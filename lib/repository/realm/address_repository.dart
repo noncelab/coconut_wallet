@@ -12,6 +12,7 @@ import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:realm/realm.dart';
 
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
@@ -343,6 +344,23 @@ class AddressRepository extends BaseRepository {
     ).first;
 
     return mapRealmToWalletAddress(realmWalletAddress);
+  }
+
+  /// 모든 월렛의 수신 주소를 1개씩 조회
+  List<WalletAddress> getReceiveAddresses() {
+    List<WalletAddress> walletAddressList = [];
+    for (final walletBase in realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)')) {
+      final realmWalletAddress = realm.query<RealmWalletAddress>(
+        r'walletId == $0 AND isChange == false AND index == $1',
+        [walletBase.id, walletBase.usedReceiveIndex + 1],
+      ).firstOrNull;
+
+      if (realmWalletAddress != null) {
+        walletAddressList.add(mapRealmToWalletAddress(realmWalletAddress));
+      }
+    }
+
+    return walletAddressList;
   }
 
   /// 지갑 Base 정보 조회

@@ -228,6 +228,38 @@ broadcasting_complete_screen:
     - "용돈"
     - "생일 선물"
 
+# send screen start ----
+send_screen:
+  select_wallet: "지갑 선택"
+  n_utxos: " • ${count}개"
+  delete: "삭제하기"
+  fee_rate: "수수료율"
+  fee_rate_suffix: "sat/vB"
+  estimated_fee: "예상 총 수수료"
+  fee_paid_by_recipients: "수수료 수신자 부담"
+  fee_paid_by_recipients_description: "수신자가 지정한 금액을 그대로 받아요"
+  my_address: "내 주소"
+  add_recipient: "수신자 추가하기"
+  use_btc_unit: "BTC 단위 사용"
+  input_maximum_amount: "최대 금액 입력"
+  address_placeholder: "보낼 주소를 입력해 주세요"
+  recommended_fee_unavailable: "추천 수수료 조회 실패"
+  recommended_fee_unavailable_description: "수수료를 직접 입력해 주세요."
+  tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
+  tooltip_max_mode_text: "최대 금액 보내기 모드"
+
+utxo_selection_screen:
+  title: "UTXO 고르기"
+
+select_wallet_with_options_bottom_sheet:
+  select_utxo: "UTXO 선택"
+  select_utxo_auto: "UTXO 자동 선택"
+  select_utxo_auto_minimal_fee_description: "최소 수수료로 전송하도록 최적의 UTXO를 선택해요"
+  select_utxo_auto_selected_utxo_description: "선택한 UTXO를 사용해 거래를 생성해요"
+  n_utxos: " • ${count}개 선택"
+
+# send screen end ----
+
 broadcasting_screen:
   title: "최종 확인"
   description: "아래 정보로 송금할게요"

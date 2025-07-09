@@ -429,7 +429,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               colorIndex: colorIndex,
               isLastItem: isLastItem,
               isBalanceHidden: isBalanceHidden,
-              fakeBlance: fakeBalance,
               signers: signers,
               walletImportSource: walletImportSource,
               currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats);

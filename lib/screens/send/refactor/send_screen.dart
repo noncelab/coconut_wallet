@@ -1,0 +1,942 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/extensions/string_extensions.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
+import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/utils/dashed_border_painter.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:tuple/tuple.dart';
+
+class SendScreen extends StatefulWidget {
+  final int walletId;
+  const SendScreen({super.key, required this.walletId});
+
+  @override
+  State<SendScreen> createState() => _SendScreenState();
+}
+
+class _SendScreenState extends State<SendScreen> {
+  static const Color keyboardToolbarGray = Color(0xFF2E2E2E);
+  static const Color feeRateFieldGray = Color(0xFF2B2B2B);
+
+  late final SendViewModel _viewModel;
+  final _recipientPageController = PageController();
+
+  final List<TextEditingController> _addressControllerList = [];
+  final List<FocusNode> _addressFocusNodeList = [];
+
+  final TextEditingController _feeRateController = TextEditingController();
+  final FocusNode _feeRateFocusNode = FocusNode();
+
+  final TextEditingController _amountController = TextEditingController();
+  final FocusNode _amountFocusNode = FocusNode();
+
+  QRViewController? _qrViewController;
+  bool _isQrDataHandling = false;
+  String _previousAmountText = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _addAddressField();
+    _viewModel = SendViewModel(
+        context.read<WalletProvider>(),
+        context.read<SendInfoProvider>(),
+        context.read<ConnectivityProvider>().isNetworkOn,
+        context.read<PreferenceProvider>().currentUnit,
+        _onAmountTextUpdate,
+        widget.walletId);
+
+    _amountFocusNode.addListener(() => setState(() {}));
+    _feeRateFocusNode.addListener(() => setState(() {}));
+    _amountController.addListener(_onAmountTextListener);
+  }
+
+  void _onAmountTextUpdate(String text) {
+    // 단위변환시 문자열 길이가 달라지므로 viewModel text와 길이를 맞춘다.
+    _previousAmountText = text;
+    _amountController.text = text;
+  }
+
+  void _onAmountTextListener() {
+    // 최대 금액 보내기 모드인 경우에는 무시
+    if (_viewModel.isAmountDisabled) {
+      if (_amountController.text != _previousAmountText) {
+        _amountController.text = _previousAmountText;
+      }
+      return;
+    }
+
+    // 문자가 입력된 경우와 삭제된 경우를 인식한다.
+    String currentText = _amountController.text;
+    if (currentText.length > _previousAmountText.length) {
+      String lastInserted = currentText.substring(_previousAmountText.length);
+      _viewModel.onKeyTap(lastInserted);
+    } else if (currentText.length < _previousAmountText.length) {
+      _viewModel.onKeyTap('<');
+      // 삭제 버튼을 꾹 누른 경우에 대한 처리
+      if (currentText.isEmpty) {
+        _viewModel.clearAmountText();
+      }
+    }
+
+    _previousAmountText = currentText;
+  }
+
+  void _addAddressField() {
+    final controller = TextEditingController();
+    final index = _addressControllerList.length;
+    controller.addListener(() {
+      _viewModel.setAddressText(controller.text, index);
+    });
+    _addressControllerList.add(controller);
+
+    final focusNode = FocusNode();
+    focusNode.addListener(() => setState(() {
+          if (focusNode.hasFocus) _viewModel.setShowAddressBoard(true);
+        }));
+    _addressFocusNodeList.add(focusNode);
+  }
+
+  void _deleteAddressField(int index) {
+    _addressControllerList[index].dispose();
+    _addressFocusNodeList[index].dispose();
+    _addressControllerList.removeAt(index);
+    _addressFocusNodeList.removeAt(index);
+  }
+
+  void _clearFocus() => FocusManager.instance.primaryFocus?.unfocus();
+
+  @override
+  void dispose() {
+    _recipientPageController.dispose();
+    _feeRateController.dispose();
+    _feeRateFocusNode.dispose();
+    _amountController.dispose();
+    _amountFocusNode.dispose();
+
+    for (var focusNode in _addressFocusNodeList) {
+      focusNode.dispose();
+    }
+    for (var controller in _addressControllerList) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, SendViewModel>(
+      create: (_) => _viewModel,
+      update: (_, connectivityProvider, walletProvider, viewModel) {
+        if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+          });
+        }
+        return viewModel;
+      },
+      child: GestureDetector(
+        onTap: _clearFocus,
+        child: Scaffold(
+            resizeToAvoidBottomInset: false,
+            backgroundColor: Colors.black,
+            appBar: CoconutAppBar.build(
+                customTitle: Selector<SendViewModel,
+                        Tuple5<WalletListItemBase?, bool, int, int, BitcoinUnit>>(
+                    selector: (_, viewModel) => Tuple5(
+                        viewModel.selectedWalletItem,
+                        viewModel.isUtxoSelectionAuto,
+                        viewModel.selectedUtxoAmountSum,
+                        viewModel.selectedUtxoListLength,
+                        viewModel.currentUnit),
+                    builder: (context, data, child) {
+                      final selectedWalletItem = data.item1;
+                      final isUtxoSelectionAuto = data.item2;
+                      final selectedUtxoListLength = data.item4;
+                      final currentUnit = data.item5;
+                      String amountText =
+                          currentUnit.displayBitcoinAmount(_viewModel.balance, withUnit: true);
+                      if (!isUtxoSelectionAuto && selectedUtxoListLength > 0) {
+                        amountText += t.send_screen.n_utxos(count: selectedUtxoListLength);
+                      }
+
+                      return Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(selectedWalletItem?.name ?? t.send_screen.select_wallet,
+                                  style: CoconutTypography.body1_16),
+                              CoconutLayout.spacing_50w,
+                              const Icon(Icons.keyboard_arrow_down_sharp,
+                                  color: CoconutColors.white, size: 16),
+                            ],
+                          ),
+                          if (selectedWalletItem != null)
+                            Text(amountText, style: CoconutTypography.body3_12_NumberBold),
+                        ],
+                      );
+                    }),
+                onTitlePressed: () {
+                  _clearFocus();
+                  CommonBottomSheets.showBottomSheet_50(
+                      context: context,
+                      child: SelectWalletWithOptionsBottomSheet(
+                        selectedWalletId: _viewModel.selectedWalletId,
+                        onWalletInfoUpdated: _viewModel.onWalletInfoUpdated,
+                        isUtxoSelectionAuto: _viewModel.isUtxoSelectionAuto,
+                        selectedUtxoList: _viewModel.selectedUtxoList,
+                      ));
+                },
+                context: context,
+                isBottom: true,
+                actionButtonList: [
+                  const SizedBox(width: 24, height: 24),
+                ],
+                onBackPressed: () {
+                  Navigator.of(context).pop();
+                }),
+            body: SizedBox(
+              height: MediaQuery.of(context).size.height,
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // Invisible Amount TextField
+                        SizedBox(
+                          width: 0,
+                          height: 0,
+                          child: TextField(
+                            controller: _amountController,
+                            focusNode: _amountFocusNode,
+                            showCursor: false,
+                            enableInteractiveSelection: false,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(signed: false, decimal: true),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                            height: 225,
+                            width: MediaQuery.of(context).size.width,
+                            child: Selector<SendViewModel, Tuple2<int, bool>>(
+                                selector: (_, viewModel) =>
+                                    Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
+                                builder: (context, data, child) {
+                                  return PageView.builder(
+                                    controller: _recipientPageController,
+                                    onPageChanged: (index) => _viewModel.setCurrentPage(index),
+                                    itemCount: _viewModel.recipientList.length +
+                                        (!_viewModel.isMaxMode ? 1 : 0),
+                                    itemBuilder: (context, index) {
+                                      if (index == _viewModel.recipientList.length) {
+                                        return _buildAddRecipientCard();
+                                      }
+                                      return _buildRecipientPage(context, index);
+                                    },
+                                  );
+                                })),
+                      ],
+                    ),
+                  ),
+                  Selector<SendViewModel, bool>(
+                      selector: (_, viewModel) => viewModel.showAddressBoard,
+                      builder: (context, data, child) {
+                        return Positioned(
+                          left: 16,
+                          right: 16,
+                          top: !_viewModel.showAddressBoard ? 225 : 180,
+                          child: !_viewModel.showAddressBoard
+                              ? _buildFeeBoard(context)
+                              : _buildAddressBoard(context),
+                        );
+                      }),
+                  if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
+                    Positioned(
+                        bottom: MediaQuery.of(context).viewInsets.bottom,
+                        child: _buildKeyboardToolbar(context)),
+                  Selector<SendViewModel, Tuple2<int, int>>(
+                      selector: (_, viewModel) =>
+                          Tuple2(viewModel.currentIndex, viewModel.recipientList.length),
+                      builder: (context, data, child) {
+                        final currentIndex = data.item1;
+                        final recipientListLength = data.item2;
+                        if (recipientListLength == 1 || currentIndex >= recipientListLength) {
+                          return const SizedBox();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text("${currentIndex + 1} ", style: CoconutTypography.body3_12),
+                              Text("/ $recipientListLength",
+                                  style:
+                                      CoconutTypography.body3_12.setColor(CoconutColors.gray600)),
+                            ],
+                          ),
+                        );
+                      }),
+                  Positioned(
+                    bottom: Sizes.size24,
+                    left: Sizes.size16,
+                    right: Sizes.size16,
+                    child: Selector<SendViewModel, Tuple2<String, bool>>(
+                        selector: (_, viewModel) =>
+                            Tuple2(viewModel.finalErrorMessage, viewModel.hasFinalError),
+                        builder: (context, data, child) {
+                          return Column(
+                            children: [
+                              Text(
+                                _viewModel.finalErrorMessage,
+                                style: Styles.caption
+                                    .merge(const TextStyle(color: MyColors.warningRed)),
+                              ),
+                              CoconutLayout.spacing_300h,
+                              CoconutButton(
+                                backgroundColor: CoconutColors.white,
+                                isActive: !_viewModel.hasFinalError,
+                                onPressed: () async {
+                                  FocusScope.of(context).unfocus();
+
+                                  if (mounted) {
+                                    Navigator.pop(context);
+                                  }
+                                },
+                                text: t.complete,
+                              ),
+                            ],
+                          );
+                        }),
+                  ),
+                ],
+              ),
+            )),
+      ),
+    );
+  }
+
+  Widget _buildFeeItem(String imagePath, int sats) {
+    return Expanded(
+      child: RippleEffect(
+        borderRadius: 8,
+        onTap: () {},
+        child: Container(
+            height: 30,
+            decoration: BoxDecoration(
+                border: Border.all(
+                  width: 1,
+                  color: CoconutColors.gray600,
+                ),
+                borderRadius: const BorderRadius.all(Radius.circular(8))),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  imagePath,
+                  width: 12,
+                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                ),
+                CoconutLayout.spacing_150w,
+                Text("$sats ${t.send_screen.fee_rate_suffix}",
+                    style: CoconutTypography.body3_12_Number),
+              ],
+            )),
+      ),
+    );
+  }
+
+  List<Widget> _getAmountKeyboardToolbarChildren(BuildContext context) {
+    return [
+      const Spacer(),
+      GestureDetector(
+        onTap: _viewModel.toggleUnit,
+        child: Container(
+            color: Colors.transparent,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Selector<SendViewModel, BitcoinUnit>(
+                selector: (_, viewModel) => viewModel.currentUnit,
+                builder: (context, data, child) {
+                  return Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/svg/check.svg',
+                        width: 8,
+                        colorFilter: ColorFilter.mode(
+                            _viewModel.currentUnit == BitcoinUnit.btc
+                                ? CoconutColors.white
+                                : CoconutColors.white.withOpacity(0.3),
+                            BlendMode.srcIn),
+                      ),
+                      CoconutLayout.spacing_100w,
+                      Text(t.send_screen.use_btc_unit, style: CoconutTypography.body3_12),
+                    ],
+                  );
+                })),
+      ),
+    ];
+  }
+
+  List<Widget> _getFeeRateKeyboardToolbarChildren(BuildContext context) {
+    // todo: 수수료 api 연동
+    bool hasError = true;
+    return [
+      CoconutLayout.spacing_200w,
+      if (hasError) ...[
+        SvgPicture.asset('assets/svg/triangle-warning.svg',
+            colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn), width: 24),
+        CoconutLayout.spacing_200w,
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(t.send_screen.recommended_fee_unavailable, style: CoconutTypography.body3_12_Bold),
+            Text(t.send_screen.recommended_fee_unavailable_description,
+                style: CoconutTypography.body3_12),
+          ],
+        ),
+      ] else ...[
+        _buildFeeItem('assets/svg/rocket.svg', 7),
+        CoconutLayout.spacing_200w,
+        _buildFeeItem('assets/svg/car.svg', 3),
+        CoconutLayout.spacing_200w,
+        _buildFeeItem('assets/svg/barefoot.svg', 1),
+      ],
+      CoconutLayout.spacing_200w,
+    ];
+  }
+
+  Widget _buildKeyboardToolbar(BuildContext context) {
+    List<Widget> keyboardToolbarChildren = [];
+    if (_amountFocusNode.hasFocus) {
+      keyboardToolbarChildren = _getAmountKeyboardToolbarChildren(context);
+    } else if (_feeRateFocusNode.hasFocus) {
+      keyboardToolbarChildren = _getFeeRateKeyboardToolbarChildren(context);
+    }
+    return GestureDetector(
+      onTap: () {}, // ignore
+      child: Container(
+          width: MediaQuery.of(context).size.width,
+          height: 50,
+          color: keyboardToolbarGray,
+          child: Row(children: keyboardToolbarChildren)),
+    );
+  }
+
+  Widget _buildFeeBoard(BuildContext context) {
+    return Column(
+      children: [
+        Selector<SendViewModel, Tuple2<bool, bool>>(
+            selector: (_, viewModel) =>
+                Tuple2(viewModel.showFeeBoard, viewModel.isFeePaidByRecipients),
+            builder: (context, data, child) {
+              if (!_viewModel.showFeeBoard) return const SizedBox();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.only(left: 14, right: 14, top: 12, bottom: 20),
+                  margin: const EdgeInsets.only(top: 0),
+                  decoration: BoxDecoration(
+                      border: Border.all(
+                        color: CoconutColors.gray700,
+                        width: 1,
+                      ),
+                      borderRadius: const BorderRadius.all(Radius.circular(8))),
+                  child: Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            t.send_screen.fee_rate,
+                            style: CoconutTypography.body3_12,
+                          ),
+                          const Spacer(),
+                          Container(
+                            width: 85,
+                            padding: const EdgeInsets.only(top: 4),
+                            child: CoconutTextField(
+                              textInputType: const TextInputType.numberWithOptions(
+                                  signed: false, decimal: true),
+                              textInputFormatter: [
+                                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                              ],
+                              height: 30,
+                              controller: _feeRateController,
+                              focusNode: _feeRateFocusNode,
+                              backgroundColor: feeRateFieldGray,
+                              padding: const EdgeInsets.only(left: 10),
+                              onChanged: (text) {
+                                String formattedText = filterDecimalInput(text, 2);
+                                _feeRateController.text = formattedText;
+                              },
+                              maxLines: 1,
+                              fontFamily: 'SpaceGrotesk',
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              borderRadius: 8,
+                              placeholderColor: Colors.transparent,
+                              suffix: Container(
+                                  padding: const EdgeInsets.only(right: 10),
+                                  child: Text(t.send_screen.fee_rate_suffix,
+                                      style: CoconutTypography.body3_12_NumberBold)),
+                            ),
+                          )
+                        ],
+                      ),
+                      CoconutLayout.spacing_200h,
+                      Row(
+                        children: [
+                          Text(
+                            t.send_screen.estimated_fee,
+                            style: CoconutTypography.body3_12,
+                          ),
+                          const Spacer(),
+                          Text(
+                            '407 sats',
+                            style: CoconutTypography.body2_14_NumberBold,
+                          ),
+                        ],
+                      ),
+                      CoconutLayout.spacing_400h,
+                      Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.send_screen.fee_paid_by_recipients,
+                                style: CoconutTypography.body3_12,
+                              ),
+                              Text(
+                                t.send_screen.fee_paid_by_recipients_description,
+                                style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: SizedBox(
+                              width: 36,
+                              height: 22,
+                              child: Transform.scale(
+                                  scale: 0.7,
+                                  child: CupertinoSwitch(
+                                      value: _viewModel.isFeePaidByRecipients,
+                                      activeColor: CoconutColors.gray100,
+                                      trackColor: CoconutColors.gray600,
+                                      thumbColor: CoconutColors.gray800,
+                                      onChanged: (isOn) => _viewModel.setIsPaidByRecipients(isOn))),
+                            ),
+                          ),
+                          CoconutLayout.spacing_100w,
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+        Selector<SendViewModel, Tuple3<bool, int, String>>(
+            selector: (_, viewModel) => Tuple3(
+                viewModel.isMaxMode, viewModel.recipientList.length, viewModel.amountSumText),
+            builder: (context, data, child) {
+              final isBatch = _viewModel.recipientList.length >= 2;
+              if (!isBatch && !_viewModel.isMaxMode) {
+                return const SizedBox();
+              }
+
+              String tooltipText = isBatch
+                  ? "${t.send_screen.tooltip_text(count: _viewModel.recipientList.length, amount: _viewModel.amountSumText)} ${_viewModel.isMaxMode ? "• ${t.send_screen.tooltip_max_mode_text}" : ""}"
+                  : t.send_screen.tooltip_max_mode_text;
+              return CoconutToolTip(
+                backgroundColor: CoconutColors.gray800,
+                borderColor: CoconutColors.gray800,
+                borderRadius: 12,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                icon: SvgPicture.asset(
+                  'assets/svg/circle-info.svg',
+                  colorFilter: const ColorFilter.mode(
+                    CoconutColors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                tooltipType: CoconutTooltipType.fixed,
+                richText: RichText(
+                  text: TextSpan(
+                    text: tooltipText,
+                    style: CoconutTypography.body3_12_Bold,
+                  ),
+                ),
+              );
+            }),
+      ],
+    );
+  }
+
+  Widget _buildAddRecipientCard() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
+      child: ShrinkAnimationButton(
+        defaultColor: CoconutColors.black,
+        onPressed: () {
+          _viewModel.addRecipient();
+          _addAddressField();
+        },
+        child: CustomPaint(
+          painter:
+              DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: CoconutColors.gray600),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SvgPicture.asset('assets/svg/plus.svg'),
+              CoconutLayout.spacing_100w,
+              Text(
+                t.send_screen.add_recipient,
+                style: CoconutTypography.body2_14,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecipientPage(BuildContext context, int index) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
+      child: Column(
+        children: [
+          Selector<SendViewModel, Tuple5<BitcoinUnit, String, bool, bool, bool>>(
+              selector: (_, viewModel) => Tuple5(
+                  viewModel.currentUnit,
+                  viewModel.recipientList[index].amount,
+                  viewModel.isMaxMode,
+                  viewModel.hasInsufficientBalanceError,
+                  viewModel.recipientList[index].minimumAmountError.isError),
+              builder: (context, data, child) {
+                final amountText = data.item2;
+                final isMinimumAmount = data.item5;
+                final amountTextColor = _viewModel.hasInsufficientBalanceError || isMinimumAmount
+                    ? CoconutColors.hotPink
+                    : amountText.isEmpty
+                        ? MyColors.transparentWhite_20
+                        : CoconutColors.white;
+                return Column(
+                  children: [
+                    GestureDetector(
+                        onTap: () {
+                          if (_viewModel.isAmountDisabled) return;
+                          _amountFocusNode.requestFocus();
+                        },
+                        child: SizedBox(
+                            height: 30,
+                            child: RichText(
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              text: TextSpan(
+                                text:
+                                    '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
+                                style: CoconutTypography.heading2_28_NumberBold
+                                    .setColor(amountTextColor),
+                                children: [
+                                  TextSpan(
+                                      text: _viewModel.currentUnit.symbol,
+                                      style: CoconutTypography.heading4_18_Number)
+                                ],
+                              ),
+                            ))),
+                    CoconutLayout.spacing_100h,
+                    Opacity(
+                      opacity: index == _viewModel.lastIndex ? 1.0 : 0.0,
+                      child: GestureDetector(
+                        onTap: () {
+                          _viewModel.setMaxMode(!_viewModel.isMaxMode);
+                          _clearFocus();
+                        },
+                        child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(4.0), color: MyColors.grey),
+                            child: Text(
+                                !_viewModel.isMaxMode ? t.send_screen.input_maximum_amount : t.max,
+                                style: Styles.caption.merge(TextStyle(
+                                    color: CoconutColors.white,
+                                    fontFamily: CustomFonts.text.getFontFamily)))),
+                      ),
+                    ),
+                  ],
+                );
+              }),
+          CoconutLayout.spacing_500h,
+          Selector<SendViewModel, Tuple2<String, SendError>>(
+              selector: (_, viewModel) => Tuple2(viewModel.recipientList[index].address,
+                  viewModel.recipientList[index].addressError),
+              builder: (context, data, child) {
+                final isAddressError = data.item2.isError;
+                final controller = _addressControllerList[index];
+                final focusNode = _addressFocusNodeList[index];
+                return CoconutTextField(
+                  controller: _addressControllerList[index],
+                  focusNode: _addressFocusNodeList[index],
+                  backgroundColor: CoconutColors.black,
+                  height: 52,
+                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                  onChanged: (text) {},
+                  maxLines: 1,
+                  suffix: IconButton(
+                    iconSize: 14,
+                    padding: EdgeInsets.zero,
+                    onPressed: controller.text.isEmpty
+                        ? () {
+                            focusNode.requestFocus();
+                            _showAddressScanner(index);
+                          }
+                        : () {
+                            focusNode.requestFocus();
+                            controller.clear();
+                          },
+                    icon: controller.text.isEmpty
+                        ? SvgPicture.asset('assets/svg/scan.svg')
+                        : SvgPicture.asset(
+                            'assets/svg/text-field-clear.svg',
+                            colorFilter: ColorFilter.mode(
+                                isAddressError ? CoconutColors.hotPink : CoconutColors.white,
+                                BlendMode.srcIn),
+                          ),
+                  ),
+                  placeholderText: controller.text.isEmpty ? t.send_screen.address_placeholder : "",
+                  isError: isAddressError,
+                );
+              }),
+          CoconutLayout.spacing_100h,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                const Spacer(),
+                Selector<SendViewModel, int>(
+                    selector: (_, viewModel) => viewModel.recipientList.length,
+                    builder: (context, data, child) {
+                      return CoconutUnderlinedButton(
+                        text: t.send_screen.delete,
+                        onTap: () {
+                          _deleteAddressField(_viewModel.currentIndex);
+                          _viewModel.deleteRecipient();
+                        },
+                        isActive: true,
+                        textStyle: CoconutTypography.body3_12,
+                        padding: EdgeInsets.zero,
+                      );
+                    }),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressRow(String address, String walletName, String derivationPath) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        final index = _viewModel.currentIndex;
+        _addressControllerList[index].text = address;
+        _addressFocusNodeList[index].requestFocus();
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            shortenAddress(address, head: 10),
+            style: CoconutTypography.body3_12_Number,
+          ),
+          Text(
+            "$walletName • $derivationPath",
+            style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressBoard(BuildContext context) {
+    return Column(
+      children: [
+        CoconutLayout.spacing_50h,
+        GestureDetector(
+          onTap: () => {}, // ignore
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+                color: CoconutColors.black,
+                border: Border.all(
+                  color: CoconutColors.gray700,
+                  width: 1,
+                ),
+                borderRadius: const BorderRadius.all(Radius.circular(8))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      t.send_screen.my_address,
+                      style: CoconutTypography.body3_12_Bold,
+                    ),
+                    const Spacer(),
+                    CoconutUnderlinedButton(
+                      text: t.close,
+                      onTap: () => _viewModel.setShowAddressBoard(false),
+                      textStyle: CoconutTypography.body3_12,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+                CoconutLayout.spacing_200h,
+                SizedBox(
+                  height: 80,
+                  child: ListView.builder(
+                      itemCount: _viewModel.walletItemList.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final address = _viewModel.walletAddressList[index].address;
+                        final walletName = _viewModel.walletItemList[index].name;
+                        final derivationPath = _viewModel.walletAddressList[index].derivationPath;
+                        final bottomPadding =
+                            index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
+
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: bottomPadding),
+                          child: _buildAddressRow(address, walletName, derivationPath),
+                        );
+                      }),
+                ),
+                CoconutLayout.spacing_200h,
+                CoconutUnderlinedButton(
+                  text: t.view_more,
+                  onTap: () {
+                    _clearFocus();
+                    if (_viewModel.walletItemList.length == 1) {
+                      _showAddressListBottomSheet(0);
+                      return;
+                    }
+
+                    CommonBottomSheets.showBottomSheet_50(
+                        context: context,
+                        child: SelectWalletBottomSheet(
+                          selectedWalletId: -1,
+                          onWalletChanged: (index) {
+                            Navigator.pop(context);
+                            _showAddressListBottomSheet(index);
+                          },
+                        ));
+                  },
+                  textStyle: CoconutTypography.body3_12,
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+        )
+      ],
+    );
+  }
+
+  void _showAddressListBottomSheet(int index) {
+    CommonBottomSheets.showBottomSheet_90(
+        context: context,
+        child: AddressListScreen(
+          id: _viewModel.walletItemList[index].id,
+          isFullScreen: false,
+        ));
+  }
+
+  void _onQRViewCreated(QRViewController qrViewController) {
+    _qrViewController = qrViewController;
+    qrViewController.scannedDataStream.listen((scanData) async {
+      if (_isQrDataHandling || scanData.code == null) return;
+      if (scanData.code!.isEmpty) return;
+
+      _isQrDataHandling = true;
+      if (_viewModel.validateAddress(scanData.code!)) {
+        if (mounted) {
+          Navigator.pop(context, scanData.code!);
+        }
+      } else {
+        if (mounted) {
+          CoconutToast.showToast(
+              isVisibleIcon: true, context: context, text: _viewModel.qrErrorMessage);
+        }
+      }
+
+      // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
+      await Future.delayed(const Duration(seconds: 1));
+      _isQrDataHandling = false;
+    });
+  }
+
+  void _showAddressScanner(int index) async {
+    final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+    final String? scannedAddress = await CommonBottomSheets.showBottomSheet_100(
+        context: context,
+        child: Scaffold(
+            backgroundColor: CoconutColors.black,
+            appBar: CoconutAppBar.build(
+                title: t.send,
+                context: context,
+                actionButtonList: [
+                  IconButton(
+                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: const ColorFilter.mode(
+                          CoconutColors.white,
+                          BlendMode.srcIn,
+                        )),
+                    onPressed: () {
+                      _qrViewController?.flipCamera();
+                    },
+                  ),
+                ],
+                onBackPressed: () {
+                  _disposeQrViewController();
+                  Navigator.of(context).pop<String>('');
+                }),
+            body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)));
+    if (scannedAddress != null) {
+      _addressControllerList[index].text = scannedAddress;
+    }
+    _disposeQrViewController();
+  }
+
+  void _disposeQrViewController() {
+    _qrViewController?.dispose();
+    _qrViewController = null;
+  }
+}

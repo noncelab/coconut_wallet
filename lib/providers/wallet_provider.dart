@@ -330,6 +330,10 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.getReceiveAddress(walletId);
   }
 
+  List<WalletAddress> getReceiveAddresses() {
+    return _addressRepository.getReceiveAddresses();
+  }
+
   List<UtxoState> getUtxoList(int walletId) {
     return _utxoRepository.getUtxoStateList(walletId);
   }

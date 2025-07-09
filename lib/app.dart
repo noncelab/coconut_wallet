@@ -18,6 +18,8 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
@@ -279,6 +281,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 (args) => CustomLoadingOverlay(
                     child: BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash'])),
               ),
+          '/send': (context) => buildScreenWithArguments(
+                context,
+                (args) => SendScreen(walletId: args['walletId']),
+              ),
           '/send-address': (context) => buildScreenWithArguments(
                 context,
                 (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
@@ -287,6 +293,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           '/fee-selection': (context) => const SendFeeSelectionScreen(),
           '/utxo-selection': (context) => const CustomLoadingOverlay(
                 child: SendUtxoSelectionScreen(),
+              ),
+          '/refactor-utxo-selection': (context) => CustomLoadingOverlay(
+                child: buildScreenWithArguments(
+                  context,
+                  (args) => UtxoSelectionScreen(selectedUtxoList: args['selectedUtxoList']),
+                ),
               ),
           '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
           '/utxo-list': (context) => buildScreenWithArguments(
