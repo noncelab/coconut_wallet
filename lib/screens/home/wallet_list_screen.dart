@@ -246,79 +246,64 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       ),
       child: Column(
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  vertical: 7.2,
-                  horizontal: 6,
-                ),
-                height: 2.5,
-                width: 2.5,
-                decoration:
-                    const BoxDecoration(color: CoconutColors.gray400, shape: BoxShape.circle),
-              ),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                    children: [
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.top,
-                        child: SvgPicture.asset(
-                          'assets/svg/star-small.svg',
-                          width: 12,
-                          height: 12,
-                        ),
-                      ),
-                      TextSpan(text: t.wallet_list.edit.star_description),
-                    ],
-                  ),
-                  overflow: TextOverflow.visible,
-                  softWrap: true,
+          _buildEditModeHeaderLine(
+            [
+              WidgetSpan(
+                alignment: PlaceholderAlignment.top,
+                child: SvgPicture.asset(
+                  'assets/svg/star-small.svg',
+                  width: 12,
+                  height: 12,
                 ),
               ),
+              TextSpan(text: t.wallet_list.edit.star_description),
             ],
           ),
           CoconutLayout.spacing_100h,
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(
-                  vertical: 7.2,
-                  horizontal: 6,
-                ),
-                height: 2.5,
-                width: 2.5,
-                decoration:
-                    const BoxDecoration(color: CoconutColors.gray400, shape: BoxShape.circle),
+          _buildEditModeHeaderLine([
+            WidgetSpan(
+              alignment: PlaceholderAlignment.top,
+              child: SvgPicture.asset(
+                'assets/svg/hamburger.svg',
+                width: 12,
+                height: 12,
               ),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                    children: [
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.top,
-                        child: SvgPicture.asset(
-                          'assets/svg/hamburger.svg',
-                          width: 12,
-                          height: 12,
-                        ),
-                      ),
-                      TextSpan(text: t.wallet_list.edit.order_description),
-                    ],
-                  ),
-                  overflow: TextOverflow.visible,
-                  softWrap: true,
-                ),
-              ),
-            ],
-          ),
+            ),
+            TextSpan(text: t.wallet_list.edit.order_description),
+          ]),
+          CoconutLayout.spacing_100h,
+          _buildEditModeHeaderLine([
+            TextSpan(text: t.wallet_list.edit.delete_description),
+          ]),
         ],
       ),
+    );
+  }
+
+  Widget _buildEditModeHeaderLine(List<InlineSpan> inlineSpan) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(
+            vertical: 7.2,
+            horizontal: 6,
+          ),
+          height: 2.5,
+          width: 2.5,
+          decoration: const BoxDecoration(color: CoconutColors.gray400, shape: BoxShape.circle),
+        ),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+              children: inlineSpan,
+            ),
+            overflow: TextOverflow.visible,
+            softWrap: true,
+          ),
+        ),
+      ],
     );
   }
 
@@ -544,12 +529,35 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   AppBar _buildAppBar(BuildContext context) {
     bool isEditMode = _viewModel.isEditMode;
+    bool hasFavoriteChanged = _viewModel.hasFavoriteChanged;
+    bool hasWalletOrderChanged = _viewModel.hasWalletOrderChanged;
     return CoconutAppBar.build(
       title: isEditMode ? t.wallet_list.edit.wallet_list : '',
       context: context,
       onBackPressed: () {
         if (isEditMode) {
-          _viewModel.setEditMode(false);
+          if (hasFavoriteChanged || hasWalletOrderChanged) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return CoconutPopup(
+                  title: t.wallet_list.edit.finish,
+                  description: t.wallet_list.edit.unsaved_changes_confirm_exit,
+                  leftButtonText: t.cancel,
+                  rightButtonText: t.confirm,
+                  onTapRight: () {
+                    _viewModel.setEditMode(false);
+                    Navigator.pop(context);
+                  },
+                  onTapLeft: () {
+                    Navigator.pop(context);
+                  },
+                );
+              },
+            );
+          } else {
+            _viewModel.setEditMode(false);
+          }
         } else {
           Navigator.pop(context);
         }

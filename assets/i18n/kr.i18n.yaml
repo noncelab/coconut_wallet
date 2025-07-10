@@ -33,6 +33,7 @@ close: "닫기"
 next: "다음"
 modify: "변경"
 confirm: "확인"
+cancel: "취소"
 security: "보안"
 unit: "단위"
 utxo: "UTXO"
@@ -193,6 +194,9 @@ wallet_list:
     wallet_list: "지갑 목록 편집"
     star_description: "을 최대 5개 선택하여 홈 화면에 보이는 지갑을 선택할 수 있어요."
     order_description: "을 눌러 지갑 순서를 변경할 수 있어요."
+    delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
+    finish: "편집 종료"
+    unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
     
 
 wallet_add_input_screen:
