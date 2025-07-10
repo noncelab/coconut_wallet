@@ -70,6 +70,11 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     );
   }
 
+  Future<bool> _comparePin(String input) async {
+    bool isSamePin = await _authProvider.verifyPin(input);
+    return isSamePin;
+  }
+
   void returnToBackSequence(String message, {bool isError = false, bool firstSequence = false}) {
     setState(() {
       errorMessage = message;
@@ -102,9 +107,25 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         setState(() => pin += value);
         vibrateExtraLight();
       }
+
+      if (pin.length == _pinLength) {
+        try {
+          bool isAlreadyUsingPin = await _comparePin(pin);
+
+          if (isAlreadyUsingPin) {
+            returnToBackSequence(t.errors.pin_setting_error.already_in_use, firstSequence: true);
+            return;
+          }
+        } catch (error) {
+          returnToBackSequence(t.errors.pin_setting_error.process_failed, isError: true);
+          return;
+        }
+      }
+
       setState(() {
         if (pin.length == _pinLength) {
           step = 1;
+          errorMessage = '';
           _shufflePinNumbers();
         }
       });
