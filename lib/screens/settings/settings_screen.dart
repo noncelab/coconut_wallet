@@ -132,47 +132,48 @@ class _SettingsScreen extends State<SettingsScreen> {
                       ],
                     ),
                   ],
-
+                  CoconutLayout.spacing_400h,
                   _category(t.unit),
-                  Selector<PreferenceProvider, bool>(
-                      selector: (_, viewModel) => viewModel.isBtcUnit,
-                      builder: (context, isBtcUnit, child) {
-                        return SingleButton(
-                          title: t.bitcoin_kr,
-                          subtitle: isBtcUnit ? t.btc : t.sats,
-                          onPressed: () async {
-                            CommonBottomSheets.showBottomSheet_50(
-                                context: context, child: const UnitBottomSheet());
-                          },
-                        );
-                      }),
+                  ButtonGroup(buttons: [
+                    Selector<PreferenceProvider, bool>(
+                        selector: (_, viewModel) => viewModel.isBtcUnit,
+                        builder: (context, isBtcUnit, child) {
+                          return SingleButton(
+                            title: t.bitcoin_kr,
+                            subtitle: isBtcUnit ? t.btc : t.sats,
+                            onPressed: () async {
+                              CommonBottomSheets.showBottomSheet_50(
+                                  context: context, child: const UnitBottomSheet());
+                            },
+                          );
+                        }),
+                    Selector<PreferenceProvider, String>(
+                        selector: (_, provider) => provider.selectedFiat.code,
+                        builder: (context, fiatCode, child) {
+                          String fiatDisplayName;
+                          switch (fiatCode) {
+                            case 'KRW':
+                              fiatDisplayName = t.fiat.krw_code;
+                              break;
+                            case 'USD':
+                              fiatDisplayName = t.fiat.usd_code;
+                              break;
+                            default:
+                              fiatDisplayName = t.fiat.usd_code;
+                          }
 
-                  CoconutLayout.spacing_200h,
-                  Selector<PreferenceProvider, String>(
-                      selector: (_, provider) => provider.selectedFiat.code,
-                      builder: (context, fiatCode, child) {
-                        String fiatDisplayName;
-                        switch (fiatCode) {
-                          case 'KRW':
-                            fiatDisplayName = t.fiat.krw_code;
-                            break;
-                          case 'USD':
-                            fiatDisplayName = t.fiat.usd_code;
-                            break;
-                          default:
-                            fiatDisplayName = t.fiat.usd_code;
-                        }
+                          return SingleButton(
+                            title: t.fiat.fiat,
+                            subtitle: fiatDisplayName,
+                            onPressed: () async {
+                              CommonBottomSheets.showBottomSheet_50(
+                                  context: context, child: const FiatBottomSheet());
+                            },
+                          );
+                        }),
+                  ]),
 
-                        return SingleButton(
-                          title: t.fiat.fiat,
-                          subtitle: fiatDisplayName,
-                          onPressed: () async {
-                            CommonBottomSheets.showBottomSheet_50(
-                                context: context, child: const CurrencyBottomSheet());
-                          },
-                        );
-                      }),
-
+                  CoconutLayout.spacing_400h,
                   _category(t.general),
                   Selector<PreferenceProvider, String>(
                     selector: (_, provider) => provider.language,
@@ -180,8 +181,12 @@ class _SettingsScreen extends State<SettingsScreen> {
                       return SingleButton(
                         title: t.settings_screen.language,
                         subtitle: _getCurrentLanguageDisplayName(language),
+                        subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
                         onPressed: () async {
-                          _showLanguageSelectionDialog();
+                          CommonBottomSheets.showBottomSheet_50(
+                            context: context,
+                            child: const LanguageBottomSheet(),
+                          );
                         },
                       );
                     },
@@ -242,12 +247,5 @@ class _SettingsScreen extends State<SettingsScreen> {
       default:
         return t.settings_screen.korean;
     }
-  }
-
-  void _showLanguageSelectionDialog() {
-    CommonBottomSheets.showBottomSheet_50(
-      context: context,
-      child: const LanguageBottomSheet(),
-    );
   }
 }

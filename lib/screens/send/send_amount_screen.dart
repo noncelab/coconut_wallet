@@ -66,6 +66,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
           appBar: CoconutAppBar.buildWithNext(
             title: t.send,
             context: context,
+            nextButtonTitle: t.next,
             onNextPressed: () => _goNextScreen('/fee-selection'),
             isActive: viewModel.isNetworkOn && viewModel.isNextButtonEnabled,
             backgroundColor: CoconutColors.black,

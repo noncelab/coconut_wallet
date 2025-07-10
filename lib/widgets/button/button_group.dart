@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 
 class ButtonGroup extends StatelessWidget {
-  final List<SingleButton> buttons;
+  final List<Widget> buttons;
 
   const ButtonGroup({super.key, required this.buttons});
 

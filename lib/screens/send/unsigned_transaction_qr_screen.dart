@@ -95,6 +95,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
           title: t.send,
           context: context,
           usePrimaryActiveColor: true,
+          nextButtonTitle: t.next,
           onNextPressed: () {
             Navigator.pushNamed(context, '/signed-psbt-scanner');
           }),

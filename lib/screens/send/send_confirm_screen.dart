@@ -49,6 +49,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                   context: context,
                   isActive: true,
                   usePrimaryActiveColor: true,
+                  nextButtonTitle: t.next,
                   onNextPressed: () {
                     context.loaderOverlay.show();
                     viewModel.setTxWaitingForSign();
