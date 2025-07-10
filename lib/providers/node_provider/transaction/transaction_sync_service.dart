@@ -23,8 +23,8 @@ typedef FetchedTransactionDetails = ({
 });
 
 typedef RbfCpfpDetectionResult = ({
-  Map<String, RbfInfo> sendingRbfInfoMap,
-  Set<String> replacedTxHashSetByReceivingRbf,
+  Map<String, RbfInfo> outgoingRbfInfoMap,
+  Set<String> replacedTxHashSetByIncomingRbf,
   Map<String, CpfpInfo> cpfpInfoMap
 });
 
@@ -189,22 +189,22 @@ class TransactionSyncService {
     Set<String> unconfirmedFetchedTxHashes,
     Set<String> confirmedFetchedTxHashes,
   ) async {
-    Map<String, RbfInfo> sendingRbfInfoMap = {}; // fetchedTxHash -> RbfInfo
-    Set<String> replacedTxHashSetByReceivingRbf = {};
+    Map<String, RbfInfo> outgoingingRbfInfoMap = {}; // fetchedTxHash -> RbfInfo
+    Set<String> replacedTxHashSetByIncomingRbf = {};
     Map<String, CpfpInfo> cpfpInfoMap = {};
 
     for (final fetchedTx in fetchedTransactions) {
       Logger.log('Processing transaction: ${fetchedTx.transactionHash}');
       if (unconfirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
-        final sendingRbfInfo = await _rbfService.detectSendingRbfTransaction(walletId, fetchedTx);
-        if (sendingRbfInfo != null) {
-          sendingRbfInfoMap[fetchedTx.transactionHash] = sendingRbfInfo;
+        final outgoingRbfInfo = await _rbfService.detectOutgoingRbfTransaction(walletId, fetchedTx);
+        if (outgoingRbfInfo != null) {
+          outgoingingRbfInfoMap[fetchedTx.transactionHash] = outgoingRbfInfo;
         }
 
-        final replacedTxHashByReceivingRbf =
-            await _rbfService.detectReceivingRbfTransaction(walletId, fetchedTx);
-        if (replacedTxHashByReceivingRbf != null) {
-          replacedTxHashSetByReceivingRbf.add(replacedTxHashByReceivingRbf);
+        final replacedTxHashByIncomingRbf =
+            await _rbfService.detectIncomingRbfTransaction(walletId, fetchedTx);
+        if (replacedTxHashByIncomingRbf != null) {
+          replacedTxHashSetByIncomingRbf.add(replacedTxHashByIncomingRbf);
         }
 
         final cpfpInfo = await _cpfpService.detectCpfpTransaction(walletId, fetchedTx);
@@ -221,8 +221,8 @@ class TransactionSyncService {
     }
 
     return (
-      sendingRbfInfoMap: sendingRbfInfoMap,
-      replacedTxHashSetByReceivingRbf: replacedTxHashSetByReceivingRbf,
+      outgoingRbfInfoMap: outgoingingRbfInfoMap,
+      replacedTxHashSetByIncomingRbf: replacedTxHashSetByIncomingRbf,
       cpfpInfoMap: cpfpInfoMap
     );
   }
@@ -233,8 +233,8 @@ class TransactionSyncService {
     List<TransactionRecord> txRecords,
     RbfCpfpDetectionResult rbfCpfpResult,
   ) async {
-    if (rbfCpfpResult.sendingRbfInfoMap.isEmpty &&
-        rbfCpfpResult.replacedTxHashSetByReceivingRbf.isEmpty &&
+    if (rbfCpfpResult.outgoingRbfInfoMap.isEmpty &&
+        rbfCpfpResult.replacedTxHashSetByIncomingRbf.isEmpty &&
         rbfCpfpResult.cpfpInfoMap.isEmpty) {
       return;
     }
@@ -242,22 +242,22 @@ class TransactionSyncService {
     final txRecordMap = {for (var record in txRecords) record.transactionHash: record};
     final int walletId = walletItem.id;
 
-    if (rbfCpfpResult.sendingRbfInfoMap.isNotEmpty) {
+    if (rbfCpfpResult.outgoingRbfInfoMap.isNotEmpty) {
       await _rbfService.saveRbfHistoryMap(
         walletId: walletId,
-        rbfInfoMap: rbfCpfpResult.sendingRbfInfoMap,
+        rbfInfoMap: rbfCpfpResult.outgoingRbfInfoMap,
         txRecordMap: txRecordMap,
       );
-      await _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.sendingRbfInfoMap);
+      await _transactionRepository.markAsRbfReplaced(walletId, rbfCpfpResult.outgoingRbfInfoMap);
       await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
-          walletId, rbfCpfpResult.sendingRbfInfoMap.keys.toSet());
+          walletId, rbfCpfpResult.outgoingRbfInfoMap.keys.toSet());
     }
 
-    if (rbfCpfpResult.replacedTxHashSetByReceivingRbf.isNotEmpty) {
+    if (rbfCpfpResult.replacedTxHashSetByIncomingRbf.isNotEmpty) {
       await _transactionRepository.deleteOrphanedCpfpTransaction(
-          walletId, rbfCpfpResult.replacedTxHashSetByReceivingRbf);
+          walletId, rbfCpfpResult.replacedTxHashSetByIncomingRbf);
       await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
-          walletId, rbfCpfpResult.replacedTxHashSetByReceivingRbf);
+          walletId, rbfCpfpResult.replacedTxHashSetByIncomingRbf);
     }
 
     if (rbfCpfpResult.cpfpInfoMap.isNotEmpty) {

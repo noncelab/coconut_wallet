@@ -22,7 +22,7 @@ class RbfService {
   RbfService(this._transactionRepository, this._utxoRepository, this._electrumService);
 
   /// RBF를 보내는 지갑 관점에서 이미 소비한 UTXO를 다시 소비하는지 확인
-  Future<RbfInfo?> detectSendingRbfTransaction(int walletId, Transaction tx) async {
+  Future<RbfInfo?> detectOutgoingRbfTransaction(int walletId, Transaction tx) async {
     // 이미 RBF 내역이 있는지 확인
     if (hasExistingRbfHistory(walletId, tx.transactionHash)) {
       return null; // 이미 RBF로 등록된 트랜잭션
@@ -100,7 +100,7 @@ class RbfService {
 
   /// RBF를 받는 지갑 관점에서 Incoming 상태의 UTXO 트랜잭션이 유효한지 확인,
   /// RBF 발견 시 대체된 트랜잭션의 해시를 반환
-  Future<String?> detectReceivingRbfTransaction(
+  Future<String?> detectIncomingRbfTransaction(
     int walletId,
     Transaction tx,
   ) async {
