@@ -105,6 +105,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       setState(() {
         if (pin.length == _pinLength) {
           step = 1;
+          _shufflePinNumbers();
         }
       });
     } else if (step == 1) {
