@@ -175,8 +175,8 @@ class _SendAddressScreenState extends State<SendAddressScreen> with WidgetsBindi
 
       _isProcessing = true;
 
-      _viewModel.validateAddress(scanData.code!).then((_) {
-        _viewModel.saveWalletIdAndRecipientAddress(widget.id, scanData.code!);
+      _viewModel.validateAddress(scanData.code!).then((normalizedAddress) {
+        _viewModel.saveWalletIdAndRecipientAddress(widget.id, normalizedAddress);
         if (_viewModel.isNetworkOn) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _goNext(); // Navigator.push 호출은 메인 스레드에서 실행

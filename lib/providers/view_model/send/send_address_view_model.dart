@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,14 +31,7 @@ class SendAddressViewModel extends ChangeNotifier {
     final clipboardText = data?.text ?? '';
     if (clipboardText.isNotEmpty) {
       try {
-        await validateAddress(clipboardText);
-
-        String addressToSave = clipboardText;
-        if (clipboardText.toLowerCase().startsWith('bitcoin:')) {
-          addressToSave = _parseBip21Address(clipboardText);
-        }
-
-        _address = _isBech32(addressToSave) ? addressToSave.toLowerCase() : addressToSave;
+        _address = await validateAddress(clipboardText);
       } catch (_) {
         _address = null;
       }
@@ -47,34 +41,19 @@ class SendAddressViewModel extends ChangeNotifier {
 
   void saveWalletIdAndRecipientAddress(int id, String address) {
     _sendInfoProvider.setWalletId(id);
-
-    String addressToSave = address;
-    if (address.toLowerCase().startsWith('bitcoin:')) {
-      addressToSave = _parseBip21Address(address);
-    }
-    _sendInfoProvider.setRecipientAddress(
-        _isBech32(addressToSave) ? addressToSave.toLowerCase() : addressToSave);
+    _sendInfoProvider.setRecipientAddress(address);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
   }
 
-  Future<void> validateAddress(String recipient) async {
+  Future<String> validateAddress(String recipient) async {
     if (recipient.isEmpty) {
       throw invalidAddressMessage;
     }
 
-    String addressToParse = recipient;
-
-    if (recipient.toLowerCase().startsWith('bitcoin:')) {
-      addressToParse = _parseBip21Address(recipient);
-      if (addressToParse.isEmpty) {
-        throw invalidAddressMessage;
-      }
-    }
-
-    final normalized = addressToParse.toLowerCase();
+    String normalized = normalizeAddress(recipient);
 
     // Bech32m(T2R) 주소 최대 62자
     if (normalized.length < 26 || normalized.length > 62) {
@@ -102,8 +81,7 @@ class SendAddressViewModel extends ChangeNotifier {
 
     bool result = false;
     try {
-      final addressForValidation = _isBech32(normalized) ? normalized : recipient;
-      result = WalletUtility.validateAddress(addressForValidation);
+      result = WalletUtility.validateAddress(normalized);
     } catch (e) {
       throw invalidAddressMessage;
     }
@@ -111,28 +89,8 @@ class SendAddressViewModel extends ChangeNotifier {
     if (!result) {
       throw invalidAddressMessage;
     }
-  }
 
-  String _parseBip21Address(String recipient) {
-    if (!recipient.startsWith('bitcoin:')) {
-      return recipient;
-    }
-
-    final withoutScheme = recipient.substring(8);
-
-    final queryIndex = withoutScheme.indexOf('?');
-    if (queryIndex == -1) {
-      return withoutScheme;
-    }
-
-    return withoutScheme.substring(0, queryIndex);
-  }
-
-  bool _isBech32(String address) {
-    final normalizedAddress = address.toLowerCase();
-    return normalizedAddress.startsWith('bc1') ||
-        normalizedAddress.startsWith('tb1') ||
-        normalizedAddress.startsWith('bcrt1');
+    return normalized;
   }
 
   /// --- batch transaction
@@ -145,7 +103,7 @@ class SendAddressViewModel extends ChangeNotifier {
 
     final normalizedRecipients = <String, double>{};
     for (final entry in recipients.entries) {
-      final address = _isBech32(entry.key) ? entry.key.toLowerCase() : entry.key;
+      final address = isBech32(entry.key) ? entry.key.toLowerCase() : entry.key;
       normalizedRecipients[address] = entry.value;
     }
     _sendInfoProvider.setRecipientsForBatch(normalizedRecipients);

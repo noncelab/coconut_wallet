@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 class SendAddressAmountBodyForBatch extends StatefulWidget {
-  final Future<void> Function(String recipient) validateAddress;
+  final Future<String> Function(String recipient) validateAddress;
   final bool Function(int totalSendAmount) checkSendAvailable;
   final void Function(Map<String, double> recipients) onRecipientsConfirmed;
 
@@ -69,8 +69,8 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
                           title: '${t.recipient} ${index + 1}',
                           address: _recipients[index].address,
                           amount: _recipients[index].amount,
-                          onAddressChanged: (String address) {
-                            _updateAddress(index, address);
+                          onAddressChanged: (String address) async {
+                            return await _updateAddress(index, address);
                           },
                           onAmountChanged: (String amount) {
                             _updateAmount(index, amount);
@@ -159,7 +159,8 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
     );
   }
 
-  void _updateAddress(int index, String address) async {
+  Future<String> _updateAddress(int index, String address) async {
+    String finalAddress = address;
     if (address.isEmpty) {
       setState(() {
         _recipients[index].isAddressValid = null;
@@ -167,14 +168,15 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
       });
     } else {
       try {
-        await widget.validateAddress(address);
-        if (!_isAddressDuplicated(address)) {
+        var normalized = await widget.validateAddress(address);
+        if (!_isAddressDuplicated(normalized)) {
           _recipients[index].isAddressValid = true;
           _recipients[index].isAddressDuplicated = false;
         } else {
           _recipients[index].isAddressValid = true;
           _recipients[index].isAddressDuplicated = true;
         }
+        finalAddress = normalized;
       } catch (_) {
         if (_recipients[index].isAddressValid != false) {
           _recipients[index].isAddressValid = false;
@@ -183,8 +185,9 @@ class _SendAddressAmountBodyForBatchState extends State<SendAddressAmountBodyFor
       }
     }
 
-    _recipients[index].address = address;
+    _recipients[index].address = finalAddress;
     setState(() {});
+    return finalAddress;
   }
 
   bool _isAddressDuplicated(String address) {
