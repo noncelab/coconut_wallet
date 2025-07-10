@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_list_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
@@ -19,6 +20,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
@@ -288,6 +290,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Balance getWalletBalance(int walletId) {
+    // 간헐적으로 이미 삭제된 지갑의 balance를 불러오려고 하는 경우가 있음(성능 차이)
+    if (walletItemList.firstWhereOrNull((w) => w.id == walletId) == null) {
+      return Balance(0, 0);
+    }
+
     final realmBalance = _walletRepository.getWalletBalance(walletId);
     return Balance(
       realmBalance.confirmed,
