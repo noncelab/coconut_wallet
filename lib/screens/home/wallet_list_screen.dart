@@ -104,6 +104,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             });
           }
 
+          // 편집모드에서 모든 지갑을 다 삭제했을 때 홈화면으로 자동 전환
+          if (walletListItem.isEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.popUntil(context, (route) {
+                return route.settings.name == '/';
+              });
+            });
+          }
+
           return Stack(
             children: [
               PopScope(
@@ -368,9 +377,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildEditableWalletList(Map<int, AnimatedBalanceData> walletBalanceMap) {
-    if (_viewModel.tempWalletOrder.isEmpty) {
-      _viewModel.tempWalletOrder = List.from(_viewModel.walletItemList);
-    }
     return ReorderableListView.builder(
       shrinkWrap: true,
       primary: false,

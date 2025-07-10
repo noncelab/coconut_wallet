@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
@@ -290,7 +289,7 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeTempWalletOrderByWalletId(int walletId) {
+  void removeTempWalletOrderByWalletId(int walletId) async {
     final orderIndex = tempWalletOrder.indexOf(walletId);
     final starIndex = tempFavoriteWalletIds.indexOf(walletId);
     if (orderIndex != -1) {
