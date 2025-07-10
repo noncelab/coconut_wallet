@@ -46,6 +46,7 @@ import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -54,6 +55,7 @@ import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
@@ -68,6 +70,8 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late String kDonationAddress;
   static late NetworkType kNetworkType;
+  static FirebaseAnalyticsObserver observer =
+      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance);
 
   const CoconutWalletApp({super.key});
 
@@ -115,6 +119,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ),
 
         Provider.value(value: _realmManager),
+
+        // AnalyticsService 등록
+        Provider<AnalyticsService>(
+          create: (context) => AnalyticsService(
+            FirebaseAnalytics.instance,
+          ),
+        ),
 
         // Repository 등록 - Provider보다 먼저 등록해야 함
         Provider<WalletRepository>(
@@ -179,7 +190,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         },
       ],
       child: CupertinoApp(
-        navigatorObservers: [routeObserver],
+        navigatorObservers: [routeObserver, CoconutWalletApp.observer],
         localizationsDelegates: const [
           DefaultMaterialLocalizations.delegate,
           DefaultWidgetsLocalizations.delegate,
