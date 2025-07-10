@@ -71,13 +71,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _addToStarredWallets(int walletId) async {
-    final starredWallets = _preferenceProvider.starredWalletIds.toList();
+  Future<void> _addToFavoriteWallets(int walletId) async {
+    final favoriteWallets = _preferenceProvider.favoriteWalletIds.toList();
 
     // 즐겨찾기된 지갑이 5개이상이면 등록안함
-    if (starredWallets.length < kMaxStarLenght && !starredWallets.contains(walletId)) {
-      starredWallets.add(walletId);
-      await _preferenceProvider.setStarredWalletIds(starredWallets);
+    if (favoriteWallets.length < kMaxStarLenght && !favoriteWallets.contains(walletId)) {
+      favoriteWallets.add(walletId);
+      await _preferenceProvider.setFavoriteWalletIds(favoriteWallets);
     }
   }
 
@@ -85,7 +85,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     return await _walletProvider.syncFromCoconutVault(watchOnlyWallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
         _addToWalletOrder(result.walletId!);
-        _addToStarredWallets(result.walletId!);
+        _addToFavoriteWallets(result.walletId!);
       }
       return result;
     });
@@ -98,7 +98,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     return await _walletProvider.syncFromThirdParty(wallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
         _addToWalletOrder(result.walletId!);
-        _addToStarredWallets(result.walletId!);
+        _addToFavoriteWallets(result.walletId!);
       }
       return result;
     });
@@ -111,7 +111,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     return await _walletProvider.syncFromThirdParty(wallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
         _addToWalletOrder(result.walletId!);
-        _addToStarredWallets(result.walletId!);
+        _addToFavoriteWallets(result.walletId!);
       }
       return result;
     });
@@ -124,7 +124,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     return await _walletProvider.syncFromThirdParty(wallet).then((result) {
       if (result.result == WalletSyncResult.newWalletAdded) {
         _addToWalletOrder(result.walletId!);
-        _addToStarredWallets(result.walletId!);
+        _addToFavoriteWallets(result.walletId!);
       }
       return result;
     });

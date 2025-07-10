@@ -31,7 +31,7 @@ class WalletItemCard extends StatelessWidget {
   final bool? isPrimaryWallet;
   final bool? isExcludeFromTotalBalance;
   final bool isEditMode;
-  final bool isStarred;
+  final bool isFavorite;
   final bool isStarVisible;
   final ValueChanged<(bool, int)>? onTapStar;
   final int? index;
@@ -56,7 +56,7 @@ class WalletItemCard extends StatelessWidget {
     this.isPrimaryWallet,
     this.isExcludeFromTotalBalance,
     this.isEditMode = false,
-    this.isStarred = false,
+    this.isFavorite = false,
     this.isStarVisible = true,
     this.onTapStar,
     this.index,
@@ -129,12 +129,12 @@ class WalletItemCard extends StatelessWidget {
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
                   if (!isStarVisible) return;
-                  onTapStar?.call((!isStarred, id));
+                  onTapStar?.call((!isFavorite, id));
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: SvgPicture.asset(
-                    'assets/svg/${isStarred ? 'star-filled' : 'star-outlined'}.svg',
+                    'assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg',
                   ),
                 ),
               ),

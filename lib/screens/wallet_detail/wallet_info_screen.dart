@@ -216,7 +216,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       message: t.alert.wallet_delete.confirm_delete_description,
                                       onConfirm: () {
                                         _handleAuthFlow(onComplete: () async {
-                                          await _deleteWalletAndGoToWalletHome(context, viewModel);
+                                          await _deleteWalletAndGoToEntryPoint(context, viewModel);
                                         });
                                       },
                                       onCancel: () {
@@ -320,7 +320,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
-  Future<void> _deleteWalletAndGoToWalletHome(
+  Future<void> _deleteWalletAndGoToEntryPoint(
       BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
     _setOverlayLoading(true);

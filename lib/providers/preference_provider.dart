@@ -34,8 +34,8 @@ class PreferenceProvider extends ChangeNotifier {
   List<int> get walletOrder => _walletOrder;
 
   /// 지갑 즐겨찾기 목록
-  late List<int> _starredWalletIds;
-  List<int> get starredWalletIds => _starredWalletIds;
+  late List<int> _favoriteWalletIds;
+  List<int> get favoriteWalletIds => _favoriteWalletIds;
 
   /// 총 잔액에서 제외할 지갑 목록
   late List<int> _excludedFromTotalBalanceWalletIds;
@@ -50,7 +50,7 @@ class PreferenceProvider extends ChangeNotifier {
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
-    _starredWalletIds = _walletPreferencesRepository.getStarredWalletIds().toList();
+    _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
     _excludedFromTotalBalanceWalletIds =
         _walletPreferencesRepository.getExcludedWalletIds().toList();
   }
@@ -156,15 +156,15 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 지갑 즐겨찾기 설정
-  Future<void> setStarredWalletIds(List<int> ids) async {
-    _starredWalletIds = ids;
-    await _walletPreferencesRepository.setStarredWalletIds(ids);
+  Future<void> setFavoriteWalletIds(List<int> ids) async {
+    _favoriteWalletIds = ids;
+    await _walletPreferencesRepository.setFavoriteWalletIds(ids);
     notifyListeners();
   }
 
-  Future<void> removeStarredWalletId(int walletId) async {
-    _starredWalletIds.remove(walletId);
-    await _walletPreferencesRepository.setStarredWalletIds(_starredWalletIds);
+  Future<void> removeFavoriteWalletId(int walletId) async {
+    _favoriteWalletIds.remove(walletId);
+    await _walletPreferencesRepository.setFavoriteWalletIds(_favoriteWalletIds);
     notifyListeners();
   }
 

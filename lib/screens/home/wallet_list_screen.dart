@@ -75,7 +75,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           vm.walletItemList,
           vm.isNetworkOn ?? false,
           vm.walletBalanceMap,
-          vm.tempStarredWalletIds,
+          vm.tempFavoriteWalletIds,
           vm.tempWalletOrder,
           vm.isEditMode,
           vm.walletOrder,
@@ -130,7 +130,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                   viewModel.setEditMode(false);
                                 },
                                 isActive:
-                                    viewModel.hasStarredChanged || viewModel.hasWalletOrderChanged,
+                                    viewModel.hasFavoriteChanged || viewModel.hasWalletOrderChanged,
                                 backgroundColor: CoconutColors.white,
                                 text: t.complete,
                               )
@@ -441,7 +441,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               false,
               index == 0,
               isEditMode: true,
-              isStarred: _viewModel.tempStarredWalletIds.contains(wallet.id),
+              isFavorite: _viewModel.tempFavoriteWalletIds.contains(wallet.id),
               index: index,
             ),
           ),
@@ -452,7 +452,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _buildWalletItem(WalletListItemBase wallet, AnimatedBalanceData animatedBalanceData,
       bool isLastItem, bool isFirstItem,
-      {bool isEditMode = false, bool isStarred = false, int? index}) {
+      {bool isEditMode = false, bool isFavorite = false, int? index}) {
     return Column(
       children: [
         if (isEditMode) CoconutLayout.spacing_100h,
@@ -463,7 +463,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           isLastItem,
           isFirstItem,
           isEditMode,
-          isStarred,
+          isFavorite,
           index: index,
         ),
         isEditMode
@@ -482,7 +482,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     bool isLastItem,
     bool isFirstItem,
     bool isEditMode,
-    bool isStarred, {
+    bool isFavorite, {
     int? index,
   }) {
     final WalletListItemBase(
@@ -519,13 +519,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             isPrimaryWallet: isFirstItem,
             isExcludeFromTotalBalance: isExludedFromTotalBalance,
             isEditMode: isEditMode,
-            isStarred: isStarred,
-            isStarVisible: isStarred ||
-                _viewModel.tempStarredWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
+            isFavorite: isFavorite,
+            isStarVisible: isFavorite ||
+                _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
             onTapStar: (pair) {
-              // pair: (bool isStarred, int walletId)
+              // pair: (bool isFavorite, int walletId)
               vibrateExtraLight();
-              _viewModel.toggleTempStarred(pair.$2);
+              _viewModel.toggleTempFavorite(pair.$2);
             },
             index: index,
             entryPoint: kEntryPointWalletList,

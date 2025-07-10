@@ -259,7 +259,7 @@ class WalletProvider extends ChangeNotifier {
 
     await _preferenceProvider.removeFakeBalance(walletId);
     await _preferenceProvider.removeWalletOrder(walletId);
-    await _preferenceProvider.removeStarredWalletId(walletId);
+    await _preferenceProvider.removeFavoriteWalletId(walletId);
     await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
 
     notifyListeners();
@@ -377,14 +377,14 @@ class WalletProvider extends ChangeNotifier {
   /// DB에서 지갑 로드(_loadWalletListFromDB) 완료 후 수행
   Future<void> _fetchWalletPreferences() async {
     var walletOrder = _preferenceProvider.walletOrder;
-    var starredWalletIds = _preferenceProvider.starredWalletIds;
+    var favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
     if (walletOrder.isEmpty) {
       walletOrder = List.from(walletItemList.map((w) => w.id));
       await _preferenceProvider.setWalletOrder(walletOrder);
     }
-    if (starredWalletIds.isEmpty) {
-      starredWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
-      await _preferenceProvider.setStarredWalletIds(starredWalletIds);
+    if (favoriteWalletIds.isEmpty) {
+      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
+      await _preferenceProvider.setFavoriteWalletIds(favoriteWalletIds);
     }
   }
 

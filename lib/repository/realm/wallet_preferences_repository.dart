@@ -1,6 +1,5 @@
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
-import 'package:flutter/widgets.dart';
 
 class WalletPreferencesRepository extends BaseRepository {
   WalletPreferencesRepository(super._realmManager);
@@ -26,21 +25,21 @@ class WalletPreferencesRepository extends BaseRepository {
     }
   }
 
-  List<int> getStarredWalletIds() {
+  List<int> getFavoriteWalletIds() {
     final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;
-    return prefs?.starredWalletIds ?? [];
+    return prefs?.favoriteWalletIds ?? [];
   }
 
-  Future<void> setStarredWalletIds(List<int> ids) async {
+  Future<void> setFavoriteWalletIds(List<int> ids) async {
     final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;
     if (prefs != null) {
       await realm.writeAsync(() {
-        prefs.starredWalletIds.clear();
-        prefs.starredWalletIds.addAll(ids);
+        prefs.favoriteWalletIds.clear();
+        prefs.favoriteWalletIds.addAll(ids);
       });
     } else {
       await realm.writeAsync(() {
-        realm.add(RealmWalletPreferences(0)..starredWalletIds.addAll(ids));
+        realm.add(RealmWalletPreferences(0)..favoriteWalletIds.addAll(ids));
       });
     }
   }

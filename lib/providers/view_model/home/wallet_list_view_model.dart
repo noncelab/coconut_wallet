@@ -42,10 +42,10 @@ class WalletListViewModel extends ChangeNotifier {
   // 임시 지갑 순서 ID 목록(편집용)
   List<int> tempWalletOrder = [];
 
-  late List<int> _starredWalletIds = [];
-  List<int> get starredWalletIds => _starredWalletIds;
+  late List<int> _favoriteWalletIds = [];
+  List<int> get favoriteWalletIds => _favoriteWalletIds;
   // 임시 즐겨찾기 지갑 ID 목록(편집용)
-  List<int> tempStarredWalletIds = [];
+  List<int> tempFavoriteWalletIds = [];
 
   late List<int> _excludedFromTotalBalanceWalletIds = [];
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
@@ -62,7 +62,7 @@ class WalletListViewModel extends ChangeNotifier {
   ) {
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _walletOrder = _preferenceProvider.walletOrder;
-    _starredWalletIds = _preferenceProvider.starredWalletIds;
+    _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     _syncNodeStateStream = _nodeProvider.syncStateStream;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
@@ -118,11 +118,11 @@ class WalletListViewModel extends ChangeNotifier {
   void setEditMode(bool isEditMode) {
     _isEditMode = isEditMode;
     if (isEditMode) {
-      // 최신 starredWalletIds를 PreferenceProvider에서 다시 읽어옴
-      _starredWalletIds = List.from(_preferenceProvider.starredWalletIds);
+      // 최신 favoriteWalletIds를 PreferenceProvider에서 다시 읽어옴
+      _favoriteWalletIds = List.from(_preferenceProvider.favoriteWalletIds);
 
-      tempStarredWalletIds =
-          walletItemList.where((w) => _starredWalletIds.contains(w.id)).map((w) => w.id).toList();
+      tempFavoriteWalletIds =
+          walletItemList.where((w) => _favoriteWalletIds.contains(w.id)).map((w) => w.id).toList();
 
       tempWalletOrder = walletItemList.map((w) => w.id).toList();
     }
@@ -191,26 +191,26 @@ class WalletListViewModel extends ChangeNotifier {
     return walletListChanged || balanceChanged;
   }
 
-  void toggleTempStarred(int walletId) {
-    if (tempStarredWalletIds.contains(walletId)) {
-      tempStarredWalletIds = List.from(tempStarredWalletIds)..remove(walletId);
+  void toggleTempFavorite(int walletId) {
+    if (tempFavoriteWalletIds.contains(walletId)) {
+      tempFavoriteWalletIds = List.from(tempFavoriteWalletIds)..remove(walletId);
     } else {
-      if (tempStarredWalletIds.length < 5) {
-        tempStarredWalletIds = List.from(tempStarredWalletIds)..add(walletId);
+      if (tempFavoriteWalletIds.length < 5) {
+        tempFavoriteWalletIds = List.from(tempFavoriteWalletIds)..add(walletId);
       }
     }
     notifyListeners();
   }
 
   void clearTempDatas() {
-    tempStarredWalletIds.clear();
+    tempFavoriteWalletIds.clear();
     tempWalletOrder.clear();
     notifyListeners();
   }
 
   /// 임시값을 실제 walletList에 반영
   Future<void> applyTempDatasToWallets() async {
-    if (!hasWalletOrderChanged && !hasStarredChanged) return;
+    if (!hasWalletOrderChanged && !hasFavoriteChanged) return;
 
     if (hasWalletOrderChanged) {
       // 삭제 여부 판단
@@ -232,9 +232,9 @@ class WalletListViewModel extends ChangeNotifier {
       _walletProvider.walletItemListNotifier.value =
           tempWalletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
     }
-    if (hasStarredChanged) {
-      await _preferenceProvider.setStarredWalletIds(tempStarredWalletIds);
-      _starredWalletIds = _preferenceProvider.starredWalletIds;
+    if (hasFavoriteChanged) {
+      await _preferenceProvider.setFavoriteWalletIds(tempFavoriteWalletIds);
+      _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
     }
 
     notifyListeners();
@@ -274,9 +274,9 @@ class WalletListViewModel extends ChangeNotifier {
     _walletProvider.notifyListeners();
   }
 
-  bool get hasStarredChanged => !const SetEquality().equals(
-        tempStarredWalletIds.toSet(),
-        _preferenceProvider.starredWalletIds.toSet(),
+  bool get hasFavoriteChanged => !const SetEquality().equals(
+        tempFavoriteWalletIds.toSet(),
+        _preferenceProvider.favoriteWalletIds.toSet(),
       );
 
   bool get hasWalletOrderChanged => !const ListEquality().equals(
@@ -292,12 +292,12 @@ class WalletListViewModel extends ChangeNotifier {
 
   void removeTempWalletOrderByWalletId(int walletId) {
     final orderIndex = tempWalletOrder.indexOf(walletId);
-    final starIndex = tempStarredWalletIds.indexOf(walletId);
+    final starIndex = tempFavoriteWalletIds.indexOf(walletId);
     if (orderIndex != -1) {
       tempWalletOrder.removeAt(orderIndex);
     }
     if (starIndex != -1) {
-      tempStarredWalletIds.removeAt(starIndex);
+      tempFavoriteWalletIds.removeAt(starIndex);
     }
     notifyListeners();
   }

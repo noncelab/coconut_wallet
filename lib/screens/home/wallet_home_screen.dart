@@ -98,31 +98,24 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       },
       child: Selector<
           WalletHomeViewModel,
-          Tuple7<
-              List<WalletListItemBase>,
-              List<WalletListItemBase>,
-              bool,
-              bool,
-              Map<int, AnimatedBalanceData>,
-              Tuple2<int?, Map<int, dynamic>>,
-              List<WalletListItemBase>>>(
-        selector: (_, vm) => Tuple7(
-            vm.walletItemList,
-            vm.starredWalletList,
-            vm.isBalanceHidden,
-            vm.shouldShowLoadingIndicator,
-            vm.walletBalanceMap,
-            Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
-            vm.starredWallets),
+          Tuple6<List<WalletListItemBase>, List<WalletListItemBase>, bool, bool,
+              Map<int, AnimatedBalanceData>, Tuple2<int?, Map<int, dynamic>>>>(
+        selector: (_, vm) => Tuple6(
+          vm.walletItemList,
+          vm.favoriteWallets,
+          vm.isBalanceHidden,
+          vm.shouldShowLoadingIndicator,
+          vm.walletBalanceMap,
+          Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
+        ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
 
           final walletItem = data.item1;
-          final starredWalletItem = data.item2;
+          final favoriteWallets = data.item2;
           final isBalanceHidden = data.item3;
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
-          final starredWallets = data.item7;
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
@@ -172,11 +165,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             // 전체보기 위젯
                             _buildViewAll(walletItem.length),
 
-                            if (starredWallets.isNotEmpty)
+                            if (favoriteWallets.isNotEmpty)
                               // 즐겨찾기된 지갑 목록
                               _buildWalletList(
                                 walletItem,
-                                starredWalletItem,
+                                favoriteWallets,
                                 walletBalanceMap,
                                 isBalanceHidden,
                                 (id) => viewModel.getFakeBalance(id),
@@ -767,7 +760,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildWalletList(
     List<WalletListItemBase> walletList,
-    List<WalletListItemBase> starredWalletList,
+    List<WalletListItemBase> favoriteWalletList,
     Map<int, AnimatedBalanceData> walletBalanceMap,
     bool isBalanceHidden,
     FakeBalanceGetter getFakeBalance,
@@ -783,9 +776,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         child: Column(
           children: List.generate(walletList.length, (index) {
             final wallet = walletList[index];
-            final isStarred = starredWalletList.any((w) => w.id == wallet.id);
+            final isFavorite = favoriteWalletList.any((w) => w.id == wallet.id);
 
-            if (isStarred) {
+            if (isFavorite) {
               return _buildWalletItem(
                 wallet,
                 kAlwaysCompleteAnimation,

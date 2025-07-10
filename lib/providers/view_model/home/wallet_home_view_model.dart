@@ -32,10 +32,10 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, dynamic> _fakeBalanceMap = {};
   int? _fakeBalanceTotalAmount;
   bool _isFirstLoaded = false;
-  bool _isEmptyStarredWallet = false; // 즐겨찾기 설정된 지갑이 없는지 여부
+  bool _isEmptyFavoriteWallet = false; // 즐겨찾기 설정된 지갑이 없는지 여부
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
-  List<WalletListItemBase> starredWallets = [];
+  List<WalletListItemBase> _favoriteWallets = [];
 
   late List<int> _excludedFromTotalBalanceWalletIds = [];
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
@@ -64,7 +64,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
   }
 
-  bool get isStarredEmpty => _isEmptyStarredWallet;
+  bool get isEmptyFavoriteWallet => _isEmptyFavoriteWallet;
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
@@ -83,7 +83,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     return orderedMap;
   }
 
-  List<WalletListItemBase> get starredWalletList => starredWallets;
+  List<WalletListItemBase> get favoriteWallets => _favoriteWallets;
 
   bool? get isNetworkOn => _isNetworkOn;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
@@ -165,10 +165,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     /// 지갑 즐겨찾기 변동 체크
-    if (starredWallets.map((w) => w.id).toList().toString() !=
-            _preferenceProvider.starredWalletIds.toString() &&
+    if (_favoriteWallets.map((w) => w.id).toList().toString() !=
+            _preferenceProvider.favoriteWalletIds.toString() &&
         walletItemList.isNotEmpty) {
-      loadStarredWallets();
+      loadFavoriteWallets();
     }
 
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
@@ -239,10 +239,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     return walletListChanged || balanceChanged;
   }
 
-  Future<void> loadStarredWallets() async {
+  Future<void> loadFavoriteWallets() async {
     if (_walletProvider.walletItemListNotifier.value.isEmpty) return;
 
-    final ids = _preferenceProvider.starredWalletIds;
+    final ids = _preferenceProvider.favoriteWalletIds;
 
     final wallets = ids
         .map((id) =>
@@ -250,9 +250,9 @@ class WalletHomeViewModel extends ChangeNotifier {
         .whereType<WalletListItemBase>()
         .toList();
 
-    starredWallets = wallets;
+    _favoriteWallets = wallets;
 
-    _isEmptyStarredWallet = wallets.isEmpty;
+    _isEmptyFavoriteWallet = wallets.isEmpty;
 
     notifyListeners();
   }
