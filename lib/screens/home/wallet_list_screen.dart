@@ -143,8 +143,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           ),
                           _buildLoadingIndicator(viewModel),
                           _buildPadding(isOffline),
-                          //if (NetworkType.currentNetworkType == NetworkType.mainnet)
-                          _buildDonationBanner(),
+                          if (NetworkType.currentNetworkType == NetworkType.mainnet)
+                            _buildDonationBanner(),
                           if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
                                 child: Column(
