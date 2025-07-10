@@ -89,13 +89,11 @@ android {
     productFlavors {
          regtest {
             dimension "network"
-            resValue "string", "app_name", "코코넛 월렛 학습용"
             applicationIdSuffix ".regtest"
             versionNameSuffix "-regtest"
         }
         mainnet {
             dimension "network"
-            resValue "string", "app_name", "코코넛 월렛"
             applicationIdSuffix ""
             versionNameSuffix ""
         }
