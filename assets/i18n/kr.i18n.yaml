@@ -604,5 +604,5 @@ fiat:
   usd_symbol: "$"
   krw_code: "KRW"
   usd_code: "USD"
-  krw_title: "대한민국 원"
-  usd_title: "미국 달러"
+  krw_price: "업비트 기준"
+  usd_price: "바이낸스 기준"

@@ -20,7 +20,7 @@ class FiatBottomSheet extends StatelessWidget {
           items: [
             SelectionItem<FiatCode>(
               title: t.fiat.krw_code,
-              subtitle: t.fiat.krw_title,
+              subtitle: t.fiat.krw_price,
               value: FiatCode.KRW,
               onTap: () async {
                 vibrateExtraLight();
@@ -33,7 +33,7 @@ class FiatBottomSheet extends StatelessWidget {
             ),
             SelectionItem<FiatCode>(
               title: t.fiat.usd_code,
-              subtitle: t.fiat.usd_title,
+              subtitle: t.fiat.usd_price,
               value: FiatCode.USD,
               onTap: () async {
                 vibrateExtraLight();

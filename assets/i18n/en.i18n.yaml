@@ -604,5 +604,5 @@ fiat:
   usd_symbol: "$"
   krw_code: "KRW"
   usd_code: "USD"
-  krw_title: "South Korean Won"
-  usd_title: "US Dollar"
+  krw_price: "Upbit Price"
+  usd_price: "Binance Price"
