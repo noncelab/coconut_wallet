@@ -51,6 +51,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
                 ? t.wallet_list.settings.primary_wallet_abled_description
                 : t.wallet_list.settings.primary_wallet_disabled_description,
             _isPrimaryWallet,
+            true,
             (bool value) {
               if (!value) {
                 _primaryWalletShakeKey.currentState?.shake();
@@ -73,6 +74,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
             t.wallet_list.settings.exclude_from_total_amount,
             t.wallet_list.settings.exclude_from_total_amount_description,
             _isExcludedFromTotalAmount,
+            false,
             (bool value) {
               setState(() {
                 _isExcludedFromTotalAmount = value;
@@ -95,6 +97,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
     String title,
     String description,
     bool value,
+    bool shouldHideWhenOn,
     ValueChanged<bool> onChanged,
   ) {
     return Row(
@@ -130,7 +133,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
         //         ),
         //       )
         Visibility(
-          visible: !value,
+          visible: shouldHideWhenOn ? !value : true,
           maintainSize: true,
           maintainAnimation: true,
           maintainState: true,
