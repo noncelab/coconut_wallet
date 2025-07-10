@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
@@ -529,6 +530,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             },
             index: index,
             entryPoint: kEntryPointWalletList,
+            onLongPressed: () {
+              vibrateExtraLight();
+              CommonBottomSheets.showBottomSheet(
+                  title: '',
+                  titlePadding: EdgeInsets.zero,
+                  context: context,
+                  child: WalletItemSettingBottomSheet(id: id));
+            },
           );
         });
   }

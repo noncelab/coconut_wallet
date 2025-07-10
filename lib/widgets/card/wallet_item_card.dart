@@ -4,11 +4,8 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
-import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
-import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter_svg/svg.dart';
@@ -36,6 +33,7 @@ class WalletItemCard extends StatelessWidget {
   final ValueChanged<(bool, int)>? onTapStar;
   final int? index;
   final String entryPoint;
+  final VoidCallback? onLongPressed;
 
   const WalletItemCard({
     super.key,
@@ -60,6 +58,7 @@ class WalletItemCard extends StatelessWidget {
     this.isStarVisible = true,
     this.onTapStar,
     this.index,
+    this.onLongPressed,
   });
 
   @override
@@ -84,12 +83,7 @@ class WalletItemCard extends StatelessWidget {
         });
       },
       onLongPressed: () {
-        vibrateExtraLight();
-        CommonBottomSheets.showBottomSheet(
-            title: '',
-            titlePadding: EdgeInsets.zero,
-            context: context,
-            child: WalletItemSettingBottomSheet(id: id));
+        onLongPressed?.call();
       },
       // ** gradient 사용안할수도 있음**
       // Coconut Vault에서 가져온 멀티시그 지갑 => 테두리 그라디언트 적용
