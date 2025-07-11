@@ -111,14 +111,22 @@ class PinInputPadState extends State<PinInputPad> {
                 }),
               ),
             ),
+            if (widget.centerWidget == null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Text(widget.errorMessage,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                    textAlign: TextAlign.center),
+              ),
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: SizedBox(height: 40, child: widget.centerWidget ?? const SizedBox()),
             ),
             const SizedBox(height: 16),
-            Text(widget.errorMessage,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
-                textAlign: TextAlign.center),
+            if (widget.centerWidget != null)
+              Text(widget.errorMessage,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                  textAlign: TextAlign.center),
             const SizedBox(height: 40),
             Expanded(
               child: Align(
@@ -140,7 +148,7 @@ class PinInputPadState extends State<PinInputPad> {
                 ),
               ),
             ),
-            SizedBox(height: widget.initOptionVisible ? 60 : 76),
+            SizedBox(height: widget.initOptionVisible ? 40 : 50),
             if (widget.initOptionVisible)
               Padding(
                   padding: const EdgeInsets.only(bottom: 60.0),
