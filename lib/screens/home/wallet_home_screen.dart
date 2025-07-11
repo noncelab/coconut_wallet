@@ -491,7 +491,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   },
                 ),
                 CoconutLayout.spacing_500h,
-                _buildHeaderActions(isActive: !isWalletListEmpty),
+                _buildHeaderActions(),
               ],
             ),
           ),
@@ -651,7 +651,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   void _onTapReceive(List<int> walletOrder) {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
-    if (firstWallet == null) return;
+    if (firstWallet == null) {
+      // 추가된 지갑이 없음
+      CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          text: t.can_use_after_add_wallet);
+      return;
+    }
 
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
     final targetId = walletOrder.firstWhere(
@@ -677,7 +685,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   void _onTapSend(List<int> walletOrder) {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
-    if (firstWallet == null) return;
+    if (firstWallet == null) {
+      // 추가된 지갑이 없음
+
+      //TODO: 보내기 화면으로 이동해야 합니다.
+      return;
+    }
 
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
     final targetId = walletOrder.firstWhere(

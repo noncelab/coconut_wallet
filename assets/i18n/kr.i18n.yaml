@@ -114,6 +114,7 @@ faucet_request: "테스트 비트코인을 요청했어요. 잠시만 기다려 
 faucet_already_request: "해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다."
 faucet_failed: "요청에 실패했습니다. 잠시 후 다시 시도해 주세요."
 bio_auth_required: "생체 인증을 진행해 주세요"
+can_use_after_add_wallet: "지갑 추가 후 사용하실 수 있어요."
 
 # lib/enums
 transaction_enums:
