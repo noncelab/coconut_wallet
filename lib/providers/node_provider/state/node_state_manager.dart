@@ -85,8 +85,9 @@ class NodeStateManager implements StateManagerInterface {
       final prevWalletInfo = prevState.registeredWallets[walletId]!;
       final newWalletInfo = newState.registeredWallets[walletId]!;
 
-      // 지갑 상세 상태 비교 (balance, transaction, utxo)
-      if (prevWalletInfo.balance != newWalletInfo.balance ||
+      // 지갑 상세 상태 비교 (subscription, balance, transaction, utxo)
+      if (prevWalletInfo.subscription != newWalletInfo.subscription ||
+          prevWalletInfo.balance != newWalletInfo.balance ||
           prevWalletInfo.transaction != newWalletInfo.transaction ||
           prevWalletInfo.utxo != newWalletInfo.utxo) {
         return true;
@@ -122,6 +123,9 @@ class NodeStateManager implements StateManagerInterface {
     }
 
     switch (updateType) {
+      case UpdateElement.subscription:
+        walletUpdateInfo.subscription = WalletSyncState.syncing;
+        break;
       case UpdateElement.balance:
         walletUpdateInfo.balance = WalletSyncState.syncing;
         break;
@@ -157,6 +161,9 @@ class NodeStateManager implements StateManagerInterface {
     NodeSyncState? newConnectionState;
 
     switch (updateType) {
+      case UpdateElement.subscription:
+        walletUpdateInfo.subscription = WalletSyncState.completed;
+        break;
       case UpdateElement.balance:
         walletUpdateInfo.balance = WalletSyncState.completed;
         break;
@@ -193,6 +200,7 @@ class NodeStateManager implements StateManagerInterface {
     if (existingInfo == null) {
       updateInfo = WalletUpdateInfo(
         walletId,
+        subscription: WalletSyncState.completed,
         balance: WalletSyncState.completed,
         transaction: WalletSyncState.completed,
         utxo: WalletSyncState.completed,
@@ -201,6 +209,7 @@ class NodeStateManager implements StateManagerInterface {
       // 기존 정보가 있는 경우 모든 카운터를 0으로 설정하고 상태를 완료로 변경
       updateInfo = WalletUpdateInfo.fromExisting(
         existingInfo,
+        subscription: WalletSyncState.completed,
         balance: WalletSyncState.completed,
         transaction: WalletSyncState.completed,
         utxo: WalletSyncState.completed,
@@ -289,7 +298,8 @@ class NodeStateManager implements StateManagerInterface {
     final registeredWallets = updatedWallets ?? _state.registeredWallets;
 
     for (final walletInfo in registeredWallets.values) {
-      if (walletInfo.balance != WalletSyncState.completed ||
+      if (walletInfo.subscription != WalletSyncState.completed ||
+          walletInfo.balance != WalletSyncState.completed ||
           walletInfo.transaction != WalletSyncState.completed ||
           walletInfo.utxo != WalletSyncState.completed) {
         return false;
