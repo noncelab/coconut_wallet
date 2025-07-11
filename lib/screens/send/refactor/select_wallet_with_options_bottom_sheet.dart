@@ -67,7 +67,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: CoconutColors.gray900,
         body: Padding(
             padding: const EdgeInsets.symmetric(vertical: Sizes.size12, horizontal: Sizes.size20),
             child: Column(children: [
@@ -167,7 +167,6 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
                     context: context,
                     childBuilder: (scrollController) => SelectWalletBottomSheet(
                           scrollController: scrollController,
-                          selectedWalletId: selectedWalletId,
                           onWalletChanged: (index) {
                             selectWalletItem(index);
                             Navigator.pop(context);

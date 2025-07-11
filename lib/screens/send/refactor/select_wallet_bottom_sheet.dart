@@ -11,23 +11,18 @@ import 'package:provider/provider.dart';
 
 class SelectWalletBottomSheet extends StatefulWidget {
   final Function(int) onWalletChanged;
-  final int selectedWalletId;
   final ScrollController? scrollController;
 
-  const SelectWalletBottomSheet(
-      {super.key,
-      required this.onWalletChanged,
-      required this.selectedWalletId,
-      this.scrollController});
+  const SelectWalletBottomSheet({super.key, required this.onWalletChanged, this.scrollController});
 
   @override
   State<SelectWalletBottomSheet> createState() => _SelectWalletBottomSheetState();
 }
 
 class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
-  late int _selectedWalletIndex;
   late final List<WalletListItemBase> _walletList;
   late final Map<int, Balance> _walletBalanceMap;
+  int _selectedWalletIndex = -1;
 
   @override
   void initState() {
@@ -35,8 +30,6 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     final walletProvider = context.read<WalletProvider>();
     _walletList = walletProvider.walletItemList;
     _walletBalanceMap = walletProvider.fetchWalletBalanceMap();
-    _selectedWalletIndex =
-        walletProvider.walletItemList.indexWhere((e) => e.id == widget.selectedWalletId);
   }
 
   @override
@@ -50,10 +43,9 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
           isBottom: true,
         ),
         body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+            padding: const EdgeInsets.symmetric(horizontal: Sizes.size16, vertical: Sizes.size12),
             child: Column(
               children: [
-                CoconutLayout.spacing_300h,
                 Expanded(
                   child: SingleChildScrollView(
                     controller: widget.scrollController,

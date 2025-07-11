@@ -260,6 +260,8 @@ flutter:
     - assets/svg/car.svg
     - assets/svg/rocket.svg
     - assets/svg/plus.svg
+    - assets/svg/broom.svg
+    - assets/svg/receipt.svg
 
   fonts:
     - family: SpaceGrotesk

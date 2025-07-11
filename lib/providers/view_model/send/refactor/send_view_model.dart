@@ -1,16 +1,21 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
 typedef WalletInfoUpdateCallback = void Function(
@@ -62,10 +67,15 @@ enum SendError {
 class SendViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
-  final Function(String) _onAmountTextUpdate; // send_screen: _amountController
+  final NodeProvider _nodeProvider;
+
+  // send_screen: _amountController, _recipientPageController
+  final Function(String) _onAmountTextUpdate;
+  final Function(int) _onRecipientPageDeleted;
 
   bool _isMaxMode = false;
   bool get isMaxMode => _isMaxMode;
+  bool get isBatchMode => recipientList.length >= 2;
 
   // 수신자 정보
   late List<RecipientInfo> _recipientList;
@@ -103,6 +113,12 @@ class SendViewModel extends ChangeNotifier {
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
 
+  List<FeeInfoWithLevel> feeInfos = [
+    FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
+    FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
+    FeeInfoWithLevel(level: TransactionFeeLevel.hour),
+  ];
+
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
   late int _confirmedBalance;
@@ -135,18 +151,48 @@ class SendViewModel extends ChangeNotifier {
   num get dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
   bool get isAmountDisabled => _isMaxMode && _currentIndex == lastIndex;
 
-  SendViewModel(this._walletProvider, this._sendInfoProvider, this._isNetworkOn, this._currentUnit,
-      this._onAmountTextUpdate, int walletId) {
+  SendViewModel(this._walletProvider, this._sendInfoProvider, this._nodeProvider, this._isNetworkOn,
+      this._currentUnit, this._onAmountTextUpdate, this._onRecipientPageDeleted, int walletId) {
     final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
     _walletAddressList = _walletProvider.getReceiveAddresses();
     _recipientList = [RecipientInfo()];
     selectWalletItem(walletIndex);
     _initBalances();
+    _setRecommendedFees();
   }
 
-  /// UI State Management
+  Future<bool> _setRecommendedFees() async {
+    final recommendedFeesResult = await _nodeProvider
+        .getRecommendedFees()
+        .timeout(const Duration(seconds: 10), onTimeout: () {
+      return Result.failure(
+          const AppError('NodeProvider', "TimeoutException: Isolate response timeout"));
+    });
+
+    if (recommendedFeesResult.isFailure) {
+      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
+      return false;
+    }
+
+    final recommendedFees = recommendedFeesResult.value;
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
+    feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
+
+    // todo: 트랜잭션 수수료 조회 처리
+    // final updateFeeInfoResult = _updateFeeInfoEstimateFee();
+    // if (updateFeeInfoResult) {
+    //   _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
+    // } else {
+    //   _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
+    // }
+    // return updateFeeInfoResult;
+
+    _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
+    return true;
+  }
+
   void setCurrentPage(int index) {
-    if (_currentIndex == index) return;
     _currentIndex = index;
 
     // 수신자 추가가 표시되어 있으면 주소 보드를 닫는다.
@@ -155,7 +201,6 @@ class SendViewModel extends ChangeNotifier {
     } else {
       _onAmountTextUpdate(recipientList[_currentIndex].amount);
     }
-
     notifyListeners();
   }
 
@@ -223,8 +268,12 @@ class SendViewModel extends ChangeNotifier {
   void deleteRecipient() {
     _recipientList.removeAt(_currentIndex);
     _recipientList = [..._recipientList];
-    if (_currentIndex - 1 >= 0) --_currentIndex;
     if (_recipientList.isEmpty) setMaxMode(false); // 수신자 추가할 수 있도록 최대 보내기 모드를 비활성화
+
+    if (lastIndex >= 0) _currentIndex = lastIndex;
+    setCurrentPage(_currentIndex);
+    _onRecipientPageDeleted(_currentIndex);
+
     _validateAmount(-1);
     notifyListeners();
   }
