@@ -67,6 +67,10 @@ class IsolateStateManager implements StateManagerInterface {
     WalletSyncState prevStatus;
 
     switch (updateType) {
+      case UpdateElement.subscription:
+        prevStatus = walletUpdateInfo.subscription;
+        walletUpdateInfo.subscription = newStatus;
+        return prevStatus != newStatus;
       case UpdateElement.balance:
         prevStatus = walletUpdateInfo.balance;
         walletUpdateInfo.balance = newStatus;
@@ -157,7 +161,8 @@ class IsolateStateManager implements StateManagerInterface {
       return false;
     }
 
-    return walletInfo.balance == WalletSyncState.syncing ||
+    return walletInfo.subscription == WalletSyncState.syncing ||
+        walletInfo.balance == WalletSyncState.syncing ||
         walletInfo.transaction == WalletSyncState.syncing ||
         walletInfo.utxo == WalletSyncState.syncing;
   }
