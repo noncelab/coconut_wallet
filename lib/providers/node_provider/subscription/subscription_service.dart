@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -36,6 +37,7 @@ class SubscriptionService {
   Future<Result<bool>> subscribeWallet(
     WalletListItemBase walletItem,
   ) async {
+    _stateManager.addWalletSyncState(walletItem.id, UpdateElement.subscription);
     final [receiveResult, changeResult] = await Future.wait([
       _subscribeWallet(walletItem, false, _scriptStatusController),
       _subscribeWallet(walletItem, true, _scriptStatusController),
@@ -72,6 +74,8 @@ class SubscriptionService {
       _stateManager.addWalletCompletedAllStates(walletItem.id);
       return Result.success(true);
     }
+
+    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.subscription);
 
     // 변경 이력이 있는 지갑에 대해서만 balance, transaction, utxo 업데이트
     await _scriptSyncService.syncBatchScriptStatusList(

@@ -43,7 +43,9 @@ class IsolateController {
           isolateToMainSendPort.send(Result.success(true));
           break;
         case IsolateControllerCommand.subscribeWallet:
-          isolateToMainSendPort.send(await _subscriptionService.subscribeWallet(params[0]));
+          final walletItem = params[0];
+          _isolateStateManager.initWalletUpdateStatus(walletItem.id);
+          isolateToMainSendPort.send(await _subscriptionService.subscribeWallet(walletItem));
           break;
         case IsolateControllerCommand.unsubscribeWallet:
           isolateToMainSendPort.send(await _subscriptionService.unsubscribeWallet(params[0]));
