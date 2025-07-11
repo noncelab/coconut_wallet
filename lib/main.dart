@@ -26,6 +26,12 @@ void main() {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
 
+  // 예외를 완전히 무시하는 설정
+  FlutterError.onError = (FlutterErrorDetails details) {
+    Logger.error("Flutter Error (무시됨): ${details.exception}");
+    Logger.log("Stack trace: ${details.stack}");
+  };
+
   runZonedGuarded(() async {
     // This app is designed only to work vertically, so we limit
     // orientations to portrait up and down.

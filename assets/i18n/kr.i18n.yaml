@@ -34,6 +34,7 @@ next: "다음"
 modify: "변경"
 confirm: "확인"
 security: "보안"
+general: "일반"
 unit: "단위"
 utxo: "UTXO"
 tag: "태그"
@@ -345,6 +346,9 @@ settings_screen:
     fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
     fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
     fake_balance_input_not_enough_error: "$btc ($sats sats) 미만으로는 설정할 수 없어요"
+  language: "언어"
+  korean: "한국어"
+  english: "English"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
@@ -631,3 +635,16 @@ third_party:
   jade: "제이드"
   seed_signer: "시드사이너"
   zpub: "zpub"
+
+trade_exchange:
+  upbit: "업비트"
+  binance: "바이낸스"
+
+fiat:
+  fiat: "법정화폐"
+  krw_symbol: "₩"
+  usd_symbol: "$"
+  krw_code: "KRW"
+  usd_code: "USD"
+  krw_price: "업비트 기준"
+  usd_price: "바이낸스 기준"

@@ -1,0 +1,608 @@
+# flutter pub run slang
+
+# t.glossary
+# t.error.pcs_error1(count: kMaxNumberOfAttempts - attempt);
+
+# common
+coconut_wallet: "coconut_wallet"
+coconut_vault: "coconut_vault"
+coconut_lib: "coconut_lib"
+
+wallet: "Wallet"
+btc: "BTC"
+bitcoin_en: "Bitcoin"
+bitcoin_kr: "Bitcoin"
+sats: "sats"
+satoshi: "Satoshi"
+testnet: "Testnet"
+address: "Address"
+fee: "Fee"
+fee_rate: "Fee Rate"
+send: "Send"
+receive: "Receive"
+paste: "Paste"
+export: "Export"
+edit: "Edit"  
+max: "Max"
+all: "All"
+no: "No"
+delete: "Delete"
+delete_label: "Delete"
+complete: "Complete"
+close: "Close"
+next: "Next"
+modify: "Modify"
+confirm: "Confirm"
+security: "Security"
+general: "General"
+unit: "Unit"
+utxo: "UTXO"
+tag: "Tag"
+change: "Change"
+sign: "Sign"
+glossary: "Glossary"
+tool: "Tool"
+tutorial: "Tutorial"
+settings: "Settings"
+tx_list: "Transaction History"
+utxo_list: "UTXO List"
+wallet_id: "Wallet ID"
+tag_manage: "Tag Management"
+tag_manage_label: "Tag Management"
+extended_public_key: "ExPub Key"
+tx_memo: "Tx Memo"
+tx_id: "Tx ID"
+block_num: "Block Number"
+inquiry_details: "Inquiry"
+utxo_total: "UTXO Total"
+receiver: "Send To"
+recipient: "Recipient"
+estimated_fee: "Est. Fee"
+total_cost: "Total Cost"
+input_directly: "Direct Input"
+mnemonic_wordlist: "Mnemonic Wordlist"
+self_security_check: "Security Check"
+app_info: "App Info"
+update_failed: "Update Failed"
+calculation_failed: "Calculation Failed"
+contact_email: "hello@noncelab.com"
+email_subject: "[Coconut Wallet] Inquiry"
+amount: "Amount"
+send_amount: "Amount"
+fetch_fee_failed: "Fee Fetch Failed"
+fetch_balance_failed: "Balance Failed"
+status_used: "Used"
+status_unused: "Unused"
+status_receiving: "Receiving"
+status_received: "Received"
+status_sending: "Sending"
+status_sent: "Sent"
+status_updating: "Updating"
+no_status: "No Status"
+quick_receive: "Quick Recv"
+quick_send: "Quick Send"
+copied: "Copied"
+change_color: "Color"
+selection: "Selection"
+hardware_wallet: "Hardware Wallet"
+vault_app: "Vault App"
+view_balance: "Balance"
+
+apply_item: "$count items"
+fee_sats: " ($value sats/vb)"
+utxo_count: "($count items)"
+total_item_count: "(Total $count items)"
+
+view_app_info: "App Info"
+view_tx_details: "View Tx Details"
+view_more: "More"
+view_less: "Less"
+view_mempool: "Mempool"
+view_all_addresses: "All Addresses"
+select_utxo: "Select UTXO"
+select_all: "Select All"
+unselect_all: "Unselect All"
+delete_confirm: "Delete Confirm"
+sign_multisig: "Sign Multisig"
+
+forgot_password: "Forgot Password?"
+tx_not_found: "Tx Not Found"
+utxo_not_found: "UTXO Not Found"
+utxo_loading: "UTXO Loading"
+faucet_request: "Test Bitcoin requested. Please wait a moment."
+faucet_already_request: "Already requested. It may take up to 5 minutes for the deposit."
+faucet_failed: "Request failed. Please try again later."
+bio_auth_required: "Biometric auth required"
+
+# lib/enums
+transaction_enums:
+  high_priority: "Fast"
+  medium_priority: "Medium"
+  low_priority: "Slow"
+  expected_time_high_priority: "~10 minutes"
+  expected_time_medium_priority: "~30 minutes"
+  expected_time_low_priority: "~1 hour"
+utxo_order_enums:
+  amt_desc: "High"
+  amt_asc: "Low"
+  time_desc: "New"
+  time_asc: "Old"
+
+# lib/screens/common
+pin_check_screen:
+  text: "Enter your password"
+
+# lib/screens/home
+wallet_add_scanner_screen:
+  add_wallet: "Add Wallet"
+  add_watch_only_wallet: "Add Watch-only Wallet"
+  vault: "Coconut Vault"
+  keystone: "Keystone"
+  jade: "Jade"
+  seed_signer: "SeedSigner"
+  self: "Input Directly"
+  self_description: "You can add a wallet with information"
+  select: "Select"
+  guide_vault: "Coconut Vault App - Select Wallet - Export Wallet Info"
+  guide_seedsigner:
+    step1: "1. On the home screen"
+    step1_em: "Seeds"
+    step2: "2. "
+    step2_em: "Master Fingerprint" # TODO: check
+    step3: "3. "
+    step3_em: "Export Xpub"
+    step4: "4. "
+    step4_em1: "Single Sig" # TODO: check
+    next: " > "
+    step4_em2: "Native Segwit" # TODO: check
+    step5: "5. "
+    step5_em: "BlueWallet"
+    step6: "6. After reading the message"
+    step6_em: "I understand"
+    step6_end: " > Export Xpub"
+  guide_keystone:
+    step1: "1. On the home screen"
+    step1_em: "More(•••)"
+    step2: "2. "
+    step2_em: "Connect Software Wallet"
+    step3: "3. Select any wallet"
+  guide_jade:
+    step0_em: "Active "
+    step0: "Status"
+    step1: "1. "
+    step1_em: "Options"
+    step2: "2. "
+    step2_em: "Wallet"
+    step3: "3. "
+    step3_em: "Export Xpub"
+
+wallet_add_input_screen:
+  app_bar_title_text: "Input Directly"
+  placeholder_text: "Enter the extended public key (zpub) or descriptor"
+  format_error_text: "Unable to verify format"
+  invalid_character_error_text: "Invalid character"
+  mainnet_wallet_error_text: "Not a mainnet wallet"
+  testnet_wallet_error_text: "Not a testnet wallet"
+  unsupported_wallet_error_text: "Unsupported wallet"
+  wallet_description_text: "Where can I find the wallet information?"
+  blue_wallet_texts:
+    - "· BlueWallet"
+    - "· Hot Wallet - More(•••) - Show Wallet XPUB"
+    - "· Watch-only Wallet - More(•••) - Export/Backup"
+    - "zpub6rFR7y4Q2AijBEqt..."
+  nunchuck_wallet_texts:
+    - "· Nunchuck"
+    - "· Keys - Select Key - Key spec info"
+    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+  mfp_title: "Master Fingerprint"
+  mfp_description_title: "Master Fingerprint"
+  mfp_description_texts:
+    - "A unique value required to identify a watch-only wallet"
+    - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
+    - "Without fingerprint, you will not be able to use the send feature."
+  mfp_input_placeholder: "f75f7ab5"
+  mfp_skip: "Skip"
+
+# lib/screens/review
+negative_feedback_screen:
+  text1: "Sorry😭"
+  text2: "Please let us know if you have any inconvenience or suggestions!"
+  text3: "Send 1:1 message"
+  text4: "Next time"
+positive_feedback_screen:
+  text1: "Thank you🥰"
+  text2: "Would you like to leave a review on the store?"
+  text3: "Of course"
+  text4: "Next time"
+
+# lib/screens/send
+broadcasting_complete_screen:
+  complete: "Send Request Complete"
+  memo_placeholder: "Enter memo"
+  memo_tags:
+    - "Transaction"
+    - "Purchase"
+    - "Donation"
+    - "Living expenses"
+    - "Savings"
+    - "Pocket money"
+    - "Birthday gift"
+
+broadcasting_screen:
+  title: "Final Confirmation"
+  description: "I will send with the information below"
+  self_sending: "This is a transaction sending to my own wallet."
+  error_popup_title: "Broadcasting Failed"
+  btn_submit: "Send"
+send_address_screen:
+  text1: "Scan QR or\npaste the copied address"
+  text2: "Please scan the address QR code"
+  add_recipient: "Add Recipient"
+  address_placeholder: "Please enter the address to send"
+  amount_placeholder: "Please enter the amount to send"
+send_confirm_screen:
+  title: "Confirm Input Information"
+signed_psbt_scanner_screen:
+  title: "Read Signed Transaction"
+unsigned_tx_qr_screen:
+  hardware_wallet_screen_guide: "Screen Guide"
+  guide_keystone:
+    step1: "1. On the home screen"
+    step1_em: "SCAN"
+    step1_end: "select"
+    step2: "2. Scan the QR code below with camera"
+  guide_seedsigner:
+    step1: "1. On the home screen"
+    step1_em: "Scan"
+    step1_end: "select"
+    step2: "2. Scan the QR code below with camera"
+  guide_jade:
+    step0: "In Active status"
+    step1: "1. "
+    step1_em: "Scan QR"
+    step1_end: "select"
+    step2: "2. Scan the QR code below with camera"
+  fast_scan_mode: "Fast scan mode"
+  low_density_qr: "Simple QR"
+  high_density_qr: "Complex QR"
+
+  guide_hardware_wallet:
+    step1: "Please scan the QR code below with your hardware wallet to start the signing process."
+
+# lib/screens/settings
+app_info_screen:
+  made_by_team_pow: "Made by Team POW."
+  category1_ask: "Have any questions?"
+  go_to_pow: "Go to POW Community"
+  ask_to_discord: "Ask via Discord Channel"
+  ask_to_x: "Ask via X"
+  ask_to_email: "Ask via Email"
+  category2_opensource: "Coconut Wallet is open source"
+  contribution: "Participate in Open Source Development"
+  tos_and_policy: "Terms and Policy"
+  terms_of_service: "Terms of Service"
+  privacy_policy: "Privacy Policy"
+  license: "Open Source License"
+  version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
+  inquiry: "Inquiry Content"
+bip39_list_screen:
+  result: "Search results for '$text'"
+  no_result: "No search results"
+pin_setting_screen:
+  new_password: "Please enter your new password"
+  enter_again: "Please confirm again"
+settings_screen:
+  set_password: "Set Password"
+  use_biometric: "Use Biometric Auth"
+  change_password: "Change Password"
+  hide_balance: "Hide Balance"
+  fake_balance:
+    fake_balance_setting: "Fake Balance Setting"
+    fake_balance_display: "Display Fake Balance"
+    fake_balance_input_placeholder: "Please set the fake total balance (in BTC units)"
+    fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
+    fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
+    fake_balance_input_not_enough_error: "Cannot set below $btc ($sats sats)"
+  language: "Language"
+  korean: "한국어"
+  english: "English"
+
+# lib/screens/wallet_detail
+wallet_detail_screen:
+  toast:
+    no_mfp_wallet_cant_send: "Wallets without master fingerprint cannot send"
+address_list_screen:
+  wallet_name: "$name's Address"
+  address_index: "Address - $index"
+  receiving: "Receiving"
+  change: "Change"
+  show_only_unused_address: "Show Only Unused Addresses"
+address_search_screen:
+  address_placeholder: "Please enter the address"
+  address_not_found: "Address not found"
+  search_result: "Search Results"
+  address_n_found: "Found $n addresses"
+  search_range: "Search Range"
+  receiving_address_index: "Receiving Address Index: $start ~ $end"
+  change_address_index: "Change Address Index: $start ~ $end"
+  receiving_address: "Receiving Address"
+  change_address: "Change Address"
+utxo_list_screen:
+  total_balance: "Total Balance"
+
+transaction_detail_screen:
+  confirmation: "$height ($count confirmations)"
+
+utxo_detail_screen:
+  pending: "Pending Confirmation"
+  address: "Holding Address"
+  utxo_locked: "Usage Locked"
+  utxo_unlocked: "Available for Use"
+  utxo_locked_toast_msg: "UTXO lock complete! This coin will no longer be used automatically."
+  utxo_unlocked_toast_msg: "UTXO unlock complete! Coin has been switched to available status."
+
+utxo_tag_screen:
+  onboarding_title: "You can manage UTXO tags"
+  add_tag: "Press the + button to create your first tag"
+wallet_info_screen:
+  title: "$name Information"
+  view_xpub: "View Extended Public Key"
+  duplicated_name: "Name already in use"
+  tooltip:
+    mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
+transaction_fee_bumping_screen:
+  rbf: "RBF"
+  cpfp: "CPFP"
+  existing_fee: "Existing Fee"
+  existing_fee_value: "${value} sats/vb"
+  total_fee: "Total $fee sats / ${vb} vb"
+  new_fee: "New Fee"
+  sats_vb: "sats/vb"
+  recommend_fee: "Minimum fee: ${fee} sats/vb or higher"
+  recommend_fee_info_rbf: "Must be at least 1 sat/vb higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vb."
+  recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vb, Recommended fee rate = ${recommendedFeeRate} sat/vb\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb"
+  current_fee: "Recommended Fee"
+  estimated_fee: "Estimated total fee about ${fee} sats"
+  estimated_fee_too_high_error: "Estimated total fee is over 0.01 BTC!"
+  recommended_fees_fetch_error: "Cannot fetch recommended fees!"
+  recommended_fees_is_null: "Fetching fees..."
+  recommended_fee_less_than_pending_tx_fee: "Please specify a fee higher than the existing fee"
+  recommended_fee_less_than_network_fee: "Please specify at least the recommended fee"
+  dialog:
+    fee_alert_title: "Notice"
+    fee_alert_description: "The total fee you set is over 0.01 BTC. Do you want to continue anyway?"
+    confirmed_alert_title: "Transaction Complete"
+    confirmed_alert_description: "The transaction that was pending has been completed."
+  toast:
+    insufficient_utxo: "Insufficient balance to create a new transaction"
+
+# lib/widgets/card
+wallet_list_add_guide_card:
+  add_watch_only: "Try adding a watch-only wallet!"
+wallet_list_glossary_shortcut_card:
+  any_word_you_dont_know: "Don't know any terms?"
+  top_right: "Top right "
+  kebab_button: "⋮ "
+  click_to_jump: "Click glossary or here to jump"
+
+# lib/widgets/overlays
+faucet_request_bottom_sheet:
+  title: "Get Test Bitcoin"
+  recipient: "Receiving Address"
+  placeholder: "Please enter the address.\nYou can check the address by pressing the [Receive] button."
+  my_address: "My wallet($name) address - $index"
+  requesting: "Requesting..."
+  request_amount: "Request $bitcoin BTC"
+license_bottom_sheet:
+  title: "License Information"
+  coconut_wallet: "Coconut Wallet"
+  copyright_text1: "Coconut Wallet follows the MIT license and the copyright belongs to NonceLab Inc. of the Republic of Korea. The full MIT license text can be found at "
+  copyright_text2: ".\n\nThe copyrights for third-party software included in this application are stated as follows. If you have any questions about this, please contact us at "
+  copyright_text3: "."
+  email_subject: "[Wallet] License Inquiry"
+security_self_check_bottom_sheet:
+  check1: "I am responsible for my own private keys."
+  check2: "I do not capture or photograph the mnemonic phrase screen."
+  check3: "I do not store mnemonic phrases in network-connected environments."
+  check4: "I verify the order and spelling of mnemonic phrases."
+  check5: "I double-check that no unintended characters are included in the passphrase."
+  check6: "I verify mnemonic phrases and passphrases in a safe place where no one is present."
+  check7: "I do not store mnemonic phrases and passphrases together."
+  check8: "I start using the wallet after testing with small amounts."
+  check9: "I will periodically check the above items and safely store the mnemonic phrase."
+  guidance: "Please understand the self-check items below and be sure to safely store the mnemonic phrase."
+tag_bottom_sheet:
+  title_new_tag: "Add Tag"
+  title_edit_tag: "Edit Tag"
+  tag_list: "Tag List"
+  add_new_tag: "Add Tag"
+  delete_tag: "Delete Tag"
+  exit_deletion: "Exit Tag Deletion"
+  max_tag_count: "You can specify up to 5 tags"
+glossary_bottom_sheet:
+  ask_to_pow: "Ask POW"
+  ask_to_discord: "Ask Discord"
+  synonym: "Same Term"
+  related: "Related Terms"
+user_experience_survey_bottom_sheet:
+  text1: "You've completed the Bitcoin transfer👍"
+  text2: "Was Coconut Wallet helpful?"
+  text3: "Yes, it's good!"
+  text4: "Just okay"
+unit_bottom_sheet:
+  basic_unit: "Basic Unit"
+  header_text: "1 BTC = 100,000,000 sats"
+
+errors:
+  storage_read_error: "Failed to load data from storage."
+  storage_write_error: "Failed to save data to storage."
+  network_error: "Cannot connect to network. Please check your connection status."
+  node_connection_error: "Failed to connect to Bitcoin node."
+  fetch_wallet_error: "Failed to fetch wallet."
+  wallet_sync_failed_error: "Failed to load wallet information from network"
+  fetch_balance_error: "Failed to fetch balance."
+  fetch_transaction_list_error: "Failed to fetch transaction history."
+  fetch_transactions_error: "Failed to fetch transaction history."
+  database_path_error: "Cannot find DB path."
+  fee_estimation_error: "Failed to calculate fee."
+  realm_unknown: "An unknown error occurred."
+  realm_not_found: "Data not found."
+  realm_exception: "An error occurred during Realm operation."
+  node_unknown: "An unknown error occurred while connecting to node."
+  broadcast_error: "Failed to broadcast transaction."
+  network_connect: "No network connection."
+  network_not_found: "Network is not connected!"
+  insufficient_balance: "Insufficient balance."
+  fee_selection_error:
+    insufficient_balance: "Insufficient balance to pay fee"
+    recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."
+    insufficient_utxo: "Insufficient UTXO total"
+  address_error:
+    invalid: "Not a valid address."
+    not_for_testnet: "Not a testnet address."
+    not_for_mainnet: "Not a mainnet address."
+    not_for_regtest: "Not a regtest address."
+    duplicated: "Address already entered"
+  pin_check_error:
+    trial_count: "You can try $count more times"
+    failed: "No more attempts allowed\nPlease close the app"
+    incorrect: "Password does not match"
+  pin_setting_error:
+    already_in_use: "Password already in use"
+    process_failed: "Problem occurred during processing"
+    save_failed: "Problem occurred during saving"
+    incorrect: "Password does not match"
+  data_loading_failed: "An error occurred while loading data."
+  data_not_found: "No data found."
+  utxo_lock_error: "Failed to set UTXO lock due to temporary error"
+  utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
+
+text_field:
+  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sats/vb)"
+  enter_fee_directly: "Enter Directly"
+  search_mnemonic_word: "Search in English"
+
+tooltip:
+  recommended_fee1: "Could not fetch recommended fee. Please enter fee directly."
+  recommended_fee2: "The fee you set is $bitcoin $unit or higher."
+  wallet_add1: "Add new wallet or update existing wallets."
+  wallet_add2: "Vault"
+  wallet_add3: "Select the wallet you want to use in "
+  wallet_add4: "Export "
+  wallet_add5: "and scan the QR code that appears on the screen."
+  amount_to_be_sent: "Only received Bitcoin can be sent.\nAmount being received: $bitcoin $unit"
+  scan_signed_psbt:
+    guide: "Have you completed signing with ${by_hardware_wallet}?\nNow, please scan the QR code shown on the ${hardware_wallet} screen."
+    by_seed_signer: "SeedSigner"
+    by_jade: "Jade"
+    by_keystone: "Keystone"
+    by_hardware_wallet: "hardware wallet"
+    by_vault_app: "Vault app"
+  unsigned_tx_qr:
+    in_vault: "In Vault"
+    select_wallet: "Select $name, "
+    scan_qr_below: "go to and scan the QR code below."
+  address_receiving: "This is the address used when receiving Bitcoin. In English, it's called Receiving or External."
+  address_change: "This is the address where you get change back when sending Bitcoin. In English, it's called Change."
+  utxo: "UTXO stands for Unspent Transaction Output, meaning unused balance. Bitcoin doesn't have a balance concept. Remember that the balance shown in your wallet is the sum of UTXOs."
+  faucet: "Test freely with test Bitcoin"
+  multisig_wallet: "This is a multisig wallet that requires\n$count signatures out of $total keys."
+  mfp: "This is the unique value of the wallet.\nAlso called Master Fingerprint (MFP)."
+  rbf: "A feature to replace an existing transaction with a new one by increasing the fee. (RBF, Replace-By-Fee)"
+  cpfp: "A feature to increase priority by setting a high fee on a new transaction (Child) to make the existing transaction (Parent) process faster. (CPFP, Child-Pays-For-Parent)"
+
+toast:
+  back_exit: "Press the back button once more to exit."
+  min_fee: "Current minimum fee is $minimum sats/vb."
+  fetching_onchain_data: "Fetching latest data. Please wait a moment."
+  screen_capture: "Screen capture detected."
+  no_balance: "No balance."
+  memo_update_failed: "Failed to update memo."
+  tag_add_failed: "Failed to add tag."
+  tag_update_failed: "Cannot edit tag."
+  tag_delete_failed: "Cannot delete tag."
+  wallet_detail_refresh: "Pull down the screen to get the latest data."
+
+alert:
+  error_tx:
+    created_failed: "Transaction Creation Failed"
+    not_parsed: "Transaction Parsing Failed: $error"
+    not_created: "Transaction Creation Failed $error"
+  error_send:
+    broadcasting_failed: "[Send Failed]\n$error"
+    insufficient_balance: "Insufficient balance"
+    minimum_amount: "You can send from $bitcoin $unit"
+    insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
+  signed_psbt:
+    invalid_qr: "Invalid QR code.\nPlease check again."
+    wrong_send_info: "Send information is different.\nPlease try again from the beginning."
+    need_more_sign: "Need $count more signatures"
+    invalid_signature: "Invalid signature information. Please try again."
+  scan_failed: "Scan Failed"
+  scan_failed_description: "QR code scan failed. Please try again.\n$error"
+  tutorial:
+    title: "Need help?"
+    description: "I'll guide you to\nthe tutorial site"
+    btn_view: "View Tutorial"
+  forgot_password:
+    title: "Forgot your password?"
+    description: "You can reset your password by pressing [Reset]. Changing the password will reset the synchronized wallet list."
+    btn_reset: "Reset"
+  wallet_add:
+    update_failed: "Update Failed"
+    update_failed_description: "No information to update for $name"
+    duplicate_name: "Duplicate Name"
+    duplicate_name_description: "There is a wallet with the same name.\nPlease change the name and sync."
+    add_failed: "Watch-only Wallet Addition Failed"
+    add_failed_description: "Invalid wallet information."
+    already_exist: "Wallet Duplicate"
+    already_exist_description: "Wallet already added. ($name)"
+  wallet_delete:
+    confirm_delete: "Delete Wallet"
+    confirm_delete_description: "Do you really want to delete the wallet?"
+  update:
+    title: "Update Notification"
+    description: "For stable service use,\nplease update to the latest version."
+    btn_update: "Update Now"
+    btn_do_later: "Later"
+  error_occurs: "Error Occurred"
+  contact_admin: "Please contact administrator. $error"
+  tag_apply:
+    title: "Apply Tag"
+    description: "Do you want to apply the tag from existing UTXO to new UTXO?"
+    btn_apply: "Apply"
+  tx_detail:
+    fetch_failed: "Transaction Fetch Failed"
+    fetch_failed_description: "Please try again later"
+  tag_delete:
+    title: "Delete Tag"
+    description: "Do you really want to delete #$name?\n"
+    description_utxo_tag: "Do you really want to delete $name?\nIt is applied to $count UTXOs."
+  recipient_delete:
+    description: "The information you entered will disappear.\nDo you still want to delete it?"
+  faucet:
+    no_test_bitcoin: "Faucet is out of service. Please try again later."
+    check_address: "Please check if the address is correct"
+    try_again: "Please try again after $count"
+  fee_bumping:
+    not_enough_amount: "Insufficient balance to execute $bumpingType.\nPlease check your current available balance."
+
+third_party:
+  keystone: "Keystone"
+  jade: "Jade"
+  seed_signer: "SeedSigner"
+  zpub: "zpub"
+
+trade_exchange:
+  upbit: "Upbit"
+  binance: "Binance"
+
+fiat:
+  fiat: "Fiat"
+  krw_symbol: "₩"
+  usd_symbol: "$"
+  krw_code: "KRW"
+  usd_code: "USD"
+  krw_price: "Upbit Price"
+  usd_price: "Binance Price"

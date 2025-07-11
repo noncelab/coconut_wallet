@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -246,17 +247,17 @@ class WalletDetailViewModel extends ChangeNotifier {
       final response =
           await _faucetService.getTestCoin(FaucetRequest(address: address, amount: requestAmount));
       if (response is FaucetResponse) {
-        onResult(true, '테스트 비트코인을 요청했어요. 잠시만 기다려 주세요.');
+        onResult(true, t.faucet_request);
         _updateFaucetRecord();
       } else if (response is DefaultErrorResponse && response.error == 'TOO_MANY_REQUEST_FAUCET') {
-        onResult(false, '해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다.');
+        onResult(false, t.faucet_already_request);
       } else {
-        onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        onResult(false, t.faucet_failed);
       }
     } catch (e) {
       Logger.error(e);
       // Error handling
-      onResult(false, '요청에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      onResult(false, t.faucet_failed);
     } finally {
       _isRequesting = false;
       _setReceiveAddress();

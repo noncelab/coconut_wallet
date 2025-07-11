@@ -19,4 +19,10 @@ class SharedPrefKeys {
   /// Fake Balance
   static const String kFakeBalanceTotal = 'FAKE_BALANCE_TOTAL';
   static const String kFakeBalanceMap = 'FAKE_BALANCE_MAP';
+
+  /// Language
+  static const String kLanguage = 'LANGUAGE';
+
+  /// Fiat
+  static const String kSelectedFiat = 'SELECTED_FIAT';
 }

@@ -45,6 +45,7 @@ class SingleButton extends StatelessWidget {
   final Widget? rightElement;
   final Widget? leftElement;
   final SingleButtonPosition buttonPosition;
+  final TextStyle? subtitleStyle;
 
   const SingleButton(
       {super.key,
@@ -54,7 +55,8 @@ class SingleButton extends StatelessWidget {
       this.onPressed,
       this.rightElement,
       this.leftElement,
-      this.buttonPosition = SingleButtonPosition.none});
+      this.buttonPosition = SingleButtonPosition.none,
+      this.subtitleStyle});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +81,8 @@ class SingleButton extends StatelessWidget {
                   Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
                   if (subtitle != null)
                     Text(subtitle!,
-                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                        style: subtitleStyle ??
+                            CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
                 ],
               )),
               rightElement ?? _rightArrow(),

@@ -89,6 +89,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
           title: (_isDonation ?? false) ? t.donation.donate : t.send,
           context: context,
           usePrimaryActiveColor: true,
+          nextButtonTitle: t.next,
           onNextPressed: () {
             Navigator.pushNamed(context, '/signed-psbt-scanner');
           }),
