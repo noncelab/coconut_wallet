@@ -42,13 +42,19 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     });
   }
 
-  void _showPinSetSuccessLottie() {
-    showGeneralDialog(
+  Future<void> _showPinSetSuccessLottie() async {
+    await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
+        Future.delayed(const Duration(milliseconds: 1260), () {
+          if (buildContext.mounted) {
+            Navigator.of(buildContext).pop();
+          }
+        });
+
         return AnimatedDialog(
           context: buildContext,
           lottieAddress: 'assets/lottie/pin-locked-success.json',
@@ -144,8 +150,14 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           try {
             var hashedPin = generateHashString(pin);
             await _authProvider.savePinSet(hashedPin, pin.length);
+
+            if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
+              await _authProvider.authenticateWithBiometrics(isSave: true);
+              await _authProvider.checkDeviceBiometrics();
+            }
+
             vibrateLightDouble();
-            _showPinSetSuccessLottie();
+            await _showPinSetSuccessLottie();
 
             if (mounted) {
               Navigator.pop(context); // Close success dialog

@@ -75,8 +75,6 @@ class WalletProvider extends ChangeNotifier {
     walletLoadStateNotifier.value = _walletLoadState;
 
     try {
-      Logger.log('--> RealmManager.isInitialized: ${_realmManager.isInitialized}');
-
       _setWalletItemList(await _fetchWalletListFromDB());
       _walletLoadState = WalletLoadState.loadCompleted;
 

@@ -1,6 +1,5 @@
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
-import 'package:coconut_wallet/repository/realm/wallet_data_manager_cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:realm/realm.dart';
 
@@ -11,7 +10,6 @@ class TestRealmManager implements RealmManager {
   final Realm _realm;
 
   bool _isInitialized = false;
-  WalletDataManagerCryptography? _cryptography;
 
   TestRealmManager()
       : _realm = Realm(
@@ -20,9 +18,6 @@ class TestRealmManager implements RealmManager {
 
   @override
   bool get isInitialized => _isInitialized;
-
-  @override
-  WalletDataManagerCryptography? get cryptography => _cryptography;
 
   @override
   Realm get realm => _realm;
@@ -65,16 +60,13 @@ class TestRealmManager implements RealmManager {
     });
 
     _isInitialized = false;
-    _cryptography = null;
   }
 
-  @override
   Future<void> encrypt(String hashedPin) async {
     // 테스트에서는 실제 암호화를 수행하지 않음
     return Future.value();
   }
 
-  @override
   Future<void> decrypt() async {
     // 테스트에서는 실제 복호화를 수행하지 않음
     return Future.value();

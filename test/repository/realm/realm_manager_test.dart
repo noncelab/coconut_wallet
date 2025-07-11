@@ -29,7 +29,6 @@ void main() {
 
       // Then
       expect(realmManager.isInitialized, true);
-      expect(realmManager.cryptography, isNull);
     });
 
     test('reset 메서드가 올바르게 동작하는지 테스트', () async {
@@ -41,7 +40,6 @@ void main() {
 
       // Then
       expect(realmManager.isInitialized, false);
-      expect(realmManager.cryptography, isNull);
     });
   });
 }
