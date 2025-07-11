@@ -279,7 +279,7 @@ void main() {
         await transactionRepository.addAllTransactions(walletId, [originalTxRecord, inputTxRecord]);
 
         // When
-        final result = await rbfService.detectSendingRbfTransaction(walletId, firstRbfTx);
+        final result = await rbfService.detectOutgoingRbfTransaction(walletId, firstRbfTx);
 
         // Then
         expect(result, isNotNull);
@@ -311,7 +311,7 @@ void main() {
         transactionRepository.addAllRbfHistory(rbfHistoryList);
 
         // When
-        final result = await rbfService.detectSendingRbfTransaction(walletId, firstRbfTx);
+        final result = await rbfService.detectOutgoingRbfTransaction(walletId, firstRbfTx);
 
         // Then
         expect(result, isNull);
@@ -342,7 +342,7 @@ void main() {
             .thenAnswer((_) async => originalTx.serialize());
 
         // When
-        final result = await rbfService.detectReceivingRbfTransaction(walletId, firstRbfTx);
+        final result = await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx);
 
         // Then
         expect(result, originalTx.transactionHash);
@@ -364,7 +364,7 @@ void main() {
             .thenAnswer((_) async => originalTx.serialize());
 
         // When
-        final result = await rbfService.detectReceivingRbfTransaction(walletId, firstRbfTx);
+        final result = await rbfService.detectIncomingRbfTransaction(walletId, firstRbfTx);
 
         // Then
         expect(result, isNull);
