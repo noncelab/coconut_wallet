@@ -110,9 +110,9 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
       if (pin.length == _pinLength) {
         try {
-          bool isAlreadyUsingPin = await _comparePin(pin);
+          bool isSameAsOldPin = await _comparePin(pin);
 
-          if (isAlreadyUsingPin) {
+          if (isSameAsOldPin) {
             returnToBackSequence(t.errors.pin_setting_error.already_in_use, firstSequence: true);
             return;
           }
