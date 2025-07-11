@@ -111,11 +111,10 @@ class PinInputPadState extends State<PinInputPad> {
                 }),
               ),
             ),
-            if (widget.centerWidget != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: widget.centerWidget,
-              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: SizedBox(height: 40, child: widget.centerWidget ?? const SizedBox()),
+            ),
             const SizedBox(height: 16),
             Text(widget.errorMessage,
                 style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
