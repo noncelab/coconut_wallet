@@ -226,9 +226,10 @@ class SendViewModel extends ChangeNotifier {
       int maxBalanceInSats = balance -
           (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast)
               .toInt();
-      _recipientList[lastIndex].amount =
-          (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
-              .toString();
+      _recipientList[lastIndex].amount = maxBalanceInSats > 0
+          ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
+              .toString()
+          : "0";
       _validateAmount(-1);
     }
     notifyListeners();
@@ -236,6 +237,15 @@ class SendViewModel extends ChangeNotifier {
 
   void onWalletInfoUpdated(
       WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto) {
+    // 모두 보내기 모드 활성화 상태에서 지갑 변경시 모두 보내기 모드를 끄고 마지막 수신자 정보를 초기화
+    if (_selectedWalletItem != null && _selectedWalletItem!.id != walletItem.id && _isMaxMode) {
+      _recipientList[lastIndex].amount = "";
+      setMaxMode(false);
+      if (_currentIndex == lastIndex) {
+        _onAmountTextUpdate(recipientList[lastIndex].amount);
+      }
+    }
+
     _selectedWalletItem = walletItem;
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _selectedUtxoList = selectedUtxoList;
@@ -363,8 +373,9 @@ class SendViewModel extends ChangeNotifier {
 
   void onKeyTap(String newInput) {
     if (_currentIndex == _recipientList.length) return;
+    if (isSatsUnit && newInput == '.') return;
+
     final recipient = _recipientList[_currentIndex];
-    if (newInput == ' ') return;
     if (newInput == '<') {
       if (recipient.amount.isNotEmpty) {
         recipient.amount = recipient.amount.substring(0, recipient.amount.length - 1);
@@ -395,8 +406,10 @@ class SendViewModel extends ChangeNotifier {
           recipient.amount += newInput;
         }
       } else {
-        /// 일반적인 경우 추가
-        recipient.amount += newInput;
+        /// 자연수인 경우 추가 11자리 제한
+        if (recipient.amount.length < 11) {
+          recipient.amount += newInput;
+        }
       }
     }
 
