@@ -57,9 +57,9 @@ class NodeProviderState {
     }
 
     final connectionStateSymbol = connectionStateToSymbol(nodeSyncState);
-    final buffer = StringBuffer();
 
     if (registeredWallets.isEmpty) {
+      final buffer = StringBuffer();
       buffer.writeln('--> 등록된 지갑이 없습니다.');
       buffer.writeln('--> nodeSyncState: $nodeSyncState');
       Logger.log(buffer.toString());
@@ -70,14 +70,17 @@ class NodeProviderState {
     final walletKeys = registeredWallets.keys.toList();
 
     // 테이블 헤더 출력 (connectionState 포함)
-    buffer.writeln('\n');
-    buffer.writeln('┌───────────────────────────────────────┐');
-    buffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
-    buffer.writeln('├─────────┬─────────┬─────────┬─────────┤');
-    buffer.writeln('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
-    buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
+    final headerBuffer = StringBuffer();
+    headerBuffer.writeln('\n');
+    headerBuffer.writeln('┌───────────────────────────────────────┐');
+    headerBuffer
+        .writeln('│ 연결 상태: $connectionStateSymbol${' ' * (23 - connectionStateSymbol.length)}│');
+    headerBuffer.writeln('├─────────┬─────────┬─────────┬─────────┤');
+    headerBuffer.writeln('│ 지갑 ID │  잔액   │  거래   │  UTXO   │');
+    headerBuffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
+    Logger.log(headerBuffer.toString());
 
-    // 각 지갑 상태 출력
+    // 각 지갑 상태를 개별적으로 출력 (긴 로그 방지)
     for (int i = 0; i < walletKeys.length; i++) {
       final key = walletKeys[i];
       final value = registeredWallets[key]!;
@@ -86,16 +89,19 @@ class NodeProviderState {
       final transactionSymbol = statusToSymbol(value.transaction);
       final utxoSymbol = statusToSymbol(value.utxo);
 
-      buffer.writeln(
+      final rowBuffer = StringBuffer();
+      rowBuffer.writeln(
           '│ ${key.toString().padRight(7)} │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
 
       // 마지막 행이 아니면 행 구분선 추가
       if (i < walletKeys.length - 1) {
-        buffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
+        rowBuffer.writeln('├─────────┼─────────┼─────────┼─────────┤');
       }
+
+      Logger.log(rowBuffer.toString());
     }
 
-    buffer.writeln('└─────────┴─────────┴─────────┴─────────┘');
-    Logger.log(buffer.toString());
+    // 테이블 하단 테두리 출력
+    Logger.log('└─────────┴─────────┴─────────┴─────────┘');
   }
 }
