@@ -315,6 +315,8 @@ unsigned_tx_qr_screen:
 app_info_screen:
   made_by_team_pow: "포우팀이 만듭니다."
   category1_ask: "궁금한 점이 있으신가요?"
+  coconut_crew_genesis_member: "코코넛 크루: 제네시스 멤버"
+  coconut_crew: "코코넛 크루"
   go_to_pow: "POW 커뮤니티 바로가기"
   ask_to_discord: "디스코드 채널로 문의하기"
   ask_to_x: "X로 문의하기"
