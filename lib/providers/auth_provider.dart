@@ -140,14 +140,15 @@ class AuthProvider extends ChangeNotifier {
     return savedPin == hashedInput;
   }
 
+  /// 비밀번호 분실
   Future<void> resetPassword() async {
     _isSetBiometrics = false;
     _canCheckBiometrics = false;
     _isSetPin = false;
     _pinLength = 0;
 
-    await SecureStorageRepository().deleteAll();
-    await SharedPrefsRepository().clearSharedPref();
+    await _secureStorageService.deleteAll();
+    await _sharedPrefs.deleteMultipleKeys(SharedPrefKeys.keysToReset);
     await checkDeviceBiometrics();
   }
 

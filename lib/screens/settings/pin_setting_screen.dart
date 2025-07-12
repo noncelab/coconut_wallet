@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_dialog.dart';
@@ -49,7 +50,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
-        Future.delayed(const Duration(milliseconds: 1260), () {
+        Future.delayed(const Duration(milliseconds: 1300), () {
           if (buildContext.mounted) {
             Navigator.of(buildContext).pop();
           }
@@ -114,7 +115,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
         vibrateExtraLight();
       }
 
-      if (pin.length == _pinLength) {
+      if (_authProvider.isSetPin && pin.length == _pinLength) {
         try {
           bool isSameAsOldPin = await _comparePin(pin);
 
@@ -154,6 +155,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
         try {
           var hashedPin = generateHashString(pin);
+          Logger.log('hashedPin: $hashedPin');
           await _authProvider.savePinSet(hashedPin, pin.length);
 
           if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
