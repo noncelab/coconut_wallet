@@ -4,13 +4,15 @@ part of 'script_sync_service_test.dart';
 class _ScriptSyncTestSetup {
   static void setupNetworkAndSharedPrefs(_ScriptSyncTestData testData) {
     int callCount = 0;
-    when(testData.sharedPrefsRepository.getInt('nextId')).thenAnswer((_) {
+    when(testData.sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField)).thenAnswer((_) {
       callCount++;
       return testData.walletA.id + callCount - 1; // 첫 번째 호출에서 walletAId, 두 번째에서 walletBId
     });
-    when(testData.sharedPrefsRepository.setInt('nextId', testData.walletA.id + 1))
+    when(testData.sharedPrefsRepository
+            .setInt(SharedPrefKeys.kNextIdField, testData.walletA.id + 1))
         .thenAnswer((_) async => true);
-    when(testData.sharedPrefsRepository.setInt('nextId', testData.walletB.id + 1))
+    when(testData.sharedPrefsRepository
+            .setInt(SharedPrefKeys.kNextIdField, testData.walletB.id + 1))
         .thenAnswer((_) async => true);
   }
 

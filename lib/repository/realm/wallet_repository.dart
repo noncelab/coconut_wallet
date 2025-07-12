@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -14,8 +15,6 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:realm/realm.dart';
 
 class WalletRepository extends BaseRepository {
-  static const String nextIdField = 'nextId';
-
   final SharedPrefsRepository _sharedPrefs;
 
   WalletRepository(super._realmManager) : _sharedPrefs = SharedPrefsRepository();
@@ -169,7 +168,7 @@ class WalletRepository extends BaseRepository {
 
   /// 다음 지갑 ID 가져오기
   int _getNextWalletId() {
-    var id = _sharedPrefs.getInt(nextIdField);
+    var id = _sharedPrefs.getInt(SharedPrefKeys.kNextIdField);
     if (id == 0) {
       return 1;
     }
@@ -178,7 +177,7 @@ class WalletRepository extends BaseRepository {
 
   /// 다음 지갑 ID 기록
   void _recordNextWalletId(int value) {
-    _sharedPrefs.setInt(nextIdField, value);
+    _sharedPrefs.setInt(SharedPrefKeys.kNextIdField, value);
   }
 
   /// 지갑 베이스 조회

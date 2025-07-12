@@ -16,6 +16,7 @@ class SharedPrefKeys {
   static const String kShowOnlyUnusedAddresses = "SHOW_ONLY_UNUSED_ADDRESSES";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
+  static const String kNextIdField = 'nextId';
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';
