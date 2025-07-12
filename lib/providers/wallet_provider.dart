@@ -13,7 +13,6 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -31,7 +30,6 @@ class WalletProvider extends ChangeNotifier {
 
   int gapLimit = 20;
 
-  final RealmManager _realmManager;
   final AddressRepository _addressRepository;
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
@@ -50,7 +48,6 @@ class WalletProvider extends ChangeNotifier {
   }
 
   WalletProvider(
-    this._realmManager,
     this._addressRepository,
     this._transactionRepository,
     this._utxoRepository,

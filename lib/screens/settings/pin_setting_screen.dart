@@ -146,29 +146,30 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
       }
 
       if (pinConfirm.length == pin.length) {
-        if (pinConfirm == pin) {
-          try {
-            var hashedPin = generateHashString(pin);
-            await _authProvider.savePinSet(hashedPin, pin.length);
-
-            if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
-              await _authProvider.authenticateWithBiometrics(isSave: true);
-              await _authProvider.checkDeviceBiometrics();
-            }
-
-            vibrateLightDouble();
-            await _showPinSetSuccessLottie();
-
-            if (mounted) {
-              Navigator.pop(context); // Close success dialog
-              Navigator.pop(context); // Close PIN setting screen
-            }
-          } catch (e) {
-            returnToBackSequence(t.errors.pin_setting_error.save_failed,
-                isError: true, firstSequence: true);
-          }
-        } else {
+        if (pinConfirm != pin) {
           returnToBackSequence(t.errors.pin_setting_error.incorrect,
+              isError: true, firstSequence: true);
+          return;
+        }
+
+        try {
+          var hashedPin = generateHashString(pin);
+          await _authProvider.savePinSet(hashedPin, pin.length);
+
+          if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
+            await _authProvider.authenticateWithBiometrics(isSave: true);
+            await _authProvider.checkDeviceBiometrics();
+          }
+
+          vibrateLightDouble();
+          await _showPinSetSuccessLottie();
+
+          if (mounted) {
+            Navigator.pop(context); // Close success dialog
+            Navigator.pop(context); // Close PIN setting screen
+          }
+        } catch (e) {
+          returnToBackSequence(t.errors.pin_setting_error.save_failed,
               isError: true, firstSequence: true);
         }
       }

@@ -145,7 +145,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     }
   }
 
-  void _showDialog() async {
+  void _showResetConfirmDialog() async {
     vibrateMedium();
 
     await CustomDialogs.showCustomAlertDialog(context,
@@ -180,7 +180,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       },
       onReset: widget.appEntrance
           ? () {
-              _showDialog();
+              _showResetConfirmDialog();
             }
           : null,
       step: 0,

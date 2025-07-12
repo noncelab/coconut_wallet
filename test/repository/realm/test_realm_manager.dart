@@ -9,36 +9,13 @@ import 'package:realm/realm.dart';
 class TestRealmManager implements RealmManager {
   final Realm _realm;
 
-  bool _isInitialized = false;
-
   TestRealmManager()
       : _realm = Realm(
           Configuration.inMemory(realmAllSchemas),
         );
 
   @override
-  bool get isInitialized => _isInitialized;
-
-  @override
   Realm get realm => _realm;
-
-  // 테스트에 필요한 추가 메서드 구현
-  void setInitialized(bool value) {
-    _isInitialized = value;
-  }
-
-  @override
-  Future<void> init(bool isSetPin) async {
-    _isInitialized = true;
-    return Future.value();
-  }
-
-  @override
-  void checkInitialized() {
-    if (!_isInitialized) {
-      throw StateError('RealmManager is not initialized. Call initialize first.');
-    }
-  }
 
   @override
   void reset() {
@@ -58,8 +35,6 @@ class TestRealmManager implements RealmManager {
       realm.deleteAll<RealmCpfpHistory>();
       realm.deleteAll<RealmTransactionMemo>();
     });
-
-    _isInitialized = false;
   }
 
   Future<void> encrypt(String hashedPin) async {
@@ -81,6 +56,5 @@ class TestRealmManager implements RealmManager {
 /// 테스트용 RealmManager 생성 헬퍼 함수
 Future<TestRealmManager> setupTestRealmManager() async {
   final realmManager = TestRealmManager();
-  realmManager.setInitialized(true);
   return realmManager;
 }

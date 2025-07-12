@@ -131,7 +131,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ChangeNotifierProvider<WalletProvider>(
             create: (context) {
               return WalletProvider(
-                Provider.of<RealmManager>(context, listen: false),
                 Provider.of<AddressRepository>(context, listen: false),
                 Provider.of<TransactionRepository>(context, listen: false),
                 Provider.of<UtxoRepository>(context, listen: false),
