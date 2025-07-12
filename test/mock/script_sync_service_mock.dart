@@ -61,10 +61,10 @@ class ScriptSyncServiceMock {
       StreamController<Map<int, WalletUpdateInfo>>.broadcast(),
     );
     if (realmManager == null) {
-      realmManager = TestRealmManager()..init(false);
+      realmManager = TestRealmManager();
     } else {
       realmManager!.dispose();
-      realmManager = TestRealmManager()..init(false);
+      realmManager = TestRealmManager();
     }
 
     // 리포지토리 초기화

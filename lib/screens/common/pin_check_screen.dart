@@ -134,17 +134,18 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         if (pin.isNotEmpty) {
           pin = pin.substring(0, pin.length - 1);
         }
-      } else if (pin.length < 4) {
+      } else if (pin.length < _authProvider.pinLength) {
         pin += value;
+        vibrateExtraLight();
       }
     });
 
-    if (pin.length == 4) {
+    if (pin.length == _authProvider.pinLength) {
       _verifyPin();
     }
   }
 
-  void _showDialog() async {
+  void _showResetConfirmDialog() async {
     vibrateMedium();
 
     await CustomDialogs.showCustomAlertDialog(context,
@@ -179,10 +180,11 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       },
       onReset: widget.appEntrance
           ? () {
-              _showDialog();
+              _showResetConfirmDialog();
             }
           : null,
       step: 0,
+      pinLength: _authProvider.pinLength,
     );
   }
 }

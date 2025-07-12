@@ -29,6 +29,10 @@ class AuthProvider extends ChangeNotifier {
   late bool _isSetPin;
   bool get isSetPin => _isSetPin;
 
+  /// 비밀번호 길이
+  late int _pinLength;
+  int get pinLength => _pinLength;
+
   /// 인증 활성화 여부
   bool get isAuthEnabled => _isSetPin;
 
@@ -39,6 +43,10 @@ class AuthProvider extends ChangeNotifier {
     _isSetBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kIsSetBiometrics);
     _canCheckBiometrics = _sharedPrefs.getBool(SharedPrefKeys.kCanCheckBiometrics);
     _isSetPin = _sharedPrefs.getBool(SharedPrefKeys.kIsSetPin);
+    _pinLength = _sharedPrefs.getInt(SharedPrefKeys.kPinLength);
+    if (_pinLength == 0) {
+      _pinLength = 4;
+    }
     checkDeviceBiometrics();
   }
 
@@ -104,10 +112,12 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// 비밀번호 저장
-  Future<void> savePinSet(String hashedPin) async {
+  Future<void> savePinSet(String hashedPin, int pinLength) async {
     await _secureStorageService.write(key: kSecureStoragePinKey, value: hashedPin);
     _isSetPin = true;
+    _pinLength = pinLength;
     _sharedPrefs.setBool(SharedPrefKeys.kIsSetPin, _isSetPin);
+    _sharedPrefs.setInt(SharedPrefKeys.kPinLength, pinLength);
     notifyListeners();
   }
 
@@ -116,8 +126,10 @@ class AuthProvider extends ChangeNotifier {
     await _secureStorageService.delete(key: kSecureStoragePinKey);
     _isSetPin = false;
     _isSetBiometrics = false;
+    _pinLength = 0;
     _sharedPrefs.setBool(SharedPrefKeys.kIsSetPin, _isSetPin);
     _sharedPrefs.setBool(SharedPrefKeys.kIsSetBiometrics, _isSetBiometrics);
+    _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kPinLength);
     notifyListeners();
   }
 
@@ -132,6 +144,7 @@ class AuthProvider extends ChangeNotifier {
     _isSetBiometrics = false;
     _canCheckBiometrics = false;
     _isSetPin = false;
+    _pinLength = 0;
 
     await SecureStorageRepository().deleteAll();
     await SharedPrefsRepository().clearSharedPref();
