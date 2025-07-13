@@ -3,3 +3,5 @@
 /// Xcode - (Targets) Runner - Build Phases - Run Script을 확인해주세요.
 
 CFBundleDisplayName = "Coconut Wallet";
+NSCameraUsageDescription = "Camera access is required for QR code scanning.";
+NSFaceIDUsageDescription = "Face ID is required to unlock the app.";
