@@ -209,6 +209,7 @@ wallet_add_scanner_screen:
     step2_em: "Connect Software Wallet"
     step3: "3. 어떤 지갑이든 선택"
   guide_jade:
+    step0_preposition: ""
     step0_em: "Active "
     step0: "상태에서"
     step1: "1. "

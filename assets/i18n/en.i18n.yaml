@@ -145,36 +145,37 @@ wallet_add_scanner_screen:
   select: "Select"
   guide_vault: "Coconut Vault App - Select Wallet - Export Wallet Info"
   guide_seedsigner:
-    step1: "1. On the home screen"
-    step1_em: "Seeds"
+    step1: "1. On the home screen, "
+    step1_em: " Seeds"
     step2: "2. "
-    step2_em: "Master Fingerprint" # TODO: check
+    step2_em: " Master Fingerprint" # TODO: check
     step3: "3. "
-    step3_em: "Export Xpub"
+    step3_em: " Export Xpub"
     step4: "4. "
-    step4_em1: "Single Sig" # TODO: check
+    step4_em1: " Single Sig" # TODO: check
     next: " > "
-    step4_em2: "Native Segwit" # TODO: check
+    step4_em2: " Native Segwit" # TODO: check
     step5: "5. "
-    step5_em: "BlueWallet"
-    step6: "6. After reading the message"
-    step6_em: "I understand"
+    step5_em: " BlueWallet"
+    step6: "6. After reading the message, "
+    step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step1: "1. On the home screen"
-    step1_em: "More(•••)"
+    step1: "1. On the home screen, "
+    step1_em: " More(•••)"
     step2: "2. "
-    step2_em: "Connect Software Wallet"
+    step2_em: " Connect Software Wallet"
     step3: "3. Select any wallet"
   guide_jade:
+    step0_preposition: "In an " 
     step0_em: "Active "
-    step0: "Status"
+    step0: "State,"
     step1: "1. "
-    step1_em: "Options"
+    step1_em: " Options"
     step2: "2. "
-    step2_em: "Wallet"
+    step2_em: " Wallet"
     step3: "3. "
-    step3_em: "Export Xpub"
+    step3_em: " Export Xpub"
 
 wallet_add_input_screen:
   app_bar_title_text: "Input Directly"
