@@ -33,9 +33,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>$(NSCameraUsageDescription)</string>
+	<string>Camera access is required for QR code scanning.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>$(NSFaceIDUsageDescription)</string>
+	<string>Face ID is required to unlock the app.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
