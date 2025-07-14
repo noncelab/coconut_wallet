@@ -78,6 +78,10 @@ class _SendScreenState extends State<SendScreen> {
 
   double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 40;
 
+  String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
+      bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
+      unit: _viewModel.currentUnit.symbol);
+
   @override
   void initState() {
     super.initState();

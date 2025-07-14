@@ -122,11 +122,13 @@ class SendViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
   int _confirmedBalance = 0;
+  int _incomingBalance = 0;
   int selectedUtxoAmountSum = 0;
 
   int get balance => isUtxoSelectionAuto || selectedUtxoListLength == 0
       ? _confirmedBalance
       : selectedUtxoAmountSum;
+  int get incomingBalance => _incomingBalance;
 
   SendError _insufficientBalanceError = SendError.none;
   SendError _qrAddressError = SendError.none;
@@ -433,13 +435,17 @@ class SendViewModel extends ChangeNotifier {
   void _initBalances() {
     if (_sendInfoProvider.walletId == null) return;
     List<UtxoState> utxos = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
-    int unspentBalance = 0;
+    int unspentBalance = 0, incomingBalance = 0;
     for (UtxoState utxo in utxos) {
       if (utxo.status == UtxoStatus.unspent) {
         unspentBalance += utxo.amount;
+      } else if (utxo.status == UtxoStatus.incoming) {
+        incomingBalance += utxo.amount;
       }
     }
+
     _confirmedBalance = unspentBalance;
+    _incomingBalance = incomingBalance;
   }
 
   void _validateAmount(int index) {
