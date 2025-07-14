@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -284,7 +285,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    switch (_walletImportSource) {
+    final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
+    final isKorean = currentLanguage == 'kr';
+
+    switch (WalletImportSource.keystone) {
       case WalletImportSource.coconutVault:
         {
           return [
@@ -295,10 +299,16 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               ),
             ),
             TextSpan(
-              text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
-                  '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
+              text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(
+              text:
+                  ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+              style: const TextStyle(
+                fontWeight: FontWeight.normal,
               ),
             ),
             TextSpan(
@@ -311,40 +321,77 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.seedSigner:
         {
-          return [
-            TextSpan(
-                text:
-                    '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
-            _em(t.unsigned_tx_qr_screen.guide_seedsigner.step1_em),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step2}'),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
+              _em(t.unsigned_tx_qr_screen.guide_seedsigner.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step2}'),
+            ];
+          } else {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1}'),
+              TextSpan(text: '${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end} '),
+              _em('${t.unsigned_tx_qr_screen.guide_seedsigner.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step2}'),
+            ];
+          }
         }
       case WalletImportSource.keystone:
         {
-          return [
-            TextSpan(
-                text:
-                    '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
-            _em(t.unsigned_tx_qr_screen.guide_keystone.step1_em),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1_end}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
+              _em(t.unsigned_tx_qr_screen.guide_keystone.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1_end}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
+            ];
+          } else {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1}'),
+              TextSpan(text: '${t.unsigned_tx_qr_screen.guide_keystone.step1_end} '),
+              _em('${t.unsigned_tx_qr_screen.guide_keystone.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
+            ];
+          }
         }
       case WalletImportSource.jade:
         {
-          return [
-            TextSpan(
-                text:
-                    '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
-            _em(t.unsigned_tx_qr_screen.guide_jade.step1_em),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step2}'),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
+              _em(t.unsigned_tx_qr_screen.guide_jade.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step2}'),
+            ];
+          } else {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end} '),
+              _em('${t.unsigned_tx_qr_screen.guide_jade.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step2}'),
+            ];
+          }
         }
       // case WalletImportSource.coconutVault: TODO: 추후 BC_UR QR로 변경합니다.
       default:

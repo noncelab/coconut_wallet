@@ -547,7 +547,8 @@ tooltip:
   unsigned_tx_qr:
     in_vault: "볼트에서"
     select_wallet: "$name 선택, "
-    scan_qr_below: "로 이동하여 아래 QR 코드를 스캔해 주세요."
+    select_menu: "$menu로 이동하여 "
+    scan_qr_below: "아래 QR 코드를 스캔해 주세요."
   address_receiving: "비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라고 해요."
   address_change: "비트코인을 보내고 남으면 거슬러받는 주소예요. 영어로 Change라고 해요."
   utxo: "UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요."

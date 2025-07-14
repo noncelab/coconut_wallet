@@ -823,7 +823,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 children: [
                   SvgPicture.asset(svgPath),
                   CoconutLayout.spacing_100h,
-                  Text(scanText, style: CoconutTypography.body2_14),
+                  Text(
+                    scanText,
+                    style: CoconutTypography.body2_14,
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),

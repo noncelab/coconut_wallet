@@ -249,12 +249,12 @@ signed_psbt_scanner_screen:
 unsigned_tx_qr_screen:
   hardware_wallet_screen_guide: "Screen Guide"
   guide_keystone:
-    step1: "1. On the home screen"
+    step1: "1. On the home screen, "
     step1_em: "SCAN"
     step1_end: "select"
     step2: "2. Scan the QR code below with camera"
   guide_seedsigner:
-    step1: "1. On the home screen"
+    step1: "1. On the home screen, "
     step1_em: "Scan"
     step1_end: "select"
     step2: "2. Scan the QR code below with camera"
@@ -503,9 +503,10 @@ tooltip:
     by_hardware_wallet: "hardware wallet"
     by_vault_app: "Vault app"
   unsigned_tx_qr:
-    in_vault: "In Vault"
-    select_wallet: "Select $name, "
-    scan_qr_below: "go to and scan the QR code below."
+    in_vault: "In Vault,"
+    select_wallet: "select $name."
+    select_menu: "Go to $menu and "
+    scan_qr_below: "scan the QR code below."
   address_receiving: "This is the address used when receiving Bitcoin. In English, it's called Receiving or External."
   address_change: "This is the address where you get change back when sending Bitcoin. In English, it's called Change."
   utxo: "UTXO stands for Unspent Transaction Output, meaning unused balance. Bitcoin doesn't have a balance concept. Remember that the balance shown in your wallet is the sum of UTXOs."
