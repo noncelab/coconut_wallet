@@ -29,7 +29,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
   // void _scrollListener() {}
 
   Future<void> _loadData() async {
-    final String detailsContent = await rootBundle.loadString('assets/files/beta_testers.json');
+    final String detailsContent = await rootBundle.loadString('assets/files/coconut_crew.json');
     final List<dynamic> jsonList = jsonDecode(detailsContent);
     _testers = jsonList.map((json) => BetaTester.fromJson(json)).toList();
     _testers.sort((a, b) {

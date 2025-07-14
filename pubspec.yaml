@@ -127,7 +127,7 @@ flutter:
   assets:
     - assets/files/glossary_details.json
     - assets/files/status_loading.json
-    - assets/files/beta_testers.json
+    - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
     - assets/images/splash_logo_regtest.png
     - assets/images/pow_logo.png
