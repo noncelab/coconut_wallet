@@ -251,8 +251,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
     }
 
     _viewModel.onBeforeGoNextScreen();
-    Navigator.pushNamed(context, routeName, arguments: {"currentUnit": _viewModel.currentUnit})
-        .then((_) {
+    Navigator.pushNamed(context, routeName).then((_) {
       _viewModel.onBackFromNextScreen();
     });
   }

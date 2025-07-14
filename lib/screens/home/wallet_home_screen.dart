@@ -687,9 +687,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void _onTapSend(List<int> walletOrder) {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
     if (firstWallet == null) {
-      // 추가된 지갑이 없음
-
-      //TODO: 보내기 화면으로 이동해야 합니다.
+      context.read<SendInfoProvider>().clear();
+      Navigator.pushNamed(context, '/send', arguments: {'id': null});
       return;
     }
 

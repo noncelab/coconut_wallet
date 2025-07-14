@@ -146,6 +146,104 @@ class CommonBottomSheets {
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height));
   }
 
+  /// ScrollController has to be passed to child when child has a scrollView
+  /// child builder is a builder for making a widget with ScrollController
+  static Future<T?> showDraggableBottomSheet<T>(
+      {required BuildContext context,
+      required Widget Function(ScrollController) childBuilder,
+      double minChildSize = 0.5,
+      double maxChildSize = 0.9}) async {
+    final draggableController = DraggableScrollableController();
+    bool isAnimating = false;
+
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          controller: draggableController,
+          initialChildSize: minChildSize,
+          minChildSize: minChildSize,
+          maxChildSize: maxChildSize,
+          expand: false,
+          builder: (context, scrollController) {
+            void handleDrag() {
+              if (isAnimating) return;
+              final extent = draggableController.size;
+              final targetExtent = (extent - minChildSize).abs() < (extent - maxChildSize).abs()
+                  ? minChildSize + 0.01
+                  : maxChildSize;
+
+              isAnimating = true;
+              draggableController
+                  .animateTo(
+                targetExtent,
+                duration: const Duration(milliseconds: 50),
+                curve: Curves.easeOut,
+              )
+                  .whenComplete(() {
+                isAnimating = false;
+              });
+            }
+
+            return NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollEndNotification) {
+                  handleDrag();
+                  return true;
+                }
+                return false;
+              },
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: CoconutColors.gray900,
+                ),
+                child: Column(
+                  children: [
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (details) {
+                        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                        draggableController.jumpTo(draggableController.size + delta);
+                      },
+                      onVerticalDragEnd: (details) {
+                        handleDrag();
+                      },
+                      onVerticalDragCancel: () {
+                        handleDrag();
+                      },
+                      child: Container(
+                        color: CoconutColors.gray800,
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: CoconutColors.gray500,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                          padding:
+                              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          child: childBuilder(scrollController)),
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   static Future<T?> showDraggableScrollableSheet<T>({
     required BuildContext context,
     required Widget child,

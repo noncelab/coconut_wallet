@@ -272,7 +272,12 @@ flutter:
     - assets/svg/star-outlined.svg
     - assets/svg/star-filled.svg
     - assets/svg/hamburger.svg
-
+    - assets/svg/barefoot.svg
+    - assets/svg/car.svg
+    - assets/svg/rocket.svg
+    - assets/svg/plus.svg
+    - assets/svg/broom.svg
+    - assets/svg/receipt.svg
 
   fonts:
     - family: SpaceGrotesk

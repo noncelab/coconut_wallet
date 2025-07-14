@@ -23,6 +23,8 @@ import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dar
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
@@ -45,7 +47,6 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -298,6 +299,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                             txHash: args['txHash'],
                             isDonation: args['isDonation'])),
                   ),
+              '/send': (context) => buildScreenWithArguments(
+                    context,
+                    (args) => SendScreen(walletId: args['walletId']),
+                  ),
               '/send-address': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
@@ -306,6 +311,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               '/fee-selection': (context) => const SendFeeSelectionScreen(),
               '/utxo-selection': (context) => const CustomLoadingOverlay(
                     child: SendUtxoSelectionScreen(),
+                  ),
+              '/refactor-utxo-selection': (context) => CustomLoadingOverlay(
+                    child: buildScreenWithArguments(
+                      context,
+                      (args) => UtxoSelectionScreen(
+                          selectedUtxoList: args['selectedUtxoList'], walletId: args['walletId']),
+                    ),
                   ),
               '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
               '/utxo-list': (context) => buildScreenWithArguments(
