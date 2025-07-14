@@ -20,6 +20,8 @@ fee: "수수료"
 fee_rate: "수수료율"
 send: "보내기"
 receive: "받기"
+show: "보기"
+hide: "숨기기"
 paste: "붙여넣기"
 export: "내보내기"
 edit: "편집"
@@ -33,6 +35,7 @@ close: "닫기"
 next: "다음"
 modify: "변경"
 confirm: "확인"
+cancel: "취소"
 security: "보안"
 general: "일반"
 unit: "단위"
@@ -87,6 +90,7 @@ selection: "선택"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
 view_balance: "잔액 보기"
+view: "보기"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"
@@ -113,6 +117,7 @@ faucet_request: "테스트 비트코인을 요청했어요. 잠시만 기다려 
 faucet_already_request: "해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다."
 faucet_failed: "요청에 실패했습니다. 잠시 후 다시 시도해 주세요."
 bio_auth_required: "생체 인증을 진행해 주세요"
+can_use_after_add_wallet: "지갑 추가 후 사용하실 수 있어요."
 
 donation:
   coconut: "코코넛 후원"
@@ -218,6 +223,27 @@ wallet_add_scanner_screen:
     step2_em: "Wallet"
     step3: "3. "
     step3_em: "Export Xpub"
+
+# lib/screens/wallet_list
+wallet_list:
+  wallet_count: "$count개"
+  view_all_wallets: "내 지갑 전체보기"
+  primary_wallet: "대표 지갑"
+  exclude_from_total_amount: "홈 화면 총액에서 제외"
+  settings:
+    primary_wallet: "대표 지갑 설정"
+    primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요."
+    primary_wallet_abled_description: "다른 지갑을 대표 지갑으로 설정하면, 자동 해제돼요."
+    exclude_from_total_amount: "총액에서 제외"
+    exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요."
+  edit:
+    wallet_list: "지갑 목록 편집"
+    star_description: "을 최대 5개 선택하여 홈 화면에 보이는 지갑을 선택할 수 있어요."
+    order_description: "을 눌러 지갑 순서를 변경할 수 있어요."
+    delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
+    finish: "편집 종료"
+    unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
+    
 
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
@@ -498,6 +524,7 @@ errors:
   broadcast_error: "트랜잭션 전송에 실패했습니다."
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
+  network_disconnected: "네트워크 끊김"
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
     insufficient_balance: "잔액이 부족하여 수수료를 낼 수 없어요"

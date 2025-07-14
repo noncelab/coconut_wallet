@@ -78,7 +78,7 @@ dependencies:
   coconut_design_system: 
     git:
       url: https://github.com/noncelab/coconut_design_system.git
-      ref: feat/appbar-custom-widget
+      ref: main
   coconut_lib: ^0.10.4
   realm: ^20.0.0
   cryptography: ^2.7.0
@@ -90,6 +90,7 @@ dependencies:
   cbor: ^6.3.5
   ur:
     path: lib/packages/bc-ur-dart
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
@@ -266,6 +267,11 @@ flutter:
     - assets/svg/lock.svg
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
+    - assets/svg/cloud-disconnected.svg
+    - assets/svg/star-small.svg
+    - assets/svg/star-outlined.svg
+    - assets/svg/star-filled.svg
+    - assets/svg/hamburger.svg
 
 
   fonts:

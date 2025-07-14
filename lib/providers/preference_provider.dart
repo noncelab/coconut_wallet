@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final WalletPreferencesRepository _walletPreferencesRepository;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -37,7 +39,19 @@ class PreferenceProvider extends ChangeNotifier {
   late FiatCode _selectedFiat;
   FiatCode get selectedFiat => _selectedFiat;
 
-  PreferenceProvider() {
+  /// 지갑 순서
+  late List<int> _walletOrder;
+  List<int> get walletOrder => _walletOrder;
+
+  /// 지갑 즐겨찾기 목록
+  late List<int> _favoriteWalletIds;
+  List<int> get favoriteWalletIds => _favoriteWalletIds;
+
+  /// 총 잔액에서 제외할 지갑 목록
+  late List<int> _excludedFromTotalBalanceWalletIds;
+  List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
+
+  PreferenceProvider(this._walletPreferencesRepository) {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
@@ -45,13 +59,12 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
-
-    // 통화 설정 초기화
+    _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
+    _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
+    _excludedFromTotalBalanceWalletIds =
+        _walletPreferencesRepository.getExcludedWalletIds().toList();
     _initializeFiat();
-
-    // 언어 설정 초기화 - OS 설정에 따라 자동 선택
     _initializeLanguageFromSystem();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyLanguageSettingSync();
     });
@@ -229,5 +242,44 @@ class PreferenceProvider extends ChangeNotifier {
         map.map((key, value) => MapEntry(key.toString(), value));
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
+  }
+
+  /// 지갑 순서 설정
+  Future<void> setWalletOrder(List<int> walletOrder) async {
+    _walletOrder = walletOrder;
+    await _walletPreferencesRepository.setWalletOrder(walletOrder);
+    notifyListeners();
+  }
+
+  Future<void> removeWalletOrder(int walletId) async {
+    _walletOrder.remove(walletId);
+    await _walletPreferencesRepository.setWalletOrder(_walletOrder);
+    notifyListeners();
+  }
+
+  /// 지갑 즐겨찾기 설정
+  Future<void> setFavoriteWalletIds(List<int> ids) async {
+    _favoriteWalletIds = ids;
+    await _walletPreferencesRepository.setFavoriteWalletIds(ids);
+    notifyListeners();
+  }
+
+  Future<void> removeFavoriteWalletId(int walletId) async {
+    _favoriteWalletIds.remove(walletId);
+    await _walletPreferencesRepository.setFavoriteWalletIds(_favoriteWalletIds);
+    notifyListeners();
+  }
+
+  /// 총 잔액에서 제외할 지갑 설정
+  Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
+    _excludedFromTotalBalanceWalletIds = ids;
+    await _walletPreferencesRepository.setExcludedWalletIds(ids);
+    notifyListeners();
+  }
+
+  Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
+    _excludedFromTotalBalanceWalletIds.remove(walletId);
+    await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
+    notifyListeners();
   }
 }

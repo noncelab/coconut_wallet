@@ -20,6 +20,8 @@ fee: "Fee"
 fee_rate: "Fee Rate"
 send: "Send"
 receive: "Receive"
+show: "Show"
+hide: "Hide"
 paste: "Paste"
 export: "Export"
 edit: "Edit"  
@@ -176,6 +178,25 @@ wallet_add_scanner_screen:
     step2_em: " Wallet"
     step3: "3. "
     step3_em: " Export Xpub"
+
+wallet_list:
+  wallet_count: "$count Items"
+  view_all_wallets: "View All My Wallets"
+  primary_wallet: "Primary Wallet"
+  exclude_from_total_amount: "Exclude from Home Total"
+  settings:
+    primary_wallet: "Set as Primary Wallet"
+    primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen."
+    primary_wallet_abled_description: "Setting another wallet as primary will automatically disable this setting."
+    exclude_from_total_amount: "Exclude from Total"
+    exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen."
+  edit:
+    wallet_list: "Edit Wallet List"
+    star_description: "Select up to 5 wallets to display on the home screen."
+    order_description: "Tap to change the order of wallets."
+    delete_description: "Swipe left on a wallet to delete it."
+    finish: "Finish Editing"
+    unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"    
 
 wallet_add_input_screen:
   app_bar_title_text: "Input Directly"

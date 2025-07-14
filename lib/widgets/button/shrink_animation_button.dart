@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 class ShrinkAnimationButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onPressed;
+  final VoidCallback? onLongPressed;
   final Color pressedColor;
   final Color defaultColor;
   final double borderRadius;
@@ -16,6 +17,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     super.key,
     required this.child,
     required this.onPressed,
+    this.onLongPressed,
     this.pressedColor = CoconutColors.gray900,
     this.defaultColor = CoconutColors.gray800,
     this.borderRadius = 24.0,
@@ -74,9 +76,16 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
     });
   }
 
+  void _onLongPress() {
+    if (widget.onLongPressed != null) {
+      widget.onLongPressed!();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+        onLongPress: _onLongPress,
         onTapDown: _onTapDown,
         onTapUp: _onTapUp,
         onTapCancel: _onTapCancel,

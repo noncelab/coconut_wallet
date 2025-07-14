@@ -18,6 +18,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
+import 'package:collection/collection.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
@@ -60,6 +61,7 @@ class WalletProvider extends ChangeNotifier {
     walletItemListNotifier = ValueNotifier(_walletItemList);
 
     _loadWalletListFromDB().then((_) {
+      _fetchWalletPreferences(); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
       notifyListeners();
     });
   }
@@ -206,7 +208,7 @@ class WalletProvider extends ChangeNotifier {
     await _addressRepository.ensureAddressesInit(walletItemBase: newItem);
 
     List<WalletListItemBase> updatedList = List.from(_walletItemList);
-    updatedList.insert(0, newItem); // wallet-list의 지갑 정렬 방식을 최신순으로 하기 위함
+    updatedList.add(newItem); // 새로 추가된 지갑을 후순으로 변경 -> 대표 지갑 변경되는걸 막기 위함
     _setWalletItemList(updatedList);
 
     _saveWalletCount(updatedList.length);
@@ -247,6 +249,9 @@ class WalletProvider extends ChangeNotifier {
     _saveWalletCount(_walletItemList.length);
 
     await _preferenceProvider.removeFakeBalance(walletId);
+    await _preferenceProvider.removeWalletOrder(walletId);
+    await _preferenceProvider.removeFavoriteWalletId(walletId);
+    await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
 
     notifyListeners();
   }
@@ -274,6 +279,11 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Balance getWalletBalance(int walletId) {
+    // 간헐적으로 이미 삭제된 지갑의 balance를 불러오려고 하는 경우가 있음(성능 차이)
+    if (walletItemList.firstWhereOrNull((w) => w.id == walletId) == null) {
+      return Balance(0, 0);
+    }
+
     final realmBalance = _walletRepository.getWalletBalance(walletId);
     return Balance(
       realmBalance.confirmed,
@@ -358,6 +368,20 @@ class WalletProvider extends ChangeNotifier {
       newAddresses: newAddresses,
       isChange: isChange,
     );
+  }
+
+  /// DB에서 지갑 로드(_loadWalletListFromDB) 완료 후 수행
+  Future<void> _fetchWalletPreferences() async {
+    var walletOrder = _preferenceProvider.walletOrder;
+    var favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
+    if (walletOrder.isEmpty) {
+      walletOrder = List.from(walletItemList.map((w) => w.id));
+      await _preferenceProvider.setWalletOrder(walletOrder);
+    }
+    if (favoriteWalletIds.isEmpty) {
+      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
+      await _preferenceProvider.setFavoriteWalletIds(favoriteWalletIds);
+    }
   }
 
   @override

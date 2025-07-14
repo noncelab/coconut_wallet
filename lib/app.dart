@@ -16,11 +16,13 @@ import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
@@ -49,7 +51,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
-
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -100,16 +101,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
 
-          // 언어 설정은 모든 플로우에서 필요하므로 항상 생성 (PriceProvider보다 먼저)
-          ChangeNotifierProvider(create: (_) => PreferenceProvider()),
-
-          ChangeNotifierProvider<PriceProvider>(
-            create: (context) => PriceProvider(
-              context.read<ConnectivityProvider>(),
-              context.read<PreferenceProvider>(),
-            ),
-          ),
-
           Provider.value(value: _realmManager),
 
           // Repository 등록 - Provider보다 먼저 등록해야 함
@@ -127,6 +118,23 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ),
           Provider<SubscriptionRepository>(
             create: (context) => SubscriptionRepository(context.read<RealmManager>()),
+          ),
+          Provider<WalletPreferencesRepository>(
+            create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
+          ),
+
+          ChangeNotifierProvider(
+              create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+
+          ChangeNotifierProvider(
+            create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>()),
+          ),
+
+          ChangeNotifierProvider<PriceProvider>(
+            create: (context) => PriceProvider(
+              context.read<ConnectivityProvider>(),
+              context.read<PreferenceProvider>(),
+            ),
           ),
 
           ChangeNotifierProvider(
@@ -215,7 +223,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 ? StartScreen(onComplete: _completeSplash)
                 : _appEntryFlow == AppEntryFlow.main
                     ? const AppGuard(
-                        child: WalletListScreen(),
+                        child: WalletHomeScreen(),
                       )
                     : CustomLoadingOverlay(
                         child: PinCheckScreen(
@@ -242,12 +250,18 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               '/app-info': (context) => const AppInfoScreen(),
               '/wallet-detail': (context) => buildScreenWithArguments(
                     context,
-                    (args) => WalletDetailScreen(id: args['id']),
+                    (args) => WalletDetailScreen(
+                      id: args['id'],
+                      entryPoint: args['entryPoint'],
+                    ),
                   ),
               '/wallet-info': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(
-                        child: WalletInfoScreen(id: args['id'], isMultisig: args['isMultisig'])),
+                        child: WalletInfoScreen(
+                            id: args['id'],
+                            isMultisig: args['isMultisig'],
+                            entryPoint: args['entryPoint'])),
                   ),
               '/address-list': (context) => buildScreenWithArguments(
                     context,

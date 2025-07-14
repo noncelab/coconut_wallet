@@ -37,8 +37,13 @@ import 'package:lottie/lottie.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   final int id;
+  final String entryPoint;
 
-  const WalletDetailScreen({super.key, required this.id});
+  const WalletDetailScreen({
+    super.key,
+    required this.id,
+    required this.entryPoint,
+  });
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
@@ -144,7 +149,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   void _navigateToWalletInfo(BuildContext context) async {
     await Navigator.pushNamed(context, '/wallet-info', arguments: {
       'id': widget.id,
-      'isMultisig': _viewModel.walletType == WalletType.multiSignature
+      'isMultisig': _viewModel.walletType == WalletType.multiSignature,
+      'entryPoint': widget.entryPoint,
     });
 
     _viewModel.updateWalletName();
@@ -391,6 +397,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         value: _viewModel,
         child: ReceiveAddressBottomSheet(
           id: widget.id,
+          derivationPath: _viewModel.derivationPath,
+          receiveAddress: _viewModel.receiveAddress,
+          receiveAddressIndex: _viewModel.receiveAddressIndex,
         ),
       ),
     );
