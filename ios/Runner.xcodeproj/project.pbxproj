@@ -427,7 +427,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\n\n\n# Configuration에 따른 앱 이름 설정\nif [[ \"${CONFIGURATION}\" == *\"mainnet\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\nelif [[ \"${CONFIGURATION}\" == *\"regtest\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet-Regtest\"\n    KO_APP_NAME=\"코코넛 월렛 학습용\"\nelse\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\nfi\n\necho \"EN_APP_NAME: $EN_APP_NAME\"\necho \"KO_APP_NAME: $KO_APP_NAME\"\n\n# 영어 InfoPlist.strings 파일 경로\nEN_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/en.lproj\"\nEN_STRINGS_FILE=\"${EN_STRINGS_PATH}/InfoPlist.strings\"\n\n# 한국어 InfoPlist.strings 파일 경로\nKO_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ko.lproj\"\nKO_STRINGS_FILE=\"${KO_STRINGS_PATH}/InfoPlist.strings\"\n\n# 디렉토리 생성\nmkdir -p \"$EN_STRINGS_PATH\"\nmkdir -p \"$KO_STRINGS_PATH\"\n\n# InfoPlist.strings 파일 생성/업데이트\necho \"CFBundleDisplayName = \\\"$EN_APP_NAME\\\";\" > \"$EN_STRINGS_FILE\"\necho \"CFBundleDisplayName = \\\"$KO_APP_NAME\\\";\" > \"$KO_STRINGS_FILE\"\n\n# 앱 권한 설명 추가\necho \"NSCameraUsageDescription = \\\"Camera access is required for QR code scanning.\\\";\" >> \"$EN_STRINGS_FILE\"\necho \"NSCameraUsageDescription = \\\"QR 코드 스캔을 위해 카메라가 필요합니다.\\\";\" >> \"$KO_STRINGS_FILE\"\n\necho \"NSFaceIDUsageDescription = \\\"Face ID is required to unlock the app.\\\";\" >> \"$EN_STRINGS_FILE\"\necho \"NSFaceIDUsageDescription = \\\"앱의 잠금을 해제할 때 Face ID를 사용하기 위해 필요합니다.\\\";\" >> \"$KO_STRINGS_FILE\"\n\necho \"✅ 영어 앱 이름 설정 완료: $EN_APP_NAME\"\necho \"✅ 한국어 앱 이름 설정 완료: $KO_APP_NAME\"\necho \"Configuration: $CONFIGURATION\"\n";
+			shellScript = "#!/bin/bash\n\n\n# Configuration에 따른 앱 이름 설정\nif [[ \"${CONFIGURATION}\" == *\"mainnet\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\nelif [[ \"${CONFIGURATION}\" == *\"regtest\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet-Regtest\"\n    KO_APP_NAME=\"코코넛 월렛 학습용\"\nelse\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\nfi\n\n# 권한 문구 설정\nEN_NSCameraUsageDescription=\"Camera access is required for QR code scanning.\"\nKO_NSCameraUsageDescription=\"QR 코드 스캔을 위해 카메라가 필요합니다.\"\nEN_NSFaceIDUsageDescription=\"Face ID is required to unlock the app.\"\nKO_NSFaceIDUsageDescription=\"앱의 잠금을 해제할 때 Face ID를 사용하기 위해 필요합니다.\"\n\necho \"EN_APP_NAME: $EN_APP_NAME\"\necho \"KO_APP_NAME: $KO_APP_NAME\"\n\n# 영어 InfoPlist.strings 파일 경로\nEN_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/en.lproj\"\nEN_STRINGS_FILE=\"${EN_STRINGS_PATH}/InfoPlist.strings\"\n\n# 한국어 InfoPlist.strings 파일 경로\nKO_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ko.lproj\"\nKO_STRINGS_FILE=\"${KO_STRINGS_PATH}/InfoPlist.strings\"\n\n# 디렉토리 생성\nmkdir -p \"$EN_STRINGS_PATH\"\nmkdir -p \"$KO_STRINGS_PATH\"\n\n# InfoPlist.strings 생성\ncat > \"$EN_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$EN_APP_NAME\";\nNSCameraUsageDescription = \"$EN_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$EN_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$KO_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$KO_APP_NAME\";\nNSCameraUsageDescription = \"$KO_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$KO_NSFaceIDUsageDescription\";\nEOF\n\n\necho \"✅ 앱 이름 및 권한 설명 설정 완료\"\necho \"📝 Configuration: $CONFIGURATION\"\necho \"📝 English App Name: $EN_APP_NAME\"\necho \"📝 Korean App Name: $KO_APP_NAME\"\n";
 		};
 		DFD5326D7C61DE059C053AD8 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -437,13 +437,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
