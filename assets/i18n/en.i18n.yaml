@@ -292,6 +292,8 @@ bip39_list_screen:
 pin_setting_screen:
   new_password: "Please enter your new password"
   enter_again: "Please confirm again"
+  set_to_6_digit: "Set to 6-digit password"
+  set_to_4_digit: "Set to 4-digit password"
 settings_screen:
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
