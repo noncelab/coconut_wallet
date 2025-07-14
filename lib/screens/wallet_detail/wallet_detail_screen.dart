@@ -25,7 +25,6 @@ import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -383,15 +382,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _onTapReceive() {
-    CommonBottomSheets.showBottomSheet_90(
-      context: context,
-      child: ChangeNotifierProvider.value(
-        value: _viewModel,
-        child: ReceiveAddressBottomSheet(
-          id: widget.id,
-        ),
-      ),
-    );
+    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
   }
 
   void _onTapSend() {

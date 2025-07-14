@@ -26,10 +26,12 @@ import 'package:provider/provider.dart';
 
 class UtxoSelectionScreen extends StatefulWidget {
   final List<UtxoState> selectedUtxoList;
+  final int walletId;
 
   const UtxoSelectionScreen({
     super.key,
     required this.selectedUtxoList,
+    required this.walletId,
   });
 
   @override
@@ -144,9 +146,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       _viewModel = UtxoSelectionViewModel(
           Provider.of<WalletProvider>(context, listen: false),
           Provider.of<UtxoTagProvider>(context, listen: false),
-          Provider.of<SendInfoProvider>(context, listen: false),
           Provider.of<PriceProvider>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+          widget.walletId,
           widget.selectedUtxoList,
           _selectedUtxoOrder);
 

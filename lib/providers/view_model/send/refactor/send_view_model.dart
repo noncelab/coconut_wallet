@@ -121,7 +121,7 @@ class SendViewModel extends ChangeNotifier {
 
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
-  late int _confirmedBalance;
+  int _confirmedBalance = 0;
   int selectedUtxoAmountSum = 0;
 
   int get balance => isUtxoSelectionAuto || selectedUtxoListLength == 0
@@ -258,8 +258,9 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void selectWalletItem(int index) {
-    final newWalletItem = _walletProvider.walletItemList[index];
-    if (_selectedWalletItem != null && _selectedWalletItem!.id == newWalletItem.id) return;
+    if (index == -1) return;
+    if (_selectedWalletItem != null &&
+        _selectedWalletItem!.id == _walletProvider.walletItemList[index].id) return;
 
     _selectedWalletItem = _walletProvider.walletItemList[index];
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
@@ -430,6 +431,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _initBalances() {
+    if (_sendInfoProvider.walletId == null) return;
     List<UtxoState> utxos = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
     int unspentBalance = 0;
     for (UtxoState utxo in utxos) {

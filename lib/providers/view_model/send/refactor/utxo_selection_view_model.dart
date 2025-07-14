@@ -14,7 +14,6 @@ import 'package:flutter/material.dart';
 class UtxoSelectionViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final UtxoTagProvider _tagProvider;
-  final SendInfoProvider _sendInfoProvider;
   final PriceProvider _priceProvider;
   late int? _bitcoinPriceKrw;
   late bool? _isNetworkOn;
@@ -39,15 +38,14 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   UtxoSelectionViewModel(
       this._walletProvider,
       this._tagProvider,
-      this._sendInfoProvider,
       this._priceProvider,
       this._isNetworkOn,
+      this._walletId,
       List<UtxoState> selectedUtxoList,
       UtxoOrder initialUtxoOrder) {
     try {
-      _walletId = _sendInfoProvider.walletId!;
       _walletProvider.getUtxoList(_walletId).fold<int>(0, (sum, utxo) {
-        if (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked) {
+        if (utxo.status == UtxoStatus.unspent) {
           _confirmedUtxoList.add(utxo);
         }
         return utxo.status == UtxoStatus.unspent ? sum + utxo.amount : sum;
@@ -152,7 +150,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void _initUtxoTagMap() {
     for (var (element) in _confirmedUtxoList) {
-      final tags = _tagProvider.getUtxoTagsByUtxoId(_sendInfoProvider.walletId!, element.utxoId);
+      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, element.utxoId);
       _utxoTagMap[element.utxoId] = tags;
     }
   }

@@ -44,11 +44,12 @@ class _SendScreenState extends State<SendScreen> {
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   final double kCoconutAppbarHeight = 60;
   final double kPageViewHeight = 225;
-  final double kAddressBoardPosition = 180;
+  final double kAddressBoardPosition = 185;
   final double kFeeBoardHeight = 147;
   final double kTooltipHeight = 39;
   final double kTooltipPadding = 5;
   final double kAmountHeight = 34;
+  final double kAddressRowHeight = 40;
 
   late final SendViewModel _viewModel;
   final _recipientPageController = PageController();
@@ -70,9 +71,12 @@ class _SendScreenState extends State<SendScreen> {
 
   bool get _hasKeyboard =>
       _amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus || _isAddressFocused;
+
   bool get _isAddressFocused => _addressFocusNodeList.any((e) => e.hasFocus);
 
   double get _keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
+
+  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 40;
 
   @override
   void initState() {
@@ -141,23 +145,24 @@ class _SendScreenState extends State<SendScreen> {
                 children: [
                   SingleChildScrollView(
                     child: Selector<SendViewModel, bool>(
-                        selector: (_, viewModel) => viewModel.showAddressBoard,
-                        builder: (context, data, child) {
-                          double scrollbarHeight = _getScrollableHeight(usableHeight);
-                          return SizedBox(
-                            height: scrollbarHeight,
-                            child: Stack(
-                              children: [
-                                _buildInvisibleAmountField(),
-                                _buildCounter(context),
-                                _buildPageView(context),
-                                _buildBoard(context),
-                                if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
-                                  _buildKeyboardToolbar(context),
-                              ],
-                            ),
-                          );
-                        }),
+                      selector: (_, viewModel) => viewModel.showAddressBoard,
+                      builder: (context, data, child) {
+                        return SizedBox(
+                          height: _getScrollableHeight(usableHeight),
+                          child: child,
+                        );
+                      },
+                      child: Stack(
+                        children: [
+                          _buildInvisibleAmountField(),
+                          _buildCounter(context),
+                          _buildPageView(context),
+                          _buildBoard(context),
+                          if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
+                            _buildKeyboardToolbar(context),
+                        ],
+                      ),
+                    ),
                   ),
                   Positioned(
                     bottom: Sizes.size24,
@@ -887,7 +892,7 @@ class _SendScreenState extends State<SendScreen> {
                   ),
                   CoconutLayout.spacing_200h,
                   SizedBox(
-                    height: _viewModel.walletItemList.length >= 2 ? 80 : 40,
+                    height: walletAddressListHeight,
                     child: ListView.builder(
                         itemCount: _viewModel.walletItemList.length,
                         itemBuilder: (BuildContext context, int index) {
@@ -954,7 +959,7 @@ class _SendScreenState extends State<SendScreen> {
     double scrollbarHeight = usableHeight;
     if (_viewModel.showAddressBoard) {
       // AddressBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
-      final addressBoardHeight = _viewModel.walletItemList.length >= 2 ? 164 : 124;
+      final addressBoardHeight = walletAddressListHeight + 80;
       final addressBoardBottomPos = kAddressBoardPosition + addressBoardHeight;
       final keyboardGap = usableHeight - _keyboardHeight - addressBoardBottomPos;
       if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
