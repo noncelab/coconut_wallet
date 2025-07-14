@@ -6,6 +6,7 @@ import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 
 class CoconutCrewScreen extends StatefulWidget {
   const CoconutCrewScreen({super.key});
@@ -33,9 +34,16 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
     final List<dynamic> jsonList = jsonDecode(detailsContent);
     _testers = jsonList.map((json) => BetaTester.fromJson(json)).toList();
     _testers.sort((a, b) {
-      // ㄱㄴㄷ,ABC,123,특수문자 순으로 정렬
+      // 123,ㄱㄴㄷ,ABC,특수문자 순으로 정렬
       int rank(String s) {
         final first = s.isNotEmpty ? s.codeUnitAt(0) : 0;
+        if (first >= 0x30 && first <= 0x39) {
+          // 숫자
+          // if (_scrollbarList.where((w) => w.str == '1').isEmpty) {
+          //   _scrollbarList.add(ScrollbarItemData(str: '1', offsetY: 0));
+          // }
+          return 0;
+        }
         if (first >= 0xAC00 && first <= 0xD7AF) {
           // 한글
           final initialCode = ((first - 0xAC00) / 588).floor();
@@ -53,32 +61,25 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
             'ㅉ' => 'ㅈ',
             _ => initialChar,
           };
-          // 첫 글자의 자음을 추출해서 _scrollbarList에 추가, 쌍자음은 자음으로 변환
-          if (_scrollbarList.where((w) => w.str == normalizedInitial).isEmpty) {
-            _scrollbarList.add(ScrollbarItemData(str: normalizedInitial, offsetY: 0));
-          }
-          return 0;
+          // // 첫 글자의 자음을 추출해서 _scrollbarList에 추가, 쌍자음은 자음으로 변환
+          // if (_scrollbarList.where((w) => w.str == normalizedInitial).isEmpty) {
+          //   _scrollbarList.add(ScrollbarItemData(str: normalizedInitial, offsetY: 0));
+          // }
+          return 1;
         }
         if ((first >= 0x41 && first <= 0x5A) || (first >= 0x61 && first <= 0x7A)) {
           // 영어
           final upperChar = s[0].toUpperCase();
-          if (_scrollbarList.where((w) => w.str == upperChar).isEmpty) {
-            _scrollbarList.add(ScrollbarItemData(str: upperChar, offsetY: 0));
-          }
-          return 1;
-        }
-        if (first >= 0x30 && first <= 0x39) {
-          // 숫자
-          if (_scrollbarList.where((w) => w.str == '1').isEmpty) {
-            _scrollbarList.add(ScrollbarItemData(str: '1', offsetY: 0));
-          }
+          // if (_scrollbarList.where((w) => w.str == upperChar).isEmpty) {
+          //   _scrollbarList.add(ScrollbarItemData(str: upperChar, offsetY: 0));
+          // }
           return 2;
         }
 
         // 특수문자
-        if (_scrollbarList.where((w) => w.str == '#').isEmpty) {
-          _scrollbarList.add(ScrollbarItemData(str: '#', offsetY: 0));
-        }
+        // if (_scrollbarList.where((w) => w.str == '#').isEmpty) {
+        //   _scrollbarList.add(ScrollbarItemData(str: '#', offsetY: 0));
+        // }
         return 3;
       }
 
@@ -192,6 +193,9 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                 String? sns = _testers[index - 1].sns;
                 String? link = _testers[index - 1].link;
 
+                String? snsType = sns?.split(' ')[0].toLowerCase();
+                String? snsId = sns?.split(' ')[1];
+
                 return KeyedSubtree(
                   key: GlobalObjectKey(index - 1),
                   child: Padding(
@@ -231,10 +235,43 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                     nickname,
                                     style: CoconutTypography.body1_16_Bold,
                                   ),
-                                  Text(
-                                    sns ?? ' ',
-                                    style:
-                                        CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                  Row(
+                                    children: [
+                                      if (snsType != null) ...[
+                                        if (snsType == 'x')
+                                          SvgPicture.network(
+                                            'https://cdn.simpleicons.org/x/B7B7B7',
+                                            width: 12,
+                                            height: 12,
+                                          ),
+                                        if (snsType == 'discord')
+                                          SvgPicture.network(
+                                            'https://cdn.simpleicons.org/discord/B7B7B7',
+                                            width: 12,
+                                            height: 12,
+                                          ),
+                                        if (snsType == 'youtube')
+                                          SvgPicture.network(
+                                            'https://cdn.simpleicons.org/youtube/B7B7B7',
+                                            width: 12,
+                                            height: 12,
+                                          ),
+                                        CoconutLayout.spacing_100w,
+                                      ],
+                                      Text(
+                                        snsId ?? ' ',
+                                        style: CoconutTypography.body3_12
+                                            .setColor(CoconutColors.gray400),
+                                      ),
+                                      if (link != null) ...[
+                                        CoconutLayout.spacing_100w,
+                                        SvgPicture.asset(
+                                          'assets/svg/clip.svg',
+                                          width: 12,
+                                          height: 12,
+                                        ),
+                                      ]
+                                    ],
                                   ),
                                   CoconutLayout.spacing_100h,
                                   Text(
