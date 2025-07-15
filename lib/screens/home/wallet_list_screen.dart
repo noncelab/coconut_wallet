@@ -53,7 +53,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
-  bool _isDropdownMenuVisible = false;
+  late ValueNotifier<bool> _isDropdownMenuVisible;
   late ScrollController _scrollController;
 
   DateTime? _lastPressedAt;
@@ -233,6 +233,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     super.initState();
 
     _scrollController = ScrollController();
+    _isDropdownMenuVisible = ValueNotifier<bool>(false);
 
     _dropdownActions = [
       () => CommonBottomSheets.showBottomSheet_90(
@@ -295,6 +296,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   @override
   void dispose() {
     _scrollController.dispose();
+    _isDropdownMenuVisible.dispose();
     super.dispose();
   }
 
@@ -679,16 +681,21 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildDropdownBackdrop() {
-    return _isDropdownMenuVisible
-        ? Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                _setPulldownMenuVisiblility(false);
-              },
-            ),
-          )
-        : Container();
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isDropdownMenuVisible,
+      builder: (context, isVisible, child) {
+        return isVisible
+            ? Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    _setPulldownMenuVisiblility(false);
+                  },
+                ),
+              )
+            : Container();
+      },
+    );
   }
 
   Widget _buildDropdownMenu() {
@@ -697,34 +704,39 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return Positioned(
         top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
         right: 20,
-        child: Visibility(
-          visible: _isDropdownMenuVisible,
-          child: CoconutPulldownMenu(
-            shadowColor: CoconutColors.gray800,
-            dividerColor: CoconutColors.gray800,
-            entries: [
-              CoconutPulldownMenuGroup(
-                groupTitle: t.tool,
-                items: [
-                  if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
-                  CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
-                  if (NetworkType.currentNetworkType.isTestnet)
-                    CoconutPulldownMenuItem(title: t.tutorial),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _isDropdownMenuVisible,
+          builder: (context, isVisible, child) {
+            return Visibility(
+              visible: isVisible,
+              child: CoconutPulldownMenu(
+                shadowColor: CoconutColors.gray800,
+                dividerColor: CoconutColors.gray800,
+                entries: [
+                  CoconutPulldownMenuGroup(
+                    groupTitle: t.tool,
+                    items: [
+                      if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
+                      CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
+                      if (NetworkType.currentNetworkType.isTestnet)
+                        CoconutPulldownMenuItem(title: t.tutorial),
+                    ],
+                  ),
+                  CoconutPulldownMenuItem(title: t.settings),
+                  CoconutPulldownMenuItem(title: t.view_app_info),
                 ],
+                dividerHeight: 1,
+                thickDividerHeight: 3,
+                thickDividerIndexList: [
+                  _getThickDividerIndex(showGlossary),
+                ],
+                onSelected: ((index, selectedText) {
+                  _setPulldownMenuVisiblility(false);
+                  _handleDropdownSelection(index, showGlossary);
+                }),
               ),
-              CoconutPulldownMenuItem(title: t.settings),
-              CoconutPulldownMenuItem(title: t.view_app_info),
-            ],
-            dividerHeight: 1,
-            thickDividerHeight: 3,
-            thickDividerIndexList: [
-              _getThickDividerIndex(showGlossary),
-            ],
-            onSelected: ((index, selectedText) {
-              _setPulldownMenuVisiblility(false);
-              _handleDropdownSelection(index, showGlossary);
-            }),
-          ),
+            );
+          },
         ));
   }
 
@@ -835,8 +847,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   void _setPulldownMenuVisiblility(bool value) {
-    setState(() {
-      _isDropdownMenuVisible = value;
-    });
+    _isDropdownMenuVisible.value = value;
   }
 }
