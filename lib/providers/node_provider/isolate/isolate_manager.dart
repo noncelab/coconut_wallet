@@ -160,7 +160,7 @@ class IsolateManager {
     try {
       _mainFromIsolateReceivePort!.listen(
         (message) {
-          if (message is List && message.length > 1) {
+          if (message is List && message.isNotEmpty) {
             _handleIsolateManagerMessage(message);
           }
         },
@@ -196,10 +196,10 @@ class IsolateManager {
     }
 
     final isolateManagerMessage = message[0] as IsolateManagerCommand;
-    final params = message[1];
+    final params = message.length > 1 ? message[1] : null;
 
     switch (isolateManagerMessage) {
-      case IsolateManagerCommand.initialize:
+      case IsolateManagerCommand.initializationCompleted:
         if (params is SendPort) {
           _mainToIsolateSendPort = params;
 
@@ -211,6 +211,22 @@ class IsolateManager {
               Logger.error('IsolateManager: Error completing initialization: $e');
             }
           }
+        }
+        break;
+
+      case IsolateManagerCommand.initializationFailed:
+        Logger.error('IsolateManager: Initialization failed message received');
+
+        // 즉시 노드 동기화 상태를 실패로 설정
+        if (_stateController != null && !_stateController!.isClosed) {
+          final stateMessage = IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToFailed, []);
+          _stateController!.add(stateMessage);
+        }
+
+        if (_isolateReady != null && !_isolateReady!.isCompleted) {
+          try {
+            _isolateReady!.completeError(Exception('IsolateManager: Initialization failed'));
+          } catch (_) {}
         }
         break;
 
@@ -248,17 +264,18 @@ class IsolateManager {
     try {
       final isConnected = await electrumService.connect(data.host, data.port, ssl: data.ssl);
 
-      if (!isConnected) {
-        Logger.error("Isolate: Failed to connect to Electrum server");
-        return;
-      }
-
       final isolateController =
           IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
 
+      if (!isConnected) {
+        Logger.error("Isolate: Failed to connect to Electrum server");
+        data.isolateToMainSendPort.send([IsolateManagerCommand.initializationFailed]);
+        return; // throw 대신 return으로 변경
+      }
+
       // 모든 초기화 완료 후 메시지 전송
-      data.isolateToMainSendPort
-          .send([IsolateManagerCommand.initialize, isolateFromMainReceivePort.sendPort]);
+      data.isolateToMainSendPort.send(
+          [IsolateManagerCommand.initializationCompleted, isolateFromMainReceivePort.sendPort]);
 
       isolateFromMainReceivePort.listen((message) async {
         if (message is List && message.length == 3) {
@@ -272,7 +289,12 @@ class IsolateManager {
         Logger.error("Isolate: ReceivePort error: $error");
       });
     } catch (e) {
-      Logger.error("Isolate: ERROR during parallel initialization: $e");
+      Logger.error("Isolate: ERROR during initialization: $e");
+      try {
+        data.isolateToMainSendPort.send([IsolateManagerCommand.initializationFailed]);
+      } catch (sendError) {
+        Logger.error("Isolate: Failed to send initializationFailed message: $sendError");
+      }
       return;
     }
   }

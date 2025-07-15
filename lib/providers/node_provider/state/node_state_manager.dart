@@ -240,11 +240,14 @@ class NodeStateManager implements StateManagerInterface {
         case IsolateStateMethod.addWalletCompletedAllStates:
           addWalletCompletedAllStates(params[0]);
           break;
-        case IsolateStateMethod.setMainClientSyncingState:
-          setMainClientSyncingState();
+        case IsolateStateMethod.setNodeSyncStateToSyncing:
+          setNodeSyncStateToSyncing();
           break;
-        case IsolateStateMethod.setMainClientWaitingState:
-          setMainClientWaitingState();
+        case IsolateStateMethod.setNodeSyncStateToCompleted:
+          setNodeSyncStateToCompleted();
+          break;
+        case IsolateStateMethod.setNodeSyncStateToFailed:
+          setNodeSyncStateToFailed();
           break;
       }
     } catch (e) {
@@ -263,7 +266,7 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   @override
-  void setMainClientSyncingState() {
+  void setNodeSyncStateToSyncing() {
     _setState(
       newConnectionState: NodeSyncState.syncing,
       newUpdatedWallets: null,
@@ -272,7 +275,7 @@ class NodeStateManager implements StateManagerInterface {
   }
 
   @override
-  void setMainClientWaitingState() {
+  void setNodeSyncStateToCompleted() {
     // 등록된 지갑 중 하나라도 syncing 상태인지 확인
     if (!isAllWalletsCompleted()) {
       return;
@@ -280,6 +283,14 @@ class NodeStateManager implements StateManagerInterface {
 
     _setState(
       newConnectionState: NodeSyncState.completed,
+      newUpdatedWallets: null,
+      notify: true,
+    );
+  }
+
+  void setNodeSyncStateToFailed() {
+    _setState(
+      newConnectionState: NodeSyncState.failed,
       newUpdatedWallets: null,
       notify: true,
     );

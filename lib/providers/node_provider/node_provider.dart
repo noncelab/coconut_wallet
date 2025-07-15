@@ -226,6 +226,12 @@ class NodeProvider extends ChangeNotifier {
       }
     } catch (e) {
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
+
+      // 초기화 실패 시 노드 동기화 상태를 실패로 설정
+      if (_stateManager != null) {
+        _stateManager!.setNodeSyncStateToFailed();
+      }
+
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         try {
           _initCompleter!.completeError(e);

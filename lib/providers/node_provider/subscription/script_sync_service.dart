@@ -114,7 +114,7 @@ class ScriptSyncService {
       Logger.error('Failed to handle script status change: $e');
       Logger.error('Stack trace: $stackTrace');
       // 오류 발생 시에도 상태 초기화
-      _stateManager.setMainClientWaitingState();
+      _stateManager.setNodeSyncStateToCompleted();
     }
   }
 
@@ -173,7 +173,7 @@ class ScriptSyncService {
       Logger.error('Failed to handle batch script status change: $e');
       Logger.error('Stack trace: $stackTrace');
       _stateManager.initWalletUpdateStatus(walletItem.id);
-      _stateManager.setMainClientWaitingState();
+      _stateManager.setNodeSyncStateToCompleted();
     }
   }
 }

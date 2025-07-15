@@ -70,6 +70,11 @@ class IsolateInitializer {
       transactionRecordService,
     );
 
+    // 소켓 연결 종료 시 상태 콜백
+    electrumService.setOnConnectionLostCallback(() {
+      isolateStateManager.setNodeSyncStateToFailed();
+    });
+
     return isolateController;
   }
 }
