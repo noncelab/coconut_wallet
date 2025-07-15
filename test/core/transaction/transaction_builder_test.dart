@@ -9,6 +9,7 @@ import '../../mock/wallet_mock.dart';
 void main() {
   late SinglesigWalletListItem wallet = WalletMock.createSingleSigWalletItem();
 
+  /// utxo_selector에서 amount순으로 정렬됨
   late List<UtxoState> availableUtxos = [
     UtxoState(
       transactionHash: 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
@@ -31,6 +32,10 @@ void main() {
   ];
   int sumOfBalance = availableUtxos.map((utxo) => utxo.amount).reduce((a, b) => a + b);
   Map<String, int> singleRecipient = {'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 50000};
+  Map<String, int> singleRecipientEdgeBalance = {
+    'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 199999
+  };
+
   Map<String, int> singleRecipientSameBalance = {
     'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': sumOfBalance,
   };
@@ -69,6 +74,25 @@ void main() {
       expect(result.estimatedFee, 141);
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
+      expect(result.selectedUtxos!.length, 1);
+    });
+
+    test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성', () {
+      final TransactionBuildResult result = TransactionBuilder(
+        availableUtxos: availableUtxos,
+        recipients: singleRecipientEdgeBalance,
+        feeRate: 1.0,
+        changeDerivationPath: "m/84'/1'/0'/0/0",
+        walletListItemBase: wallet,
+        isFeeSubtractedFromAmount: false,
+        isUtxoFixed: false,
+      ).build();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.estimatedFee, 141 + 68);
+      expect(result.transaction, isNotNull);
+      expect(result.selectedUtxos, isNotNull);
+      expect(result.selectedUtxos!.length, 2);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
