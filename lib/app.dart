@@ -23,6 +23,7 @@ import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dar
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
@@ -237,6 +238,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         ),
                       ),
             routes: {
+              '/wallet-list': (context) => const WalletListScreen(),
               '/wallet-add-scanner': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(
