@@ -95,12 +95,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       },
       child: Selector<
           WalletListViewModel,
-          Tuple7<List<WalletListItemBase>, bool, bool, bool, bool, Map<int, AnimatedBalanceData>,
+          Tuple6<List<WalletListItemBase>, bool, bool, bool, Map<int, AnimatedBalanceData>,
               Tuple2<int?, Map<int, dynamic>>>>(
-        selector: (_, vm) => Tuple7(
+        selector: (_, vm) => Tuple6(
             vm.walletItemList,
             vm.isNetworkOn ?? false,
-            vm.isBalanceHidden,
             vm.shouldShowLoadingIndicator,
             vm.isTermsShortcutVisible,
             vm.walletBalanceMap,
@@ -110,10 +109,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
           final walletListItem = data.item1;
           final isOffline = !data.item2;
-          final isBalanceHidden = data.item3;
-          final shouldShowLoadingIndicator = data.item4;
-          final isTermsShortcutVisible = data.item5;
-          final walletBalanceMap = data.item6;
+          final shouldShowLoadingIndicator = data.item3;
+          final isTermsShortcutVisible = data.item4;
+          final walletBalanceMap = data.item5;
 
           if (viewModel.isWalletListChanged(
               _previousWalletList, walletListItem, walletBalanceMap)) {
@@ -163,7 +161,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                             )),
                           // 지갑 목록
                           _buildSliverAnimatedList(walletListItem, walletBalanceMap,
-                              isBalanceHidden, (id) => viewModel.getFakeBalance(id)),
+                              (id) => viewModel.getFakeBalance(id)),
                         ]),
                     _buildOfflineWarningBar(context, isOffline),
                     _buildDropdownBackdrop(),
@@ -366,11 +364,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     }
   }
 
-  Widget _buildSliverAnimatedList(
-      List<WalletListItemBase> walletList,
-      Map<int, AnimatedBalanceData> walletBalanceMap,
-      bool isBalanceHidden,
-      FakeBalanceGetter getFakeBalance) {
+  Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
+      Map<int, AnimatedBalanceData> walletBalanceMap, FakeBalanceGetter getFakeBalance) {
     return SliverAnimatedList(
       key: _walletListKey,
       initialItemCount: walletList.length,
@@ -380,7 +375,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               walletList[index],
               animation,
               walletBalanceMap[walletList[index].id] ?? AnimatedBalanceData(0, 0),
-              isBalanceHidden,
               getFakeBalance(walletList[index].id),
               index == walletList.length - 1);
         }
@@ -389,13 +383,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletItem(
-      WalletListItemBase wallet,
-      Animation<double> animation,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      int? fakeBalance,
-      bool isLastItem) {
+  Widget _buildWalletItem(WalletListItemBase wallet, Animation<double> animation,
+      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
     return Column(
@@ -406,7 +395,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             Key(wallet.id.toString()),
             wallet,
             animatedBalanceData,
-            isBalanceHidden,
             fakeBalance,
             isLastItem,
           ),
@@ -416,13 +404,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget? _getWalletRowItem(
-      Key key,
-      WalletListItemBase walletItem,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      int? fakeBalance,
-      bool isLastItem) {
+  Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
+      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
     final WalletListItemBase(
       id: id,
       name: name,
@@ -435,9 +418,12 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       signers = (walletItem as MultisigWalletListItem).signers;
     }
 
-    return Selector<PreferenceProvider, bool>(
-        selector: (_, viewModel) => viewModel.isBtcUnit,
-        builder: (context, isBtcUnit, child) {
+    return Selector2<PreferenceProvider, WalletListViewModel, Tuple2<bool, bool>>(
+        selector: (_, preferenceProvider, viewModel) =>
+            Tuple2(preferenceProvider.isBtcUnit, viewModel.isBalanceHidden),
+        builder: (context, data, child) {
+          final isBtcUnit = data.item1;
+          final isBalanceHidden = data.item2;
           return WalletItemCard(
               key: key,
               id: id,
