@@ -18,7 +18,7 @@ class CoconutCrewScreen extends StatefulWidget {
 class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
   // final ScrollController _scrollController = ScrollController();
   List<BetaTester> _testers = [];
-  final List<ScrollbarItemData> _scrollbarList = [];
+  // final List<ScrollbarItemData> _scrollbarList = [];
 
   @override
   void initState() {
