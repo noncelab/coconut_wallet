@@ -477,16 +477,16 @@ errors:
   broadcast_error: "Failed to broadcast transaction."
   network_connect: "No network connection."
   network_not_found: "Network is not connected!"
-  insufficient_balance: "Insufficient balance."
+  insufficient_balance: "Insufficient balance"
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"
     recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."
     insufficient_utxo: "Insufficient UTXO total"
   address_error:
-    invalid: "Not a valid address."
-    not_for_testnet: "Not a testnet address."
-    not_for_mainnet: "Not a mainnet address."
-    not_for_regtest: "Not a regtest address."
+    invalid: "Not a valid address"
+    not_for_testnet: "Not a testnet address"
+    not_for_mainnet: "Not a mainnet address"
+    not_for_regtest: "Not a regtest address"
     duplicated: "Address already entered"
   pin_check_error:
     trial_count: "You can try $count more times"
