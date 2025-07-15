@@ -137,7 +137,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                               FixedBottomButton(
                                 onButtonClicked: () async {
                                   await viewModel.applyTempDatasToWallets();
-                                  viewModel.setEditMode(false);
                                 },
                                 isActive:
                                     viewModel.hasFavoriteChanged || viewModel.hasWalletOrderChanged,

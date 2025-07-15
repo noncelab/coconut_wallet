@@ -211,37 +211,44 @@ class WalletListViewModel extends ChangeNotifier {
   Future<void> applyTempDatasToWallets() async {
     if (!hasWalletOrderChanged && !hasFavoriteChanged) return;
 
-    if (hasWalletOrderChanged) {
-      // 삭제 여부 판단
-      if (tempWalletOrder.length != _preferenceProvider.walletOrder.length) {
-        setLoadingNotifier(true);
+    final deletedWalletIds =
+        _preferenceProvider.walletOrder.where((id) => !tempWalletOrder.contains(id)).toList();
+    await _handleAuthFlow(
+      onComplete: () async {
+        if (hasWalletOrderChanged) {
+          // 삭제 여부 판단
+          if (tempWalletOrder.length != _preferenceProvider.walletOrder.length) {
+            setLoadingNotifier(true);
 
-        final deletedWalletIds =
-            _preferenceProvider.walletOrder.where((id) => !tempWalletOrder.contains(id)).toList();
+            await _deleteWallets(deletedWalletIds);
+            setLoadingNotifier(false);
+          }
+          await _preferenceProvider.setWalletOrder(tempWalletOrder);
 
-        await _handleAuthFlow(onComplete: () async {
-          await _deleteWallets(deletedWalletIds);
-        });
-        setLoadingNotifier(false);
-      } else {
-        await _preferenceProvider.setWalletOrder(tempWalletOrder);
-      }
-
-      final walletMap = {for (var wallet in walletItemList) wallet.id: wallet};
-      _walletProvider.walletItemListNotifier.value =
-          tempWalletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
-    }
-    if (hasFavoriteChanged) {
-      await _preferenceProvider.setFavoriteWalletIds(tempFavoriteWalletIds);
-      _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
-    }
-
-    notifyListeners();
+          final walletMap = {for (var wallet in walletItemList) wallet.id: wallet};
+          _walletProvider.walletItemListNotifier.value =
+              tempWalletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+        }
+        if (hasFavoriteChanged) {
+          await _preferenceProvider.setFavoriteWalletIds(tempFavoriteWalletIds);
+          _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
+        }
+        setEditMode(false);
+        notifyListeners();
+      },
+      hasWalletDeleted: deletedWalletIds.isNotEmpty,
+    );
   }
 
   VoidCallback? _pendingAuthCompleteCallback;
 
-  Future<void> _handleAuthFlow({required VoidCallback onComplete}) async {
+  Future<void> _handleAuthFlow(
+      {required VoidCallback onComplete, required bool hasWalletDeleted}) async {
+    if (!hasWalletDeleted) {
+      // 지갑이 삭제된 경우가 아니라면 pinCheck 생략
+      onComplete();
+      return;
+    }
     if (!_authProvider.isAuthEnabled) {
       onComplete();
       return;
@@ -254,6 +261,7 @@ class WalletListViewModel extends ChangeNotifier {
 
     _pendingAuthCompleteCallback = onComplete;
     setPincheckNotifier(true);
+    notifyListeners();
   }
 
   void handleAuthCompletion() {
