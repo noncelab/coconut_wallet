@@ -498,6 +498,7 @@ errors:
   broadcast_error: "트랜잭션 전송에 실패했습니다."
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
+  electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요."
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
     insufficient_balance: "잔액이 부족하여 수수료를 낼 수 없어요"

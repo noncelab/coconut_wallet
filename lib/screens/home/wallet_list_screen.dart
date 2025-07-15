@@ -6,6 +6,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -95,11 +96,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       },
       child: Selector<
           WalletListViewModel,
-          Tuple6<List<WalletListItemBase>, bool, bool, bool, Map<int, AnimatedBalanceData>,
+          Tuple6<List<WalletListItemBase>, NetworkStatus, bool, bool, Map<int, AnimatedBalanceData>,
               Tuple2<int?, Map<int, dynamic>>>>(
         selector: (_, vm) => Tuple6(
             vm.walletItemList,
-            vm.isNetworkOn ?? false,
+            vm.networkStatus,
             vm.shouldShowLoadingIndicator,
             vm.isTermsShortcutVisible,
             vm.walletBalanceMap,
@@ -108,7 +109,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
           final walletListItem = data.item1;
-          final isOffline = !data.item2;
+          final networkStatus = data.item2;
           final shouldShowLoadingIndicator = data.item3;
           final isTermsShortcutVisible = data.item4;
           final walletBalanceMap = data.item5;
@@ -137,10 +138,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           _buildAppBar(viewModel),
                           // pull to refresh시 로딩 인디케이터를 보이기 위함
                           CupertinoSliverRefreshControl(
-                            onRefresh: viewModel.updateWalletBalances,
+                            onRefresh: viewModel.onRefresh,
                           ),
                           _buildLoadingIndicator(viewModel),
-                          _buildPadding(isOffline),
+                          _buildPadding(networkStatus),
                           if (NetworkType.currentNetworkType == NetworkType.mainnet)
                             _buildDonationBanner(),
                           if (!shouldShowLoadingIndicator)
@@ -163,7 +164,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           _buildSliverAnimatedList(walletListItem, walletBalanceMap,
                               (id) => viewModel.getFakeBalance(id)),
                         ]),
-                    _buildOfflineWarningBar(context, isOffline),
+                    _buildNetworkWarningBar(context, networkStatus),
                     _buildDropdownBackdrop(),
                     _buildDropdownMenu(),
                   ],
@@ -181,7 +182,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return preferenceProvider.language == 'kr';
   }
 
-  Positioned _buildOfflineWarningBar(BuildContext context, bool isOffline) {
+  Positioned _buildNetworkWarningBar(BuildContext context, NetworkStatus networkStatus) {
+    final shouldShow = networkStatus != NetworkStatus.online;
+
+    String message;
+    switch (networkStatus) {
+      case NetworkStatus.offline:
+        message = t.errors.network_not_found;
+        break;
+      case NetworkStatus.connectionFailed:
+        message = t.errors.electrum_connection_failed;
+        break;
+      case NetworkStatus.online:
+        message = '';
+        break;
+    }
+
     return Positioned(
       top: kToolbarHeight + MediaQuery.of(context).padding.top,
       left: 0,
@@ -189,7 +205,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       child: AnimatedContainer(
         duration: kOfflineWarningBarDuration,
         curve: Curves.easeOut,
-        height: isOffline ? kOfflineWarningBarHeight : 0.0,
+        height: shouldShow ? kOfflineWarningBarHeight : 0.0,
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         color: CoconutColors.hotPink,
@@ -199,7 +215,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             SvgPicture.asset('assets/svg/triangle-warning.svg'),
             CoconutLayout.spacing_100w,
             Text(
-              t.errors.network_not_found,
+              message,
               style: CoconutTypography.body3_12,
             ),
           ],
@@ -216,12 +232,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildPadding(bool isOffline) {
+  Widget _buildPadding(NetworkStatus networkStatus) {
     const kDefaultPadding = Sizes.size12;
+    final shouldShow = networkStatus != NetworkStatus.online;
     return SliverToBoxAdapter(
         child: AnimatedContainer(
             duration: kOfflineWarningBarDuration,
-            height: isOffline ? kOfflineWarningBarHeight + kDefaultPadding : kDefaultPadding,
+            height: shouldShow ? kOfflineWarningBarHeight + kDefaultPadding : kDefaultPadding,
             curve: Curves.easeInOut,
             child: const SizedBox()));
   }
@@ -304,7 +321,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<NodeProvider>(context, listen: false).syncStateStream,
+      Provider.of<NodeProvider>(context, listen: false),
     );
     return _viewModel;
   }
