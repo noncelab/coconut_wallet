@@ -54,9 +54,7 @@ import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
-import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
@@ -70,7 +68,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late String kDonationAddress;
   static late NetworkType kNetworkType;
-  static FirebaseAnalyticsObserver observer =
+  static FirebaseAnalyticsObserver firebaseAnalyticsObserver =
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance);
 
   const CoconutWalletApp({super.key});
@@ -186,7 +184,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ],
         child: TranslationProvider(
           child: CupertinoApp(
-            navigatorObservers: [routeObserver],
+            navigatorObservers: [routeObserver, CoconutWalletApp.firebaseAnalyticsObserver],
             localizationsDelegates: const [
               DefaultMaterialLocalizations.delegate,
               DefaultWidgetsLocalizations.delegate,
