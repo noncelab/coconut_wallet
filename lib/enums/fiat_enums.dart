@@ -5,15 +5,16 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 
 import '../utils/balance_format_util.dart';
 
-enum CurrencyCode {
+enum FiatCode {
   KRW('KRW', 'South Korean Won', '₩'),
+  USD('USD', 'US Dollar', '\$'),
   ;
 
   final String code; // ISO 4217 코드
   final String fullName; // 통화 이름
   final String symbol;
 
-  const CurrencyCode(this.code, this.fullName, this.symbol);
+  const FiatCode(this.code, this.fullName, this.symbol);
 
   // 메서드 추가 가능
   String description() {

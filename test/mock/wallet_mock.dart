@@ -13,7 +13,7 @@ class WalletMock {
 
     return SinglesigWalletListItem(
       id: id,
-      name: name,
+      name: name + id.toString(),
       colorIndex: 0,
       iconIndex: 0,
       descriptor: descriptor,

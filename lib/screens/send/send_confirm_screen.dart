@@ -1,5 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -49,6 +49,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                   context: context,
                   isActive: true,
                   usePrimaryActiveColor: true,
+                  nextButtonTitle: t.next,
                   onNextPressed: () {
                     context.loaderOverlay.show();
                     viewModel.setTxWaitingForSign();

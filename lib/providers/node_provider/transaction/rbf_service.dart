@@ -22,7 +22,7 @@ class RbfService {
   RbfService(this._transactionRepository, this._utxoRepository, this._electrumService);
 
   /// RBF를 보내는 지갑 관점에서 이미 소비한 UTXO를 다시 소비하는지 확인
-  Future<RbfInfo?> detectSendingRbfTransaction(int walletId, Transaction tx) async {
+  Future<RbfInfo?> detectOutgoingRbfTransaction(int walletId, Transaction tx) async {
     // 이미 RBF 내역이 있는지 확인
     if (hasExistingRbfHistory(walletId, tx.transactionHash)) {
       return null; // 이미 RBF로 등록된 트랜잭션
@@ -100,23 +100,24 @@ class RbfService {
 
   /// RBF를 받는 지갑 관점에서 Incoming 상태의 UTXO 트랜잭션이 유효한지 확인,
   /// RBF 발견 시 대체된 트랜잭션의 해시를 반환
-  Future<String?> detectReceivingRbfTransaction(
+  Future<String?> detectIncomingRbfTransaction(
     int walletId,
     Transaction tx,
   ) async {
-    List<UtxoState> incomingUtxoList =
-        _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.incoming);
+    List<UtxoState> unconfirmedUtxoList =
+        _utxoRepository.getUtxoStateList(walletId).where((utxo) => utxo.isPending).toList();
 
-    incomingUtxoList =
-        incomingUtxoList.where((utxo) => utxo.transactionHash != tx.transactionHash).toList();
+    // 현재 페칭 중인 트랜잭션은 제외
+    unconfirmedUtxoList =
+        unconfirmedUtxoList.where((utxo) => utxo.transactionHash != tx.transactionHash).toList();
 
-    // 수신 중인 UTXO가 없으면 RBF 대상이 아님
-    if (incomingUtxoList.isEmpty) {
+    // 펜딩 중인 UTXO가 없으면 RBF 대상이 아님
+    if (unconfirmedUtxoList.isEmpty) {
       return null;
     }
 
-    for (final utxo in incomingUtxoList) {
-      // 이미 확인된 트랜잭션은 RBF 대상이 아님
+    for (final utxo in unconfirmedUtxoList) {
+      // 이미 컨펌된 트랜잭션은 RBF 대상이 아님
       final txRecord = _transactionRepository.getTransactionRecord(walletId, utxo.transactionHash);
       if (txRecord == null || txRecord.blockHeight > 0) {
         continue;

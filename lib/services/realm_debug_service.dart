@@ -31,10 +31,6 @@ class RealmDebugService {
 
   /// Realm 쿼리 실행
   List<Map<String, dynamic>> executeQuery(String tableName, String query) {
-    if (!realmManager.isInitialized) {
-      throw Exception('RealmManager가 초기화되지 않았습니다.');
-    }
-
     final realm = realmManager.realm;
     return _queryByTableType(realm, tableName, query);
   }
@@ -240,10 +236,6 @@ class RealmDebugService {
 
   /// 실제 데이터를 기반으로 한 동적 쿼리 예제들
   List<String> getDynamicQueryExamples(String tableName) {
-    if (!realmManager.isInitialized) {
-      return ['TRUEPREDICATE'];
-    }
-
     final realm = realmManager.realm;
     List<String> examples = ['TRUEPREDICATE'];
 
@@ -343,8 +335,6 @@ class RealmDebugService {
 
   /// 테이블 통계 정보 조회
   Map<String, int> getTableStatistics() {
-    if (!realmManager.isInitialized) return {};
-
     final realm = realmManager.realm;
     return {
       'RealmWalletBase': realm.all<RealmWalletBase>().length,
@@ -366,10 +356,6 @@ class RealmDebugService {
 
   /// 트랜잭션 데이터 업데이트
   Future<void> updateTransactionData(Map<String, dynamic> updatedData) async {
-    if (!realmManager.isInitialized) {
-      throw Exception('RealmManager가 초기화되지 않았습니다.');
-    }
-
     final realm = realmManager.realm;
 
     realm.write(() {

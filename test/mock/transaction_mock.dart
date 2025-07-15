@@ -75,8 +75,10 @@ class TransactionMock {
     required int amount,
     String? inputTransactionHash,
     bool isCoinbase = false,
+    ({int amount, String address})? change,
   }) {
     List<TransactionInput> inputs = [];
+    List<TransactionOutput> outputs = [];
 
     if (isCoinbase) {
       inputs.add(TransactionInput.forPayment(
@@ -86,9 +88,11 @@ class TransactionMock {
           TransactionInput.forPayment(inputTransactionHash ?? Hash.sha256('$toAddress$amount'), 0));
     }
 
-    List<TransactionOutput> outputs = [
-      TransactionOutput.forPayment(amount, toAddress),
-    ];
+    outputs.add(TransactionOutput.forPayment(amount, toAddress));
+
+    if (change != null) {
+      outputs.add(TransactionOutput.forPayment(change.amount, change.address));
+    }
 
     return Transaction.withInputsAndOutputs(inputs, outputs, AddressType.p2wpkh);
   }

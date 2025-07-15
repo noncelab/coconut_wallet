@@ -1,0 +1,7 @@
+/// flavor 별로 앱 이름이나 권한 설명을 동적으로 설정하고 있으므로
+/// 이 파일은 사용되지 않습니다.
+/// Xcode - (Targets) Runner - Build Phases - Run Script을 확인해주세요.
+
+CFBundleDisplayName = "Coconut Wallet";
+NSCameraUsageDescription = "Camera access is required for QR code scanning.";
+NSFaceIDUsageDescription = "Face ID is required to unlock the app.";

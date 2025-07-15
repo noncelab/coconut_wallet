@@ -5,7 +5,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -143,13 +143,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           ),
                           _buildLoadingIndicator(viewModel),
                           _buildPadding(isOffline),
-                          //if (NetworkType.currentNetworkType == NetworkType.mainnet)
-                          _buildDonationBanner(),
+                          if (NetworkType.currentNetworkType == NetworkType.mainnet)
+                            _buildDonationBanner(),
                           if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
                                 child: Column(
                               children: [
-                                if (isTermsShortcutVisible)
+                                if (isTermsShortcutVisible && _isKoreanLanguage())
                                   GlossaryShortcutCard(
                                     onTap: () {
                                       CommonBottomSheets.showBottomSheet_90(
@@ -176,6 +176,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         },
       ),
     );
+  }
+
+  bool _isKoreanLanguage() {
+    final preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
+    return preferenceProvider.language == 'kr';
   }
 
   Positioned _buildOfflineWarningBar(BuildContext context, bool isOffline) {
@@ -687,6 +692,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildDropdownMenu() {
+    final bool showGlossary = _isKoreanLanguage();
+
     return Positioned(
         top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
         right: 20,
@@ -699,7 +706,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               CoconutPulldownMenuGroup(
                 groupTitle: t.tool,
                 items: [
-                  CoconutPulldownMenuItem(title: t.glossary),
+                  if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
                   CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
                   if (NetworkType.currentNetworkType.isTestnet)
                     CoconutPulldownMenuItem(title: t.tutorial),
@@ -711,19 +718,44 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             dividerHeight: 1,
             thickDividerHeight: 3,
             thickDividerIndexList: [
-              NetworkType.currentNetworkType.isTestnet ? 2 : 1,
+              _getThickDividerIndex(showGlossary),
             ],
             onSelected: ((index, selectedText) {
-              // 메인넷의 경우 튜토리얼 항목을 넘어간다.
-              if (!NetworkType.currentNetworkType.isTestnet && index >= 2) {
-                ++index;
-              }
-
               _setPulldownMenuVisiblility(false);
-              _dropdownActions[index].call();
+              _handleDropdownSelection(index, showGlossary);
             }),
           ),
         ));
+  }
+
+  /// 용어집 표시 여부에 따른 Thick Divider 인덱스 계산
+  int _getThickDividerIndex(bool showGlossary) {
+    if (NetworkType.currentNetworkType.isTestnet) {
+      // 테스트넷: 용어집, 니모닉, 튜토리얼 → 인덱스 2
+      // 테스트넷 (용어집 없음): 니모닉, 튜토리얼 → 인덱스 1
+      return showGlossary ? 2 : 1;
+    } else {
+      // 메인넷: 용어집, 니모닉 → 인덱스 1
+      // 메인넷 (용어집 없음): 니모닉 → 인덱스 0
+      return showGlossary ? 1 : 0;
+    }
+  }
+
+  /// 드롭다운 선택 처리 (인덱스 조정 포함)
+  void _handleDropdownSelection(int index, bool showGlossary) {
+    int adjustedIndex = index;
+
+    // 용어집이 없는 경우 인덱스 조정
+    if (!showGlossary) {
+      adjustedIndex++;
+    }
+
+    // 메인넷에서 튜토리얼 항목이 없는 경우 추가 조정
+    if (!NetworkType.currentNetworkType.isTestnet && adjustedIndex >= 2) {
+      adjustedIndex++;
+    }
+
+    _dropdownActions[adjustedIndex].call();
   }
 
   Widget _buildWalletIconShrinkButton(
@@ -791,7 +823,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 children: [
                   SvgPicture.asset(svgPath),
                   CoconutLayout.spacing_100h,
-                  Text(scanText, style: CoconutTypography.body2_14),
+                  Text(
+                    scanText,
+                    style: CoconutTypography.body2_14,
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),

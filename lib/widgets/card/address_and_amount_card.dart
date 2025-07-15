@@ -15,12 +15,12 @@ class AddressAndAmountCard extends StatefulWidget {
   final String amount;
   final String? addressPlaceholder;
   final String? amountPlaceholder;
-  final void Function(String address) onAddressChanged;
+  final Future<String> Function(String address) onAddressChanged;
   final void Function(String amount) onAmountChanged;
   final void Function(bool isContentEmpty) onDeleted;
   final VoidCallback? onFocusRequested;
   final VoidCallback? onFocusAfterScanned;
-  final Future<void> Function(String address) validateAddress;
+  final Future<String> Function(String address) validateAddress;
   final bool isRemovable;
   final bool isAddressInvalid;
   final bool isAmountDust;
@@ -209,12 +209,15 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
     );
   }
 
-  void _onAddressChanged(String value) {
+  void _onAddressChanged(String value) async {
     if (value.isEmpty) {
       _addressController.clear();
     }
 
-    widget.onAddressChanged(value);
+    var finalAddress = await widget.onAddressChanged(value);
+    if (finalAddress != _addressController.text) {
+      _addressController.text = finalAddress;
+    }
   }
 
   void _onAmountChanged(String value) {
@@ -239,9 +242,9 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
 
       _isQrDataHandling = true;
 
-      widget.validateAddress(scanData.code!).then((_) {
+      widget.validateAddress(scanData.code!).then((normalizedAddress) {
         if (mounted) {
-          Navigator.pop(context, scanData.code!);
+          Navigator.pop(context, normalizedAddress);
         }
       }).catchError((e) {
         if (mounted) {
@@ -283,9 +286,9 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   Navigator.of(context).pop<String>('');
                 }),
             body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)));
+
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
-      _onAddressChanged(scannedAddress);
       await Future.delayed(
           const Duration(milliseconds: 200), () => _quantityFocusNode.requestFocus());
 

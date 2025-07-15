@@ -1,6 +1,7 @@
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -8,32 +9,51 @@ import 'package:flutter/material.dart';
 
 class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
+  final PreferenceProvider _preferenceProvider;
 
-  /// Upbit 시세 조회용 웹소켓
-  WebSocketService? _upbitWebSocketService;
-  WebSocketService? get upbitWebSocketService => _upbitWebSocketService;
+  /// 현재 통화별 웹소켓 서비스
+  WebSocketService? _currentWebSocketService;
+  WebSocketService? get currentWebSocketService => _currentWebSocketService;
 
   late final VoidCallback _connectivityListener;
+  late final VoidCallback _preferenceListener;
   bool _isPendingConnection = false;
 
+  /// 통화별 가격 저장
   int? _bitcoinPriceKrw;
-  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+  int? _bitcoinPriceUsd;
 
-  PriceProvider(this._connectivityProvider) {
-    Logger.log('UpbitConnectModel: Initialized with connectivity provider');
+  int? get bitcoinPriceKrw => _bitcoinPriceKrw;
+  int? get bitcoinPriceUsd => _bitcoinPriceUsd;
+
+  /// 현재 선택된 통화의 가격
+  int? get currentBitcoinPrice {
+    switch (_preferenceProvider.selectedFiat) {
+      case FiatCode.KRW:
+        return _bitcoinPriceKrw;
+      case FiatCode.USD:
+        return _bitcoinPriceUsd;
+    }
+  }
+
+  PriceProvider(this._connectivityProvider, this._preferenceProvider) {
+    Logger.log('PriceProvider: Initialized with connectivity provider');
 
     _connectivityListener = _onConnectivityChanged;
+    _preferenceListener = _onPreferenceChanged;
+
     _connectivityProvider.addListener(_connectivityListener);
+    _preferenceProvider.addListener(_preferenceListener);
 
     _checkInitialNetworkState();
   }
 
   void _checkInitialNetworkState() {
     if (_connectivityProvider.isNetworkOn == true) {
-      initUpbitWebSocketService();
+      initWebSocketService();
     } else {
       _isPendingConnection = true;
-      Logger.log('UpbitConnectModel: Waiting for network connection');
+      Logger.log('PriceProvider: Waiting for network connection');
     }
   }
 
@@ -41,91 +61,148 @@ class PriceProvider extends ChangeNotifier {
     final isNetworkOn = _connectivityProvider.isNetworkOn;
 
     if (isNetworkOn == true) {
-      if (_isPendingConnection || _upbitWebSocketService == null) {
-        Logger.log('UpbitConnectModel: Network connected');
+      if (_isPendingConnection || _currentWebSocketService == null) {
+        Logger.log('PriceProvider: Network connected');
         _isPendingConnection = false;
-        initUpbitWebSocketService();
+        initWebSocketService();
       }
     } else if (isNetworkOn == false) {
-      Logger.log('UpbitConnectModel: Network disconnected');
+      Logger.log('PriceProvider: Network disconnected');
       _isPendingConnection = true;
-      disposeUpbitWebSocketService();
+      disposeWebSocketService();
     }
   }
 
-  void initUpbitWebSocketService({bool force = false}) {
+  void _onPreferenceChanged() {
+    // 통화가 변경되었을 때 웹소켓 재연결
+    if (_connectivityProvider.isNetworkOn == true) {
+      initWebSocketService(force: true);
+    }
+  }
+
+  void initWebSocketService({bool force = false}) {
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isNetworkOn != true) {
-      Logger.log('UpbitConnectModel: Network not connected');
+      Logger.log('PriceProvider: 네트워크가 연결되지 않아 WebSocket 연결을 보류합니다.');
       _isPendingConnection = true;
       return;
     }
 
     if (force) {
-      disposeUpbitWebSocketService();
+      disposeWebSocketService();
     }
 
-    if (_upbitWebSocketService != null) {
-      Logger.log('UpbitConnectModel: WebSocket already connected');
+    if (_currentWebSocketService != null) {
+      Logger.log('PriceProvider: WebSocket이 이미 연결되어 있습니다.');
       return;
     }
 
-    Logger.log('[Upbit Web Socket] Initialized');
-    _isPendingConnection = false;
+    try {
+      final selectedFiat = _preferenceProvider.selectedFiat;
+      Logger.log('[${selectedFiat.code} WebSocket] 초기화 중...');
+      _isPendingConnection = false;
 
-    _upbitWebSocketService = WebSocketService();
-    _upbitWebSocketService?.tickerStream.listen((ticker) {
-      _bitcoinPriceKrw = ticker?.tradePrice;
-      notifyListeners();
-    }, onError: (error) {
-      Logger.error('UpbitConnectModel: WebSocket stream error: $error');
-    });
+      _currentWebSocketService = WebSocketServiceFactory.create(selectedFiat);
+      _currentWebSocketService?.tickerStream.listen((ticker) {
+        _updatePrice(ticker);
+        notifyListeners();
+      }, onError: (error) {
+        Logger.error('PriceProvider: WebSocket 스트림 오류: $error');
+        // 오류 발생 시 WebSocket 서비스 정리
+        disposeWebSocketService();
+      });
+    } catch (e) {
+      Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
+      _isPendingConnection = true;
+    }
   }
 
-  void disposeUpbitWebSocketService() {
-    if (upbitWebSocketService != null) {
-      upbitWebSocketService?.dispose();
-      _upbitWebSocketService = null;
-      Logger.log('[Upbit Web Socket] Disposed');
+  void _updatePrice(PriceResponse? ticker) {
+    if (ticker == null) return;
+
+    switch (_preferenceProvider.selectedFiat) {
+      case FiatCode.KRW:
+        _bitcoinPriceKrw = ticker.tradePrice;
+        break;
+      case FiatCode.USD:
+        _bitcoinPriceUsd = ticker.tradePrice;
+        break;
+    }
+  }
+
+  void disposeWebSocketService() {
+    if (_currentWebSocketService != null) {
+      try {
+        _currentWebSocketService?.dispose();
+        Logger.log('[${_preferenceProvider.selectedFiat.code} WebSocket] 정리 완료');
+      } catch (e) {
+        Logger.error('PriceProvider: WebSocket 서비스 정리 중 오류: $e');
+      } finally {
+        _currentWebSocketService = null;
+      }
     }
   }
 
   @override
   void dispose() {
     _connectivityProvider.removeListener(_connectivityListener);
-    _upbitWebSocketService?.dispose();
+    _preferenceProvider.removeListener(_preferenceListener);
+    try {
+      _currentWebSocketService?.dispose();
+    } catch (e) {
+      Logger.error('PriceProvider: dispose 중 WebSocket 오류: $e');
+    }
     super.dispose();
   }
 
   // util: 통화 코드를 받아서 가격을 반환 (문자열)
-  String getFiatPrice(int satoshiAmount,
-      {CurrencyCode fiatCode = CurrencyCode.KRW, bool showCurrencySymbol = true}) {
-    if (_bitcoinPriceKrw == null) {
-      return '';
-    }
+  String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) {
+    try {
+      final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
+      final price = _getPriceForFiat(targetFiat);
 
-    if (fiatCode.code == CurrencyCode.KRW.code) {
-      final amount = FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!)
-          .toThousandsSeparatedString();
+      if (price == null) {
+        return '';
+      }
+
+      final amount =
+          FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
 
       if (showCurrencySymbol) {
-        return '${fiatCode.symbol} $amount';
+        return '${targetFiat.symbol} $amount';
       } else {
         return amount;
       }
+    } catch (e) {
+      Logger.error('PriceProvider: getFiatPrice 오류: $e');
+      return '';
     }
-    return '';
   }
 
   // util: 통화 코드를 받아서 가격을 반환 (정수)
-  int? getFiatAmount(int satoshiAmount, [CurrencyCode fiatCode = CurrencyCode.KRW]) {
-    if (_bitcoinPriceKrw == null) {
+  int? getFiatAmount(int satoshiAmount, [FiatCode? fiatCode]) {
+    try {
+      final targetFiat = fiatCode ?? _preferenceProvider.selectedFiat;
+      final price = _getPriceForFiat(targetFiat);
+
+      if (price == null) {
+        return null;
+      }
+
+      return FiatUtil.calculateFiatAmount(satoshiAmount, price);
+    } catch (e) {
+      Logger.error('PriceProvider: getFiatAmount 오류: $e');
       return null;
     }
+  }
 
-    if (fiatCode.code == CurrencyCode.KRW.code) {
-      return FiatUtil.calculateFiatAmount(satoshiAmount, bitcoinPriceKrw!);
+  /// 특정 통화의 가격 반환
+  int? _getPriceForFiat(FiatCode fiatCode) {
+    switch (fiatCode) {
+      case FiatCode.KRW:
+        return _bitcoinPriceKrw;
+      case FiatCode.USD:
+        return _bitcoinPriceUsd;
     }
-    return null;
   }
 }
