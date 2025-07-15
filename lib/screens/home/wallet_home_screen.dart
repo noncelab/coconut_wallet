@@ -634,10 +634,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   bool _checkStateAndShowToast(int id) {
-    if (_viewModel.isNetworkOn != true) {
-      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
-      return false;
-    }
+    // if (_viewModel.isNetworkOn != true) {
+    //   CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+    //   return false;
+    // }
     final walletUpdateInfo = WalletUpdateInfo(id);
     // TODO: 실제 특정 id(대표지갑)의 SyncState와 연동-> 대표지갑 sync가 충족되지 않으면 [보내기] 불가하도록 개선, 아래 조건문도 변경이 필요함
     if (walletUpdateInfo.balance == WalletSyncState.completed &&
@@ -708,9 +708,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
       return;
     }
+
     if (!_checkStateAndShowToast(targetId)) return;
     context.read<SendInfoProvider>().clear();
-    Navigator.pushNamed(context, '/send-address', arguments: {'id': targetId});
+    Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId});
   }
 
   Widget _buildViewAll(int walletCount) {
@@ -724,7 +725,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               defaultColor: CoconutColors.gray800,
               pressedColor: CoconutColors.gray750,
               onPressed: () {
-                // TODO: 지갑 전체보기 화면 이동
                 Navigator.pushNamed(context, '/wallet-list');
               },
               borderRadius: CoconutStyles.radius_200,
