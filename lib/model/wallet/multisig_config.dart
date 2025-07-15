@@ -1,9 +1,9 @@
 class MultisigConfig {
-  final int threshold;
-  final int totalSignature;
+  final int requiredSignature;
+  final int totalSigner;
 
   const MultisigConfig({
-    required this.threshold,
-    required this.totalSignature,
+    required this.requiredSignature,
+    required this.totalSigner,
   });
 }
