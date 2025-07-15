@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:coconut_wallet/widgets/button/key_button.dart';
@@ -16,6 +17,8 @@ class PinInputPad extends StatefulWidget {
   final int step;
   final bool appBarVisible;
   final bool initOptionVisible;
+  final int pinLength;
+  final Widget? centerWidget;
 
   const PinInputPad({
     super.key,
@@ -30,6 +33,8 @@ class PinInputPad extends StatefulWidget {
     required this.step,
     this.appBarVisible = true,
     this.initOptionVisible = false,
+    this.pinLength = 4,
+    this.centerWidget,
   });
 
   @override
@@ -93,22 +98,35 @@ class PinInputPadState extends State<PinInputPad> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                PinBox(isSet: widget.pin.isNotEmpty),
-                const SizedBox(width: 8),
-                PinBox(isSet: widget.pin.length > 1),
-                const SizedBox(width: 8),
-                PinBox(isSet: widget.pin.length > 2),
-                const SizedBox(width: 8),
-                PinBox(isSet: widget.pin.length > 3),
-              ],
+            SizedBox(
+              height: 50,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.pinLength, (index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: PinBox(
+                        isSet: widget.pin.length > index, size: widget.pinLength == 4 ? null : 40),
+                  );
+                }),
+              ),
+            ),
+            if (widget.centerWidget == null)
+              Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Text(widget.errorMessage,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                    textAlign: TextAlign.center),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: SizedBox(height: 40, child: widget.centerWidget ?? const SizedBox()),
             ),
             const SizedBox(height: 16),
-            Text(widget.errorMessage,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
-                textAlign: TextAlign.center),
+            if (widget.centerWidget != null)
+              Text(widget.errorMessage,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                  textAlign: TextAlign.center),
             const SizedBox(height: 40),
             Expanded(
               child: Align(
@@ -130,7 +148,7 @@ class PinInputPadState extends State<PinInputPad> {
                 ),
               ),
             ),
-            SizedBox(height: widget.initOptionVisible ? 60 : 100),
+            SizedBox(height: widget.initOptionVisible ? 40 : 50),
             if (widget.initOptionVisible)
               Padding(
                   padding: const EdgeInsets.only(bottom: 60.0),
@@ -139,7 +157,7 @@ class PinInputPadState extends State<PinInputPad> {
                       widget.onReset?.call();
                     },
                     child: Text(
-                      '비밀번호가 기억나지 않나요?',
+                      t.forgot_password,
                       style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray600),
                       textAlign: TextAlign.center,
                     ),

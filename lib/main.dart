@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/database_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +24,12 @@ void main() {
   if (kReleaseMode) {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
+
+  // 예외를 완전히 무시하는 설정
+  FlutterError.onError = (FlutterErrorDetails details) {
+    Logger.error("Flutter Error (무시됨): ${details.exception}");
+    Logger.log("Stack trace: ${details.stack}");
+  };
 
   runZonedGuarded(() async {
     // This app is designed only to work vertically, so we limit

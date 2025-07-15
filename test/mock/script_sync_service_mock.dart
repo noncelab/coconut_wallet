@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
-import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
@@ -52,6 +52,7 @@ class ScriptSyncServiceMock {
   }
 
   static void init() {
+    NetworkType.setNetworkType(NetworkType.regtest);
     callSubscribeWalletCount = 0;
     electrumService = MockElectrumService();
     stateManager = NodeStateManager(
@@ -60,10 +61,10 @@ class ScriptSyncServiceMock {
       StreamController<Map<int, WalletUpdateInfo>>.broadcast(),
     );
     if (realmManager == null) {
-      realmManager = TestRealmManager()..init(false);
+      realmManager = TestRealmManager();
     } else {
       realmManager!.dispose();
-      realmManager = TestRealmManager()..init(false);
+      realmManager = TestRealmManager();
     }
 
     // 리포지토리 초기화

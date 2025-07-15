@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -29,9 +30,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   late final WalletImportSource _walletImportSource;
   late QrScanDensity _qrScanDensity;
   late double _sliderValue;
-  late double _qrPaddingVertical;
-  late double _qrSize;
-  bool _isQrDensityInitialized = false;
   late bool? _isDonation;
 
   @override
@@ -47,39 +45,34 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     //  (QR스캔성능)    일반 화면        갤폴드 접은 화면
     //     볼트           상                상
     //    키스톤           상                상
     //   시드사이너         상                하
     //    제이드          중상                하
-    if (!_isQrDensityInitialized) {
-      final screenWidth = MediaQuery.of(context).size.width;
-      final isNarrowScreen = screenWidth < 360;
-      _qrSize = MediaQuery.sizeOf(context).width * 0.9;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrowScreen = screenWidth < 360;
 
-      switch (_walletImportSource) {
-        case WalletImportSource.coconutVault:
-          _qrScanDensity = QrScanDensity.fast;
-          _qrSize = MediaQuery.sizeOf(context).width * 0.8;
-          _qrPaddingVertical = 0;
-          break;
-        case WalletImportSource.seedSigner:
-          _qrScanDensity = isNarrowScreen ? QrScanDensity.slow : QrScanDensity.fast;
-          _qrPaddingVertical = 60;
-          break;
-        case WalletImportSource.extendedPublicKey:
-          _qrScanDensity = QrScanDensity.fast;
-          _qrPaddingVertical = 60;
-          break;
-        default:
-          _qrScanDensity = isNarrowScreen ? QrScanDensity.normal : QrScanDensity.fast;
-          _qrPaddingVertical = 30;
-          break;
-      }
-      _sliderValue = _qrScanDensity.index * 5;
-      _isQrDensityInitialized = true;
+    switch (_walletImportSource) {
+      case WalletImportSource.coconutVault:
+      case WalletImportSource.keystone:
+        // 볼트와 키스톤은 스캔 성능이 우수하기 때문에 일반/좁은 화면 모두 _qrScanDensity: fast, padding: 16으로 설정
+        _qrScanDensity = QrScanDensity.fast;
+        break;
+      case WalletImportSource.seedSigner:
+      case WalletImportSource.extendedPublicKey:
+        // 시드사이너는 좁은 화면에서 _qrScanDensity slow가 안정적임
+        _qrScanDensity = isNarrowScreen ? QrScanDensity.slow : QrScanDensity.fast;
+        break;
+      case WalletImportSource.jade:
+        // 제이드는 카메라 성능 최악
+        _qrScanDensity = isNarrowScreen ? QrScanDensity.slow : QrScanDensity.normal;
+        break;
+      default:
+        _qrScanDensity = QrScanDensity.normal;
+        break;
     }
+    _sliderValue = _qrScanDensity.index * 5;
   }
 
   @override
@@ -89,7 +82,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     const targetMmSize = 62.8 * 0.9; // 폴드1에서의 QR mm 크기
 
     // 테스트용(갤폴드에서 보이는 QR사이즈)
-    // final qrSize = screenWidth * (targetMmSize / deviceMmWidth);
+    final qrSize = screenWidth * (targetMmSize / deviceMmWidth);
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       backgroundColor: CoconutColors.black,
@@ -97,6 +90,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
           title: (_isDonation ?? false) ? t.donation.donate : t.send,
           context: context,
           usePrimaryActiveColor: true,
+          nextButtonTitle: t.next,
           onNextPressed: () {
             Navigator.pushNamed(context, '/signed-psbt-scanner');
           }),
@@ -118,8 +112,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                 ),
                 Container(
                   margin: const EdgeInsets.only(top: 40),
-                  padding: EdgeInsets.symmetric(
-                    vertical: _qrPaddingVertical,
+                  // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
+                  // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
                     horizontal: 16,
                   ),
                   decoration: BoxDecoration(
@@ -127,8 +123,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                   child: Center(
                     child: AnimatedQrView(
                       key: ValueKey(_qrScanDensity),
-                      qrSize: _qrSize,
-                      // qrSize: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
                       qrScanDensity: _qrScanDensity,
                       qrViewDataHandler:
                           BcUrQrViewHandler(_psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
@@ -291,7 +285,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    switch (_walletImportSource) {
+    final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
+    final isKorean = currentLanguage == 'kr';
+
+    switch (WalletImportSource.keystone) {
       case WalletImportSource.coconutVault:
         {
           return [
@@ -302,10 +299,16 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               ),
             ),
             TextSpan(
-              text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
-                  '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
+              text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextSpan(
+              text:
+                  ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+              style: const TextStyle(
+                fontWeight: FontWeight.normal,
               ),
             ),
             TextSpan(
@@ -318,40 +321,77 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.seedSigner:
         {
-          return [
-            TextSpan(
-                text:
-                    '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
-            _em(t.unsigned_tx_qr_screen.guide_seedsigner.step1_em),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step2}'),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
+              _em(t.unsigned_tx_qr_screen.guide_seedsigner.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step2}'),
+            ];
+          } else {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1}'),
+              TextSpan(text: '${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end} '),
+              _em('${t.unsigned_tx_qr_screen.guide_seedsigner.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step2}'),
+            ];
+          }
         }
       case WalletImportSource.keystone:
         {
-          return [
-            TextSpan(
-                text:
-                    '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
-            _em(t.unsigned_tx_qr_screen.guide_keystone.step1_em),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1_end}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
+              _em(t.unsigned_tx_qr_screen.guide_keystone.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1_end}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
+            ];
+          } else {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1}'),
+              TextSpan(text: '${t.unsigned_tx_qr_screen.guide_keystone.step1_end} '),
+              _em('${t.unsigned_tx_qr_screen.guide_keystone.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step2}'),
+            ];
+          }
         }
       case WalletImportSource.jade:
         {
-          return [
-            TextSpan(
-                text:
-                    '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
-            _em(t.unsigned_tx_qr_screen.guide_jade.step1_em),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end}\n'),
-            TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step2}'),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
+              _em(t.unsigned_tx_qr_screen.guide_jade.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step2}'),
+            ];
+          } else {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end} '),
+              _em('${t.unsigned_tx_qr_screen.guide_jade.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step2}'),
+            ];
+          }
         }
       // case WalletImportSource.coconutVault: TODO: 추후 BC_UR QR로 변경합니다.
       default:

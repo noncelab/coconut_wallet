@@ -4,12 +4,15 @@ class WalletUpdateCounter {
   int _balanceCounter;
   int _transactionCounter;
   int _utxoCounter;
+  int _subscriptionCounter;
 
   WalletUpdateCounter({
     int balanceCounter = 0,
     int transactionCounter = 0,
     int utxoCounter = 0,
-  })  : _utxoCounter = utxoCounter,
+    int subscriptionCounter = 0,
+  })  : _subscriptionCounter = subscriptionCounter,
+        _utxoCounter = utxoCounter,
         _transactionCounter = transactionCounter,
         _balanceCounter = balanceCounter;
 
@@ -21,6 +24,9 @@ class WalletUpdateCounter {
   /// 특정 업데이트 요소의 카운터 증가
   void incrementCounter(UpdateElement updateType) {
     switch (updateType) {
+      case UpdateElement.subscription:
+        _subscriptionCounter++;
+        break;
       case UpdateElement.balance:
         _balanceCounter++;
         break;
@@ -38,6 +44,12 @@ class WalletUpdateCounter {
   /// @return 카운터 값이 0이면 true, 아니면 false
   bool decrementCounter(UpdateElement updateType) {
     switch (updateType) {
+      case UpdateElement.subscription:
+        _subscriptionCounter--;
+        if (_subscriptionCounter <= 0) {
+          return true;
+        }
+        break;
       case UpdateElement.balance:
         _balanceCounter--;
         if (_balanceCounter <= 0) {

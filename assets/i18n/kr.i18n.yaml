@@ -34,6 +34,7 @@ next: "다음"
 modify: "변경"
 confirm: "확인"
 security: "보안"
+general: "일반"
 unit: "단위"
 utxo: "UTXO"
 tag: "태그"
@@ -208,6 +209,7 @@ wallet_add_scanner_screen:
     step2_em: "Connect Software Wallet"
     step3: "3. 어떤 지갑이든 선택"
   guide_jade:
+    step0_preposition: ""
     step0_em: "Active "
     step0: "상태에서"
     step1: "1. "
@@ -333,6 +335,8 @@ bip39_list_screen:
 pin_setting_screen:
   new_password: "새로운 비밀번호를 눌러주세요"
   enter_again: "다시 한번 확인할게요"
+  set_to_6_digit: "6자리 비밀번호로 설정하기"
+  set_to_4_digit: "4자리 비밀번호로 설정하기"
 settings_screen:
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"
@@ -345,6 +349,9 @@ settings_screen:
     fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
     fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
     fake_balance_input_not_enough_error: "$btc ($sats sats) 미만으로는 설정할 수 없어요"
+  language: "언어"
+  korean: "한국어"
+  english: "English"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
@@ -540,7 +547,8 @@ tooltip:
   unsigned_tx_qr:
     in_vault: "볼트에서"
     select_wallet: "$name 선택, "
-    scan_qr_below: "로 이동하여 아래 QR 코드를 스캔해 주세요."
+    select_menu: "$menu로 이동하여 "
+    scan_qr_below: "아래 QR 코드를 스캔해 주세요."
   address_receiving: "비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라고 해요."
   address_change: "비트코인을 보내고 남으면 거슬러받는 주소예요. 영어로 Change라고 해요."
   utxo: "UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요."
@@ -631,3 +639,16 @@ third_party:
   jade: "제이드"
   seed_signer: "시드사이너"
   zpub: "zpub"
+
+trade_exchange:
+  upbit: "업비트"
+  binance: "바이낸스"
+
+fiat:
+  fiat: "법정화폐"
+  krw_symbol: "₩"
+  usd_symbol: "$"
+  krw_code: "KRW"
+  usd_code: "USD"
+  krw_price: "업비트 기준"
+  usd_price: "바이낸스 기준"

@@ -79,6 +79,8 @@ class ScriptSyncService {
         await _addressRepository.setWalletAddressUsed(
             dto.walletItem, dto.scriptStatus.index, dto.scriptStatus.isChange);
       }
+      // 구독 완료
+      _stateManager.addWalletCompletedState(dto.walletItem.id, UpdateElement.subscription);
 
       // Balance 동기화
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
@@ -137,9 +139,6 @@ class ScriptSyncService {
   }) async {
     try {
       final now = DateTime.now();
-
-      // 지갑 업데이트 상태 초기화
-      _stateManager.initWalletUpdateStatus(walletItem.id);
 
       // Balance 병렬 처리
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);

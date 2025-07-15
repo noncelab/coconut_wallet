@@ -24,7 +24,7 @@ class IsolateInitializer {
     ElectrumService electrumService,
   ) {
     // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
-    final realmManager = RealmManager()..init(false);
+    final realmManager = RealmManager();
     final addressRepository = AddressRepository(realmManager);
     final walletRepository = WalletRepository(realmManager);
     final utxoRepository = UtxoRepository(realmManager);

@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -66,6 +66,7 @@ class _SendAmountScreenState extends State<SendAmountScreen> {
           appBar: CoconutAppBar.buildWithNext(
             title: t.send,
             context: context,
+            nextButtonTitle: t.next,
             onNextPressed: () => _goNextScreen('/fee-selection'),
             isActive: viewModel.isNetworkOn && viewModel.isNextButtonEnabled,
             backgroundColor: CoconutColors.black,
