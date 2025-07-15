@@ -20,6 +20,7 @@ import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_b
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -382,21 +383,24 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,
-                  visible: !isBalanceHidden && _viewModel.walletItemList.isNotEmpty,
+                  visible: (!isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) &&
+                      _viewModel.walletItemList.isNotEmpty,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Selector<WalletHomeViewModel, List<int>>(
                         selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
                         builder: (context, excludedIds, child) {
-                          final balance = Map.fromEntries(
-                            _viewModel.walletBalanceMap.entries.where(
-                              (entry) => !excludedIds.contains(entry.key),
-                            ),
-                          )
-                              .values
-                              .map((e) => e.current)
-                              .fold(0, (current, element) => current + element);
+                          final balance = _viewModel.fakeBalanceTotalAmount != null
+                              ? _viewModel.fakeBalanceTotalAmount!
+                              : Map.fromEntries(
+                                  _viewModel.walletBalanceMap.entries.where(
+                                    (entry) => !excludedIds.contains(entry.key),
+                                  ),
+                                )
+                                  .values
+                                  .map((e) => e.current)
+                                  .fold(0, (current, element) => current + element);
                           return FiatPrice(
                             satoshiAmount: balance,
                             textStyle:
