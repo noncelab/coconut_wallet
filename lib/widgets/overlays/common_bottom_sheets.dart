@@ -195,47 +195,41 @@ class CommonBottomSheets {
                 }
                 return false;
               },
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: CoconutColors.gray900,
-                ),
-                child: Column(
-                  children: [
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onVerticalDragUpdate: (details) {
-                        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                        draggableController.jumpTo(draggableController.size + delta);
-                      },
-                      onVerticalDragEnd: (details) {
-                        handleDrag();
-                      },
-                      onVerticalDragCancel: () {
-                        handleDrag();
-                      },
-                      child: Container(
-                        color: CoconutColors.gray800,
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: CoconutColors.gray500,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragUpdate: (details) {
+                      final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                      draggableController.jumpTo(draggableController.size + delta);
+                    },
+                    onVerticalDragEnd: (details) {
+                      handleDrag();
+                    },
+                    onVerticalDragCancel: () {
+                      handleDrag();
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                        child: Container(
+                          width: 55,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: CoconutColors.gray400,
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: Padding(
-                          padding:
-                              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                          child: childBuilder(scrollController)),
-                    )
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                        child: childBuilder(scrollController)),
+                  )
+                ],
               ),
             );
           },

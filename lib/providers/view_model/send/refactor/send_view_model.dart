@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -16,6 +17,7 @@ import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 
 typedef WalletInfoUpdateCallback = void Function(
@@ -119,6 +121,9 @@ class SendViewModel extends ChangeNotifier {
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
 
+  int _estimatedFee = 0;
+  int get estimatedFee => _estimatedFee;
+
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
   int _confirmedBalance = 0;
@@ -218,28 +223,47 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _adjustLastReceiverAmount(int validateAmountIndex) {
+    double amountSumExceptLast = 0;
+    for (int i = 0; i < lastIndex; ++i) {
+      if (_recipientList[i].amount.isNotEmpty) {
+        amountSumExceptLast += double.parse(_recipientList[i].amount);
+      }
+    }
+
+    int maxBalanceInSats = balance -
+        (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast)
+            .toInt();
+    _recipientList[lastIndex].amount = maxBalanceInSats > 0
+        ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
+            .toString()
+        : "0";
+
+    if (_currentIndex == lastIndex) {
+      _onAmountTextUpdate(recipientList[lastIndex].amount);
+    }
+    _validateAmount(validateAmountIndex);
+  }
+
   void setMaxMode(bool isEnabled) {
     if (_isMaxMode == isEnabled) return;
+
     _isMaxMode = isEnabled;
+    if (_isMaxMode) _adjustLastReceiverAmount(-1);
+    vibrateLight();
+    notifyListeners();
+  }
 
-    // 최대 amount 설정
-    if (_isMaxMode) {
-      double amountSumExceptLast = 0;
-      for (int i = 0; i < lastIndex; ++i) {
-        if (_recipientList[i].amount.isNotEmpty) {
-          amountSumExceptLast += double.parse(_recipientList[i].amount);
-        }
-      }
-
-      int maxBalanceInSats = balance -
-          (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast)
-              .toInt();
-      _recipientList[lastIndex].amount = maxBalanceInSats > 0
-          ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
-              .toString()
-          : "0";
-      _validateAmount(-1);
+  void onFeeRateUpdated(String feeRate) {
+    try {
+      // todo: 수수료 계산
+      _estimatedFee = (double.parse(feeRate)).toInt();
+    } catch (e) {
+      _estimatedFee = 0;
+      Logger.log(e);
     }
+
+    _updateFinalError();
     notifyListeners();
   }
 
@@ -281,6 +305,7 @@ class SendViewModel extends ChangeNotifier {
     final newList = [..._recipientList, RecipientInfo(address: '', amount: '')];
     _recipientList = newList;
     _updateFinalError();
+    vibrateLight();
     notifyListeners();
   }
 
@@ -294,6 +319,7 @@ class SendViewModel extends ChangeNotifier {
     _onRecipientPageDeleted(_currentIndex);
 
     _validateAmount(-1);
+    vibrateLight();
     notifyListeners();
   }
 
@@ -315,7 +341,7 @@ class SendViewModel extends ChangeNotifier {
 
   void _updateFinalError() {
     String message = "";
-    // [전체] 충분하지 않은 Balance > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값이 존재 > 수신자 0명인 경우
+    // [전체] 충분하지 않은 Balance > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값이 존재 > 수신자 0명인 경우 > 예상 수수료 오류
     if (_insufficientBalanceError.isError) {
       message = _insufficientBalanceError.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.minimumAmountError.isError)) {
@@ -324,9 +350,10 @@ class SendViewModel extends ChangeNotifier {
       message = SendError.invalidAddress.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.addressError == SendError.duplicatedAddress)) {
       message = SendError.duplicatedAddress.getMessage(currentUnit);
-    } else if (_recipientList.any((e) => e.address.isEmpty || e.amount.isEmpty)) {
+    } else if (_recipientList.any((e) => e.address.isEmpty || e.amount.isEmpty) ||
+        _recipientList.isEmpty) {
       message = " ";
-    } else if (_recipientList.isEmpty) {
+    } else if (_estimatedFee == 0) {
       message = " ";
     }
 
@@ -368,6 +395,8 @@ class SendViewModel extends ChangeNotifier {
       if (currentIndex != recipientList.length) {
         _onAmountTextUpdate(recipientList[_currentIndex].amount);
       }
+
+      vibrateLight();
       notifyListeners();
     } catch (e) {
       Logger.log(e);
@@ -422,7 +451,11 @@ class SendViewModel extends ChangeNotifier {
       }
     }
 
-    _validateAmount(_currentIndex);
+    if (_isMaxMode) {
+      _adjustLastReceiverAmount(_currentIndex);
+    } else {
+      _validateAmount(_currentIndex);
+    }
     notifyListeners();
   }
 
@@ -571,6 +604,13 @@ class SendViewModel extends ChangeNotifier {
     return normalizedAddress.startsWith('bc1') ||
         normalizedAddress.startsWith('tb1') ||
         normalizedAddress.startsWith('bcrt1');
+  }
+
+  void setTxWaitingForSign() {
+    // todo: 수정 필요
+    _sendInfoProvider.setTxWaitingForSign("");
+    _sendInfoProvider.setIsMultisig(false);
+    _sendInfoProvider.setWalletImportSource(WalletImportSource.coconutVault);
   }
 }
 

@@ -41,6 +41,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     return _receiveAddress!.address;
   }
 
+  int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
+
   @override
   void initState() {
     super.initState();
@@ -154,9 +156,10 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
         context: context,
         childBuilder: (scrollController) => SelectWalletBottomSheet(
               scrollController: scrollController,
-              onWalletChanged: (index) {
+              walletId: selectedWalletId,
+              onWalletChanged: (id) {
                 final walletProvider = context.read<WalletProvider>();
-                _selectedWalletItem = walletProvider.walletItemList[index];
+                _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
                 _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
                 setState(() {});
                 Navigator.pop(context);

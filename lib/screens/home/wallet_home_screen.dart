@@ -9,7 +9,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -18,7 +17,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
@@ -668,20 +666,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       orElse: () => firstWallet.id,
     );
 
-    _viewModel.setReceiveAddress(targetId);
-
-    CommonBottomSheets.showBottomSheet_90(
-      context: context,
-      child: ChangeNotifierProvider.value(
-        value: _viewModel,
-        child: ReceiveAddressBottomSheet(
-          id: targetId,
-          derivationPath: _viewModel.derivationPath,
-          receiveAddress: _viewModel.receiveAddress,
-          receiveAddressIndex: _viewModel.receiveAddressIndex,
-        ),
-      ),
-    );
+    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": targetId});
   }
 
   void _onTapSend(List<int> walletOrder) {

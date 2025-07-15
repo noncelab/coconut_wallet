@@ -35,6 +35,7 @@ close: "Close"
 next: "Next"
 modify: "Modify"
 confirm: "Confirm"
+cancel: "Cancel"
 security: "Security"
 general: "General"
 unit: "Unit"
@@ -250,6 +251,38 @@ broadcasting_complete_screen:
     - "Savings"
     - "Pocket money"
     - "Birthday gift"
+
+# send screen start ----
+send_screen:
+  select_wallet: "Select Wallet"
+  n_utxos: " • ${count} UTXOs"
+  delete: "Delete"
+  fee_rate: "Fee Rate"
+  fee_rate_suffix: "sat/vB"
+  estimated_fee: "Estimated Total Fee"
+  fee_paid_by_recipients: "Fee Paid by Recipients"
+  fee_paid_by_recipients_description: "Recipients will receive the exact amount you specify."
+  my_address: "My Address"
+  add_recipient: "Add Recipient"
+  use_btc_unit: "Use BTC Unit"
+  input_maximum_amount: "Send All"
+  address_placeholder: "Enter the recipient's address"
+  recommended_fee_unavailable: "Failed to Fetch Recommended Fee"
+  recommended_fee_unavailable_description: "Please enter the fee manually."
+  tooltip_text: "${count} addresses • Total ${amount}"
+  tooltip_max_mode_text: "Send All Mode On"
+
+utxo_selection_screen:
+  title: "Select UTXOs"
+
+select_wallet_with_options_bottom_sheet:
+  select_utxo: "Select UTXOs"
+  select_utxo_auto: "Auto-Select UTXOs"
+  select_utxo_auto_minimal_fee_description: "Automatically selects UTXOs for minimal fee"
+  select_utxo_auto_selected_utxo_description: "Creates a transaction using the selected UTXOs"
+  n_utxos: " • ${count} utxos"
+
+# send screen end ----
 
 broadcasting_screen:
   title: "Final Confirmation"
@@ -487,7 +520,7 @@ errors:
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"
     not_for_regtest: "Not a regtest address"
-    duplicated: "Address already entered"
+    duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"
     failed: "No more attempts allowed\nPlease close the app"
@@ -557,7 +590,7 @@ alert:
   error_send:
     broadcasting_failed: "[Send Failed]\n$error"
     insufficient_balance: "Insufficient balance"
-    minimum_amount: "You can send from $bitcoin $unit"
+    minimum_amount: "You can send at least $bitcoin $unit"
     insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
   signed_psbt:
     invalid_qr: "Invalid QR code.\nPlease check again."
