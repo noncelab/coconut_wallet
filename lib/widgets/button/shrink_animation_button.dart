@@ -54,10 +54,10 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onTapDown(TapDownDetails details) {
+    _controller.forward();
     setState(() {
       _isPressed = true;
     });
-    _controller.forward();
   }
 
   void _onTapUp(TapUpDetails details) {
