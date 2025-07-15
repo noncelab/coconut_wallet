@@ -9,7 +9,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -383,7 +382,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,
-                  visible: !isBalanceHidden,
+                  visible: !isBalanceHidden && _viewModel.walletItemList.isNotEmpty,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -399,9 +398,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               .map((e) => e.current)
                               .fold(0, (current, element) => current + element);
                           return FiatPrice(
-                            satoshiAmount: balance, // TODO : fiatPrice
+                            satoshiAmount: balance,
                             textStyle:
-                                CoconutTypography.body3_12_Bold.setColor(CoconutColors.gray350),
+                                CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
                           );
                         },
                       )
