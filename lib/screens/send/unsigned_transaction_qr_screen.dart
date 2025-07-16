@@ -288,7 +288,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
     final isKorean = currentLanguage == 'kr';
 
-    switch (WalletImportSource.keystone) {
+    switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         {
           return [
