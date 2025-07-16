@@ -123,6 +123,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                         ),
                         if (viewModel.isBalanceHidden)
                           SingleButton(
+                            enableShrinkAnim: true,
                             title: t.settings_screen.fake_balance.fake_balance_setting,
                             onPressed: () async {
                               CommonBottomSheets.showBottomSheet_50(
@@ -139,6 +140,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                         selector: (_, viewModel) => viewModel.isBtcUnit,
                         builder: (context, isBtcUnit, child) {
                           return SingleButton(
+                            enableShrinkAnim: true,
+                            animationEndValue: 0.97,
                             title: t.bitcoin_kr,
                             subtitle: isBtcUnit ? t.btc : t.sats,
                             onPressed: () async {
@@ -163,6 +166,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                           }
 
                           return SingleButton(
+                            enableShrinkAnim: true,
+                            animationEndValue: 0.97,
                             title: t.fiat.fiat,
                             subtitle: fiatDisplayName,
                             onPressed: () async {
@@ -179,6 +184,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                     selector: (_, provider) => provider.language,
                     builder: (context, language, child) {
                       return SingleButton(
+                        enableShrinkAnim: true,
+                        animationEndValue: 0.97,
                         title: t.settings_screen.language,
                         subtitle: _getCurrentLanguageDisplayName(language),
                         subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
@@ -197,6 +204,8 @@ class _SettingsScreen extends State<SettingsScreen> {
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
                     SingleButton(
+                      enableShrinkAnim: true,
+                      animationEndValue: 0.97,
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {
                         final realmManager = Provider.of<RealmManager>(context, listen: false);

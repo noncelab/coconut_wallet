@@ -127,6 +127,7 @@ flutter:
   assets:
     - assets/files/glossary_details.json
     - assets/files/status_loading.json
+    - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
     - assets/images/splash_logo_regtest.png
     - assets/images/pow_logo.png
@@ -232,6 +233,7 @@ flutter:
     - assets/images/discord-logo.png
     - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png
+    - assets/images/laurel-wreath.png
     - assets/svg/github-logo-white.svg
     - assets/svg/github-logo.svg
     - assets/files/LICENSE
@@ -266,6 +268,7 @@ flutter:
     - assets/svg/lock.svg
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
+    - assets/svg/clip.svg
 
 
   fonts:

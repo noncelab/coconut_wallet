@@ -22,6 +22,7 @@ import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dar
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
+import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
@@ -49,7 +50,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
-
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -325,6 +325,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       ),
                     ),
                   ),
+              '/coconut-crew': (context) => const CoconutCrewScreen(),
             },
           ),
         ));

@@ -274,6 +274,9 @@ unsigned_tx_qr_screen:
 # lib/screens/settings
 app_info_screen:
   made_by_team_pow: "Made by Team POW."
+  coconut_crew_genesis_member: "Coconut Crew: Genesis Member"
+  coconut_crew: "Coconut Crew"
+  coconut_crew_thanks_msg: "These self-custody pioneers\nhave been with us since beta.\nWithout them, Coconut wouldn't exist today."
   category1_ask: "Have any questions?"
   go_to_pow: "Go to POW Community"
   ask_to_discord: "Ask via Discord Channel"

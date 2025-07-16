@@ -11,18 +11,19 @@ class ShrinkAnimationButton extends StatefulWidget {
   final Border? border;
   final double borderWidth;
   final List<Color>? borderGradientColors;
+  final double? animationEndValue;
 
-  const ShrinkAnimationButton({
-    super.key,
-    required this.child,
-    required this.onPressed,
-    this.pressedColor = CoconutColors.gray900,
-    this.defaultColor = CoconutColors.gray800,
-    this.borderRadius = 24.0,
-    this.borderWidth = 2.0,
-    this.border,
-    this.borderGradientColors,
-  });
+  const ShrinkAnimationButton(
+      {super.key,
+      required this.child,
+      required this.onPressed,
+      this.pressedColor = CoconutColors.gray900,
+      this.defaultColor = CoconutColors.gray800,
+      this.borderRadius = 24.0,
+      this.borderWidth = 2.0,
+      this.border,
+      this.borderGradientColors,
+      this.animationEndValue = 0.97});
 
   @override
   State<ShrinkAnimationButton> createState() => _ShrinkAnimationButtonState();
@@ -41,7 +42,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _animation = Tween<double>(begin: 1.0, end: 0.97)
+    _animation = Tween<double>(begin: 1.0, end: widget.animationEndValue)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 

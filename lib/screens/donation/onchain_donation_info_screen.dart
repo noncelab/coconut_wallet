@@ -4,7 +4,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/donation/onchain_donation_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
