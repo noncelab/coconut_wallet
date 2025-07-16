@@ -35,6 +35,9 @@ class PreferenceProvider extends ChangeNotifier {
   late String _language;
   String get language => _language;
 
+  bool get isKorean => _language == "kr";
+  bool get isEnglish => _language == "en";
+
   /// 선택된 통화
   late FiatCode _selectedFiat;
   FiatCode get selectedFiat => _selectedFiat;
@@ -105,10 +108,10 @@ class PreferenceProvider extends ChangeNotifier {
   void _applyLanguageSettingSync() {
     try {
       print('Applying language setting: $_language');
-      if (_language == 'kr') {
+      if (isKorean) {
         LocaleSettings.setLocaleSync(AppLocale.kr);
         print('Korean locale applied successfully');
-      } else if (_language == 'en') {
+      } else if (isEnglish) {
         LocaleSettings.setLocaleSync(AppLocale.en);
         print('English locale applied successfully');
       }
@@ -124,9 +127,9 @@ class PreferenceProvider extends ChangeNotifier {
   /// 언어 설정 적용
   Future<void> _applyLanguageSetting() async {
     try {
-      if (_language == 'kr') {
+      if (isKorean) {
         await LocaleSettings.setLocale(AppLocale.kr);
-      } else if (_language == 'en') {
+      } else if (isEnglish) {
         await LocaleSettings.setLocale(AppLocale.en);
       } else {
         // 기본값은 영어로 설정

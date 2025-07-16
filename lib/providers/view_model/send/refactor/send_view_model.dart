@@ -99,8 +99,8 @@ class SendViewModel extends ChangeNotifier {
   WalletListItemBase? _selectedWalletItem;
   bool _isUtxoSelectionAuto = true;
 
-  bool _isFeePaidByRecipients = false;
-  bool get isFeePaidByRecipients => _isFeePaidByRecipients;
+  bool _isFeeSubtractedFromSendAmount = false;
+  bool get isFeeSubtractedFromSendAmount => _isFeeSubtractedFromSendAmount;
 
   List<UtxoState> _selectedUtxoList = [];
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
@@ -403,9 +403,9 @@ class SendViewModel extends ChangeNotifier {
     }
   }
 
-  void setIsPaidByRecipients(bool isEnabled) {
-    if (_isFeePaidByRecipients == isEnabled) return;
-    _isFeePaidByRecipients = isEnabled;
+  void setIsFeeSubtractedFromSendAmount(bool isEnabled) {
+    if (_isFeeSubtractedFromSendAmount == isEnabled) return;
+    _isFeeSubtractedFromSendAmount = isEnabled;
     notifyListeners();
   }
 

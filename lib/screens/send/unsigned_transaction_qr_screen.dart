@@ -285,8 +285,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
-    final isKorean = currentLanguage == 'kr';
+    final isKorean = Provider.of<PreferenceProvider>(context, listen: false).isKorean;
 
     switch (WalletImportSource.keystone) {
       case WalletImportSource.coconutVault:

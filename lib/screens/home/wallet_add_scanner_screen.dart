@@ -62,8 +62,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
-    final isKorean = currentLanguage == 'kr';
+    final isKorean = Provider.of<PreferenceProvider>(context, listen: false).isKorean;
 
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:

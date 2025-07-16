@@ -477,8 +477,8 @@ class _SendScreenState extends State<SendScreen> {
     return Column(
       children: [
         Selector<SendViewModel, Tuple3<bool, bool, int>>(
-            selector: (_, viewModel) => Tuple3(
-                viewModel.showFeeBoard, viewModel.isFeePaidByRecipients, viewModel.estimatedFee),
+            selector: (_, viewModel) => Tuple3(viewModel.showFeeBoard,
+                viewModel.isFeeSubtractedFromSendAmount, viewModel.estimatedFee),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
               return Padding(
@@ -517,11 +517,15 @@ class _SendScreenState extends State<SendScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                t.send_screen.fee_paid_by_recipients,
+                                t.send_screen.fee_subtracted_from_send_amount,
                                 style: CoconutTypography.body3_12,
                               ),
                               Text(
-                                t.send_screen.fee_paid_by_recipients_description,
+                                _viewModel.isFeeSubtractedFromSendAmount
+                                    ? t.send_screen
+                                        .fee_subtracted_from_send_amount_enabled_description
+                                    : t.send_screen
+                                        .fee_subtracted_from_send_amount_disabled_description,
                                 style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
                               ),
                             ],
@@ -531,11 +535,12 @@ class _SendScreenState extends State<SendScreen> {
                               alignment: Alignment.centerRight,
                               child: CoconutSwitch(
                                   scale: 0.7,
-                                  isOn: _viewModel.isFeePaidByRecipients,
+                                  isOn: _viewModel.isFeeSubtractedFromSendAmount,
                                   activeColor: CoconutColors.gray100,
                                   trackColor: CoconutColors.gray600,
                                   thumbColor: CoconutColors.gray800,
-                                  onChanged: (isOn) => _viewModel.setIsPaidByRecipients(isOn))),
+                                  onChanged: (isOn) =>
+                                      _viewModel.setIsFeeSubtractedFromSendAmount(isOn))),
                           CoconutLayout.spacing_100w,
                         ],
                       ),
@@ -684,6 +689,14 @@ class _SendScreenState extends State<SendScreen> {
                       amountTextColor = CoconutColors.white;
                     }
 
+                    final isKorean = context.read<PreferenceProvider>().isKorean;
+                    final maxButtonBaseText = t.send_screen.input_maximum_amount;
+                    final maxButtonText = _viewModel.isMaxMode
+                        ? (isKorean
+                            ? '$maxButtonBaseText ${t.cancel}'
+                            : '${t.cancel} $maxButtonBaseText')
+                        : maxButtonBaseText;
+
                     return Column(
                       children: [
                         IgnorePointer(
@@ -736,8 +749,7 @@ class _SendScreenState extends State<SendScreen> {
                                             BlendMode.srcIn),
                                       ),
                                       CoconutLayout.spacing_100w,
-                                      Text(
-                                          "${t.send_screen.input_maximum_amount} ${_viewModel.isMaxMode ? t.cancel : ""}",
+                                      Text(maxButtonText,
                                           style: Styles.caption.merge(TextStyle(
                                               color: CoconutColors.white,
                                               fontFamily: CustomFonts.text.getFontFamily))),
