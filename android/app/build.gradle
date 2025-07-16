@@ -1,6 +1,5 @@
 plugins {
     id "com.android.application"
-    id 'com.google.gms.google-services'
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
@@ -41,6 +40,10 @@ if (keystorePropertiesFile.exists()) {
     }
 } else {
     throw GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
+}
+
+if (flavor == "mainnet") {
+    apply plugin: 'com.google.gms.google-services'
 }
 
 android {

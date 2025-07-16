@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';

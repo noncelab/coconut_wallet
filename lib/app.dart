@@ -17,6 +17,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
@@ -58,8 +59,6 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
-
 class CoconutWalletApp extends StatefulWidget {
   static late String kElectrumHost;
   static late int kElectrumPort;
@@ -68,8 +67,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late String kDonationAddress;
   static late NetworkType kNetworkType;
-  static FirebaseAnalyticsObserver firebaseAnalyticsObserver =
-      FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance);
+  static late bool kIsFirebaseAnalyticsUsed;
 
   const CoconutWalletApp({super.key});
 
@@ -82,11 +80,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
 
   final RealmManager _realmManager = RealmManager();
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   /// startSplash 완료 콜백
   void _completeSplash(AppEntryFlow appEntryFlow) {
@@ -116,12 +109,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
           Provider.value(value: _realmManager),
 
-          // AnalyticsService 등록
-          Provider<AnalyticsService>(
-            create: (context) => AnalyticsService(
-              FirebaseAnalytics.instance,
+          if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) ...{
+            Provider<AnalyticsService>(
+              create: (context) => AnalyticsService(
+                FirebaseAnalytics.instance,
+                CoconutWalletApp.kIsFirebaseAnalyticsUsed,
+              ),
             ),
-          ),
+          },
 
           // Repository 등록 - Provider보다 먼저 등록해야 함
           Provider<WalletRepository>(
@@ -177,6 +172,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   context.read<ConnectivityProvider>(),
                   walletProvider.walletLoadStateNotifier,
                   walletProvider.walletItemListNotifier,
+                  CoconutWalletApp.kIsFirebaseAnalyticsUsed
+                      ? context.read<AnalyticsService>()
+                      : null,
                 );
               },
             ),
@@ -184,7 +182,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ],
         child: TranslationProvider(
           child: CupertinoApp(
-            navigatorObservers: [routeObserver, CoconutWalletApp.firebaseAnalyticsObserver],
+            navigatorObservers: [
+              routeObserver,
+              if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
+                FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)
+            ],
             localizationsDelegates: const [
               DefaultMaterialLocalizations.delegate,
               DefaultWidgetsLocalizations.delegate,
