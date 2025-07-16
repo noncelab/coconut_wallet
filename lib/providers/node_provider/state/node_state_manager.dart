@@ -297,6 +297,7 @@ class NodeStateManager implements StateManagerInterface {
     );
   }
 
+  @override
   void setNodeSyncStateToFailed() {
     _setState(
       newConnectionState: NodeSyncState.failed,

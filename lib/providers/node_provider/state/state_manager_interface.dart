@@ -19,4 +19,7 @@ abstract class StateManagerInterface {
 
   /// 노드 상태를 waiting으로 변경
   void setNodeSyncStateToCompleted();
+
+  /// 노드 상태를 failed으로 변경
+  void setNodeSyncStateToFailed();
 }

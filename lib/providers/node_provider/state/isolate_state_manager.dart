@@ -155,6 +155,7 @@ class IsolateStateManager implements StateManagerInterface {
     _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
   }
 
+  @override
   void setNodeSyncStateToFailed() {
     _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToFailed, []));
   }
