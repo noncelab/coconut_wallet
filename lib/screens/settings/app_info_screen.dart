@@ -251,13 +251,15 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      packageInfo.appName,
-                      style: CoconutTypography.heading2_28_Bold
-                          .copyWith(fontSize: 24, color: CoconutColors.white),
+                    FittedBox(
+                      child: Text(
+                        packageInfo.appName,
+                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                      ),
                     ),
                     Text('ver.${packageInfo.version}',
                         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+                    CoconutLayout.spacing_100h,
                     Text(t.app_info_screen.made_by_team_pow,
                         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400)),
                   ],

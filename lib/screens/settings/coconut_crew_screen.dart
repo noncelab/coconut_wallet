@@ -274,12 +274,15 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                     ],
                                   ),
                                   CoconutLayout.spacing_100h,
-                                  Text(
-                                    message,
-                                    overflow: TextOverflow.ellipsis,
-                                    style:
-                                        CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                                    maxLines: 2,
+                                  FittedBox(
+                                    child: Text(
+                                      message,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: CoconutTypography.body2_14
+                                          .setColor(CoconutColors.gray200)
+                                          .copyWith(height: 1.2),
+                                      maxLines: 2,
+                                    ),
                                   )
                                 ],
                               ),
