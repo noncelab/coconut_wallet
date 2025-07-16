@@ -319,6 +319,7 @@ class SendViewModel extends ChangeNotifier {
     _onRecipientPageDeleted(_currentIndex);
 
     _validateAmount(-1);
+    _validateAddresses();
     vibrateLight();
     notifyListeners();
   }
@@ -361,16 +362,15 @@ class SendViewModel extends ChangeNotifier {
     _updateFeeBoardVisibility();
   }
 
-  void setAddressText(String text, int index) {
-    final recipient = _recipientList[index];
-    recipient.address = text;
-
-    if (recipient.address.isEmpty) {
-      _setAddressError(SendError.none, index);
-    } else {
-      validateAddress(recipient.address, index: index);
+  void _validateAddresses() {
+    for (int i = 0; i < _recipientList.length; i++) {
+      validateAddress(_recipientList[i].address, index: i);
     }
+  }
 
+  void setAddressText(String text, int index) {
+    _recipientList[index].address = text;
+    _validateAddresses();
     notifyListeners();
   }
 
@@ -535,18 +535,20 @@ class SendViewModel extends ChangeNotifier {
       return;
     }
 
-    _recipientList[index].addressError = error;
-    _updateFinalError();
-    notifyListeners();
+    if (_recipientList[index].addressError != error) {
+      _recipientList[index].addressError = error;
+      _updateFinalError();
+      notifyListeners();
+    }
   }
 
-  bool validateAddress(String recipient, {int index = -1}) {
-    if (recipient.isEmpty) {
-      _setAddressError(SendError.invalidAddress, index);
+  bool validateAddress(String address, {int index = -1}) {
+    if (address.isEmpty) {
+      _setAddressError(SendError.none, index);
       return false;
     }
 
-    final normalized = recipient.toLowerCase();
+    final normalized = address.toLowerCase();
 
     // Bech32m(T2R) 주소 최대 62자
     if (normalized.length < 26 || normalized.length > 62) {
@@ -578,7 +580,7 @@ class SendViewModel extends ChangeNotifier {
 
     bool result = false;
     try {
-      final addressForValidation = _isBech32(normalized) ? normalized : recipient;
+      final addressForValidation = _isBech32(normalized) ? normalized : address;
       result = WalletUtility.validateAddress(addressForValidation);
     } catch (e) {
       _setAddressError(SendError.invalidAddress, index);
@@ -590,7 +592,7 @@ class SendViewModel extends ChangeNotifier {
       return false;
     }
 
-    if (_recipientList.where((e) => e.address == recipient).length >= 2) {
+    if (_isAddressDuplicated(address)) {
       _setAddressError(SendError.duplicatedAddress, index);
       return false;
     }
@@ -604,6 +606,10 @@ class SendViewModel extends ChangeNotifier {
     return normalizedAddress.startsWith('bc1') ||
         normalizedAddress.startsWith('tb1') ||
         normalizedAddress.startsWith('bcrt1');
+  }
+
+  bool _isAddressDuplicated(String address) {
+    return _recipientList.where((e) => e.address == address).length >= 2;
   }
 
   void setTxWaitingForSign() {
