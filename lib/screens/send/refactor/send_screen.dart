@@ -557,35 +557,37 @@ class _SendScreenState extends State<SendScreen> {
                   style: CoconutTypography.body3_12,
                 ),
                 const Spacer(),
-                Container(
-                  width: 85,
-                  padding: const EdgeInsets.only(top: 4),
-                  child: CoconutTextField(
-                    textInputType:
-                        const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                    ],
-                    textAlign: TextAlign.end,
-                    controller: _feeRateController,
-                    focusNode: _feeRateFocusNode,
-                    backgroundColor: feeRateFieldGray,
-                    height: 30,
-                    padding: const EdgeInsets.only(left: 10),
-                    onChanged: (text) {
-                      String formattedText = filterDecimalInput(text, 2);
-                      _feeRateController.text = formattedText;
-                      _viewModel.onFeeRateUpdated(formattedText);
-                    },
-                    maxLines: 1,
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    borderRadius: 8,
-                    suffix: Container(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: Text(t.send_screen.fee_rate_suffix,
-                            style: CoconutTypography.body3_12_NumberBold)),
+                IntrinsicWidth(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: CoconutTextField(
+                      textInputType:
+                          const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputFormatter: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      textAlign: TextAlign.end,
+                      controller: _feeRateController,
+                      focusNode: _feeRateFocusNode,
+                      backgroundColor: feeRateFieldGray,
+                      height: 30,
+                      padding: const EdgeInsets.only(left: 10),
+                      onChanged: (text) {
+                        String formattedText =
+                            filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
+                        _feeRateController.text = formattedText;
+                        _viewModel.onFeeRateUpdated(formattedText);
+                      },
+                      maxLines: 1,
+                      fontFamily: 'SpaceGrotesk',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      borderRadius: 8,
+                      suffix: Container(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: Text(t.send_screen.fee_rate_suffix,
+                              style: CoconutTypography.body3_12_NumberBold)),
+                    ),
                   ),
                 )
               ],

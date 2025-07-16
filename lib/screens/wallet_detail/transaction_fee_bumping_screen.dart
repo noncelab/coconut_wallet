@@ -295,7 +295,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       return;
     }
 
-    _textEditingController.text = filterDecimalInput(input, 2);
+    _textEditingController.text = filterNumericInput(input, decimalPlaces: 2);
     _textEditingController.selection =
         TextSelection.collapsed(offset: _textEditingController.text.length);
 
