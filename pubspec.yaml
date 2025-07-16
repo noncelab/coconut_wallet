@@ -19,11 +19,11 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # iOS
 #version: 3.1.7+3
 # AOS
-version: 3.1.7+43
+# version: 3.1.7+43
 # iOS Mainnet
-#version: 0.0.13+4
+#version: 0.0.14+2
 # AOS Mainnet
-#version: 0.0.13+16
+version: 0.0.14+18
 
 environment:
   sdk: ">=3.3.1 <4.0.0"
