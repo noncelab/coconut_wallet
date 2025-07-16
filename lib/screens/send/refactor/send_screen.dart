@@ -943,7 +943,7 @@ class _SendScreenState extends State<SendScreen> {
                     onTap: () {
                       _clearFocus();
                       if (_viewModel.walletItemList.length == 1) {
-                        _showAddressListBottomSheet(0);
+                        _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
                         return;
                       }
 
