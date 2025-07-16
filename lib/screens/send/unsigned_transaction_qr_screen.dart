@@ -211,46 +211,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
   Widget _buildToolTip() {
     // TODO: 코코넛 지갑인 경우 UI는 볼트와 한꺼번에 수정합니다.
-    if (_walletImportSource == WalletImportSource.coconutVault) {
-      return CoconutToolTip(
-          baseBackgroundColor: CoconutColors.white.withOpacity(0.95),
-          tooltipType: CoconutTooltipType.fixed,
-          richText: RichText(
-            text: TextSpan(
-              text: '[1] ',
-              style: const TextStyle(
-                fontFamily: 'Pretendard',
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                height: 1.4,
-                letterSpacing: 0.5,
-                color: CoconutColors.black,
-              ),
-              children: <TextSpan>[
-                TextSpan(
-                  text: t.tooltip.unsigned_tx_qr.in_vault,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-                TextSpan(
-                  text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} '
-                      '\'${_isMultisig ? t.sign_multisig : t.sign}\'',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextSpan(
-                  text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          showIcon: true);
-    } else if (_sendInfoProvider.isDonation == true) {
+    if (_sendInfoProvider.isDonation == true) {
       return Padding(
         padding: const EdgeInsets.only(
           top: 24,
@@ -288,36 +249,70 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
     final isKorean = currentLanguage == 'kr';
 
-    switch (WalletImportSource.keystone) {
+    switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         {
-          return [
-            TextSpan(
-              text: t.tooltip.unsigned_tx_qr.in_vault,
-              style: const TextStyle(
-                fontWeight: FontWeight.normal,
+          if (isKorean) {
+            return [
+              TextSpan(
+                text: '[1] ',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
               ),
-            ),
-            TextSpan(
-              text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
+              TextSpan(
+                text: t.tooltip.unsigned_tx_qr.open_vault,
+                style: CoconutTypography.body2_14.copyWith(height: 1),
               ),
-            ),
-            TextSpan(
-              text:
-                  ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
-              style: const TextStyle(
-                fontWeight: FontWeight.normal,
+              TextSpan(
+                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
               ),
-            ),
-            TextSpan(
-              text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-              style: const TextStyle(
-                fontWeight: FontWeight.normal,
+              TextSpan(
+                text:
+                    ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
               ),
-            ),
-          ];
+              TextSpan(
+                text: t.tooltip.unsigned_tx_qr.scan_qr_below,
+                style: CoconutTypography.body2_14.copyWith(height: 1.4),
+              ),
+            ];
+          } else {
+            return [
+              TextSpan(
+                text: '[1] ',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+              ),
+              TextSpan(
+                text: t.tooltip.unsigned_tx_qr.open_vault,
+                style: CoconutTypography.body2_14.copyWith(height: 1),
+              ),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.copyWith(height: 1),
+              ),
+              TextSpan(
+                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+              ),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.copyWith(height: 1),
+              ),
+              TextSpan(
+                text:
+                    ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+              ),
+              TextSpan(
+                text: ', ',
+                style: CoconutTypography.body2_14.copyWith(height: 1),
+              ),
+              TextSpan(
+                text: t.tooltip.unsigned_tx_qr.scan_qr_below,
+                style: CoconutTypography.body2_14.copyWith(height: 1.4),
+              ),
+            ];
+          }
         }
       case WalletImportSource.seedSigner:
         {

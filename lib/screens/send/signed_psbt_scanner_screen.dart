@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -172,36 +173,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
   Widget _buildToolTip() {
     // TODO: 코코넛 지갑인 경우 UI는 볼트와 한꺼번에 수정합니다.
-    if (_viewModel.walletImportSource == WalletImportSource.coconutVault) {
-      return CoconutToolTip(
-        tooltipType: CoconutTooltipType.fixed,
-        baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
-        richText: RichText(
-          text: TextSpan(
-            text: '[5] ',
-            style: const TextStyle(
-              fontFamily: 'Pretendard',
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-              height: 1.4,
-              letterSpacing: 0.5,
-              color: CoconutColors.black,
-            ),
-            children: [
-              TextSpan(
-                text: t.tooltip.scan_signed_psbt.guide(
-                    by_hardware_wallet: t.tooltip.scan_signed_psbt.by_vault_app,
-                    hardware_wallet: t.vault_app),
-                style: const TextStyle(
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        showIcon: true,
-      );
-    } else if (_viewModel.isSendingDonation == true) {
+    if (_viewModel.isSendingDonation == true) {
       return Padding(
         padding: const EdgeInsets.only(
           top: 30,
@@ -240,8 +212,14 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     final hardwareWalletWords = _getHardwareWalletWords();
     return [
       TextSpan(
-          text: t.tooltip.scan_signed_psbt.guide(
-              by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1])),
+        text: '[5] ',
+        style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+      ),
+      TextSpan(
+        text: t.tooltip.scan_signed_psbt.guide(
+            by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1]),
+        style: CoconutTypography.body2_14.copyWith(height: 1.2),
+      ),
     ];
   }
 
