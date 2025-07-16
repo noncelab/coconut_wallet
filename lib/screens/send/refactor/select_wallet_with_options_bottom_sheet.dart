@@ -121,20 +121,14 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
           ),
           const Spacer(),
           Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(
-              width: 36,
-              height: 22,
-              child: Transform.scale(
+              alignment: Alignment.centerRight,
+              child: CoconutSwitch(
                   scale: 0.7,
-                  child: CupertinoSwitch(
-                      value: _isUtxoSelectionAuto,
-                      activeColor: CoconutColors.gray100,
-                      trackColor: CoconutColors.gray600,
-                      thumbColor: CoconutColors.gray800,
-                      onChanged: (isOn) => _setUtxoSelectionAuto(isOn))),
-            ),
-          ),
+                  isOn: _isUtxoSelectionAuto,
+                  activeColor: CoconutColors.gray100,
+                  trackColor: CoconutColors.gray600,
+                  thumbColor: CoconutColors.gray800,
+                  onChanged: (isOn) => _setUtxoSelectionAuto(isOn))),
           CoconutLayout.spacing_100w,
         ],
       ),

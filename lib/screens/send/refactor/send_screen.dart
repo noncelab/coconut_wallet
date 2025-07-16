@@ -21,7 +21,6 @@ import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart'
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -529,20 +528,14 @@ class _SendScreenState extends State<SendScreen> {
                           ),
                           const Spacer(),
                           Align(
-                            alignment: Alignment.centerRight,
-                            child: SizedBox(
-                              width: 36,
-                              height: 22,
-                              child: Transform.scale(
+                              alignment: Alignment.centerRight,
+                              child: CoconutSwitch(
                                   scale: 0.7,
-                                  child: CupertinoSwitch(
-                                      value: _viewModel.isFeePaidByRecipients,
-                                      activeColor: CoconutColors.gray100,
-                                      trackColor: CoconutColors.gray600,
-                                      thumbColor: CoconutColors.gray800,
-                                      onChanged: (isOn) => _viewModel.setIsPaidByRecipients(isOn))),
-                            ),
-                          ),
+                                  isOn: _viewModel.isFeePaidByRecipients,
+                                  activeColor: CoconutColors.gray100,
+                                  trackColor: CoconutColors.gray600,
+                                  thumbColor: CoconutColors.gray800,
+                                  onChanged: (isOn) => _viewModel.setIsPaidByRecipients(isOn))),
                           CoconutLayout.spacing_100w,
                         ],
                       ),

@@ -78,7 +78,7 @@ dependencies:
   coconut_design_system: 
     git:
       url: https://github.com/noncelab/coconut_design_system.git
-      ref: main
+      ref: fix/switch-size
   coconut_lib: ^0.10.4
   realm: ^20.0.0
   cryptography: ^2.7.0
