@@ -9,7 +9,7 @@ part 'model/request/analytics_request_types.dart';
 /// Firebase Analytics를 래핑하는 공통 서비스 클래스
 /// 플랫폼 정보, 타임스탬프, 유료 사용자 비활성화 옵션을 제공
 class AnalyticsService {
-  final FirebaseAnalytics _analytics;
+  final FirebaseAnalytics? _analytics;
   final bool _isAnalyticsDisabled;
 
   bool _isInitialized = false;
@@ -25,7 +25,7 @@ class AnalyticsService {
 
     try {
       final commonParams = await _getCommonParameters();
-      await _analytics.setDefaultEventParameters(commonParams.toMap());
+      await _analytics?.setDefaultEventParameters(commonParams.toMap());
       _isInitialized = true;
     } catch (e) {
       Logger.error('Analytics initialization error: $e');
@@ -57,7 +57,7 @@ class AnalyticsService {
         ...?parameters,
       };
 
-      await _analytics.logEvent(
+      await _analytics?.logEvent(
         name: eventName,
         parameters: combinedParameters,
       );
@@ -75,7 +75,7 @@ class AnalyticsService {
     if (_isAnalyticsDisabled) return;
 
     try {
-      await _analytics.setUserProperty(
+      await _analytics?.setUserProperty(
         name: name,
         value: value,
       );

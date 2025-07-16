@@ -109,14 +109,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
           Provider.value(value: _realmManager),
 
-          if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) ...{
-            Provider<AnalyticsService>(
-              create: (context) => AnalyticsService(
-                FirebaseAnalytics.instance,
-                CoconutWalletApp.kIsFirebaseAnalyticsUsed,
-              ),
+          Provider<AnalyticsService>(
+            create: (context) => AnalyticsService(
+              CoconutWalletApp.kIsFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null,
+              !CoconutWalletApp.kIsFirebaseAnalyticsUsed,
             ),
-          },
+          ),
 
           // Repository 등록 - Provider보다 먼저 등록해야 함
           Provider<WalletRepository>(
