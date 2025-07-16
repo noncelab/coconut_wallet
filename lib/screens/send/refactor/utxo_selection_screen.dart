@@ -4,7 +4,6 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/utxo_selection_view_model.dart';
@@ -26,9 +25,11 @@ import 'package:provider/provider.dart';
 class UtxoSelectionScreen extends StatefulWidget {
   final List<UtxoState> selectedUtxoList;
   final int walletId;
+  final BitcoinUnit currentUnit;
 
   const UtxoSelectionScreen({
     super.key,
+    required this.currentUnit,
     required this.selectedUtxoList,
     required this.walletId,
   });
@@ -57,7 +58,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   bool _isScrolledOrderDropdownVisible = false; // 필터 드롭다운(축소형)
   late Offset _orderDropdownButtonPosition;
   late Offset _scrolledOrderDropdownButtonPosition;
-  late BitcoinUnit _currentUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +140,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   void initState() {
     try {
       super.initState();
-      _currentUnit = context.read<PreferenceProvider>().currentUnit;
       _selectedUtxoOrder = _utxoOrderOptions[0];
       _viewModel = UtxoSelectionViewModel(
           Provider.of<WalletProvider>(context, listen: false),
@@ -210,9 +209,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   Widget _buildTotalUtxoAmount(Widget textKeyWidget, ErrorState? errorState,
       int selectedUtxoListLength, int totalSelectedUtxoAmount) {
-    String utxoSumText = _currentUnit.displayBitcoinAmount(totalSelectedUtxoAmount,
-        defaultWhenZero: '0', shouldCheckZero: true);
-    String unitText = _currentUnit.symbol;
+    String utxoSumText = widget.currentUnit
+        .displayBitcoinAmount(totalSelectedUtxoAmount, defaultWhenZero: '0', shouldCheckZero: true);
+    String unitText = widget.currentUnit.symbol;
 
     return Column(
       children: [
@@ -531,7 +530,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                   key: ValueKey(utxo.transactionHash),
                   utxo: utxo,
                   utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-                  currentUnit: _currentUnit,
+                  currentUnit: widget.currentUnit,
                 ),
               );
             }
@@ -539,7 +538,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               child: SelectableUtxoItemCard(
                 key: ValueKey(utxo.transactionHash),
-                currentUnit: _currentUnit,
+                currentUnit: widget.currentUnit,
                 utxo: utxo,
                 isSelectable: true,
                 isSelected: viewModel.selectedUtxoList.contains(utxo),

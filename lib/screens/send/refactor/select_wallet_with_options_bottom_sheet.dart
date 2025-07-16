@@ -1,16 +1,15 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,9 +18,11 @@ class SelectWalletWithOptionsBottomSheet extends StatefulWidget {
   final List<UtxoState> selectedUtxoList;
   final bool isUtxoSelectionAuto;
   final WalletInfoUpdateCallback onWalletInfoUpdated;
+  final BitcoinUnit currentUnit;
 
   const SelectWalletWithOptionsBottomSheet(
       {super.key,
+      required this.currentUnit,
       required this.selectedWalletId,
       required this.onWalletInfoUpdated,
       required this.isUtxoSelectionAuto,
@@ -152,6 +153,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
                 Navigator.pushNamed(context, "/refactor-utxo-selection", arguments: {
                   "selectedUtxoList": _selectedUtxoList,
                   "walletId": _selectedWalletItem!.id,
+                  "currentUnit": widget.currentUnit,
                 }).then((utxoList) {
                   if (utxoList != null) {
                     _setSelectedUtxoList(utxoList as List<UtxoState>);
@@ -194,6 +196,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
             context: context,
             childBuilder: (scrollController) => SelectWalletBottomSheet(
                   scrollController: scrollController,
+                  currentUnit: widget.currentUnit,
                   walletId: selectedWalletId,
                   onWalletChanged: (id) {
                     _selectWalletItem(id);
@@ -233,10 +236,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
     int balanceInt = _isUtxoSelectionAuto || _selectedUtxoList.isEmpty
         ? selectedWalletBalance
         : selectedUtxoAmountSum;
-    String amountText = context
-        .read<PreferenceProvider>()
-        .currentUnit
-        .displayBitcoinAmount(balanceInt, withUnit: true);
+    String amountText = widget.currentUnit.displayBitcoinAmount(balanceInt, withUnit: true);
     if (!_isUtxoSelectionAuto && _selectedUtxoList.isNotEmpty) {
       amountText +=
           t.select_wallet_with_options_bottom_sheet.n_utxos(count: _selectedUtxoList.length);

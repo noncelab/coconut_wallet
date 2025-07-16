@@ -1,8 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:flutter/material.dart';
@@ -13,9 +13,14 @@ class SelectWalletBottomSheet extends StatefulWidget {
   final Function(int) onWalletChanged;
   final ScrollController? scrollController;
   final int walletId;
+  final BitcoinUnit currentUnit;
 
   const SelectWalletBottomSheet(
-      {super.key, required this.walletId, required this.onWalletChanged, this.scrollController});
+      {super.key,
+      required this.walletId,
+      required this.onWalletChanged,
+      required this.currentUnit,
+      this.scrollController});
 
   @override
   State<SelectWalletBottomSheet> createState() => _SelectWalletBottomSheetState();
@@ -93,10 +98,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
 
   Widget _buildWalletItem(WalletListItemBase walletBase, Balance? balance, bool isChecked) {
     int balanceInt = balance != null ? balance.confirmed : 0;
-    String amountText = context
-        .read<PreferenceProvider>()
-        .currentUnit
-        .displayBitcoinAmount(balanceInt, withUnit: true);
+    String amountText = widget.currentUnit.displayBitcoinAmount(balanceInt, withUnit: true);
     return Row(
       children: [
         SizedBox(

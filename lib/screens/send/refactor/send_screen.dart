@@ -951,6 +951,7 @@ class _SendScreenState extends State<SendScreen> {
                           context: context,
                           childBuilder: (scrollController) => SelectWalletBottomSheet(
                                 scrollController: scrollController,
+                                currentUnit: _viewModel.currentUnit,
                                 walletId: -1,
                                 onWalletChanged: (id) {
                                   Navigator.pop(context);
@@ -1015,6 +1016,7 @@ class _SendScreenState extends State<SendScreen> {
     CommonBottomSheets.showBottomSheet_50(
         context: context,
         child: SelectWalletWithOptionsBottomSheet(
+          currentUnit: _viewModel.currentUnit,
           selectedWalletId: _viewModel.selectedWalletId,
           onWalletInfoUpdated: _viewModel.onWalletInfoUpdated,
           isUtxoSelectionAuto: _viewModel.isUtxoSelectionAuto,
