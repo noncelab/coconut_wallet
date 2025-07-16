@@ -84,7 +84,8 @@ class UtxoSyncService {
               ))
           .toList();
     } catch (e, stackTrace) {
-      Logger.error('Failed to get UTXO list: $e');
+      Logger.error(
+          'Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
       Logger.error('Stack trace: $stackTrace');
       return [];
     }
