@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -277,7 +278,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<ConnectivityProvider>(context, listen: false),
         Provider.of<PriceProvider>(context, listen: false),
         Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id));
+        Provider.of<NodeProvider>(context, listen: false));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);
@@ -370,8 +371,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   bool _checkStateAndShowToast() {
-    if (_viewModel.isNetworkOn != true) {
+    if (_viewModel.isNetworkOff) {
       CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      return false;
+    }
+
+    if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
+      CoconutToast.showWarningToast(context: context, text: t.errors.electrum_connection_failed);
       return false;
     }
 
