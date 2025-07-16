@@ -548,7 +548,7 @@ tooltip:
     by_hardware_wallet: "하드웨어 월렛으로"
     by_vault_app: "볼트 앱으로"
   unsigned_tx_qr:
-    in_vault: "볼트에서"
+    open_vault: "볼트에서"
     select_wallet: "$name 선택, "
     select_menu: "$menu로 이동하여 "
     scan_qr_below: "아래 QR 코드를 스캔해 주세요."
