@@ -57,7 +57,7 @@ tx_memo: "Tx Memo"
 tx_id: "Tx ID"
 block_num: "Block Number"
 inquiry_details: "Inquiry"
-utxo_total: "UTXO Total"
+utxo_total: "Selected Amount"
 receiver: "Send To"
 recipient: "Recipient"
 estimated_fee: "Est. Fee"
@@ -260,8 +260,9 @@ send_screen:
   fee_rate: "Fee Rate"
   fee_rate_suffix: "sat/vB"
   estimated_fee: "Estimated Total Fee"
-  fee_paid_by_recipients: "Fee Paid by Recipients"
-  fee_paid_by_recipients_description: "Recipients will receive the exact amount you specify."
+  fee_paid_by_recipients: "Fee subtracted from send amount"
+  fee_paid_by_recipients_description: "Recipient receives the exact amount entered"
+  fee_substracted_from_send_amount: "The fee will be subtracted from the recipient’s amount"
   my_address: "My Address"
   add_recipient: "Add Recipient"
   use_btc_unit: "Use BTC Unit"
@@ -270,7 +271,7 @@ send_screen:
   recommended_fee_unavailable: "Failed to Fetch Recommended Fee"
   recommended_fee_unavailable_description: "Please enter the fee manually."
   tooltip_text: "${count} addresses • Total ${amount}"
-  tooltip_max_mode_text: "Send All Mode On"
+  tooltip_max_mode_text: "Send All Mode Enabled"
 
 utxo_selection_screen:
   title: "Select UTXOs"
@@ -279,7 +280,7 @@ select_wallet_with_options_bottom_sheet:
   select_utxo: "Select UTXOs"
   select_utxo_auto: "Auto-Select UTXOs"
   select_utxo_auto_minimal_fee_description: "Automatically selects UTXOs for minimal fee"
-  select_utxo_auto_selected_utxo_description: "Creates a transaction using the selected UTXOs"
+  select_utxo_auto_selected_utxo_description: "Transaction will use your selected UTXOs only"
   n_utxos: " • ${count} utxos"
 
 # send screen end ----
@@ -514,7 +515,7 @@ errors:
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"
     recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."
-    insufficient_utxo: "Insufficient UTXO total"
+    insufficient_utxo: "Selected UTXOs are insufficient"
   address_error:
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
