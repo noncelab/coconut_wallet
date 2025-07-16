@@ -210,7 +210,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   Widget _buildToolTip() {
-    // TODO: 코코넛 지갑인 경우 UI는 볼트와 한꺼번에 수정합니다.
     if (_sendInfoProvider.isDonation == true) {
       return Padding(
         padding: const EdgeInsets.only(
