@@ -17,6 +17,7 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -777,21 +778,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   double _estimateVirtualByte(Transaction transaction) {
-    double estimatedVirtualByte;
-    switch (_walletListItemBase.walletType) {
-      case WalletType.singleSignature:
-        estimatedVirtualByte = transaction.estimateVirtualByte(AddressType.p2wpkh);
-        break;
-      case WalletType.multiSignature:
-        final multisigWallet = _walletListItemBase.walletBase as MultisignatureWallet;
-        estimatedVirtualByte = transaction.estimateVirtualByte(AddressType.p2wsh,
-            requiredSignature: multisigWallet.requiredSignature,
-            totalSigner: multisigWallet.totalSigner);
-        break;
-      default:
-        throw Exception('Unknown wallet type');
-    }
-    return estimatedVirtualByte;
+    return TransactionUtil.estimateVirtualByteByWallet(walletListItemBase, transaction);
   }
 
   String _getRecommendedFeeRateDescriptionForCpfp() {

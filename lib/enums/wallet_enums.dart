@@ -1,8 +1,18 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 enum WalletType {
   singleSignature,
-  multiSignature,
+  multiSignature;
+
+  AddressType get addressType {
+    switch (this) {
+      case WalletType.singleSignature:
+        return AddressType.p2wpkh;
+      case WalletType.multiSignature:
+        return AddressType.p2wsh;
+    }
+  }
 }
 
 enum WalletSyncResult {

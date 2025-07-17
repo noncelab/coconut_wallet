@@ -79,7 +79,10 @@ dependencies:
     git:
       url: https://github.com/noncelab/coconut_design_system.git
       ref: feat/appbar-custom-widget
-  coconut_lib: ^0.10.4
+  coconut_lib:
+    git: 
+      url: https://github.com/Noncelab/coconut_lib.git
+      ref: develop
   realm: ^20.0.0
   cryptography: ^2.7.0
   slang: ^4.4.1
