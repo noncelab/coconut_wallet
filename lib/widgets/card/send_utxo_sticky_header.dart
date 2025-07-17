@@ -140,7 +140,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   }
 
   String get unitText => currentUnit.symbol;
-  String get feeText => currentUnit.displayBitcoinAmount(estimatedFee, defaultWhenNull: '0');
+  String get feeText => currentUnit.displayBitcoinAmount(estimatedFee, defaultWhenNull: '-');
   String get changeText => currentUnit.displayBitcoinAmount(change, defaultWhenNull: '-');
 
   Widget _buildEstimatedFee() {

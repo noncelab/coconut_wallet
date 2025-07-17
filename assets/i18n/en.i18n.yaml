@@ -59,7 +59,7 @@ receiver: "Send To"
 recipient: "Recipient"
 estimated_fee: "Est. Fee"
 total_cost: "Total Cost"
-input_directly: "Direct Input"
+input_directly: "Fee Rate"
 mnemonic_wordlist: "Mnemonic Wordlist"
 self_security_check: "Security Check"
 app_info: "App Info"
@@ -140,7 +140,7 @@ wallet_add_scanner_screen:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  self: "Input Directly"
+  self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
   guide_vault: "Coconut Vault App - Select Wallet - Export Wallet Info"
@@ -178,7 +178,7 @@ wallet_add_scanner_screen:
     step3_em: " Export Xpub"
 
 wallet_add_input_screen:
-  app_bar_title_text: "Input Directly"
+  app_bar_title_text: "Add Manually"
   placeholder_text: "Enter the extended public key (zpub) or descriptor"
   format_error_text: "Unable to verify format"
   invalid_character_error_text: "Invalid character"
@@ -462,7 +462,7 @@ errors:
   insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"
-    recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."
+    recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Enter Manually' button to enter fee rate."
     insufficient_utxo: "Insufficient UTXO total"
   address_error:
     invalid: "Not a valid address."
@@ -486,11 +486,11 @@ errors:
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sats/vb)"
-  enter_fee_directly: "Enter Directly"
+  enter_fee_directly: "Enter Manually"
   search_mnemonic_word: "Search in English"
 
 tooltip:
-  recommended_fee1: "Could not fetch recommended fee. Please enter fee directly."
+  recommended_fee1: "Could not fetch recommended fee. Please enter fee manually."
   recommended_fee2: "The fee you set is $bitcoin $unit or higher."
   wallet_add1: "Add new wallet or update existing wallets."
   wallet_add2: "Vault"

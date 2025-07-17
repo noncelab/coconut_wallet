@@ -59,6 +59,23 @@ void main() {
   };
 
   group('SingleTx - Auto UTXO Selection', () {
+    test('Single / Auto Utxo / 수수료 발신자 부담 / availableUtxos가 비어있을 때', () {
+      final TransactionBuildResult result = TransactionBuilder(
+        availableUtxos: [],
+        recipients: singleRecipient,
+        feeRate: 1.0,
+        changeDerivationPath: "m/84'/1'/0'/0/0",
+        walletListItemBase: wallet,
+        isFeeSubtractedFromAmount: false,
+        isUtxoFixed: false,
+      ).build();
+
+      expect(result.isFailure, isTrue);
+      expect(result.estimatedFee, isNotNull);
+      expect(result.transaction, isNull);
+      expect(result.selectedUtxos, isEmpty);
+    });
+
     test('Single / Auto Utxo / 수수료 발신자 부담', () {
       final TransactionBuildResult result = TransactionBuilder(
         availableUtxos: availableUtxos,

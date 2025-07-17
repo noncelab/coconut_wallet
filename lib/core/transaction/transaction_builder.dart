@@ -58,8 +58,7 @@ class TransactionBuilder {
     required this.walletListItemBase,
     required this.isFeeSubtractedFromAmount,
     required this.isUtxoFixed,
-  })  : assert(availableUtxos.isNotEmpty),
-        assert(recipients.isNotEmpty);
+  }) : assert(recipients.isNotEmpty);
 
   TransactionBuildResult build() {
     try {

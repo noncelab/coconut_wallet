@@ -504,7 +504,7 @@ errors:
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
     insufficient_balance: "잔액이 부족하여 수수료를 낼 수 없어요"
-    recommended_fee_unavailable: "추천 수수료를 조회하지 못했어요.\n'변경' 버튼을 눌러 수수료를 직접 입력해 주세요."
+    recommended_fee_unavailable: "추천 수수료를 조회하지 못했어요.\n'직접 입력하기' 버튼을 눌러 수수료를 직접 입력해 주세요."
     insufficient_utxo: "UTXO 합계가 모자라요"
   address_error:
     invalid: "올바른 주소가 아니에요."
