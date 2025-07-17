@@ -106,32 +106,32 @@ class _SettingsScreen extends State<SettingsScreen> {
                           }),
                   ]),
 
-                  if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
-                    CoconutLayout.spacing_200h,
-                    MultiButton(
-                      children: [
-                        SingleButton(
-                          title: t.settings_screen.hide_balance,
-                          rightElement: CupertinoSwitch(
-                              value: viewModel.isBalanceHidden,
-                              activeColor: CoconutColors.gray100,
-                              trackColor: CoconutColors.gray600,
-                              thumbColor: CoconutColors.gray800,
-                              onChanged: (value) {
-                                viewModel.changeIsBalanceHidden(value);
-                              }),
-                        ),
-                        if (viewModel.isBalanceHidden)
-                          SingleButton(
-                            title: t.settings_screen.fake_balance.fake_balance_setting,
-                            onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
-                                  context: context, child: const FakeBalanceBottomSheet());
-                            },
-                          ),
-                      ],
-                    ),
-                  ],
+                  // if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
+                  //   CoconutLayout.spacing_200h,
+                  //   MultiButton(
+                  //     children: [
+                  //       SingleButton(
+                  //         title: t.settings_screen.hide_balance,
+                  //         rightElement: CupertinoSwitch(
+                  //             value: viewModel.isBalanceHidden,
+                  //             activeColor: CoconutColors.gray100,
+                  //             trackColor: CoconutColors.gray600,
+                  //             thumbColor: CoconutColors.gray800,
+                  //             onChanged: (value) {
+                  //               viewModel.changeIsBalanceHidden(value);
+                  //             }),
+                  //       ),
+                  //       if (viewModel.isBalanceHidden)
+                  //         SingleButton(
+                  //           title: t.settings_screen.fake_balance.fake_balance_setting,
+                  //           onPressed: () async {
+                  //             CommonBottomSheets.showBottomSheet_50(
+                  //                 context: context, child: const FakeBalanceBottomSheet());
+                  //           },
+                  //         ),
+                  //     ],
+                  //   ),
+                  // ],
                   CoconutLayout.spacing_400h,
                   _category(t.unit),
                   ButtonGroup(buttons: [

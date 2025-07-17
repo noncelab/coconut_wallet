@@ -6,12 +6,14 @@ class MultiButton extends StatefulWidget {
   final List<SingleButton> children;
   final int animationDuration;
   final Color backgroundColor;
+  final bool showDivider;
 
   const MultiButton({
     super.key,
     required this.children,
     this.animationDuration = 100,
     this.backgroundColor = CoconutColors.gray800,
+    this.showDivider = true,
   });
 
   @override
@@ -55,7 +57,7 @@ class _MultiButtonState extends State<MultiButton> with TickerProviderStateMixin
                   children: widget.children.length > 1
                       ? [
                           Container(
-                            height: 1,
+                            height: widget.showDivider ? 1 : 0,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(24),
                               color: CoconutColors.gray700,

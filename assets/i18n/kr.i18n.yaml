@@ -180,6 +180,25 @@ pin_check_screen:
   text: "비밀번호를 눌러주세요"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "내 지갑 전체보기"
+  edit_home_screen: "홈 화면 편집하기"
+  edit:
+    title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
+    hide_balance: "잔액 숨기기"
+    hide_balance_on_home: "홈 화면에 잔액을 표시하지 않아요."
+    fake_balance:
+      fake_balance_display: "가짜 잔액 표시"
+      fake_balance_description: "대신 가짜 잔액을 표시해요. 지갑이 여러 개면 각 잔액이 자동 계산돼요."
+      fake_balance_input_placeholder: "홈 화면에 표시할 금액(BTC 단위)"
+      fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
+      fake_balance_input_not_enough_error: "$btc ($sats sats) 미만으로는 설정할 수 없어요"
+    category:
+      total_balance: "잔액 합계"
+      wallet_list: "지갑 목록"
+      recent_tramsactions: "최근 거래"
+      analysis: "분석"
+
 wallet_add_scanner_screen:
   add_wallet: "지갑 추가"
   add_watch_only_wallet: "보기 전용 지갑 추가"
@@ -227,7 +246,6 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
-  view_all_wallets: "내 지갑 전체보기"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   settings:
@@ -243,7 +261,6 @@ wallet_list:
     delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
-    
 
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
@@ -399,14 +416,6 @@ settings_screen:
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"
   change_password: "비밀번호 바꾸기"
-  hide_balance: "홈 화면 잔액 숨기기"
-  fake_balance:
-    fake_balance_setting: "가짜 잔액 설정"
-    fake_balance_display: "가짜 잔액 표시"
-    fake_balance_input_placeholder: "가짜 총 잔액을 설정해 주세요.(BTC 단위)"
-    fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
-    fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
-    fake_balance_input_not_enough_error: "$btc ($sats sats) 미만으로는 설정할 수 없어요"
   language: "언어"
   korean: "한국어"
   english: "English"

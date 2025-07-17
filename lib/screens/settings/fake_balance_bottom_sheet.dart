@@ -43,8 +43,6 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
-    debugPrint(
-        '_preferenceProvider.fakeBalanceTotalAmount: ${_preferenceProvider.fakeBalanceTotalAmount}');
     _fakeBalanceTotalBtc = _preferenceProvider.fakeBalanceTotalAmount != null
         ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
         : null;
@@ -113,7 +111,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
         resizeToAvoidBottomInset: false,
         backgroundColor: CoconutColors.black,
         appBar: CoconutAppBar.build(
-          title: t.settings_screen.fake_balance.fake_balance_setting,
+          title: t.wallet_home_screen.edit.fake_balance.fake_balance_display,
           context: context,
           isBottom: true,
         ),
@@ -130,7 +128,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              t.settings_screen.fake_balance.fake_balance_display,
+                              t.wallet_home_screen.edit.fake_balance.fake_balance_display,
                               style: CoconutTypography.body2_14_Bold.setColor(
                                 CoconutColors.white,
                               ),
@@ -158,9 +156,10 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             ],
                             placeholderText: _fakeBalanceTotalBtc != null
                                 ? ''
-                                : t.settings_screen.fake_balance.fake_balance_input_placeholder,
+                                : t.wallet_home_screen.edit.fake_balance
+                                    .fake_balance_input_placeholder,
                             descriptionText: _textFieldFocusNode.hasFocus
-                                ? '  ${t.settings_screen.fake_balance.fake_balance_input_description}'
+                                ? '  ${t.wallet_home_screen.edit.fake_balance}'
                                 : '',
                             suffix: _textEditingController.text.isNotEmpty
                                 ? Padding(
@@ -184,8 +183,8 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             cursorColor: CoconutColors.white,
                             maxLength: _maxInputLength,
                             errorText: _inputError == FakeBalanceInputError.exceedsTotalSupply
-                                ? '  ${t.settings_screen.fake_balance.fake_balance_input_exceeds_error}'
-                                : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
+                                ? '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_exceeds_error}'
+                                : '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
                             isError: _inputError != FakeBalanceInputError.none,
                             maxLines: 1,
                           ),

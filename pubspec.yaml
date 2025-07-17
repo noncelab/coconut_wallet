@@ -278,6 +278,10 @@ flutter:
     - assets/svg/plus.svg
     - assets/svg/broom.svg
     - assets/svg/receipt.svg
+    - assets/svg/piggy-bank.svg
+    - assets/svg/wallet.svg
+    - assets/svg/transaction.svg
+    - assets/svg/analysis.svg
 
   fonts:
     - family: SpaceGrotesk

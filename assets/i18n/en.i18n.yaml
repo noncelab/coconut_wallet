@@ -135,6 +135,25 @@ pin_check_screen:
   text: "Enter your password"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "View All My Wallets"
+  edit_home_screen: "Edit Home Screen"
+  edit:
+    title: "You can hide or add features\non the home screen"
+    hide_balance: "Hide Balance"
+    hide_balance_on_home: "Balance will not be displayed on the home screen."
+    fake_balance:
+      fake_balance_display: "Display Fake Balance"
+      fake_balance_description: "If you have multiple wallets, each wallet's balance will be calculated automatically.."
+      fake_balance_input_placeholder: "Please set the fake total balance (in BTC units)"
+      fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
+      fake_balance_input_not_enough_error: "Cannot set below $btc ($sats sats)"
+    category:
+      total_balance: "Total Balance"
+      wallet_list: "Wallet List"
+      recent_tramsactions: "Recent Transactions"
+      analysis: "Analysis"
+
 wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"
@@ -179,9 +198,9 @@ wallet_add_scanner_screen:
     step3: "3. "
     step3_em: " Export Xpub"
 
+# lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
-  view_all_wallets: "View All My Wallets"
   primary_wallet: "Primary Wallet"
   exclude_from_total_amount: "Exclude from Home Total"
   settings:
@@ -320,14 +339,6 @@ settings_screen:
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
   change_password: "Change Password"
-  hide_balance: "Hide Balance"
-  fake_balance:
-    fake_balance_setting: "Fake Balance Setting"
-    fake_balance_display: "Display Fake Balance"
-    fake_balance_input_placeholder: "Please set the fake total balance (in BTC units)"
-    fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
-    fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
-    fake_balance_input_not_enough_error: "Cannot set below $btc ($sats sats)"
   language: "Language"
   korean: "한국어"
   english: "English"

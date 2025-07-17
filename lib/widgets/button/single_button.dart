@@ -46,17 +46,20 @@ class SingleButton extends StatelessWidget {
   final Widget? leftElement;
   final SingleButtonPosition buttonPosition;
   final TextStyle? subtitleStyle;
+  final Color? backgroundColor;
 
-  const SingleButton(
-      {super.key,
-      required this.title,
-      this.subtitle,
-      this.description,
-      this.onPressed,
-      this.rightElement,
-      this.leftElement,
-      this.buttonPosition = SingleButtonPosition.none,
-      this.subtitleStyle});
+  const SingleButton({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.description,
+    this.onPressed,
+    this.rightElement,
+    this.leftElement,
+    this.buttonPosition = SingleButtonPosition.none,
+    this.subtitleStyle = CoconutTypography.body3_12,
+    this.backgroundColor = CoconutColors.gray800,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +67,7 @@ class SingleButton extends StatelessWidget {
         onTap: onPressed,
         child: Container(
           decoration: BoxDecoration(
-            color: CoconutColors.gray800,
+            color: backgroundColor,
             borderRadius: buttonPosition.radius,
           ),
           padding: buttonPosition.padding,

@@ -16,13 +16,14 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -134,49 +135,51 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 child: Stack(
                   children: [
                     CustomScrollView(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        semanticChildCount: walletItem.length,
-                        slivers: <Widget>[
-                          _buildAppBar(viewModel),
-                          // pull to refresh시 로딩 인디케이터를 보이기 위함
-                          CupertinoSliverRefreshControl(
-                            onRefresh: viewModel.updateWalletBalances,
-                          ),
-                          _buildLoadingIndicator(viewModel),
-                          _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance(),
-                              shouldShowLoadingIndicator, viewModel.walletItemList.isEmpty),
-                          if (!shouldShowLoadingIndicator)
-                            SliverToBoxAdapter(
-                                child: Column(
-                              children: [
-                                if (walletItem.isEmpty) ...[
-                                  CoconutLayout.spacing_600h,
-                                  WalletAdditionGuideCard(onPressed: _onAddWalletPressed)
-                                ]
-                              ],
-                            )),
-                          if (shouldShowLoadingIndicator && walletItem.isEmpty) ...[
-                            // 처음 로딩시 스켈레톤
-                            _buildBodySkeleton(),
-                          ],
-                          if (walletItem.isNotEmpty) ...[
-                            // 지갑 리스트가 비어있지 않을 때
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      semanticChildCount: walletItem.length,
+                      slivers: <Widget>[
+                        _buildAppBar(viewModel),
+                        // pull to refresh시 로딩 인디케이터를 보이기 위함
+                        CupertinoSliverRefreshControl(
+                          onRefresh: viewModel.updateWalletBalances,
+                        ),
+                        _buildLoadingIndicator(viewModel),
+                        _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance(),
+                            shouldShowLoadingIndicator, viewModel.walletItemList.isEmpty),
+                        if (!shouldShowLoadingIndicator)
+                          SliverToBoxAdapter(
+                              child: Column(
+                            children: [
+                              if (walletItem.isEmpty) ...[
+                                CoconutLayout.spacing_600h,
+                                WalletAdditionGuideCard(onPressed: _onAddWalletPressed)
+                              ]
+                            ],
+                          )),
+                        if (shouldShowLoadingIndicator && walletItem.isEmpty) ...[
+                          // 처음 로딩시 스켈레톤
+                          _buildBodySkeleton(),
+                        ],
+                        if (walletItem.isNotEmpty) ...[
+                          // 지갑 리스트가 비어있지 않을 때
 
-                            // 전체보기 위젯
-                            _buildViewAll(walletItem.length),
+                          // 전체보기 위젯
+                          _buildViewAll(walletItem.length),
 
-                            if (favoriteWallets.isNotEmpty)
-                              // 즐겨찾기된 지갑 목록
-                              _buildWalletList(
-                                walletItem,
-                                favoriteWallets,
-                                walletBalanceMap,
-                                isBalanceHidden,
-                                (id) => viewModel.getFakeBalance(id),
-                              ),
-                          ],
-                        ]),
+                          if (favoriteWallets.isNotEmpty)
+                            // 즐겨찾기된 지갑 목록
+                            _buildWalletList(
+                              walletItem,
+                              favoriteWallets,
+                              walletBalanceMap,
+                              isBalanceHidden,
+                              (id) => viewModel.getFakeBalance(id),
+                            ),
+                        ],
+                        if (walletItem.isNotEmpty) _buildHomeEditButton(),
+                      ],
+                    ),
                     _buildDropdownBackdrop(),
                     _buildDropdownMenu(),
                   ],
@@ -717,6 +720,29 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId});
   }
 
+  Widget _buildHomeEditButton() {
+    return SliverToBoxAdapter(
+      child: Column(
+        children: [
+          CoconutLayout.spacing_800h,
+          CoconutUnderlinedButton(
+            padding: const EdgeInsets.all(8),
+            onTap: () => CommonBottomSheets.showBottomSheet_100(
+                context: context,
+                isScrollControlled: true,
+                // controller: _draggableController,
+                isDismissible: false,
+                enableDrag: true,
+                child: const WalletHomeEditBottomSheet()),
+            text: t.wallet_home_screen.edit_home_screen,
+            textStyle: CoconutTypography.body3_12,
+          ),
+          CoconutLayout.spacing_1600h,
+        ],
+      ),
+    );
+  }
+
   Widget _buildViewAll(int walletCount) {
     return SliverToBoxAdapter(
       child: Column(
@@ -740,7 +766,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      t.wallet_list.view_all_wallets,
+                      t.wallet_home_screen.view_all_wallets,
                       style: CoconutTypography.body2_14,
                     ),
                     Row(
