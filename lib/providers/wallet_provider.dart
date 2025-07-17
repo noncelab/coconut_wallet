@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -380,6 +382,7 @@ class WalletProvider extends ChangeNotifier {
   Future<void> _fetchWalletPreferences() async {
     var walletOrder = _preferenceProvider.walletOrder;
     var favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
+    var homeFeatures = _preferenceProvider.homeFeatures;
     if (walletOrder.isEmpty) {
       walletOrder = List.from(walletItemList.map((w) => w.id));
       await _preferenceProvider.setWalletOrder(walletOrder);
@@ -387,6 +390,19 @@ class WalletProvider extends ChangeNotifier {
     if (favoriteWalletIds.isEmpty) {
       favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
       await _preferenceProvider.setFavoriteWalletIds(favoriteWalletIds);
+    }
+    if (homeFeatures.isEmpty) {
+      homeFeatures.addAll([
+        HomeFeature(
+            label: t.wallet_home_screen.edit.category.recent_tramsactions,
+            assetPath: 'assets/svg/transaction.svg',
+            isEnabled: true),
+        HomeFeature(
+            label: t.wallet_home_screen.edit.category.analysis,
+            assetPath: 'assets/svg/analysis.svg',
+            isEnabled: true),
+      ]);
+      await _preferenceProvider.setHomeFeautres(homeFeatures);
     }
   }
 

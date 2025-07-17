@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -51,6 +52,10 @@ class PreferenceProvider extends ChangeNotifier {
   late List<int> _excludedFromTotalBalanceWalletIds;
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
 
+  /// 홈 화면에 표시할 기능(최근 거래, 분석 ...)
+  late List<HomeFeature> _homeFeatures;
+  List<HomeFeature> get homeFeatures => _homeFeatures;
+
   PreferenceProvider(this._walletPreferencesRepository) {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
@@ -63,6 +68,7 @@ class PreferenceProvider extends ChangeNotifier {
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
     _excludedFromTotalBalanceWalletIds =
         _walletPreferencesRepository.getExcludedWalletIds().toList();
+    _homeFeatures = _walletPreferencesRepository.getHomeFeatures();
     _initializeFiat();
     _initializeLanguageFromSystem();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -280,6 +286,15 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
     await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
+    notifyListeners();
+  }
+
+  Future<void> setHomeFeautres(List<HomeFeature> features) async {
+    // 잔액 합계, 지갑 목록은 고정이기 때문에 리스트에 포함되지 않습니다.
+    // 토글 가능한 항목('최근 거래', '분석'...)만 리스트에 포함됩니다.
+    // 추후 홈 화면 기능이 추가됨에 따라 kHomeFeatures를 수정할 필요가 있습니다.
+    _homeFeatures = List.from(features);
+    await _walletPreferencesRepository.setHomeFeatures(features);
     notifyListeners();
   }
 }

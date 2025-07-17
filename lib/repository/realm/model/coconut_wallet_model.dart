@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:realm/realm.dart';
 
 /// 스키마 수정/추가 시 검토해야 할 코드
@@ -26,6 +27,7 @@ final realmAllSchemas = [
   RealmCpfpHistory.schema,
   RealmTransactionMemo.schema,
   RealmWalletPreferences.schema,
+  RealmHomeFeature.schema,
 ];
 
 @RealmModel()
@@ -225,4 +227,13 @@ class _RealmWalletPreferences {
   late List<int> favoriteWalletIds;
   // 총 잔액에서 제외되는 지갑 ID 목록.
   late List<int> excludedFromTotalBalanceWalletIds;
+  // 홈 화면에 표시되는 기능 Map
+  late List<_RealmHomeFeature> homeFeatures;
+}
+
+@RealmModel()
+class _RealmHomeFeature {
+  late String label;
+  late String assetPath;
+  late bool isEnabled;
 }

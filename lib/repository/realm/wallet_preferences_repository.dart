@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 
@@ -39,7 +40,7 @@ class WalletPreferencesRepository extends BaseRepository {
       });
     } else {
       await realm.writeAsync(() {
-        realm.add(RealmWalletPreferences(0)..favoriteWalletIds.addAll(ids));
+        realm.add(RealmWalletPreferences(0)..favoriteWalletIds.addAll(ids), update: true);
       });
     }
   }
@@ -59,6 +60,31 @@ class WalletPreferencesRepository extends BaseRepository {
     } else {
       await realm.writeAsync(() {
         realm.add(RealmWalletPreferences(0)..excludedFromTotalBalanceWalletIds.addAll(ids));
+      });
+    }
+  }
+
+  List<HomeFeature> getHomeFeatures() {
+    final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;
+    return prefs?.homeFeatures
+            .map((e) => HomeFeature(label: e.label, assetPath: e.assetPath, isEnabled: e.isEnabled))
+            .toList() ??
+        [];
+  }
+
+  Future<void> setHomeFeatures(List<HomeFeature> features) async {
+    final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;
+    if (prefs != null) {
+      await realm.writeAsync(() {
+        prefs.homeFeatures.clear();
+        prefs.homeFeatures.addAll(features.map((f) => RealmHomeFeature(f.label, f.assetPath, f.isEnabled)));
+      });
+    } else {
+      await realm.writeAsync(() {
+        realm.add(
+          RealmWalletPreferences(0)
+            ..homeFeatures.addAll(features.map((f) => RealmHomeFeature(f.label, f.assetPath, f.isEnabled))),
+        );
       });
     }
   }

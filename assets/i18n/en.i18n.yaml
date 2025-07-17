@@ -35,6 +35,7 @@ close: "Close"
 next: "Next"
 modify: "Modify"
 confirm: "Confirm"
+cancel: "Cancel"
 security: "Security"
 general: "General"
 unit: "Unit"
@@ -149,10 +150,15 @@ wallet_home_screen:
       fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
       fake_balance_input_not_enough_error: "Cannot set below $btc ($sats sats)"
     category:
-      total_balance: "Total Balance"
-      wallet_list: "Wallet List"
-      recent_tramsactions: "Recent Transactions"
+      total_balance: "Total\nBalance"
+      wallet_list: "Wallet\nList"
+      recent_tramsactions: "Recent\nTransactions"
       analysis: "Analysis"
+    alert: 
+          empty_fake_balance: "Enter Fake Balance"
+          empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
+          set_to_0: "Set balance to 0 BTC"
+          enter_again: "Try again"
 
 wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
