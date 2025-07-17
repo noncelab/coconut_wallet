@@ -525,6 +525,9 @@ class SendViewModel extends ChangeNotifier {
       if (recipient.amount.isNotEmpty) amountSum += double.parse(recipient.amount);
     }
 
+    // 부동 소수점 오차가 생길 수 있으므로 소수점 8자리만 다시 파싱
+    if (isBtcUnit) amountSum = double.parse(amountSum.toStringAsFixed(8));
+
     if (amountSum > 0 && amountSum > balance / dustLimitDenominator) {
       _insufficientBalanceError = SendError.insufficientBalance;
     } else {

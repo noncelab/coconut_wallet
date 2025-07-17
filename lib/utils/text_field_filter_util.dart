@@ -2,6 +2,7 @@ String filterNumericInput(String input, {required int decimalPlaces, int integer
   String allowedCharsInput = input.replaceAll(RegExp(r'[^0-9.]'), '');
   if (input == '00') return '0';
   if (input == '.') return '0.';
+  if (RegExp(r'^0[1-9]$').hasMatch(input)) return input.substring(1);
 
   var splitedInput = allowedCharsInput.split('.');
   if (splitedInput.length == 1 && integerPlaces != -1 && splitedInput[0].length > integerPlaces) {

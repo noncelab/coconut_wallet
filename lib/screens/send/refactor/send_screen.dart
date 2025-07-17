@@ -566,6 +566,7 @@ class _SendScreenState extends State<SendScreen> {
                       textInputFormatter: [
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                       ],
+                      enableInteractiveSelection: false,
                       textAlign: TextAlign.end,
                       controller: _feeRateController,
                       focusNode: _feeRateFocusNode,
@@ -867,10 +868,9 @@ class _SendScreenState extends State<SendScreen> {
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: () {
-          final controllerIndex = _viewModel.currentIndex;
-          _addressControllerList[controllerIndex].text = address;
-          _addressFocusNodeList[controllerIndex].requestFocus();
+          _addressControllerList[_viewModel.currentIndex].text = address;
           _viewModel.markWalletAddressForUpdate(index);
+          _clearFocus();
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
