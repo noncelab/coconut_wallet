@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/dust_constants.dart';
+import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -20,27 +20,14 @@ class UtxoSelector {
       throw Exception('MultisigConfig is required for multisignature wallet');
     }
 
-    final addressType = _getAddressType(walletType);
-
     return _selectOptimalUtxosCommon(
       utxoList: utxoList,
       paymentMap: paymentMap,
       feeRate: feeRate,
-      addressType: addressType,
+      addressType: walletType.addressType,
       multisigConfig: multisigConfig,
       isFeeSubtractedFromAmount: isFeeSubtractedFromAmount,
     );
-  }
-
-  static AddressType _getAddressType(WalletType walletType) {
-    switch (walletType) {
-      case WalletType.singleSignature:
-        return AddressType.p2wpkh;
-      case WalletType.multiSignature:
-        return AddressType.p2wsh;
-      default:
-        throw Exception('Unsupported Wallet Type: $walletType');
-    }
   }
 
   /// UtxoSelector에서 Utxo 선택하는 기준으로 정렬
@@ -74,7 +61,7 @@ class UtxoSelector {
     double virtualByte = virtualByteInfo.baseVirtualByte;
     double addedVbytePerInput = virtualByteInfo.addedVBytePerInput;
     int estimatedFee = (virtualByte * feeRate).ceil();
-    int dust = getDustThreshold(addressType);
+    //int dust = getDustThreshold(addressType); // '받는 주소' 기준의 dust threshold 고려는 추후 필요시 적용
 
     // UTXO 선택 로직
     for (int i = 0; i < unspentUtxos.length; i++) {
@@ -83,7 +70,7 @@ class UtxoSelector {
       estimatedFee = ((virtualByte + addedVbytePerInput * (i + 1)) * feeRate).ceil();
       if (!isFeeSubtractedFromAmount) {
         // TODO: 기존 로직과의 차이: dust보다 큰 값이 남는지 체크 안해보는 중. change Output이 없도록 트랜잭션을 만들 수가 있음
-        if (totalInputAmount > totalSendAmount + estimatedFee) {
+        if (totalInputAmount >= totalSendAmount + estimatedFee) {
           break;
         }
       } else {
@@ -99,24 +86,12 @@ class UtxoSelector {
     }
 
     // 보내는 금액에서 제외하는 경우, amount 충분한지 확인
-    if (isFeeSubtractedFromAmount && paymentMap.entries.last.value - estimatedFee <= dust) {
+    if (isFeeSubtractedFromAmount && paymentMap.entries.last.value - estimatedFee <= dustLimit) {
       throw SendAmountTooLowException(
           message: 'Last output amount is too small to cover fee.', estimatedFee: estimatedFee);
     }
 
     return UtxoSelectionResult(selectedInputs, estimatedFee);
-  }
-
-  static int getDustThreshold(AddressType addressType) {
-    if (addressType.isTaproot) {
-      return DustThresholds.taproot;
-    }
-
-    final threshold = DustThresholds.thresholds[addressType];
-    if (threshold == null) {
-      throw Exception('Unsupported Address Type: $addressType');
-    }
-    return threshold;
   }
 
   static VirtualByteInfo _calculateVirtualBytes({
@@ -157,6 +132,18 @@ class UtxoSelector {
       addedVBytePerInput: addedVBytePerInput,
     );
   }
+
+  // static int getDustThreshold(AddressType addressType) {
+  //   if (addressType.isTaproot) {
+  //     return DustThresholds.taproot;
+  //   }
+
+  //   final threshold = DustThresholds.thresholds[addressType];
+  //   if (threshold == null) {
+  //     throw Exception('Unsupported Address Type: $addressType');
+  //   }
+  //   return threshold;
+  // }
 }
 
 class VirtualByteInfo {
