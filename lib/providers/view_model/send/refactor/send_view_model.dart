@@ -80,7 +80,7 @@ class SendViewModel extends ChangeNotifier {
   bool get isBatchMode => recipientList.length >= 2;
 
   // 수신자 정보
-  List<RecipientInfo> _recipientList = [RecipientInfo()];
+  List<RecipientInfo> _recipientList = [];
   List<RecipientInfo> get recipientList => _recipientList;
 
   int _currentIndex = 0;
@@ -93,6 +93,7 @@ class SendViewModel extends ChangeNotifier {
   int _amountSum = 0;
   String get amountSumText => _currentUnit.displayBitcoinAmount(_amountSum, withUnit: true);
 
+  List<bool> _walletAddressNeedsUpdate = [];
   List<WalletAddress> _walletAddressList = [];
   List<WalletAddress> get walletAddressList => _walletAddressList;
 
@@ -106,7 +107,7 @@ class SendViewModel extends ChangeNotifier {
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
   int get selectedUtxoListLength => _selectedUtxoList.length;
 
-  List<WalletListItemBase> get walletItemList => _walletProvider.walletItemListNotifier.value;
+  List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
   WalletListItemBase? get selectedWalletItem => _selectedWalletItem;
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
@@ -160,18 +161,39 @@ class SendViewModel extends ChangeNotifier {
 
   SendViewModel(this._walletProvider, this._sendInfoProvider, this._nodeProvider, this._isNetworkOn,
       this._currentUnit, this._onAmountTextUpdate, this._onRecipientPageDeleted, int? walletId) {
-    _recipientList = [RecipientInfo()];
-    _walletAddressList = [];
-
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
-      if (walletIndex != -1) {
-        selectWalletItem(walletIndex);
-        _walletAddressList = _walletProvider.getReceiveAddresses();
-      }
+      if (walletIndex != -1) selectWalletItem(walletIndex);
     }
+
+    _recipientList = [RecipientInfo()];
+    _walletAddressList = [];
+    _initWalletAddressList();
     _initBalances();
     _setRecommendedFees();
+  }
+
+  void _initWalletAddressList() {
+    _walletAddressList = _walletProvider.getReceiveAddresses();
+    _walletAddressNeedsUpdate = List.filled(_walletAddressList.length, false);
+  }
+
+  void _updateWalletAddressList() {
+    for (int i = 0; i < _walletAddressNeedsUpdate.length; ++i) {
+      if (!_walletAddressNeedsUpdate[i]) continue;
+
+      final walletBase = _walletProvider.walletItemList[i].walletBase;
+      final nextAddressIndex = _walletAddressList[i].index + 1;
+      final walletAddress = _walletProvider.generateAddress(walletBase, nextAddressIndex, false);
+      _walletAddressList[i] = walletAddress;
+      _walletAddressNeedsUpdate[i] = false;
+    }
+
+    notifyListeners();
+  }
+
+  void markWalletAddressForUpdate(int index) {
+    _walletAddressNeedsUpdate[index] = true;
   }
 
   Future<bool> _setRecommendedFees() async {
@@ -220,6 +242,7 @@ class SendViewModel extends ChangeNotifier {
   void setShowAddressBoard(bool isEnabled) {
     if (_showAddressBoard == isEnabled) return;
     _showAddressBoard = isEnabled;
+    if (_showAddressBoard) _updateWalletAddressList();
     notifyListeners();
   }
 
@@ -312,7 +335,10 @@ class SendViewModel extends ChangeNotifier {
   void deleteRecipient() {
     _recipientList.removeAt(_currentIndex);
     _recipientList = [..._recipientList];
-    if (_recipientList.isEmpty) setMaxMode(false); // 수신자 추가할 수 있도록 최대 보내기 모드를 비활성화
+    if (_recipientList.isEmpty) {
+      _initWalletAddressList(); // 주소 목록 인덱스 초기화
+      setMaxMode(false); // 수신자 추가할 수 있도록 최대 보내기 모드를 비활성화
+    }
 
     if (lastIndex >= 0) _currentIndex = lastIndex;
     setCurrentPage(_currentIndex);

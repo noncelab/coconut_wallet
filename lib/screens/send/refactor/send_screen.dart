@@ -415,9 +415,9 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildBottomTooltips(BuildContext context) {
-    return Selector<SendViewModel, Tuple3<bool, bool, String>>(
+    return Selector<SendViewModel, Tuple3<bool, int, String>>(
         selector: (_, viewModel) =>
-            Tuple3(viewModel.isMaxMode, viewModel.isBatchMode, viewModel.amountSumText),
+            Tuple3(viewModel.isMaxMode, _viewModel.recipientList.length, viewModel.amountSumText),
         builder: (context, data, child) {
           return Column(
             children: [
@@ -860,26 +860,31 @@ class _SendScreenState extends State<SendScreen> {
         });
   }
 
-  Widget _buildAddressRow(String address, String walletName, String derivationPath) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
-        final index = _viewModel.currentIndex;
-        _addressControllerList[index].text = address;
-        _addressFocusNodeList[index].requestFocus();
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            shortenAddress(address, head: 10),
-            style: CoconutTypography.body3_12_Number,
-          ),
-          Text(
-            "$walletName • $derivationPath",
-            style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-          ),
-        ],
+  Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
+    double bottomPadding = index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          final controllerIndex = _viewModel.currentIndex;
+          _addressControllerList[controllerIndex].text = address;
+          _addressFocusNodeList[controllerIndex].requestFocus();
+          _viewModel.markWalletAddressForUpdate(index);
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              shortenAddress(address, head: 10),
+              style: CoconutTypography.body3_12_Number,
+            ),
+            Text(
+              "$walletName • $derivationPath",
+              style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -930,13 +935,7 @@ class _SendScreenState extends State<SendScreen> {
                           final address = _viewModel.walletAddressList[index].address;
                           final walletName = _viewModel.walletItemList[index].name;
                           final derivationPath = _viewModel.walletAddressList[index].derivationPath;
-                          final bottomPadding =
-                              index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
-
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: bottomPadding),
-                            child: _buildAddressRow(address, walletName, derivationPath),
-                          );
+                          return _buildAddressRow(index, address, walletName, derivationPath);
                         }),
                   ),
                   CoconutLayout.spacing_200h,
