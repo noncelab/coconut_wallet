@@ -288,6 +288,7 @@ app_info_screen:
   terms_of_service: "Terms of Service"
   privacy_policy: "Privacy Policy"
   license: "Open Source License"
+  data_collection: "Data Collection Notice"
   version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
   inquiry: "Inquiry Content"
 bip39_list_screen:

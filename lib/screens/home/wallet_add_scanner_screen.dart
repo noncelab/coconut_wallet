@@ -3,11 +3,14 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:flutter/cupertino.dart';
@@ -274,6 +277,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       switch (addResult.result) {
         case WalletSyncResult.newWalletAdded:
           {
+            context.read<AnalyticsService>().logEvent(
+                eventName: AnalyticsEventNames.walletAddCompleted,
+                parameters: {
+                  AnalyticsParameterNames.walletAddImportSource: widget.importSource.name
+                });
             await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
             Navigator.pop(context, addResult);
             break;

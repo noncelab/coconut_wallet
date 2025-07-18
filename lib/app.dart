@@ -17,6 +17,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
@@ -46,6 +47,7 @@ import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -53,10 +55,9 @@ import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
-
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
 class CoconutWalletApp extends StatefulWidget {
   static late String kElectrumHost;
@@ -66,6 +67,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late String kFaucetHost;
   static late String kDonationAddress;
   static late NetworkType kNetworkType;
+  static late bool kIsFirebaseAnalyticsUsed;
 
   const CoconutWalletApp({super.key});
 
@@ -78,11 +80,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
 
   final RealmManager _realmManager = RealmManager();
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   /// startSplash 완료 콜백
   void _completeSplash(AppEntryFlow appEntryFlow) {
@@ -111,6 +108,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ),
 
           Provider.value(value: _realmManager),
+
+          Provider<AnalyticsService>(
+            create: (context) => AnalyticsService(
+              CoconutWalletApp.kIsFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null,
+              !CoconutWalletApp.kIsFirebaseAnalyticsUsed,
+            ),
+          ),
 
           // Repository 등록 - Provider보다 먼저 등록해야 함
           Provider<WalletRepository>(
@@ -166,6 +170,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   context.read<ConnectivityProvider>(),
                   walletProvider.walletLoadStateNotifier,
                   walletProvider.walletItemListNotifier,
+                  CoconutWalletApp.kIsFirebaseAnalyticsUsed
+                      ? context.read<AnalyticsService>()
+                      : null,
                 );
               },
             ),
@@ -173,7 +180,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ],
         child: TranslationProvider(
           child: CupertinoApp(
-            navigatorObservers: [routeObserver],
+            navigatorObservers: [
+              routeObserver,
+              if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
+                FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)
+            ],
             localizationsDelegates: const [
               DefaultMaterialLocalizations.delegate,
               DefaultWidgetsLocalizations.delegate,

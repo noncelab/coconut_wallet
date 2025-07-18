@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -13,6 +15,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -453,6 +456,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   void _goToScannerScreen(WalletImportSource walletImportSource) async {
+    context.read<AnalyticsService>().logEvent(
+        eventName: AnalyticsEventNames.walletAddScreenEntered,
+        parameters: {AnalyticsParameterNames.walletAddImportSource: walletImportSource.name});
+
     Navigator.pop(context);
     final ResultOfSyncFromVault? scanResult =
         (await Navigator.pushNamed(context, '/wallet-add-scanner', arguments: {
@@ -467,11 +474,20 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   void _goToManualInputScreen() {
+    context.read<AnalyticsService>().logEvent(
+        eventName: AnalyticsEventNames.walletAddScreenEntered,
+        parameters: {
+          AnalyticsParameterNames.walletAddImportSource: WalletImportSource.extendedPublicKey.name
+        });
     Navigator.pop(context);
     Navigator.pushNamed(context, "/wallet-add-input");
   }
 
   void _onAddWalletPressed() {
+    context
+        .read<AnalyticsService>()
+        .logEvent(eventName: AnalyticsEventNames.walletAddButtonClicked);
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,

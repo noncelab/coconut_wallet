@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
@@ -11,6 +12,7 @@ import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -26,6 +28,7 @@ class NodeProvider extends ChangeNotifier {
   final int _port;
   final bool _ssl;
   final NetworkType _networkType;
+  final AnalyticsService? _analyticsService;
 
   NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
@@ -75,7 +78,7 @@ class NodeProvider extends ChangeNotifier {
   bool get ssl => _ssl;
 
   NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
-      this._walletLoadStateNotifier, this._walletItemListNotifier,
+      this._walletLoadStateNotifier, this._walletItemListNotifier, this._analyticsService,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
@@ -154,7 +157,11 @@ class NodeProvider extends ChangeNotifier {
     for (final wallet in currentWallets) {
       if (!registeredWallets.contains(wallet.id)) {
         // 새로운 지갑 발견
-        subscribeWallet(wallet);
+        subscribeWallet(wallet).then((_) {
+          _analyticsService?.logEvent(
+            eventName: AnalyticsEventNames.walletAddSyncCompleted,
+          );
+        });
       }
     }
   }

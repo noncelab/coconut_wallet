@@ -93,6 +93,8 @@ dependencies:
   cbor: ^6.3.5
   ur:
     path: lib/packages/bc-ur-dart
+  firebase_core: ^3.4.0
+  firebase_analytics: ^11.3.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
