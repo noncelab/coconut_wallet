@@ -39,63 +39,69 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                 )),
         backgroundColor: CoconutColors.black,
         body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
-                ),
-                const SizedBox(height: 30),
-                if (isFirst)
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
+                  ),
+                  const SizedBox(height: 30),
+                  if (isFirst)
+                    FittedBox(
+                      child: Text(
+                        t.user_experience_survey_bottom_sheet.text1,
+                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   Text(
-                    t.user_experience_survey_bottom_sheet.text1,
+                    t.user_experience_survey_bottom_sheet.text2,
                     style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
                   ),
-                Text(
-                  t.user_experience_survey_bottom_sheet.text2,
-                  style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
-                ),
-                const SizedBox(
-                  height: 80,
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/positive-feedback'),
-                  child: Container(
-                      width: MediaQuery.of(context).size.width * 0.5,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
-                      child: Text(
-                        t.user_experience_survey_bottom_sheet.text3,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray700),
-                        textAlign: TextAlign.center,
-                      )),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/negative-feedback');
-                  },
-                  child: Container(
-                      width: MediaQuery.of(context).size.width * 0.5,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          color: CoconutColors.white.withOpacity(0.5)),
-                      child: Text(
-                        t.user_experience_survey_bottom_sheet.text4,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-                        textAlign: TextAlign.center,
-                      )),
-                ),
-                const SizedBox(
-                  height: 40,
-                ),
-              ],
+                  const SizedBox(
+                    height: 80,
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/positive-feedback'),
+                    child: Container(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14), color: CoconutColors.primary),
+                        child: Text(
+                          t.user_experience_survey_bottom_sheet.text3,
+                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray700),
+                          textAlign: TextAlign.center,
+                        )),
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/negative-feedback');
+                    },
+                    child: Container(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            color: CoconutColors.white.withOpacity(0.5)),
+                        child: Text(
+                          t.user_experience_survey_bottom_sheet.text4,
+                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                          textAlign: TextAlign.center,
+                        )),
+                  ),
+                  const SizedBox(
+                    height: 40,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
