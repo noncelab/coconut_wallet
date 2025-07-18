@@ -457,7 +457,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   void _goToScannerScreen(WalletImportSource walletImportSource) async {
     context.read<AnalyticsService>().logEvent(
-        eventName: AnalyticsEventNames.walletAddScreenEnter,
+        eventName: AnalyticsEventNames.walletAddScreenEntered,
         parameters: {AnalyticsParameterNames.walletAddImportSource: walletImportSource.name});
 
     Navigator.pop(context);
@@ -475,7 +475,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   void _goToManualInputScreen() {
     context.read<AnalyticsService>().logEvent(
-        eventName: AnalyticsEventNames.walletAddScreenEnter,
+        eventName: AnalyticsEventNames.walletAddScreenEntered,
         parameters: {
           AnalyticsParameterNames.walletAddImportSource: WalletImportSource.extendedPublicKey.name
         });
