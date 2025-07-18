@@ -291,6 +291,17 @@ class TransactionBuilder {
   int _estimateFee() {
     assert(_transaction != null);
 
+    /// change가 dust미만이어서 change output이 없는 경우는 그 금액이 수수료로 소진된다는 의미입니다.
+    /// 하지만 _transaction의 estimatedFee 결과에는 change값이 포함되지 않으므로 아래와 같이 조치합니다.
+    final hasChangeOutput = _transaction!.outputs.any((output) => output.isChangeOutput == true);
+    if (!hasChangeOutput) {
+      final inputSum =
+          _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
+      final outputSum =
+          _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+      return inputSum - outputSum;
+    }
+
     if (walletListItemBase.walletType == WalletType.multiSignature) {
       return _transaction!.estimateFee(feeRate, walletListItemBase.walletType.addressType,
           requiredSignature: walletListItemBase.multisigConfig!.requiredSignature,
