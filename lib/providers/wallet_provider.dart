@@ -394,11 +394,11 @@ class WalletProvider extends ChangeNotifier {
     if (homeFeatures.isEmpty) {
       homeFeatures.addAll([
         HomeFeature(
-            label: t.wallet_home_screen.edit.category.recent_tramsactions,
+            homeFeatureTypeString: HomeFeatureType.recentTransaction.toString(),
             assetPath: 'assets/svg/transaction.svg',
             isEnabled: true),
         HomeFeature(
-            label: t.wallet_home_screen.edit.category.analysis,
+            homeFeatureTypeString: HomeFeatureType.analysis.toString(),
             assetPath: 'assets/svg/analysis.svg',
             isEnabled: true),
       ]);

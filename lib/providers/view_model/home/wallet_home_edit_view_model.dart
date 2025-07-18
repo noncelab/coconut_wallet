@@ -64,7 +64,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
 
     _tempHomeFeatures = homeFeatures
         .map((feature) => HomeFeature(
-              label: feature.label,
+              homeFeatureTypeString: feature.homeFeatureTypeString,
               assetPath: feature.assetPath,
               isEnabled: feature.isEnabled,
             ))
@@ -174,12 +174,13 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleTempHomeFeatureEnabled(String label) {
-    final index = _tempHomeFeatures.indexWhere((element) => element.label == label);
+  void toggleTempHomeFeatureEnabled(String homeFeatureTypeString) {
+    final index = _tempHomeFeatures
+        .indexWhere((element) => element.homeFeatureTypeString == homeFeatureTypeString);
     if (index != -1) {
       final feature = _tempHomeFeatures[index];
       _tempHomeFeatures[index] = HomeFeature(
-        label: feature.label,
+        homeFeatureTypeString: feature.homeFeatureTypeString,
         assetPath: feature.assetPath,
         isEnabled: !feature.isEnabled,
       );
@@ -203,13 +204,15 @@ class WalletHomeEditViewModel extends ChangeNotifier {
 
   Future<void> _setFakeBalance() async {
     final wallets = _walletProvider.walletItemList;
-    if (!_isFakeBalanceActive) {
+    if (!_tempIsFakeBalanceActive) {
       await _preferenceProvider.changeIsFakeBalanceActive(false);
+
       return;
     }
-    if (_fakeBalanceTotalBtc == null || wallets.isEmpty) return;
 
-    if (_fakeBalanceTotalBtc == 0) {
+    if (_tempFakeBalanceTotalBtc == null || wallets.isEmpty) return;
+
+    if (_tempFakeBalanceTotalBtc == 0) {
       await _preferenceProvider.setFakeBalanceTotalAmount(0);
 
       final Map<int, dynamic> fakeBalanceMap = {};
@@ -220,28 +223,29 @@ class WalletHomeEditViewModel extends ChangeNotifier {
         debugPrint('[Wallet $i]Fake Balance: ${fakeBalanceMap[i]} BTC');
       }
       await _preferenceProvider.setFakeBalanceMap(fakeBalanceMap);
+      await _preferenceProvider.changeIsFakeBalanceActive(_tempIsFakeBalanceActive);
       return;
     }
 
     final walletCount = wallets.length;
 
-    if (!_fakeBalanceTotalBtc.toString().contains('.')) {
+    if (!_tempFakeBalanceTotalBtc.toString().contains('.')) {
       // input값이 정수 일 때 sats로 환산
-      _fakeBalanceTotalBtc = _fakeBalanceTotalBtc! * 100000000;
+      _tempFakeBalanceTotalBtc = _tempFakeBalanceTotalBtc! * 100000000;
     } else {
       // input이 소수일 때 소수점 이하 8자리로 맞춘 후 정수로 변환
-      final fixedString = _fakeBalanceTotalBtc!.toStringAsFixed(8).replaceAll('.', '');
-      _fakeBalanceTotalBtc = double.parse(fixedString);
+      final fixedString = _tempFakeBalanceTotalBtc!.toStringAsFixed(8).replaceAll('.', '');
+      _tempFakeBalanceTotalBtc = double.parse(fixedString);
     }
 
-    if (_fakeBalanceTotalBtc! < walletCount) return; // 최소 1사토시씩 못 주면 리턴
+    if (_tempFakeBalanceTotalBtc! < walletCount) return; // 최소 1사토시씩 못 주면 리턴
 
     final random = Random();
     // 1. 각 지갑에 최소 1사토시 할당
     // 2. 남은 사토시를 랜덤 가중치로 분배
     final List<int> weights = List.generate(walletCount, (_) => random.nextInt(100) + 1); // 1~100
     final int weightSum = weights.reduce((a, b) => a + b);
-    final int remainingSats = (_fakeBalanceTotalBtc! - walletCount).toInt();
+    final int remainingSats = (_tempFakeBalanceTotalBtc! - walletCount).toInt();
     final List<int> splits = [];
 
     for (int i = 0; i < walletCount; i++) {
@@ -250,23 +254,22 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     }
 
     // 보정: 분할의 총합이 totalSats보다 작을 수 있으므로 마지막 지갑에 부족분 추가
-    final int diff = (_fakeBalanceTotalBtc! - splits.reduce((a, b) => a + b)).toInt();
+    final int diff = (_tempFakeBalanceTotalBtc! - splits.reduce((a, b) => a + b)).toInt();
     splits[splits.length - 1] += diff;
 
     final Map<int, dynamic> fakeBalanceMap = {};
 
-    if (_preferenceProvider.isFakeBalanceActive != _isFakeBalanceActive) {
-      await _preferenceProvider.changeIsFakeBalanceActive(_isFakeBalanceActive);
+    if (_preferenceProvider.isFakeBalanceActive != _tempIsFakeBalanceActive) {
+      await _preferenceProvider.changeIsFakeBalanceActive(_tempIsFakeBalanceActive);
     }
 
-    debugPrint('_fakeBalanceTotalAmount!.toInt(): ${_fakeBalanceTotalBtc!.toInt()}');
-    await _preferenceProvider.setFakeBalanceTotalAmount(_fakeBalanceTotalBtc!.toInt());
+    await _preferenceProvider.setFakeBalanceTotalAmount(_tempFakeBalanceTotalBtc!.toInt());
 
     for (int i = 0; i < splits.length; i++) {
       final walletId = wallets[i].id;
       final fakeBalance = splits[i];
       fakeBalanceMap[walletId] = fakeBalance;
-      debugPrint('[Wallet $i]Fake Balance: ${splits[i]} Sats');
+      debugPrint('[Wallet $i]Fake Balance:::::: ${splits[i]} Sats');
     }
 
     await _preferenceProvider.setFakeBalanceMap(fakeBalanceMap);

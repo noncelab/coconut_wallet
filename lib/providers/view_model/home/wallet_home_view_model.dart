@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -36,6 +37,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
   List<WalletListItemBase> _favoriteWallets = [];
+  final List<HomeFeature> _homeFeatures = [];
 
   late List<int> _excludedFromTotalBalanceWalletIds = [];
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
@@ -84,6 +86,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   List<WalletListItemBase> get favoriteWallets => _favoriteWallets;
+  List<HomeFeature> get homeFeatures => _homeFeatures;
 
   bool? get isNetworkOn => _isNetworkOn;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
@@ -171,6 +174,9 @@ class WalletHomeViewModel extends ChangeNotifier {
       loadFavoriteWallets();
     }
 
+    /// 홈 기능 설정(HomeFeatures) 변동 체크
+    loadHomeFeatures();
+
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
     if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
         _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
@@ -254,6 +260,14 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     _isEmptyFavoriteWallet = wallets.isEmpty;
 
+    notifyListeners();
+  }
+
+  Future<void> loadHomeFeatures() async {
+    final features = _preferenceProvider.homeFeatures;
+    _homeFeatures
+      ..clear()
+      ..addAll(features);
     notifyListeners();
   }
 

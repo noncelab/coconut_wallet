@@ -1,11 +1,18 @@
 // 내용 변경시 RealmHomeFeature도 수정 필요
 class HomeFeature {
-  final String label;
+  final String homeFeatureTypeString;
   final String assetPath;
   final bool isEnabled;
   const HomeFeature({
-    required this.label,
+    required this.homeFeatureTypeString,
     required this.assetPath,
     required this.isEnabled,
   });
+}
+
+enum HomeFeatureType {
+  totalBalance,
+  walletList,
+  recentTransaction,
+  analysis,
 }

@@ -233,7 +233,7 @@ class _RealmWalletPreferences {
 
 @RealmModel()
 class _RealmHomeFeature {
-  late String label;
+  late String homeFeatureTypeString;
   late String assetPath;
   late bool isEnabled;
 }

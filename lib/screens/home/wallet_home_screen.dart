@@ -10,6 +10,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -23,7 +24,6 @@ import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -46,6 +46,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_glossary_bottom_sheet.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
+import 'package:collection/collection.dart';
 
 class WalletHomeScreen extends StatefulWidget {
   const WalletHomeScreen({super.key});
@@ -100,14 +101,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       },
       child: Selector<
           WalletHomeViewModel,
-          Tuple6<List<WalletListItemBase>, List<WalletListItemBase>, bool, bool,
-              Map<int, AnimatedBalanceData>, Tuple2<int?, Map<int, dynamic>>>>(
-        selector: (_, vm) => Tuple6(
+          Tuple7<List<WalletListItemBase>, List<WalletListItemBase>, bool, bool,
+              Map<int, AnimatedBalanceData>, List<HomeFeature>, Tuple2<int?, Map<int, dynamic>>>>(
+        selector: (_, vm) => Tuple7(
           vm.walletItemList,
           vm.favoriteWallets,
           vm.isBalanceHidden,
           vm.shouldShowLoadingIndicator,
           vm.walletBalanceMap,
+          vm.homeFeatures,
           Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
         ),
         builder: (context, data, child) {
@@ -118,6 +120,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final isBalanceHidden = data.item3;
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
+          final homeFeatures = data.item6;
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
@@ -176,6 +179,17 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               isBalanceHidden,
                               (id) => viewModel.getFakeBalance(id),
                             ),
+
+                          if (homeFeatures.isNotEmpty) ...[
+                            buildFeatureSectionIfEnabled(
+                              HomeFeatureType.recentTransaction,
+                              _buildRecentTransaction,
+                            ),
+                            buildFeatureSectionIfEnabled(
+                              HomeFeatureType.analysis,
+                              _buildAnalysis,
+                            ),
+                          ]
                         ],
                         if (walletItem.isNotEmpty) _buildHomeEditButton(),
                       ],
@@ -893,6 +907,52 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             entryPoint: kEntryPointWalletHome,
           );
         });
+  }
+
+  Widget buildFeatureSectionIfEnabled(
+    HomeFeatureType type,
+    Widget Function() builder,
+  ) {
+    final feature = _viewModel.homeFeatures.firstWhereOrNull(
+      (f) => f.homeFeatureTypeString == type.toString(),
+    );
+    if (feature != null && feature.isEnabled) {
+      return builder();
+    }
+
+    return SliverToBoxAdapter(child: Container());
+  }
+
+  Widget _buildRecentTransaction() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: CoconutColors.gray800,
+        ),
+        child: const Center(
+          child: Text('최근 거래 위젯'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnalysis() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
+        padding: const EdgeInsets.symmetric(vertical: 64),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: CoconutColors.gray800,
+        ),
+        child: const Center(
+          child: Text('분석 위젯'),
+        ),
+      ),
+    );
   }
 
   void _goToScannerScreen(WalletImportSource walletImportSource) async {

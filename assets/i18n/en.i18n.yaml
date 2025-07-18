@@ -152,7 +152,7 @@ wallet_home_screen:
     category:
       total_balance: "Total\nBalance"
       wallet_list: "Wallet\nList"
-      recent_tramsactions: "Recent\nTransactions"
+      recent_transactions: "Recent\nTransactions"
       analysis: "Analysis"
     alert: 
           empty_fake_balance: "Enter Fake Balance"
