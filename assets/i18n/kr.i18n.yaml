@@ -381,6 +381,11 @@ utxo_list_screen:
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
+  time_ago:
+    just_now: 방금 전
+    minutes: ${count}분 째
+    hours: ${count}시간 째
+    days: ${count}일 째
 
 utxo_detail_screen:
   pending: "승인 대기중"

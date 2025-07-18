@@ -645,13 +645,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     Duration difference = now.difference(timeStamp);
 
     if (difference.inMinutes < 1) {
-      return "방금 전"; // 1분 미만일 경우
+      return t.transaction_detail_screen.time_ago.just_now; // 1분 미만일 경우
     } else if (difference.inMinutes < 60) {
-      return "${difference.inMinutes}분 째"; // 1~59분
+      return t.transaction_detail_screen.time_ago.minutes(count: difference.inMinutes); // 1~59분
     } else if (difference.inHours < 24) {
-      return "${difference.inHours}시간 째"; // 1~23시간
+      return t.transaction_detail_screen.time_ago.hours(count: difference.inHours); // 1~23시간
     } else {
-      return "${difference.inDays}일 째"; // 1일 이상
+      return t.transaction_detail_screen.time_ago.days(count: difference.inDays); // 1일 이상
     }
   }
 

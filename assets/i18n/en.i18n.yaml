@@ -339,6 +339,11 @@ utxo_list_screen:
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmations)"
+  time_ago:
+    just_now: just now
+    minutes: ${count} minutes ago
+    hours: ${count} hours ago
+    days: ${count} days ago
 
 utxo_detail_screen:
   pending: "Pending Confirmation"
