@@ -272,7 +272,10 @@ class SendViewModel extends ChangeNotifier {
     if (_isMaxMode == isEnabled) return;
 
     _isMaxMode = isEnabled;
-    if (_isMaxMode) _adjustLastReceiverAmount(-1);
+    if (_isMaxMode) {
+      _adjustLastReceiverAmount(-1);
+      _updateFeeBoardVisibility();
+    }
     vibrateLight();
     notifyListeners();
   }
@@ -335,11 +338,6 @@ class SendViewModel extends ChangeNotifier {
   void deleteRecipient() {
     _recipientList.removeAt(_currentIndex);
     _recipientList = [..._recipientList];
-    if (_recipientList.isEmpty) {
-      _initWalletAddressList(); // 주소 목록 인덱스 초기화
-      setMaxMode(false); // 수신자 추가할 수 있도록 최대 보내기 모드를 비활성화
-    }
-
     if (lastIndex >= 0) _currentIndex = lastIndex;
     setCurrentPage(_currentIndex);
     _onRecipientPageDeleted(_currentIndex);
@@ -351,12 +349,13 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _updateFeeBoardVisibility() {
+    if (_showFeeBoard) return;
     bool hasValidRecipient = _recipientList.any((e) =>
         e.address.isNotEmpty &&
         e.amount.isNotEmpty &&
         e.addressError.isNotError &&
         e.minimumAmountError.isNotError);
-    _showFeeBoard = hasValidRecipient;
+    _showFeeBoard = _insufficientBalanceError.isNotError && hasValidRecipient;
     notifyListeners();
   }
 
@@ -368,7 +367,7 @@ class SendViewModel extends ChangeNotifier {
 
   void _updateFinalError() {
     String message = "";
-    // [전체] 충분하지 않은 Balance > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값이 존재 > 수신자 0명인 경우 > 예상 수수료 오류
+    // [전체] 충분하지 않은 Balance > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값이 존재 > 예상 수수료 오류
     if (_insufficientBalanceError.isError) {
       message = _insufficientBalanceError.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.minimumAmountError.isError)) {
@@ -377,15 +376,13 @@ class SendViewModel extends ChangeNotifier {
       message = SendError.invalidAddress.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.addressError == SendError.duplicatedAddress)) {
       message = SendError.duplicatedAddress.getMessage(currentUnit);
-    } else if (_recipientList.any((e) => e.address.isEmpty || e.amount.isEmpty) ||
-        _recipientList.isEmpty) {
+    } else if (_recipientList.any((e) => e.address.isEmpty || e.amount.isEmpty)) {
       message = " ";
     } else if (_estimatedFee == 0) {
       message = " ";
     }
 
     _setFinalErrorMessage(message);
-    _updateFeeBoardVisibility();
   }
 
   void _validateAddresses() {
@@ -396,8 +393,8 @@ class SendViewModel extends ChangeNotifier {
 
   void setAddressText(String text, int index) {
     _recipientList[index].address = text;
-    _updateFeeBoardVisibility();
     _validateAddresses();
+    _updateFeeBoardVisibility();
     notifyListeners();
   }
 
@@ -483,6 +480,8 @@ class SendViewModel extends ChangeNotifier {
     } else {
       _validateAmount(_currentIndex);
     }
+
+    _updateFeeBoardVisibility();
     notifyListeners();
   }
 

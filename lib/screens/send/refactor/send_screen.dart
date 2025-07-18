@@ -602,15 +602,17 @@ class _SendScreenState extends State<SendScreen> {
     return SizedBox(
         height: kPageViewHeight,
         width: MediaQuery.of(context).size.width,
-        child: Selector<SendViewModel, Tuple2<int, bool>>(
-            selector: (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
+        child: Selector<SendViewModel, Tuple3<int, bool, bool>>(
+            selector: (_, viewModel) =>
+                Tuple3(viewModel.recipientList.length, viewModel.isMaxMode, viewModel.showFeeBoard),
             builder: (context, data, child) {
               final recipientListLength = data.item1;
               final isMaxMode = data.item2;
+              final showFeeBoard = data.item3;
               return PageView.builder(
                 controller: _recipientPageController,
                 onPageChanged: (index) => _viewModel.setCurrentPage(index),
-                itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
+                itemCount: recipientListLength + (!isMaxMode && showFeeBoard ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == recipientListLength) {
                     return _buildAddRecipientCard();
@@ -811,13 +813,13 @@ class _SendScreenState extends State<SendScreen> {
                     Selector<SendViewModel, int>(
                         selector: (_, viewModel) => viewModel.recipientList.length,
                         builder: (context, data, child) {
+                          if (!_viewModel.isBatchMode) return const SizedBox();
                           return CoconutUnderlinedButton(
                             text: t.send_screen.delete,
                             onTap: () {
                               _deleteAddressField(_viewModel.currentIndex);
                               _viewModel.deleteRecipient();
                             },
-                            isActive: true,
                             textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                             padding: EdgeInsets.zero,
                           );
