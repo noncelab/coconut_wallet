@@ -4,7 +4,6 @@ import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/multi_button.dart';
@@ -15,6 +14,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
+
+enum FakeBalanceInputError {
+  none,
+  notEnoughForAllWallets, // 지갑 수만큼 1사토시 이상 배정 불가한 경우
+  exceedsTotalSupply, // 2100만 BTC를 초과하는 경우
+}
 
 class WalletHomeEditBottomSheet extends StatefulWidget {
   const WalletHomeEditBottomSheet({
