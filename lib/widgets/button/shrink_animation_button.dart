@@ -12,6 +12,7 @@ class ShrinkAnimationButton extends StatefulWidget {
   final Border? border;
   final double borderWidth;
   final List<Color>? borderGradientColors;
+  final double? animationEndValue;
 
   const ShrinkAnimationButton({
     super.key,
@@ -24,6 +25,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.borderWidth = 2.0,
     this.border,
     this.borderGradientColors,
+    this.animationEndValue,
   });
 
   @override
@@ -43,7 +45,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _animation = Tween<double>(begin: 1.0, end: 0.97)
+    _animation = Tween<double>(begin: 1.0, end: widget.animationEndValue)
         .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 

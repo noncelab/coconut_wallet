@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/wallet/multisig_config.dart';
 
 abstract class WalletListItemBase {
   static const String walletTypeField = 'walletType';
@@ -36,4 +37,15 @@ abstract class WalletListItemBase {
   @override
   String toString() =>
       'Wallet($id) / type=$walletType / source=${walletImportSource.name}/ name=$name';
+
+  MultisigConfig? get multisigConfig {
+    if (walletType == WalletType.multiSignature) {
+      final multisigWalletBase = walletBase as MultisignatureWallet;
+      return MultisigConfig(
+          requiredSignature: multisigWalletBase.requiredSignature,
+          totalSigner: multisigWalletBase.totalSigner);
+    }
+
+    return null;
+  }
 }

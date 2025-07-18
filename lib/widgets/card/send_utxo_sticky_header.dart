@@ -19,7 +19,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   final bool customFeeSelected;
   final int sendAmount;
   final int? estimatedFee;
-  final int? satsPerVb;
+  final double? satsPerVb;
   final int? change;
 
   const SendUtxoStickyHeader({
@@ -140,7 +140,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   }
 
   String get unitText => currentUnit.symbol;
-  String get feeText => currentUnit.displayBitcoinAmount(estimatedFee, defaultWhenNull: '0');
+  String get feeText => currentUnit.displayBitcoinAmount(estimatedFee, defaultWhenNull: '-');
   String get changeText => currentUnit.displayBitcoinAmount(change, defaultWhenNull: '-');
 
   Widget _buildEstimatedFee() {

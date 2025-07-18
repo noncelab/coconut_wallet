@@ -2,9 +2,11 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:flutter/material.dart';
 
 class TransactionUtil {
@@ -177,5 +179,18 @@ class TransactionUtil {
         );
       },
     );
+  }
+
+  static double estimateVirtualByteByWallet(
+      WalletListItemBase walletListItemBase, Transaction transaction) {
+    int? requiredSignature, totalSigner;
+    if (walletListItemBase.walletType == WalletType.multiSignature) {
+      final multisigWallet = walletListItemBase.walletBase as MultisignatureWallet;
+      requiredSignature = multisigWallet.requiredSignature;
+      totalSigner = multisigWallet.totalSigner;
+    }
+
+    return transaction.estimateVirtualByte(walletListItemBase.walletType.addressType,
+        requiredSignature: requiredSignature, totalSigner: totalSigner);
   }
 }
