@@ -8,6 +8,7 @@ import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -56,7 +57,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
-  bool _isDropdownMenuVisible = false;
+  late ValueNotifier<bool> _isDropdownMenuVisible;
   late ScrollController _scrollController;
 
   DateTime? _lastPressedAt;
@@ -98,12 +99,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       },
       child: Selector<
           WalletListViewModel,
-          Tuple7<List<WalletListItemBase>, bool, bool, bool, bool, Map<int, AnimatedBalanceData>,
+          Tuple6<List<WalletListItemBase>, NetworkStatus, bool, bool, Map<int, AnimatedBalanceData>,
               Tuple2<int?, Map<int, dynamic>>>>(
-        selector: (_, vm) => Tuple7(
+        selector: (_, vm) => Tuple6(
             vm.walletItemList,
-            vm.isNetworkOn ?? false,
-            vm.isBalanceHidden,
+            vm.networkStatus,
             vm.shouldShowLoadingIndicator,
             vm.isTermsShortcutVisible,
             vm.walletBalanceMap,
@@ -112,11 +112,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
           final walletListItem = data.item1;
-          final isOffline = !data.item2;
-          final isBalanceHidden = data.item3;
-          final shouldShowLoadingIndicator = data.item4;
-          final isTermsShortcutVisible = data.item5;
-          final walletBalanceMap = data.item6;
+          final networkStatus = data.item2;
+          final shouldShowLoadingIndicator = data.item3;
+          final isTermsShortcutVisible = data.item4;
+          final walletBalanceMap = data.item5;
 
           if (viewModel.isWalletListChanged(
               _previousWalletList, walletListItem, walletBalanceMap)) {
@@ -142,10 +141,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                           _buildAppBar(viewModel),
                           // pull to refresh시 로딩 인디케이터를 보이기 위함
                           CupertinoSliverRefreshControl(
-                            onRefresh: viewModel.updateWalletBalances,
+                            onRefresh: viewModel.onRefresh,
                           ),
                           _buildLoadingIndicator(viewModel),
-                          _buildPadding(isOffline),
+                          _buildPadding(networkStatus),
                           if (NetworkType.currentNetworkType == NetworkType.mainnet)
                             _buildDonationBanner(),
                           if (!shouldShowLoadingIndicator)
@@ -166,9 +165,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                             )),
                           // 지갑 목록
                           _buildSliverAnimatedList(walletListItem, walletBalanceMap,
-                              isBalanceHidden, (id) => viewModel.getFakeBalance(id)),
+                              (id) => viewModel.getFakeBalance(id)),
                         ]),
-                    _buildOfflineWarningBar(context, isOffline),
+                    _buildNetworkWarningBar(context, networkStatus),
                     _buildDropdownBackdrop(),
                     _buildDropdownMenu(),
                   ],
@@ -186,7 +185,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return preferenceProvider.language == 'kr';
   }
 
-  Positioned _buildOfflineWarningBar(BuildContext context, bool isOffline) {
+  Positioned _buildNetworkWarningBar(BuildContext context, NetworkStatus networkStatus) {
+    final shouldShow = networkStatus != NetworkStatus.online;
+
+    String message;
+    switch (networkStatus) {
+      case NetworkStatus.offline:
+        message = t.errors.network_not_found;
+        break;
+      case NetworkStatus.connectionFailed:
+        message = t.errors.electrum_connection_failed;
+        break;
+      case NetworkStatus.online:
+        message = '';
+        break;
+    }
+
     return Positioned(
       top: kToolbarHeight + MediaQuery.of(context).padding.top,
       left: 0,
@@ -194,7 +208,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       child: AnimatedContainer(
         duration: kOfflineWarningBarDuration,
         curve: Curves.easeOut,
-        height: isOffline ? kOfflineWarningBarHeight : 0.0,
+        height: shouldShow ? kOfflineWarningBarHeight : 0.0,
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         color: CoconutColors.hotPink,
@@ -204,7 +218,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             SvgPicture.asset('assets/svg/triangle-warning.svg'),
             CoconutLayout.spacing_100w,
             Text(
-              t.errors.network_not_found,
+              message,
               style: CoconutTypography.body3_12,
             ),
           ],
@@ -221,12 +235,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildPadding(bool isOffline) {
+  Widget _buildPadding(NetworkStatus networkStatus) {
     const kDefaultPadding = Sizes.size12;
+    final shouldShow = networkStatus != NetworkStatus.online;
     return SliverToBoxAdapter(
         child: AnimatedContainer(
             duration: kOfflineWarningBarDuration,
-            height: isOffline ? kOfflineWarningBarHeight + kDefaultPadding : kDefaultPadding,
+            height: shouldShow ? kOfflineWarningBarHeight + kDefaultPadding : kDefaultPadding,
             curve: Curves.easeInOut,
             child: const SizedBox()));
   }
@@ -236,6 +251,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     super.initState();
 
     _scrollController = ScrollController();
+    _isDropdownMenuVisible = ValueNotifier<bool>(false);
 
     _dropdownActions = [
       () => CommonBottomSheets.showBottomSheet_90(
@@ -298,6 +314,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   @override
   void dispose() {
     _scrollController.dispose();
+    _isDropdownMenuVisible.dispose();
     super.dispose();
   }
 
@@ -307,7 +324,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<NodeProvider>(context, listen: false).syncStateStream,
+      Provider.of<NodeProvider>(context, listen: false),
     );
     return _viewModel;
   }
@@ -367,11 +384,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     }
   }
 
-  Widget _buildSliverAnimatedList(
-      List<WalletListItemBase> walletList,
-      Map<int, AnimatedBalanceData> walletBalanceMap,
-      bool isBalanceHidden,
-      FakeBalanceGetter getFakeBalance) {
+  Widget _buildSliverAnimatedList(List<WalletListItemBase> walletList,
+      Map<int, AnimatedBalanceData> walletBalanceMap, FakeBalanceGetter getFakeBalance) {
     return SliverAnimatedList(
       key: _walletListKey,
       initialItemCount: walletList.length,
@@ -381,7 +395,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               walletList[index],
               animation,
               walletBalanceMap[walletList[index].id] ?? AnimatedBalanceData(0, 0),
-              isBalanceHidden,
               getFakeBalance(walletList[index].id),
               index == walletList.length - 1);
         }
@@ -390,13 +403,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletItem(
-      WalletListItemBase wallet,
-      Animation<double> animation,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      int? fakeBalance,
-      bool isLastItem) {
+  Widget _buildWalletItem(WalletListItemBase wallet, Animation<double> animation,
+      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
     var offsetAnimation = AnimationUtil.buildSlideInAnimation(animation);
 
     return Column(
@@ -407,7 +415,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             Key(wallet.id.toString()),
             wallet,
             animatedBalanceData,
-            isBalanceHidden,
             fakeBalance,
             isLastItem,
           ),
@@ -417,13 +424,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget? _getWalletRowItem(
-      Key key,
-      WalletListItemBase walletItem,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      int? fakeBalance,
-      bool isLastItem) {
+  Widget? _getWalletRowItem(Key key, WalletListItemBase walletItem,
+      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
     final WalletListItemBase(
       id: id,
       name: name,
@@ -436,9 +438,12 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       signers = (walletItem as MultisigWalletListItem).signers;
     }
 
-    return Selector<PreferenceProvider, bool>(
-        selector: (_, viewModel) => viewModel.isBtcUnit,
-        builder: (context, isBtcUnit, child) {
+    return Selector2<PreferenceProvider, WalletListViewModel, Tuple2<bool, bool>>(
+        selector: (_, preferenceProvider, viewModel) =>
+            Tuple2(preferenceProvider.isBtcUnit, viewModel.isBalanceHidden),
+        builder: (context, data, child) {
+          final isBtcUnit = data.item1;
+          final isBalanceHidden = data.item2;
           return WalletItemCard(
               key: key,
               id: id,
@@ -695,16 +700,21 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildDropdownBackdrop() {
-    return _isDropdownMenuVisible
-        ? Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                _setPulldownMenuVisiblility(false);
-              },
-            ),
-          )
-        : Container();
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isDropdownMenuVisible,
+      builder: (context, isVisible, child) {
+        return isVisible
+            ? Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    _setPulldownMenuVisiblility(false);
+                  },
+                ),
+              )
+            : Container();
+      },
+    );
   }
 
   Widget _buildDropdownMenu() {
@@ -713,34 +723,39 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return Positioned(
         top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
         right: 20,
-        child: Visibility(
-          visible: _isDropdownMenuVisible,
-          child: CoconutPulldownMenu(
-            shadowColor: CoconutColors.gray800,
-            dividerColor: CoconutColors.gray800,
-            entries: [
-              CoconutPulldownMenuGroup(
-                groupTitle: t.tool,
-                items: [
-                  if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
-                  CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
-                  if (NetworkType.currentNetworkType.isTestnet)
-                    CoconutPulldownMenuItem(title: t.tutorial),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _isDropdownMenuVisible,
+          builder: (context, isVisible, child) {
+            return Visibility(
+              visible: isVisible,
+              child: CoconutPulldownMenu(
+                shadowColor: CoconutColors.gray800,
+                dividerColor: CoconutColors.gray800,
+                entries: [
+                  CoconutPulldownMenuGroup(
+                    groupTitle: t.tool,
+                    items: [
+                      if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
+                      CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
+                      if (NetworkType.currentNetworkType.isTestnet)
+                        CoconutPulldownMenuItem(title: t.tutorial),
+                    ],
+                  ),
+                  CoconutPulldownMenuItem(title: t.settings),
+                  CoconutPulldownMenuItem(title: t.view_app_info),
                 ],
+                dividerHeight: 1,
+                thickDividerHeight: 3,
+                thickDividerIndexList: [
+                  _getThickDividerIndex(showGlossary),
+                ],
+                onSelected: ((index, selectedText) {
+                  _setPulldownMenuVisiblility(false);
+                  _handleDropdownSelection(index, showGlossary);
+                }),
               ),
-              CoconutPulldownMenuItem(title: t.settings),
-              CoconutPulldownMenuItem(title: t.view_app_info),
-            ],
-            dividerHeight: 1,
-            thickDividerHeight: 3,
-            thickDividerIndexList: [
-              _getThickDividerIndex(showGlossary),
-            ],
-            onSelected: ((index, selectedText) {
-              _setPulldownMenuVisiblility(false);
-              _handleDropdownSelection(index, showGlossary);
-            }),
-          ),
+            );
+          },
         ));
   }
 
@@ -851,8 +866,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   void _setPulldownMenuVisiblility(bool value) {
-    setState(() {
-      _isDropdownMenuVisible = value;
-    });
+    _isDropdownMenuVisible.value = value;
   }
 }

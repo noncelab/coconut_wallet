@@ -465,6 +465,7 @@ errors:
   broadcast_error: "Failed to broadcast transaction."
   network_connect: "No network connection."
   network_not_found: "Network is not connected!"
+  electrum_connection_failed: "Unable to connect to Electrum server."
   insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"

@@ -30,7 +30,7 @@ class IsolateController {
           }
 
           // 동기화 중 state 업데이트
-          _isolateStateManager.setMainClientSyncingState();
+          _isolateStateManager.setNodeSyncStateToSyncing();
 
           for (var walletItem in walletItems) {
             final result = await _subscriptionService.subscribeWallet(walletItem);

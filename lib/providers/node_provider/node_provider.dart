@@ -133,7 +133,12 @@ class NodeProvider extends ChangeNotifier {
 
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
-    subscribeWallets();
+    subscribeWallets().then((result) {
+      if (result.isFailure) {
+        Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
+        _stateManager?.setNodeSyncStateToFailed();
+      }
+    });
   }
 
   /// WalletItemList 변경 감지 및 처리
@@ -157,10 +162,15 @@ class NodeProvider extends ChangeNotifier {
     for (final wallet in currentWallets) {
       if (!registeredWallets.contains(wallet.id)) {
         // 새로운 지갑 발견
-        subscribeWallet(wallet).then((_) {
-          _analyticsService?.logEvent(
-            eventName: AnalyticsEventNames.walletAddSyncCompleted,
-          );
+        subscribeWallet(wallet).then((result) {
+          if (result.isFailure) {
+            Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
+            _stateManager?.setNodeSyncStateToFailed();
+          } else {
+            _analyticsService?.logEvent(
+              eventName: AnalyticsEventNames.walletAddSyncCompleted,
+            );
+          }
         });
       }
     }
@@ -233,6 +243,12 @@ class NodeProvider extends ChangeNotifier {
       }
     } catch (e) {
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
+
+      // 초기화 실패 시 노드 동기화 상태를 실패로 설정
+      if (_stateManager != null) {
+        _stateManager!.setNodeSyncStateToFailed();
+      }
+
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         try {
           _initCompleter!.completeError(e);
@@ -342,6 +358,7 @@ class NodeProvider extends ChangeNotifier {
       if (result.isSuccess) {
         Logger.log('NodeProvider: Reconnect completed successfully');
       } else {
+        _stateManager?.setNodeSyncStateToFailed();
         Logger.error(result.error.toString());
       }
     } catch (e) {

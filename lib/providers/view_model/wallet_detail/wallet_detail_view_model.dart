@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
@@ -32,8 +33,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   final PriceProvider _priceProvider;
   final SendInfoProvider _sendInfoProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final Stream<WalletUpdateInfo> _syncWalletStateStream;
+  late final Stream<WalletUpdateInfo> _syncWalletStateStream;
+  late final Stream<NodeSyncState> _nodeSyncStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
+  StreamSubscription<NodeSyncState>? _nodeSyncStateSubscription;
 
   late WalletListItemBase _walletListBaseItem;
   late WalletType _walletType;
@@ -56,7 +59,19 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   int get prevBalance => _prevBalance;
   late bool _isWalletSyncing;
-  bool get isWalletSyncing => _isWalletSyncing;
+  bool get isWalletSyncing => _isWalletSyncing && networkStatus == NetworkStatus.online;
+  late NodeSyncState _nodeSyncState;
+  NetworkStatus get networkStatus {
+    if (_connectProvider.isNetworkOff) {
+      return NetworkStatus.offline;
+    }
+
+    if (_nodeSyncState == NodeSyncState.failed) {
+      return NetworkStatus.connectionFailed;
+    }
+
+    return NetworkStatus.online;
+  }
 
   late int _balance;
   int get balance => _balance;
@@ -66,14 +81,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get receivingAmount => _receivingAmount;
   int get sendingAmount => _sendingAmount;
 
-  WalletDetailViewModel(
-      this._walletId,
-      this._walletProvider,
-      this._txProvider,
-      this._connectProvider,
-      this._priceProvider,
-      this._sendInfoProvider,
-      this._syncWalletStateStream) {
+  WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
+      this._connectProvider, this._priceProvider, this._sendInfoProvider, NodeProvider nodeProvider)
+      : _syncWalletStateStream = nodeProvider.getWalletStateStream(_walletId),
+        _nodeSyncStateStream = nodeProvider.syncStateStream {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -83,6 +94,8 @@ class WalletDetailViewModel extends ChangeNotifier {
     // 지갑 업데이트
     _prevWalletUpdateInfo = WalletUpdateInfo(_walletId);
     _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);
+    _nodeSyncStateSubscription = _nodeSyncStateStream.listen(_onNodeSyncStateChanged);
+    _nodeSyncState = NodeSyncState.syncing;
     _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
     _balance = _getBalance();
 
@@ -127,7 +140,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   String get walletName => _walletName;
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
-  bool? get isNetworkOn => _connectProvider.isNetworkOn;
+  bool get isNetworkOff => _connectProvider.isNetworkOff;
   bool get isMultisigWallet => _walletListBaseItem is MultisigWalletListItem;
   String? get masterFingerprint => isMultisigWallet
       ? null
@@ -195,6 +208,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevWalletUpdateInfo = newInfo;
   }
 
+  void _onNodeSyncStateChanged(NodeSyncState newState) {
+    _nodeSyncState = newState;
+    notifyListeners();
+  }
+
   bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
     return updateInfo.balance == WalletSyncState.completed &&
         updateInfo.transaction == WalletSyncState.completed;
@@ -228,6 +246,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _syncWalletStateSubscription?.cancel();
+    _nodeSyncStateSubscription?.cancel();
     _priceProvider.removeListener(_updateBitcoinPrice);
     _txProvider.removeListener(_onTransactionProviderChanged);
     super.dispose();
