@@ -396,6 +396,7 @@ class SendViewModel extends ChangeNotifier {
 
   void setAddressText(String text, int index) {
     _recipientList[index].address = text;
+    _updateFeeBoardVisibility();
     _validateAddresses();
     notifyListeners();
   }
