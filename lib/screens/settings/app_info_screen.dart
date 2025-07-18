@@ -7,6 +7,7 @@ import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
@@ -426,6 +427,14 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     context: context, child: const LicenseBottomSheet());
               },
             ),
+            if (appFlavor == "mainnet")
+              SingleButton(
+                buttonPosition: SingleButtonPosition.bottom,
+                title: t.app_info_screen.data_collection,
+                onPressed: () {
+                  launchURL(DATA_COLLECTION_URL);
+                },
+              ),
           ]),
         ],
       ),

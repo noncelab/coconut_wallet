@@ -327,6 +327,7 @@ app_info_screen:
   terms_of_service: "이용 약관"
   privacy_policy: "개인정보 처리방침"
   license: "오픈소스 라이선스"
+  data_collection: "데이터 수집 안내"
   version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
   inquiry: "문의 내용"
 bip39_list_screen:
