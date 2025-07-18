@@ -208,7 +208,7 @@ wallet_add_input_screen:
 # lib/screens/review
 negative_feedback_screen:
   text1: "Sorry😭"
-  text2: "Please let us know if you have any inconvenience or suggestions!"
+  text2: "Please let us know\nif you have any inconvenience or suggestions!"
   text3: "Send 1:1 message"
   text4: "Next time"
 positive_feedback_screen:
