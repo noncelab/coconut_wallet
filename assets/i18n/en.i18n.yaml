@@ -343,7 +343,7 @@ transaction_detail_screen:
 utxo_detail_screen:
   pending: "Pending Confirmation"
   address: "Holding Address"
-  utxo_locked: "Usage Locked"
+  utxo_locked: "Coin Locked"
   utxo_unlocked: "Available for Use"
   utxo_locked_toast_msg: "UTXO lock complete! This coin will no longer be used automatically."
   utxo_unlocked_toast_msg: "UTXO unlock complete! Coin has been switched to available status."

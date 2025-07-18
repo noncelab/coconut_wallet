@@ -249,9 +249,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _selectedUtxoList = [];
     _cachedSelectedUtxoAmountSum = 0;
     notifyListeners();
-    if (!_isMaxMode) {
-      _updateUtxoList(_selectedUtxoList);
-    }
+    _updateUtxoList(_selectedUtxoList);
   }
 
   Future<Result<int>?> getMinimumFeeRateFromNetwork() async {
@@ -337,9 +335,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     } else {
       selectedUtxoList.add(utxo);
     }
-    if (!_isMaxMode) {
-      _updateUtxoList(selectedUtxoList);
-    }
+    _updateUtxoList(selectedUtxoList);
     notifyListeners();
   }
 
