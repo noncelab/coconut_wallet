@@ -19,7 +19,7 @@ class SendUtxoStickyHeader extends StatelessWidget {
   final bool customFeeSelected;
   final int sendAmount;
   final int? estimatedFee;
-  final int? satsPerVb;
+  final double? satsPerVb;
   final int? change;
 
   const SendUtxoStickyHeader({
