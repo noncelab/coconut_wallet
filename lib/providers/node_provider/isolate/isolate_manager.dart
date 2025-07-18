@@ -299,6 +299,66 @@ class IsolateManager {
     }
   }
 
+  /// 작업 유형에 따른 타임아웃을 결정합니다.
+  Duration _getTimeoutForCommand(IsolateControllerCommand command) {
+    switch (command) {
+      // 소켓 상태 조회: 0.1s
+      case IsolateControllerCommand.getSocketConnectionStatus:
+        return kIsolateSocketCheckTimeout;
+
+      // 오래 걸리는 작업: 180s
+      case IsolateControllerCommand.subscribeWallets:
+      case IsolateControllerCommand.subscribeWallet:
+      case IsolateControllerCommand.unsubscribeWallet:
+      case IsolateControllerCommand.getTransactionRecord:
+        return kIsolateResponseTimeout;
+
+      // 간단한 작업: 3s
+      case IsolateControllerCommand.broadcast:
+      case IsolateControllerCommand.getNetworkMinimumFeeRate:
+      case IsolateControllerCommand.getLatestBlock:
+      case IsolateControllerCommand.getTransaction:
+      case IsolateControllerCommand.getRecommendedFees:
+        return kIsolateSimpleResponseTimeout;
+    }
+  }
+
+  /// 간단한 작업인지 판별합니다.
+  bool _isSimpleCommand(IsolateControllerCommand command) {
+    switch (command) {
+      case IsolateControllerCommand.broadcast:
+      case IsolateControllerCommand.getNetworkMinimumFeeRate:
+      case IsolateControllerCommand.getLatestBlock:
+      case IsolateControllerCommand.getTransaction:
+      case IsolateControllerCommand.getRecommendedFees:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// 간단한 작업의 경우 소켓 상태를 먼저 확인하고 작업을 수행합니다.
+  Future<Result<T>> _sendWithSocketCheck<T>(
+      IsolateControllerCommand messageType, List<dynamic> params) async {
+    try {
+      if (_isSimpleCommand(messageType)) {
+        Logger.log('IsolateManager: Checking socket status before fast command: $messageType');
+
+        final socketStatus = await getSocketConnectionStatus();
+        if (socketStatus.isFailure || socketStatus.value == SocketConnectionStatus.terminated) {
+          Logger.error(
+              'IsolateManager: Socket connection terminated, aborting fast command: $messageType');
+          return Result.failure(ErrorCodes.nodeConnectionError);
+        }
+      }
+
+      return await _send<T>(messageType, params);
+    } catch (e) {
+      Logger.error('IsolateManager: Error in _sendWithSocketCheck: $e');
+      return Result.failure(ErrorCodes.nodeUnknown);
+    }
+  }
+
   Future<Result<T>> _send<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
     try {
       // 초기화 상태 확인 및 대기
@@ -327,17 +387,15 @@ class IsolateManager {
 
       Result<T> result;
       try {
-        bool isSocketConnectionStatusMessage =
+        final timeLimit = _getTimeoutForCommand(messageType);
+        final isSocketConnectionStatusMessage =
             messageType == IsolateControllerCommand.getSocketConnectionStatus;
-
-        final timeLimit = isSocketConnectionStatusMessage
-            ? const Duration(milliseconds: 100)
-            : kIsolateResponseTimeout;
 
         result = await mainFromIsolateReceivePort.first.timeout(
           timeLimit,
           onTimeout: () {
-            Logger.error('IsolateManager: Command timeout: $messageType');
+            Logger.error(
+                'IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)');
             if (isSocketConnectionStatusMessage) {
               return Result.success(SocketConnectionStatus.terminated);
             }
@@ -379,23 +437,23 @@ class IsolateManager {
   }
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    return _send(IsolateControllerCommand.broadcast, [signedTx]);
+    return _sendWithSocketCheck(IsolateControllerCommand.broadcast, [signedTx]);
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {
-    return _send(IsolateControllerCommand.getNetworkMinimumFeeRate, []);
+    return _sendWithSocketCheck(IsolateControllerCommand.getNetworkMinimumFeeRate, []);
   }
 
   Future<Result<BlockTimestamp>> getLatestBlock() async {
-    return _send(IsolateControllerCommand.getLatestBlock, []);
+    return _sendWithSocketCheck(IsolateControllerCommand.getLatestBlock, []);
   }
 
   Future<Result<String>> getTransaction(String txHash) async {
-    return _send(IsolateControllerCommand.getTransaction, [txHash]);
+    return _sendWithSocketCheck(IsolateControllerCommand.getTransaction, [txHash]);
   }
 
   Future<Result<RecommendedFee>> getRecommendedFees() async {
-    return _send(IsolateControllerCommand.getRecommendedFees, []);
+    return _sendWithSocketCheck(IsolateControllerCommand.getRecommendedFees, []);
   }
 
   Future<Result<SocketConnectionStatus>> getSocketConnectionStatus() async {
