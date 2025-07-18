@@ -99,13 +99,13 @@ class AddressRepository extends BaseRepository {
 
     if (realmWalletBase.generatedReceiveIndex < 0) {
       addressesToAdd.add(
-        _generateAddress(walletItemBase.walletBase, 0, false),
+        generateAddress(walletItemBase.walletBase, 0, false),
       );
     }
 
     if (realmWalletBase.generatedChangeIndex < 0) {
       addressesToAdd.add(
-        _generateAddress(walletItemBase.walletBase, 0, true),
+        generateAddress(walletItemBase.walletBase, 0, true),
       );
     }
 
@@ -260,7 +260,7 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 단일 주소 생성
-  WalletAddress _generateAddress(WalletBase wallet, int index, bool isChange) {
+  WalletAddress generateAddress(WalletBase wallet, int index, bool isChange) {
     String address = wallet.getAddress(index, isChange: isChange);
     String derivationPath = '${wallet.derivationPath}${isChange ? '/1' : '/0'}/$index';
 
@@ -282,7 +282,7 @@ class AddressRepository extends BaseRepository {
       required int startIndex,
       required int count,
       required bool isChange}) {
-    return List.generate(count, (index) => _generateAddress(wallet, startIndex + index, isChange));
+    return List.generate(count, (index) => generateAddress(wallet, startIndex + index, isChange));
   }
 
   /// 여러 주소 생성 (비동기 - UI 렉 방지)
@@ -295,7 +295,7 @@ class AddressRepository extends BaseRepository {
 
     for (int i = 0; i < count; i++) {
       await Future.delayed(Duration.zero);
-      final address = _generateAddress(wallet, startIndex + i, isChange);
+      final address = generateAddress(wallet, startIndex + i, isChange);
       addresses.add(address);
     }
 

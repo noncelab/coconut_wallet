@@ -21,7 +21,6 @@ import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart'
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -277,7 +276,9 @@ class _SendScreenState extends State<SendScreen> {
                 onPressed: () async {
                   FocusScope.of(context).unfocus();
                   if (mounted) {
-                    Navigator.pop(context);
+                    _viewModel.setTxWaitingForSign();
+                    Navigator.pushNamed(context, '/unsigned-transaction-qr',
+                        arguments: {'walletName': _viewModel.selectedWalletItem!.name});
                   }
                 },
                 text: t.complete,
@@ -358,12 +359,11 @@ class _SendScreenState extends State<SendScreen> {
                       children: [
                         SvgPicture.asset(
                           'assets/svg/check.svg',
-                          width: 8,
                           colorFilter: ColorFilter.mode(
-                              _viewModel.currentUnit == BitcoinUnit.btc
-                                  ? CoconutColors.white
-                                  : CoconutColors.white.withOpacity(0.3),
+                              _viewModel.isBtcUnit ? CoconutColors.white : CoconutColors.gray700,
                               BlendMode.srcIn),
+                          width: 10,
+                          height: 10,
                         ),
                         CoconutLayout.spacing_100w,
                         Text(t.send_screen.use_btc_unit, style: CoconutTypography.body3_12),
@@ -414,12 +414,71 @@ class _SendScreenState extends State<SendScreen> {
         });
   }
 
+  Widget _buildBottomTooltips(BuildContext context) {
+    return Selector<SendViewModel, Tuple3<bool, int, String>>(
+        selector: (_, viewModel) =>
+            Tuple3(viewModel.isMaxMode, _viewModel.recipientList.length, viewModel.amountSumText),
+        builder: (context, data, child) {
+          return Column(
+            children: [
+              if (_viewModel.isBatchMode)
+                Padding(
+                  padding: EdgeInsets.only(bottom: kTooltipPadding),
+                  child: CoconutToolTip(
+                    backgroundColor: CoconutColors.gray800,
+                    borderColor: CoconutColors.gray800,
+                    borderRadius: 12,
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    icon: SvgPicture.asset(
+                      'assets/svg/receipt.svg',
+                      colorFilter: const ColorFilter.mode(
+                        CoconutColors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    tooltipType: CoconutTooltipType.fixed,
+                    richText: RichText(
+                      text: TextSpan(
+                        text: t.send_screen.tooltip_text(
+                            count: _viewModel.recipientList.length,
+                            amount: _viewModel.amountSumText),
+                        style: CoconutTypography.body3_12_Bold,
+                      ),
+                    ),
+                  ),
+                ),
+              if (_viewModel.isMaxMode)
+                CoconutToolTip(
+                  backgroundColor: CoconutColors.gray800,
+                  borderColor: CoconutColors.gray800,
+                  borderRadius: 12,
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  icon: SvgPicture.asset(
+                    'assets/svg/broom.svg',
+                    colorFilter: const ColorFilter.mode(
+                      CoconutColors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  tooltipType: CoconutTooltipType.fixed,
+                  richText: RichText(
+                    text: TextSpan(
+                      text: t.send_screen.tooltip_max_mode_text,
+                      style: CoconutTypography.body3_12_Bold,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        });
+  }
+
   Widget _buildFeeBoard(BuildContext context) {
     return Column(
       children: [
-        Selector<SendViewModel, Tuple2<bool, bool>>(
-            selector: (_, viewModel) =>
-                Tuple2(viewModel.showFeeBoard, viewModel.isFeePaidByRecipients),
+        Selector<SendViewModel, Tuple3<bool, bool, int>>(
+            selector: (_, viewModel) => Tuple3(viewModel.showFeeBoard,
+                viewModel.isFeeSubtractedFromSendAmount, viewModel.estimatedFee),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
               return Padding(
@@ -436,45 +495,7 @@ class _SendScreenState extends State<SendScreen> {
                       borderRadius: const BorderRadius.all(Radius.circular(8))),
                   child: Column(
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            t.send_screen.fee_rate,
-                            style: CoconutTypography.body3_12,
-                          ),
-                          const Spacer(),
-                          Container(
-                            width: 85,
-                            padding: const EdgeInsets.only(top: 4),
-                            child: CoconutTextField(
-                              textInputType: const TextInputType.numberWithOptions(
-                                  signed: false, decimal: true),
-                              textInputFormatter: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                              ],
-                              controller: _feeRateController,
-                              focusNode: _feeRateFocusNode,
-                              backgroundColor: feeRateFieldGray,
-                              height: 30,
-                              padding: const EdgeInsets.only(left: 10),
-                              onChanged: (text) {
-                                String formattedText = filterDecimalInput(text, 2);
-                                _feeRateController.text = formattedText;
-                              },
-                              maxLines: 1,
-                              fontFamily: 'SpaceGrotesk',
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              borderRadius: 8,
-                              suffix: Container(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: Text(t.send_screen.fee_rate_suffix,
-                                      style: CoconutTypography.body3_12_NumberBold)),
-                            ),
-                          )
-                        ],
-                      ),
+                      child!, // 수수료율
                       CoconutLayout.spacing_200h,
                       Row(
                         children: [
@@ -484,7 +505,7 @@ class _SendScreenState extends State<SendScreen> {
                           ),
                           const Spacer(),
                           Text(
-                            '407 sats',
+                            "${_viewModel.estimatedFee} sats",
                             style: CoconutTypography.body2_14_NumberBold,
                           ),
                         ],
@@ -496,31 +517,30 @@ class _SendScreenState extends State<SendScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                t.send_screen.fee_paid_by_recipients,
+                                t.send_screen.fee_subtracted_from_send_amount,
                                 style: CoconutTypography.body3_12,
                               ),
                               Text(
-                                t.send_screen.fee_paid_by_recipients_description,
+                                _viewModel.isFeeSubtractedFromSendAmount
+                                    ? t.send_screen
+                                        .fee_subtracted_from_send_amount_enabled_description
+                                    : t.send_screen
+                                        .fee_subtracted_from_send_amount_disabled_description,
                                 style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
                               ),
                             ],
                           ),
                           const Spacer(),
                           Align(
-                            alignment: Alignment.centerRight,
-                            child: SizedBox(
-                              width: 36,
-                              height: 22,
-                              child: Transform.scale(
+                              alignment: Alignment.centerRight,
+                              child: CoconutSwitch(
                                   scale: 0.7,
-                                  child: CupertinoSwitch(
-                                      value: _viewModel.isFeePaidByRecipients,
-                                      activeColor: CoconutColors.gray100,
-                                      trackColor: CoconutColors.gray600,
-                                      thumbColor: CoconutColors.gray800,
-                                      onChanged: (isOn) => _viewModel.setIsPaidByRecipients(isOn))),
-                            ),
-                          ),
+                                  isOn: _viewModel.isFeeSubtractedFromSendAmount,
+                                  activeColor: CoconutColors.gray100,
+                                  trackColor: CoconutColors.gray600,
+                                  thumbColor: CoconutColors.gray800,
+                                  onChanged: (isOn) =>
+                                      _viewModel.setIsFeeSubtractedFromSendAmount(isOn))),
                           CoconutLayout.spacing_100w,
                         ],
                       ),
@@ -528,63 +548,52 @@ class _SendScreenState extends State<SendScreen> {
                   ),
                 ),
               );
-            }),
-        Selector<SendViewModel, Tuple3<bool, int, String>>(
-            selector: (_, viewModel) => Tuple3(
-                viewModel.isMaxMode, viewModel.recipientList.length, viewModel.amountSumText),
-            builder: (context, data, child) {
-              return Column(
-                children: [
-                  if (_viewModel.isBatchMode)
-                    Padding(
-                      padding: EdgeInsets.only(bottom: kTooltipPadding),
-                      child: CoconutToolTip(
-                        backgroundColor: CoconutColors.gray800,
-                        borderColor: CoconutColors.gray800,
-                        borderRadius: 12,
-                        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                        icon: SvgPicture.asset(
-                          'assets/svg/receipt.svg',
-                          colorFilter: const ColorFilter.mode(
-                            CoconutColors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                        tooltipType: CoconutTooltipType.fixed,
-                        richText: RichText(
-                          text: TextSpan(
-                            text: t.send_screen.tooltip_text(
-                                count: _viewModel.recipientList.length,
-                                amount: _viewModel.amountSumText),
-                            style: CoconutTypography.body3_12_Bold,
-                          ),
-                        ),
-                      ),
+            },
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  t.send_screen.fee_rate,
+                  style: CoconutTypography.body3_12,
+                ),
+                const Spacer(),
+                IntrinsicWidth(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: CoconutTextField(
+                      textInputType:
+                          const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputFormatter: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                      ],
+                      enableInteractiveSelection: false,
+                      textAlign: TextAlign.end,
+                      controller: _feeRateController,
+                      focusNode: _feeRateFocusNode,
+                      backgroundColor: feeRateFieldGray,
+                      height: 30,
+                      padding: const EdgeInsets.only(left: 10),
+                      onChanged: (text) {
+                        String formattedText =
+                            filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
+                        _feeRateController.text = formattedText;
+                        _viewModel.onFeeRateUpdated(formattedText);
+                      },
+                      maxLines: 1,
+                      fontFamily: 'SpaceGrotesk',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      borderRadius: 8,
+                      suffix: Container(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: Text(t.send_screen.fee_rate_suffix,
+                              style: CoconutTypography.body3_12_NumberBold)),
                     ),
-                  if (_viewModel.isMaxMode)
-                    CoconutToolTip(
-                      backgroundColor: CoconutColors.gray800,
-                      borderColor: CoconutColors.gray800,
-                      borderRadius: 12,
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                      icon: SvgPicture.asset(
-                        'assets/svg/broom.svg',
-                        colorFilter: const ColorFilter.mode(
-                          CoconutColors.white,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      tooltipType: CoconutTooltipType.fixed,
-                      richText: RichText(
-                        text: TextSpan(
-                          text: t.send_screen.tooltip_max_mode_text,
-                          style: CoconutTypography.body3_12_Bold,
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            }),
+                  ),
+                )
+              ],
+            )),
+        _buildBottomTooltips(context),
       ],
     );
   }
@@ -683,6 +692,14 @@ class _SendScreenState extends State<SendScreen> {
                       amountTextColor = CoconutColors.white;
                     }
 
+                    final isKorean = context.read<PreferenceProvider>().isKorean;
+                    final maxButtonBaseText = t.send_screen.input_maximum_amount;
+                    final maxButtonText = _viewModel.isMaxMode
+                        ? (isKorean
+                            ? '$maxButtonBaseText ${t.cancel}'
+                            : '${t.cancel} $maxButtonBaseText')
+                        : maxButtonBaseText;
+
                     return Column(
                       children: [
                         IgnorePointer(
@@ -735,8 +752,7 @@ class _SendScreenState extends State<SendScreen> {
                                             BlendMode.srcIn),
                                       ),
                                       CoconutLayout.spacing_100w,
-                                      Text(
-                                          "${t.send_screen.input_maximum_amount} ${_viewModel.isMaxMode ? t.cancel : ""}",
+                                      Text(maxButtonText,
                                           style: Styles.caption.merge(TextStyle(
                                               color: CoconutColors.white,
                                               fontFamily: CustomFonts.text.getFontFamily))),
@@ -845,26 +861,30 @@ class _SendScreenState extends State<SendScreen> {
         });
   }
 
-  Widget _buildAddressRow(String address, String walletName, String derivationPath) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
-        final index = _viewModel.currentIndex;
-        _addressControllerList[index].text = address;
-        _addressFocusNodeList[index].requestFocus();
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            shortenAddress(address, head: 10),
-            style: CoconutTypography.body3_12_Number,
-          ),
-          Text(
-            "$walletName • $derivationPath",
-            style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-          ),
-        ],
+  Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
+    double bottomPadding = index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          _addressControllerList[_viewModel.currentIndex].text = address;
+          _viewModel.markWalletAddressForUpdate(index);
+          _clearFocus();
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              shortenAddress(address, head: 10),
+              style: CoconutTypography.body3_12_Number,
+            ),
+            Text(
+              "$walletName • $derivationPath",
+              style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -915,13 +935,7 @@ class _SendScreenState extends State<SendScreen> {
                           final address = _viewModel.walletAddressList[index].address;
                           final walletName = _viewModel.walletItemList[index].name;
                           final derivationPath = _viewModel.walletAddressList[index].derivationPath;
-                          final bottomPadding =
-                              index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
-
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: bottomPadding),
-                            child: _buildAddressRow(address, walletName, derivationPath),
-                          );
+                          return _buildAddressRow(index, address, walletName, derivationPath);
                         }),
                   ),
                   CoconutLayout.spacing_200h,
@@ -930,7 +944,7 @@ class _SendScreenState extends State<SendScreen> {
                     onTap: () {
                       _clearFocus();
                       if (_viewModel.walletItemList.length == 1) {
-                        _showAddressListBottomSheet(0);
+                        _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
                         return;
                       }
 
@@ -938,9 +952,11 @@ class _SendScreenState extends State<SendScreen> {
                           context: context,
                           childBuilder: (scrollController) => SelectWalletBottomSheet(
                                 scrollController: scrollController,
-                                onWalletChanged: (index) {
+                                currentUnit: _viewModel.currentUnit,
+                                walletId: -1,
+                                onWalletChanged: (id) {
                                   Navigator.pop(context);
-                                  _showAddressListBottomSheet(index);
+                                  _showAddressListBottomSheet(id);
                                 },
                               ));
                     },
@@ -1001,6 +1017,7 @@ class _SendScreenState extends State<SendScreen> {
     CommonBottomSheets.showBottomSheet_50(
         context: context,
         child: SelectWalletWithOptionsBottomSheet(
+          currentUnit: _viewModel.currentUnit,
           selectedWalletId: _viewModel.selectedWalletId,
           onWalletInfoUpdated: _viewModel.onWalletInfoUpdated,
           isUtxoSelectionAuto: _viewModel.isUtxoSelectionAuto,
@@ -1008,11 +1025,11 @@ class _SendScreenState extends State<SendScreen> {
         ));
   }
 
-  void _showAddressListBottomSheet(int index) {
+  void _showAddressListBottomSheet(int walletId) {
     CommonBottomSheets.showBottomSheet_90(
         context: context,
         child: AddressListScreen(
-          id: _viewModel.walletItemList[index].id,
+          id: walletId,
           isFullScreen: false,
         ));
   }

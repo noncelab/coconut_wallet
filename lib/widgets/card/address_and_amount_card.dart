@@ -225,7 +225,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
       _amountController.clear();
     }
 
-    _amountController.text = filterDecimalInput(value, 8);
+    _amountController.text = filterNumericInput(value, decimalPlaces: 8);
 
     widget.onAmountChanged(_amountController.text);
   }

@@ -6,7 +6,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -135,16 +134,18 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                                 CoconutColors.white,
                               ),
                             ),
-                            CupertinoSwitch(
-                              value: _isFakeBalanceActive,
-                              activeColor: CoconutColors.gray100,
-                              trackColor: CoconutColors.gray600,
-                              thumbColor: CoconutColors.gray800,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isFakeBalanceActive = value;
-                                });
-                              },
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: CoconutSwitch(
+                                  isOn: _isFakeBalanceActive,
+                                  activeColor: CoconutColors.gray100,
+                                  trackColor: CoconutColors.gray600,
+                                  thumbColor: CoconutColors.gray800,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _isFakeBalanceActive = value;
+                                    });
+                                  }),
                             ),
                           ],
                         ),

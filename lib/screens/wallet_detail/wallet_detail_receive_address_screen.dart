@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     if (_receiveAddress == null) return "";
     return _receiveAddress!.address;
   }
+
+  int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
 
   @override
   void initState() {
@@ -154,9 +157,11 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
         context: context,
         childBuilder: (scrollController) => SelectWalletBottomSheet(
               scrollController: scrollController,
-              onWalletChanged: (index) {
+              currentUnit: context.read<PreferenceProvider>().currentUnit,
+              walletId: selectedWalletId,
+              onWalletChanged: (id) {
                 final walletProvider = context.read<WalletProvider>();
-                _selectedWalletItem = walletProvider.walletItemList[index];
+                _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
                 _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
                 setState(() {});
                 Navigator.pop(context);

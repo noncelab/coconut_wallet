@@ -312,6 +312,10 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.getGeneratedAddressIndexes(wallet);
   }
 
+  WalletAddress generateAddress(WalletBase wallet, int index, bool isChange) {
+    return _addressRepository.generateAddress(wallet, index, isChange);
+  }
+
   bool containsAddress(int walletId, String address, {bool? isChange}) {
     return _addressRepository.containsAddress(
       walletId,
