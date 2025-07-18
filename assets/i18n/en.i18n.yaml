@@ -219,19 +219,19 @@ positive_feedback_screen:
 
 # lib/screens/send
 broadcasting_complete_screen:
-  complete: "Send Request Complete"
-  memo_placeholder: "Enter memo"
+  complete: "Transaction Sent"
+  memo_placeholder: "Add a memo"
   memo_tags:
-    - "Transaction"
+    - "Payment"
     - "Purchase"
     - "Donation"
-    - "Living expenses"
+    - "Living Expenses"
     - "Savings"
-    - "Pocket money"
+    - "Allowance"
     - "Birthday gift"
 
 broadcasting_screen:
-  title: "Final Confirmation"
+  title: "Final Review"
   description: "I will send with the information below"
   self_sending: "This is a transaction sending to my own wallet."
   error_popup_title: "Broadcasting Failed"
@@ -243,11 +243,11 @@ send_address_screen:
   address_placeholder: "Please enter the address to send"
   amount_placeholder: "Please enter the amount to send"
 send_confirm_screen:
-  title: "Confirm Input Information"
+  title: "Review Details"
 signed_psbt_scanner_screen:
-  title: "Read Signed Transaction"
+  title: "Scan Signed Tx"
 unsigned_tx_qr_screen:
-  hardware_wallet_screen_guide: "Screen Guide"
+  hardware_wallet_screen_guide: "Guide"
   guide_keystone:
     step1: "1. On the home screen, "
     step1_em: "SCAN"
