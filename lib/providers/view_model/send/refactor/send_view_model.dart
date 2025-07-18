@@ -101,6 +101,7 @@ class SendViewModel extends ChangeNotifier {
   bool _isUtxoSelectionAuto = true;
 
   bool _isFeeSubtractedFromSendAmount = false;
+  bool _previousIsFeeSubtractedFromSendAmount = false;
   bool get isFeeSubtractedFromSendAmount => _isFeeSubtractedFromSendAmount;
 
   List<UtxoState> _selectedUtxoList = [];
@@ -275,7 +276,12 @@ class SendViewModel extends ChangeNotifier {
     if (_isMaxMode) {
       _adjustLastReceiverAmount(-1);
       _updateFeeBoardVisibility();
+      _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
+      _isFeeSubtractedFromSendAmount = true;
+    } else {
+      _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
     }
+
     vibrateLight();
     notifyListeners();
   }

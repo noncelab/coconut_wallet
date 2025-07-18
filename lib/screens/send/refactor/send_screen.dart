@@ -44,11 +44,9 @@ class _SendScreenState extends State<SendScreen> {
   final double kCoconutAppbarHeight = 60;
   final double kPageViewHeight = 225;
   final double kAddressBoardPosition = 185;
-  final double kFeeBoardHeight = 147;
   final double kTooltipHeight = 39;
   final double kTooltipPadding = 5;
   final double kAmountHeight = 34;
-  final double kAddressRowHeight = 40;
 
   late final SendViewModel _viewModel;
   final _recipientPageController = PageController();
@@ -76,6 +74,8 @@ class _SendScreenState extends State<SendScreen> {
   double get _keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
 
   double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 40;
+
+  double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 147;
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
       bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
@@ -476,15 +476,13 @@ class _SendScreenState extends State<SendScreen> {
   Widget _buildFeeBoard(BuildContext context) {
     return Column(
       children: [
-        Selector<SendViewModel, Tuple3<bool, bool, int>>(
-            selector: (_, viewModel) => Tuple3(viewModel.showFeeBoard,
-                viewModel.isFeeSubtractedFromSendAmount, viewModel.estimatedFee),
+        Selector<SendViewModel, Tuple2<bool, int>>(
+            selector: (_, viewModel) => Tuple2(viewModel.showFeeBoard, viewModel.estimatedFee),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Container(
-                  height: kFeeBoardHeight,
                   padding: const EdgeInsets.only(left: 14, right: 14, top: 12, bottom: 20),
                   margin: const EdgeInsets.only(top: 0),
                   decoration: BoxDecoration(
@@ -495,7 +493,7 @@ class _SendScreenState extends State<SendScreen> {
                       borderRadius: const BorderRadius.all(Radius.circular(8))),
                   child: Column(
                     children: [
-                      child!, // 수수료율
+                      child!,
                       CoconutLayout.spacing_200h,
                       Row(
                         children: [
@@ -510,90 +508,102 @@ class _SendScreenState extends State<SendScreen> {
                           ),
                         ],
                       ),
-                      CoconutLayout.spacing_400h,
-                      Row(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.send_screen.fee_subtracted_from_send_amount,
-                                style: CoconutTypography.body3_12,
-                              ),
-                              Text(
-                                _viewModel.isFeeSubtractedFromSendAmount
-                                    ? t.send_screen
-                                        .fee_subtracted_from_send_amount_enabled_description
-                                    : t.send_screen
-                                        .fee_subtracted_from_send_amount_disabled_description,
-                                style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-                              ),
-                            ],
-                          ),
-                          const Spacer(),
-                          Align(
-                              alignment: Alignment.centerRight,
-                              child: CoconutSwitch(
-                                  scale: 0.7,
-                                  isOn: _viewModel.isFeeSubtractedFromSendAmount,
-                                  activeColor: CoconutColors.gray100,
-                                  trackColor: CoconutColors.gray600,
-                                  thumbColor: CoconutColors.gray800,
-                                  onChanged: (isOn) =>
-                                      _viewModel.setIsFeeSubtractedFromSendAmount(isOn))),
-                          CoconutLayout.spacing_100w,
-                        ],
-                      ),
+                      _buildFeeSubtractedFromSendAmount(),
                     ],
                   ),
                 ),
               );
             },
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  t.send_screen.fee_rate,
-                  style: CoconutTypography.body3_12,
-                ),
-                const Spacer(),
-                IntrinsicWidth(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: CoconutTextField(
-                      textInputType:
-                          const TextInputType.numberWithOptions(signed: false, decimal: true),
-                      textInputFormatter: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                      ],
-                      enableInteractiveSelection: false,
-                      textAlign: TextAlign.end,
-                      controller: _feeRateController,
-                      focusNode: _feeRateFocusNode,
-                      backgroundColor: feeRateFieldGray,
-                      height: 30,
-                      padding: const EdgeInsets.only(left: 10),
-                      onChanged: (text) {
-                        String formattedText =
-                            filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
-                        _feeRateController.text = formattedText;
-                        _viewModel.onFeeRateUpdated(formattedText);
-                      },
-                      maxLines: 1,
-                      fontFamily: 'SpaceGrotesk',
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      borderRadius: 8,
-                      suffix: Container(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: Text(t.send_screen.fee_rate_suffix,
-                              style: CoconutTypography.body3_12_NumberBold)),
-                    ),
-                  ),
-                )
-              ],
-            )),
+            child: _buildFeeRateRow()),
         _buildBottomTooltips(context),
+      ],
+    );
+  }
+
+  Widget _buildFeeSubtractedFromSendAmount() {
+    return Selector<SendViewModel, Tuple2<bool, bool>>(
+        selector: (_, viewModel) =>
+            Tuple2(viewModel.isMaxMode, viewModel.isFeeSubtractedFromSendAmount),
+        builder: (context, data, child) {
+          if (_viewModel.isMaxMode) return const SizedBox();
+          return Column(
+            children: [
+              CoconutLayout.spacing_400h,
+              Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        t.send_screen.fee_subtracted_from_send_amount,
+                        style: CoconutTypography.body3_12,
+                      ),
+                      Text(
+                        _viewModel.isFeeSubtractedFromSendAmount
+                            ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
+                            : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
+                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Align(
+                      alignment: Alignment.centerRight,
+                      child: CoconutSwitch(
+                          scale: 0.7,
+                          isOn: _viewModel.isFeeSubtractedFromSendAmount,
+                          activeColor: CoconutColors.gray100,
+                          trackColor: CoconutColors.gray600,
+                          thumbColor: CoconutColors.gray800,
+                          onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn))),
+                ],
+              )
+            ],
+          );
+        });
+  }
+
+  Widget _buildFeeRateRow() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          t.send_screen.fee_rate,
+          style: CoconutTypography.body3_12,
+        ),
+        const Spacer(),
+        IntrinsicWidth(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: CoconutTextField(
+              textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+              textInputFormatter: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              enableInteractiveSelection: false,
+              textAlign: TextAlign.end,
+              controller: _feeRateController,
+              focusNode: _feeRateFocusNode,
+              backgroundColor: feeRateFieldGray,
+              height: 30,
+              padding: const EdgeInsets.only(left: 10),
+              onChanged: (text) {
+                String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
+                _feeRateController.text = formattedText;
+                _viewModel.onFeeRateUpdated(formattedText);
+              },
+              maxLines: 1,
+              fontFamily: 'SpaceGrotesk',
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              borderRadius: 8,
+              suffix: Container(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Text(t.send_screen.fee_rate_suffix,
+                      style: CoconutTypography.body3_12_NumberBold)),
+            ),
+          ),
+        )
       ],
     );
   }
@@ -999,7 +1009,7 @@ class _SendScreenState extends State<SendScreen> {
       if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
     } else if (_viewModel.showFeeBoard && _isAddressFocused) {
       // FeeBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
-      double bottomPos = kPageViewHeight + kFeeBoardHeight;
+      double bottomPos = kPageViewHeight + feeBoardHeight;
       int tooltipCount = 0;
       if (_viewModel.isBatchMode) ++tooltipCount;
       if (_viewModel.isMaxMode) ++tooltipCount;
