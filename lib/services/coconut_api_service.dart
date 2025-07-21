@@ -9,6 +9,8 @@ import 'package:coconut_wallet/services/model/response/faucet_response.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/services/model/response/app_version_response.dart';
 import 'package:coconut_wallet/services/base_api_service.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:flutter/foundation.dart';
 
 class CoconutApiService extends BaseApiService {
   @override
@@ -64,6 +66,12 @@ class CoconutApiService extends BaseApiService {
     );
   }
 
+  /// Regtest 테스트용 추천 수수료 조회
+  ///
+  /// Regtest 환경에서는 mempool 이 여유로워서 수수료율이 항상 1로 반환됨.
+  /// 따라서 Rbf, Cpfp 등 추천 수수료율 조회할 때 임의로 서버에서 지정하고 이 값을 사용하도록 하기 위한 함수
+  /// 실제로 사용할 경우에는 [NodeProvider.getRecommendedFees] 를 사용해야 함.
+  @visibleForTesting
   Future<RecommendedFee> getRecommendedFee() async {
     return handleApiCall(
       () async {
