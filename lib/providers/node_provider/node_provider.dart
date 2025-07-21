@@ -310,7 +310,7 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.broadcast(signedTx);
   }
 
-  Future<Result<int>> getNetworkMinimumFeeRate() async {
+  Future<Result<double>> getNetworkMinimumFeeRate() async {
     return _isolateManager.getNetworkMinimumFeeRate();
   }
 

@@ -43,7 +43,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
-  int? _minimumSatsPerVb;
+  double? _minimumSatsPerVb;
   TransactionFeeLevel _selectedLevel = TransactionFeeLevel.halfhour;
   bool _customSelected = false;
   String? _selectedFeeLevel = TransactionFeeLevel.halfhour.text;

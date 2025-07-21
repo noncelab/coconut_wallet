@@ -242,7 +242,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
   }
 
   void _onTapFeeChangeButton() async {
-    Result<int>? minimumFeeRate = await _viewModel.getMinimumFeeRateFromNetwork();
+    Result<double>? minimumFeeRate = await _viewModel.getMinimumFeeRateFromNetwork();
 
     if (!mounted) {
       return;
