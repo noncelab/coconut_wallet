@@ -21,9 +21,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # AOS
 #version: 3.1.8+44
 # iOS Mainnet
-#version: 0.0.15+2
+#version: 0.1.0+1
 # AOS Mainnet
-version: 0.0.15+20
+version: 0.1.0+21
 
 environment:
   sdk: ">=3.3.1 <4.0.0"
@@ -74,15 +74,6 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  # coconut_design_system: ^0.9.0
-  coconut_design_system: 
-    git:
-      url: https://github.com/noncelab/coconut_design_system.git
-      ref: feat/appbar-custom-widget
-  coconut_lib:
-    git: 
-      url: https://github.com/Noncelab/coconut_lib.git
-      ref: develop
   realm: ^20.0.0
   cryptography: ^2.7.0
   slang: ^4.4.1
@@ -95,6 +86,8 @@ dependencies:
     path: lib/packages/bc-ur-dart
   firebase_core: ^3.4.0
   firebase_analytics: ^11.3.0
+  coconut_design_system: ^0.9.1
+  coconut_lib: ^0.10.5
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
