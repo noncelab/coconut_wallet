@@ -87,6 +87,8 @@ selection: "Selection"
 hardware_wallet: "Hardware Wallet"
 vault_app: "Vault App"
 view_balance: "Balance"
+network: "Network"
+electrum_server: "Electrum Server"
 
 apply_item: "$count items"
 fee_sats: " ($value sats/vb)"
@@ -314,6 +316,22 @@ settings_screen:
   language: "Language"
   korean: "한국어"
   english: "English"
+  electrum_server: 
+    server_address: "Server Address"
+    port: "Port"
+    use_ssl: "Use SSL"
+    ssl_port: "SSL Port: $port"
+    default_server: "Default Server"
+    reset: "Reset"
+    save: "Save"
+    error_msg:
+      invalid_domain_format: "Not a valid domain format"
+      port_out_of_range: "Please enter a valid port number (1–65535)"
+    alert: 
+      connection_failed_to_server: "Cannot connect to $server!"
+      connection_failed: "Cannot connect!"
+      connecting: "Connecting..."
+      connected: "Connected"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:

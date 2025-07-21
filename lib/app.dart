@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -24,6 +25,7 @@ import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.da
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
+import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
@@ -337,6 +339,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                   ),
               '/coconut-crew': (context) => const CoconutCrewScreen(),
+              '/electrum-server': (context) => ChangeNotifierProvider<ElectrumServerViewModel>(
+                    create: (context) => ElectrumServerViewModel(),
+                    child: const ElectrumServerScreen(),
+                  ),
             },
           ),
         ));
