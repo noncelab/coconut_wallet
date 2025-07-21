@@ -547,7 +547,7 @@ alert:
     broadcasting_failed: "[Send Failed]\n$error"
     insufficient_balance: "Insufficient balance"
     minimum_amount: "You can send from $bitcoin $unit"
-    insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
+    insufficient_fee: "[Send Failed]\nTransaction failed due to low fee rate.\nWould you like to try again through mempool.space, a public external server?"
   signed_psbt:
     invalid_qr: "Invalid QR code.\nPlease check again."
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."

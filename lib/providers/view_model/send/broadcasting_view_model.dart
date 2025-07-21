@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/services/mempool_api_service.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   late final UtxoTagProvider _tagProvider;
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _txProvider;
+  late final MempoolApiService _mempoolApiService;
   late final WalletBase _walletBase;
   late final int _walletId;
   late bool? _isNetworkOn;
@@ -38,6 +40,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     this._isNetworkOn,
     this._nodeProvider,
     this._txProvider,
+    this._mempoolApiService,
   ) {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
@@ -63,8 +66,12 @@ class BroadcastingViewModel extends ChangeNotifier {
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    debugPrint('signedTx: ${signedTx.serialize()}');
     return _nodeProvider.broadcast(signedTx);
+  }
+
+  Future<Result<String>> broadcastWithMempoolApi(Transaction signedTx) async {
+    final result = await _mempoolApiService.broadcastTransaction(signedTx.serialize());
+    return Result.success(result);
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {

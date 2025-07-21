@@ -12,8 +12,8 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/mempool_api_service.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -21,6 +21,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/floating_widget.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
@@ -69,6 +70,52 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     });
   }
 
+  /// 브로드캐스트 결과 처리를 위한 공통 함수
+  Future<void> _handleBroadcastResult(Result<String> result, Transaction signedTx) async {
+    if (result.isFailure) {
+      Logger.log(">>>>> broadcast error: ${result.error}");
+      String message = t.alert.error_send.broadcasting_failed(error: result.error.message);
+
+      vibrateMedium();
+      if (!mounted) return;
+      CustomDialogs.showCustomAlertDialog(context,
+          title: t.broadcasting_screen.error_popup_title,
+          message: message,
+          onConfirm: () => Navigator.pop(context));
+      return;
+    }
+
+    vibrateLight();
+    await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
+
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/broadcasting-complete',
+      ModalRoute.withName(_viewModel.isSendingDonation ? '/' : '/wallet-detail'),
+      arguments: {
+        'id': _viewModel.walletId,
+        'txHash': signedTx.transactionHash,
+        'isDonation': _viewModel.isSendingDonation,
+      },
+    );
+  }
+
+  /// 예외 처리를 위한 공통 함수
+  void _handleBroadcastException(dynamic error) {
+    Logger.log(">>>>> broadcast error: $error");
+    _setOverlayLoading(false);
+
+    if (!mounted) return;
+    CustomDialogs.showCustomAlertDialog(
+      context,
+      title: t.broadcasting_screen.error_popup_title,
+      message: t.alert.error_send.broadcasting_failed(error: error.toString()),
+      onConfirm: () => Navigator.pop(context),
+    );
+    vibrateMedium();
+  }
+
   void broadcast() async {
     if (context.loaderOverlay.visible) return;
     _setOverlayLoading(true);
@@ -78,48 +125,43 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     Transaction signedTx = psbt.getSignedTransaction(_viewModel.walletAddressType);
 
     try {
+      // 1차 브로드캐스트 시도 (직접 연결된 노드)
       Result<String> result = await _viewModel.broadcast(signedTx);
       _setOverlayLoading(false);
 
-      if (result.isFailure) {
+      // min relay fee 부족 시 멤풀 API 사용 확인
+      if (result.isFailure && result.error.message.contains('min relay fee not met')) {
         vibrateMedium();
         if (!mounted) return;
-        showAlertDialog(
-            context: context,
-            title: t.broadcasting_screen.error_popup_title,
-            content: t.alert.error_send.broadcasting_failed(error: result.error.message));
+
+        CustomDialogs.showCustomAlertDialog(
+          context,
+          title: t.broadcasting_screen.error_popup_title,
+          message: t.alert.error_send.insufficient_fee,
+          onConfirm: () async {
+            Navigator.pop(context); // 1번째 팝업 먼저 닫기
+            _setOverlayLoading(true);
+            try {
+              // 2차 브로드캐스트 시도 (공개된 멤풀 API)
+              Result<String> mempoolResult = await _viewModel.broadcastWithMempoolApi(signedTx);
+              _setOverlayLoading(false);
+              await _handleBroadcastResult(mempoolResult, signedTx);
+            } catch (error) {
+              _handleBroadcastException(error);
+            }
+          },
+          onCancel: () => Navigator.pop(context),
+          confirmButtonText: t.confirm,
+          cancelButtonText: t.close,
+          confirmButtonColor: CoconutColors.white,
+        );
         return;
       }
 
-      if (result.isSuccess) {
-        vibrateLight();
-        await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
-
-        if (!mounted) return;
-
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/broadcasting-complete', // 이동할 경로
-          ModalRoute.withName(_viewModel.isSendingDonation
-              ? '/'
-              : '/wallet-detail'), // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
-          arguments: {
-            'id': _viewModel.walletId,
-            'txHash': signedTx.transactionHash,
-            'isDonation': _viewModel.isSendingDonation,
-          },
-        );
-      }
-    } catch (_) {
-      Logger.log(">>>>> broadcast error: $_");
-      _setOverlayLoading(false);
-      String message = t.alert.error_send.broadcasting_failed(error: _.toString());
-      if (_.toString().contains('min relay fee not met')) {
-        message = t.alert.error_send.insufficient_fee;
-      }
-      if (!mounted) return;
-      showAlertDialog(context: context, content: message);
-      vibrateMedium();
+      // 일반적인 결과 처리 (성공 또는 다른 종류의 실패)
+      await _handleBroadcastResult(result, signedTx);
+    } catch (error) {
+      _handleBroadcastException(error);
     }
   }
 
@@ -200,6 +242,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<MempoolApiService>(context, listen: false),
     );
 
     if (_viewModel.isSendingDonation) {
@@ -212,7 +255,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         _viewModel.setTxInfo();
       } catch (e) {
         vibrateMedium();
-        showAlertDialog(context: context, content: t.alert.error_tx.not_parsed(error: e));
+        CustomDialogs.showCustomAlertDialog(
+          context,
+          title: t.broadcasting_screen.error_popup_title,
+          message: t.alert.error_tx.not_parsed(error: e),
+          onConfirm: () {
+            Navigator.pop(context);
+          },
+        );
       }
 
       _setOverlayLoading(false);

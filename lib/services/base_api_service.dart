@@ -51,6 +51,10 @@ abstract class BaseApiService {
     Logger.error("[$operation] DioException: ${e.message}");
     Logger.error("[$operation] Response data: ${e.response?.data}");
 
+    if (e.response?.data != null) {
+      throw Exception('Network error during $operation: ${e.response?.data}');
+    }
+
     throw Exception('Network error during $operation: ${e.message}');
   }
 
