@@ -71,8 +71,9 @@ class SendViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
 
-  // send_screen: _amountController, _recipientPageController
+  // send_screen: _amountController, _feeRateController, _recipientPageController
   final Function(String) _onAmountTextUpdate;
+  final Function(String) _onFeeRateTextUpdate;
   final Function(int) _onRecipientPageDeleted;
 
   bool _isMaxMode = false;
@@ -160,8 +161,16 @@ class SendViewModel extends ChangeNotifier {
   num get dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
   bool get isAmountDisabled => _isMaxMode && _currentIndex == lastIndex;
 
-  SendViewModel(this._walletProvider, this._sendInfoProvider, this._nodeProvider, this._isNetworkOn,
-      this._currentUnit, this._onAmountTextUpdate, this._onRecipientPageDeleted, int? walletId) {
+  SendViewModel(
+      this._walletProvider,
+      this._sendInfoProvider,
+      this._nodeProvider,
+      this._isNetworkOn,
+      this._currentUnit,
+      this._onAmountTextUpdate,
+      this._onFeeRateTextUpdate,
+      this._onRecipientPageDeleted,
+      int? walletId) {
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
       if (walletIndex != -1) selectWalletItem(walletIndex);
@@ -207,6 +216,7 @@ class SendViewModel extends ChangeNotifier {
 
     if (recommendedFeesResult.isFailure) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
+      _onFeeRateTextUpdate('-');
       return false;
     }
 
@@ -225,6 +235,8 @@ class SendViewModel extends ChangeNotifier {
     // return updateFeeInfoResult;
 
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
+    _onFeeRateTextUpdate(recommendedFees.halfHourFee.toString());
+
     return true;
   }
 
@@ -266,6 +278,7 @@ class SendViewModel extends ChangeNotifier {
     if (_currentIndex == lastIndex) {
       _onAmountTextUpdate(recipientList[lastIndex].amount);
     }
+
     _validateAmount(validateAmountIndex);
   }
 
@@ -318,6 +331,8 @@ class SendViewModel extends ChangeNotifier {
     _isUtxoSelectionAuto = isUtxoSelectionAuto;
     _initBalances();
     _validateAmount(-1);
+
+    _updateFeeBoardVisibility();
     notifyListeners();
   }
 

@@ -92,6 +92,7 @@ class _SendScreenState extends State<SendScreen> {
         context.read<ConnectivityProvider>().isNetworkOn,
         context.read<PreferenceProvider>().currentUnit,
         _onAmountTextUpdate,
+        _onFeeRateTextUpdate,
         _onRecipientPageDeleted,
         widget.walletId);
 
@@ -317,6 +318,7 @@ class _SendScreenState extends State<SendScreen> {
         onTap: () {
           if (isFetching) return;
           _feeRateController.text = sats.toString();
+          _clearFocus();
         },
         child: !isFetching
             ? child
@@ -1134,6 +1136,10 @@ class _SendScreenState extends State<SendScreen> {
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
     );
+  }
+
+  void _onFeeRateTextUpdate(String text) {
+    _feeRateController.text = text;
   }
 
   void _onAmountTextUpdate(String text) {
