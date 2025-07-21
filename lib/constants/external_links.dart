@@ -26,4 +26,4 @@ const DISCORD_COCONUT = 'https://discord.gg/YHxGQRxa7R';
 const X_POW = 'https://x.com/POWbitcoiner';
 
 /// Tutorial
-const TUTORIAL_URL = 'https://www.coconut.onl/';
+const TUTORIAL_URL = 'https://tutorial.coconut.onl/';
