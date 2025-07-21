@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -24,9 +25,9 @@ class NodeProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final ValueNotifier<WalletLoadState> _walletLoadStateNotifier;
   final ValueNotifier<List<WalletListItemBase>> _walletItemListNotifier;
-  final String _host;
-  final int _port;
-  final bool _ssl;
+  String _host;
+  int _port;
+  bool _ssl;
   final NetworkType _networkType;
   final AnalyticsService? _analyticsService;
 
@@ -404,6 +405,29 @@ class NodeProvider extends ChangeNotifier {
     } finally {
       _isClosing = false;
     }
+  }
+
+  Future<Result<bool>> changeServer(String host, int port, bool ssl) async {
+    await closeConnection();
+    _host = host;
+    _port = port;
+    _ssl = ssl;
+
+    Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+    try {
+      await initialize();
+    } catch (e) {
+      return Result.failure(ErrorCodes.networkError);
+    }
+
+    subscribeWallets().then((result) {
+      if (result.isFailure) {
+        Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
+      }
+    });
+    notifyListeners();
+
+    return Result.success(true);
   }
 
   @override
