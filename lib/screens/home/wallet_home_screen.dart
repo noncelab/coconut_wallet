@@ -21,6 +21,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/card/donation_banner_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
@@ -54,7 +55,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
-  ValueNotifier<bool> _isDropdownMenuVisible = ValueNotifier(false);
+  final ValueNotifier<bool> _isDropdownMenuVisible = ValueNotifier(false);
   late ScrollController _scrollController;
 
   DateTime? _lastPressedAt;
@@ -494,6 +495,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 ),
                 CoconutLayout.spacing_500h,
                 _buildHeaderActions(),
+                if (!Platform.isIOS && NetworkType.currentNetworkType == NetworkType.mainnet) ...[
+                  CoconutLayout.spacing_400h,
+                  _buildDonationBanner(),
+                ],
               ],
             ),
           ),
@@ -631,6 +636,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           ],
         );
       },
+    );
+  }
+
+  Widget _buildDonationBanner() {
+    return DonationBannerCard(
+      walletListLength: _viewModel.walletItemList.length,
     );
   }
 
