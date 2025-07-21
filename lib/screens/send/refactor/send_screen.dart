@@ -478,7 +478,7 @@ class _SendScreenState extends State<SendScreen> {
   Widget _buildFeeBoard(BuildContext context) {
     return Column(
       children: [
-        Selector<SendViewModel, Tuple2<bool, int>>(
+        Selector<SendViewModel, Tuple2<bool, int?>>(
             selector: (_, viewModel) => Tuple2(viewModel.showFeeBoard, viewModel.estimatedFee),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
@@ -505,7 +505,7 @@ class _SendScreenState extends State<SendScreen> {
                           ),
                           const Spacer(),
                           Text(
-                            "${_viewModel.estimatedFee} sats",
+                            "${_viewModel.estimatedFee ?? '-'} sats",
                             style: CoconutTypography.body2_14_NumberBold,
                           ),
                         ],
@@ -590,9 +590,10 @@ class _SendScreenState extends State<SendScreen> {
               height: 30,
               padding: const EdgeInsets.only(left: 10),
               onChanged: (text) {
+                if (text == "-") return;
                 String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
                 _feeRateController.text = formattedText;
-                _viewModel.onFeeRateUpdated(formattedText);
+                _viewModel.setFeeRateText(formattedText);
               },
               maxLines: 1,
               fontFamily: 'SpaceGrotesk',

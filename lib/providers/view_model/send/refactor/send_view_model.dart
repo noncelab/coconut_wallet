@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -124,8 +125,12 @@ class SendViewModel extends ChangeNotifier {
     FeeInfoWithLevel(level: TransactionFeeLevel.hour),
   ];
 
-  int _estimatedFee = 0;
-  int get estimatedFee => _estimatedFee;
+  TransactionBuilder? _txBuilder;
+  String _feeRateText = "";
+  String _changeAddressDerivationPath = "";
+
+  int? _estimatedFee;
+  int? get estimatedFee => _estimatedFee;
 
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
@@ -160,6 +165,28 @@ class SendViewModel extends ChangeNotifier {
   bool get isNetworkOn => _isNetworkOn == true;
   num get dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
   bool get isAmountDisabled => _isMaxMode && _currentIndex == lastIndex;
+  bool get _hasValidRecipient => _validRecipientList.isNotEmpty;
+
+  List<RecipientInfo> get _validRecipientList {
+    return _recipientList
+        .where((e) =>
+            e.address.isNotEmpty &&
+            e.amount.isNotEmpty &&
+            e.addressError.isNotError &&
+            e.minimumAmountError.isNotError)
+        .toList();
+  }
+
+  Map<String, int> get _recipientMap {
+    final Map<String, int> recipientMap = {};
+    for (final recipient in _validRecipientList) {
+      recipientMap[recipient.address] = (isBtcUnit
+          ? UnitUtil.convertBitcoinToSatoshi(double.parse(recipient.amount))
+          : int.parse(recipient.amount));
+    }
+
+    return recipientMap;
+  }
 
   SendViewModel(
       this._walletProvider,
@@ -181,6 +208,35 @@ class SendViewModel extends ChangeNotifier {
     _initWalletAddressList();
     _initBalances();
     _setRecommendedFees();
+  }
+
+  void _setEstimatedFee(int? estimatedFee) {
+    if (_estimatedFee == estimatedFee) return;
+    _estimatedFee = estimatedFee;
+    _updateFinalError();
+  }
+
+  void _calculateEstimatedFee() {
+    if (_selectedWalletItem == null ||
+        !_hasValidRecipient ||
+        _feeRateText.isEmpty ||
+        _feeRateText == "0" ||
+        _changeAddressDerivationPath.isEmpty) {
+      _setEstimatedFee(null);
+      return;
+    }
+
+    _txBuilder = TransactionBuilder(
+      availableUtxos: _selectedUtxoList,
+      recipients: _recipientMap,
+      feeRate: double.parse(_feeRateText),
+      changeDerivationPath: _changeAddressDerivationPath,
+      walletListItemBase: _selectedWalletItem!,
+      isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
+      isUtxoFixed: _isUtxoSelectionAuto,
+    );
+
+    _setEstimatedFee(_txBuilder!.build().estimatedFee);
   }
 
   void _initWalletAddressList() {
@@ -225,18 +281,10 @@ class SendViewModel extends ChangeNotifier {
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
     feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
 
-    // todo: 트랜잭션 수수료 조회 처리
-    // final updateFeeInfoResult = _updateFeeInfoEstimateFee();
-    // if (updateFeeInfoResult) {
-    //   _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
-    // } else {
-    //   _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
-    // }
-    // return updateFeeInfoResult;
-
+    final defaultFeeRate = recommendedFees.halfHourFee.toString();
+    _feeRateText = defaultFeeRate;
+    _onFeeRateTextUpdate(defaultFeeRate);
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
-    _onFeeRateTextUpdate(recommendedFees.halfHourFee.toString());
-
     return true;
   }
 
@@ -296,19 +344,7 @@ class SendViewModel extends ChangeNotifier {
     }
 
     vibrateLight();
-    notifyListeners();
-  }
-
-  void onFeeRateUpdated(String feeRate) {
-    try {
-      // todo: 수수료 계산
-      _estimatedFee = (double.parse(feeRate)).toInt();
-    } catch (e) {
-      _estimatedFee = 0;
-      Logger.log(e);
-    }
-
-    _updateFinalError();
+    _calculateEstimatedFee();
     notifyListeners();
   }
 
@@ -329,10 +365,13 @@ class SendViewModel extends ChangeNotifier {
     selectedUtxoAmountSum =
         _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
     _isUtxoSelectionAuto = isUtxoSelectionAuto;
+    _changeAddressDerivationPath =
+        _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
     _initBalances();
     _validateAmount(-1);
-
     _updateFeeBoardVisibility();
+
+    _calculateEstimatedFee();
     notifyListeners();
   }
 
@@ -343,6 +382,9 @@ class SendViewModel extends ChangeNotifier {
 
     _selectedWalletItem = _walletProvider.walletItemList[index];
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
+    _changeAddressDerivationPath =
+        _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
+
     _selectedUtxoList = [];
     selectedUtxoAmountSum = 0;
     notifyListeners();
@@ -365,18 +407,16 @@ class SendViewModel extends ChangeNotifier {
 
     _validateAmount(-1);
     _validateAddresses();
+    _calculateEstimatedFee();
     vibrateLight();
     notifyListeners();
   }
 
   void _updateFeeBoardVisibility() {
     if (_showFeeBoard) return;
-    bool hasValidRecipient = _recipientList.any((e) =>
-        e.address.isNotEmpty &&
-        e.amount.isNotEmpty &&
-        e.addressError.isNotError &&
-        e.minimumAmountError.isNotError);
-    _showFeeBoard = _insufficientBalanceError.isNotError && hasValidRecipient;
+
+    _showFeeBoard = _insufficientBalanceError.isNotError && _hasValidRecipient;
+    if (_showFeeBoard) _calculateEstimatedFee();
     notifyListeners();
   }
 
@@ -399,7 +439,7 @@ class SendViewModel extends ChangeNotifier {
       message = SendError.duplicatedAddress.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.address.isEmpty || e.amount.isEmpty)) {
       message = " ";
-    } else if (_estimatedFee == 0) {
+    } else if (_estimatedFee == null) {
       message = " ";
     }
 
@@ -416,7 +456,13 @@ class SendViewModel extends ChangeNotifier {
     _recipientList[index].address = text;
     _validateAddresses();
     _updateFeeBoardVisibility();
+    _calculateEstimatedFee();
     notifyListeners();
+  }
+
+  void setFeeRateText(String feeRate) {
+    _feeRateText = feeRate;
+    _calculateEstimatedFee();
   }
 
   void toggleUnit() {
@@ -451,6 +497,7 @@ class SendViewModel extends ChangeNotifier {
   void setIsFeeSubtractedFromSendAmount(bool isEnabled) {
     if (_isFeeSubtractedFromSendAmount == isEnabled) return;
     _isFeeSubtractedFromSendAmount = isEnabled;
+    _calculateEstimatedFee();
     notifyListeners();
   }
 
@@ -503,6 +550,7 @@ class SendViewModel extends ChangeNotifier {
     }
 
     _updateFeeBoardVisibility();
+    _calculateEstimatedFee();
     notifyListeners();
   }
 
