@@ -343,6 +343,7 @@ app_info_screen:
   terms_of_service: "Terms of Service"
   privacy_policy: "Privacy Policy"
   license: "Open Source License"
+  data_collection: "Data Collection Notice"
   version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
   inquiry: "Inquiry Content"
 bip39_list_screen:
@@ -519,7 +520,8 @@ errors:
   broadcast_error: "Failed to broadcast transaction."
   network_connect: "No network connection."
   network_not_found: "Network is not connected!"
-  insufficient_balance: "Insufficient balance"
+  electrum_connection_failed: "Unable to connect to Electrum server."
+  insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"
     recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."

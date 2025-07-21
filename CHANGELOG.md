@@ -1,4 +1,15 @@
-## mainnet 0.0.13(beta), regtest 3.1.7 - 2025-07-14
+## mainnet 0.0.15(beta), regtest 3.1.8 - 2025-07-18
+### Fixed
+* utxo_selection 버그 수정
+* 영문화 문구 일부 수정
+
+## mainnet 0.0.14(beta) - 2025-07-16
+### Fixed
+* 영문화 문구 일부 수정
+### Added
+* 설정 > 앱 정보 보기 > 코코넛 크루: 제네시스 멤버 추가
+  
+## mainnet 0.0.13(beta), regtest 3.1.7(only aos) - 2025-07-14
 ### Fixed
 * 비밀번호 분실 > 초기화 안되는 버그 수정
 * 지갑 상세 화면에서 지갑 정보 화면으로 가는 앱 바 버튼 스타일 수정

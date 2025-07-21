@@ -54,7 +54,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   final GlobalKey _dropdownButtonKey = GlobalKey();
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
-  bool _isDropdownMenuVisible = false;
+  ValueNotifier<bool> _isDropdownMenuVisible = ValueNotifier(false);
   late ScrollController _scrollController;
 
   DateTime? _lastPressedAt;
@@ -96,15 +96,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       },
       child: Selector<
           WalletHomeViewModel,
-          Tuple6<List<WalletListItemBase>, List<WalletListItemBase>, bool, bool,
-              Map<int, AnimatedBalanceData>, Tuple2<int?, Map<int, dynamic>>>>(
-        selector: (_, vm) => Tuple6(
+          Tuple7<List<WalletListItemBase>, List<WalletListItemBase>, bool, bool,
+              Map<int, AnimatedBalanceData>, Tuple2<int?, Map<int, dynamic>>, NetworkStatus>>(
+        selector: (_, vm) => Tuple7(
           vm.walletItemList,
           vm.favoriteWallets,
           vm.isBalanceHidden,
           vm.shouldShowLoadingIndicator,
           vm.walletBalanceMap,
           Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
+          vm.networkStatus,
         ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
@@ -262,7 +263,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
-      Provider.of<NodeProvider>(context, listen: false).syncStateStream,
+      Provider.of<NodeProvider>(context, listen: false),
     );
     return _viewModel;
   }
@@ -783,7 +784,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 wallet,
                 kAlwaysCompleteAnimation,
                 walletBalanceMap[wallet.id] ?? AnimatedBalanceData(0, 0),
-                isBalanceHidden,
                 getFakeBalance(wallet.id),
                 index == walletList.length - 1,
               );
@@ -796,30 +796,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletItem(
-      WalletListItemBase wallet,
-      Animation<double> animation,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      int? fakeBalance,
-      bool isLastItem) {
+  Widget _buildWalletItem(WalletListItemBase wallet, Animation<double> animation,
+      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
     return _getWalletRowItem(
       Key(wallet.id.toString()),
       wallet,
       animatedBalanceData,
-      isBalanceHidden,
       fakeBalance,
       isLastItem,
     );
   }
 
-  Widget _getWalletRowItem(
-      Key key,
-      WalletListItemBase walletItem,
-      AnimatedBalanceData animatedBalanceData,
-      bool isBalanceHidden,
-      int? fakeBalance,
-      bool isLastItem) {
+  Widget _getWalletRowItem(Key key, WalletListItemBase walletItem,
+      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
     final WalletListItemBase(
       id: id,
       name: name,
@@ -832,9 +821,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       signers = (walletItem as MultisigWalletListItem).signers;
     }
 
-    return Selector<PreferenceProvider, bool>(
-        selector: (_, viewModel) => viewModel.isBtcUnit,
-        builder: (context, isBtcUnit, child) {
+    return Selector2<PreferenceProvider, WalletHomeViewModel, Tuple2<bool, bool>>(
+        selector: (_, preferenceProvider, viewModel) =>
+            Tuple2(preferenceProvider.isBtcUnit, viewModel.isBalanceHidden),
+        builder: (context, data, child) {
+          final isBtcUnit = data.item1;
+          final isBalanceHidden = data.item2;
           return WalletItemCard(
             key: key,
             id: id,
@@ -1019,16 +1011,31 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   SliverAppBar _buildAppBar(WalletHomeViewModel viewModel) {
+    final shouldShow = viewModel.networkStatus != NetworkStatus.online;
+
+    String message;
+    switch (viewModel.networkStatus) {
+      case NetworkStatus.offline:
+        message = t.errors.network_disconnected;
+        break;
+      case NetworkStatus.connectionFailed:
+        message = t.errors.electrum_connection_failed;
+        break;
+      case NetworkStatus.online:
+        message = '';
+        break;
+    }
+
     return CoconutAppBar.buildHomeAppbar(
       context: context,
-      leadingSvgAsset: (viewModel.isNetworkOn ?? false)
+      leadingSvgAsset: !shouldShow
           ? Container()
           : Row(
               children: [
                 SvgPicture.asset('assets/svg/cloud-disconnected.svg'),
                 CoconutLayout.spacing_100w,
                 Text(
-                  t.errors.network_disconnected,
+                  message,
                   style: CoconutTypography.body3_12_Bold.setColor(
                     CoconutColors.hotPink,
                   ),
@@ -1094,56 +1101,107 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildDropdownBackdrop() {
-    return _isDropdownMenuVisible
-        ? Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                _setPulldownMenuVisiblility(false);
-              },
-            ),
-          )
-        : Container();
+    // return _isDropdownMenuVisible
+    //     ? Positioned.fill(
+    //         child: GestureDetector(
+    //           behavior: HitTestBehavior.translucent,
+    //           onTap: () {
+    //             _setPulldownMenuVisiblility(false);
+    //           },
+    //         ),
+    //       )
+    //     : Container();
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isDropdownMenuVisible,
+      builder: (context, isVisible, child) {
+        return isVisible
+            ? Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    _setPulldownMenuVisiblility(false);
+                  },
+                ),
+              )
+            : Container();
+      },
+    );
+  }
+
+  bool _isKoreanLanguage() {
+    final preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
+    return preferenceProvider.language == 'kr';
   }
 
   Widget _buildDropdownMenu() {
+    final bool showGlossary = _isKoreanLanguage();
     return Positioned(
         top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
         right: 20,
-        child: Visibility(
-          visible: _isDropdownMenuVisible,
-          child: CoconutPulldownMenu(
-            shadowColor: CoconutColors.gray800,
-            dividerColor: CoconutColors.gray800,
-            entries: [
-              CoconutPulldownMenuGroup(
-                groupTitle: t.tool,
-                items: [
-                  CoconutPulldownMenuItem(title: t.glossary),
-                  CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
-                  if (NetworkType.currentNetworkType.isTestnet)
-                    CoconutPulldownMenuItem(title: t.tutorial),
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _isDropdownMenuVisible,
+          builder: (context, isVisible, child) {
+            return Visibility(
+              visible: isVisible,
+              child: CoconutPulldownMenu(
+                shadowColor: CoconutColors.gray800,
+                dividerColor: CoconutColors.gray800,
+                entries: [
+                  CoconutPulldownMenuGroup(
+                    groupTitle: t.tool,
+                    items: [
+                      if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
+                      CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
+                      if (NetworkType.currentNetworkType.isTestnet)
+                        CoconutPulldownMenuItem(title: t.tutorial),
+                    ],
+                  ),
+                  CoconutPulldownMenuItem(title: t.settings),
+                  CoconutPulldownMenuItem(title: t.view_app_info),
                 ],
+                dividerHeight: 1,
+                thickDividerHeight: 3,
+                thickDividerIndexList: [
+                  _getThickDividerIndex(showGlossary),
+                ],
+                onSelected: ((index, selectedText) {
+                  _setPulldownMenuVisiblility(false);
+                  _handleDropdownSelection(index, showGlossary);
+                }),
               ),
-              CoconutPulldownMenuItem(title: t.settings),
-              CoconutPulldownMenuItem(title: t.view_app_info),
-            ],
-            dividerHeight: 1,
-            thickDividerHeight: 3,
-            thickDividerIndexList: [
-              NetworkType.currentNetworkType.isTestnet ? 2 : 1,
-            ],
-            onSelected: ((index, selectedText) {
-              // 메인넷의 경우 튜토리얼 항목을 넘어간다.
-              if (!NetworkType.currentNetworkType.isTestnet && index >= 2) {
-                ++index;
-              }
-
-              _setPulldownMenuVisiblility(false);
-              _dropdownActions[index].call();
-            }),
-          ),
+            );
+          },
         ));
+  }
+
+  /// 용어집 표시 여부에 따른 Thick Divider 인덱스 계산
+  int _getThickDividerIndex(bool showGlossary) {
+    if (NetworkType.currentNetworkType.isTestnet) {
+      // 테스트넷: 용어집, 니모닉, 튜토리얼 → 인덱스 2
+      // 테스트넷 (용어집 없음): 니모닉, 튜토리얼 → 인덱스 1
+      return showGlossary ? 2 : 1;
+    } else {
+      // 메인넷: 용어집, 니모닉 → 인덱스 1
+      // 메인넷 (용어집 없음): 니모닉 → 인덱스 0
+      return showGlossary ? 1 : 0;
+    }
+  }
+
+  /// 드롭다운 선택 처리 (인덱스 조정 포함)
+  void _handleDropdownSelection(int index, bool showGlossary) {
+    int adjustedIndex = index;
+
+    // 용어집이 없는 경우 인덱스 조정
+    if (!showGlossary) {
+      adjustedIndex++;
+    }
+
+    // 메인넷에서 튜토리얼 항목이 없는 경우 추가 조정
+    if (!NetworkType.currentNetworkType.isTestnet && adjustedIndex >= 2) {
+      adjustedIndex++;
+    }
+
+    _dropdownActions[adjustedIndex].call();
   }
 
   Widget _buildWalletIconShrinkButton(
@@ -1211,7 +1269,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 children: [
                   SvgPicture.asset(svgPath),
                   CoconutLayout.spacing_100h,
-                  Text(scanText, style: CoconutTypography.body2_14),
+                  Text(
+                    scanText,
+                    style: CoconutTypography.body2_14,
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),
@@ -1219,8 +1281,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   void _setPulldownMenuVisiblility(bool value) {
-    setState(() {
-      _isDropdownMenuVisible = value;
-    });
+    _isDropdownMenuVisible.value = value;
   }
 }

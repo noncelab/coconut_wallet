@@ -15,8 +15,11 @@ abstract class StateManagerInterface {
   void addWalletCompletedAllStates(int walletId);
 
   /// 노드 상태를 syncing으로 변경
-  void setMainClientSyncingState();
+  void setNodeSyncStateToSyncing();
 
   /// 노드 상태를 waiting으로 변경
-  void setMainClientWaitingState();
+  void setNodeSyncStateToCompleted();
+
+  /// 노드 상태를 failed으로 변경
+  void setNodeSyncStateToFailed();
 }

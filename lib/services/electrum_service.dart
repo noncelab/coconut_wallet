@@ -299,4 +299,9 @@ class ElectrumService {
     _pingTimer?.cancel();
     await _socketManager.disconnect();
   }
+
+  /// 소켓 연결 종료 콜백 등록
+  void setOnConnectionLostCallback(void Function() callback) {
+    _socketManager.onConnectionLost = callback;
+  }
 }

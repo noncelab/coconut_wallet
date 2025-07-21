@@ -165,3 +165,8 @@ default.realm.management
 .cursor
 
 .metadata
+
+# Google Services
+GoogleService-Info.plist
+google-services.json
+firebase.json

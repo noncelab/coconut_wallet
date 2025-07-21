@@ -146,13 +146,18 @@ class IsolateStateManager implements StateManagerInterface {
   }
 
   @override
-  void setMainClientSyncingState() {
-    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setMainClientSyncingState, []));
+  void setNodeSyncStateToSyncing() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToSyncing, []));
   }
 
   @override
-  void setMainClientWaitingState() {
-    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setMainClientWaitingState, []));
+  void setNodeSyncStateToCompleted() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
+  }
+
+  @override
+  void setNodeSyncStateToFailed() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToFailed, []));
   }
 
   bool _isWalletAnySyncing(int walletId) {
