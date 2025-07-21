@@ -116,7 +116,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
       _transaction = buildResult.transaction!;
       _estimatedFee = buildResult.estimatedFee!;
     } else {
-      var a = 1;
+      // TODO: 에러 처리
     }
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
