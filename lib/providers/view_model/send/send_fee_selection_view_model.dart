@@ -1,6 +1,9 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -8,7 +11,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
 class SendFeeSelectionViewModel extends ChangeNotifier {
@@ -17,116 +19,110 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
 
   late final WalletListItemBase _walletListItemBase;
-  late AddressType _walletAddressType;
   late int _confirmedBalance;
-  late bool _isMultisigWallet;
   late bool _isMaxMode;
   late int _walletId;
   late double _amount;
-  String? _recipientAddress;
   late bool? _isNetworkOn;
-  late bool _isBatchTx = false;
+  late TransactionBuilder _txBuilder;
+  late List<UtxoState> _availableUtxos;
+  TransactionBuildResult? _buildResultWithCustomFee;
+  final List<TransactionBuildResult> _recommendedFeeTxResult = [];
 
   SendFeeSelectionViewModel(
       this._sendInfoProvider, this._walletProvider, this._nodeProvider, this._isNetworkOn) {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    _walletAddressType = _walletListItemBase.walletType.addressType;
-    _confirmedBalance =
-        _walletProvider.getUtxoList(_sendInfoProvider.walletId!).fold<int>(0, (sum, utxo) {
-      if (utxo.status == UtxoStatus.unspent) {
-        return sum + utxo.amount;
-      }
-      return sum;
-    });
-    _isMultisigWallet = _walletListItemBase.walletType == WalletType.multiSignature;
     _walletId = _sendInfoProvider.walletId!;
+    _availableUtxos = _walletProvider
+        .getUtxoListByStatus(_walletId, UtxoStatus.unspent)
+        .where((element) => element.status != UtxoStatus.locked)
+        .toList();
+    _confirmedBalance = _availableUtxos.fold<int>(0, (sum, utxo) {
+      return sum + utxo.amount;
+    });
     if (_sendInfoProvider.recipientsForBatch != null) {
-      _isBatchTx = true;
       _setBatchTxParams();
     } else {
       _setSingleTxParams();
     }
     _isNetworkOn = isNetworkOn;
     _updateSendInfoProvider();
+    _txBuilder = TransactionBuilder(
+        availableUtxos: _availableUtxos,
+        recipients: _sendInfoProvider.getRecipientMap()!,
+        feeRate: 1,
+        changeDerivationPath: _walletProvider.getChangeAddress(_walletId).derivationPath,
+        walletListItemBase: _walletListItemBase,
+        isFeeSubtractedFromAmount: _isMaxMode,
+        isUtxoFixed: false);
   }
 
   double get amount => _amount;
   bool get isNetworkOn => _isNetworkOn == true;
   WalletProvider get walletProvider => _walletProvider;
   NodeProvider get nodeprovider => _nodeProvider;
+  TransactionBuildResult? get buildResultWithCustomFee => _buildResultWithCustomFee;
+  List<TransactionBuildResult> get recommendedFeeTxResult => _recommendedFeeTxResult;
 
-  int estimateFee(double satsPerVb) {
-    final transaction = _createTransaction(satsPerVb);
-
-    if (_isMultisigWallet) {
-      final multisigWallet = _walletListItemBase.walletBase as MultisignatureWallet;
-      return transaction.estimateFee(satsPerVb, _walletAddressType,
-          requiredSignature: multisigWallet.requiredSignature,
-          totalSigner: multisigWallet.totalSigner);
+  TransactionBuildResult getFinalBuildResult(TransactionFeeLevel? feeLevel) {
+    if (feeLevel == null) {
+      return _buildResultWithCustomFee!;
+    } else {
+      switch (feeLevel) {
+        case TransactionFeeLevel.fastest:
+          return _recommendedFeeTxResult.first;
+        case TransactionFeeLevel.halfhour:
+          return _recommendedFeeTxResult[1];
+        case TransactionFeeLevel.hour:
+          return _recommendedFeeTxResult.last;
+      }
     }
-
-    return transaction.estimateFee(satsPerVb, _walletAddressType);
   }
 
-  Transaction _createTransaction(double satsPerVb) {
-    final utxoPool = _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent);
-    final wallet = _walletProvider.getWalletById(_walletId);
-    final changeAddress = _walletProvider.getChangeAddress(_walletId);
-    final amount = UnitUtil.convertBitcoinToSatoshi(_amount);
-
-    if (_isBatchTx) {
-      return Transaction.forBatchPayment(
-          TransactionUtil.selectOptimalUtxos(utxoPool, amount, satsPerVb, _walletAddressType),
-          _sendInfoProvider.recipientsForBatch!
-              .map((key, value) => MapEntry(key, UnitUtil.convertBitcoinToSatoshi(value))),
-          changeAddress.derivationPath,
-          satsPerVb.toDouble(),
-          _walletListItemBase.walletBase);
+  List<TransactionBuildResult> setRecommendedFeeTxs(List<FeeInfoWithLevel> feeInfos) {
+    for (var feeInfo in feeInfos) {
+      _recommendedFeeTxResult.add(_txBuilder.copyWith(feeRate: feeInfo.satsPerVb).build());
     }
+    return _recommendedFeeTxResult;
+  }
 
-    return _isMaxMode
-        ? Transaction.forSweep(
-            utxoPool, _recipientAddress!, satsPerVb.toDouble(), wallet.walletBase)
-        : Transaction.forSinglePayment(
-            TransactionUtil.selectOptimalUtxos(utxoPool, amount, satsPerVb, _walletAddressType),
-            _recipientAddress!,
-            changeAddress.derivationPath,
-            amount,
-            satsPerVb.toDouble(),
-            _walletListItemBase.walletBase);
+  int estimateFeeWithCustomFee(double satsPerVb, {bool isUserSelection = false}) {
+    final buildResult = _txBuilder.copyWith(feeRate: satsPerVb).build();
+    if (isUserSelection) {
+      _buildResultWithCustomFee = buildResult;
+    }
+    if (buildResult.estimatedFee == null && buildResult.isFailure) {
+      throw buildResult.exception ?? 'Unknown error';
+    }
+    return buildResult.estimatedFee!;
   }
 
   void _setSingleTxParams() {
     _amount = _sendInfoProvider.amount!;
-    _recipientAddress = _sendInfoProvider.recipientAddress!;
     _isMaxMode = _confirmedBalance == UnitUtil.convertBitcoinToSatoshi(_amount);
   }
 
   void _setBatchTxParams() {
     _amount = _sendInfoProvider.recipientsForBatch!.values.fold(0, (sum, value) => sum + value);
-    //_recipientAddresses = _sendInfoProvider.recipientsForBatch!.keys.toList();
     _isMaxMode = false;
   }
-
-  // double getAmount(int estimatedFee) {
-  //   return _isMaxMode
-  //       ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - estimatedFee)
-  //       : amount;
-  // }
 
   bool isBalanceEnough(int? estimatedFee) {
     if (estimatedFee == null || estimatedFee == 0) return false;
     if (_isMaxMode) return (_confirmedBalance - estimatedFee) > dustLimit;
-    Logger.log('--> ${UnitUtil.convertBitcoinToSatoshi(amount)} $estimatedFee $_confirmedBalance');
+    Logger.log(
+        '--> ${UnitUtil.convertBitcoinToSatoshi(amount)} + $estimatedFee <= $_confirmedBalance');
     return (UnitUtil.convertBitcoinToSatoshi(amount) + estimatedFee) <= _confirmedBalance;
   }
 
-  void saveFinalSendInfo(int estimatedFee, double satsPerVb) {
-    double finalAmount =
-        _isMaxMode ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - estimatedFee) : _amount;
+  void saveFinalSendInfo(TransactionFeeLevel? feeLevel) {
+    final finalBuildResult = getFinalBuildResult(feeLevel);
+    double finalAmount = _isMaxMode
+        ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - finalBuildResult.estimatedFee!)
+        : _amount;
     _sendInfoProvider.setAmount(finalAmount);
-    _sendInfoProvider.setEstimatedFee(estimatedFee);
-    _sendInfoProvider.setTransaction(_createTransaction(satsPerVb));
+    _sendInfoProvider.setEstimatedFee(finalBuildResult.estimatedFee!);
+    _sendInfoProvider.setTransaction(finalBuildResult.transaction!);
     _sendInfoProvider.setFeeBumpfingType(null);
     _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
   }
@@ -137,7 +133,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   }
 
   void _updateSendInfoProvider() {
-    _sendInfoProvider.setIsMultisig(_isMultisigWallet);
+    _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
   }
 }

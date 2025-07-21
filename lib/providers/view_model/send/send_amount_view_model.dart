@@ -153,6 +153,7 @@ class SendAmountViewModel extends ChangeNotifier {
     if (double.parse(_input) <= dustLimit / dustLimitDenominator) {
       _errorIndex = 1;
       _isNextButtonEnabled = false;
+      notifyListeners();
       return;
     }
 
