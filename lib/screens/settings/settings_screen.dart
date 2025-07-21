@@ -9,6 +9,8 @@ import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
@@ -121,6 +123,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                         ),
                         if (viewModel.isBalanceHidden)
                           SingleButton(
+                            enableShrinkAnim: true,
                             title: t.settings_screen.fake_balance.fake_balance_setting,
                             onPressed: () async {
                               CommonBottomSheets.showBottomSheet_50(
@@ -130,26 +133,79 @@ class _SettingsScreen extends State<SettingsScreen> {
                       ],
                     ),
                   ],
-
+                  CoconutLayout.spacing_400h,
                   _category(t.unit),
-                  Selector<PreferenceProvider, bool>(
-                      selector: (_, viewModel) => viewModel.isBtcUnit,
-                      builder: (context, isBtcUnit, child) {
-                        return SingleButton(
-                          title: t.bitcoin_kr,
-                          subtitle: isBtcUnit ? t.btc : t.sats,
-                          onPressed: () async {
-                            CommonBottomSheets.showBottomSheet_50(
-                                context: context, child: const UnitBottomSheet());
-                          },
-                        );
-                      }),
+                  ButtonGroup(buttons: [
+                    Selector<PreferenceProvider, bool>(
+                        selector: (_, viewModel) => viewModel.isBtcUnit,
+                        builder: (context, isBtcUnit, child) {
+                          return SingleButton(
+                            enableShrinkAnim: true,
+                            animationEndValue: 0.97,
+                            title: t.bitcoin_kr,
+                            subtitle: isBtcUnit ? t.btc : t.sats,
+                            onPressed: () async {
+                              CommonBottomSheets.showBottomSheet_50(
+                                  context: context, child: const UnitBottomSheet());
+                            },
+                          );
+                        }),
+                    Selector<PreferenceProvider, String>(
+                        selector: (_, provider) => provider.selectedFiat.code,
+                        builder: (context, fiatCode, child) {
+                          String fiatDisplayName;
+                          switch (fiatCode) {
+                            case 'KRW':
+                              fiatDisplayName = t.fiat.krw_code;
+                              break;
+                            case 'USD':
+                              fiatDisplayName = t.fiat.usd_code;
+                              break;
+                            default:
+                              fiatDisplayName = t.fiat.usd_code;
+                          }
+
+                          return SingleButton(
+                            enableShrinkAnim: true,
+                            animationEndValue: 0.97,
+                            title: t.fiat.fiat,
+                            subtitle: fiatDisplayName,
+                            onPressed: () async {
+                              CommonBottomSheets.showBottomSheet_50(
+                                  context: context, child: const FiatBottomSheet());
+                            },
+                          );
+                        }),
+                  ]),
+
+                  CoconutLayout.spacing_400h,
+                  _category(t.general),
+                  Selector<PreferenceProvider, String>(
+                    selector: (_, provider) => provider.language,
+                    builder: (context, language, child) {
+                      return SingleButton(
+                        enableShrinkAnim: true,
+                        animationEndValue: 0.97,
+                        title: t.settings_screen.language,
+                        subtitle: _getCurrentLanguageDisplayName(language),
+                        subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                        onPressed: () async {
+                          CommonBottomSheets.showBottomSheet_50(
+                            context: context,
+                            child: const LanguageBottomSheet(),
+                          );
+                        },
+                      );
+                    },
+                  ),
 
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
                     SingleButton(
+                      enableShrinkAnim: true,
+                      animationEndValue: 0.97,
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {
                         final realmManager = Provider.of<RealmManager>(context, listen: false);
@@ -189,5 +245,16 @@ class _SettingsScreen extends State<SettingsScreen> {
     return (await CommonBottomSheets.showBottomSheet_90(
             context: context, child: const CustomLoadingOverlay(child: PinCheckScreen())) ==
         true);
+  }
+
+  String _getCurrentLanguageDisplayName(String language) {
+    switch (language) {
+      case 'kr':
+        return t.settings_screen.korean;
+      case 'en':
+        return t.settings_screen.english;
+      default:
+        return t.settings_screen.korean;
+    }
   }
 }

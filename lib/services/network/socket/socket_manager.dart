@@ -35,6 +35,9 @@ class SocketManager {
   /// On Reconnect callback
   void Function()? onReconnect;
 
+  /// On Connection Lost callback
+  void Function()? onConnectionLost;
+
   /// [factory]: 테스트용 모킹 객체를 주입하기 위한 클래스로 실제 사용 시 별도로 지정하지 않아도 됨 <br/>
   /// [maxConnectionAttempts]: 최대 연결 시도 횟수, default: 30 <br/>
   /// [reconnectDelaySeconds]: 재연결 주기, default: 10 (s) <br/>
@@ -83,7 +86,10 @@ class SocketManager {
       _connectionAttempts = 0;
       _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
     } catch (e) {
+      Logger.error('Socket connection failed: $e');
       _connectionStatus = SocketConnectionStatus.terminated;
+      onConnectionLost?.call();
+      return false;
     }
     return true;
   }
@@ -98,11 +104,15 @@ class SocketManager {
   }
 
   void _onDone() {
+    Logger.log('Socket connection closed');
     _connectionStatus = SocketConnectionStatus.terminated;
+    onConnectionLost?.call();
   }
 
   void _onError(error) {
+    Logger.error('Socket connection error: $error');
     _connectionStatus = SocketConnectionStatus.terminated;
+    onConnectionLost?.call();
   }
 
   Future<void> send(String data) async {

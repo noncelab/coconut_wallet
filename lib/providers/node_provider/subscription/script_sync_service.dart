@@ -79,6 +79,8 @@ class ScriptSyncService {
         await _addressRepository.setWalletAddressUsed(
             dto.walletItem, dto.scriptStatus.index, dto.scriptStatus.isChange);
       }
+      // 구독 완료
+      _stateManager.addWalletCompletedState(dto.walletItem.id, UpdateElement.subscription);
 
       // Balance 동기화
       await _balanceSyncService.fetchScriptBalance(dto.walletItem, dto.scriptStatus);
@@ -114,7 +116,7 @@ class ScriptSyncService {
       Logger.error('Failed to handle script status change: $e');
       Logger.error('Stack trace: $stackTrace');
       // 오류 발생 시에도 상태 초기화
-      _stateManager.setMainClientWaitingState();
+      _stateManager.setNodeSyncStateToCompleted();
     }
   }
 
@@ -137,9 +139,6 @@ class ScriptSyncService {
   }) async {
     try {
       final now = DateTime.now();
-
-      // 지갑 업데이트 상태 초기화
-      _stateManager.initWalletUpdateStatus(walletItem.id);
 
       // Balance 병렬 처리
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
@@ -173,7 +172,7 @@ class ScriptSyncService {
       Logger.error('Failed to handle batch script status change: $e');
       Logger.error('Stack trace: $stackTrace');
       _stateManager.initWalletUpdateStatus(walletItem.id);
-      _stateManager.setMainClientWaitingState();
+      _stateManager.setNodeSyncStateToCompleted();
     }
   }
 }

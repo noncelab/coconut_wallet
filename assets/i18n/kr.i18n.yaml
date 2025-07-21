@@ -34,6 +34,7 @@ next: "다음"
 modify: "변경"
 confirm: "확인"
 security: "보안"
+general: "일반"
 unit: "단위"
 utxo: "UTXO"
 tag: "태그"
@@ -113,6 +114,48 @@ faucet_already_request: "해당 주소로 이미 요청했습니다. 입금까�
 faucet_failed: "요청에 실패했습니다. 잠시 후 다시 시도해 주세요."
 bio_auth_required: "생체 인증을 진행해 주세요"
 
+donation:
+  coconut: "코코넛 후원"
+  donate: "후원하기"
+  supportImpactMessage: "당신의 응원 덕분에, 우린 자유로운 돈을 더 많은 사람들에게 전할 수 있습니다"
+  encourageSupportMessage: "코코넛을 지속할 수 있도록 응원해 주세요"
+  coffee: "☕️ 커피 한 잔"
+  late_meal: "🍜️ 야근 식대"
+  maintenance: "⚒️️ 유지 보수비"
+  support_heart: "🩷 응원의 마음"
+  onchain: "온체인 후원"
+  lightning: "라이트닝 후원"
+  under_dust_error: "${dust}(더스트) 보다 큰 금액을 입력해 주세요\n"
+  over_donation_max_value_error: "최대 $value sats까지 후원하실 수 있어요\n"
+  donation_wallet: "후원 지갑"
+  total_donation_amount: "최종 후원 금액"
+  donation_address: "후원 주소"
+  empty_enough_balance_wallet: "잔액이 충분한 지갑이 없어요"
+  unsigned_qr_tooltip: "QR 코드를 스캔하여 서명해 주세요"
+  signed_qr_tooltip: "서명된 트랜잭션을 스캔해 주세요"
+  user_messages: [
+    "사랑을 담아",
+    "응원의 마음을 담아",
+    "파이팅 하라고",
+    "소처럼 일하라고",
+    "힘내라고",
+    "고마운 마음으로",
+    "기특해서",
+  ]
+  user_messages_description_1: "코코넛 개발팀에게"
+  user_messages_description_2: "${amount} sats를"
+  donate_confirm: "후원합니다"
+  complete:
+    thank_you: "감사합니다!"
+    description: "당신의 후원은 단순한 비트코인이 아닙니다.\n더 나은 지갑, 더 가까운 대중화를 향한\n코코넛의 발걸음을 이어갈 수 있게 해줍니다."
+
+  # 후원하기 - 라이트닝
+  donation_amount: "후원 금액"
+  ln_invoice: "라이트닝 인보이스"
+  ln_address: "라이트닝 주소"
+  ln_address_pow: "powbitcoiner@speed.app"
+  ln_invoice_api_error: "라이트닝 인보이스 생성에 실패했어요"
+
 # lib/enums
 transaction_enums:
   high_priority: "빠른 전송"
@@ -166,6 +209,7 @@ wallet_add_scanner_screen:
     step2_em: "Connect Software Wallet"
     step3: "3. 어떤 지갑이든 선택"
   guide_jade:
+    step0_preposition: ""
     step0_em: "Active "
     step0: "상태에서"
     step1: "1. "
@@ -272,6 +316,9 @@ unsigned_tx_qr_screen:
 # lib/screens/settings
 app_info_screen:
   made_by_team_pow: "포우팀이 만듭니다."
+  coconut_crew_genesis_member: "코코넛 크루: 제네시스 멤버"
+  coconut_crew: "코코넛 크루"
+  coconut_crew_thanks_msg: "베타 테스트부터 함께해주신\n셀프 커스터디 개척자들입니다.\n여러분이 없었다면 코코넛은 태어나지 못했을 거예요."
   category1_ask: "궁금한 점이 있으신가요?"
   go_to_pow: "POW 커뮤니티 바로가기"
   ask_to_discord: "디스코드 채널로 문의하기"
@@ -283,6 +330,7 @@ app_info_screen:
   terms_of_service: "이용 약관"
   privacy_policy: "개인정보 처리방침"
   license: "오픈소스 라이선스"
+  data_collection: "데이터 수집 안내"
   version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
   inquiry: "문의 내용"
 bip39_list_screen:
@@ -291,6 +339,8 @@ bip39_list_screen:
 pin_setting_screen:
   new_password: "새로운 비밀번호를 눌러주세요"
   enter_again: "다시 한번 확인할게요"
+  set_to_6_digit: "6자리 비밀번호로 설정하기"
+  set_to_4_digit: "4자리 비밀번호로 설정하기"
 settings_screen:
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"
@@ -303,6 +353,9 @@ settings_screen:
     fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
     fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
     fake_balance_input_not_enough_error: "$btc ($sats sats) 미만으로는 설정할 수 없어요"
+  language: "언어"
+  korean: "한국어"
+  english: "English"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
@@ -329,6 +382,11 @@ utxo_list_screen:
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
+  time_ago:
+    just_now: 방금 전
+    minutes: ${count}분 째
+    hours: ${count}시간 째
+    days: ${count}일 째
 
 utxo_detail_screen:
   pending: "승인 대기중"
@@ -449,10 +507,11 @@ errors:
   broadcast_error: "트랜잭션 전송에 실패했습니다."
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
+  electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요."
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
     insufficient_balance: "잔액이 부족하여 수수료를 낼 수 없어요"
-    recommended_fee_unavailable: "추천 수수료를 조회하지 못했어요.\n'변경' 버튼을 눌러 수수료를 직접 입력해 주세요."
+    recommended_fee_unavailable: "추천 수수료를 조회하지 못했어요.\n'직접 입력하기' 버튼을 눌러 수수료를 직접 입력해 주세요."
     insufficient_utxo: "UTXO 합계가 모자라요"
   address_error:
     invalid: "올바른 주소가 아니에요."
@@ -496,9 +555,10 @@ tooltip:
     by_hardware_wallet: "하드웨어 월렛으로"
     by_vault_app: "볼트 앱으로"
   unsigned_tx_qr:
-    in_vault: "볼트에서"
+    open_vault: "볼트에서"
     select_wallet: "$name 선택, "
-    scan_qr_below: "로 이동하여 아래 QR 코드를 스캔해 주세요."
+    select_menu: "$menu로 이동하여 "
+    scan_qr_below: "아래 QR 코드를 스캔해 주세요."
   address_receiving: "비트코인을 받을 때 사용하는 주소예요. 영어로 Receiving 또는 External이라고 해요."
   address_change: "비트코인을 보내고 남으면 거슬러받는 주소예요. 영어로 Change라고 해요."
   utxo: "UTXO란 Unspent Tx Output을 줄인 말로 아직 쓰이지 않은 잔액이란 뜻이에요. 비트코인에는 잔액 개념이 없어요. 지갑에 표시되는 잔액은 UTXO의 총합이라는 것을 알아두세요."
@@ -589,3 +649,16 @@ third_party:
   jade: "제이드"
   seed_signer: "시드사이너"
   zpub: "zpub"
+
+trade_exchange:
+  upbit: "업비트"
+  binance: "바이낸스"
+
+fiat:
+  fiat: "법정화폐"
+  krw_symbol: "₩"
+  usd_symbol: "$"
+  krw_code: "KRW"
+  usd_code: "USD"
+  krw_price: "업비트 기준"
+  usd_price: "바이낸스 기준"

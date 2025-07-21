@@ -67,6 +67,10 @@ class IsolateStateManager implements StateManagerInterface {
     WalletSyncState prevStatus;
 
     switch (updateType) {
+      case UpdateElement.subscription:
+        prevStatus = walletUpdateInfo.subscription;
+        walletUpdateInfo.subscription = newStatus;
+        return prevStatus != newStatus;
       case UpdateElement.balance:
         prevStatus = walletUpdateInfo.balance;
         walletUpdateInfo.balance = newStatus;
@@ -142,13 +146,18 @@ class IsolateStateManager implements StateManagerInterface {
   }
 
   @override
-  void setMainClientSyncingState() {
-    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setMainClientSyncingState, []));
+  void setNodeSyncStateToSyncing() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToSyncing, []));
   }
 
   @override
-  void setMainClientWaitingState() {
-    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setMainClientWaitingState, []));
+  void setNodeSyncStateToCompleted() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToCompleted, []));
+  }
+
+  @override
+  void setNodeSyncStateToFailed() {
+    _sendStateUpdateToMain(IsolateStateMessage(IsolateStateMethod.setNodeSyncStateToFailed, []));
   }
 
   bool _isWalletAnySyncing(int walletId) {
@@ -157,7 +166,8 @@ class IsolateStateManager implements StateManagerInterface {
       return false;
     }
 
-    return walletInfo.balance == WalletSyncState.syncing ||
+    return walletInfo.subscription == WalletSyncState.syncing ||
+        walletInfo.balance == WalletSyncState.syncing ||
         walletInfo.transaction == WalletSyncState.syncing ||
         walletInfo.utxo == WalletSyncState.syncing;
   }

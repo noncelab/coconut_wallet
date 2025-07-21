@@ -1,11 +1,12 @@
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_dialog.dart';
 import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
+import 'package:coconut_wallet/widgets/pin/pin_length_toggle_button.dart';
 import 'package:provider/provider.dart';
 
 class PinSettingScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
   late String pin;
   late String pinConfirm;
   late String errorMessage;
+  late int _pinLength;
   late List<String> _shuffledPinNumbers;
   late AuthProvider _authProvider;
 
@@ -31,6 +33,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     pinConfirm = '';
     errorMessage = '';
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _pinLength = _authProvider.pinLength == 0 ? 4 : _authProvider.pinLength;
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad(isSettings: true);
   }
 
@@ -40,13 +43,19 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     });
   }
 
-  void _showPinSetSuccessLottie() {
-    showGeneralDialog(
+  Future<void> _showPinSetSuccessLottie() async {
+    await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      barrierColor: MyColors.transparentBlack_50,
+      barrierColor: Colors.black54,
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (BuildContext buildContext, Animation animation, Animation secondaryAnimation) {
+        Future.delayed(const Duration(milliseconds: 1300), () {
+          if (buildContext.mounted) {
+            Navigator.of(buildContext).pop();
+          }
+        });
+
         return AnimatedDialog(
           context: buildContext,
           lottieAddress: 'assets/lottie/pin-locked-success.json',
@@ -68,12 +77,16 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     );
   }
 
+  Future<bool> _comparePin(String input) async {
+    bool isSamePin = await _authProvider.verifyPin(input);
+    return isSamePin;
+  }
+
   void returnToBackSequence(String message, {bool isError = false, bool firstSequence = false}) {
     setState(() {
       errorMessage = message;
       pinConfirm = '';
       _shufflePinNumbers();
-      //_subModel.shuffleNumbers(isSettings: true);
       if (firstSequence) {
         step = 0;
         pin = '';
@@ -87,30 +100,26 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
     vibrateLightDouble();
   }
 
-  Future<bool> _comparePin(String input) async {
-    bool isSamePin = await _authProvider.verifyPin(input);
-    return isSamePin;
-  }
-
   void _onKeyTap(String value) async {
+    setState(() {
+      errorMessage = '';
+    });
+
     if (step == 0) {
       if (value == '<') {
         if (pin.isNotEmpty) {
-          setState(() {
-            pin = pin.substring(0, pin.length - 1);
-          });
+          setState(() => pin = pin.substring(0, pin.length - 1));
         }
-      } else if (pin.length < 4) {
-        setState(() {
-          pin += value;
-        });
+      } else if (pin.length < _pinLength) {
+        setState(() => pin += value);
+        vibrateExtraLight();
       }
 
-      if (pin.length == 4) {
+      if (_authProvider.isSetPin && pin.length == _pinLength) {
         try {
-          bool isAlreadyUsingPin = await _comparePin(pin);
+          bool isSameAsOldPin = await _comparePin(pin);
 
-          if (isAlreadyUsingPin) {
+          if (isSameAsOldPin) {
             returnToBackSequence(t.errors.pin_setting_error.already_in_use, firstSequence: true);
             return;
           }
@@ -118,80 +127,96 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           returnToBackSequence(t.errors.pin_setting_error.process_failed, isError: true);
           return;
         }
-        setState(() {
+      }
+
+      setState(() {
+        if (pin.length == _pinLength) {
           step = 1;
           errorMessage = '';
           _shufflePinNumbers();
-          //_subModel.shuffleNumbers(isSettings: true);
-        });
-      }
-    } else if (step == 1) {
-      setState(() {
-        if (value == '<') {
-          if (pinConfirm.isNotEmpty) {
-            pinConfirm = pinConfirm.substring(0, pinConfirm.length - 1);
-          }
-        } else if (pinConfirm.length < 4) {
-          pinConfirm += value;
         }
       });
+    } else if (step == 1) {
+      if (value == '<') {
+        if (pinConfirm.isNotEmpty) {
+          setState(() => pinConfirm = pinConfirm.substring(0, pinConfirm.length - 1));
+        }
+      } else if (pinConfirm.length < pin.length) {
+        setState(() => pinConfirm += value);
+        vibrateExtraLight();
+      }
 
-      if (pinConfirm.length == 4) {
-        if (pin != pinConfirm) {
-          returnToBackSequence(t.errors.pin_setting_error.incorrect);
+      if (pinConfirm.length == pin.length) {
+        if (pinConfirm != pin) {
+          returnToBackSequence(t.errors.pin_setting_error.incorrect,
+              isError: true, firstSequence: true);
           return;
         }
 
-        vibrateLight();
-        if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
-          await _authProvider.authenticateWithBiometrics(isSave: true);
-          await _authProvider.checkDeviceBiometrics();
-        }
+        try {
+          var hashedPin = generateHashString(pin);
+          Logger.log('hashedPin: $hashedPin');
+          await _authProvider.savePinSet(hashedPin, pin.length);
 
-        var hashedPin = generateHashString(pin);
-        if (!mounted) return;
-        _authProvider.savePinSet(hashedPin).then((_) async {
-          _showPinSetSuccessLottie();
+          if (widget.useBiometrics && _authProvider.canCheckBiometrics) {
+            await _authProvider.authenticateWithBiometrics(isSave: true);
+            await _authProvider.checkDeviceBiometrics();
+          }
+
+          vibrateLightDouble();
+          await _showPinSetSuccessLottie();
 
           if (mounted) {
-            Navigator.pop(context);
-            Navigator.pop(context);
+            Navigator.pop(context); // Close success dialog
+            Navigator.pop(context); // Close PIN setting screen
           }
-        }).catchError((e) {
-          returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true);
-        });
+        } catch (e) {
+          returnToBackSequence(t.errors.pin_setting_error.save_failed,
+              isError: true, firstSequence: true);
+        }
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return PinInputPad(
-      title: step == 0 ? t.pin_setting_screen.new_password : t.pin_setting_screen.enter_again,
-      pin: step == 0 ? pin : pinConfirm,
-      errorMessage: errorMessage,
-      onKeyTap: _onKeyTap,
-      pinShuffleNumbers: _shuffledPinNumbers,
-      onClosePressed: step == 0
-          ? () {
-              Navigator.pop(context); // Pin 설정 취소
-            }
-          : () {
-              setState(() {
-                pin = '';
-                pinConfirm = '';
-                step = 0;
-              });
-            },
-      onBackPressed: () {
-        setState(() {
-          pin = '';
-          pinConfirm = '';
-          errorMessage = '';
-          step = 0;
-        });
-      },
-      step: step,
+    String title = step == 0 ? t.pin_setting_screen.new_password : t.pin_setting_screen.enter_again;
+
+    Widget? centerWidget;
+    if (step == 0) {
+      centerWidget = PinLengthToggleButton(
+        currentPinLength: _pinLength,
+        onToggle: () {
+          setState(() {
+            _pinLength = _pinLength == 4 ? 6 : 4;
+            pin = '';
+          });
+        },
+      );
+    }
+
+    return Scaffold(
+      body: PinInputPad(
+        title: title,
+        pin: step == 0 ? pin : pinConfirm,
+        errorMessage: errorMessage,
+        onKeyTap: _onKeyTap,
+        pinShuffleNumbers: _shuffledPinNumbers,
+        onClosePressed: () => Navigator.pop(context),
+        onBackPressed: () {
+          setState(() {
+            step = 0;
+            pin = '';
+            pinConfirm = '';
+            errorMessage = '';
+          });
+        },
+        step: step,
+        pinLength: _pinLength,
+        appBarVisible: true,
+        initOptionVisible: false,
+        centerWidget: centerWidget,
+      ),
     );
   }
 }

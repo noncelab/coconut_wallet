@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
@@ -52,8 +53,9 @@ void main() {
       }
       final sharedPrefsRepository = SharedPrefsRepository()
         ..setSharedPreferencesForTest(MockSharedPreferences());
-      when(sharedPrefsRepository.getInt('nextId')).thenReturn(walletItem.id);
-      when(sharedPrefsRepository.setInt('nextId', walletItem.id + 1)).thenAnswer((_) async => true);
+      when(sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField)).thenReturn(walletItem.id);
+      when(sharedPrefsRepository.setInt(SharedPrefKeys.kNextIdField, walletItem.id + 1))
+          .thenAnswer((_) async => true);
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
       walletRepository = WalletRepository(realmManager!);

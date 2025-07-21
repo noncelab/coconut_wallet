@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -22,9 +23,10 @@ import 'package:provider/provider.dart';
 class FeeSelectionScreen extends StatefulWidget {
   static const String selectedOptionField = 'selectedOption';
   static const String feeInfoField = 'feeInfo';
+  static const String updatedTxBuilderField = 'updatedTxBuilder';
 
   final List<FeeInfoWithLevel> feeInfos;
-  final int Function(double satsPerVb) estimateFee;
+  final TransactionBuilder txBuilder;
   final int? networkMinimumFeeRate;
   final TransactionFeeLevel? selectedFeeLevel; // null인 경우 직접 입력한 경우
   final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
@@ -33,7 +35,7 @@ class FeeSelectionScreen extends StatefulWidget {
   const FeeSelectionScreen(
       {super.key,
       required this.feeInfos,
-      required this.estimateFee,
+      required this.txBuilder,
       required this.networkMinimumFeeRate,
       this.selectedFeeLevel,
       this.customFeeInfo,
@@ -52,6 +54,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   TransactionFeeLevel? _selectedFeeLevel;
   final TextEditingController _customFeeController = TextEditingController();
+  TransactionBuilder? _updatedTxBuilder;
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
       bitcoin: _currentUnit == BitcoinUnit.btc
@@ -256,11 +259,12 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
     }
 
     try {
-      int result = widget.estimateFee(customSatsPerVb);
+      _updatedTxBuilder = widget.txBuilder.copyWith(feeRate: customSatsPerVb);
+      final result = _updatedTxBuilder!.build();
       _customSatsPerVb = customSatsPerVb;
       if (mounted) {
         setState(() {
-          _estimatedFee = result;
+          _estimatedFee = result.estimatedFee!;
           _selectedFeeLevel = null;
         });
       }
@@ -285,6 +289,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       FeeSelectionScreen.feeInfoField: (_selectedFeeLevel == null && _customSatsPerVb != null)
           ? FeeInfo(estimatedFee: _estimatedFee, satsPerVb: _customSatsPerVb)
           : _findFeeInfoWithLevel(_selectedFeeLevel!),
+      FeeSelectionScreen.updatedTxBuilderField: _updatedTxBuilder,
     };
 
     Navigator.pop(context, returnData);

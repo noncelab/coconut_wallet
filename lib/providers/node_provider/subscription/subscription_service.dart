@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/subscribe_stream_dto.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -25,6 +27,10 @@ class SubscriptionService {
   final StreamController<SubscribeScriptStreamDto> _scriptStatusController;
   final int _gapLimit = 20; // 기본 gap limit 설정
 
+  // 중복 구독 방지를 위한 상태 관리
+  final Set<int> _subscribingWallets = {};
+  final Map<int, Completer<Result<bool>>> _subscriptionCompleters = {};
+
   SubscriptionService(this._electrumService, this._stateManager, this._addressRepository,
       this._subscriptionRepository, this._scriptSyncService)
       : _scriptStatusController = StreamController<SubscribeScriptStreamDto>.broadcast() {
@@ -36,6 +42,42 @@ class SubscriptionService {
   Future<Result<bool>> subscribeWallet(
     WalletListItemBase walletItem,
   ) async {
+    final walletId = walletItem.id;
+
+    // 이미 구독 중이면 기존 작업 완료 대기
+    if (_subscribingWallets.contains(walletId)) {
+      Logger.log('SubscribeWallet: ${walletItem.name} - 이미 구독 중, 기존 작업 대기');
+      return await _subscriptionCompleters[walletId]?.future ?? Result.success(true);
+    }
+
+    // 새로운 구독 시작
+    _subscribingWallets.add(walletId);
+    final completer = Completer<Result<bool>>();
+    _subscriptionCompleters[walletId] = completer;
+
+    try {
+      Logger.log('SubscribeWallet: ${walletItem.name} - 구독 시작');
+      final result = await _performSubscribeWallet(walletItem);
+      completer.complete(result);
+      return result;
+    } catch (e, stackTrace) {
+      Logger.error('SubscribeWallet: ${walletItem.name} - 구독 중 에러 발생: $e');
+      Logger.error('Stack trace: $stackTrace');
+      final errorResult = Result<bool>.failure(ErrorCodes.nodeUnknown);
+      completer.complete(errorResult);
+      return errorResult;
+    } finally {
+      // 상태 정리
+      _subscribingWallets.remove(walletId);
+      _subscriptionCompleters.remove(walletId);
+    }
+  }
+
+  /// 지갑의 스크립트 구독 실제 구현부
+  Future<Result<bool>> _performSubscribeWallet(
+    WalletListItemBase walletItem,
+  ) async {
+    _stateManager.addWalletSyncState(walletItem.id, UpdateElement.subscription);
     final [receiveResult, changeResult] = await Future.wait([
       _subscribeWallet(walletItem, false, _scriptStatusController),
       _subscribeWallet(walletItem, true, _scriptStatusController),
@@ -72,6 +114,8 @@ class SubscriptionService {
       _stateManager.addWalletCompletedAllStates(walletItem.id);
       return Result.success(true);
     }
+
+    _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.subscription);
 
     // 변경 이력이 있는 지갑에 대해서만 balance, transaction, utxo 업데이트
     await _scriptSyncService.syncBatchScriptStatusList(

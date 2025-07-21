@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -134,17 +135,18 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         if (pin.isNotEmpty) {
           pin = pin.substring(0, pin.length - 1);
         }
-      } else if (pin.length < 4) {
+      } else if (pin.length < _authProvider.pinLength) {
         pin += value;
+        vibrateExtraLight();
       }
     });
 
-    if (pin.length == 4) {
+    if (pin.length == _authProvider.pinLength) {
       _verifyPin();
     }
   }
 
-  void _showDialog() async {
+  void _showResetConfirmDialog() async {
     vibrateMedium();
 
     await CustomDialogs.showCustomAlertDialog(context,
@@ -154,6 +156,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
         confirmButtonColor: CoconutColors.hotPink,
         cancelButtonText: t.close, onConfirm: () async {
       await _authProvider.resetPassword();
+      Provider.of<RealmManager>(context, listen: false).reset();
       widget.onComplete?.call();
       if (mounted) {
         Navigator.of(context).pop();
@@ -179,10 +182,11 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       },
       onReset: widget.appEntrance
           ? () {
-              _showDialog();
+              _showResetConfirmDialog();
             }
           : null,
       step: 0,
+      pinLength: _authProvider.pinLength,
     );
   }
 }

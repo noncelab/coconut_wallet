@@ -30,9 +30,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   SendFeeSelectionViewModel(
       this._sendInfoProvider, this._walletProvider, this._nodeProvider, this._isNetworkOn) {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
-    _walletAddressType = _walletListItemBase.walletType == WalletType.singleSignature
-        ? AddressType.p2wpkh
-        : AddressType.p2wsh;
+    _walletAddressType = _walletListItemBase.walletType.addressType;
     _confirmedBalance =
         _walletProvider.getUtxoList(_sendInfoProvider.walletId!).fold<int>(0, (sum, utxo) {
       if (utxo.status == UtxoStatus.unspent) {

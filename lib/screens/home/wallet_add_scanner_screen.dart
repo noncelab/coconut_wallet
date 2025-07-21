@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:flutter/cupertino.dart';
@@ -60,6 +62,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   }
 
   List<TextSpan> _getGuideTextSpan() {
+    final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
+    final isKorean = currentLanguage == 'kr';
+
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:
         {
@@ -71,65 +76,129 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.seedSigner:
         {
-          return [
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
-            _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step2),
-            _em(t.wallet_add_scanner_screen.guide_seedsigner.step2_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step3),
-            _em(t.wallet_add_scanner_screen.guide_seedsigner.step3_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step4),
-            _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em1),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.next),
-            _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em2),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step5),
-            _em(t.wallet_add_scanner_screen.guide_seedsigner.step5_em),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6),
-            _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_em),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6_end),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step2),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step2_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step3),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step3_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step4),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em1),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.next),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step5),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step5_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_em),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_end),
+            ];
+          } else {
+            return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step2_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step3),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step3_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step4),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em1),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.next),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step4_em2),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step5),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step5_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step6),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_em),
+              _em(t.wallet_add_scanner_screen.guide_seedsigner.step6_end),
+            ];
+          }
         }
       case WalletImportSource.keystone:
         {
-          return [
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step2),
-            _em(t.wallet_add_scanner_screen.guide_keystone.step2_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
-          ];
+          if (isKorean) {
+            return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
+              _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step2),
+              _em(t.wallet_add_scanner_screen.guide_keystone.step2_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
+            ];
+          } else {
+            return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_keystone.step2_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step3),
+            ];
+          }
         }
       case WalletImportSource.jade:
         {
-          return [
-            _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step1),
-            _em(t.wallet_add_scanner_screen.guide_jade.step1_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step2),
-            _em(t.wallet_add_scanner_screen.guide_jade.step2_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-            const TextSpan(text: '\n'),
-            TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step3),
-            _em(t.wallet_add_scanner_screen.guide_jade.step3_em),
-            TextSpan(text: t.wallet_add_scanner_screen.select),
-          ];
+          if (isKorean) {
+            return [
+              _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step1),
+              _em(t.wallet_add_scanner_screen.guide_jade.step1_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step2),
+              _em(t.wallet_add_scanner_screen.guide_jade.step2_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step3),
+              _em(t.wallet_add_scanner_screen.guide_jade.step3_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+            ];
+          } else {
+            return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0_preposition),
+              _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_jade.step1_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_jade.step2_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step3),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_jade.step3_em),
+            ];
+          }
         }
       default:
         return [];
@@ -208,6 +277,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       switch (addResult.result) {
         case WalletSyncResult.newWalletAdded:
           {
+            context.read<AnalyticsService>().logEvent(
+                eventName: AnalyticsEventNames.walletAddCompleted,
+                parameters: {
+                  AnalyticsParameterNames.walletAddImportSource: widget.importSource.name
+                });
             await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
             Navigator.pop(context, addResult);
             break;

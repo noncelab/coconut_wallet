@@ -5,8 +5,11 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
@@ -14,7 +17,6 @@ import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.da
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
-import 'package:coconut_wallet/widgets/button/single_button.dart';
 
 class AppInfoScreen extends StatefulWidget {
   const AppInfoScreen({super.key});
@@ -154,26 +156,46 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          controller: _scrollController,
-          child: Container(
-            color: CoconutColors.black,
-            child: Column(
-              children: [
-                SizedBox(height: kToolbarHeight + MediaQuery.of(context).padding.top + 30),
-                headerWidget(_packageInfoFuture),
-                CoconutLayout.spacing_1200h,
-                socialMediaWidget(),
-                CoconutLayout.spacing_1200h,
-                githubWidget(),
-                CoconutLayout.spacing_1200h,
-                termsOfServiceWidget(),
-                CoconutLayout.spacing_1200h,
-                footerWidget(_packageInfoFuture),
-              ],
-            ),
-          )),
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              Container(
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height / 2,
+                color: CoconutColors.black,
+              ),
+              Container(
+                width: MediaQuery.sizeOf(context).width,
+                height: MediaQuery.sizeOf(context).height / 2,
+                color: CoconutColors.gray800,
+              ),
+            ],
+          ),
+          SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              controller: _scrollController,
+              child: Container(
+                color: CoconutColors.black,
+                child: Column(
+                  children: [
+                    SizedBox(height: kToolbarHeight + MediaQuery.of(context).padding.top + 30),
+                    headerWidget(_packageInfoFuture),
+                    CoconutLayout.spacing_400h,
+                    coconutCrewWidget(),
+                    CoconutLayout.spacing_400h,
+                    socialMediaWidget(),
+                    CoconutLayout.spacing_400h,
+                    githubWidget(),
+                    CoconutLayout.spacing_400h,
+                    termsOfServiceWidget(),
+                    CoconutLayout.spacing_1200h,
+                    footerWidget(_packageInfoFuture),
+                  ],
+                ),
+              )),
+        ],
+      ),
     );
   }
 
@@ -230,13 +252,15 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      packageInfo.appName,
-                      style: CoconutTypography.heading2_28_Bold
-                          .copyWith(fontSize: 24, color: CoconutColors.white),
+                    FittedBox(
+                      child: Text(
+                        packageInfo.appName,
+                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                      ),
                     ),
                     Text('ver.${packageInfo.version}',
                         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+                    CoconutLayout.spacing_100h,
                     Text(t.app_info_screen.made_by_team_pow,
                         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400)),
                   ],
@@ -245,6 +269,39 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             ),
           );
         });
+  }
+
+  Widget coconutCrewWidget() {
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: 16,
+      ),
+      child: ShrinkAnimationButton(
+        defaultColor: CoconutColors.gray800,
+        pressedColor: CoconutColors.gray750,
+        onPressed: () {
+          Navigator.pushNamed(context, '/coconut-crew');
+        },
+        borderRadius: CoconutStyles.radius_200,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Image.asset(
+                'assets/images/laurel-wreath.png',
+                width: 28,
+                height: 28,
+              ),
+              CoconutLayout.spacing_300w,
+              Text(
+                t.app_info_screen.coconut_crew_genesis_member,
+                style: CoconutTypography.body2_14_Bold,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget socialMediaWidget() {
@@ -261,6 +318,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           _category(t.app_info_screen.category1_ask),
           ButtonGroup(buttons: [
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.top,
               title: t.app_info_screen.go_to_pow,
               leftElement: ClipRRect(
@@ -277,6 +335,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.middle,
               title: t.app_info_screen.ask_to_discord,
               leftElement: ClipRRect(
@@ -293,6 +352,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.middle,
               title: t.app_info_screen.ask_to_x,
               leftElement: ClipRRect(
@@ -309,6 +369,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+                enableShrinkAnim: true,
                 buttonPosition: SingleButtonPosition.bottom,
                 title: t.app_info_screen.ask_to_email,
                 leftElement: ClipRRect(
@@ -355,6 +416,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           _category(t.app_info_screen.category2_opensource),
           ButtonGroup(buttons: [
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.top,
               title: t.coconut_lib,
               leftElement: githubLogo,
@@ -363,6 +425,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.middle,
               title: t.coconut_wallet,
               leftElement: githubLogo,
@@ -371,6 +434,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.middle,
               title: t.coconut_vault,
               leftElement: githubLogo,
@@ -379,6 +443,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.bottom,
               title: t.app_info_screen.contribution,
               onPressed: () {
@@ -405,6 +470,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
           _category(t.app_info_screen.tos_and_policy),
           ButtonGroup(buttons: [
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.top,
               title: t.app_info_screen.terms_of_service,
               onPressed: () {
@@ -412,6 +478,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.middle,
               title: t.app_info_screen.privacy_policy,
               onPressed: () {
@@ -419,6 +486,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               },
             ),
             SingleButton(
+              enableShrinkAnim: true,
               buttonPosition: SingleButtonPosition.bottom,
               title: t.app_info_screen.license,
               onPressed: () {
@@ -426,6 +494,14 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     context: context, child: const LicenseBottomSheet());
               },
             ),
+            if (appFlavor == "mainnet")
+              SingleButton(
+                buttonPosition: SingleButtonPosition.bottom,
+                title: t.app_info_screen.data_collection,
+                onPressed: () {
+                  launchURL(DATA_COLLECTION_URL);
+                },
+              ),
           ]),
         ],
       ),

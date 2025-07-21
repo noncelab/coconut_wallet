@@ -13,7 +13,6 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -31,7 +30,6 @@ class WalletProvider extends ChangeNotifier {
 
   int gapLimit = 20;
 
-  final RealmManager _realmManager;
   final AddressRepository _addressRepository;
   final TransactionRepository _transactionRepository;
   final UtxoRepository _utxoRepository;
@@ -40,7 +38,6 @@ class WalletProvider extends ChangeNotifier {
   late final PreferenceProvider _preferenceProvider;
 
   late final Future<void> Function(int) _saveWalletCount;
-  late final bool _isSetPin;
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
@@ -51,16 +48,13 @@ class WalletProvider extends ChangeNotifier {
   }
 
   WalletProvider(
-    this._realmManager,
     this._addressRepository,
     this._transactionRepository,
     this._utxoRepository,
     this._walletRepository,
     Future<void> Function(int) saveWalletCount,
-    bool isSetPin,
     this._preferenceProvider,
-  )   : _saveWalletCount = saveWalletCount,
-        _isSetPin = isSetPin {
+  ) : _saveWalletCount = saveWalletCount {
     // ValueNotifier들 초기화
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
@@ -78,10 +72,6 @@ class WalletProvider extends ChangeNotifier {
     walletLoadStateNotifier.value = _walletLoadState;
 
     try {
-      Logger.log('--> RealmManager.isInitialized: ${_realmManager.isInitialized}');
-      if (_realmManager.isInitialized) {
-        await _realmManager.init(_isSetPin);
-      }
       _setWalletItemList(await _fetchWalletListFromDB());
       _walletLoadState = WalletLoadState.loadCompleted;
 

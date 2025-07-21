@@ -20,8 +20,11 @@ extension TransactionTypeExtension on TransactionType {
 
 enum SocketConnectionStatus { reconnecting, connecting, connected, terminated }
 
+/// 네트워크 상태 구분
+enum NetworkStatus { online, offline, connectionFailed }
+
 /// 갱신된 데이터 종류
-enum UpdateElement { balance, utxo, transaction }
+enum UpdateElement { subscription, balance, utxo, transaction }
 
 /// 갱신된 데이터의 상태
 enum WalletSyncState { waiting, syncing, completed }

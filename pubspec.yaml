@@ -17,13 +17,13 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 # iOS
-#version: 3.1.6+1
+#version: 3.1.8+2
 # AOS
-version: 3.1.6+42
+#version: 3.1.8+44
 # iOS Mainnet
-#version: 0.0.12+1
+#version: 0.1.0+1
 # AOS Mainnet
-#version: 0.0.12+15
+version: 0.1.0+21
 
 environment:
   sdk: ">=3.3.1 <4.0.0"
@@ -74,8 +74,6 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  coconut_design_system: ^0.9.0
-  coconut_lib: ^0.10.4
   realm: ^20.0.0
   cryptography: ^2.7.0
   slang: ^4.4.1
@@ -86,6 +84,10 @@ dependencies:
   cbor: ^6.3.5
   ur:
     path: lib/packages/bc-ur-dart
+  firebase_core: ^3.4.0
+  firebase_analytics: ^11.3.0
+  coconut_design_system: ^0.9.1
+  coconut_lib: ^0.10.5
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
@@ -123,6 +125,7 @@ flutter:
   assets:
     - assets/files/glossary_details.json
     - assets/files/status_loading.json
+    - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
     - assets/images/splash_logo_regtest.png
     - assets/images/pow_logo.png
@@ -131,6 +134,7 @@ flutter:
     - assets/svg/bell.svg
     - assets/svg/add-circle.svg
     - assets/svg/arrow-right.svg
+    - assets/svg/arrow-right-md.svg
     - assets/svg/arrow-back.svg
     - assets/svg/send.svg
     - assets/svg/settings.svg
@@ -148,9 +152,6 @@ flutter:
     - assets/svg/trash.svg
     - assets/svg/eye.svg
     - assets/svg/eye-crossed.svg
-    - assets/svg/nav-icons/home.svg
-    - assets/svg/nav-icons/info.svg
-    - assets/svg/nav-icons/settings.svg
     - assets/svg/wallet-icons/bank.svg
     - assets/svg/wallet-icons/building.svg
     - assets/svg/wallet-icons/car.svg
@@ -189,12 +190,6 @@ flutter:
     - assets/svg/scan-wallet-qr.svg
     - assets/svg/scan-vault-qr.svg
     - assets/svg/completion-check.svg
-    - assets/svg/tooltip/info.svg
-    - assets/svg/tooltip/normal.svg
-    - assets/svg/tooltip/success.svg
-    - assets/svg/tooltip/warning.svg
-    - assets/svg/tooltip/error.svg
-    - assets/svg/tooltip/triangle-warning.svg
     - assets/svg/face-id.svg
     - assets/svg/fingerprint.svg
     - assets/svg/status-complete.svg
@@ -212,11 +207,22 @@ flutter:
     - assets/lottie/loading-three-dots.json
     - assets/lottie/arrow-up.json
     - assets/lottie/arrow-down.json
+    - assets/lottie/hand-with-floating-heart.json
+    - assets/lottie/hand-with-floating-heart-delayed.json
+    - assets/lottie/tripple-hearts.json
+    - assets/lottie/giving-heart.json
+    - assets/lottie/giving-coin.json
+    - assets/lottie/two-hands-making-heart.json
+    - assets/lottie/spinning-heart.json
+    - assets/lottie/upside-down-hands.json
+    - assets/lottie/thankyou-hearts.json
+    - assets/images/hand-with-laid-heart.png
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
     - assets/images/discord-logo.png
     - assets/images/discord-full-logo.png
     - assets/images/mail-icon.png
+    - assets/images/laurel-wreath.png
     - assets/svg/github-logo-white.svg
     - assets/svg/github-logo.svg
     - assets/files/LICENSE
@@ -251,6 +257,7 @@ flutter:
     - assets/svg/lock.svg
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
+    - assets/svg/clip.svg
 
 
   fonts:

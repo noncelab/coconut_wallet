@@ -16,11 +16,13 @@ enum IsolateStateMethod {
   addWalletSyncState,
   addWalletCompletedState,
   addWalletCompletedAllStates,
-  setMainClientSyncingState,
-  setMainClientWaitingState,
+  setNodeSyncStateToSyncing,
+  setNodeSyncStateToCompleted,
+  setNodeSyncStateToFailed,
 }
 
 enum IsolateManagerCommand {
-  initialize,
+  initializationCompleted,
+  initializationFailed,
   updateState,
 }

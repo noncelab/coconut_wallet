@@ -33,9 +33,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>QR 코드 스캔을 위해 카메라가 필요합니다.</string>
+	<string>Camera access is required for QR code scanning.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>앱의 잠금을 해제할 때 Face ID를 사용하기 위해 필요합니다.</string>
+	<string>Face ID is required to unlock the app.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

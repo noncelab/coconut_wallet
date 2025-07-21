@@ -74,6 +74,13 @@ class SharedPrefsRepository {
     await _sharedPrefs.setDouble(key, value);
   }
 
+  /// Delete multiple keys at once
+  Future<void> deleteMultipleKeys(List<String> keys) async {
+    for (final key in keys) {
+      await _sharedPrefs.remove(key);
+    }
+  }
+
   /// FaucetHistory-------------------------------------------------------------
   Future<void> saveFaucetHistory(FaucetRecord faucetHistory) async {
     final Map<int, FaucetRecord> faucetHistories = _getFaucetHistories();

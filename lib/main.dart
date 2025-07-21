@@ -4,13 +4,16 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
+import 'package:coconut_wallet/firebase_options.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_analytics/observer.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/utils/database_path_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +28,12 @@ void main() {
   if (kReleaseMode) {
     debugPrint = (String? message, {int? wrapWidth}) {};
   }
+
+  // 예외를 완전히 무시하는 설정
+  FlutterError.onError = (FlutterErrorDetails details) {
+    Logger.error("Flutter Error (무시됨): ${details.exception}");
+    Logger.log("Stack trace: ${details.stack}");
+  };
 
   runZonedGuarded(() async {
     // This app is designed only to work vertically, so we limit
@@ -66,14 +75,32 @@ void main() {
 
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);
+
+    // Electrum
     CoconutWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';
     String? portString = dotenv.env[DotenvKeys.electrumPort];
     CoconutWalletApp.kElectrumPort = portString != null ? int.tryParse(portString) ?? 0 : 0;
     CoconutWalletApp.kElectrumIsSSL = dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
     CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+
+    // Donation
+    CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';
+
+    // Mainnet, Regtest 등 네트워크 타입 설정
     CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
     NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
+
+    // Firebase
+    CoconutWalletApp.kIsFirebaseAnalyticsUsed =
+        const bool.fromEnvironment('USE_FIREBASE', defaultValue: false);
+    Logger.log('👉 Firebase 사용 여부: ${CoconutWalletApp.kIsFirebaseAnalyticsUsed}');
+    if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+
     runApp(const CoconutWalletApp());
   }, (error, stackTrace) {
     Logger.error(">>>>> runZoneGuarded error: $error");

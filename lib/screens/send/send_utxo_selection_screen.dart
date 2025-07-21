@@ -1,9 +1,10 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -248,16 +249,16 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     }
 
     Map<String, dynamic>? feeSelectionResult = await CommonBottomSheets.showBottomSheet_90(
-      context: context,
-      child: FeeSelectionScreen(
+        context: context,
+        child: FeeSelectionScreen(
           feeInfos: _viewModel.feeInfos,
           selectedFeeLevel: _viewModel.selectedLevel,
           networkMinimumFeeRate: minimumFeeRate?.value,
           customFeeInfo: _viewModel.customFeeInfo,
           isRecommendedFeeFetchSuccess:
               _viewModel.recommendedFeeFetchStatus == RecommendedFeeFetchStatus.succeed,
-          estimateFee: _viewModel.estimateFee),
-    );
+          txBuilder: _viewModel.txBuilder,
+        ));
     if (feeSelectionResult != null) {
       _viewModel.onFeeRateChanged(feeSelectionResult);
     }
@@ -275,7 +276,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
     _viewModel.selectAllUtxo();
   }
 
-  void _toggleSelection(Utxo utxo) {
+  void _toggleSelection(UtxoState utxo) {
     _removeUtxoOrderDropdown();
     _viewModel.toggleUtxoSelection(utxo);
   }
@@ -674,7 +675,7 @@ class _SendUtxoSelectionScreenState extends State<SendUtxoSelectionScreen> {
                 customFeeSelected: viewModel.customFeeSelected,
                 sendAmount: viewModel.sendAmount,
                 estimatedFee: viewModel.estimatedFee,
-                satsPerVb: viewModel.satsPerVb?.toInt(),
+                satsPerVb: viewModel.satsPerVb,
                 change: viewModel.change,
                 onPressedUnitToggle: _toggleUnit,
                 currentUnit: _currentUnit,

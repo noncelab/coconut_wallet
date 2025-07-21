@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -18,6 +19,7 @@ typedef FakeBalanceGetter = int? Function(int id);
 class WalletListViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   WalletProvider _walletProvider;
+  final NodeProvider _nodeProvider;
   final Stream<NodeSyncState> _syncNodeStateStream;
   late final PreferenceProvider _preferenceProvider;
   late bool _isTermsShortcutVisible;
@@ -37,8 +39,8 @@ class WalletListViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._visibilityProvider,
     this._connectivityProvider,
-    this._syncNodeStateStream,
-  ) {
+    this._nodeProvider,
+  ) : _syncNodeStateStream = _nodeProvider.syncStateStream {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
@@ -62,6 +64,19 @@ class WalletListViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
+
+  /// 네트워크 상태를 구분하여 반환
+  NetworkStatus get networkStatus {
+    if (!(_isNetworkOn ?? false)) {
+      return NetworkStatus.offline;
+    }
+
+    if (_nodeSyncState == NodeSyncState.failed) {
+      return NetworkStatus.connectionFailed;
+    }
+
+    return NetworkStatus.online;
+  }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
     if (_nodeSyncState != syncState) {
@@ -90,7 +105,17 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateWalletBalances() async {
+  Future<void> onRefresh() async {
+    updateWalletBalances();
+
+    if (networkStatus != NetworkStatus.connectionFailed) {
+      return;
+    }
+
+    _nodeProvider.reconnect();
+  }
+
+  void updateWalletBalances() {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
     notifyListeners();

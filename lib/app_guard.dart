@@ -71,7 +71,7 @@ class _AppGuardState extends State<AppGuard> {
         if (_isPause) {
           _isPause = false;
           _authProvider.checkDeviceBiometrics();
-          _priceProvider.initUpbitWebSocketService();
+          _priceProvider.initWebSocketService();
           _nodeProvider.reconnect();
         }
         break;
@@ -80,7 +80,7 @@ class _AppGuardState extends State<AppGuard> {
       case AppLifecycleState.paused:
         if (_isPause) break;
         _isPause = true;
-        _priceProvider.disposeUpbitWebSocketService();
+        _priceProvider.disposeWebSocketService();
         unawaited(_nodeProvider.closeConnection());
         break;
       case AppLifecycleState.inactive:

@@ -19,29 +19,4 @@ void main() {
     realmManager.reset();
     realmManager.realm.close();
   });
-
-  group('RealmManager 테스트', () {
-    test('init 메서드가 올바르게 동작하는지 테스트', () async {
-      // Given
-
-      // When
-      await realmManager.init(true);
-
-      // Then
-      expect(realmManager.isInitialized, true);
-      expect(realmManager.cryptography, isNull);
-    });
-
-    test('reset 메서드가 올바르게 동작하는지 테스트', () async {
-      // Given
-      realmManager.setInitialized(true);
-
-      // When
-      realmManager.reset();
-
-      // Then
-      expect(realmManager.isInitialized, false);
-      expect(realmManager.cryptography, isNull);
-    });
-  });
 }

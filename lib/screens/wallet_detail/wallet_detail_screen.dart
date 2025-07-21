@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/currency_enums.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -18,8 +19,8 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/appbar/wallet_detail_title_widget.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -116,10 +117,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return CoconutAppBar.build(
       entireWidgetKey: _appBarKey,
       backgroundColor: CoconutColors.black,
-      title: TextUtils.ellipsisIfLonger(_viewModel.walletName, maxLength: 15),
+      customTitle: WalletDetailTitleWidget(
+        walletName: _viewModel.walletName,
+        onTap: () => _navigateToWalletInfo(context),
+      ),
       titlePadding: const EdgeInsets.all(8),
       context: context,
-      onTitlePressed: () => _navigateToWalletInfo(context),
       actionButtonList: [
         if (NetworkType.currentNetworkType.isTestnet)
           IconButton(
@@ -275,7 +278,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<ConnectivityProvider>(context, listen: false),
         Provider.of<PriceProvider>(context, listen: false),
         Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id));
+        Provider.of<NodeProvider>(context, listen: false));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);
@@ -368,8 +371,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   bool _checkStateAndShowToast() {
-    if (_viewModel.isNetworkOn != true) {
+    if (_viewModel.isNetworkOff) {
       CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      return false;
+    }
+
+    if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
+      CoconutToast.showWarningToast(context: context, text: t.errors.electrum_connection_failed);
       return false;
     }
 

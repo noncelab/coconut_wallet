@@ -44,7 +44,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       child: Scaffold(
         backgroundColor: CoconutColors.black,
         appBar: CoconutAppBar.build(
-          title: t.signed_psbt_scanner_screen.title,
+          title:
+              _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
           context: context,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
@@ -171,34 +172,18 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
   Widget _buildToolTip() {
     // TODO: 코코넛 지갑인 경우 UI는 볼트와 한꺼번에 수정합니다.
-    if (_viewModel.walletImportSource == WalletImportSource.coconutVault) {
-      return CoconutToolTip(
-        tooltipType: CoconutTooltipType.fixed,
-        baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
-        richText: RichText(
-          text: TextSpan(
-            text: '[5] ',
-            style: const TextStyle(
-              fontFamily: 'Pretendard',
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-              height: 1.4,
-              letterSpacing: 0.5,
-              color: CoconutColors.black,
-            ),
-            children: [
-              TextSpan(
-                text: t.tooltip.scan_signed_psbt.guide(
-                    by_hardware_wallet: t.tooltip.scan_signed_psbt.by_vault_app,
-                    hardware_wallet: t.vault_app),
-                style: const TextStyle(
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
+    if (_viewModel.isSendingDonation == true) {
+      return Padding(
+        padding: const EdgeInsets.only(
+          top: 30,
+        ),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Text(
+            t.donation.signed_qr_tooltip,
+            style: CoconutTypography.body2_14_Bold,
           ),
         ),
-        showIcon: true,
       );
     } else {
       return CoconutToolTip(
@@ -226,8 +211,14 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     final hardwareWalletWords = _getHardwareWalletWords();
     return [
       TextSpan(
-          text: t.tooltip.scan_signed_psbt.guide(
-              by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1])),
+        text: '[5] ',
+        style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+      ),
+      TextSpan(
+        text: t.tooltip.scan_signed_psbt.guide(
+            by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1]),
+        style: CoconutTypography.body2_14.copyWith(height: 1.2),
+      ),
     ];
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/i_qr_view_data_handler.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
@@ -7,14 +8,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class AnimatedQrView extends StatefulWidget {
-  final double qrSize;
   final int milliSeconds;
   final QrScanDensity qrScanDensity;
   final IQrViewDataHandler qrViewDataHandler;
 
   const AnimatedQrView(
       {super.key,
-      required this.qrSize,
       required this.qrViewDataHandler,
       required this.qrScanDensity,
       this.milliSeconds = 600});
@@ -67,17 +66,23 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
       // QR 전환이 바로 안될 때를 대비한 위젯 - 실제로는 렌더링 되지 않을 가능성 높음
       return Stack(
         children: [
-          QrImageView(data: _qrData, size: widget.qrSize, version: _qrVersion),
+          QrImageView(data: _qrData, version: _qrVersion),
           Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: SizedBox(
-              width: widget.qrSize,
-              height: widget.qrSize,
-              child: const CoconutLoadingOverlay(
-                applyFullScreen: true,
+            left: 70,
+            right: 70,
+            top: 70,
+            bottom: 70,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: const BoxDecoration(
+                  color: CoconutColors.gray300,
+                ),
+                child: const CoconutLoadingOverlay(
+                  applyFullScreen: true,
+                ),
               ),
             ),
           ),
@@ -89,7 +94,7 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
     // 시드사이너가 QR version 10 인 경우 빠르게 인식이 안되어 9로 설정합니다.
     // 아래 QrImageView의 maxInputLength는 2192bits(274bytes)
 
-    return QrImageView(data: _qrData, size: widget.qrSize, version: _qrVersion);
+    return QrImageView(data: _qrData, version: _qrVersion);
   }
 
   @override

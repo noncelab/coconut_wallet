@@ -42,6 +42,10 @@ if (keystorePropertiesFile.exists()) {
     throw GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
 }
 
+if (flavor == "mainnet") {
+    apply plugin: 'com.google.gms.google-services'
+}
+
 android {
     namespace "onl.coconut.wallet"
     compileSdk flutter.compileSdkVersion
@@ -89,13 +93,11 @@ android {
     productFlavors {
          regtest {
             dimension "network"
-            resValue "string", "app_name", "코코넛 월렛 학습용"
             applicationIdSuffix ".regtest"
             versionNameSuffix "-regtest"
         }
         mainnet {
             dimension "network"
-            resValue "string", "app_name", "코코넛 월렛"
             applicationIdSuffix ""
             versionNameSuffix ""
         }

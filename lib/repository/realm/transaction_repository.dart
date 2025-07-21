@@ -411,6 +411,37 @@ class TransactionRepository extends BaseRepository {
     return Result.failure(ErrorCodes.realmNotFound);
   }
 
+  Future<void> deleteOrphanedCpfpTransaction(
+      int walletId, Set<String> receivingRbfTxHashSet) async {
+    final realmCpfpHistory = realm.query<RealmCpfpHistory>(
+      r'walletId == $0 AND parentTransactionHash IN $1',
+      [walletId, receivingRbfTxHashSet],
+    );
+
+    if (realmCpfpHistory.isEmpty) {
+      return;
+    }
+
+    Logger.log(
+        'deleteOrphanedCpfpTransaction: ${realmCpfpHistory.length} orphaned cpfp transaction');
+
+    final orphanedChildRealmTxs = realm.query<RealmTransaction>(
+      r'walletId == $0 AND transactionHash IN $1',
+      [walletId, realmCpfpHistory.map((cpfp) => cpfp.childTransactionHash).toList()],
+    );
+
+    final orphanedUtxo = realm.query<RealmUtxo>(
+      r'walletId == $0 AND transactionHash IN $1',
+      [walletId, orphanedChildRealmTxs.map((tx) => tx.transactionHash).toList()],
+    );
+
+    await realm.writeAsync(() {
+      realm.deleteMany<RealmCpfpHistory>(realmCpfpHistory);
+      realm.deleteMany<RealmTransaction>(orphanedChildRealmTxs);
+      realm.deleteMany<RealmUtxo>(orphanedUtxo);
+    });
+  }
+
   Future<void> updateTransactionRecord(
       int walletId, String txHash, TransactionRecord updatedTx) async {
     final realmTransaction = realm.find<RealmTransaction>(getRealmTransactionId(walletId, txHash));
