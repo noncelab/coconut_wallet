@@ -82,7 +82,7 @@ void main() {
     CoconutWalletApp.kElectrumPort = portString != null ? int.tryParse(portString) ?? 0 : 0;
     CoconutWalletApp.kElectrumIsSSL = dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
     CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
-    CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+    CoconutWalletApp.kCoconutApiHost = dotenv.env[DotenvKeys.apiHost] ?? '';
 
     // Donation
     CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';

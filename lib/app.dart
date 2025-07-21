@@ -57,6 +57,7 @@ import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/coconut_api_service.dart';
+import 'package:coconut_wallet/services/mempool_api_service.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
@@ -65,7 +66,7 @@ class CoconutWalletApp extends StatefulWidget {
   static late int kElectrumPort;
   static late bool kElectrumIsSSL;
   static late String kMempoolHost;
-  static late String kFaucetHost;
+  static late String kCoconutApiHost;
   static late String kDonationAddress;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
@@ -137,6 +138,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           // API Services
           Provider<CoconutApiService>(
             create: (context) => CoconutApiService(),
+          ),
+          Provider<MempoolApiService>(
+            create: (context) => MempoolApiService(),
           ),
 
           ChangeNotifierProvider(
