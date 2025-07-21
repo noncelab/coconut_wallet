@@ -56,6 +56,7 @@ import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/coconut_api_service.dart';
 
 enum AppEntryFlow { splash, main, pinCheck }
 
@@ -131,6 +132,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ),
           Provider<SubscriptionRepository>(
             create: (context) => SubscriptionRepository(context.read<RealmManager>()),
+          ),
+
+          // API Services
+          Provider<CoconutApiService>(
+            create: (context) => CoconutApiService(),
           ),
 
           ChangeNotifierProvider(
