@@ -25,7 +25,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.borderWidth = 2.0,
     this.border,
     this.borderGradientColors,
-    this.animationEndValue,
+    this.animationEndValue = 0.97,
   });
 
   @override
