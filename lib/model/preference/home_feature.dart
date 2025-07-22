@@ -10,6 +10,7 @@ class HomeFeature {
   });
 }
 
+// RealmHomeFeature 수정 불필요
 enum HomeFeatureType {
   totalBalance,
   walletList,

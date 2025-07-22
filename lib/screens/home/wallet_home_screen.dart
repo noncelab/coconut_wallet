@@ -932,7 +932,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Widget Function() builder,
   ) {
     final feature = _viewModel.homeFeatures.firstWhereOrNull(
-      (f) => f.homeFeatureTypeString == type.toString(),
+      (f) => f.homeFeatureTypeString == type.name,
     );
     if (feature != null && feature.isEnabled) {
       return builder();

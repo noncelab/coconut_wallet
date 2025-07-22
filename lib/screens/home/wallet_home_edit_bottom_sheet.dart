@@ -565,27 +565,20 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
 
   String _getHomeFeatureLabel(String homeFeatureTypeString) {
     final type = HomeFeatureType.values.firstWhere(
-      (e) => e.toString() == homeFeatureTypeString,
+      (e) => e.name == homeFeatureTypeString,
       orElse: () => HomeFeatureType.totalBalance,
     );
 
-    switch (type) {
-      case HomeFeatureType.totalBalance:
-        {
-          return t.wallet_home_screen.edit.category.total_balance;
-        }
-      case HomeFeatureType.walletList:
-        {
-          return t.wallet_home_screen.edit.category.wallet_list;
-        }
-      case HomeFeatureType.recentTransaction:
-        {
-          return t.wallet_home_screen.edit.category.recent_transactions;
-        }
-      case HomeFeatureType.analysis:
-        {
-          return t.wallet_home_screen.edit.category.analysis;
-        }
+    if (type == HomeFeatureType.totalBalance) {
+      return t.wallet_home_screen.edit.category.total_balance;
+    } else if (type == HomeFeatureType.walletList) {
+      return t.wallet_home_screen.edit.category.wallet_list;
+    } else if (type == HomeFeatureType.recentTransaction) {
+      return t.wallet_home_screen.edit.category.recent_transactions;
+    } else if (type == HomeFeatureType.analysis) {
+      return t.wallet_home_screen.edit.category.analysis;
     }
+
+    return '';
   }
 }
