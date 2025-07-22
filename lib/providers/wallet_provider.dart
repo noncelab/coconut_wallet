@@ -1,11 +1,8 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/home_features.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -64,7 +61,7 @@ class WalletProvider extends ChangeNotifier {
     walletItemListNotifier = ValueNotifier(_walletItemList);
 
     _loadWalletListFromDB().then((_) {
-      _fetchWalletPreferences(); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
+      _preferenceProvider.setWalletPreferences(walletItemList); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
       notifyListeners();
     });
   }
@@ -377,46 +374,6 @@ class WalletProvider extends ChangeNotifier {
       newAddresses: newAddresses,
       isChange: isChange,
     );
-  }
-
-  /// DB에서 지갑 로드(_loadWalletListFromDB) 완료 후 수행
-  Future<void> _fetchWalletPreferences() async {
-    var walletOrder = _preferenceProvider.walletOrder;
-    var favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
-    var homeFeatures = _preferenceProvider.homeFeatures;
-
-    if (walletOrder.isEmpty) {
-      walletOrder = List.from(walletItemList.map((w) => w.id));
-      await _preferenceProvider.setWalletOrder(walletOrder);
-    }
-    if (favoriteWalletIds.isEmpty) {
-      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
-      await _preferenceProvider.setFavoriteWalletIds(favoriteWalletIds);
-    }
-    if (homeFeatures.isEmpty) {
-      homeFeatures.addAll(List.from(kHomeFeatures));
-      await _preferenceProvider.setHomeFeautres(homeFeatures);
-    } else {
-      final isSame = const DeepCollectionEquality.unordered().equals(
-        homeFeatures.map((e) => e.homeFeatureTypeString).toList(),
-        kHomeFeatures.map((e) => e.homeFeatureTypeString).toList(),
-      );
-      if (isSame) return;
-
-      // 홈 기능은 추후 추가/제거 등 달라질 여지가 있기 때문에 내용을 비교해서 추가/제거 합니다.(kHomeFeatures 기준)
-      final updatedHomeFeatures = <HomeFeature>[];
-      for (final defaultFeature in kHomeFeatures) {
-        final existing = homeFeatures.firstWhereOrNull(
-          (e) => e.homeFeatureTypeString == defaultFeature.homeFeatureTypeString,
-        );
-        updatedHomeFeatures.add(existing ?? defaultFeature);
-      }
-      homeFeatures.removeWhere(
-          (e) => !kHomeFeatures.any((k) => k.homeFeatureTypeString == e.homeFeatureTypeString));
-      homeFeatures.addAll(updatedHomeFeatures.where(
-          (e) => !homeFeatures.any((h) => h.homeFeatureTypeString == e.homeFeatureTypeString)));
-      await _preferenceProvider.setHomeFeautres(homeFeatures);
-    }
   }
 
   @override
