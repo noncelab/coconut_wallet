@@ -10,7 +10,7 @@ import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_
 class TransactionBuildResult {
   final Transaction? transaction;
   final List<UtxoState>? selectedUtxos;
-  final int? estimatedFee;
+  final int estimatedFee;
   final Exception? exception;
 
   bool get isSuccess => transaction != null;
