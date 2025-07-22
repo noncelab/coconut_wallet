@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/constants/home_features.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -302,6 +301,12 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   Future<void> setWalletPreferences(List<WalletListItemBase> walletItemList) async {
+    final initialHomeFeatures = [
+      // ** 추가시 homeFeatureTypeString 을 [HomeFeatureType]과 동일시해야함 **
+      HomeFeature(homeFeatureTypeString: HomeFeatureType.recentTransaction.name, isEnabled: true),
+      HomeFeature(homeFeatureTypeString: HomeFeatureType.analysis.name, isEnabled: true),
+    ];
+
     var walletOrder = _walletOrder;
     var favoriteWalletIds = _favoriteWalletIds;
     var homeFeatures = _homeFeatures;
@@ -315,25 +320,25 @@ class PreferenceProvider extends ChangeNotifier {
       await setFavoriteWalletIds(favoriteWalletIds);
     }
     if (homeFeatures.isEmpty) {
-      homeFeatures.addAll(List.from(kHomeFeatures));
+      homeFeatures.addAll(List.from(initialHomeFeatures));
       await setHomeFeautres(homeFeatures);
     } else {
       final isSame = const DeepCollectionEquality.unordered().equals(
         homeFeatures.map((e) => e.homeFeatureTypeString).toList(),
-        kHomeFeatures.map((e) => e.homeFeatureTypeString).toList(),
+        initialHomeFeatures.map((e) => e.homeFeatureTypeString).toList(),
       );
       if (isSame) return;
 
       // 홈 기능은 추후 추가/제거 등 달라질 여지가 있기 때문에 내용을 비교해서 추가/제거 합니다.(kHomeFeatures 기준)
       final updatedHomeFeatures = <HomeFeature>[];
-      for (final defaultFeature in kHomeFeatures) {
+      for (final defaultFeature in initialHomeFeatures) {
         final existing = homeFeatures.firstWhereOrNull(
           (e) => e.homeFeatureTypeString == defaultFeature.homeFeatureTypeString,
         );
         updatedHomeFeatures.add(existing ?? defaultFeature);
       }
-      homeFeatures.removeWhere(
-          (e) => !kHomeFeatures.any((k) => k.homeFeatureTypeString == e.homeFeatureTypeString));
+      homeFeatures.removeWhere((e) =>
+          !initialHomeFeatures.any((k) => k.homeFeatureTypeString == e.homeFeatureTypeString));
       homeFeatures.addAll(updatedHomeFeatures.where(
           (e) => !homeFeatures.any((h) => h.homeFeatureTypeString == e.homeFeatureTypeString)));
       await setHomeFeautres(homeFeatures);
