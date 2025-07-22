@@ -70,7 +70,7 @@ void main() {
       );
 
       expect(result.selectedUtxos.length, 2);
-      expect(result.selectedUtxos.map((u) => u.amount!).reduce((a, b) => a + b), 150000);
+      expect(result.selectedUtxos.map((u) => u.amount).reduce((a, b) => a + b), 150000);
     });
 
     test('should throw exception when not enough funds (1)', () {

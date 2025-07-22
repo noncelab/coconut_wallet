@@ -362,9 +362,9 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     try {
       final txsWithRecommendedFees = _viewModel.setRecommendedFeeTxs(feeInfos);
       setState(() {
-        _setFeeInfo(feeInfos[0], txsWithRecommendedFees[0].estimatedFee!);
-        _setFeeInfo(feeInfos[1], txsWithRecommendedFees[1].estimatedFee!);
-        _setFeeInfo(feeInfos[2], txsWithRecommendedFees[2].estimatedFee!);
+        _setFeeInfo(feeInfos[0], txsWithRecommendedFees[0].estimatedFee);
+        _setFeeInfo(feeInfos[1], txsWithRecommendedFees[1].estimatedFee);
+        _setFeeInfo(feeInfos[2], txsWithRecommendedFees[2].estimatedFee);
       });
     } catch (error) {
       _isRecommendedFeeFetchSuccess = false;

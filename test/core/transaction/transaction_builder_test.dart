@@ -210,7 +210,7 @@ void main() {
       expect(result.transaction!.outputs.first.amount, lessThan(singleRecipient.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipient.values.first));
     });
 
@@ -232,7 +232,7 @@ void main() {
           lessThan(singleRecipientSameBalance.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipientSameBalance.values.first));
     });
 
@@ -327,7 +327,7 @@ void main() {
       expect(result.transaction!.outputs.first.amount, lessThan(singleRecipient.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipient.values.first));
     });
 
@@ -350,7 +350,7 @@ void main() {
           lessThan(singleRecipientSameBalance.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipientSameBalance.values.first));
     });
 
@@ -448,7 +448,7 @@ void main() {
           .fold(0, (previousValue, element) => previousValue + element.amount);
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
-      expect(totalOutputAmount + result.estimatedFee!, lessThanOrEqualTo(totalBalance));
+      expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 = 잔액', () {
@@ -473,11 +473,11 @@ void main() {
           .fold(0, (previousValue, element) => previousValue + element.amount);
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
-      expect(totalOutputAmount + result.estimatedFee!, lessThanOrEqualTo(totalBalance));
+      expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
 
       expect(result.transaction!.outputs[1].amount,
           lessThan(batchRecipientsSameBalance.entries.last.value));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee!,
+      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
           lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value));
     });
 
@@ -519,7 +519,7 @@ void main() {
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, equals(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount,
-          equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee!));
+          equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee));
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담', () {
@@ -539,7 +539,7 @@ void main() {
       expect(result.transaction!.inputs.length, 2);
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, lessThan(batchRecipients.values.last));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee!,
+      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
           lessThanOrEqualTo(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount,
           greaterThanOrEqualTo(sumOfBalance - sumOfBatchRecipients));
@@ -752,7 +752,7 @@ void main() {
       expect(result.transaction!.outputs.first.amount, lessThan(singleRecipient.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipient.values.first));
     });
 
@@ -774,7 +774,7 @@ void main() {
           lessThan(singleRecipientSameBalance.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipientSameBalance.values.first));
     });
 
@@ -869,7 +869,7 @@ void main() {
       expect(result.transaction!.outputs.first.amount, lessThan(singleRecipient.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipient.values.first));
     });
 
@@ -892,7 +892,7 @@ void main() {
           lessThan(singleRecipientSameBalance.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee! + result.transaction!.outputs.first.amount,
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipientSameBalance.values.first));
     });
 
@@ -990,7 +990,7 @@ void main() {
           .fold(0, (previousValue, element) => previousValue + element.amount);
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
-      expect(totalOutputAmount + result.estimatedFee!, lessThanOrEqualTo(totalBalance));
+      expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 = 잔액', () {
@@ -1015,11 +1015,11 @@ void main() {
           .fold(0, (previousValue, element) => previousValue + element.amount);
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
-      expect(totalOutputAmount + result.estimatedFee!, lessThanOrEqualTo(totalBalance));
+      expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
 
       expect(result.transaction!.outputs[1].amount,
           lessThan(batchRecipientsSameBalance.entries.last.value));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee!,
+      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
           lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value));
     });
 
@@ -1061,7 +1061,7 @@ void main() {
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, equals(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount,
-          equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee!));
+          equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee));
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담', () {
@@ -1081,7 +1081,7 @@ void main() {
       expect(result.transaction!.inputs.length, 2);
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, lessThan(batchRecipients.values.last));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee!,
+      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
           lessThanOrEqualTo(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount,
           greaterThanOrEqualTo(sumOfBalance - sumOfBatchRecipients));

@@ -91,10 +91,7 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     if (isUserSelection) {
       _buildResultWithCustomFee = buildResult;
     }
-    if (buildResult.estimatedFee == null && buildResult.isFailure) {
-      throw buildResult.exception ?? 'Unknown error';
-    }
-    return buildResult.estimatedFee!;
+    return buildResult.estimatedFee;
   }
 
   void _setSingleTxParams() {
@@ -118,10 +115,10 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   void saveFinalSendInfo(TransactionFeeLevel? feeLevel) {
     final finalBuildResult = getFinalBuildResult(feeLevel);
     double finalAmount = _isMaxMode
-        ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - finalBuildResult.estimatedFee!)
+        ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - finalBuildResult.estimatedFee)
         : _amount;
     _sendInfoProvider.setAmount(finalAmount);
-    _sendInfoProvider.setEstimatedFee(finalBuildResult.estimatedFee!);
+    _sendInfoProvider.setEstimatedFee(finalBuildResult.estimatedFee);
     _sendInfoProvider.setTransaction(finalBuildResult.transaction!);
     _sendInfoProvider.setFeeBumpfingType(null);
     _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
