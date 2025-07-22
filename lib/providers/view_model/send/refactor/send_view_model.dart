@@ -130,7 +130,13 @@ class SendViewModel extends ChangeNotifier {
   String _changeAddressDerivationPath = "";
 
   int? _estimatedFee;
-  int? get estimatedFee => _estimatedFee;
+  int? get estimatedFeeInSats => _estimatedFee;
+  double get _estimatedFeeByUnit {
+    int estimatedFeeInInt = _estimatedFee ?? 0;
+    return isBtcUnit
+        ? UnitUtil.convertSatoshiToBitcoin(estimatedFeeInInt)
+        : estimatedFeeInInt.toDouble();
+  }
 
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
@@ -144,6 +150,7 @@ class SendViewModel extends ChangeNotifier {
   int get incomingBalance => _incomingBalance;
 
   SendError _insufficientBalanceError = SendError.none;
+  SendError _insufficientBalanceErrorOfLastRecipient = SendError.none;
   SendError _qrAddressError = SendError.none;
 
   bool _hasFinalError = true;
@@ -153,6 +160,8 @@ class SendViewModel extends ChangeNotifier {
   String get finalErrorMessage => _finalErrorMessage;
 
   bool get hasInsufficientBalanceError => _insufficientBalanceError.isError;
+  bool get hasInsufficientBalanceErrorOfLastRecipient =>
+      _insufficientBalanceErrorOfLastRecipient.isError;
   String get qrErrorMessage => _qrAddressError.getMessage(_currentUnit);
 
   bool _showFeeBoard = false;
@@ -163,8 +172,9 @@ class SendViewModel extends ChangeNotifier {
   bool get isSatsUnit => !isBtcUnit;
 
   bool get isNetworkOn => _isNetworkOn == true;
-  num get dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
+  num get _dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
   bool get isAmountDisabled => _isMaxMode && _currentIndex == lastIndex;
+  bool get isEstimatedFeeGreaterThanBalance => balance < (_estimatedFee ?? 0);
   bool get _hasValidRecipient => _validRecipientList.isNotEmpty;
 
   List<RecipientInfo> get _validRecipientList {
@@ -186,6 +196,15 @@ class SendViewModel extends ChangeNotifier {
     }
 
     return recipientMap;
+  }
+
+  bool isMaxModeIndex(int index) {
+    return _isMaxMode && index == lastIndex;
+  }
+
+  bool isAmountInsufficient(int index) {
+    if (index != lastIndex) return false;
+    return _isMaxMode && _recipientList[index].amount == '0';
   }
 
   SendViewModel(
@@ -212,8 +231,13 @@ class SendViewModel extends ChangeNotifier {
 
   void _setEstimatedFee(int? estimatedFee) {
     if (_estimatedFee == estimatedFee) return;
+
     _estimatedFee = estimatedFee;
-    _updateFinalError();
+    if (_isMaxMode) {
+      _adjustLastReceiverAmount(-1);
+    } else {
+      _validateAmount(-1);
+    }
   }
 
   void _calculateEstimatedFee() {
@@ -315,9 +339,12 @@ class SendViewModel extends ChangeNotifier {
       }
     }
 
+    int estimatedFeeInSats = _estimatedFee ?? 0;
     int maxBalanceInSats = balance -
         (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast)
-            .toInt();
+            .toInt() -
+        estimatedFeeInSats -
+        dustLimit;
     _recipientList[lastIndex].amount = maxBalanceInSats > 0
         ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
             .toString()
@@ -343,8 +370,8 @@ class SendViewModel extends ChangeNotifier {
       _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
     }
 
-    vibrateLight();
     _calculateEstimatedFee();
+    vibrateLight();
     notifyListeners();
   }
 
@@ -368,10 +395,9 @@ class SendViewModel extends ChangeNotifier {
     _changeAddressDerivationPath =
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
     _initBalances();
+    _calculateEstimatedFee();
     _validateAmount(-1);
     _updateFeeBoardVisibility();
-
-    _calculateEstimatedFee();
     notifyListeners();
   }
 
@@ -405,9 +431,9 @@ class SendViewModel extends ChangeNotifier {
     setCurrentPage(_currentIndex);
     _onRecipientPageDeleted(_currentIndex);
 
-    _validateAmount(-1);
-    _validateAddresses();
     _calculateEstimatedFee();
+    _validateAddresses();
+    _validateAmount(-1);
     vibrateLight();
     notifyListeners();
   }
@@ -428,16 +454,19 @@ class SendViewModel extends ChangeNotifier {
 
   void _updateFinalError() {
     String message = "";
-    // [전체] 충분하지 않은 Balance > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값이 존재 > 예상 수수료 오류
+    // [전체] 충분하지 않은 Balance > [마지막 수신자] 전송 금액 - 예상 수수료가 dustLimit보다 크지 않음 > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값 또는 0이 존재 > 예상 수수료 오류
     if (_insufficientBalanceError.isError) {
       message = _insufficientBalanceError.getMessage(currentUnit);
+    } else if (_insufficientBalanceErrorOfLastRecipient.isError) {
+      message = _insufficientBalanceErrorOfLastRecipient.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.minimumAmountError.isError)) {
       message = SendError.minimumAmount.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.addressError == SendError.invalidAddress)) {
       message = SendError.invalidAddress.getMessage(currentUnit);
     } else if (_recipientList.any((e) => e.addressError == SendError.duplicatedAddress)) {
       message = SendError.duplicatedAddress.getMessage(currentUnit);
-    } else if (_recipientList.any((e) => e.address.isEmpty || e.amount.isEmpty)) {
+    } else if (_recipientList
+        .any((e) => e.address.isEmpty || e.amount.isEmpty || e.amount == "0")) {
       message = " ";
     } else if (_estimatedFee == null) {
       message = " ";
@@ -455,8 +484,8 @@ class SendViewModel extends ChangeNotifier {
   void setAddressText(String text, int index) {
     _recipientList[index].address = text;
     _validateAddresses();
-    _updateFeeBoardVisibility();
     _calculateEstimatedFee();
+    _updateFeeBoardVisibility();
     notifyListeners();
   }
 
@@ -549,8 +578,8 @@ class SendViewModel extends ChangeNotifier {
       _validateAmount(_currentIndex);
     }
 
-    _updateFeeBoardVisibility();
     _calculateEstimatedFee();
+    _updateFeeBoardVisibility();
     notifyListeners();
   }
 
@@ -595,15 +624,19 @@ class SendViewModel extends ChangeNotifier {
     }
 
     // 부동 소수점 오차가 생길 수 있으므로 소수점 8자리만 다시 파싱
-    if (isBtcUnit) amountSum = double.parse(amountSum.toStringAsFixed(8));
+    double amountSumWithEstimatedFee = amountSum + _estimatedFeeByUnit;
+    if (isBtcUnit) {
+      amountSumWithEstimatedFee = double.parse(amountSumWithEstimatedFee.toStringAsFixed(8));
+    }
 
-    if (amountSum > 0 && amountSum > balance / dustLimitDenominator) {
+    if (amountSumWithEstimatedFee > 0 &&
+        amountSumWithEstimatedFee > balance / _dustLimitDenominator) {
       _insufficientBalanceError = SendError.insufficientBalance;
     } else {
       _insufficientBalanceError = SendError.none;
     }
 
-    if (_currentUnit == BitcoinUnit.btc) {
+    if (isBtcUnit) {
       _amountSum = UnitUtil.convertBitcoinToSatoshi(amountSum);
     } else {
       _amountSum = amountSum.toInt();
@@ -613,13 +646,28 @@ class SendViewModel extends ChangeNotifier {
     if (index != -1) {
       final recipient = recipientList[index];
       if (recipient.amount.isNotEmpty && double.parse(recipient.amount) > 0) {
-        if (double.parse(recipient.amount) <= dustLimit / dustLimitDenominator) {
+        if (double.parse(recipient.amount) <= dustLimit / _dustLimitDenominator) {
           recipient.minimumAmountError = SendError.minimumAmount;
         } else {
           recipient.minimumAmountError = SendError.none;
         }
       } else {
         recipient.minimumAmountError = SendError.none;
+      }
+    }
+
+    // 마지막 수신자의 전송 금액을 확인한다. (전송 금액 - 예상 수수료 <= dust)
+    if (_recipientList[lastIndex].amount.isNotEmpty) {
+      double amount = double.parse(_recipientList[lastIndex].amount);
+      int estimatedFeeInSats = _estimatedFee ?? 0;
+      bool isAmountInsufficientForFee =
+          (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amount) : amount).toInt() -
+                  estimatedFeeInSats <=
+              dustLimit;
+      if (isAmountInsufficientForFee) {
+        _insufficientBalanceErrorOfLastRecipient = SendError.insufficientBalance;
+      } else {
+        _insufficientBalanceErrorOfLastRecipient = SendError.none;
       }
     }
 

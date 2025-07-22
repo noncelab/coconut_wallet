@@ -272,6 +272,7 @@ send_screen:
   recommended_fee_unavailable_description: "Please enter the fee manually."
   tooltip_text: "${count} addresses • Total ${amount}"
   tooltip_max_mode_text: "Send All Mode Enabled"
+  max_mode_insufficient_balance: "Insufficient Balance"
 
 utxo_selection_screen:
   title: "Select UTXOs"

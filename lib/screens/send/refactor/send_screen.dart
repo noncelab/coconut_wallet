@@ -199,10 +199,10 @@ class _SendScreenState extends State<SendScreen> {
                   final currentUnit = data.item5;
 
                   if (selectedWalletItem == null) {
-                    return const Center(
+                    return Center(
                       child: Text(
                         '-',
-                        style: CoconutTypography.body1_16,
+                        style: CoconutTypography.body1_16.setColor(CoconutColors.white),
                       ),
                     );
                   }
@@ -218,13 +218,16 @@ class _SendScreenState extends State<SendScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(selectedWalletItem.name, style: CoconutTypography.body1_16),
+                          Text(selectedWalletItem.name,
+                              style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
                           CoconutLayout.spacing_50w,
                           const Icon(Icons.keyboard_arrow_down_sharp,
                               color: CoconutColors.white, size: 16),
                         ],
                       ),
-                      Text(amountText, style: CoconutTypography.body3_12_NumberBold),
+                      Text(amountText,
+                          style:
+                              CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white)),
                     ],
                   );
                 }),
@@ -308,7 +311,7 @@ class _SendScreenState extends State<SendScreen> {
             ),
             CoconutLayout.spacing_150w,
             Text("${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body3_12_Number),
+                style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
           ],
         ));
 
@@ -368,7 +371,8 @@ class _SendScreenState extends State<SendScreen> {
                           height: 10,
                         ),
                         CoconutLayout.spacing_100w,
-                        Text(t.send_screen.use_btc_unit, style: CoconutTypography.body3_12),
+                        Text(t.send_screen.use_btc_unit,
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
                       ],
                     );
                   })),
@@ -388,7 +392,7 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_200w,
               if (isFailed) ...[
                 SvgPicture.asset('assets/svg/triangle-warning.svg',
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                     width: 24),
                 CoconutLayout.spacing_200w,
                 Column(
@@ -396,9 +400,9 @@ class _SendScreenState extends State<SendScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(t.send_screen.recommended_fee_unavailable,
-                        style: CoconutTypography.body3_12_Bold),
+                        style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white)),
                     Text(t.send_screen.recommended_fee_unavailable_description,
-                        style: CoconutTypography.body3_12),
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
                   ],
                 ),
               ] else ...[
@@ -478,8 +482,9 @@ class _SendScreenState extends State<SendScreen> {
   Widget _buildFeeBoard(BuildContext context) {
     return Column(
       children: [
-        Selector<SendViewModel, Tuple2<bool, int?>>(
-            selector: (_, viewModel) => Tuple2(viewModel.showFeeBoard, viewModel.estimatedFee),
+        Selector<SendViewModel, Tuple3<bool, int?, int>>(
+            selector: (_, viewModel) =>
+                Tuple3(viewModel.showFeeBoard, viewModel.estimatedFeeInSats, viewModel.balance),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
               return Padding(
@@ -501,12 +506,15 @@ class _SendScreenState extends State<SendScreen> {
                         children: [
                           Text(
                             t.send_screen.estimated_fee,
-                            style: CoconutTypography.body3_12,
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white),
                           ),
                           const Spacer(),
                           Text(
-                            "${_viewModel.estimatedFee ?? '-'} sats",
-                            style: CoconutTypography.body2_14_NumberBold,
+                            "${_viewModel.estimatedFeeInSats ?? '-'} sats",
+                            style: CoconutTypography.body2_14_NumberBold.setColor(
+                                _viewModel.isEstimatedFeeGreaterThanBalance
+                                    ? CoconutColors.hotPink
+                                    : CoconutColors.white),
                           ),
                         ],
                       ),
@@ -538,7 +546,7 @@ class _SendScreenState extends State<SendScreen> {
                     children: [
                       Text(
                         t.send_screen.fee_subtracted_from_send_amount,
-                        style: CoconutTypography.body3_12,
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.white),
                       ),
                       Text(
                         _viewModel.isFeeSubtractedFromSendAmount
@@ -571,7 +579,7 @@ class _SendScreenState extends State<SendScreen> {
       children: [
         Text(
           t.send_screen.fee_rate,
-          style: CoconutTypography.body3_12,
+          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
         ),
         const Spacer(),
         IntrinsicWidth(
@@ -598,12 +606,13 @@ class _SendScreenState extends State<SendScreen> {
               maxLines: 1,
               fontFamily: 'SpaceGrotesk',
               fontSize: 12,
+              activeColor: CoconutColors.white,
               fontWeight: FontWeight.bold,
               borderRadius: 8,
               suffix: Container(
                   padding: const EdgeInsets.only(right: 10),
                   child: Text(t.send_screen.fee_rate_suffix,
-                      style: CoconutTypography.body3_12_NumberBold)),
+                      style: CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white))),
             ),
           ),
         )
@@ -655,7 +664,7 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_100w,
               Text(
                 t.send_screen.add_recipient,
-                style: CoconutTypography.body2_14,
+                style: CoconutTypography.body2_14.setColor(CoconutColors.white),
               ),
             ],
           ),
@@ -686,20 +695,27 @@ class _SendScreenState extends State<SendScreen> {
           padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
           child: Column(
             children: [
-              Selector<SendViewModel, Tuple5<BitcoinUnit, String, bool, bool, bool>>(
-                  selector: (_, viewModel) => Tuple5(
+              Selector<SendViewModel, Tuple7<BitcoinUnit, String, bool, bool, bool, bool, int?>>(
+                  selector: (_, viewModel) => Tuple7(
                       viewModel.currentUnit,
                       viewModel.recipientList[index].amount,
                       viewModel.isMaxMode,
                       viewModel.hasInsufficientBalanceError,
-                      viewModel.recipientList[index].minimumAmountError.isError),
+                      viewModel.hasInsufficientBalanceErrorOfLastRecipient,
+                      viewModel.recipientList[index].minimumAmountError.isError,
+                      viewModel.estimatedFeeInSats),
                   builder: (context, data, child) {
-                    final amountText = data.item2;
-                    final isMinimumAmount = data.item5;
+                    String amountText = data.item2;
+                    final isMinimumAmount = data.item6;
+                    final hasInsufficientBalanceErrorOfLastRecipient =
+                        data.item5 && index == _viewModel.lastIndex;
+
                     Color amountTextColor;
-                    if (_viewModel.hasInsufficientBalanceError || isMinimumAmount) {
+                    if (_viewModel.hasInsufficientBalanceError ||
+                        isMinimumAmount ||
+                        hasInsufficientBalanceErrorOfLastRecipient) {
                       amountTextColor = CoconutColors.hotPink;
-                    } else if (_viewModel.isMaxMode && index == _viewModel.lastIndex) {
+                    } else if (_viewModel.isMaxModeIndex(index)) {
                       amountTextColor = CoconutColors.gray600;
                     } else if (amountText.isEmpty) {
                       amountTextColor = MyColors.transparentWhite_20;
@@ -724,17 +740,23 @@ class _SendScreenState extends State<SendScreen> {
                               child: RichText(
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
-                                text: TextSpan(
-                                  text:
-                                      '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
-                                  style: CoconutTypography.heading2_28_NumberBold
-                                      .setColor(amountTextColor),
-                                  children: [
-                                    TextSpan(
-                                        text: _viewModel.currentUnit.symbol,
-                                        style: CoconutTypography.heading4_18_Number)
-                                  ],
-                                ),
+                                text: _viewModel.isAmountInsufficient(index)
+                                    ? TextSpan(
+                                        text: t.send_screen.max_mode_insufficient_balance,
+                                        style: CoconutTypography.heading3_21_Bold
+                                            .setColor(CoconutColors.hotPink),
+                                      )
+                                    : TextSpan(
+                                        text:
+                                            '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
+                                        style: CoconutTypography.heading2_28_NumberBold
+                                            .setColor(amountTextColor),
+                                        children: [
+                                          TextSpan(
+                                              text: _viewModel.currentUnit.symbol,
+                                              style: CoconutTypography.heading4_18_Number)
+                                        ],
+                                      ),
                               ),
                             ),
                           ),
@@ -866,7 +888,8 @@ class _SendScreenState extends State<SendScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("${currentIndex + 1} ", style: CoconutTypography.body3_12),
+                  Text("${currentIndex + 1} ",
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
                   Text("/ $recipientListLength",
                       style: CoconutTypography.body3_12.setColor(CoconutColors.gray600)),
                 ],
@@ -892,7 +915,7 @@ class _SendScreenState extends State<SendScreen> {
           children: [
             Text(
               shortenAddress(address, head: 10),
-              style: CoconutTypography.body3_12_Number,
+              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
             ),
             Text(
               "$walletName • $derivationPath",
@@ -929,7 +952,7 @@ class _SendScreenState extends State<SendScreen> {
                       children: [
                         Text(
                           t.send_screen.my_address,
-                          style: CoconutTypography.body3_12_Bold,
+                          style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
                         ),
                         const Spacer(),
                         CoconutUnderlinedButton(
