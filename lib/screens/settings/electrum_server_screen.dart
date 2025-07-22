@@ -4,6 +4,7 @@ import 'package:coconut_wallet/constants/electrum_server_domain.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -84,8 +85,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     await Future.delayed(const Duration(milliseconds: 3000));
     if (!mounted) return;
     if (Random().nextBool()) {
+      vibrateLightDouble();
       viewModel.setNodeConnectionStatus(NodeConnectionStatus.failed);
     } else {
+      vibrateLight();
       viewModel.setNodeConnectionStatus(NodeConnectionStatus.connected);
     }
     await Future.delayed(const Duration(milliseconds: 2000));
