@@ -428,18 +428,21 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
         final fixedWidgets = [
           {
             'homeFeatureTypeString': HomeFeatureType.totalBalance.toString(),
-            'icon': 'assets/svg/piggy-bank.svg'
+            'icon': HomeFeatureType.totalBalance.assetPath,
           },
           {
             'homeFeatureTypeString': HomeFeatureType.walletList.toString(),
-            'icon': 'assets/svg/wallet.svg'
+            'icon': HomeFeatureType.walletList.assetPath,
           },
         ];
         final displayHomeWidgets = [
           ...fixedWidgets,
           ..._viewModel.tempHomeFeatures.map((e) => {
                 'homeFeatureTypeString': e.homeFeatureTypeString,
-                'icon': e.assetPath,
+                'icon': HomeFeatureType.values
+                    .firstWhere((type) => type.name == e.homeFeatureTypeString,
+                        orElse: () => HomeFeatureType.totalBalance)
+                    .assetPath,
                 'isEnabled': e.isEnabled,
               })
         ];

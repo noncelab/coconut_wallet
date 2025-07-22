@@ -234,6 +234,5 @@ class _RealmWalletPreferences {
 @RealmModel()
 class _RealmHomeFeature {
   late String homeFeatureTypeString;
-  late String assetPath;
   late bool isEnabled;
 }

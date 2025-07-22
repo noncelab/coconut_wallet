@@ -67,10 +67,8 @@ class WalletPreferencesRepository extends BaseRepository {
   List<HomeFeature> getHomeFeatures() {
     final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;
     return prefs?.homeFeatures
-            .map((e) => HomeFeature(
-                homeFeatureTypeString: e.homeFeatureTypeString,
-                assetPath: e.assetPath,
-                isEnabled: e.isEnabled))
+            .map((e) =>
+                HomeFeature(homeFeatureTypeString: e.homeFeatureTypeString, isEnabled: e.isEnabled))
             .toList() ??
         [];
   }
@@ -80,15 +78,15 @@ class WalletPreferencesRepository extends BaseRepository {
     if (prefs != null) {
       await realm.writeAsync(() {
         prefs.homeFeatures.clear();
-        prefs.homeFeatures.addAll(features
-            .map((f) => RealmHomeFeature(f.homeFeatureTypeString, f.assetPath, f.isEnabled)));
+        prefs.homeFeatures
+            .addAll(features.map((f) => RealmHomeFeature(f.homeFeatureTypeString, f.isEnabled)));
       });
     } else {
       await realm.writeAsync(() {
         realm.add(
           RealmWalletPreferences(0)
-            ..homeFeatures.addAll(features
-                .map((f) => RealmHomeFeature(f.homeFeatureTypeString, f.assetPath, f.isEnabled))),
+            ..homeFeatures.addAll(
+                features.map((f) => RealmHomeFeature(f.homeFeatureTypeString, f.isEnabled))),
         );
       });
     }

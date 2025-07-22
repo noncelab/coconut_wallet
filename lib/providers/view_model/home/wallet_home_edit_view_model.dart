@@ -65,7 +65,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     _tempHomeFeatures = homeFeatures
         .map((feature) => HomeFeature(
               homeFeatureTypeString: feature.homeFeatureTypeString,
-              assetPath: feature.assetPath,
               isEnabled: feature.isEnabled,
             ))
         .toList();
@@ -181,7 +180,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
       final feature = _tempHomeFeatures[index];
       _tempHomeFeatures[index] = HomeFeature(
         homeFeatureTypeString: feature.homeFeatureTypeString,
-        assetPath: feature.assetPath,
         isEnabled: !feature.isEnabled,
       );
       notifyListeners();

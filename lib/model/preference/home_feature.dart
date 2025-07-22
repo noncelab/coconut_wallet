@@ -1,11 +1,9 @@
 // 내용 변경시 RealmHomeFeature도 수정 필요
 class HomeFeature {
   final String homeFeatureTypeString;
-  final String assetPath;
   final bool isEnabled;
   const HomeFeature({
     required this.homeFeatureTypeString,
-    required this.assetPath,
     required this.isEnabled,
   });
 }
@@ -15,5 +13,18 @@ enum HomeFeatureType {
   totalBalance,
   walletList,
   recentTransaction,
-  analysis,
+  analysis;
+
+  String get assetPath {
+    switch (this) {
+      case HomeFeatureType.totalBalance:
+        return 'assets/svg/piggy-bank.svg';
+      case HomeFeatureType.walletList:
+        return 'assets/svg/wallet.svg';
+      case HomeFeatureType.recentTransaction:
+        return 'assets/svg/transaction.svg';
+      case HomeFeatureType.analysis:
+        return 'assets/svg/analysis.svg';
+    }
+  }
 }
