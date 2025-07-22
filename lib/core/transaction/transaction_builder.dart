@@ -65,9 +65,12 @@ class TransactionBuilder {
       if (isUtxoFixed) {
         _selectedUtxos = availableUtxos;
         double virtualByte = WalletUtility.estimateVirtualByte(
-            walletListItemBase.walletType.addressType,
-            _selectedUtxos!.length,
-            recipients.length + 1); // change output 있다고 가정
+          walletListItemBase.walletType.addressType,
+          _selectedUtxos!.length,
+          recipients.length + 1,
+          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+          totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+        ); // change output 있다고 가정
         _estimatedFeeByFeeEstimator = (virtualByte * feeRate).ceil();
       } else {
         final utxoSelectionResult = UtxoSelector.selectOptimalUtxos(

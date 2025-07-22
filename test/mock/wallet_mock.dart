@@ -29,7 +29,7 @@ class WalletMock {
     int totalSigners = 3,
   }) {
     const descriptor =
-        "wsh(sortedmulti(2,[D45AA182/48'/1'/0'/2']tpubDEBqRRczC3kBKcVwNpXZDca2JxnhGhG4nZX3bdzQP9bdXe5X5F8QmvwpnfGVJVgXJVh4n1N4YRLuqZwdPh1JpWd2xE1zftHQcxS4QaQ8Qzj/<0;1>/*,[D45AA182/48'/1'/0'/2']tpubDEBqRRczC3kBKcVwNpXZDca2JxnhGhG4nZX3bdzQP9bdXe5X5F8QmvwpnfGVJVgXJVh4n1N4YRLuqZwdPh1JpWd2xE1zftHQcxS4QaQ8Qzj/<0;1>/*,[D45AA182/48'/1'/0'/2']tpubDEBqRRczC3kBKcVwNpXZDca2JxnhGhG4nZX3bdzQP9bdXe5X5F8QmvwpnfGVJVgXJVh4n1N4YRLuqZwdPh1JpWd2xE1zftHQcxS4QaQ8Qzj/<0;1>/*))#vzh9c8jy";
+        "wsh(sortedmulti(2,[A3B2EB70/48'/1'/0'/2']Vpub5nPDj2f67vDX5FsPMTG9NJZEFWoZVCvdomuuXEtNdtbvMEW6R8Y4AfuvD1v8HEMJ5KV97Y2FkBcpiU1nTmVUEvx4oAUcyrMNayimtFvjGQs/<0;1>/*,[B697ED0C/48'/1'/0'/2']Vpub5m3o8CxnPauiate1UZLcQi45f6q5HnmtZ3tvP2cv5Vtm51LJt5Um51pjkeTYNjd1PZBJ18R5eaYQ8dZdhq2Fit39qNggpkVJyvHj8HzUUe4/<0;1>/*,[F75F5AB5/48'/1'/0'/2']Vpub5nMwPdpQ4ozaJdZQeD2A6A5ci9DwQN6pWKFF3GGuBAK2tewmCB7HMcYsb9iukL2KMNjAgb72HWicwo55kzmnNvyih767HwSUxcv9PPdY8qj/<0;1>/*))#qlqyc9ar";
 
     final signers = List.generate(
       totalSigners,
