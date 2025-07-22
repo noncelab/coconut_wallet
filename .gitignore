@@ -163,6 +163,8 @@ default.realm.management
 
 # Cursor IDE
 .cursor
+.cursorrules
+features/*
 
 .metadata
 
