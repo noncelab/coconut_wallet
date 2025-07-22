@@ -1,3 +1,8 @@
+## mainnet 0.2.0 - 2025-07-21
+### Fixed
+* 보내기 - 수수료 선택 화면 버그 수정
+* 후원하기 배너 안드로이드에서만 노출
+
 ## mainnet 0.0.15(beta), regtest 3.1.8 - 2025-07-18
 ### Fixed
 * utxo_selection 버그 수정

@@ -9,6 +9,7 @@
 /// All dependencies including transitive dependencies.
 const allDependencies = <Package>[
   __fe_analyzer_shared,
+  __flutterfire_internals,
   _analyzer,
   _archive,
   _args,
@@ -59,6 +60,12 @@ const allDependencies = <Package>[
   _fake_async,
   _ffi,
   _file,
+  _firebase_analytics,
+  _firebase_analytics_platform_interface,
+  _firebase_analytics_web,
+  _firebase_core,
+  _firebase_core_platform_interface,
+  _firebase_core_web,
   _fixnum,
   _flat_buffers,
   _flutter,
@@ -222,6 +229,8 @@ const dependencies = <Package>[
   _device_info_plus,
   _dio,
   _equatable,
+  _firebase_analytics,
+  _firebase_core,
   _flutter,
   _flutter_dotenv,
   _flutter_secure_storage,
@@ -358,6 +367,50 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     isMarkdown: false,
     isSdk: false,
     dependencies: [PackageRef('meta')]);
+
+/// _flutterfire_internals 1.3.41
+const __flutterfire_internals = Package(
+    name: '_flutterfire_internals',
+    description: 'A package hosting Dart code shared between FlutterFire plugins.',
+    homepage: 'https://firebase.google.com/docs/firestore',
+    repository: 'https://github.com/firebase/flutterfire/tree/main/packages/_flutterfire_internals',
+    authors: [],
+    version: '1.3.41',
+    license: '''Copyright 2017, the Chromium project authors. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+    isMarkdown: false,
+    isSdk: false,
+    dependencies: [
+      PackageRef('collection'),
+      PackageRef('firebase_core'),
+      PackageRef('firebase_core_platform_interface'),
+      PackageRef('flutter'),
+      PackageRef('meta')
+    ]);
 
 /// analyzer 6.4.1
 const _analyzer = Package(
@@ -1540,7 +1593,7 @@ const _clock = Package(
     isSdk: false,
     dependencies: []);
 
-/// coconut_design_system 0.9.0
+/// coconut_design_system 0.9.1
 const _coconut_design_system = Package(
     name: 'coconut_design_system',
     description:
@@ -1548,7 +1601,7 @@ const _coconut_design_system = Package(
     homepage: 'https://www.noncelab.com',
     repository: 'https://github.com/noncelab/coconut_design_system',
     authors: [],
-    version: '0.9.0',
+    version: '0.9.1',
     license: '''MIT License
 
 Copyright 2025 Nonce Lab
@@ -1581,14 +1634,14 @@ Licensor: Nonce Lab''',
       PackageRef('lottie')
     ]);
 
-/// coconut_lib 0.10.4
+/// coconut_lib 0.10.5
 const _coconut_lib = Package(
     name: 'coconut_lib',
     description:
         'The coconut_lib is a development tool for mobile air gap Bitcoin wallets. It is written in Dart. Coconut Vault and Coconut Wallet were created using this library.',
     repository: 'https://github.com/noncelab/coconut_lib.git',
     authors: [],
-    version: '0.10.4',
+    version: '0.10.5',
     license: '''Copyright 2025 Nonce Lab
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -3754,6 +3807,281 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     isMarkdown: false,
     isSdk: false,
     dependencies: [PackageRef('meta'), PackageRef('path')]);
+
+/// firebase_analytics 11.3.0
+const _firebase_analytics = Package(
+    name: 'firebase_analytics',
+    description:
+        'Flutter plugin for Google Analytics for Firebase, an app measurement solution that provides insight on app usage and user engagement on Android and iOS.',
+    homepage: 'https://firebase.google.com/docs/analytics',
+    repository:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_analytics/firebase_analytics',
+    authors: [],
+    version: '11.3.0',
+    license: '''Copyright 2017, the Chromium project authors. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+    isMarkdown: false,
+    isSdk: false,
+    dependencies: [
+      PackageRef('firebase_analytics_platform_interface'),
+      PackageRef('firebase_analytics_web'),
+      PackageRef('firebase_core'),
+      PackageRef('firebase_core_platform_interface'),
+      PackageRef('flutter')
+    ]);
+
+/// firebase_analytics_platform_interface 4.2.2
+const _firebase_analytics_platform_interface = Package(
+    name: 'firebase_analytics_platform_interface',
+    description: 'A common platform interface for the firebase_analytics plugin.',
+    homepage:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_analytics/firebase_analytics_platform_interface',
+    repository:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_analytics/firebase_analytics_platform_interface',
+    authors: [],
+    version: '4.2.2',
+    license: '''Copyright 2017, the Chromium project authors. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+    isMarkdown: false,
+    isSdk: false,
+    dependencies: [
+      PackageRef('_flutterfire_internals'),
+      PackageRef('firebase_core'),
+      PackageRef('flutter'),
+      PackageRef('meta'),
+      PackageRef('plugin_platform_interface')
+    ]);
+
+/// firebase_analytics_web 0.5.9+2
+const _firebase_analytics_web = Package(
+    name: 'firebase_analytics_web',
+    description: 'The web implementation of firebase_analytics',
+    homepage:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_analytics/firebase_analytics_web',
+    repository:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_analytics/firebase_analytics_web',
+    authors: [],
+    version: '0.5.9+2',
+    license: '''Copyright 2017, the Chromium project authors. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+    isMarkdown: false,
+    isSdk: false,
+    dependencies: [
+      PackageRef('_flutterfire_internals'),
+      PackageRef('firebase_analytics_platform_interface'),
+      PackageRef('firebase_core'),
+      PackageRef('firebase_core_web'),
+      PackageRef('flutter')
+    ]);
+
+/// firebase_core 3.4.0
+const _firebase_core = Package(
+    name: 'firebase_core',
+    description: 'Flutter plugin for Firebase Core, enabling connecting to multiple Firebase apps.',
+    homepage: 'https://firebase.google.com/docs/flutter/setup',
+    repository:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_core/firebase_core',
+    authors: [],
+    version: '3.4.0',
+    license: '''// Copyright 2017 The Chromium Authors. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//    * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//    * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//    * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+    isMarkdown: false,
+    isSdk: false,
+    dependencies: [
+      PackageRef('firebase_core_platform_interface'),
+      PackageRef('firebase_core_web'),
+      PackageRef('flutter'),
+      PackageRef('meta')
+    ]);
+
+/// firebase_core_platform_interface 5.4.2
+const _firebase_core_platform_interface = Package(
+    name: 'firebase_core_platform_interface',
+    description: 'A common platform interface for the firebase_core plugin.',
+    homepage:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_core/firebase_core_platform_interface',
+    repository:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_core/firebase_core_platform_interface',
+    authors: [],
+    version: '5.4.2',
+    license: '''// Copyright 2017 The Chromium Authors. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//    * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//    * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//    * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+    isMarkdown: false,
+    isSdk: false,
+    dependencies: [
+      PackageRef('collection'),
+      PackageRef('flutter'),
+      PackageRef('meta'),
+      PackageRef('plugin_platform_interface')
+    ]);
+
+/// firebase_core_web 2.17.5
+const _firebase_core_web = Package(
+    name: 'firebase_core_web',
+    description: 'The web implementation of firebase_core',
+    homepage:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_core/firebase_core_web',
+    repository:
+        'https://github.com/firebase/flutterfire/tree/main/packages/firebase_core/firebase_core_web',
+    authors: [],
+    version: '2.17.5',
+    license: '''// Copyright 2020 The Chromium Authors. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//    * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//    * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//    * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+    isMarkdown: false,
+    isSdk: false,
+    dependencies: [
+      PackageRef('firebase_core_platform_interface'),
+      PackageRef('flutter'),
+      PackageRef('meta'),
+      PackageRef('web')
+    ]);
 
 /// fixnum 1.1.1
 const _fixnum = Package(
