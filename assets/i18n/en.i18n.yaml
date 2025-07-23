@@ -263,7 +263,7 @@ send_screen:
   fee_subtracted_from_send_amount: "Fee subtracted from send amount"
   fee_subtracted_from_send_amount_disabled_description: "Recipient receives the exact amount entered"
   fee_subtracted_from_send_amount_enabled_description: "The fee will be subtracted from the recipient’s amount"
-  my_address: "My Address"
+  my_address: "My Addresses"
   add_recipient: "Add Recipient"
   use_btc_unit: "Use BTC Unit"
   input_maximum_amount: "Send All"

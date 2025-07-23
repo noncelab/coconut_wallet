@@ -1,0 +1,32 @@
+---
+description: 지갑을 추가하는 기능
+globs: 
+  - lib/screens/wallet_add_screen.dart
+  - lib/screens/wallet_add_mfp_input_creen.dart
+  - lib/screens/wallet_add_input_screen.dart
+  - lib/providers/view_model/home/wallet_add_input_view_model.dart
+  - lib/providers/view_model/home/wallet_add_scanner_view_model.dart
+alwaysApply: false  # true면 이 기능이 항상 문서/코드 매핑에 적용됨
+---
+
+## 기능 설명
+
+사용자가 새로운 지갑을 추가하는 흐름을 담당합니다. 다음 단계로 구성되어 있습니다:
+
+1. 지갑 이름 입력
+2. 시드 문구 백업 여부 확인
+3. 비밀번호 설정
+
+## UI 구성
+
+- `AddWalletScreen`
+- `WalletNameInputForm`
+- `PasswordSetupScreen`
+
+## 테스트 코드
+
+- `wallet_add_test.dart`에 단위 및 통합 테스트가 포함되어야 합니다.
+
+## 관련 이슈
+
+- #42 지갑 생성 중 비밀번호 확인 생략 가능성

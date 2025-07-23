@@ -1,0 +1,138 @@
+// Flutter App Expert .cursorrules
+
+# Flexibility Notice
+# 이 구조는 권장 사항일 뿐이며, 기존 프로젝트 구조를 우선시하여 유연하게 적용하세요.
+# Flutter의 best practice를 따르되, 기존 아키텍처와 충돌하지 않도록 조심하세요.
+
+entryPoints = ["lib/main.dart"]
+commentRegex = "//|///"
+ignoreDirs = ["build", ".dart_tool", "ios", "android"]
+docDirs = ["features"]
+
+[style]
+language = "korean"
+code_style = "flutter"
+
+[exclusions]
+files = [
+  "**/*.g.dart", # 자동 생성 파일 무시
+]
+
+[context]
+// Flutter Best Practices
+
+flutter_best_practices = """
+- 기존 프로젝트 구조에 맞춰 유연하게 적용
+- Flutter 3.x 및 Material 3 사용
+- BLoC 패턴을 통한 Clean Architecture 구현
+- 명확한 상태 관리 및 에러 핸들링 적용
+- 의존성 주입은 Provider를 이용한 ViewModel 생성
+- 각 플랫폼 가이드라인을 고려한 UI
+- 다국어를 위한 적절한 로컬라이제이션 적용
+"""
+
+# 프로젝트 구조
+project_structure = """
+assets/
+  files/
+  fonts/
+  i18n/
+  images/
+  lottie/
+  readme/
+  svg/
+lib/
+  constants/
+  enums/
+  extensions/
+  localization/
+  model/
+    error/
+    faucet/
+    node/
+    preference/
+    send/
+    utxo/
+    wallet/
+  packages/
+  providers/
+    node_provider/
+    view_model/
+  repository/
+    realm/
+    secure/storage/
+    shared_preference/
+  screens/
+    common/
+    donation/
+    home/
+    onboarding/
+    review/
+    send/
+    settings/
+    wallet_detail/
+  services/
+    model/
+      error/
+      request/
+      response/
+      stream/
+    network/
+      socket/
+  utils/
+  widgets/
+  app_guard.dart
+  app.dart
+  main.dart
+  oss_liscense.dart
+  styles.dart
+"""
+
+
+# 코딩 가이드라인
+coding_guidelines = """
+1. Null safety 철저 적용
+2. Either 타입을 통한 에러 처리
+3. 의미 있는 네이밍 규칙 사용
+4. 위젯은 작고 명확하게 구성
+5. GoRouter로 라우팅 구성
+6. Form validation 체계화
+7. BLoC을 활용한 상태 관리
+8. Provider와 ViewModel을 이용한 의존성 주입
+9. 자산(assets) 정리 체계화
+10. 테스트 전략 수립 및 실행
+"""
+
+# 위젯 구성 가이드라인
+widget_guidelines = """
+1. 위젯은 작은 단위로 나누어 구성
+2. const 생성자 적극 사용
+3. Key는 명시적으로 설정
+4. 레이아웃 구성 원칙 준수
+5. 적절한 생명주기 메서드 활용
+6. 에러 경계 처리 구현
+7. 성능 최적화 적용
+8. 접근성 지침 준수
+"""
+
+# 성능 가이드라인
+performance_guidelines = """
+1. 이미지 캐싱 적용
+2. 리스트 최적화 (e.g. itemBuilder)
+3. build 메서드 효율화
+4. 상태 관리 구조 최적화
+5. 메모리 관리 고려
+6. 플랫폼 채널 최적화
+7. 릴리즈 빌드 최적화 플래그 적용
+"""
+
+# 테스트 가이드라인
+testing_guidelines = """
+1. 핵심 로직 단위 테스트
+2. UI 위젯 테스트 작성
+3. 통합 테스트로 흐름 검증
+4. Mocking 전략 수립
+5. 커버리지 측정 도구 사용
+6. 테스트 명명 규칙 통일
+7. CI 환경에 테스트 통합
+"""

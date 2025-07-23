@@ -17,6 +17,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -73,7 +74,7 @@ class _SendScreenState extends State<SendScreen> {
 
   double get _keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
 
-  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 40;
+  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 48;
 
   double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 147;
 
@@ -427,56 +428,74 @@ class _SendScreenState extends State<SendScreen> {
         builder: (context, data, child) {
           return Column(
             children: [
-              if (_viewModel.isBatchMode)
-                Padding(
-                  padding: EdgeInsets.only(bottom: kTooltipPadding),
-                  child: CoconutToolTip(
-                    backgroundColor: CoconutColors.gray800,
-                    borderColor: CoconutColors.gray800,
-                    borderRadius: 12,
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    icon: SvgPicture.asset(
-                      'assets/svg/receipt.svg',
-                      colorFilter: const ColorFilter.mode(
-                        CoconutColors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    tooltipType: CoconutTooltipType.fixed,
-                    richText: RichText(
-                      text: TextSpan(
-                        text: t.send_screen.tooltip_text(
-                            count: _viewModel.recipientList.length,
-                            amount: _viewModel.amountSumText),
-                        style: CoconutTypography.body3_12_Bold,
-                      ),
-                    ),
-                  ),
-                ),
-              if (_viewModel.isMaxMode)
-                CoconutToolTip(
-                  backgroundColor: CoconutColors.gray800,
-                  borderColor: CoconutColors.gray800,
-                  borderRadius: 12,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                  icon: SvgPicture.asset(
-                    'assets/svg/broom.svg',
-                    colorFilter: const ColorFilter.mode(
-                      CoconutColors.white,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  tooltipType: CoconutTooltipType.fixed,
-                  richText: RichText(
-                    text: TextSpan(
-                      text: t.send_screen.tooltip_max_mode_text,
-                      style: CoconutTypography.body3_12_Bold,
-                    ),
-                  ),
-                ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                child: _viewModel.isBatchMode
+                    ? Padding(
+                        key: const ValueKey('batch_tooltip'),
+                        padding: EdgeInsets.only(bottom: kTooltipPadding),
+                        child: _buildTooltip(
+                          iconPath: 'assets/svg/receipt.svg',
+                          text: t.send_screen.tooltip_text(
+                              count: _viewModel.recipientList.length,
+                              amount: _viewModel.amountSumText),
+                        ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('batch_empty')),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                child: _viewModel.isMaxMode
+                    ? _buildTooltip(
+                        key: const ValueKey('max_tooltip'),
+                        iconPath: 'assets/svg/broom.svg',
+                        text: t.send_screen.tooltip_max_mode_text,
+                      )
+                    : const SizedBox.shrink(key: ValueKey('max_empty')),
+              ),
             ],
           );
         });
+  }
+
+  Widget _buildTooltip({
+    required String iconPath,
+    required String text,
+    Key? key,
+  }) {
+    return CoconutToolTip(
+      key: key,
+      backgroundColor: CoconutColors.gray800,
+      borderColor: CoconutColors.gray800,
+      borderRadius: 12,
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      icon: SvgPicture.asset(
+        iconPath,
+        colorFilter: const ColorFilter.mode(
+          CoconutColors.white,
+          BlendMode.srcIn,
+        ),
+      ),
+      tooltipType: CoconutTooltipType.fixed,
+      richText: RichText(
+        text: TextSpan(
+          text: text,
+          style: CoconutTypography.body3_12_Bold,
+        ),
+      ),
+    );
   }
 
   Widget _buildFeeBoard(BuildContext context) {
@@ -490,24 +509,21 @@ class _SendScreenState extends State<SendScreen> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Container(
-                  padding: const EdgeInsets.only(left: 14, right: 14, top: 12, bottom: 20),
+                  padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
                   margin: const EdgeInsets.only(top: 0),
                   decoration: BoxDecoration(
                       border: Border.all(
                         color: CoconutColors.gray700,
                         width: 1,
                       ),
-                      borderRadius: const BorderRadius.all(Radius.circular(8))),
+                      borderRadius: const BorderRadius.all(Radius.circular(12))),
                   child: Column(
                     children: [
                       child!,
                       CoconutLayout.spacing_200h,
                       Row(
                         children: [
-                          Text(
-                            t.send_screen.estimated_fee,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                          ),
+                          _buildFeeRowLabel(t.send_screen.estimated_fee),
                           const Spacer(),
                           Text(
                             "${_viewModel.estimatedFeeInSats ?? '-'} sats",
@@ -541,31 +557,30 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_400h,
               Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.send_screen.fee_subtracted_from_send_amount,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                      ),
-                      Text(
-                        _viewModel.isFeeSubtractedFromSendAmount
-                            ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
-                            : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFeeRowLabel(t.send_screen.fee_subtracted_from_send_amount),
+                        Text(
+                          _viewModel.isFeeSubtractedFromSendAmount
+                              ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
+                              : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                          maxLines: 2, // en - right overflow 방지
+                          softWrap: true,
+                        ),
+                      ],
+                    ),
                   ),
-                  const Spacer(),
-                  Align(
-                      alignment: Alignment.centerRight,
-                      child: CoconutSwitch(
-                          scale: 0.7,
-                          isOn: _viewModel.isFeeSubtractedFromSendAmount,
-                          activeColor: CoconutColors.gray100,
-                          trackColor: CoconutColors.gray600,
-                          thumbColor: CoconutColors.gray800,
-                          onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn))),
+                  CoconutLayout.spacing_200w,
+                  CoconutSwitch(
+                      scale: 0.7,
+                      isOn: _viewModel.isFeeSubtractedFromSendAmount,
+                      activeColor: CoconutColors.gray100,
+                      trackColor: CoconutColors.gray600,
+                      thumbColor: CoconutColors.gray800,
+                      onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn)),
                 ],
               )
             ],
@@ -577,10 +592,7 @@ class _SendScreenState extends State<SendScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          t.send_screen.fee_rate,
-          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-        ),
+        _buildFeeRowLabel(t.send_screen.fee_rate),
         const Spacer(),
         IntrinsicWidth(
           child: Padding(
@@ -596,7 +608,7 @@ class _SendScreenState extends State<SendScreen> {
               focusNode: _feeRateFocusNode,
               backgroundColor: feeRateFieldGray,
               height: 30,
-              padding: const EdgeInsets.only(left: 10),
+              padding: const EdgeInsets.only(left: 12, right: 2),
               onChanged: (text) {
                 if (text == "-") return;
                 String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
@@ -605,18 +617,25 @@ class _SendScreenState extends State<SendScreen> {
               },
               maxLines: 1,
               fontFamily: 'SpaceGrotesk',
-              fontSize: 12,
+              fontSize: 14,
               activeColor: CoconutColors.white,
               fontWeight: FontWeight.bold,
               borderRadius: 8,
               suffix: Container(
-                  padding: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.only(right: 12),
                   child: Text(t.send_screen.fee_rate_suffix,
-                      style: CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white))),
+                      style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white))),
             ),
           ),
         )
       ],
+    );
+  }
+
+  Widget _buildFeeRowLabel(String label) {
+    return Text(
+      label,
+      style: CoconutTypography.body2_14.setColor(CoconutColors.gray300),
     );
   }
 
@@ -764,37 +783,38 @@ class _SendScreenState extends State<SendScreen> {
                         CoconutLayout.spacing_200h,
                         IgnorePointer(
                           ignoring: index != _viewModel.lastIndex,
-                          child: GestureDetector(
-                            onTap: () {
-                              _viewModel.setMaxMode(!_viewModel.isMaxMode);
-                              _clearFocus();
-                            },
-                            child: Opacity(
-                              opacity: index == _viewModel.lastIndex ? 1.0 : 0.0,
+                          child: Opacity(
+                            opacity: index == _viewModel.lastIndex ? 1.0 : 0.0,
+                            child: ShrinkAnimationButton(
+                              onPressed: () {
+                                _viewModel.setMaxMode(!_viewModel.isMaxMode);
+                                _clearFocus();
+                              },
+                              defaultColor: MyColors.grey,
+                              pressedColor: MyColors.grey.withOpacity(0.8),
+                              borderRadius: 4.0,
                               child: Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(4.0),
-                                      color: MyColors.grey),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SvgPicture.asset(
-                                        'assets/svg/broom.svg',
-                                        colorFilter: ColorFilter.mode(
-                                            CoconutColors.white
-                                                .withOpacity(_viewModel.isMaxMode ? 1.0 : 0.3),
-                                            BlendMode.srcIn),
-                                      ),
-                                      CoconutLayout.spacing_100w,
-                                      Text(maxButtonText,
-                                          style: Styles.caption.merge(TextStyle(
-                                              color: CoconutColors.white,
-                                              fontFamily: CustomFonts.text.getFontFamily))),
-                                    ],
-                                  )),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SvgPicture.asset(
+                                      'assets/svg/broom.svg',
+                                      colorFilter: ColorFilter.mode(
+                                          CoconutColors.white
+                                              .withOpacity(_viewModel.isMaxMode ? 1.0 : 0.3),
+                                          BlendMode.srcIn),
+                                    ),
+                                    CoconutLayout.spacing_100w,
+                                    Text(maxButtonText,
+                                        style: Styles.caption.merge(TextStyle(
+                                            color: CoconutColors.white,
+                                            fontFamily: CustomFonts.text.getFontFamily))),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -903,25 +923,33 @@ class _SendScreenState extends State<SendScreen> {
     double bottomPadding = index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () {
+      child: ShrinkAnimationButton(
+        onPressed: () {
           _addressControllerList[_viewModel.currentIndex].text = address;
           _viewModel.markWalletAddressForUpdate(index);
           _clearFocus();
+          vibrateLight();
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              shortenAddress(address, head: 10),
-              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
-            ),
-            Text(
-              "$walletName • $derivationPath",
-              style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-            ),
-          ],
+        defaultColor: Colors.transparent,
+        pressedColor: CoconutColors.gray800,
+        borderRadius: 4.0,
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CoconutLayout.spacing_100h,
+              Text(
+                shortenAddress(address, head: 10),
+                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+              ),
+              Text(
+                "$walletName • $derivationPath",
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+              ),
+              CoconutLayout.spacing_100h,
+            ],
+          ),
         ),
       ),
     );
