@@ -83,7 +83,7 @@ class CoconutApiService extends BaseApiService {
   }
 
   void _checkRegtestNetwork() {
-    if (NetworkType.currentNetworkType.toString() != 'regtest') {
+    if (NetworkType.currentNetworkType != NetworkType.regtest) {
       throw Exception('Faucet is not available on this network');
     }
   }
