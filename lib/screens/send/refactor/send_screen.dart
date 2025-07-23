@@ -970,10 +970,10 @@ class _SendScreenState extends State<SendScreen> {
                     child: ListView.builder(
                         itemCount: _viewModel.walletItemList.length,
                         itemBuilder: (BuildContext context, int index) {
-                          final address = _viewModel.walletAddressList[index].address;
-                          final walletName = _viewModel.walletItemList[index].name;
-                          final derivationPath = _viewModel.walletAddressList[index].derivationPath;
-                          return _buildAddressRow(index, address, walletName, derivationPath);
+                          final walletListItem = _viewModel.walletItemList[index];
+                          final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                          return _buildAddressRow(index, walletAddress.address, walletListItem.name,
+                              walletAddress.derivationPath);
                         }),
                   ),
                   CoconutLayout.spacing_200h,

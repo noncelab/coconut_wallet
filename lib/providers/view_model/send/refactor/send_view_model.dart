@@ -96,8 +96,8 @@ class SendViewModel extends ChangeNotifier {
   String get amountSumText => _currentUnit.displayBitcoinAmount(_amountSum, withUnit: true);
 
   List<bool> _walletAddressNeedsUpdate = [];
-  List<WalletAddress> _walletAddressList = [];
-  List<WalletAddress> get walletAddressList => _walletAddressList;
+  Map<int, WalletAddress> _walletAddressMap = {};
+  Map<int, WalletAddress> get walletAddressMap => _walletAddressMap;
 
   WalletListItemBase? _selectedWalletItem;
   bool _isUtxoSelectionAuto = true;
@@ -224,7 +224,7 @@ class SendViewModel extends ChangeNotifier {
 
     _sendInfoProvider.clear();
     _recipientList = [RecipientInfo()];
-    _walletAddressList = [];
+    _walletAddressMap = {};
     _initWalletAddressList();
     _initBalances();
     _setRecommendedFees();
@@ -265,18 +265,19 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _initWalletAddressList() {
-    _walletAddressList = _walletProvider.getReceiveAddresses();
-    _walletAddressNeedsUpdate = List.filled(_walletAddressList.length, false);
+    _walletAddressMap = _walletProvider.getReceiveAddressMap();
+    _walletAddressNeedsUpdate = List.filled(_walletAddressMap.length, false);
   }
 
   void _updateWalletAddressList() {
     for (int i = 0; i < _walletAddressNeedsUpdate.length; ++i) {
       if (!_walletAddressNeedsUpdate[i]) continue;
 
-      final walletBase = _walletProvider.walletItemList[i].walletBase;
-      final nextAddressIndex = _walletAddressList[i].index + 1;
-      final walletAddress = _walletProvider.generateAddress(walletBase, nextAddressIndex, false);
-      _walletAddressList[i] = walletAddress;
+      final walletListItem = _walletProvider.walletItemList[i];
+      final nextAddressIndex = _walletAddressMap[walletListItem.id]!.index + 1;
+      final walletAddress =
+          _walletProvider.generateAddress(walletListItem.walletBase, nextAddressIndex, false);
+      _walletAddressMap[walletListItem.id] = walletAddress;
       _walletAddressNeedsUpdate[i] = false;
     }
 
@@ -697,8 +698,8 @@ class SendViewModel extends ChangeNotifier {
 
     final normalized = address.toLowerCase();
 
-    // Bech32m(T2R) 주소 최대 62자
-    if (normalized.length < 26 || normalized.length > 62) {
+    // Bech32m(T2R) 주소
+    if (normalized.length < 26) {
       _setAddressError(SendError.invalidAddress, index);
       return false;
     }

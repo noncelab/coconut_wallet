@@ -55,8 +55,8 @@ class SendAddressViewModel extends ChangeNotifier {
 
     String normalized = normalizeAddress(recipient);
 
-    // Bech32m(T2R) 주소 최대 62자
-    if (normalized.length < 26 || normalized.length > 62) {
+    // Bech32m(T2R) 주소
+    if (normalized.length < 26) {
       throw invalidAddressMessage;
     }
 
