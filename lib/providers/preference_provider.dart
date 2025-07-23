@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
@@ -229,5 +231,35 @@ class PreferenceProvider extends ChangeNotifier {
         map.map((key, value) => MapEntry(key.toString(), value));
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
+  }
+
+  /// 일렉트럼 서버 설정
+  Future<void> setElectrumServer({
+    required String serverName,
+    String? host,
+    int? port,
+    bool? ssl,
+  }) async {
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, serverName);
+
+    if (serverName == 'CUSTOM') {
+      await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host ?? '');
+      await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port ?? 0);
+      await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl ?? false);
+    }
+  }
+
+  /// 일렉트럼 서버 설정 불러오기
+  ElectrumServer getElectrumServer() {
+    final serverName = _sharedPrefs.getString(SharedPrefKeys.kElectrumServerName);
+    if (serverName == 'CUSTOM') {
+      return ElectrumServer.custom(
+        _sharedPrefs.getString(SharedPrefKeys.kCustomElectrumHost),
+        _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumPort),
+        _sharedPrefs.getBool(SharedPrefKeys.kCustomElectrumIsSsl),
+      );
+    }
+
+    return DefaultElectrumServer.fromServerType(serverName).server;
   }
 }
