@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -16,6 +15,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_de
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/services/mempool_api_service.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -56,6 +56,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   late Animation<Offset> _slideOutAnimation;
   bool isAnimating = false; // 애니메이션 실행 중 여부 확인
   late BitcoinUnit _currentUnit;
+  late MempoolApiService _mempoolApiService;
 
   void _toggleUnit() {
     setState(() {
@@ -220,8 +221,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
                           onTapUnderlineButton: () {
                             tx.blockHeight != 0
-                                ? launchUrl(Uri.parse(
-                                    '${CoconutWalletApp.kMempoolHost}/block/${tx.blockHeight}'))
+                                ? launchUrl(_mempoolApiService.getBlockUrl(tx.blockHeight))
                                 : ();
                           },
                           child: Text(
@@ -248,8 +248,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           label: t.tx_id,
                           underlineButtonLabel: t.view_mempool,
                           onTapUnderlineButton: () {
-                            launchUrl(Uri.parse(
-                                "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
+                            launchUrl(_mempoolApiService.getTxUrl(tx.transactionHash));
                           },
                           child: CopyTextContainer(
                             text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
@@ -312,6 +311,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
+    _mempoolApiService = context.read<MempoolApiService>();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),

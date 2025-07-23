@@ -17,9 +17,7 @@ class CoconutApiService extends BaseApiService {
   String get baseUrl => CoconutWalletApp.kCoconutApiHost;
 
   Future<FaucetResponse> sendFaucetRequest(FaucetRequest requestBody) async {
-    if (NetworkType.currentNetworkType.toString() != 'regtest') {
-      throw Exception('Faucet is not available on this network');
-    }
+    _checkRegtestNetwork();
 
     return handleApiCall(
       () async {
@@ -38,6 +36,8 @@ class CoconutApiService extends BaseApiService {
   }
 
   Future<FaucetStatusResponse> getFaucetStatus() async {
+    _checkRegtestNetwork();
+
     return handleApiCall(
       () async {
         final response = await dio.get('/faucet/status');
@@ -80,5 +80,11 @@ class CoconutApiService extends BaseApiService {
       },
       operationName: 'Recommended fee',
     );
+  }
+
+  void _checkRegtestNetwork() {
+    if (NetworkType.currentNetworkType.toString() != 'regtest') {
+      throw Exception('Faucet is not available on this network');
+    }
   }
 }
