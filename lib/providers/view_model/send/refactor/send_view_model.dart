@@ -222,6 +222,7 @@ class SendViewModel extends ChangeNotifier {
       if (walletIndex != -1) selectWalletItem(walletIndex);
     }
 
+    _sendInfoProvider.clear();
     _recipientList = [RecipientInfo()];
     _walletAddressList = [];
     _initWalletAddressList();
@@ -395,9 +396,9 @@ class SendViewModel extends ChangeNotifier {
     _changeAddressDerivationPath =
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
     _initBalances();
-    _calculateEstimatedFee();
     _validateAmount(-1);
     _updateFeeBoardVisibility();
+    _calculateEstimatedFee();
     notifyListeners();
   }
 
@@ -468,7 +469,7 @@ class SendViewModel extends ChangeNotifier {
     } else if (_recipientList
         .any((e) => e.address.isEmpty || e.amount.isEmpty || e.amount == "0")) {
       message = " ";
-    } else if (_estimatedFee == null) {
+    } else if (_estimatedFee == null || _txBuilder == null) {
       message = " ";
     }
 
@@ -602,7 +603,7 @@ class SendViewModel extends ChangeNotifier {
       return;
     }
 
-    List<UtxoState> utxos = _walletProvider.getUtxoList(_sendInfoProvider.walletId!);
+    List<UtxoState> utxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
     int unspentBalance = 0, incomingBalance = 0;
     for (UtxoState utxo in utxos) {
       if (utxo.status == UtxoStatus.unspent) {
@@ -759,10 +760,11 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void setTxWaitingForSign() {
-    // todo: 수정 필요
-    _sendInfoProvider.setTxWaitingForSign("");
-    _sendInfoProvider.setIsMultisig(false);
-    _sendInfoProvider.setWalletImportSource(WalletImportSource.coconutVault);
+    Psbt psbt =
+        Psbt.fromTransaction(_txBuilder!.build().transaction!, _selectedWalletItem!.walletBase);
+    _sendInfoProvider.setTxWaitingForSign(psbt.serialize());
+    _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
+    _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
   }
 }
 
