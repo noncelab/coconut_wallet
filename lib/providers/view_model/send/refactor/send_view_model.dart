@@ -219,7 +219,7 @@ class SendViewModel extends ChangeNotifier {
       int? walletId) {
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
-      if (walletIndex != -1) selectWalletItem(walletIndex);
+      if (walletIndex != -1) _selectWallet(walletIndex);
     }
 
     _sendInfoProvider.clear();
@@ -258,10 +258,14 @@ class SendViewModel extends ChangeNotifier {
       changeDerivationPath: _changeAddressDerivationPath,
       walletListItemBase: _selectedWalletItem!,
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
-      isUtxoFixed: _isUtxoSelectionAuto,
+      isUtxoFixed: !_isUtxoSelectionAuto,
     );
 
-    _setEstimatedFee(_txBuilder!.build().estimatedFee);
+    var result = _txBuilder!.build();
+    _setEstimatedFee(result.estimatedFee);
+
+    Logger.log(_txBuilder);
+    Logger.log(result);
   }
 
   void _initWalletAddressList() {
@@ -403,7 +407,7 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectWalletItem(int index) {
+  void _selectWallet(int index) {
     if (index == -1) return;
     if (_selectedWalletItem != null &&
         _selectedWalletItem!.id == _walletProvider.walletItemList[index].id) return;
@@ -413,8 +417,11 @@ class SendViewModel extends ChangeNotifier {
     _changeAddressDerivationPath =
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
-    _selectedUtxoList = [];
-    selectedUtxoAmountSum = 0;
+    // UTXO 자동 선택 모드이므로 전체 UTXO 리스트 설정
+    _selectedUtxoList = _walletProvider.getUtxoList(_selectedWalletItem!.id);
+    selectedUtxoAmountSum =
+        _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+
     notifyListeners();
   }
 
