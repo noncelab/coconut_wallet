@@ -29,6 +29,14 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _showOnlyUnusedAddresses;
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
+  /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부
+  late bool _isReceivingTooltipDisabled;
+  bool get isReceivingTooltipDisabled => _isReceivingTooltipDisabled;
+
+  /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부
+  late bool _isChangeTooltipDisabled;
+  bool get isChangeTooltipDisabled => _isChangeTooltipDisabled;
+
   /// 언어 설정
   late String _language;
   String get language => _language;
@@ -45,6 +53,8 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
+    _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -158,6 +168,20 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeShowOnlyUnusedAddresses(bool show) async {
     _showOnlyUnusedAddresses = show;
     await _sharedPrefs.setBool(SharedPrefKeys.kShowOnlyUnusedAddresses, show);
+    notifyListeners();
+  }
+
+  /// 주소 리스트 화면 '입금' 툴팁 다시 보지 않기 설정
+  Future<void> setReceivingTooltipDisabledPermanently() async {
+    _isReceivingTooltipDisabled = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsReceivingTooltipDisabled, true);
+    notifyListeners();
+  }
+
+  /// 주소 리스트 화면 '잔돈' 툴팁 다시 보지 않기 설정
+  Future<void> setChangeTooltipDisabledPermanently() async {
+    _isChangeTooltipDisabled = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsChangeTooltipDisabled, true);
     notifyListeners();
   }
 
