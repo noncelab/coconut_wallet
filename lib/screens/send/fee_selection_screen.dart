@@ -264,7 +264,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
       _customSatsPerVb = customSatsPerVb;
       if (mounted) {
         setState(() {
-          _estimatedFee = result.estimatedFee!;
+          _estimatedFee = result.estimatedFee;
           _selectedFeeLevel = null;
         });
       }
