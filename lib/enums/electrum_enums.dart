@@ -22,7 +22,7 @@ enum DefaultElectrumServer {
   acinq(
     ElectrumServer(
       'electrum.acinq.co',
-      50001,
+      50002,
       true,
     ),
     'ACINQ',
