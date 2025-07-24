@@ -20,8 +20,10 @@ import 'package:tuple/tuple.dart';
 class AddressListScreen extends StatefulWidget {
   final int id;
   final bool isFullScreen;
+  final double paddingTop;
 
-  const AddressListScreen({super.key, required this.id, this.isFullScreen = true});
+  const AddressListScreen(
+      {super.key, required this.id, this.isFullScreen = true, this.paddingTop = 0});
 
   @override
   State<AddressListScreen> createState() => _AddressListScreenState();
@@ -57,26 +59,24 @@ class _AddressListScreenState extends State<AddressListScreen> {
         builder: (context, viewModel, child) {
           List<WalletAddress> addressList =
               _isReceivingSelected ? viewModel.receivingAddressList : viewModel.changeAddressList;
-          return GestureDetector(
-            child: Scaffold(
-                extendBodyBehindAppBar: true,
-                backgroundColor: CoconutColors.black,
-                appBar: _buildAppBar(context),
-                body: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                  ),
-                  child: Column(
-                    children: [
-                      _buildSegmentedControl(),
-                      _buildShowOnlyUsedAddressesButton(),
-                      Expanded(
-                        child: _buildAddressList(addressList, isTooltipDisabled),
-                      ),
-                    ],
-                  ),
-                )),
-          );
+          return Scaffold(
+              extendBodyBehindAppBar: true,
+              backgroundColor: CoconutColors.black,
+              appBar: _buildAppBar(context),
+              body: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                ),
+                child: Column(
+                  children: [
+                    _buildSegmentedControl(),
+                    _buildShowOnlyUsedAddressesButton(),
+                    Expanded(
+                      child: _buildAddressList(addressList, isTooltipDisabled),
+                    ),
+                  ],
+                ),
+              ));
         },
       ),
     );
@@ -100,13 +100,14 @@ class _AddressListScreenState extends State<AddressListScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_appBarKey.currentContext?.mounted ?? false) {
-        final renderObject = _appBarKey.currentContext!.findRenderObject();
-        if (renderObject is RenderBox && renderObject.hasSize) {
-          setState(() {
-            _appBarSize = renderObject.size;
-          });
-        }
+        final renderBox = _appBarKey.currentContext!.findRenderObject() as RenderBox;
+        final renderSize = renderBox.size;
+        final topPadding = widget.isFullScreen ? 0.0 : MediaQuery.of(context).padding.top;
+        setState(() {
+          _appBarSize = Size(renderSize.width, renderSize.height + topPadding);
+        });
       }
+
       _controller.addListener(_nextLoad);
       _updateTooltipSize();
     });
@@ -362,19 +363,18 @@ class _AddressListScreenState extends State<AddressListScreen> {
                   ((_isReceivingSelected && !isTooltipDisabled.item1) ||
                       (!_isReceivingSelected && !isTooltipDisabled.item2))) {
                 final currentOffset = _controller.offset;
-
+                final scrollTreshold = _appBarSize.height + 32 + widget.paddingTop;
                 Future.microtask(() {
                   if (!_controller.hasClients) return;
-
-                  if (currentOffset < _appBarSize.height / 2 + 32) {
+                  if (currentOffset < scrollTreshold / 2) {
                     _controller.animateTo(
                       0,
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOut,
                     );
-                  } else if (currentOffset < _appBarSize.height + 32) {
+                  } else if (currentOffset < scrollTreshold) {
                     _controller.animateTo(
-                      _appBarSize.height + 32,
+                      scrollTreshold,
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOut,
                     );
@@ -444,9 +444,20 @@ class _AddressListScreenState extends State<AddressListScreen> {
   }
 
   Future<void> _nextLoad() async {
-    // 스크롤이 _appBarSize.height + 32 부근에 도달하면 멈추도록 설정
-    if (_controller.position.pixels.toInt() == (_appBarSize.height).toInt() + 32) {
-      _controller.jumpTo(_appBarSize.height + 32);
+    final currentOffset = _controller.offset;
+    if (currentOffset < _appBarSize.height + widget.paddingTop + 100) {
+      final provider = context.read<PreferenceProvider>();
+      final isTooltipDisabled = Tuple2(
+        provider.isReceivingTooltipDisabled,
+        provider.isChangeTooltipDisabled,
+      );
+      if ((_isReceivingSelected && !isTooltipDisabled.item1) ||
+          (!_isReceivingSelected && !isTooltipDisabled.item2)) {
+        // 스크롤이 _appBarSize.height + 32 부근에 도달하면 멈추도록 설정
+        if (_controller.position.pixels.toInt() == _appBarSize.height + widget.paddingTop + 32) {
+          _controller.jumpTo(_appBarSize.height + widget.paddingTop + 32);
+        }
+      }
     }
 
     if (_isInitializing || _isLoadMoreRunning || _controller.position.extentAfter > 500) {

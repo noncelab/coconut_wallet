@@ -397,6 +397,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         value: _viewModel,
         child: ReceiveAddressBottomSheet(
           id: widget.id,
+          paddingTop: MediaQuery.of(context).padding.top,
         ),
       ),
     );
