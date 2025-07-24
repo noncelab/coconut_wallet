@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -101,20 +102,20 @@ class PreferenceProvider extends ChangeNotifier {
   /// 언어 설정 적용 (동기 버전)
   void _applyLanguageSettingSync() {
     try {
-      print('Applying language setting: $_language');
+      Logger.log('Applying language setting: $_language');
       if (_language == 'kr') {
         LocaleSettings.setLocaleSync(AppLocale.kr);
-        print('Korean locale applied successfully');
+        Logger.log('Korean locale applied successfully');
       } else if (_language == 'en') {
         LocaleSettings.setLocaleSync(AppLocale.en);
-        print('English locale applied successfully');
+        Logger.log('English locale applied successfully');
       }
 
       // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
       notifyListeners();
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
-      print('Language initialization failed: $e');
+      Logger.log('Language initialization failed: $e');
     }
   }
 
@@ -131,7 +132,7 @@ class PreferenceProvider extends ChangeNotifier {
       }
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
-      print('Language initialization failed: $e');
+      Logger.log('Language initialization failed: $e');
     }
   }
 

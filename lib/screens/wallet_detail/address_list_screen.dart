@@ -264,19 +264,11 @@ class _AddressListScreenState extends State<AddressListScreen> {
               Selector<PreferenceProvider, bool>(
                 selector: (context, provider) => provider.isReceivingTooltipDisabled,
                 builder: (context, isReceivingTooltipDisabled, child) {
-                  if (isReceivingTooltipDisabled) {
-                    return Container();
-                  }
-                  return Column(
-                    children: [
-                      _buildTooltip(
-                        t.tooltip.address_receiving,
-                        () => context
-                            .read<PreferenceProvider>()
-                            .setReceivingTooltipDisabledPermanently(),
-                      ),
-                      CoconutLayout.spacing_700h,
-                    ],
+                  return _buildAnimatedTooltip(
+                    isDisabled: isReceivingTooltipDisabled,
+                    text: t.tooltip.address_receiving,
+                    onDisable: () =>
+                        context.read<PreferenceProvider>().setReceivingTooltipDisabledPermanently(),
                   );
                 },
               ),
@@ -284,22 +276,36 @@ class _AddressListScreenState extends State<AddressListScreen> {
               Selector<PreferenceProvider, bool>(
                 selector: (context, provider) => provider.isChangeTooltipDisabled,
                 builder: (context, isChangeTooltipDisabled, child) {
-                  if (isChangeTooltipDisabled) {
-                    return Container();
-                  }
-                  return Column(
-                    children: [
-                      _buildTooltip(
-                        t.tooltip.address_change,
-                        () => context
-                            .read<PreferenceProvider>()
-                            .setChangeTooltipDisabledPermanently(),
-                      ),
-                      CoconutLayout.spacing_700h,
-                    ],
+                  return _buildAnimatedTooltip(
+                    isDisabled: isChangeTooltipDisabled,
+                    text: t.tooltip.address_change,
+                    onDisable: () =>
+                        context.read<PreferenceProvider>().setChangeTooltipDisabledPermanently(),
                   );
                 },
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnimatedTooltip({
+    required bool isDisabled,
+    required String text,
+    required VoidCallback onDisable,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      height: isDisabled ? 0 : null,
+      curve: Curves.easeInOut,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 500),
+        opacity: isDisabled ? 0.0 : 1.0,
+        child: Column(
+          children: [
+            _buildTooltip(text, onDisable),
+            CoconutLayout.spacing_700h,
           ],
         ),
       ),
