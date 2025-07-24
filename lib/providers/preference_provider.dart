@@ -29,13 +29,13 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _showOnlyUnusedAddresses;
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
-  /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부
+  /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isReceivingTooltipDisabled;
-  bool get isReceivingTooltipDisabled => _isReceivingTooltipDisabled;
+  bool get isReceivingTooltipDisabled => language == 'kr' ? _isReceivingTooltipDisabled : true;
 
-  /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부
+  /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
   late bool _isChangeTooltipDisabled;
-  bool get isChangeTooltipDisabled => _isChangeTooltipDisabled;
+  bool get isChangeTooltipDisabled => language == 'kr' ? _isChangeTooltipDisabled : true;
 
   /// 언어 설정
   late String _language;

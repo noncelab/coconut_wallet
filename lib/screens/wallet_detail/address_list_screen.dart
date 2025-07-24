@@ -339,7 +339,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                 CoconutLayout.spacing_50h,
                 CoconutUnderlinedButton(
                     padding: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
-                    text: '다시 보지 않기',
+                    text: t.tooltip.dont_show_again,
                     textStyle: CoconutTypography.body3_12,
                     onTap: onTap)
               ],

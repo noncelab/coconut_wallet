@@ -567,6 +567,7 @@ tooltip:
   mfp: "지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요."
   rbf: "수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)"
   cpfp: "새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)"
+  dont_show_again: "다시 보지 않기"
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
