@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -15,6 +16,7 @@ import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -403,6 +405,22 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider: 연결 종료 중 오류 발생: $e');
     } finally {
       _isClosing = false;
+    }
+  }
+
+  Future<Result<bool>> checkServerConnection(ElectrumServer electrumServer) async {
+    final electrumService = ElectrumService();
+
+    await electrumService
+        .connect(electrumServer.host, electrumServer.port, ssl: electrumServer.ssl)
+        .timeout(kElectrumConnectionTimeout);
+
+    if (electrumService.connectionStatus == SocketConnectionStatus.connected) {
+      await electrumService.close();
+      return Result.success(true);
+    } else {
+      await electrumService.close();
+      return Result.failure(ErrorCodes.networkError);
     }
   }
 
