@@ -104,7 +104,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       printLongString('--> _onCompletedScanningForBcUr: ${base64Encode(decodedCbor.bytes)}');
       psbt = _viewModel.parseBase64EncodedToPsbt(base64Encode(decodedCbor.bytes));
     } catch (e) {
-      await _showErrorDialog(t.alert.signed_psbt.invalid_qr);
+      await _showErrorDialog(t.alert.invalid_qr);
       return;
     }
 
@@ -143,8 +143,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     Logger.error("[SignedPsbtScannerScreen] onFailed: $message");
 
     String errorMessage;
-    if (message.contains('Invalid Scheme')) {
-      errorMessage = t.alert.signed_psbt.invalid_signature;
+    if (message == CoconutQrScanner.qrFormatErrorMessage) {
+      errorMessage = t.alert.invalid_qr;
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
     }

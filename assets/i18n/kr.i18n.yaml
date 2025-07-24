@@ -591,12 +591,12 @@ alert:
     minimum_amount: "$bitcoin $unit 부터 전송할 수 있어요"
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
-    invalid_qr: "잘못된 QR 코드예요.\n다시 확인해 주세요."
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
     need_more_sign: "$count개 서명이 더 필요해요"
     invalid_signature: "잘못된 서명 정보에요. 다시 시도해 주세요."
   scan_failed: "스캔 실패"
   scan_failed_description: "QR 코드 스캔에 실패했어요. 다시 시도해 주세요.\n$error"
+  invalid_qr: "잘못된 QR 코드예요.\n다시 확인해 주세요."
   tutorial:
     title: "도움이 필요하신가요?"
     description: "튜토리얼 사이트로\n안내해 드릴게요"

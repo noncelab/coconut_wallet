@@ -549,12 +549,12 @@ alert:
     minimum_amount: "You can send from $bitcoin $unit"
     insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
   signed_psbt:
-    invalid_qr: "Invalid QR code.\nPlease check again."
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."
     need_more_sign: "Need $count more signatures"
     invalid_signature: "Invalid signature information. Please try again."
   scan_failed: "Scan Failed"
   scan_failed_description: "QR code scan failed. Please try again.\n$error"
+  invalid_qr: "Invalid QR code.\nPlease check again."
   tutorial:
     title: "Need some help?"
     description: "We’ll guide you to the tutorial."

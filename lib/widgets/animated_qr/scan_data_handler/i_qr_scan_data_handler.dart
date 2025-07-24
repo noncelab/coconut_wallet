@@ -3,6 +3,8 @@ abstract class IQrScanDataHandler {
 
   double get progress;
 
+  bool get isFragmented;
+
   bool isCompleted();
 
   bool joinData(String data);

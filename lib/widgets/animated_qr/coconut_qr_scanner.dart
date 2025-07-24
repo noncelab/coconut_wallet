@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class CoconutQrScanner extends StatefulWidget {
+  static String qrFormatErrorMessage = 'Invalid QR format.';
+  static String qrInvalidErrorMessage = 'Invalid QR Code.';
   final Function(QRViewController) setQrViewController;
   final Function(dynamic) onComplete;
   final Function(String) onFailed;
@@ -36,6 +38,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   Timer? _scanTimeoutTimer;
   bool _showLoadingBar = false;
+  bool _isFirstScanData = true;
 
   @override
   void initState() {
@@ -85,15 +88,30 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         });
       });
       try {
-        if (!handler.isCompleted() && !handler.joinData(scanData.code!)) {
+        if (_isFirstScanData) {
           if (!handler.validateFormat(scanData.code!)) {
-            widget.onFailed('Invalid QR code');
-          } // 이어서 다른 Density의 QR(ur 포맷)을 스캔할 때는 alert를 띄우지 않습니다.
-          handler.reset();
-          setState(() {
-            _showLoadingBar = false;
-          });
-          return;
+            widget.onFailed(CoconutQrScanner.qrFormatErrorMessage);
+            setState(() {
+              _showLoadingBar = false;
+            });
+            return;
+          }
+          _isFirstScanData = false;
+        }
+
+        if (!handler.isCompleted()) {
+          bool result = handler.joinData(scanData.code!);
+          if (!result && !handler.isFragmented) {
+            widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage);
+            handler.reset();
+            setState(() {
+              _showLoadingBar = false;
+            });
+            _isFirstScanData = true;
+            return;
+          }
+
+          /// isFragmented (bc-ur)일 땐 joinData 실패해도 무시하고 계속 스캔 진행합니다.
         }
 
         if (!_showLoadingBar) {
@@ -109,6 +127,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           widget.onComplete(handler.result!);
           handler.reset();
           _scanTimeoutTimer?.cancel();
+          _isFirstScanData = true;
         }
       } catch (e) {
         Logger.log(e.toString());
@@ -118,6 +137,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         widget.onFailed(e.toString());
         handler.reset();
         _scanTimeoutTimer?.cancel();
+        _isFirstScanData = true;
       }
     }, onError: (e) {
       setState(() {
@@ -126,6 +146,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       widget.onFailed(e.toString());
       handler.reset();
       _scanTimeoutTimer?.cancel();
+      _isFirstScanData = true;
     });
   }
 

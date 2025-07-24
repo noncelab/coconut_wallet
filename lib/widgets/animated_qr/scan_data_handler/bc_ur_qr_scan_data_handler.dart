@@ -13,6 +13,9 @@ class BcUrQrScanDataHandler implements IQrScanDataHandler {
   double get progress => _urDecoder.estimatedPercentComplete();
 
   @override
+  bool get isFragmented => true;
+
+  @override
   bool isCompleted() {
     Logger.log('--> BcUrQrScanDataHandler isCompleted: ${_urDecoder.isComplete()}');
     return _urDecoder.isComplete();
