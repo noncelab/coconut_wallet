@@ -32,8 +32,9 @@ import 'package:tuple/tuple.dart';
 
 class SendScreen extends StatefulWidget {
   final int? walletId;
+  final SendEntryPoint sendEntryPoint;
 
-  const SendScreen({super.key, this.walletId});
+  const SendScreen({super.key, this.walletId, required this.sendEntryPoint});
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -95,7 +96,8 @@ class _SendScreenState extends State<SendScreen> {
         _onAmountTextUpdate,
         _onFeeRateTextUpdate,
         _onRecipientPageDeleted,
-        widget.walletId);
+        widget.walletId,
+        widget.sendEntryPoint);
 
     _amountFocusNode.addListener(() => setState(() {}));
     _feeRateFocusNode.addListener(() => setState(() {}));
@@ -265,14 +267,24 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple2<String, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.hasFinalError),
+    return Selector<SendViewModel, Tuple3<String, bool, bool>>(
+        selector: (_, viewModel) => Tuple3(
+            viewModel.finalErrorMessage, viewModel.hasFinalError, viewModel.isFeeRateLowerThanMin),
         builder: (context, data, child) {
+          final textColor =
+              _viewModel.hasErrorMessage ? CoconutColors.hotPink : CoconutColors.white;
+          String message = "";
+          if (_viewModel.hasErrorMessage) {
+            message = _viewModel.finalErrorMessage;
+          } else if (_viewModel.isFeeRateLowerThanMin) {
+            message = t.toast.min_fee(minimum: _viewModel.minimumFeeRate ?? 0);
+          }
+
           return Column(
             children: [
               Text(
-                _viewModel.finalErrorMessage,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                message,
+                style: CoconutTypography.body3_12.setColor(textColor),
               ),
               CoconutLayout.spacing_300h,
               CoconutButton(

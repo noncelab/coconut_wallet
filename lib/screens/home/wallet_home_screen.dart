@@ -688,8 +688,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void _onTapSend(List<int> walletOrder) {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
     if (firstWallet == null) {
-      context.read<SendInfoProvider>().clear();
-      Navigator.pushNamed(context, '/send', arguments: {'id': null});
+      Navigator.pushNamed(context, '/send',
+          arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home});
       return;
     }
 
@@ -711,8 +711,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
 
     if (!_checkStateAndShowToast(targetId)) return;
-    context.read<SendInfoProvider>().clear();
-    Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId});
+    Navigator.pushNamed(context, '/send',
+        arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
   }
 
   Widget _buildViewAll(int walletCount) {

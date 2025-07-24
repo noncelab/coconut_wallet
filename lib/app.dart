@@ -322,7 +322,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   ),
               '/send': (context) => buildScreenWithArguments(
                     context,
-                    (args) => SendScreen(walletId: args['walletId']),
+                    (args) => SendScreen(
+                      walletId: args['walletId'],
+                      sendEntryPoint: args['sendEntryPoint'],
+                    ),
                   ),
               '/send-address': (context) => buildScreenWithArguments(
                     context,

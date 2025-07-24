@@ -100,9 +100,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         Navigator.pushNamedAndRemoveUntil(
           context,
           '/broadcasting-complete', // 이동할 경로
-          ModalRoute.withName(_viewModel.isSendingDonation
-              ? '/'
-              : '/wallet-detail'), // '/wallet-detail' 경로를 남기고 그 외의 경로 제거
+          ModalRoute.withName(_viewModel.sendEntryPoint == SendEntryPoint.walletDetail
+              ? "/wallet-detail" // '/wallet-detail' 경로를 남기고 그 외의 경로 제거, '/'는 HomeScreen 까지
+              : "/"),
           arguments: {
             'id': _viewModel.walletId,
             'txHash': signedTx.transactionHash,

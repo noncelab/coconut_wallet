@@ -5,6 +5,11 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 
+enum SendEntryPoint {
+  home,
+  walletDetail,
+}
+
 class SendInfoProvider {
   int? _walletId;
   String? _recipientAddress;
@@ -13,6 +18,7 @@ class SendInfoProvider {
   bool? _isMaxMode;
   bool? _isMultisig;
   bool? _isDonation;
+  SendEntryPoint? _sendEntryPoint;
   Transaction? _transaction;
   String? _txWaitingForSign;
   String? _signedPsbtBase64Encoded;
@@ -29,6 +35,7 @@ class SendInfoProvider {
   bool? get isMaxMode => _isMaxMode;
   bool? get isMultisig => _isMultisig;
   bool? get isDonation => _isDonation;
+  SendEntryPoint? get sendEntryPoint => _sendEntryPoint;
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
   String? get signedPsbt => _signedPsbtBase64Encoded;
@@ -89,10 +96,14 @@ class SendInfoProvider {
     _isDonation = isDonation;
   }
 
+  void setSendEntryPoint(SendEntryPoint sendEntryPoint) {
+    _sendEntryPoint = sendEntryPoint;
+  }
+
   void clear() {
     _walletId = _recipientAddress = _amount = _estimatedFee = _isMaxMode = _isMultisig =
-        _transaction = _txWaitingForSign = _signedPsbtBase64Encoded =
-            _isDonation = _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
+        _transaction = _txWaitingForSign = _signedPsbtBase64Encoded = _isDonation =
+            _sendEntryPoint = _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
   }
 
   Map<String, int>? getRecipientMap() {

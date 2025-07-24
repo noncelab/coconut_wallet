@@ -410,8 +410,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (!_checkStateAndShowToast()) return;
     _viewModel.clearSendInfo();
-    // 이전 화면: Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});
-    Navigator.pushNamed(context, '/send', arguments: {'walletId': _viewModel.walletId});
+    // 이전 화면
+    // Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, '/send', arguments: {
+      'walletId': _viewModel.walletId,
+      'sendEntryPoint': SendEntryPoint.walletDetail
+    });
   }
 
   void _toggleUnit() {

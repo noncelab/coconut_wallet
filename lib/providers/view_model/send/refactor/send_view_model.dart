@@ -68,6 +68,7 @@ enum SendError {
 }
 
 class SendViewModel extends ChangeNotifier {
+  static const finalErrorMessageSpaceText = " ";
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
@@ -138,6 +139,12 @@ class SendViewModel extends ChangeNotifier {
         : estimatedFeeInInt.toDouble();
   }
 
+  bool _isFeeRateLowerThanMin = false;
+  bool get isFeeRateLowerThanMin => _isFeeRateLowerThanMin;
+
+  double? _minimumFeeRate;
+  double? get minimumFeeRate => _minimumFeeRate;
+
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
   int _confirmedBalance = 0;
@@ -158,6 +165,7 @@ class SendViewModel extends ChangeNotifier {
 
   String _finalErrorMessage = "";
   String get finalErrorMessage => _finalErrorMessage;
+  bool get hasErrorMessage => _hasFinalError && _finalErrorMessage != finalErrorMessageSpaceText;
 
   bool get hasInsufficientBalanceError => _insufficientBalanceError.isError;
   bool get hasInsufficientBalanceErrorOfLastRecipient =>
@@ -216,8 +224,11 @@ class SendViewModel extends ChangeNotifier {
       this._onAmountTextUpdate,
       this._onFeeRateTextUpdate,
       this._onRecipientPageDeleted,
-      int? walletId) {
+      int? walletId,
+      SendEntryPoint sendEntryPoint) {
     _sendInfoProvider.clear();
+    _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
+
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
       if (walletIndex != -1) _selectWallet(walletIndex);
@@ -310,6 +321,7 @@ class SendViewModel extends ChangeNotifier {
     feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
     feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
+    _minimumFeeRate = recommendedFees.hourFee.toDouble();
 
     final defaultFeeRate = recommendedFees.halfHourFee.toString();
     _feeRateText = defaultFeeRate;
@@ -476,9 +488,9 @@ class SendViewModel extends ChangeNotifier {
       message = SendError.duplicatedAddress.getMessage(currentUnit);
     } else if (_recipientList
         .any((e) => e.address.isEmpty || e.amount.isEmpty || e.amount == "0")) {
-      message = " ";
+      message = finalErrorMessageSpaceText;
     } else if (_estimatedFee == null || _txBuilder == null) {
-      message = " ";
+      message = finalErrorMessageSpaceText;
     }
 
     _setFinalErrorMessage(message);
@@ -500,7 +512,17 @@ class SendViewModel extends ChangeNotifier {
 
   void setFeeRateText(String feeRate) {
     _feeRateText = feeRate;
+
+    try {
+      var feeRateValue = double.parse(feeRate);
+      _isFeeRateLowerThanMin = _minimumFeeRate != null && feeRateValue < _minimumFeeRate!;
+    } catch (e) {
+      Logger.log(e);
+      _isFeeRateLowerThanMin = false;
+    }
+
     _calculateEstimatedFee();
+    notifyListeners();
   }
 
   void toggleUnit() {
