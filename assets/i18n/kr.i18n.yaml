@@ -230,6 +230,8 @@ wallet_list:
   view_all_wallets: "내 지갑 전체보기"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
+  home_balance: "홈 화면 총액"
+  excluded_balance: "제외 총액"
   settings:
     primary_wallet: "대표 지갑 설정"
     primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요."

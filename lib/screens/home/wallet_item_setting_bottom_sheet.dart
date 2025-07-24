@@ -100,35 +100,21 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: CoconutTypography.body3_12),
-            Text(
-              description,
-              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: CoconutTypography.body2_14),
+              Text(
+                description,
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                maxLines: 2,
+                softWrap: true,
+              ),
+            ],
+          ),
         ),
-        // CoconutShakeAnimation(
-        //         key: _primaryWalletShakeKey,
-        //         shakeOffset: 3,
-        //         shakeAmount: 2,
-        //         direction: Axis.horizontal,
-        //         curve: Curves.linear,
-        //         child: CoconutSwitch(
-        //           isOn: value,
-        //           activeColor: CoconutColors.gray100,
-        //           thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
-        //           trackColor: CoconutColors.gray600,
-        //           scale: 0.8,
-        //           onChanged: (bool newValue) {
-        //             setState(() {
-        //               onChanged(newValue);
-        //             });
-        //           },
-        //         ),
-        //       )
+        CoconutLayout.spacing_200w,
         Visibility(
           visible: shouldHideWhenOn ? !value : true,
           maintainSize: true,
