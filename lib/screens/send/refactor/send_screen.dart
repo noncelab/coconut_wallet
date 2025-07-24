@@ -293,9 +293,9 @@ class _SendScreenState extends State<SendScreen> {
                 onPressed: () async {
                   FocusScope.of(context).unfocus();
                   if (mounted) {
-                    _viewModel.setTxWaitingForSign();
-                    Navigator.pushNamed(context, '/unsigned-transaction-qr',
-                        arguments: {'walletName': _viewModel.selectedWalletItem!.name});
+                    _viewModel.saveSendInfo();
+                    Navigator.pushNamed(context, '/send-confirm',
+                        arguments: {"currentUnit": _viewModel.currentUnit});
                   }
                 },
                 text: t.complete,

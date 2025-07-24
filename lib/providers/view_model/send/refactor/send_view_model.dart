@@ -202,7 +202,6 @@ class SendViewModel extends ChangeNotifier {
           ? UnitUtil.convertBitcoinToSatoshi(double.parse(recipient.amount))
           : int.parse(recipient.amount));
     }
-
     return recipientMap;
   }
 
@@ -789,10 +788,18 @@ class SendViewModel extends ChangeNotifier {
     return _recipientList.where((e) => e.address == address).length >= 2;
   }
 
-  void setTxWaitingForSign() {
-    Psbt psbt =
-        Psbt.fromTransaction(_txBuilder!.build().transaction!, _selectedWalletItem!.walletBase);
-    _sendInfoProvider.setTxWaitingForSign(psbt.serialize());
+  void saveSendInfo() {
+    final recipientMap =
+        _recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
+    if (isBatchMode) {
+      _sendInfoProvider.setRecipientsForBatch(recipientMap);
+    } else {
+      final firstEntry = recipientMap.entries.first;
+      _sendInfoProvider.setRecipientAddress(firstEntry.key);
+      _sendInfoProvider.setAmount(firstEntry.value);
+    }
+
+    _sendInfoProvider.setTransaction(_txBuilder!.build().transaction!);
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
   }
