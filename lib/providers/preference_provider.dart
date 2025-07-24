@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -233,25 +234,46 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
 
-  /// 일렉트럼 서버 설정
-  Future<void> setElectrumServer({
-    required String serverName,
-    String? host,
-    int? port,
-    bool? ssl,
-  }) async {
-    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, serverName);
-
-    if (serverName == 'CUSTOM') {
-      await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host ?? '');
-      await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port ?? 0);
-      await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl ?? false);
+  /// 커스텀 일렉트럼 서버 파라미터 검증
+  void _validateCustomElectrumServerParams(String host, int port, bool ssl) {
+    if (host.trim().isEmpty) {
+      throw ArgumentError('Host cannot be empty');
     }
+
+    if (port <= 0 || port > 65535) {
+      throw ArgumentError('Port must be between 1 and 65535');
+    }
+  }
+
+  /// 일렉트럼 서버 설정
+  Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
+    await _sharedPrefs.setString(
+        SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
+  }
+
+  /// 커스텀 일렉트럼 서버 설정
+  Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
+    _validateCustomElectrumServerParams(host, port, ssl);
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, 'CUSTOM');
+    await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host);
+    await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port);
+    await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl);
   }
 
   /// 일렉트럼 서버 설정 불러오기
   ElectrumServer getElectrumServer() {
     final serverName = _sharedPrefs.getString(SharedPrefKeys.kElectrumServerName);
+
+    if (serverName.isEmpty) {
+      if (NetworkType.currentNetworkType == NetworkType.mainnet) {
+        setDefaultElectrumServer(DefaultElectrumServer.coconut);
+        return DefaultElectrumServer.coconut.server;
+      } else {
+        setDefaultElectrumServer(DefaultElectrumServer.regtest);
+        return DefaultElectrumServer.regtest.server;
+      }
+    }
+
     if (serverName == 'CUSTOM') {
       return ElectrumServer.custom(
         _sharedPrefs.getString(SharedPrefKeys.kCustomElectrumHost),

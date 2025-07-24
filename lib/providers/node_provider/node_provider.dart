@@ -5,6 +5,7 @@ import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -25,9 +26,7 @@ class NodeProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final ValueNotifier<WalletLoadState> _walletLoadStateNotifier;
   final ValueNotifier<List<WalletListItemBase>> _walletItemListNotifier;
-  String _host;
-  int _port;
-  bool _ssl;
+  ElectrumServer _electrumServer;
   final NetworkType _networkType;
   final AnalyticsService? _analyticsService;
 
@@ -74,11 +73,11 @@ class NodeProvider extends ChangeNotifier {
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
-  String get host => _host;
-  int get port => _port;
-  bool get ssl => _ssl;
+  String get host => _electrumServer.host;
+  int get port => _electrumServer.port;
+  bool get ssl => _electrumServer.ssl;
 
-  NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
+  NodeProvider(this._electrumServer, this._networkType, this._connectivityProvider,
       this._walletLoadStateNotifier, this._walletItemListNotifier, this._analyticsService,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
@@ -407,11 +406,9 @@ class NodeProvider extends ChangeNotifier {
     }
   }
 
-  Future<Result<bool>> changeServer(String host, int port, bool ssl) async {
+  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
     await closeConnection();
-    _host = host;
-    _port = port;
-    _ssl = ssl;
+    _electrumServer = electrumServer;
 
     Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
     try {
