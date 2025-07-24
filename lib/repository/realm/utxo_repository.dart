@@ -186,6 +186,7 @@ class UtxoRepository extends BaseRepository {
 
   /// 모든 UTXO 추가
   Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> utxos) async {
+    realm.refresh();
     return handleAsyncRealm<bool>(() async {
       final existingUtxos = realm.query<RealmUtxo>(
         r'walletId == $0',
@@ -235,6 +236,7 @@ class UtxoRepository extends BaseRepository {
   }
 
   List<UtxoState> getUtxoStateList(int walletId) {
+    realm.refresh();
     final realmUtxos = realm.query<RealmUtxo>(
       r'walletId == $0 AND isDeleted == false',
       [walletId],
@@ -244,6 +246,7 @@ class UtxoRepository extends BaseRepository {
 
   // 특정 상태의 UTXO 목록만 조회
   List<UtxoState> getUtxosByStatus(int walletId, UtxoStatus status) {
+    realm.refresh();
     final statusStr = utxoStatusToString(status);
     final realmUtxos = realm.query<RealmUtxo>(
       r'walletId == $0 AND status == $1 AND isDeleted == false',
@@ -254,6 +257,7 @@ class UtxoRepository extends BaseRepository {
 
   /// 특정 UTXO 조회
   UtxoState? getUtxoState(int walletId, String utxoId) {
+    realm.refresh();
     final realmUtxo = realm.query<RealmUtxo>(
       r'walletId == $0 AND id == $1 AND isDeleted == false',
       [walletId, utxoId],
