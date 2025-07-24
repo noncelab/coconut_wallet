@@ -42,12 +42,18 @@ class SendScreen extends StatefulWidget {
 class _SendScreenState extends State<SendScreen> {
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
+  // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
   final double kPageViewHeight = 225;
   final double kAddressBoardPosition = 185;
-  final double kTooltipHeight = 39;
+  final double kTooltipHeight = 43;
   final double kTooltipPadding = 5;
   final double kAmountHeight = 34;
+  final double kFeeBoardBottomPadding = 12;
+  double get addressBoardHeight => walletAddressListHeight + 84;
+  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 48;
+  double get keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
+  double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
 
   late final SendViewModel _viewModel;
   final _recipientPageController = PageController();
@@ -71,12 +77,6 @@ class _SendScreenState extends State<SendScreen> {
       _amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus || _isAddressFocused;
 
   bool get _isAddressFocused => _addressFocusNodeList.any((e) => e.hasFocus);
-
-  double get _keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
-
-  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 48;
-
-  double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 147;
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
       bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
@@ -336,7 +336,7 @@ class _SendScreenState extends State<SendScreen> {
 
   Widget _buildKeyboardToolbar(BuildContext context) {
     return Positioned(
-      bottom: _keyboardHeight,
+      bottom: keyboardHeight,
       child: GestureDetector(
           onTap: () {}, // ignore
           child: Container(
@@ -475,24 +475,27 @@ class _SendScreenState extends State<SendScreen> {
     required String text,
     Key? key,
   }) {
-    return CoconutToolTip(
-      key: key,
-      backgroundColor: CoconutColors.gray800,
-      borderColor: CoconutColors.gray800,
-      borderRadius: 12,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      icon: SvgPicture.asset(
-        iconPath,
-        colorFilter: const ColorFilter.mode(
-          CoconutColors.white,
-          BlendMode.srcIn,
+    return SizedBox(
+      height: kTooltipHeight,
+      child: CoconutToolTip(
+        key: key,
+        backgroundColor: CoconutColors.gray800,
+        borderColor: CoconutColors.gray800,
+        borderRadius: 12,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        icon: SvgPicture.asset(
+          iconPath,
+          colorFilter: const ColorFilter.mode(
+            CoconutColors.white,
+            BlendMode.srcIn,
+          ),
         ),
-      ),
-      tooltipType: CoconutTooltipType.fixed,
-      richText: RichText(
-        text: TextSpan(
-          text: text,
-          style: CoconutTypography.body3_12_Bold,
+        tooltipType: CoconutTooltipType.fixed,
+        richText: RichText(
+          text: TextSpan(
+            text: text,
+            style: CoconutTypography.body3_12_Bold,
+          ),
         ),
       ),
     );
@@ -501,16 +504,16 @@ class _SendScreenState extends State<SendScreen> {
   Widget _buildFeeBoard(BuildContext context) {
     return Column(
       children: [
-        Selector<SendViewModel, Tuple3<bool, int?, int>>(
-            selector: (_, viewModel) =>
-                Tuple3(viewModel.showFeeBoard, viewModel.estimatedFeeInSats, viewModel.balance),
+        Selector<SendViewModel, Tuple5<bool, int?, int, bool, bool>>(
+            selector: (_, viewModel) => Tuple5(viewModel.showFeeBoard, viewModel.estimatedFeeInSats,
+                viewModel.balance, viewModel.isMaxMode, viewModel.isFeeSubtractedFromSendAmount),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(bottom: kFeeBoardBottomPadding),
                 child: Container(
+                  height: feeBoardHeight,
                   padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
-                  margin: const EdgeInsets.only(top: 0),
                   decoration: BoxDecoration(
                       border: Border.all(
                         color: CoconutColors.gray700,
@@ -534,7 +537,7 @@ class _SendScreenState extends State<SendScreen> {
                           ),
                         ],
                       ),
-                      _buildFeeSubtractedFromSendAmount(),
+                      if (!_viewModel.isMaxMode) _buildFeeSubtractedFromSendAmount(),
                     ],
                   ),
                 ),
@@ -547,45 +550,39 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildFeeSubtractedFromSendAmount() {
-    return Selector<SendViewModel, Tuple2<bool, bool>>(
-        selector: (_, viewModel) =>
-            Tuple2(viewModel.isMaxMode, viewModel.isFeeSubtractedFromSendAmount),
-        builder: (context, data, child) {
-          if (_viewModel.isMaxMode) return const SizedBox();
-          return Column(
-            children: [
-              CoconutLayout.spacing_400h,
-              Row(
+    return Column(
+      children: [
+        CoconutLayout.spacing_400h,
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFeeRowLabel(t.send_screen.fee_subtracted_from_send_amount),
-                        Text(
-                          _viewModel.isFeeSubtractedFromSendAmount
-                              ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
-                              : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
-                          maxLines: 2, // en - right overflow 방지
-                          softWrap: true,
-                        ),
-                      ],
-                    ),
+                  _buildFeeRowLabel(t.send_screen.fee_subtracted_from_send_amount),
+                  Text(
+                    _viewModel.isFeeSubtractedFromSendAmount
+                        ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
+                        : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                    maxLines: 2, // en - right overflow 방지
+                    softWrap: true,
                   ),
-                  CoconutLayout.spacing_200w,
-                  CoconutSwitch(
-                      scale: 0.7,
-                      isOn: _viewModel.isFeeSubtractedFromSendAmount,
-                      activeColor: CoconutColors.gray100,
-                      trackColor: CoconutColors.gray600,
-                      thumbColor: CoconutColors.gray800,
-                      onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn)),
                 ],
-              )
-            ],
-          );
-        });
+              ),
+            ),
+            CoconutLayout.spacing_200w,
+            CoconutSwitch(
+                scale: 0.7,
+                isOn: _viewModel.isFeeSubtractedFromSendAmount,
+                activeColor: CoconutColors.gray100,
+                trackColor: CoconutColors.gray600,
+                thumbColor: CoconutColors.gray800,
+                onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn)),
+          ],
+        )
+      ],
+    );
   }
 
   Widget _buildFeeRateRow() {
@@ -956,85 +953,88 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildAddressBoard(BuildContext context) {
-    return Column(
-      children: [
-        CoconutLayout.spacing_50h,
-        GestureDetector(
-          onTap: () => {}, // ignore
-          child: Container(
-            decoration: BoxDecoration(
-                color: CoconutColors.black,
-                border: Border.all(
-                  color: CoconutColors.gray700,
-                  width: 1,
-                ),
-                borderRadius: const BorderRadius.all(Radius.circular(8))),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 14, bottom: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 14),
-                    child: Row(
-                      children: [
-                        Text(
-                          t.send_screen.my_address,
-                          style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
-                        ),
-                        const Spacer(),
-                        CoconutUnderlinedButton(
-                          text: t.close,
-                          onTap: () => _viewModel.setShowAddressBoard(false),
-                          textStyle: CoconutTypography.body3_12,
-                          padding: const EdgeInsets.only(right: 14, left: 24),
-                        ),
-                      ],
+    return SizedBox(
+      height: addressBoardHeight,
+      child: Column(
+        children: [
+          CoconutLayout.spacing_50h,
+          GestureDetector(
+            onTap: () => {}, // ignore
+            child: Container(
+              decoration: BoxDecoration(
+                  color: CoconutColors.black,
+                  border: Border.all(
+                    color: CoconutColors.gray700,
+                    width: 1,
+                  ),
+                  borderRadius: const BorderRadius.all(Radius.circular(8))),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 14, bottom: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Row(
+                        children: [
+                          Text(
+                            t.send_screen.my_address,
+                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                          ),
+                          const Spacer(),
+                          CoconutUnderlinedButton(
+                            text: t.close,
+                            onTap: () => _viewModel.setShowAddressBoard(false),
+                            textStyle: CoconutTypography.body3_12,
+                            padding: const EdgeInsets.only(right: 14, left: 24),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  CoconutLayout.spacing_200h,
-                  SizedBox(
-                    height: walletAddressListHeight,
-                    child: ListView.builder(
-                        itemCount: _viewModel.walletItemList.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final walletListItem = _viewModel.walletItemList[index];
-                          final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
-                          return _buildAddressRow(index, walletAddress.address, walletListItem.name,
-                              walletAddress.derivationPath);
-                        }),
-                  ),
-                  CoconutLayout.spacing_200h,
-                  CoconutUnderlinedButton(
-                    text: t.view_more,
-                    onTap: () {
-                      _clearFocus();
-                      if (_viewModel.walletItemList.length == 1) {
-                        _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
-                        return;
-                      }
+                    CoconutLayout.spacing_200h,
+                    SizedBox(
+                      height: walletAddressListHeight,
+                      child: ListView.builder(
+                          itemCount: _viewModel.walletItemList.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final walletListItem = _viewModel.walletItemList[index];
+                            final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                            return _buildAddressRow(index, walletAddress.address,
+                                walletListItem.name, walletAddress.derivationPath);
+                          }),
+                    ),
+                    CoconutLayout.spacing_200h,
+                    CoconutUnderlinedButton(
+                      text: t.view_more,
+                      onTap: () {
+                        _clearFocus();
+                        if (_viewModel.walletItemList.length == 1) {
+                          _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
+                          return;
+                        }
 
-                      CommonBottomSheets.showDraggableBottomSheet(
-                          context: context,
-                          childBuilder: (scrollController) => SelectWalletBottomSheet(
-                                scrollController: scrollController,
-                                currentUnit: _viewModel.currentUnit,
-                                walletId: -1,
-                                onWalletChanged: (id) {
-                                  Navigator.pop(context);
-                                  _showAddressListBottomSheet(id);
-                                },
-                              ));
-                    },
-                    textStyle: CoconutTypography.body3_12,
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
+                        CommonBottomSheets.showDraggableBottomSheet(
+                            context: context,
+                            childBuilder: (scrollController) => SelectWalletBottomSheet(
+                                  scrollController: scrollController,
+                                  currentUnit: _viewModel.currentUnit,
+                                  walletId: -1,
+                                  onWalletChanged: (id) {
+                                    Navigator.pop(context);
+                                    _showAddressListBottomSheet(id);
+                                  },
+                                ));
+                      },
+                      textStyle: CoconutTypography.body3_12,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1057,9 +1057,10 @@ class _SendScreenState extends State<SendScreen> {
     double scrollbarHeight = usableHeight;
     if (_viewModel.showAddressBoard) {
       // AddressBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
-      final addressBoardHeight = walletAddressListHeight + 80;
       final addressBoardBottomPos = kAddressBoardPosition + addressBoardHeight;
-      final keyboardGap = usableHeight - _keyboardHeight - addressBoardBottomPos;
+
+      // 사용 가능 높이에 키보드 높이와 보드의 바텀 위치를 빼서 스크롤 가능 범위를 구한다.
+      final keyboardGap = usableHeight - keyboardHeight - addressBoardBottomPos;
       if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
     } else if (_viewModel.showFeeBoard && _isAddressFocused) {
       // FeeBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
@@ -1067,10 +1068,15 @@ class _SendScreenState extends State<SendScreen> {
       int tooltipCount = 0;
       if (_viewModel.isBatchMode) ++tooltipCount;
       if (_viewModel.isMaxMode) ++tooltipCount;
-      if (tooltipCount > 0) bottomPos += 12;
-      if (tooltipCount == 2) bottomPos += kTooltipPadding;
+
+      // 수수료 보드와 툴팁 사이 패딩
+      if (tooltipCount > 0) bottomPos += kFeeBoardBottomPadding;
+      // 툴팁 개수에 따른 패딩 계산
+      if (tooltipCount > 1) bottomPos += kTooltipPadding * (tooltipCount - 1);
+      // 툴팁 개수에 따른 높이 계산
       bottomPos += tooltipCount * kTooltipHeight;
-      final keyboardGap = usableHeight - _keyboardHeight - bottomPos;
+
+      final keyboardGap = usableHeight - keyboardHeight - bottomPos;
       if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
     }
 

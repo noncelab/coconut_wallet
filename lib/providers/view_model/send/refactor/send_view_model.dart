@@ -217,12 +217,12 @@ class SendViewModel extends ChangeNotifier {
       this._onFeeRateTextUpdate,
       this._onRecipientPageDeleted,
       int? walletId) {
+    _sendInfoProvider.clear();
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
       if (walletIndex != -1) _selectWallet(walletIndex);
     }
 
-    _sendInfoProvider.clear();
     _recipientList = [RecipientInfo()];
     _walletAddressMap = {};
     _initWalletAddressList();

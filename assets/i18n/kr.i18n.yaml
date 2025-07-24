@@ -319,7 +319,7 @@ send_screen:
   recommended_fee_unavailable: "추천 수수료 조회 실패"
   recommended_fee_unavailable_description: "수수료를 직접 입력해 주세요."
   tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
-  tooltip_max_mode_text: "모두 보내기 모드 중"
+  tooltip_max_mode_text: "모두 보내기 중"
   max_mode_insufficient_balance: "잔액 부족"
 
 utxo_selection_screen:
