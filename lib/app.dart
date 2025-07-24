@@ -62,9 +62,6 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 enum AppEntryFlow { splash, main, pinCheck }
 
 class CoconutWalletApp extends StatefulWidget {
-  static late String kElectrumHost;
-  static late int kElectrumPort;
-  static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
   static late String kDonationAddress;
@@ -165,9 +162,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               create: (context) {
                 final walletProvider = context.read<WalletProvider>();
                 return NodeProvider(
-                  CoconutWalletApp.kElectrumHost,
-                  CoconutWalletApp.kElectrumPort,
-                  CoconutWalletApp.kElectrumIsSSL,
+                  context.read<PreferenceProvider>().getElectrumServer(),
                   CoconutWalletApp.kNetworkType,
                   context.read<ConnectivityProvider>(),
                   walletProvider.walletLoadStateNotifier,

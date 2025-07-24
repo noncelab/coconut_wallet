@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/enums/electrum_enums.dart';
+
 class SharedPrefKeys {
   /// 아래 7개는 비밀번호 분실 시 초기화 필요
   static const String kWalletCount = 'WALLET_COUNT';
@@ -28,6 +30,13 @@ class SharedPrefKeys {
 
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
+
+  // Electrum
+  /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
+  static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';
+  static const String kCustomElectrumHost = 'CUSTOM_ELECTRUM_HOST';
+  static const String kCustomElectrumPort = 'CUSTOM_ELECTRUM_PORT';
+  static const String kCustomElectrumIsSsl = 'CUSTOM_ELECTRUM_IS_SSL';
 
   /// kHasLaunchedBefore 절대 초기화 금지
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';
