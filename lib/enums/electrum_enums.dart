@@ -9,6 +9,7 @@ enum DefaultElectrumServer {
     ),
     'COCONUT',
     1,
+    false, // isRegtest
   ),
   blockstream(
     ElectrumServer(
@@ -18,6 +19,7 @@ enum DefaultElectrumServer {
     ),
     'BLOCKSTREAM',
     2,
+    false,
   ),
   acinq(
     ElectrumServer(
@@ -27,6 +29,7 @@ enum DefaultElectrumServer {
     ),
     'ACINQ',
     3,
+    false,
   ),
   foundationdevices(
     ElectrumServer(
@@ -36,6 +39,7 @@ enum DefaultElectrumServer {
     ),
     'FOUNDATIONDEVICES',
     4,
+    false,
   ),
   bluewallet(
     ElectrumServer(
@@ -45,6 +49,7 @@ enum DefaultElectrumServer {
     ),
     'BLUEWALLET',
     5,
+    false,
   ),
   lukechilds(
     ElectrumServer(
@@ -54,6 +59,7 @@ enum DefaultElectrumServer {
     ),
     'LUKECHILDS',
     6,
+    false,
   ),
   bitaroo(
     ElectrumServer(
@@ -63,6 +69,7 @@ enum DefaultElectrumServer {
     ),
     'BITAROO',
     7,
+    false,
   ),
   jochenhoenicke(
     ElectrumServer(
@@ -72,6 +79,7 @@ enum DefaultElectrumServer {
     ),
     'JOCHENHOENICKE',
     8,
+    false,
   ),
   emzy(
     ElectrumServer(
@@ -81,6 +89,7 @@ enum DefaultElectrumServer {
     ),
     'EMZY',
     9,
+    false,
   ),
   ecdsa(
     ElectrumServer(
@@ -90,6 +99,7 @@ enum DefaultElectrumServer {
     ),
     'ECDSA',
     10,
+    false,
   ),
 
   // Regtest
@@ -101,17 +111,20 @@ enum DefaultElectrumServer {
     ),
     'REGTEST',
     99,
+    true, // isRegtest
   );
 
   const DefaultElectrumServer(
     this.server,
     this.serverName,
     this.order,
+    this.isRegtest,
   );
 
   final ElectrumServer server;
   final String serverName;
   final int order;
+  final bool isRegtest;
 
   static DefaultElectrumServer fromServerType(String serverType) {
     return DefaultElectrumServer.values.firstWhere(
@@ -125,4 +138,20 @@ enum DefaultElectrumServer {
       ..sort((a, b) => a.order.compareTo(b.order));
     return List<ElectrumServer>.unmodifiable(servers.map((e) => e.server).toList());
   })();
+
+  /// Flavor에 따른 서버 리스트 반환
+  static List<ElectrumServer> getServersByFlavor(bool isRegtestFlavor) {
+    final filteredServers = DefaultElectrumServer.values
+        .where((server) => server.isRegtest == isRegtestFlavor)
+        .toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+
+    return List<ElectrumServer>.unmodifiable(filteredServers.map((e) => e.server).toList());
+  }
+
+  /// Mainnet 서버만 반환
+  static List<ElectrumServer> get mainnetServers => getServersByFlavor(false);
+
+  /// Regtest 서버만 반환
+  static List<ElectrumServer> get regtestServers => getServersByFlavor(true);
 }

@@ -429,20 +429,29 @@ class NodeProvider extends ChangeNotifier {
     _electrumServer = electrumServer;
 
     Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+
     try {
       await initialize();
+
+      // subscribeWallets 결과를 기다림
+      final subscribeResult = await subscribeWallets();
+
+      if (subscribeResult.isFailure) {
+        Logger.error('NodeProvider: 서버 변경 실패: ${subscribeResult.error}');
+        _stateManager?.setNodeSyncStateToFailed();
+        notifyListeners();
+        return Result.failure(subscribeResult.error);
+      }
+
+      Logger.log('NodeProvider: 서버 변경 성공');
+      notifyListeners();
+      return Result.success(true);
     } catch (e) {
+      Logger.error('NodeProvider: 서버 변경 중 초기화 실패: $e');
+      _stateManager?.setNodeSyncStateToFailed();
+      notifyListeners();
       return Result.failure(ErrorCodes.networkError);
     }
-
-    subscribeWallets().then((result) {
-      if (result.isFailure) {
-        Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
-      }
-    });
-    notifyListeners();
-
-    return Result.success(true);
   }
 
   @override
