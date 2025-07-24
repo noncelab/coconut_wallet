@@ -1,9 +1,13 @@
 import 'dart:math';
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/electrum_server_domain.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,6 +25,8 @@ class ElectrumServerScreen extends StatefulWidget {
 }
 
 class _ElectrumServerScreen extends State<ElectrumServerScreen> {
+  late final PreferenceProvider preferenceProvider;
+  late final NodeProvider nodeProvider;
   final TextEditingController _serverAddressController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
   final ScrollController _defaultServerScrollController = ScrollController();
@@ -34,8 +40,37 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   @override
   void initState() {
     super.initState();
+    nodeProvider = Provider.of<NodeProvider>(context, listen: false);
+    preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = context.read<ElectrumServerViewModel>();
+      final currentServer = preferenceProvider.getElectrumServer();
+
+      viewModel.setCurrentServer(
+        ElectrumServer(
+          currentServer.host,
+          currentServer.port,
+          currentServer.ssl,
+        ),
+      );
+      setState(() {
+        // 기존 정보 입력
+        _serverAddressController.text = preferenceProvider.getElectrumServer().host.toString();
+        _portController.text = preferenceProvider.getElectrumServer().port.toString();
+      });
+
+      // 현재 사용중인 서버 상태 점검
+      nodeProvider.checkServerConnection(preferenceProvider.getElectrumServer()).then((result) {
+        if (result.isFailure) {
+          debugPrint('서버 상태 점검: [연결 실패]');
+          viewModel.setNodeConnectionStatus(NodeConnectionStatus.unconnected);
+        } else {
+          debugPrint('서버 상태 점검: [연결 성공]');
+          viewModel.setNodeConnectionStatus(NodeConnectionStatus.waiting);
+        }
+      });
+
       serverAddressFocusNode.addListener(() {
         if (serverAddressFocusNode.hasFocus) {
           context.read<ElectrumServerViewModel>().setDefaultServerMenuVisible(true);
@@ -82,23 +117,61 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     final viewModel = context.read<ElectrumServerViewModel>();
 
     viewModel.setNodeConnectionStatus(NodeConnectionStatus.connecting);
-    await Future.delayed(const Duration(milliseconds: 3000));
-    if (!mounted) return;
-    if (Random().nextBool()) {
-      vibrateLightDouble();
-      viewModel.setNodeConnectionStatus(NodeConnectionStatus.failed);
-    } else {
-      vibrateLight();
-      viewModel.setNodeConnectionStatus(NodeConnectionStatus.connected);
-    }
-    await Future.delayed(const Duration(milliseconds: 2000));
-    if (!mounted || viewModel.nodeConnectionStatus != NodeConnectionStatus.connected) return;
-    viewModel.setNodeConnectionStatus(NodeConnectionStatus.waiting);
+
+    preferenceProvider.setCustomElectrumServer(
+        _serverAddressController.text, int.parse(_portController.text), viewModel.useSsl);
+
+    await nodeProvider
+        .changeServer(ElectrumServer.custom(
+      _serverAddressController.text,
+      int.parse(_portController.text),
+      viewModel.useSsl,
+    ))
+        .then((result) async {
+      if (!mounted) return;
+
+      if (result.isFailure) {
+        vibrateLightDouble();
+        viewModel.setNodeConnectionStatus(NodeConnectionStatus.failed);
+
+        // 실패시 preferences 저장값도 복구
+        preferenceProvider.setCustomElectrumServer(
+          viewModel.currentServer.host,
+          viewModel.currentServer.port,
+          viewModel.currentServer.ssl,
+        );
+      } else {
+        vibrateLight();
+        viewModel.setNodeConnectionStatus(NodeConnectionStatus.connected);
+        viewModel.setCurrentServer(ElectrumServer.custom(
+          _serverAddressController.text,
+          int.parse(_portController.text),
+          viewModel.useSsl,
+        ));
+      }
+
+      await Future.delayed(const Duration(milliseconds: 2000));
+
+      if (!mounted || viewModel.nodeConnectionStatus != NodeConnectionStatus.connected) return;
+      viewModel.setNodeConnectionStatus(NodeConnectionStatus.waiting);
+    });
   }
 
   bool isValidDomain(String input) {
-    final domainRegExp = RegExp(r'^(?!-)[A-Za-z0-9-]{1,63}(?<!-)(\.[A-Za-z]{2,})+$');
+    final domainRegExp =
+        RegExp(r'^(?!:\/\/)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$');
     return domainRegExp.hasMatch(input);
+  }
+
+  bool isSameWithCurrentServer(bool useSsl) {
+    final viewModel = context.read<ElectrumServerViewModel>();
+    final currentServerHost = viewModel.currentServer.host;
+    final currentPort = viewModel.currentServer.port;
+    final currentSsl = viewModel.currentServer.ssl;
+
+    return _serverAddressController.text == currentServerHost &&
+        _portController.text == currentPort.toString() &&
+        useSsl == currentSsl;
   }
 
   @override
@@ -198,19 +271,19 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     }
                   });
 
-                  final shouldScroll = kDefaultElectrumServers.length > 3;
+                  final shouldScroll = DefaultElectrumServer.all.length > 3;
                   final serverList = Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (int i = 0; i < kDefaultElectrumServers.length; i++) ...[
+                      for (int i = 0; i < DefaultElectrumServer.all.length; i++) ...[
                         ShrinkAnimationButton(
                           key: i == 0 ? _defaultServerButtonKey : null,
                           defaultColor: CoconutColors.black,
                           pressedColor: CoconutColors.gray850,
                           borderRadius: 12,
                           onPressed: () {
-                            _serverAddressController.text = kDefaultElectrumServers[i].address;
-                            _portController.text = kDefaultElectrumServers[i].port.toString();
+                            _serverAddressController.text = DefaultElectrumServer.all[i].host;
+                            _portController.text = DefaultElectrumServer.all[i].port.toString();
                             _unFocus();
                           },
                           child: Container(
@@ -220,12 +293,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  kDefaultElectrumServers[i].address,
+                                  DefaultElectrumServer.all[i].host,
                                   style: CoconutTypography.body3_12,
                                 ),
                                 Text(
                                   t.settings_screen.electrum_server.ssl_port(
-                                    port: kDefaultElectrumServers[i].port,
+                                    port: DefaultElectrumServer.all[i].port,
                                   ),
                                   style: CoconutTypography.body3_12.setColor(
                                     CoconutColors.gray400,
@@ -554,9 +627,11 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
         children: [
           _buildAlertIcon(status),
           CoconutLayout.spacing_300w,
-          Text(
-            _getAlertString(status),
-            style: CoconutTypography.body2_14_Bold,
+          Expanded(
+            child: Text(
+              _getAlertString(status),
+              style: CoconutTypography.body2_14_Bold,
+            ),
           ),
         ],
       ),
@@ -600,7 +675,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       case NodeConnectionStatus.unconnected:
         {
           return t.settings_screen.electrum_server.alert
-              .connection_failed_to_server(server: 'TODO.com'); // TODO: 도메인
+              .connection_failed_to_server(server: _serverAddressController.text);
         }
       case NodeConnectionStatus.failed:
         {
@@ -623,13 +698,17 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   Widget _buildBottomButton() {
     final viewModel = context.read<ElectrumServerViewModel>();
-    return Selector<ElectrumServerViewModel, Tuple3<NodeConnectionStatus, bool, bool>>(
-        selector: (_, viewModel) => Tuple3(viewModel.nodeConnectionStatus,
-            viewModel.isServerAddressFormatError, viewModel.isPortOutOfRangeError),
+    return Selector<ElectrumServerViewModel, Tuple4<NodeConnectionStatus, bool, bool, bool>>(
+        selector: (_, viewModel) => Tuple4(
+            viewModel.nodeConnectionStatus,
+            viewModel.isServerAddressFormatError,
+            viewModel.isPortOutOfRangeError,
+            viewModel.useSsl),
         builder: (context, data, child) {
           final nodeConnectionStatus = data.item1;
           final isServerAddressFormatError = data.item2;
           final isPortOutOfRangeError = data.item3;
+          final useSsl = data.item4;
           return Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -649,10 +728,18 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: SizedBox(
                         width: MediaQuery.sizeOf(context).width,
                         child: ShrinkAnimationButton(
-                          isActive: nodeConnectionStatus != NodeConnectionStatus.connecting,
+                          isActive: nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                              !isSameWithCurrentServer(useSsl),
                           defaultColor: CoconutColors.white,
                           pressedColor: CoconutColors.gray350,
-                          onPressed: () {},
+                          onPressed: () {
+                            final viewModel = context.read<ElectrumServerViewModel>();
+                            setState(() {
+                              _serverAddressController.text = viewModel.currentServer.host;
+                              _portController.text = viewModel.currentServer.port.toString();
+                              viewModel.setUseSsl(viewModel.currentServer.ssl);
+                            });
+                          },
                           borderRadius: CoconutStyles.radius_200,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -675,7 +762,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                               _portController.text.isNotEmpty &&
                               !isServerAddressFormatError &&
                               !isPortOutOfRangeError &&
-                              nodeConnectionStatus != NodeConnectionStatus.connecting,
+                              nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                              !isSameWithCurrentServer(useSsl),
                           defaultColor: CoconutColors.white,
                           pressedColor: CoconutColors.gray350,
                           onPressed: () {
@@ -707,13 +795,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
           );
         });
   }
-}
-
-class DefaultServer {
-  final String address;
-  final int port;
-
-  const DefaultServer({required this.address, required this.port});
 }
 
 enum NodeConnectionStatus {
