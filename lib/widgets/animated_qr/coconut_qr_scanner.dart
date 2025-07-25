@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -75,10 +77,16 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
     super.dispose();
   }
 
+  void resetScanState() {
+    widget.qrDataHandler.reset();
+    _isFirstScanData = true;
+  }
+
   void _onQrViewCreated(QRViewController controller) {
     widget.setQrViewController(controller);
     var handler = widget.qrDataHandler;
-    controller.scannedDataStream.listen((scanData) async {
+    controller.scannedDataStream.distinct((previous, next) => previous.code == next.code).listen(
+        (scanData) async {
       if (scanData.code == null) return;
 
       _scanTimeoutTimer?.cancel();
@@ -100,18 +108,22 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         }
 
         if (!handler.isCompleted()) {
-          bool result = handler.joinData(scanData.code!);
-          if (!result && !handler.isFragmented) {
-            widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage);
-            handler.reset();
-            setState(() {
-              _showLoadingBar = false;
-            });
-            _isFirstScanData = true;
+          try {
+            bool result = handler.joinData(scanData.code!);
+            Logger.log('--> progress: ${handler.progress}');
+            if (!result && handler is! IFragmentedQrScanDataHandler) {
+              widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage);
+              resetScanState();
+              return;
+            }
+            /* handler가 IFragmentedQrScanDataHandler일 땐 joinData 실패해도 무시하고 계속 스캔 진행함.
+             왜냐하면 animated qr 스캔 중 노이즈 데이터가 오탐되는 경우가 있는데 매번 처음부터 다시 하면 사용성을 해침 */
+          } on SequenceLengthMismatchException catch (_) {
+            // QR Density 변경됨
+            assert(handler is IFragmentedQrScanDataHandler);
+            resetScanState();
             return;
           }
-
-          /// isFragmented (bc-ur)일 땐 joinData 실패해도 무시하고 계속 스캔 진행합니다.
         }
 
         if (!_showLoadingBar) {
@@ -121,13 +133,12 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         }
 
         if (handler.isCompleted()) {
+          widget.onComplete(handler.result!);
+          resetScanState();
           setState(() {
             _showLoadingBar = false;
           });
-          widget.onComplete(handler.result!);
-          handler.reset();
           _scanTimeoutTimer?.cancel();
-          _isFirstScanData = true;
         }
       } catch (e) {
         Logger.log(e.toString());
@@ -135,18 +146,16 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           _showLoadingBar = false;
         });
         widget.onFailed(e.toString());
-        handler.reset();
+        resetScanState();
         _scanTimeoutTimer?.cancel();
-        _isFirstScanData = true;
       }
     }, onError: (e) {
+      widget.onFailed(e.toString());
+      resetScanState();
       setState(() {
         _showLoadingBar = false;
       });
-      widget.onFailed(e.toString());
-      handler.reset();
       _scanTimeoutTimer?.cancel();
-      _isFirstScanData = true;
     });
   }
 
