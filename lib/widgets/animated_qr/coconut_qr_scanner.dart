@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class CoconutQrScanner extends StatefulWidget {
+  static String qrFormatErrorMessage = 'Invalid QR format.';
+  static String qrInvalidErrorMessage = 'Invalid QR Code.';
   final Function(QRViewController) setQrViewController;
   final Function(dynamic) onComplete;
   final Function(String) onFailed;
@@ -36,6 +40,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   Timer? _scanTimeoutTimer;
   bool _showLoadingBar = false;
+  bool _isFirstScanData = true;
 
   @override
   void initState() {
@@ -72,10 +77,16 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
     super.dispose();
   }
 
+  void resetScanState() {
+    widget.qrDataHandler.reset();
+    _isFirstScanData = true;
+  }
+
   void _onQrViewCreated(QRViewController controller) {
     widget.setQrViewController(controller);
     var handler = widget.qrDataHandler;
-    controller.scannedDataStream.listen((scanData) async {
+    controller.scannedDataStream.distinct((previous, next) => previous.code == next.code).listen(
+        (scanData) async {
       if (scanData.code == null) return;
 
       _scanTimeoutTimer?.cancel();
@@ -85,15 +96,34 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         });
       });
       try {
-        if (!handler.isCompleted() && !handler.joinData(scanData.code!)) {
+        if (_isFirstScanData) {
           if (!handler.validateFormat(scanData.code!)) {
-            widget.onFailed('Invalid QR code');
-          } // 이어서 다른 Density의 QR(ur 포맷)을 스캔할 때는 alert를 띄우지 않습니다.
-          handler.reset();
-          setState(() {
-            _showLoadingBar = false;
-          });
-          return;
+            widget.onFailed(CoconutQrScanner.qrFormatErrorMessage);
+            setState(() {
+              _showLoadingBar = false;
+            });
+            return;
+          }
+          _isFirstScanData = false;
+        }
+
+        if (!handler.isCompleted()) {
+          try {
+            bool result = handler.joinData(scanData.code!);
+            Logger.log('--> progress: ${handler.progress}');
+            if (!result && handler is! IFragmentedQrScanDataHandler) {
+              widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage);
+              resetScanState();
+              return;
+            }
+            /* handler가 IFragmentedQrScanDataHandler일 땐 joinData 실패해도 무시하고 계속 스캔 진행함.
+             왜냐하면 animated qr 스캔 중 노이즈 데이터가 오탐되는 경우가 있는데 매번 처음부터 다시 하면 사용성을 해침 */
+          } on SequenceLengthMismatchException catch (_) {
+            // QR Density 변경됨
+            assert(handler is IFragmentedQrScanDataHandler);
+            resetScanState();
+            return;
+          }
         }
 
         if (!_showLoadingBar) {
@@ -103,30 +133,31 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         }
 
         if (handler.isCompleted()) {
-          setState(() {
-            _showLoadingBar = false;
-          });
-          widget.onComplete(handler.result!);
-          handler.reset();
-          _scanTimeoutTimer?.cancel();
+          _resetLoadingBarState();
+          final result = handler.result!;
+          resetScanState();
+          widget.onComplete(result);
         }
       } catch (e) {
-        Logger.log(e.toString());
-        setState(() {
-          _showLoadingBar = false;
-        });
+        Logger.error(e.toString());
+        _resetLoadingBarState();
+        resetScanState();
         widget.onFailed(e.toString());
-        handler.reset();
-        _scanTimeoutTimer?.cancel();
       }
     }, onError: (e) {
+      _resetLoadingBarState();
+      resetScanState();
+      widget.onFailed(e.toString());
+    });
+  }
+
+  void _resetLoadingBarState() {
+    _scanTimeoutTimer?.cancel();
+    if (_showLoadingBar) {
       setState(() {
         _showLoadingBar = false;
       });
-      widget.onFailed(e.toString());
-      handler.reset();
-      _scanTimeoutTimer?.cancel();
-    });
+    }
   }
 
   QrScannerOverlayShape _getOverlayShape() {
