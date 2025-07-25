@@ -11,6 +11,16 @@ void vibrateExtraLight() {
   }
 }
 
+void vibrateExtraLightDouble() async {
+  if (Platform.isAndroid) {
+    Vibration.vibrate(pattern: [0, 10, 0, 10]);
+  } else if (Platform.isIOS) {
+    HapticFeedback.lightImpact();
+    await Future.delayed(const Duration(milliseconds: 100));
+    HapticFeedback.lightImpact();
+  }
+}
+
 void vibrateLight() {
   if (Platform.isAndroid) {
     Vibration.vibrate(duration: 100);

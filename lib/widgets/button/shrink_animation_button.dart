@@ -7,23 +7,28 @@ class ShrinkAnimationButton extends StatefulWidget {
   final VoidCallback onPressed;
   final Color pressedColor;
   final Color defaultColor;
+  final Color disabledColor;
   final double borderRadius;
   final Border? border;
   final double borderWidth;
   final List<Color>? borderGradientColors;
   final double? animationEndValue;
+  final bool isActive;
 
-  const ShrinkAnimationButton(
-      {super.key,
-      required this.child,
-      required this.onPressed,
-      this.pressedColor = CoconutColors.gray900,
-      this.defaultColor = CoconutColors.gray800,
-      this.borderRadius = 24.0,
-      this.borderWidth = 2.0,
-      this.border,
-      this.borderGradientColors,
-      this.animationEndValue = 0.97});
+  const ShrinkAnimationButton({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    this.pressedColor = CoconutColors.gray900,
+    this.defaultColor = CoconutColors.gray800,
+    this.disabledColor = CoconutColors.gray800,
+    this.borderRadius = 24.0,
+    this.borderWidth = 2.0,
+    this.border,
+    this.borderGradientColors,
+    this.animationEndValue = 0.97,
+    this.isActive = true,
+  });
 
   @override
   State<ShrinkAnimationButton> createState() => _ShrinkAnimationButtonState();
@@ -53,6 +58,8 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onTapDown(TapDownDetails details) {
+    if (!widget.isActive) return;
+
     setState(() {
       _isPressed = true;
     });
@@ -60,6 +67,8 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onTapUp(TapUpDetails details) {
+    if (!widget.isActive) return;
+
     _controller.reverse().then((_) {
       widget.onPressed();
       setState(() {
@@ -69,6 +78,8 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onTapCancel() {
+    if (!widget.isActive) return;
+
     _controller.reverse();
     setState(() {
       _isPressed = false;
@@ -90,7 +101,13 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
                   ? ColorUtil.getMultisigLinearGradient(widget.borderGradientColors!)
                   : null,
               border: widget.borderGradientColors == null
-                  ? Border.all(color: _isPressed ? widget.pressedColor : widget.defaultColor)
+                  ? Border.all(
+                      color: widget.isActive
+                          ? _isPressed
+                              ? widget.pressedColor
+                              : widget.defaultColor
+                          : widget.disabledColor,
+                    )
                   : null,
             ),
             child: AnimatedContainer(
@@ -101,7 +118,11 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _isPressed ? widget.pressedColor : widget.defaultColor,
+                  color: widget.isActive
+                      ? _isPressed
+                          ? widget.pressedColor
+                          : widget.defaultColor
+                      : widget.disabledColor,
                   borderRadius: BorderRadius.circular(widget.borderRadius),
                 ),
                 child: widget.child,

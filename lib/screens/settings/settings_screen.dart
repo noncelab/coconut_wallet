@@ -199,6 +199,21 @@ class _SettingsScreen extends State<SettingsScreen> {
                     },
                   ),
 
+                  CoconutLayout.spacing_400h,
+                  _category(t.network),
+                  ButtonGroup(
+                    buttons: [
+                      SingleButton(
+                        enableShrinkAnim: true,
+                        animationEndValue: 0.97,
+                        title: t.electrum_server,
+                        onPressed: () async {
+                          Navigator.pushNamed(context, '/electrum-server');
+                        },
+                      ),
+                    ],
+                  ),
+
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
