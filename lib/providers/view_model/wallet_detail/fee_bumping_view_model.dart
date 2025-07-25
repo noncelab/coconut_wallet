@@ -17,6 +17,8 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -554,17 +556,24 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   void _generateSinglePayment(
       List<Utxo> inputs, String recipient, String changeAddress, double feeRate, int amount) {
-    _bumpingTransaction = Transaction.forSinglePayment(
-        inputs,
-        recipient,
-        _addressRepository.getDerivationPath(_walletId, changeAddress),
-        amount,
-        feeRate,
-        walletListItemBase.walletBase);
-    _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(amount));
-    _sendInfoProvider.setIsMaxMode(false);
-    _setInsufficientUtxo(false);
-    debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');
+    try {
+      _bumpingTransaction = Transaction.forSinglePayment(
+          inputs,
+          recipient,
+          _addressRepository.getDerivationPath(_walletId, changeAddress),
+          amount,
+          feeRate,
+          walletListItemBase.walletBase);
+      _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(amount));
+      _sendInfoProvider.setIsMaxMode(false);
+      _setInsufficientUtxo(false);
+      debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');
+    } on Exception catch (e) {
+      int? estimatedFee = extractEstimatedFeeFromException(e);
+      if (estimatedFee != null) {
+        _generateSweepPayment(inputs, recipient, feeRate);
+      }
+    }
   }
 
   void _generateSweepPayment(List<Utxo> inputs, String recipient, double feeRate) {
