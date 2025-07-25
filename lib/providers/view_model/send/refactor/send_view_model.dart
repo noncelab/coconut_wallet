@@ -4,6 +4,7 @@ import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -656,7 +657,8 @@ class SendViewModel extends ChangeNotifier {
     // 부동 소수점 오차가 생길 수 있으므로 소수점 8자리만 다시 파싱
     double amountSumWithEstimatedFee = amountSum + _estimatedFeeByUnit;
     if (isBtcUnit) {
-      amountSumWithEstimatedFee = double.parse(amountSumWithEstimatedFee.toStringAsFixed(8));
+      amountSumWithEstimatedFee = amountSumWithEstimatedFee.truncateTo8();
+      amountSum = amountSum.truncateTo8();
     }
 
     if (amountSumWithEstimatedFee > 0 &&

@@ -114,7 +114,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                       isNumber: true),
                                 ],
                               ))),
-                    )
+                    ),
+                    CoconutLayout.spacing_400h,
                   ]),
                 ),
               ));

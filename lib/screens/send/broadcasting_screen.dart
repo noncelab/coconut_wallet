@@ -136,56 +136,57 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         return viewModel;
       },
       child: Consumer<BroadcastingViewModel>(
-        builder: (context, viewModel, child) => Scaffold(
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-          backgroundColor: CoconutColors.black,
-          appBar: CoconutAppBar.build(
-            title: viewModel.isSendingDonation ? t.donation.donate : t.broadcasting_screen.title,
-            context: context,
-          ),
-          body: SafeArea(
-            child: Stack(
-              children: [
-                viewModel.isSendingDonation
-                    ? _buildDonationBroadcastInfo(
-                        viewModel.amount,
-                        viewModel.isInitDone,
-                        viewModel.isNetworkOn,
-                      )
-                    : _buildNormalBroadcastInfo(
-                        viewModel.amount,
-                        viewModel.fee,
-                        viewModel.totalAmount,
-                        viewModel.sendingAmountWhenAddressIsMyChange,
-                        viewModel.isSendingToMyAddress,
-                        viewModel.recipientAddresses,
-                        viewModel.isNetworkOn),
-                if (!viewModel.isSendingDonation)
-                  FixedBottomButton(
-                      isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                      onButtonClicked: () async {
-                        if (viewModel.isNetworkOn == false) {
-                          CoconutToast.showWarningToast(
-                            context: context,
-                            text: ErrorCodes.networkError.message,
-                          );
-                          return;
-                        }
-                        if (viewModel.feeBumpingType != null &&
-                            viewModel.hasTransactionConfirmed()) {
-                          await TransactionUtil.showTransactionConfirmedDialog(context);
-                          return;
-                        }
-                        if (viewModel.isInitDone) {
-                          broadcast();
-                        }
-                      },
-                      text: t.broadcasting_screen.btn_submit)
-              ],
-            ),
-          ),
-        ),
-      ),
+          builder: (context, viewModel, child) => Scaffold(
+                floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+                backgroundColor: CoconutColors.black,
+                appBar: CoconutAppBar.build(
+                  title:
+                      viewModel.isSendingDonation ? t.donation.donate : t.broadcasting_screen.title,
+                  context: context,
+                ),
+                body: SafeArea(
+                  child: Stack(
+                    children: [
+                      viewModel.isSendingDonation
+                          ? _buildDonationBroadcastInfo(
+                              viewModel.amount,
+                              viewModel.isInitDone,
+                              viewModel.isNetworkOn,
+                            )
+                          : _buildNormalBroadcastInfo(
+                              viewModel.amount,
+                              viewModel.fee,
+                              viewModel.totalAmount,
+                              viewModel.sendingAmountWhenAddressIsMyChange,
+                              viewModel.isSendingToMyAddress,
+                              viewModel.recipientAddresses,
+                              viewModel.isNetworkOn),
+                      if (!viewModel.isSendingDonation)
+                        FixedBottomButton(
+                            showGradient: false,
+                            isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                            onButtonClicked: () async {
+                              if (viewModel.isNetworkOn == false) {
+                                CoconutToast.showWarningToast(
+                                  context: context,
+                                  text: ErrorCodes.networkError.message,
+                                );
+                                return;
+                              }
+                              if (viewModel.feeBumpingType != null &&
+                                  viewModel.hasTransactionConfirmed()) {
+                                await TransactionUtil.showTransactionConfirmedDialog(context);
+                                return;
+                              }
+                              if (viewModel.isInitDone) {
+                                broadcast();
+                              }
+                            },
+                            text: t.broadcasting_screen.btn_submit)
+                    ],
+                  ),
+                ),
+              )),
     );
   }
 
@@ -319,13 +320,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       bool isSendingToMyAddress,
       List<String> recipientAddresses,
       bool isNetworkOn) {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      child: Container(
-        width: MediaQuery.of(context).size.width,
-        height:
-            MediaQuery.sizeOf(context).height - kToolbarHeight - MediaQuery.of(context).padding.top,
-        padding: Paddings.container,
+    return Padding(
+      padding: const EdgeInsets.only(
+          left: 10, right: 10, bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.start,
@@ -363,7 +362,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                     borderRadius: BorderRadius.circular(28.0),
                     color: MyColors.transparentWhite_06,
                   ),
-                  child: Container(
+                  child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         children: [
@@ -395,6 +394,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 style: Styles.caption,
               ),
             ],
+            // FixedBottomButton 크기에 맞게 스크롤이 가능하도록 설정
+            CoconutLayout.spacing_600h,
+            const SizedBox(height: FixedBottomButton.fixedBottomButtonDefaultHeight),
           ],
         ),
       ),
