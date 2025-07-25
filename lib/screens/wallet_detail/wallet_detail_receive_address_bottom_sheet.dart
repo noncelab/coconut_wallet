@@ -10,10 +10,12 @@ import 'package:tuple/tuple.dart';
 
 class ReceiveAddressBottomSheet extends StatelessWidget {
   final int id;
+  final double paddingTop;
 
   const ReceiveAddressBottomSheet({
     super.key,
     required this.id,
+    this.paddingTop = 0,
   });
 
   @override
@@ -71,6 +73,7 @@ class ReceiveAddressBottomSheet extends StatelessWidget {
                                   child: AddressListScreen(
                                     id: id,
                                     isFullScreen: false,
+                                    paddingTop: paddingTop,
                                   ),
                                 );
                               },

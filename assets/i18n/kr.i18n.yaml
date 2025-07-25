@@ -567,6 +567,7 @@ tooltip:
   mfp: "지갑의 고유 값이에요.\n마스터 핑거프린트(MFP)라고도 해요."
   rbf: "수수료를 올려, 기존 거래를 새로운 거래로 대체하는 기능이에요. (RBF, Replace-By-Fee)"
   cpfp: "새로운 거래(Child)에 높은 수수료를 지정해 기존 거래(Parent)가 빨리 처리되도록 우선순위를 높이는 기능이에요. (CPFP, Child-Pays-For-Parent)"
+  dont_show_again: "다시 보지 않기"
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
@@ -591,12 +592,12 @@ alert:
     minimum_amount: "$bitcoin $unit 부터 전송할 수 있어요"
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
-    invalid_qr: "잘못된 QR 코드예요.\n다시 확인해 주세요."
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
     need_more_sign: "$count개 서명이 더 필요해요"
     invalid_signature: "잘못된 서명 정보에요. 다시 시도해 주세요."
   scan_failed: "스캔 실패"
   scan_failed_description: "QR 코드 스캔에 실패했어요. 다시 시도해 주세요.\n$error"
+  invalid_qr: "잘못된 QR 코드예요.\n다시 확인해 주세요."
   tutorial:
     title: "도움이 필요하신가요?"
     description: "튜토리얼 사이트로\n안내해 드릴게요"
