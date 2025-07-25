@@ -133,30 +133,31 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         }
 
         if (handler.isCompleted()) {
-          widget.onComplete(handler.result!);
+          _resetLoadingBarState();
+          final result = handler.result!;
           resetScanState();
-          setState(() {
-            _showLoadingBar = false;
-          });
-          _scanTimeoutTimer?.cancel();
+          widget.onComplete(result);
         }
       } catch (e) {
-        Logger.log(e.toString());
-        setState(() {
-          _showLoadingBar = false;
-        });
-        widget.onFailed(e.toString());
+        Logger.error(e.toString());
+        _resetLoadingBarState();
         resetScanState();
-        _scanTimeoutTimer?.cancel();
+        widget.onFailed(e.toString());
       }
     }, onError: (e) {
-      widget.onFailed(e.toString());
+      _resetLoadingBarState();
       resetScanState();
+      widget.onFailed(e.toString());
+    });
+  }
+
+  void _resetLoadingBarState() {
+    _scanTimeoutTimer?.cancel();
+    if (_showLoadingBar) {
       setState(() {
         _showLoadingBar = false;
       });
-      _scanTimeoutTimer?.cancel();
-    });
+    }
   }
 
   QrScannerOverlayShape _getOverlayShape() {
