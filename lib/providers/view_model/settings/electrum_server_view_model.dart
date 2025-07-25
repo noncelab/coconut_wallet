@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -15,13 +17,13 @@ class ElectrumServerViewModel extends ChangeNotifier {
   ElectrumServer? get currentServer => _currentServer;
 
   NodeConnectionStatus _nodeConnectionStatus = NodeConnectionStatus.waiting;
-
+  final Map<ElectrumServer, NodeConnectionStatus> _serverConnectionMap = {};
   bool _isServerAddressFormatError = false; // 서버 주소 형식
   bool _isPortOutOfRangeError = false; // 1 ~ 65535 포트 범위
   bool _isDefaultServerMenuVisible = false; // 기본 서버 메뉴 visibility
 
   NodeConnectionStatus get nodeConnectionStatus => _nodeConnectionStatus;
-
+  Map<ElectrumServer, NodeConnectionStatus> get serverConnectionMap => _serverConnectionMap;
   bool get isServerAddressFormatError => _isServerAddressFormatError;
   bool get isPortOutOfRangeError => _isPortOutOfRangeError;
   bool get isDefaultServerMenuVisible => _isDefaultServerMenuVisible;
@@ -35,12 +37,37 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     // 초기 상태 확인
     _checkInitialNodeProviderStatus();
+
+    _checkAllElectrumServerConnections();
   }
 
   /// 초기 NodeProvider 상태 확인
   void _checkInitialNodeProviderStatus() {
     final currentServer = _preferenceProvider.getElectrumServer();
     changeServer(currentServer);
+  }
+
+  /// 모든 기본 일렉트럼 서버 상태 체크
+  void _checkAllElectrumServerConnections() {
+    final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
+    final serverList = isRegtestFlavor
+        ? DefaultElectrumServer.regtestServers
+        : DefaultElectrumServer.mainnetServers;
+
+    for (final server in serverList) {
+      _serverConnectionMap[server] = NodeConnectionStatus.connecting;
+
+      _nodeProvider.checkServerConnection(server).then((result) {
+        _serverConnectionMap[server] =
+            result.isSuccess ? NodeConnectionStatus.connected : NodeConnectionStatus.failed;
+        debugPrint(
+            '[서버 상태 체크] ${_serverConnectionMap[server]!.name} - ${result.isSuccess ? 'Connected' : 'Failed'}');
+        notifyListeners();
+      }).catchError((_) {
+        _serverConnectionMap[server] = NodeConnectionStatus.failed;
+        notifyListeners();
+      });
+    }
   }
 
   void setNodeConnectionStatus(NodeConnectionStatus status) {

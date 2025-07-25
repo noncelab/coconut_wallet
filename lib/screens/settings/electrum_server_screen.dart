@@ -32,11 +32,19 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   final GlobalKey _defaultServerButtonKey = GlobalKey();
   final GlobalKey _serverAddressFieldKey = GlobalKey();
+  late final ValueChanged<Size> _onDefaultServerButtonSizeChanged;
   Size _defaultServerButtonSize = const Size(0, 0);
 
   @override
   void initState() {
     super.initState();
+    _onDefaultServerButtonSizeChanged = (Size size) {
+      if (size != _defaultServerButtonSize) {
+        setState(() {
+          _defaultServerButtonSize = size;
+        });
+      }
+    };
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<ElectrumServerViewModel>();
@@ -244,9 +252,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     if (_defaultServerButtonKey.currentContext != null) {
                       final defaultServerButtonRenderBox =
                           _defaultServerButtonKey.currentContext?.findRenderObject() as RenderBox;
-                      setState(() {
-                        _defaultServerButtonSize = defaultServerButtonRenderBox.size;
-                      });
+                      _onDefaultServerButtonSizeChanged(defaultServerButtonRenderBox.size);
                     }
                   });
 
@@ -275,27 +281,61 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                             _onServerInputChanged(); // 변경 플래그 설정
                             _unFocus();
                           },
-                          child: Container(
-                            width: MediaQuery.sizeOf(context).width,
-                            padding: const EdgeInsets.only(left: 14, right: 14, top: 8, bottom: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  serverList[i].host,
-                                  style: CoconutTypography.body3_12,
-                                ),
-                                Text(
-                                  t.settings_screen.electrum_server.ssl_port(
-                                    port: serverList[i].port,
+                          child: Selector<ElectrumServerViewModel, NodeConnectionStatus?>(
+                              selector: (_, viewModel) =>
+                                  viewModel.serverConnectionMap[serverList[i]],
+                              builder: (context, serverConnectionStatus, child) {
+                                return Container(
+                                  width: MediaQuery.sizeOf(context).width,
+                                  padding:
+                                      const EdgeInsets.only(left: 14, right: 14, top: 8, bottom: 8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        serverList[i].host,
+                                        style: CoconutTypography.body3_12,
+                                      ),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            t.settings_screen.electrum_server.ssl_port(
+                                              port: serverList[i].port,
+                                            ),
+                                            style: CoconutTypography.body3_12.setColor(
+                                              CoconutColors.gray400,
+                                            ),
+                                          ),
+                                          if (serverConnectionStatus ==
+                                              NodeConnectionStatus.connecting) ...[
+                                            CoconutLayout.spacing_100w,
+                                            const CupertinoActivityIndicator(
+                                              radius: 6,
+                                            ),
+                                          ],
+                                          if (serverConnectionStatus ==
+                                                  NodeConnectionStatus.connected ||
+                                              serverConnectionStatus ==
+                                                  NodeConnectionStatus.failed) ...[
+                                            CoconutLayout.spacing_150w,
+                                            Container(
+                                              width: CoconutTypography.body3_12.fontSize! / 2,
+                                              height: CoconutTypography.body3_12.fontSize! / 2,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: serverConnectionStatus ==
+                                                        NodeConnectionStatus.connected
+                                                    ? CoconutColors.green
+                                                    : CoconutColors.red,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  style: CoconutTypography.body3_12.setColor(
-                                    CoconutColors.gray400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                                );
+                              }),
                         ),
                       ],
                     ],
