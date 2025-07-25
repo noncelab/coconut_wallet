@@ -220,6 +220,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                                 _isWalletInfoExpanded
                                                     ? 'assets/svg/circle-warning.svg'
                                                     : 'assets/svg/circle-help.svg',
+                                                width: 18,
                                                 colorFilter: const ColorFilter.mode(
                                                     CoconutColors.white, BlendMode.srcIn),
                                               ),
