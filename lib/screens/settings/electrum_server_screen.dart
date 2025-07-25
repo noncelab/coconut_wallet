@@ -283,7 +283,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                           },
                           child: Selector<ElectrumServerViewModel, NodeConnectionStatus?>(
                               selector: (_, viewModel) =>
-                                  viewModel.serverConnectionMap[serverList[i]],
+                                  viewModel.connectionStatusMap[serverList[i]],
                               builder: (context, serverConnectionStatus, child) {
                                 return Container(
                                   width: MediaQuery.sizeOf(context).width,

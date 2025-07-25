@@ -17,13 +17,13 @@ class ElectrumServerViewModel extends ChangeNotifier {
   ElectrumServer? get currentServer => _currentServer;
 
   NodeConnectionStatus _nodeConnectionStatus = NodeConnectionStatus.waiting;
-  final Map<ElectrumServer, NodeConnectionStatus> _serverConnectionMap = {};
+  final Map<ElectrumServer, NodeConnectionStatus> _connectionStatusMap = {};
   bool _isServerAddressFormatError = false; // 서버 주소 형식
   bool _isPortOutOfRangeError = false; // 1 ~ 65535 포트 범위
   bool _isDefaultServerMenuVisible = false; // 기본 서버 메뉴 visibility
 
   NodeConnectionStatus get nodeConnectionStatus => _nodeConnectionStatus;
-  Map<ElectrumServer, NodeConnectionStatus> get serverConnectionMap => _serverConnectionMap;
+  Map<ElectrumServer, NodeConnectionStatus> get connectionStatusMap => _connectionStatusMap;
   bool get isServerAddressFormatError => _isServerAddressFormatError;
   bool get isPortOutOfRangeError => _isPortOutOfRangeError;
   bool get isDefaultServerMenuVisible => _isDefaultServerMenuVisible;
@@ -33,7 +33,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
     _initialServer = _preferenceProvider.getElectrumServer();
 
     // 초기 서버 정보 설정
-    setCurrentServer(_initialServer);
+    _setCurrentServer(_initialServer);
 
     // 초기 상태 확인
     _checkInitialNodeProviderStatus();
@@ -45,7 +45,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
   /// 초기 NodeProvider 상태 확인
   void _checkInitialNodeProviderStatus() {
     final currentServer = _preferenceProvider.getElectrumServer();
-    changeServer(currentServer);
+    _performServerConnectionTest(currentServer);
   }
 
   /// 모든 기본 일렉트럼 서버 상태 체크
@@ -56,16 +56,16 @@ class ElectrumServerViewModel extends ChangeNotifier {
         : DefaultElectrumServer.mainnetServers;
 
     for (final server in serverList) {
-      _serverConnectionMap[server] = NodeConnectionStatus.connecting;
+      _connectionStatusMap[server] = NodeConnectionStatus.connecting;
 
       _nodeProvider.checkServerConnection(server).then((result) {
-        _serverConnectionMap[server] =
+        _connectionStatusMap[server] =
             result.isSuccess ? NodeConnectionStatus.connected : NodeConnectionStatus.failed;
         debugPrint(
-            '[서버 상태 체크] ${_serverConnectionMap[server]!.name} - ${result.isSuccess ? 'Connected' : 'Failed'}');
+            '[서버 상태 체크] ${_connectionStatusMap[server]!.name} - ${result.isSuccess ? 'Connected' : 'Failed'}');
         notifyListeners();
       }).catchError((_) {
-        _serverConnectionMap[server] = NodeConnectionStatus.failed;
+        _connectionStatusMap[server] = NodeConnectionStatus.failed;
         notifyListeners();
       });
     }
@@ -91,7 +91,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setCurrentServer(ElectrumServer server) {
+  void _setCurrentServer(ElectrumServer server) {
     _currentServer = server;
     notifyListeners();
   }
@@ -111,9 +111,6 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   /// 현재 서버와 동일한지 확인
   bool isSameWithCurrentServer(String serverAddress, String portText, bool useSsl) {
-    debugPrint(
-        'current server: ${_currentServer.host} ${_currentServer.port} ${_currentServer.ssl}');
-    debugPrint('new server: $serverAddress $portText $useSsl');
     return serverAddress == _currentServer.host &&
         portText == _currentServer.port.toString() &&
         useSsl == _currentServer.ssl;
@@ -138,7 +135,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
     final result = await _nodeProvider.changeServer(newServer);
 
     // 상태 상관없이 서버 정보 업데이트
-    setCurrentServer(newServer);
+    _setCurrentServer(newServer);
     _preferenceProvider.setCustomElectrumServer(
       newServer.host,
       newServer.port,
@@ -154,25 +151,6 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     setNodeConnectionStatus(NodeConnectionStatus.connected);
     return true;
-  }
-
-  /// 서버 변경 및 연결 테스트
-  void changeServer(ElectrumServer currentServer) {
-    debugPrint('서버 상태 점검 시작: ${currentServer.host}:${currentServer.port}');
-
-    // 현재 연결된 서버와 설정된 서버가 같은지 확인
-    final isSameServerConnected = _nodeProvider.host == currentServer.host &&
-        _nodeProvider.port == currentServer.port &&
-        _nodeProvider.ssl == currentServer.ssl;
-
-    debugPrint('NodeProvider 초기화됨 - 서버 일치 여부: $isSameServerConnected');
-
-    if (!isSameServerConnected) {
-      debugPrint(
-          '서버 상태 점검: [다른 서버에 연결됨] NodeProvider: ${_nodeProvider.host}:${_nodeProvider.port}, 설정: ${currentServer.host}:${currentServer.port}');
-    }
-
-    _performServerConnectionTest(currentServer);
   }
 
   /// 서버 연결 테스트 수행
