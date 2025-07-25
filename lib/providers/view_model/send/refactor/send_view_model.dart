@@ -793,6 +793,11 @@ class SendViewModel extends ChangeNotifier {
   void saveSendInfo() {
     final recipientMap =
         _recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
+    // 이전에 사용한 정보 초기화
+    _sendInfoProvider.setRecipientsForBatch(null);
+    _sendInfoProvider.setRecipientAddress(null);
+    _sendInfoProvider.setAmount(null);
+
     if (isBatchMode) {
       _sendInfoProvider.setRecipientsForBatch(recipientMap);
     } else {

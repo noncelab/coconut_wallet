@@ -48,11 +48,11 @@ class SendInfoProvider {
     _walletId = id;
   }
 
-  void setRecipientAddress(String address) {
+  void setRecipientAddress(String? address) {
     _recipientAddress = address;
   }
 
-  void setAmount(double amount) {
+  void setAmount(double? amount) {
     _amount = amount;
   }
 
@@ -80,7 +80,7 @@ class SendInfoProvider {
     _signedPsbtBase64Encoded = signedPsbtBase64Encoded;
   }
 
-  void setRecipientsForBatch(Map<String, double> recipients) {
+  void setRecipientsForBatch(Map<String, double>? recipients) {
     _recipientsForBatch = recipients;
   }
 
