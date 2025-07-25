@@ -11,16 +11,16 @@ enum DefaultElectrumServer {
     1,
     false, // isRegtest
   ),
-  blockstream(
-    ElectrumServer(
-      'blockstream.info',
-      700,
-      true,
-    ),
-    'BLOCKSTREAM',
-    2,
-    false,
-  ),
+  // blockstream(
+  //   ElectrumServer(
+  //     'blockstream.info',
+  //     700,
+  //     true,
+  //   ),
+  //   'BLOCKSTREAM',
+  //   2,
+  //   false,
+  // ),
   acinq(
     ElectrumServer(
       'electrum.acinq.co',
@@ -91,16 +91,16 @@ enum DefaultElectrumServer {
     9,
     false,
   ),
-  ecdsa(
-    ElectrumServer(
-      'ecdsa.net',
-      110,
-      true,
-    ),
-    'ECDSA',
-    10,
-    false,
-  ),
+  // ecdsa(
+  //   ElectrumServer(
+  //     'ecdsa.net',
+  //     110,
+  //     true,
+  //   ),
+  //   'ECDSA',
+  //   10,
+  //   false,
+  // ),
 
   // Regtest
   regtest(

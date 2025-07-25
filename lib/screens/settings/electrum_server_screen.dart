@@ -217,7 +217,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                   ],
                 ),
               ),
-              _buildBottomButton(),
+              _buildBottomButtons(),
             ],
           ),
         ),
@@ -727,7 +727,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     }
   }
 
-  Widget _buildBottomButton() {
+  Widget _buildBottomButtons() {
     return Selector<ElectrumServerViewModel, NodeConnectionStatus>(
         selector: (_, viewModel) => viewModel.nodeConnectionStatus,
         builder: (context, nodeConnectionStatus, child) {
