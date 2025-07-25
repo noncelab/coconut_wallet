@@ -1,16 +1,16 @@
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 
 enum DefaultElectrumServer {
-  // coconut(
-  //   ElectrumServer(
-  //     'electrum.coconut.onl',
-  //     50001,
-  //     true,
-  //   ),
-  //   'COCONUT',
-  //   1,
-  //   false, // isRegtest
-  // ),
+  coconut(
+    ElectrumServer(
+      'electrum.coconut.onl',
+      50001,
+      true,
+    ),
+    'COCONUT',
+    1,
+    false, // isRegtest
+  ),
   blockstream(
     ElectrumServer(
       'blockstream.info',
@@ -129,7 +129,7 @@ enum DefaultElectrumServer {
   static DefaultElectrumServer fromServerType(String serverType) {
     return DefaultElectrumServer.values.firstWhere(
       (e) => e.serverName == serverType,
-      orElse: () => DefaultElectrumServer.acinq, // FIXME: to coconut
+      orElse: () => DefaultElectrumServer.coconut,
     );
   }
 

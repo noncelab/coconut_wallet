@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -21,9 +20,6 @@ class ElectrumServerViewModel extends ChangeNotifier {
   bool _isPortOutOfRangeError = false; // 1 ~ 65535 포트 범위
   bool _isDefaultServerMenuVisible = false; // 기본 서버 메뉴 visibility
 
-  // NodeSyncState 구독 필요 없음, 연결 상태만 필요
-  // StreamSubscription<NodeSyncState>? _nodeStateSubscription;
-
   NodeConnectionStatus get nodeConnectionStatus => _nodeConnectionStatus;
 
   bool get isServerAddressFormatError => _isServerAddressFormatError;
@@ -37,64 +33,9 @@ class ElectrumServerViewModel extends ChangeNotifier {
     // 초기 서버 정보 설정
     setCurrentServer(_initialServer);
 
-    // NodeProvider 상태 변경 감지 시작
-    // _startListeningToNodeState();
-
     // 초기 상태 확인
     _checkInitialNodeProviderStatus();
   }
-
-  // /// NodeProvider 상태 변경 리스너 등록
-  // void _startListeningToNodeState() {
-  //   _nodeStateSubscription?.cancel();
-  //   _nodeStateSubscription = _nodeProvider.syncStateStream.listen((state) {
-  //     _handleNodeSyncStateChange(state);
-  //   });
-  // }
-
-  /// NodeSyncState 변경 처리
-  // void _handleNodeSyncStateChange(NodeSyncState state) {
-  //   // 현재 설정된 서버와 NodeProvider의 서버가 같은지 확인
-  //   final currentServer = _preferenceProvider.getElectrumServer();
-  //   final isCurrentServerConnected = _nodeProvider.host == currentServer.host &&
-  //       _nodeProvider.port == currentServer.port &&
-  //       _nodeProvider.ssl == currentServer.ssl;
-
-  //   // 현재 서버와 연결된 상태에서만 상태 업데이트
-  //   if (isCurrentServerConnected) {
-  //     _updateStatusFromNodeSyncState(state, allowConnectingOverride: false);
-  //   }
-
-  //   // 연결 중 상태에서의 상태 변화 처리
-  //   if (_nodeConnectionStatus == NodeConnectionStatus.connecting) {
-  //     _updateStatusFromNodeSyncState(state, allowConnectingOverride: true);
-  //   }
-  // }
-
-  /// NodeSyncState에 따른 NodeConnectionStatus 업데이트
-  // void _updateStatusFromNodeSyncState(NodeSyncState state,
-  //     {required bool allowConnectingOverride}) {
-  //   switch (state) {
-  //     case NodeSyncState.syncing:
-  //       if (allowConnectingOverride || _nodeConnectionStatus != NodeConnectionStatus.connecting) {
-  //         setNodeConnectionStatus(NodeConnectionStatus.connected);
-  //       }
-  //       break;
-  //     case NodeSyncState.completed:
-  //       if (allowConnectingOverride || _nodeConnectionStatus != NodeConnectionStatus.connecting) {
-  //         setNodeConnectionStatus(NodeConnectionStatus.connected);
-  //       }
-  //       break;
-  //     case NodeSyncState.failed:
-  //       setNodeConnectionStatus(NodeConnectionStatus.failed);
-  //       break;
-  //     case NodeSyncState.init:
-  //       if (!allowConnectingOverride && _nodeConnectionStatus != NodeConnectionStatus.connecting) {
-  //         setNodeConnectionStatus(NodeConnectionStatus.waiting);
-  //       }
-  //       break;
-  //   }
-  // }
 
   /// 초기 NodeProvider 상태 확인
   void _checkInitialNodeProviderStatus() {
@@ -142,16 +83,19 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   /// 현재 서버와 동일한지 확인
   bool isSameWithCurrentServer(String serverAddress, String portText, bool useSsl) {
+    debugPrint(
+        'current server: ${_currentServer.host} ${_currentServer.port} ${_currentServer.ssl}');
+    debugPrint('new server: $serverAddress $portText $useSsl');
     return serverAddress == _currentServer.host &&
         portText == _currentServer.port.toString() &&
         useSsl == _currentServer.ssl;
   }
 
-  /// 초기 서버 정보와 다른지 확인 (새로 추가)
+  /// 초기 서버 정보와 다른지 확인
   bool isDifferentFromInitialServer(String serverAddress, String portText, bool useSsl) {
-    return serverAddress != _currentServer.host ||
-        portText != _currentServer.port.toString() ||
-        useSsl != _currentServer.ssl;
+    return serverAddress != _initialServer.host ||
+        portText != _initialServer.port.toString() ||
+        useSsl != _initialServer.ssl;
   }
 
   /// 입력 형식 유효성 검사: 서버 주소 형식, 포트 범위 검사
@@ -163,21 +107,23 @@ class ElectrumServerViewModel extends ChangeNotifier {
   /// 서버 변경 및 상태 업데이트
   Future<bool> changeServerAndUpdateState(ElectrumServer newServer) async {
     setNodeConnectionStatus(NodeConnectionStatus.connecting);
-
     final result = await _nodeProvider.changeServer(newServer);
+
+    // 상태 상관없이 서버 정보 업데이트
+    setCurrentServer(newServer);
+    _preferenceProvider.setCustomElectrumServer(
+      newServer.host,
+      newServer.port,
+      newServer.ssl,
+    );
+
+    debugPrint('서버 정보 업데이트: ${newServer.host} ${newServer.port} ${newServer.ssl}');
 
     if (result.isFailure) {
       setNodeConnectionStatus(NodeConnectionStatus.failed);
       return false;
     }
 
-    setCurrentServer(newServer);
-
-    _preferenceProvider.setCustomElectrumServer(
-      newServer.host,
-      newServer.port,
-      newServer.ssl,
-    );
     setNodeConnectionStatus(NodeConnectionStatus.connected);
     return true;
   }
@@ -224,11 +170,5 @@ class ElectrumServerViewModel extends ChangeNotifier {
       debugPrint('서버 상태 점검: [테스트 중 오류] ${currentServer.host}:${currentServer.port} - $error');
       setNodeConnectionStatus(NodeConnectionStatus.failed);
     });
-  }
-
-  @override
-  void dispose() {
-    // _nodeStateSubscription?.cancel();
-    super.dispose();
   }
 }

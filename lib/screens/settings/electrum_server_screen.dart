@@ -143,6 +143,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
   bool _hasActualChanges() {
     final viewModel = context.read<ElectrumServerViewModel>();
+
+    if (_serverAddressController.text.isEmpty ||
+        _portController.text.isEmpty ||
+        !viewModel.isValidDomain(_serverAddressController.text) ||
+        !viewModel.isValidPort(_portController.text)) return false;
+
     return !viewModel.isSameWithCurrentServer(
         _serverAddressController.text, _portController.text, _currentSslState);
   }
@@ -688,16 +694,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   Widget _buildBottomButton() {
-    return Selector<ElectrumServerViewModel, Tuple3<NodeConnectionStatus, bool, bool>>(
-        selector: (_, viewModel) => Tuple3(viewModel.nodeConnectionStatus,
-            viewModel.isServerAddressFormatError, viewModel.isPortOutOfRangeError),
-        builder: (context, data, child) {
-          final nodeConnectionStatus = data.item1;
-          final isServerAddressFormatError = data.item2;
-          final isPortOutOfRangeError = data.item3;
-
+    return Selector<ElectrumServerViewModel, NodeConnectionStatus>(
+        selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+        builder: (context, nodeConnectionStatus, child) {
           // Save 버튼: 실제 변경 여부 확인
           final hasActualChanges = _hasActualChanges();
+          debugPrint('hasActualChanges : $hasActualChanges');
 
           // Reset 버튼: 초기 서버 정보와 다른지 확인
           final isDifferentFromInitial = _isDifferentFromInitialServer();
@@ -721,9 +723,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: SizedBox(
                         width: MediaQuery.sizeOf(context).width,
                         child: ShrinkAnimationButton(
-                          isActive: true,
-                          // nodeConnectionStatus != NodeConnectionStatus.connecting &&
-                          //     isDifferentFromInitial,
+                          isActive: nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                              isDifferentFromInitial,
                           defaultColor: CoconutColors.white,
                           pressedColor: CoconutColors.gray350,
                           onPressed: _onReset,
@@ -745,24 +746,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: SizedBox(
                         width: MediaQuery.sizeOf(context).width,
                         child: ShrinkAnimationButton(
-                          isActive: true,
-                          // _serverAddressController.text.isNotEmpty &&
-                          //     _portController.text.isNotEmpty &&
-                          //     !isServerAddressFormatError &&
-                          //     !isPortOutOfRangeError &&
-                          //     nodeConnectionStatus != NodeConnectionStatus.connecting &&
-                          //     hasActualChanges,
+                          isActive: hasActualChanges &&
+                              nodeConnectionStatus != NodeConnectionStatus.connecting,
                           defaultColor: CoconutColors.white,
                           pressedColor: CoconutColors.gray350,
                           onPressed: () {
                             _unFocus();
-
-                            // if (isServerAddressFormatError ||
-                            //     isPortOutOfRangeError ||
-                            //     _serverAddressController.text.isEmpty ||
-                            //     _portController.text.isEmpty ||
-                            //     !hasActualChanges) return;
-
                             _onSave();
                           },
                           borderRadius: CoconutStyles.radius_200,

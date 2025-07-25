@@ -267,8 +267,8 @@ class PreferenceProvider extends ChangeNotifier {
 
     if (serverName.isEmpty) {
       if (NetworkType.currentNetworkType == NetworkType.mainnet) {
-        setDefaultElectrumServer(DefaultElectrumServer.acinq); // FIXME: to coconut
-        return DefaultElectrumServer.acinq.server; // FIXME: to coconut
+        setDefaultElectrumServer(DefaultElectrumServer.coconut);
+        return DefaultElectrumServer.coconut.server;
       } else {
         setDefaultElectrumServer(DefaultElectrumServer.regtest);
         return DefaultElectrumServer.regtest.server;
