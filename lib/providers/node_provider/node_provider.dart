@@ -40,6 +40,7 @@ class NodeProvider extends ChangeNotifier {
   bool _isInitializing = false;
   bool _isClosing = false;
   bool _isPendingInitialization = false;
+  bool _isServerChanging = false;
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
@@ -77,6 +78,7 @@ class NodeProvider extends ChangeNotifier {
   String get host => _electrumServer.host;
   int get port => _electrumServer.port;
   bool get ssl => _electrumServer.ssl;
+  bool get isServerChanging => _isServerChanging;
 
   NodeProvider(this._electrumServer, this._networkType, this._connectivityProvider,
       this._walletLoadStateNotifier, this._walletItemListNotifier, this._analyticsService,
@@ -443,6 +445,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
+    _isServerChanging = true;
     await closeConnection();
     _electrumServer = electrumServer;
 
@@ -467,6 +470,8 @@ class NodeProvider extends ChangeNotifier {
       _stateManager?.setNodeSyncStateToFailed();
       notifyListeners();
       return Result.failure(ErrorCodes.networkError);
+    } finally {
+      _isServerChanging = false;
     }
   }
 
