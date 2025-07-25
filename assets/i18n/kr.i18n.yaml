@@ -370,7 +370,6 @@ settings_screen:
       invalid_domain_format: "도메인 형식이 아니에요"
       port_out_of_range: "유효한 포트를 입력해주세요 (1~65535)"
     alert: 
-      connection_failed_to_server: "$server에 연결할 수 없습니다!"
       connection_failed: "연결할 수 없습니다!"
       connecting: "연결 중입니다"
       connected: "연결되었습니다"

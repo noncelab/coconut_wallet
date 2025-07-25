@@ -38,6 +38,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
     // 초기 상태 확인
     _checkInitialNodeProviderStatus();
 
+    // 모든 ElectrumServer 연결 테스트
     _checkAllElectrumServerConnections();
   }
 
@@ -158,11 +159,6 @@ class ElectrumServerViewModel extends ChangeNotifier {
   /// 서버 변경 및 연결 테스트
   void changeServer(ElectrumServer currentServer) {
     debugPrint('서버 상태 점검 시작: ${currentServer.host}:${currentServer.port}');
-
-    // NodeProvider가 초기화되었는지 확인 // 이거 왜 하지?
-    // if (!_nodeProvider.isInitialized) {
-    //   debugPrint('서버 상태 점검: [NodeProvider 초기화되지 않음]');
-    // }
 
     // 현재 연결된 서버와 설정된 서버가 같은지 확인
     final isSameServerConnected = _nodeProvider.host == currentServer.host &&

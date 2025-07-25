@@ -677,7 +677,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   Widget _buildAlertIcon(NodeConnectionStatus status) {
     switch (status) {
-      case NodeConnectionStatus.unconnected:
       case NodeConnectionStatus.failed:
         {
           return SvgPicture.asset(
@@ -709,11 +708,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   String _getAlertString(NodeConnectionStatus status) {
     switch (status) {
-      case NodeConnectionStatus.unconnected:
-        {
-          return t.settings_screen.electrum_server.alert
-              .connection_failed_to_server(server: _serverAddressController.text);
-        }
       case NodeConnectionStatus.failed:
         {
           return t.settings_screen.electrum_server.alert.connection_failed;
@@ -816,7 +810,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 }
 
 enum NodeConnectionStatus {
-  unconnected, // %s에 연결할 수 없습니다!
   connecting, // 연결 중입니다
   connected, // 연결되었습니다
   failed, // 연결할 수 없습니다!

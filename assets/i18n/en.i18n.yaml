@@ -328,7 +328,6 @@ settings_screen:
       invalid_domain_format: "Not a valid domain format"
       port_out_of_range: "Please enter a valid port number (1–65535)"
     alert: 
-      connection_failed_to_server: "Cannot connect to $server!"
       connection_failed: "Cannot connect!"
       connecting: "Connecting..."
       connected: "Connected"
