@@ -14,6 +14,8 @@ class SharedPrefKeys {
   static const String kCanCheckBiometrics = "CAN_CHECK_BIOMETRICS";
   static const String kIsBtcUnit = "IS_BTC_UNIT";
   static const String kShowOnlyUnusedAddresses = "SHOW_ONLY_UNUSED_ADDRESSES";
+  static const String kIsReceivingTooltipDisabled = "IS_RECEIVING_TOOLTIP_DISABLED";
+  static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';

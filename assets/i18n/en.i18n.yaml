@@ -525,6 +525,7 @@ tooltip:
   mfp: "This is the unique value of the wallet.\nAlso called Master Fingerprint (MFP)."
   rbf: "A feature to replace an existing transaction with a new one by increasing the fee. (RBF, Replace-By-Fee)"
   cpfp: "A feature to increase priority by setting a high fee on a new transaction (Child) to make the existing transaction (Parent) process faster. (CPFP, Child-Pays-For-Parent)"
+  dont_show_again: "Don't show again"
 
 toast:
   back_exit: "Press the back button once more to exit."

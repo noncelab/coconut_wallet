@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -29,6 +30,14 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _showOnlyUnusedAddresses;
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
 
+  /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
+  late bool _isReceivingTooltipDisabled;
+  bool get isReceivingTooltipDisabled => language == 'kr' ? _isReceivingTooltipDisabled : true;
+
+  /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
+  late bool _isChangeTooltipDisabled;
+  bool get isChangeTooltipDisabled => language == 'kr' ? _isChangeTooltipDisabled : true;
+
   /// 언어 설정
   late String _language;
   String get language => _language;
@@ -45,6 +54,8 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
+    _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -91,20 +102,20 @@ class PreferenceProvider extends ChangeNotifier {
   /// 언어 설정 적용 (동기 버전)
   void _applyLanguageSettingSync() {
     try {
-      print('Applying language setting: $_language');
+      Logger.log('Applying language setting: $_language');
       if (_language == 'kr') {
         LocaleSettings.setLocaleSync(AppLocale.kr);
-        print('Korean locale applied successfully');
+        Logger.log('Korean locale applied successfully');
       } else if (_language == 'en') {
         LocaleSettings.setLocaleSync(AppLocale.en);
-        print('English locale applied successfully');
+        Logger.log('English locale applied successfully');
       }
 
       // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
       notifyListeners();
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
-      print('Language initialization failed: $e');
+      Logger.log('Language initialization failed: $e');
     }
   }
 
@@ -121,7 +132,7 @@ class PreferenceProvider extends ChangeNotifier {
       }
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
-      print('Language initialization failed: $e');
+      Logger.log('Language initialization failed: $e');
     }
   }
 
@@ -158,6 +169,20 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeShowOnlyUnusedAddresses(bool show) async {
     _showOnlyUnusedAddresses = show;
     await _sharedPrefs.setBool(SharedPrefKeys.kShowOnlyUnusedAddresses, show);
+    notifyListeners();
+  }
+
+  /// 주소 리스트 화면 '입금' 툴팁 다시 보지 않기 설정
+  Future<void> setReceivingTooltipDisabledPermanently() async {
+    _isReceivingTooltipDisabled = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsReceivingTooltipDisabled, true);
+    notifyListeners();
+  }
+
+  /// 주소 리스트 화면 '잔돈' 툴팁 다시 보지 않기 설정
+  Future<void> setChangeTooltipDisabledPermanently() async {
+    _isChangeTooltipDisabled = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsChangeTooltipDisabled, true);
     notifyListeners();
   }
 
