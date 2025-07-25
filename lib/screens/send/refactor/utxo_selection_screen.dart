@@ -10,10 +10,12 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/utxo_selection
 import 'package:coconut_wallet/providers/view_model/send/send_utxo_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
+import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
@@ -111,9 +113,12 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     _buildUtxoOrderDropdown(viewModel),
                     FixedBottomButton(
                       buttonHeight: 50,
-                      onButtonClicked: () => Navigator.pop(context, _viewModel.selectedUtxoList),
+                      onButtonClicked: () {
+                        vibrateLight();
+                        Navigator.pop(context, _viewModel.selectedUtxoList);
+                      },
                       text: t.complete,
-                      isActive: _viewModel.selectedUtxoList.isNotEmpty,
+                      isActive: _viewModel.hasSelectionChanged,
                       showGradient: true,
                       gradientPadding:
                           const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),

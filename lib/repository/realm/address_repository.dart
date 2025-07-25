@@ -355,8 +355,8 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 모든 월렛의 수신 주소를 1개씩 조회
-  List<WalletAddress> getReceiveAddresses() {
-    List<WalletAddress> walletAddressList = [];
+  Map<int, WalletAddress> getReceiveAddressMap() {
+    Map<int, WalletAddress> walletAddressMap = {};
     for (final walletBase in realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)')) {
       final realmWalletAddress = realm.query<RealmWalletAddress>(
         r'walletId == $0 AND isChange == false AND index == $1',
@@ -364,11 +364,11 @@ class AddressRepository extends BaseRepository {
       ).firstOrNull;
 
       if (realmWalletAddress != null) {
-        walletAddressList.add(mapRealmToWalletAddress(realmWalletAddress));
+        walletAddressMap[walletBase.id] = mapRealmToWalletAddress(realmWalletAddress);
       }
     }
 
-    return walletAddressList;
+    return walletAddressMap;
   }
 
   /// 지갑 Base 정보 조회

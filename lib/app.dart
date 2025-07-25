@@ -322,7 +322,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   ),
               '/send': (context) => buildScreenWithArguments(
                     context,
-                    (args) => SendScreen(walletId: args['walletId']),
+                    (args) => SendScreen(
+                      walletId: args['walletId'],
+                      sendEntryPoint: args['sendEntryPoint'],
+                    ),
                   ),
               '/send-address': (context) => buildScreenWithArguments(
                     context,
@@ -342,7 +345,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                           currentUnit: args['currentUnit']),
                     ),
                   ),
-              '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
+              '/send-confirm': (context) => buildScreenWithArguments(
+                    context,
+                    (args) => CustomLoadingOverlay(
+                        child: SendConfirmScreen(currentUnit: args['currentUnit'])),
+                  ),
               '/utxo-list': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(

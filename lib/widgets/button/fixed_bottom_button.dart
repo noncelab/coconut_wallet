@@ -2,6 +2,9 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomButton extends StatefulWidget {
+  static const fixedBottomButtonDefaultHeight = 50.0;
+  static const fixedBottomButtonDefaultBottomPadding = 30.0;
+
   const FixedBottomButton({
     super.key,
     required this.onButtonClicked,
@@ -10,7 +13,7 @@ class FixedBottomButton extends StatefulWidget {
     this.isActive = true,
     this.buttonHeight,
     this.horizontalPadding = CoconutLayout.defaultPadding,
-    this.bottomPadding = Sizes.size30,
+    this.bottomPadding = FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
     this.gradientPadding,
     this.subWidget,
     this.backgroundColor = CoconutColors.primary,
@@ -80,7 +83,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                   disabledBackgroundColor: CoconutColors.gray800,
                   disabledForegroundColor: CoconutColors.gray700,
                   isActive: widget.isActive,
-                  height: widget.buttonHeight ?? 50,
+                  height: widget.buttonHeight ?? FixedBottomButton.fixedBottomButtonDefaultHeight,
                   backgroundColor: widget.backgroundColor,
                   foregroundColor: CoconutColors.black,
                   pressedTextColor: CoconutColors.black,

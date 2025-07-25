@@ -8,3 +8,11 @@ extension DoubleFormatting on double {
     return toString();
   }
 }
+
+extension DoublePrecisionExtension on double {
+  /// 소수점 아래 8자리에서 절삭 (반올림 안 함)
+  double truncateTo8() {
+    const factor = 100000000;
+    return (this * factor).truncate() / factor;
+  }
+}

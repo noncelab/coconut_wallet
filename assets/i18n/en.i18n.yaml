@@ -184,7 +184,9 @@ wallet_list:
   wallet_count: "$count Items"
   view_all_wallets: "View All My Wallets"
   primary_wallet: "Primary Wallet"
-  exclude_from_total_amount: "Exclude from Home Total"
+  exclude_from_total_amount: "Excluded from Home Total"
+  home_balance: "Home Balance"
+  excluded_balance: "Excluded Balance"
   settings:
     primary_wallet: "Set as Primary Wallet"
     primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen."
@@ -263,7 +265,7 @@ send_screen:
   fee_subtracted_from_send_amount: "Fee subtracted from send amount"
   fee_subtracted_from_send_amount_disabled_description: "Recipient receives the exact amount entered"
   fee_subtracted_from_send_amount_enabled_description: "The fee will be subtracted from the recipient’s amount"
-  my_address: "My Address"
+  my_address: "My Addresses"
   add_recipient: "Add Recipient"
   use_btc_unit: "Use BTC Unit"
   input_maximum_amount: "Send All"
@@ -272,6 +274,7 @@ send_screen:
   recommended_fee_unavailable_description: "Please enter the fee manually."
   tooltip_text: "${count} addresses • Total ${amount}"
   tooltip_max_mode_text: "Send All Mode Enabled"
+  max_mode_insufficient_balance: "Insufficient Balance"
 
 utxo_selection_screen:
   title: "Select UTXOs"
@@ -519,8 +522,9 @@ errors:
   node_unknown: "An unknown error occurred while connecting to node."
   broadcast_error: "Failed to broadcast transaction."
   network_connect: "No network connection."
+  network_disconnected: "Network disconnected"
   network_not_found: "Network is not connected!"
-  electrum_connection_failed: "Unable to connect to Electrum server."
+  electrum_connection_failed: "Unable to connect to Electrum server"
   insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"

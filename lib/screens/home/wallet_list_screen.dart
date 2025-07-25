@@ -317,40 +317,121 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _buildTotalAmount(Map<int, AnimatedBalanceData> walletBalanceMap) {
     return SliverToBoxAdapter(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 35, bottom: 24, left: 20, right: 20),
-            child: Selector<PreferenceProvider, bool>(
-              selector: (_, viewModel) => viewModel.isBtcUnit,
-              builder: (context, isBtcUnit, child) {
-                return Row(
-                  children: [
-                    AnimatedBalance(
-                        prevValue:
-                            walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b),
-                        value:
-                            walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b),
-                        currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                        textStyle: CoconutTypography.heading3_21_NumberBold),
-                    CoconutLayout.spacing_100w,
-                    Text(
-                      isBtcUnit ? t.btc : t.sats,
-                      style: CoconutTypography.heading3_21_NumberBold,
-                    ),
-                  ],
-                );
-              },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            color: CoconutColors.gray900,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Selector<PreferenceProvider, Tuple3<bool, List<int>, List<int>>>(
+            selector: (_, viewModel) => Tuple3(
+              viewModel.isBtcUnit,
+              viewModel.excludedFromTotalBalanceWalletIds,
+              viewModel.favoriteWalletIds,
             ),
+            builder: (context, data, child) {
+              final isBtcUnit = data.item1;
+              final excludedIds = data.item2;
+              final favoriteIds = data.item3;
+
+              // 전체 총액
+              final totalBalance =
+                  walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b);
+              final prevTotalBalance =
+                  walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b);
+
+              // 제외 총액 (제외된 지갑들의 총액)
+              final excludedBalance = walletBalanceMap.entries
+                  .where((entry) => excludedIds.contains(entry.key))
+                  .map((entry) => entry.value.current)
+                  .fold(0, (a, b) => a + b);
+
+              // 홈 화면 총액
+              final homeBalance = totalBalance - excludedBalance;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 전체 총액
+                  Row(
+                    children: [
+                      AnimatedBalance(
+                          prevValue: prevTotalBalance,
+                          value: totalBalance,
+                          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                          textStyle: CoconutTypography.heading4_18_NumberBold),
+                      CoconutLayout.spacing_100w,
+                      Text(
+                        isBtcUnit ? t.btc : t.sats,
+                        style: CoconutTypography.heading4_18_NumberBold,
+                      ),
+                    ],
+                  ),
+
+                  // 홈 화면 총액 (애니메이션)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      );
+                    },
+                    child: excludedIds.isNotEmpty
+                        ? Column(
+                            key: const ValueKey('balance_details'),
+                            children: [
+                              CoconutLayout.spacing_300h,
+                              _buildBalanceRow(
+                                label: t.wallet_list.home_balance,
+                                amount: homeBalance,
+                                isBtcUnit: isBtcUnit,
+                              ),
+                              CoconutLayout.spacing_200h,
+                              _buildBalanceRow(
+                                label: t.wallet_list.excluded_balance,
+                                amount: excludedBalance,
+                                isBtcUnit: isBtcUnit,
+                              ),
+                            ],
+                          )
+                        : const SizedBox.shrink(key: ValueKey('balance_empty')),
+                  ),
+                ],
+              );
+            },
           ),
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: CoconutColors.gray700,
-          ),
-          CoconutLayout.spacing_300h,
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildBalanceRow({
+    required String label,
+    required int amount,
+    required bool isBtcUnit,
+  }) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+        ),
+        const Spacer(),
+        Text(
+          isBtcUnit
+              ? BitcoinUnit.btc.displayBitcoinAmount(amount)
+              : BitcoinUnit.sats.displayBitcoinAmount(amount),
+          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+        ),
+        CoconutLayout.spacing_100w,
+        Text(
+          isBtcUnit ? t.btc : t.sats,
+          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+        ),
+      ],
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -50,7 +51,7 @@ class SendConfirmViewModel extends ChangeNotifier {
       totalSendAmount += value;
       addresses.add('$key ($value ${t.btc})');
     });
-    _amount = totalSendAmount;
+    _amount = totalSendAmount.truncateTo8();
     _addresses = addresses;
   }
 

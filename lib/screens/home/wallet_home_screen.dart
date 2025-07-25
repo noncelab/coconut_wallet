@@ -18,6 +18,7 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -116,6 +117,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           final isBalanceHidden = data.item3;
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
+          final networkStatus = data.item7;
 
           if (viewModel.isWalletListChanged(_previousWalletList, walletItem, walletBalanceMap)) {
             _handleWalletListUpdate(walletItem);
@@ -137,10 +139,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         physics: const AlwaysScrollableScrollPhysics(),
                         semanticChildCount: walletItem.length,
                         slivers: <Widget>[
-                          _buildAppBar(viewModel),
+                          _buildAppBar(networkStatus),
                           // pull to refresh시 로딩 인디케이터를 보이기 위함
                           CupertinoSliverRefreshControl(
-                            onRefresh: viewModel.updateWalletBalances,
+                            onRefresh: viewModel.onRefresh,
                           ),
                           _buildLoadingIndicator(viewModel),
                           _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance(),
@@ -686,8 +688,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void _onTapSend(List<int> walletOrder) {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
     if (firstWallet == null) {
-      context.read<SendInfoProvider>().clear();
-      Navigator.pushNamed(context, '/send', arguments: {'id': null});
+      Navigator.pushNamed(context, '/send',
+          arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home});
       return;
     }
 
@@ -709,8 +711,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
 
     if (!_checkStateAndShowToast(targetId)) return;
-    context.read<SendInfoProvider>().clear();
-    Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId});
+    Navigator.pushNamed(context, '/send',
+        arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
   }
 
   Widget _buildViewAll(int walletCount) {
@@ -1021,11 +1023,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  SliverAppBar _buildAppBar(WalletHomeViewModel viewModel) {
-    final shouldShow = viewModel.networkStatus != NetworkStatus.online;
+  SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
+    final shouldShow = networkStatus != NetworkStatus.online;
 
+    Logger.log('networkStatus: $networkStatus, shouldShow: $shouldShow');
     String message;
-    switch (viewModel.networkStatus) {
+    switch (networkStatus) {
       case NetworkStatus.offline:
         message = t.errors.network_disconnected;
         break;
@@ -1036,23 +1039,34 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         message = '';
         break;
     }
+    Logger.log('Error message: $message');
 
     return CoconutAppBar.buildHomeAppbar(
       context: context,
-      leadingSvgAsset: !shouldShow
-          ? Container()
-          : Row(
-              children: [
-                SvgPicture.asset('assets/svg/cloud-disconnected.svg'),
-                CoconutLayout.spacing_100w,
-                Text(
-                  message,
-                  style: CoconutTypography.body3_12_Bold.setColor(
-                    CoconutColors.hotPink,
-                  ),
-                )
-              ],
-            ),
+      leadingSvgAsset: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: shouldShow
+            ? Row(
+                key: const ValueKey('error_message'),
+                children: [
+                  SvgPicture.asset('assets/svg/cloud-disconnected.svg', width: 16),
+                  CoconutLayout.spacing_100w,
+                  Text(
+                    message,
+                    style: CoconutTypography.body3_12_Bold.setColor(
+                      CoconutColors.hotPink,
+                    ),
+                  )
+                ],
+              )
+            : const SizedBox.shrink(key: ValueKey('empty')),
+      ),
       appTitle: '',
       actionButtonList: [
         // 보기 전용 지갑 추가하기

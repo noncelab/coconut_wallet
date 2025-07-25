@@ -22,6 +22,26 @@ class TransactionBuildResult {
     required this.estimatedFee,
     this.exception,
   });
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    buffer.writeln("┌──────────────── Transaction Build Result Info ────────────────┐");
+    buffer.writeln("│ isSuccess = $isSuccess");
+    if (transaction == null) buffer.writeln("│ transaction = null");
+    if (selectedUtxos == null) {
+      buffer.writeln("│ selectedUtxos = null");
+    } else {
+      buffer.writeln("│ selectedUtxos(${selectedUtxos!.length}):");
+      for (var utxo in selectedUtxos!) {
+        buffer.writeln("│   - amount: ${utxo.amount}");
+      }
+    }
+    buffer.writeln("│ estimatedFee = $estimatedFee");
+    buffer.writeln("│ exception = $exception");
+    buffer.writeln("└───────────────────────────────────────────────────────────────┘");
+    return buffer.toString();
+  }
 }
 
 /// [SingleTx]
@@ -318,5 +338,25 @@ class TransactionBuilder {
 
     final selectedUtxoIds = _selectedUtxos!.map((e) => e.utxoId).toSet();
     return availableUtxos.where((utxo) => !selectedUtxoIds.contains(utxo.utxoId)).toList();
+  }
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    buffer.writeln("┌──────────────────── Transaction Builder Info ────────────────────┐");
+    buffer.writeln("│ availableUtxos(${availableUtxos.length}):");
+    for (var utxo in availableUtxos) {
+      buffer.writeln("│   - amount: ${utxo.amount}");
+    }
+    buffer.writeln("│ recipients(${recipients.length}):");
+    for (var entry in recipients.entries) {
+      buffer.writeln("│   - ${entry.key}: ${entry.value}");
+    }
+    buffer.writeln("│ feeRate = $feeRate");
+    buffer.writeln("│ changeDerivationPath = $changeDerivationPath");
+    buffer.writeln("│ isFeeSubtractedFromAmount = $isFeeSubtractedFromAmount");
+    buffer.writeln("│ isUtxoFixed = $isUtxoFixed");
+    buffer.writeln("└─────────────────────────────────────────────────────────────────┘");
+    return buffer.toString();
   }
 }

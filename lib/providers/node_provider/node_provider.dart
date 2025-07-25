@@ -39,6 +39,7 @@ class NodeProvider extends ChangeNotifier {
   bool _isInitializing = false;
   bool _isClosing = false;
   bool _isPendingInitialization = false;
+  bool _hasConnectionError = false;
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
@@ -76,6 +77,14 @@ class NodeProvider extends ChangeNotifier {
   String get host => _host;
   int get port => _port;
   bool get ssl => _ssl;
+  bool get hasConnectionError => _hasConnectionError;
+
+  void _setConnectionError(bool value) {
+    if (_hasConnectionError != value) {
+      _hasConnectionError = value;
+      notifyListeners();
+    }
+  }
 
   NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
       this._walletLoadStateNotifier, this._walletItemListNotifier, this._analyticsService,
@@ -223,6 +232,7 @@ class NodeProvider extends ChangeNotifier {
 
     _isInitializing = true;
     _isPendingInitialization = false;
+    _setConnectionError(false); // 초기화 시작 시 에러 상태 리셋
 
     try {
       _createNewCompleter();
@@ -243,6 +253,9 @@ class NodeProvider extends ChangeNotifier {
       }
     } catch (e) {
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
+
+      // 연결 에러 플래그 설정 (notifyListeners 호출됨)
+      _setConnectionError(true);
 
       // 초기화 실패 시 노드 동기화 상태를 실패로 설정
       if (_stateManager != null) {
@@ -351,6 +364,7 @@ class NodeProvider extends ChangeNotifier {
 
     try {
       Logger.log('NodeProvider: Starting reconnect');
+      _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
       await closeConnection();
       await initialize();
       final result = await subscribeWallets();
@@ -359,10 +373,12 @@ class NodeProvider extends ChangeNotifier {
         Logger.log('NodeProvider: Reconnect completed successfully');
       } else {
         _stateManager?.setNodeSyncStateToFailed();
+        _setConnectionError(true);
         Logger.error(result.error.toString());
       }
     } catch (e) {
       Logger.error('NodeProvider: Reconnect failed: $e');
+      _setConnectionError(true);
     }
   }
 
