@@ -282,17 +282,6 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                               ? ''
                                               : t.wallet_home_screen.edit.fake_balance
                                                   .fake_balance_input_placeholder,
-                                          suffix: _textEditingController.text.isNotEmpty
-                                              ? Padding(
-                                                  padding: const EdgeInsets.only(
-                                                    right: 16,
-                                                  ),
-                                                  child: Text(
-                                                    t.btc,
-                                                    style: CoconutTypography.body1_16,
-                                                  ),
-                                                )
-                                              : null,
                                           isLengthVisible: false,
                                           controller: _textEditingController,
                                           focusNode: _textFieldFocusNode,
