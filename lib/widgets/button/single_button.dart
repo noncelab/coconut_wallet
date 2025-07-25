@@ -47,6 +47,7 @@ class SingleButton extends StatelessWidget {
   final SingleButtonPosition buttonPosition;
   final TextStyle? subtitleStyle;
   final Color? backgroundColor;
+  final double? betweenGap;
 
   const SingleButton({
     super.key,
@@ -59,6 +60,7 @@ class SingleButton extends StatelessWidget {
     this.buttonPosition = SingleButtonPosition.none,
     this.subtitleStyle = CoconutTypography.body3_12,
     this.backgroundColor = CoconutColors.gray800,
+    this.betweenGap = 0,
   });
 
   @override
@@ -88,6 +90,7 @@ class SingleButton extends StatelessWidget {
                             CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
                 ],
               )),
+              Container(width: betweenGap),
               rightElement ?? _rightArrow(),
             ],
           ),

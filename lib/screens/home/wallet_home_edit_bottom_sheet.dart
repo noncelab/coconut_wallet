@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
@@ -191,7 +193,6 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                         color: CoconutColors.gray700,
                       ),
                       if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
-                        CoconutLayout.spacing_200h,
                         Consumer<WalletHomeEditViewModel>(
                           builder: (context, viewModel, child) {
                             return Column(
@@ -201,6 +202,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                   showDivider: false,
                                   children: [
                                     SingleButton(
+                                      buttonPosition: SingleButtonPosition.middle,
                                       title: t.wallet_home_screen.edit.hide_balance,
                                       subtitle: t.wallet_home_screen.edit.hide_balance_on_home,
                                       subtitleStyle: CoconutTypography.body3_12.setColor(
@@ -214,9 +216,11 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                         viewModel
                                             .setTempIsBalanceHidden(!viewModel.tempIsBalanceHidden);
                                       },
+                                      betweenGap: 16,
                                       backgroundColor: Colors.transparent,
-                                      rightElement: CupertinoSwitch(
-                                        value: viewModel.tempIsBalanceHidden,
+                                      rightElement: CoconutSwitch(
+                                        isOn: viewModel.tempIsBalanceHidden,
+                                        scale: 0.7,
                                         activeColor: CoconutColors.gray100,
                                         trackColor: CoconutColors.gray600,
                                         thumbColor: CoconutColors.gray800,
@@ -227,6 +231,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                     ),
                                     if (viewModel.tempIsBalanceHidden)
                                       SingleButton(
+                                        buttonPosition: SingleButtonPosition.middle,
                                         title: t.wallet_home_screen.edit.fake_balance
                                             .fake_balance_display,
                                         subtitle: t.wallet_home_screen.edit.fake_balance
@@ -234,6 +239,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                         subtitleStyle: CoconutTypography.body3_12.setColor(
                                           CoconutColors.gray400,
                                         ),
+                                        betweenGap: 16,
                                         onPressed: () async {
                                           if (_textFieldFocusNode.hasFocus) {
                                             FocusScope.of(context).unfocus();
@@ -244,8 +250,9 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                               !viewModel.tempIsFakeBalanceActive);
                                         },
                                         backgroundColor: Colors.transparent,
-                                        rightElement: CupertinoSwitch(
-                                          value: viewModel.tempIsFakeBalanceActive,
+                                        rightElement: CoconutSwitch(
+                                          isOn: viewModel.tempIsFakeBalanceActive,
+                                          scale: 0.7,
                                           activeColor: CoconutColors.gray100,
                                           trackColor: CoconutColors.gray600,
                                           thumbColor: CoconutColors.gray800,
@@ -427,11 +434,11 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
       builder: (context, viewModel, _) {
         final fixedWidgets = [
           {
-            'homeFeatureTypeString': HomeFeatureType.totalBalance.toString(),
+            'homeFeatureTypeString': HomeFeatureType.totalBalance.name,
             'icon': HomeFeatureType.totalBalance.assetPath,
           },
           {
-            'homeFeatureTypeString': HomeFeatureType.walletList.toString(),
+            'homeFeatureTypeString': HomeFeatureType.walletList.name,
             'icon': HomeFeatureType.walletList.assetPath,
           },
         ];
@@ -446,117 +453,131 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                 'isEnabled': e.isEnabled,
               })
         ];
-
         return Center(
-          child: SizedBox(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             width: MediaQuery.sizeOf(context).width,
             child: Column(
               children: [
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 14,
-                  children: displayHomeWidgets.map((widget) {
-                    return ShrinkAnimationButton(
-                      onPressed: () {
-                        FocusScope.of(context).unfocus();
-                        if (fixedWidgets.any((fixed) =>
-                            fixed['homeFeatureTypeString'] == widget['homeFeatureTypeString'])) {
-                          return;
-                        }
-                        // homeFeatureTypeString을 통해 토글
-                        _viewModel.toggleTempHomeFeatureEnabled(
-                            widget['homeFeatureTypeString'].toString());
-                      },
-                      defaultColor: CoconutColors.gray800,
-                      pressedColor: CoconutColors.gray750,
-                      child: Container(
-                        height: 100,
-                        width: 100,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Stack(
+                LayoutBuilder(builder: (context, constraints) {
+                  // 한 줄에 몇 개 들어갈지 계산 (예: 3개)
+                  double spacing = 12;
+                  int itemsPerRow = 3;
+
+                  // 각 아이템의 너비 계산 (spacing과 패딩을 제외하고 가득 차도록 설정)
+                  double itemWidth =
+                      (constraints.maxWidth - spacing * (itemsPerRow - 1)) / itemsPerRow;
+
+                  return Wrap(
+                    spacing: spacing,
+                    runSpacing: 14,
+                    children: displayHomeWidgets.map((widget) {
+                      return SizedBox(
+                        width: itemWidth,
+                        height: itemWidth,
+                        child: ShrinkAnimationButton(
+                          isActive: !fixedWidgets.any((fixed) =>
+                              fixed['homeFeatureTypeString'] == widget['homeFeatureTypeString']),
+                          onPressed: () {
+                            FocusScope.of(context).unfocus();
+                            // homeFeatureTypeString을 통해 토글
+                            _viewModel.toggleTempHomeFeatureEnabled(
+                                widget['homeFeatureTypeString'].toString());
+                          },
+                          defaultColor: CoconutColors.gray800,
+                          pressedColor: CoconutColors.gray750,
+                          child: Container(
+                            height: 100,
+                            width: 100,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Align(
-                                    alignment: Alignment.topLeft,
-                                    child: Text(
-                                      _getHomeFeatureLabel(
-                                          widget['homeFeatureTypeString'].toString()),
-                                      style:
-                                          CoconutTypography.body3_12.setColor(CoconutColors.white),
-                                    ),
-                                  ),
-                                  Align(
-                                    alignment: Alignment.topRight,
-                                    child: (widget['homeFeatureTypeString'] ==
-                                                HomeFeatureType.totalBalance.toString() ||
-                                            widget['homeFeatureTypeString'] ==
-                                                HomeFeatureType.walletList.toString())
-                                        ? Container(
-                                            width: 18,
-                                            height: 18,
-                                            decoration: const BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: CoconutColors.gray700,
-                                            ),
-                                            child: Center(
-                                              child: SvgPicture.asset(
-                                                'assets/svg/lock.svg',
-                                                width: 14,
-                                                height: 14,
-                                                colorFilter: const ColorFilter.mode(
-                                                    CoconutColors.white, BlendMode.srcIn),
-                                              ),
-                                            ),
-                                          )
-                                        : AnimatedContainer(
-                                            duration: const Duration(milliseconds: 100),
-                                            width: 16,
-                                            height: 16,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: (widget['isEnabled'] as bool)
-                                                  ? CoconutColors.white
-                                                  : CoconutColors.gray800,
-                                              border: Border.all(
-                                                width: (widget['isEnabled'] as bool) ? 0 : 1.5,
-                                                color: CoconutColors.gray600,
-                                              ),
-                                            ),
-                                            child: Center(
-                                              child: SvgPicture.asset(
-                                                'assets/svg/check.svg',
-                                                width: 6,
-                                                height: 6,
-                                                colorFilter: ColorFilter.mode(
-                                                  (widget['isEnabled'] as bool)
-                                                      ? CoconutColors.gray800
-                                                      : CoconutColors.gray600,
-                                                  BlendMode.srcIn,
+                                  Stack(
+                                    children: [
+                                      Align(
+                                        alignment: Alignment.topLeft,
+                                        child: Text(
+                                          _getHomeFeatureLabel(
+                                              widget['homeFeatureTypeString'].toString()),
+                                          style: CoconutTypography.body3_12
+                                              .setColor(CoconutColors.white),
+                                        ),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.topRight,
+                                        child: (widget['homeFeatureTypeString'] ==
+                                                    HomeFeatureType.totalBalance.name ||
+                                                widget['homeFeatureTypeString'] ==
+                                                    HomeFeatureType.walletList.name)
+                                            ? Container(
+                                                width: 16,
+                                                height: 16,
+                                                decoration: const BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: CoconutColors.gray700,
+                                                ),
+                                                child: Center(
+                                                  child: SvgPicture.asset(
+                                                    'assets/svg/check.svg',
+                                                    width: 6,
+                                                    height: 6,
+                                                    colorFilter: const ColorFilter.mode(
+                                                      CoconutColors.gray800,
+                                                      BlendMode.srcIn,
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : AnimatedContainer(
+                                                duration: const Duration(milliseconds: 100),
+                                                width: 16,
+                                                height: 16,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: (widget['isEnabled'] as bool)
+                                                      ? CoconutColors.white
+                                                      : CoconutColors.gray800,
+                                                  border: Border.all(
+                                                    width: (widget['isEnabled'] as bool) ? 0 : 1.5,
+                                                    color: CoconutColors.gray600,
+                                                  ),
+                                                ),
+                                                child: Center(
+                                                  child: SvgPicture.asset(
+                                                    'assets/svg/check.svg',
+                                                    width: 6,
+                                                    height: 6,
+                                                    colorFilter: ColorFilter.mode(
+                                                      (widget['isEnabled'] as bool)
+                                                          ? CoconutColors.gray800
+                                                          : CoconutColors.gray600,
+                                                      BlendMode.srcIn,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  SvgPicture.asset(
+                                    widget['icon']!.toString(),
+                                    width: 32,
                                   ),
                                 ],
                               ),
-                              const Spacer(),
-                              SvgPicture.asset(
-                                widget['icon']!.toString(),
-                                width: 32,
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                ),
+                      );
+                    }).toList(),
+                  );
+                }),
                 SizedBox(height: _fixedBottomButtonSize.height),
               ],
             ),
@@ -571,7 +592,6 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
       (e) => e.name == homeFeatureTypeString,
       orElse: () => HomeFeatureType.totalBalance,
     );
-
     if (type == HomeFeatureType.totalBalance) {
       return t.wallet_home_screen.edit.category.total_balance;
     } else if (type == HomeFeatureType.walletList) {

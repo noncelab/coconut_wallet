@@ -12,6 +12,7 @@ class ShrinkAnimationButton extends StatefulWidget {
   final Border? border;
   final double borderWidth;
   final List<Color>? borderGradientColors;
+  final bool isActive;
 
   const ShrinkAnimationButton({
     super.key,
@@ -24,6 +25,7 @@ class ShrinkAnimationButton extends StatefulWidget {
     this.borderWidth = 2.0,
     this.border,
     this.borderGradientColors,
+    this.isActive = true,
   });
 
   @override
@@ -54,6 +56,8 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onTapDown(TapDownDetails details) {
+    if (!widget.isActive) return;
+
     _controller.forward();
     setState(() {
       _isPressed = true;
@@ -61,6 +65,8 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onTapUp(TapUpDetails details) {
+    if (!widget.isActive) return;
+
     _controller.reverse().then((_) {
       widget.onPressed();
       setState(() {
@@ -70,6 +76,8 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onTapCancel() {
+    if (!widget.isActive) return;
+
     _controller.reverse();
     setState(() {
       _isPressed = false;
@@ -77,6 +85,8 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   }
 
   void _onLongPress() {
+    if (!widget.isActive) return;
+
     if (widget.onLongPressed != null) {
       widget.onLongPressed!();
     }
