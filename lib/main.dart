@@ -76,7 +76,7 @@ void main() {
 
     // Electrum
     CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
-    CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+    CoconutWalletApp.kCoconutApiHost = dotenv.env[DotenvKeys.apiHost] ?? '';
 
     // Donation
     CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';

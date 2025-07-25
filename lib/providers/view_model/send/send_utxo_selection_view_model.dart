@@ -252,7 +252,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
     _updateUtxoList(_selectedUtxoList);
   }
 
-  Future<Result<int>?> getMinimumFeeRateFromNetwork() async {
+  Future<Result<double>?> getMinimumFeeRateFromNetwork() async {
     return await _nodeProvider.getNetworkMinimumFeeRate();
   }
 

@@ -27,7 +27,7 @@ class FeeSelectionScreen extends StatefulWidget {
 
   final List<FeeInfoWithLevel> feeInfos;
   final TransactionBuilder txBuilder;
-  final int? networkMinimumFeeRate;
+  final double? networkMinimumFeeRate;
   final TransactionFeeLevel? selectedFeeLevel; // null인 경우 직접 입력한 경우
   final FeeInfo? customFeeInfo; // feeRate을 직접 입력한 경우
   final bool isRecommendedFeeFetchSuccess;

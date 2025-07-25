@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -13,6 +12,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
+import 'package:coconut_wallet/services/mempool_api_service.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -59,12 +59,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   late BitcoinUnit _currentUnit;
   late Stream<WalletUpdateInfo> _walletSyncStateStream;
   late StreamSubscription<WalletUpdateInfo>? _walletSyncStateSubscription;
+  late MempoolApiService _mempoolApiService;
 
   @override
   void initState() {
     super.initState();
     _utxoState = widget.utxo;
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
+    _mempoolApiService = context.read<MempoolApiService>();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final utxoTooltipIconRenderBox =
           _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
@@ -404,8 +406,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         UnderlineButtonItemCard(
             label: t.utxo_detail_screen.address,
             underlineButtonLabel: t.view_mempool,
-            onTapUnderlineButton: () =>
-                launchUrl(Uri.parse("${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+            onTapUnderlineButton: () => launchUrl(_mempoolApiService.getAddressUrl(widget.utxo.to)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -489,8 +490,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
         onTapUnderlineButton: () {
           widget.utxo.status == UtxoStatus.unspent
-              ? launchUrl(
-                  Uri.parse("${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"))
+              ? launchUrl(_mempoolApiService.getBlockUrl(widget.utxo.blockHeight))
               : ();
         },
         child: Text(

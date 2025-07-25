@@ -1,27 +1,24 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 /// NodeProvider의 네트워크 관련 기능을 담당하는 서비스 클래스
 /// ElectrumService의 네트워크 관련 기능을 직접 구현합니다.
 class NetworkService {
   final ElectrumService _electrumService;
-  final TransactionRepository _transactionRepository;
 
-  NetworkService(this._electrumService, this._transactionRepository);
+  NetworkService(this._electrumService);
 
   /// 네트워크 최소 수수료율을 조회합니다.
-  Future<Result<int>> getNetworkMinimumFeeRate() async {
+  Future<Result<double>> getNetworkMinimumFeeRate() async {
     try {
       final feeHistogram = await _electrumService.getMempoolFeeHistogram();
       if (feeHistogram.isEmpty) {
-        return Result.success(1);
+        return Result.success(0.1);
       }
 
       num minimumFeeRate = feeHistogram.last.first;
@@ -31,7 +28,7 @@ class NetworkService {
         }
       });
 
-      return Result.success(minimumFeeRate.ceil());
+      return Result.success(minimumFeeRate.toDouble());
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }
@@ -98,18 +95,22 @@ class NetworkService {
       int economyFee = feeEconomy > 0 ? _convertFeeToSatPerVByte(feeEconomy) : 0;
 
       // 4. 최소 수수료 (minimumFee)는 mempool 내에서 지불되고 있는 가장 낮은 fee rate (sat/vB)
-      int minimumFee = 0;
-      if (histogram.isNotEmpty) {
-        // 예시 결과에서 histogram은 내림차순 정렬되어 있으므로 마지막 요소의 fee가 최소값임.
-        minimumFee = (histogram.last[0] as num).toInt();
-      }
+      // 소수점 지원을 위해 double로 처리
+      double minimumFee = 0.1;
+      // histogram이 존재하면 마지막 요소의 fee를 최소 수수료로 설정
+      minimumFee = histogram.isNotEmpty ? (histogram.last[0] as num).toDouble() : 0.1;
 
-      // 5. 만약 estimatefee 결과가 0(즉, -1인 경우)라면 최소 수수료 또는 기본값 1로 대체
-      fastestFee = fastestFee > 0 ? fastestFee : (minimumFee > 0 ? minimumFee : 1);
-      halfHourFee = halfHourFee > 0 ? halfHourFee : (minimumFee > 0 ? minimumFee : 1);
-      hourFee = hourFee > 0 ? hourFee : (minimumFee > 0 ? minimumFee : 1);
-      economyFee = economyFee > 0 ? economyFee : (minimumFee > 0 ? minimumFee : 1);
-      minimumFee = minimumFee > 0 ? minimumFee : 1;
+      // 최소 수수료의 반올림 값을 미리 계산
+      final int minimumFeeRounded = minimumFee.round() == 0 ? 1 : minimumFee.round();
+
+      // 수수료가 0인 경우 최소 수수료나 기본값 1로 대체하는 함수
+      int getValidFee(int fee) => fee > 0 ? fee : minimumFeeRounded;
+
+      // 각 수수료 레벨에 대해 유효한 값 설정
+      fastestFee = getValidFee(fastestFee);
+      halfHourFee = getValidFee(halfHourFee);
+      hourFee = getValidFee(hourFee);
+      economyFee = getValidFee(economyFee);
 
       return Result.success(
           RecommendedFee(fastestFee, halfHourFee, hourFee, economyFee, minimumFee));

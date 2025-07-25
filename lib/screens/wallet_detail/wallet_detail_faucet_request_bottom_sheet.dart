@@ -8,7 +8,8 @@ import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
-import 'package:coconut_wallet/services/faucet_service.dart';
+import 'package:coconut_wallet/services/coconut_api_service.dart';
+import 'package:provider/provider.dart';
 import 'package:coconut_wallet/services/model/response/faucet_status_response.dart';
 import 'package:coconut_wallet/widgets/textfield/custom_text_field.dart';
 import 'package:flutter/cupertino.dart';
@@ -84,7 +85,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
   }
 
   void _setAvailabilityAndAmount() async {
-    await Faucet().getStatus().then((FaucetStatusResponse response) {
+    await Provider.of<CoconutApiService>(context, listen: false)
+        .getFaucetStatus()
+        .then((FaucetStatusResponse response) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {

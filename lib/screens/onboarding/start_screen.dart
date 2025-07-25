@@ -9,6 +9,7 @@ import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
+import 'package:coconut_wallet/services/coconut_api_service.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
@@ -50,6 +51,7 @@ class _StartScreenState extends State<StartScreen> {
     _viewModel = StartViewModel(
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<AuthProvider>(context, listen: false),
+      Provider.of<CoconutApiService>(context, listen: false),
     );
 
     _initialize();

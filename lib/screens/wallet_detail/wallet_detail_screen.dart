@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/coconut_api_service.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -278,7 +279,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         Provider.of<ConnectivityProvider>(context, listen: false),
         Provider.of<PriceProvider>(context, listen: false),
         Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<NodeProvider>(context, listen: false));
+        Provider.of<NodeProvider>(context, listen: false),
+        Provider.of<CoconutApiService>(context, listen: false));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);

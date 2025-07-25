@@ -3,7 +3,7 @@ class RecommendedFee {
   final int _halfHourFee;
   final int _hourFee;
   final int _economyFee;
-  final int _minimumFee;
+  final double _minimumFee;
 
   RecommendedFee(
       this._fastestFee, this._halfHourFee, this._hourFee, this._economyFee, this._minimumFee);
@@ -16,10 +16,10 @@ class RecommendedFee {
 
   int get economyFee => _economyFee;
 
-  int get minimumFee => _minimumFee;
+  double get minimumFee => _minimumFee; // double 반환
 
   factory RecommendedFee.fromJson(Map<String, dynamic> json) {
-    int _parseIntSafely(dynamic value, String fieldName) {
+    int parseIntSafely(dynamic value, String fieldName) {
       if (value == null) {
         throw FormatException('$fieldName is null');
       }
@@ -32,13 +32,29 @@ class RecommendedFee {
       throw FormatException('$fieldName has invalid type: ${value.runtimeType}');
     }
 
+    double parseDoubleSafely(dynamic value, String fieldName) {
+      if (value == null) {
+        throw FormatException('$fieldName is null');
+      }
+      if (value is double) {
+        return value;
+      }
+      if (value is int) {
+        return value.toDouble();
+      }
+      if (value is String) {
+        return double.parse(value);
+      }
+      throw FormatException('$fieldName has invalid type: ${value.runtimeType}');
+    }
+
     try {
       return RecommendedFee(
-        _parseIntSafely(json['fastestFee'], 'fastestFee'),
-        _parseIntSafely(json['halfHourFee'], 'halfHourFee'),
-        _parseIntSafely(json['hourFee'], 'hourFee'),
-        _parseIntSafely(json['economyFee'], 'economyFee'),
-        _parseIntSafely(json['minimumFee'], 'minimumFee'),
+        parseIntSafely(json['fastestFee'], 'fastestFee'),
+        parseIntSafely(json['halfHourFee'], 'halfHourFee'),
+        parseIntSafely(json['hourFee'], 'hourFee'),
+        parseIntSafely(json['economyFee'], 'economyFee'),
+        parseDoubleSafely(json['minimumFee'], 'minimumFee'),
       );
     } catch (e) {
       throw FormatException('Failed to parse RecommendedFee: $e');

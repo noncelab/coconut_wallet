@@ -12,14 +12,12 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
-import 'package:coconut_wallet/services/model/error/default_error_response.dart';
+import 'package:coconut_wallet/services/coconut_api_service.dart';
 import 'package:coconut_wallet/services/model/request/faucet_request.dart';
-import 'package:coconut_wallet/services/model/response/faucet_response.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/services/faucet_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
@@ -32,6 +30,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectProvider;
   final PriceProvider _priceProvider;
   final SendInfoProvider _sendInfoProvider;
+  final CoconutApiService _coconutApiService;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   late final Stream<WalletUpdateInfo> _syncWalletStateStream;
   late final Stream<NodeSyncState> _nodeSyncStateStream;
@@ -45,7 +44,6 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool _faucetTooltipVisible = false;
 
   /// Faucet
-  final Faucet _faucetService = Faucet();
   late FaucetRecord _faucetRecord;
 
   String _walletName = '';
@@ -81,8 +79,15 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get receivingAmount => _receivingAmount;
   int get sendingAmount => _sendingAmount;
 
-  WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._connectProvider, this._priceProvider, this._sendInfoProvider, NodeProvider nodeProvider)
+  WalletDetailViewModel(
+      this._walletId,
+      this._walletProvider,
+      this._txProvider,
+      this._connectProvider,
+      this._priceProvider,
+      this._sendInfoProvider,
+      NodeProvider nodeProvider,
+      this._coconutApiService)
       : _syncWalletStateStream = nodeProvider.getWalletStateStream(_walletId),
         _nodeSyncStateStream = nodeProvider.syncStateStream {
     // 지갑 상세 초기화
@@ -263,16 +268,10 @@ class WalletDetailViewModel extends ChangeNotifier {
     _isRequesting = true;
     notifyListeners();
     try {
-      final response =
-          await _faucetService.getTestCoin(FaucetRequest(address: address, amount: requestAmount));
-      if (response is FaucetResponse) {
-        onResult(true, t.faucet_request);
-        _updateFaucetRecord();
-      } else if (response is DefaultErrorResponse && response.error == 'TOO_MANY_REQUEST_FAUCET') {
-        onResult(false, t.faucet_already_request);
-      } else {
-        onResult(false, t.faucet_failed);
-      }
+      await _coconutApiService
+          .sendFaucetRequest(FaucetRequest(address: address, amount: requestAmount));
+      onResult(true, t.faucet_request);
+      _updateFaucetRecord();
     } catch (e) {
       Logger.error(e);
       // Error handling

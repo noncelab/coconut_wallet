@@ -3,10 +3,9 @@ import 'dart:io';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/app_info.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/services/model/response/app_version_response.dart';
+import 'package:coconut_wallet/services/coconut_api_service.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
-import 'package:coconut_wallet/services/app_version_service.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -17,16 +16,15 @@ class StartViewModel extends ChangeNotifier {
   /// Common variables ---------------------------------------------------------
   late final VisibilityProvider _visibilityProvider;
   late final AuthProvider _authProvider;
-
+  late final CoconutApiService _coconutApiService;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final AppVersion _appVersionRepository = AppVersion();
 
   late PackageInfo _packageInfo;
 
   bool _canUpdate = false;
   bool _isLoading = true;
 
-  StartViewModel(this._visibilityProvider, this._authProvider) {
+  StartViewModel(this._visibilityProvider, this._authProvider, this._coconutApiService) {
     _initialize();
   }
 
@@ -76,17 +74,15 @@ class StartViewModel extends ChangeNotifier {
   /// 앱 최신 버전 확인
   Future<void> _checkLatestVersion() async {
     try {
-      final response = await _appVersionRepository.getLatestAppVersion();
-      if (response is AppVersionResponse) {
-        String currentVersion = _packageInfo.version;
-        String newVersion = response.latestVersion;
-        Logger.log('currentVersion : $currentVersion\nnewVersion : $newVersion');
-        if (currentVersion.isNotEmpty && newVersion.isNotEmpty) {
-          // 메이저 버전이 다를 경우만 판별
-          if (int.tryParse(currentVersion.split('.')[0])! <
-              int.tryParse(newVersion.split('.')[0])!) {
-            _canUpdate = await _shouldShowUpdateDialog();
-          }
+      final response = await _coconutApiService.getLatestAppVersion();
+
+      String currentVersion = _packageInfo.version;
+      String newVersion = response.latestVersion;
+      Logger.log('currentVersion : $currentVersion\nnewVersion : $newVersion');
+      if (currentVersion.isNotEmpty && newVersion.isNotEmpty) {
+        // 메이저 버전이 다를 경우만 판별
+        if (int.tryParse(currentVersion.split('.')[0])! < int.tryParse(newVersion.split('.')[0])!) {
+          _canUpdate = await _shouldShowUpdateDialog();
         }
       }
     } catch (e) {
