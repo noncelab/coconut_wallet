@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
-import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -411,14 +410,33 @@ class NodeProvider extends ChangeNotifier {
   Future<Result<bool>> checkServerConnection(ElectrumServer electrumServer) async {
     final electrumService = ElectrumService();
 
-    await electrumService
-        .connect(electrumServer.host, electrumServer.port, ssl: electrumServer.ssl)
-        .timeout(kElectrumConnectionTimeout);
+    try {
+      // 1. 소켓 연결 시도
+      await electrumService
+          .connect(electrumServer.host, electrumServer.port, ssl: electrumServer.ssl)
+          .timeout(const Duration(seconds: 10));
 
-    if (electrumService.connectionStatus == SocketConnectionStatus.connected) {
+      // 2. 연결 상태 확인
+      if (electrumService.connectionStatus != SocketConnectionStatus.connected) {
+        await electrumService.close();
+        Logger.log('NodeProvider: 소켓 연결 실패 - ${electrumServer.host}:${electrumServer.port}');
+        return Result.failure(ErrorCodes.networkError);
+      }
+
+      // 3. 서버 통신 테스트
+      try {
+        await electrumService.getServerVersion().timeout(const Duration(seconds: 5));
+        Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
+      } catch (e) {
+        await electrumService.close();
+        Logger.error('NodeProvider: 서버 통신 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
+        return Result.failure(ErrorCodes.networkError);
+      }
+
       await electrumService.close();
       return Result.success(true);
-    } else {
+    } catch (e) {
+      Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       await electrumService.close();
       return Result.failure(ErrorCodes.networkError);
     }
@@ -433,15 +451,13 @@ class NodeProvider extends ChangeNotifier {
     try {
       await initialize();
 
-      // subscribeWallets 결과를 기다림
-      final subscribeResult = await subscribeWallets();
-
-      if (subscribeResult.isFailure) {
-        Logger.error('NodeProvider: 서버 변경 실패: ${subscribeResult.error}');
-        _stateManager?.setNodeSyncStateToFailed();
-        notifyListeners();
-        return Result.failure(subscribeResult.error);
-      }
+      subscribeWallets().then((result) {
+        if (result.isFailure) {
+          Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
+          _stateManager?.setNodeSyncStateToFailed();
+          notifyListeners();
+        }
+      });
 
       Logger.log('NodeProvider: 서버 변경 성공');
       notifyListeners();

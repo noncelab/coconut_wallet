@@ -335,7 +335,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   ),
               '/coconut-crew': (context) => const CoconutCrewScreen(),
               '/electrum-server': (context) => ChangeNotifierProvider<ElectrumServerViewModel>(
-                    create: (context) => ElectrumServerViewModel(),
+                    create: (context) => ElectrumServerViewModel(
+                        Provider.of<NodeProvider>(context, listen: false),
+                        Provider.of<PreferenceProvider>(context, listen: false)),
                     child: const ElectrumServerScreen(),
                   ),
             },

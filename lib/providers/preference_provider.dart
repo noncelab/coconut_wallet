@@ -263,11 +263,12 @@ class PreferenceProvider extends ChangeNotifier {
   /// 일렉트럼 서버 설정 불러오기
   ElectrumServer getElectrumServer() {
     final serverName = _sharedPrefs.getString(SharedPrefKeys.kElectrumServerName);
+    debugPrint('PREFERNECE_PROVIDER:: getElectrumServer() serverName: $serverName');
 
     if (serverName.isEmpty) {
       if (NetworkType.currentNetworkType == NetworkType.mainnet) {
-        setDefaultElectrumServer(DefaultElectrumServer.coconut);
-        return DefaultElectrumServer.coconut.server;
+        setDefaultElectrumServer(DefaultElectrumServer.acinq); // FIXME: to coconut
+        return DefaultElectrumServer.acinq.server; // FIXME: to coconut
       } else {
         setDefaultElectrumServer(DefaultElectrumServer.regtest);
         return DefaultElectrumServer.regtest.server;

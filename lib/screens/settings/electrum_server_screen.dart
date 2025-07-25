@@ -3,8 +3,6 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -15,7 +13,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'dart:async';
 
 class ElectrumServerScreen extends StatefulWidget {
   const ElectrumServerScreen({super.key});
@@ -25,10 +22,10 @@ class ElectrumServerScreen extends StatefulWidget {
 }
 
 class _ElectrumServerScreen extends State<ElectrumServerScreen> {
-  late final PreferenceProvider preferenceProvider;
-  late final NodeProvider nodeProvider;
   final TextEditingController _serverAddressController = TextEditingController();
   final TextEditingController _portController = TextEditingController();
+  bool _currentSslState = false;
+
   final ScrollController _defaultServerScrollController = ScrollController();
   FocusNode serverAddressFocusNode = FocusNode();
   FocusNode portFocusNode = FocusNode();
@@ -37,41 +34,17 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   final GlobalKey _serverAddressFieldKey = GlobalKey();
   Size _defaultServerButtonSize = const Size(0, 0);
 
-  bool _isServerChanged = false;
-
-  // 화면 진입 시의 초기 서버 정보 저장
-  late ElectrumServer _initialServer;
-
   @override
   void initState() {
     super.initState();
-    nodeProvider = Provider.of<NodeProvider>(context, listen: false);
-    preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = context.read<ElectrumServerViewModel>();
-      final currentServer = preferenceProvider.getElectrumServer();
-
-      // 화면 진입 시의 초기 서버 정보 저장
-      _initialServer = ElectrumServer(
-        currentServer.host,
-        currentServer.port,
-        currentServer.ssl,
-      );
-
-      // ViewModel 초기화: NodeProvider 상태 감지 시작 및 초기 상태 확인
-      viewModel.initialize(nodeProvider, preferenceProvider);
-
-      viewModel.setCurrentServer(_initialServer);
-
-      // SSL 설정도 초기화
-      viewModel.setUseSsl(_initialServer.ssl);
 
       setState(() {
-        // 기존 정보 입력
-        _serverAddressController.text = _initialServer.host;
-        _portController.text = _initialServer.port.toString();
-        _isServerChanged = false;
+        _serverAddressController.text = viewModel.initialServer.host;
+        _portController.text = viewModel.initialServer.port.toString();
+        _currentSslState = viewModel.initialServer.ssl;
       });
 
       serverAddressFocusNode.addListener(() {
@@ -102,31 +75,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     viewModel.validateInputFormat(_serverAddressController.text, _portController.text);
   }
 
-  // _onSave, _onRset 내부에서 호출하는 서버 변경 공통 로직
-  Future<void> _changeServerAndUpdateState(ElectrumServer newServer) async {
+  // 서버 입력 변경 감지
+  void _onServerInputChanged() {
     final viewModel = context.read<ElectrumServerViewModel>();
 
-    viewModel.setNodeConnectionStatus(NodeConnectionStatus.connecting);
-    _isServerChanged = false; // 서버 변경 플래그 초기화
-
-    final result = await nodeProvider.changeServer(newServer);
-
-    if (!mounted) return;
-
-    if (result.isFailure) {
-      vibrateLightDouble();
-      viewModel.setNodeConnectionStatus(NodeConnectionStatus.failed);
-    } else {
-      vibrateLight();
-      viewModel.setCurrentServer(newServer);
-    }
-
-    // preference에 저장
-    preferenceProvider.setCustomElectrumServer(
-      newServer.host,
-      newServer.port,
-      newServer.ssl,
-    );
+    // 서버 정보가 변경되면 waiting 상태로 변경 - 연결 상태 박스 숨김
+    viewModel.setNodeConnectionStatus(NodeConnectionStatus.waiting);
   }
 
   void _onSave() async {
@@ -135,41 +89,41 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     final newServer = ElectrumServer.custom(
       _serverAddressController.text,
       int.parse(_portController.text),
-      viewModel.useSsl,
+      _currentSslState,
     );
 
-    await _changeServerAndUpdateState(newServer);
+    final success = await viewModel.changeServerAndUpdateState(newServer);
+
+    if (!mounted) return;
+
+    if (success) {
+      vibrateLight();
+    } else {
+      vibrateLightDouble();
+    }
   }
 
-  // 서버 입력 변경 감지
-  void _onServerInputChanged() {
-    _isServerChanged = true;
-    final viewModel = context.read<ElectrumServerViewModel>();
-
-    // 서버 정보가 변경되면 waiting 상태로 변경 (알림박스 숨김)
-    viewModel.setNodeConnectionStatus(NodeConnectionStatus.waiting);
-  }
-
-  // Reset 버튼 클릭 시 화면 진입 시의 초기 서버 정보로 초기화
   void _onReset() async {
     final viewModel = context.read<ElectrumServerViewModel>();
+    final initialServer = viewModel.initialServer;
 
-    // 초기 서버가 현재 연결된 서버와 다른 경우에만 서버 변경
-    if (!viewModel.isSameWithCurrentServer(
-        _initialServer.host, _initialServer.port.toString(), _initialServer.ssl)) {
-      _onServerInputChanged(); // 상태 변경 감지
+    _onServerInputChanged(); // 상태 변경 감지
 
-      setState(() {
-        // 화면 진입 시의 초기 서버 정보로 초기화
-        _serverAddressController.text = _initialServer.host;
-        _portController.text = _initialServer.port.toString();
-        viewModel.setUseSsl(_initialServer.ssl);
-      });
+    setState(() {
+      // 화면 진입 시의 초기 서버 정보로 초기화
+      _serverAddressController.text = initialServer.host;
+      _portController.text = initialServer.port.toString();
+      _currentSslState = initialServer.ssl;
+    });
 
-      await _changeServerAndUpdateState(_initialServer);
+    final success = await viewModel.changeServerAndUpdateState(initialServer);
+
+    if (!mounted) return;
+
+    if (success) {
+      vibrateLight();
     } else {
-      // 같은 서버인 경우에도 상태 점검
-      viewModel.checkCurrentNodeProviderStatus(nodeProvider, _initialServer);
+      vibrateLightDouble();
     }
   }
 
@@ -179,22 +133,18 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     return domainRegExp.hasMatch(input);
   }
 
-  bool isSameWithCurrentServer(bool useSsl) {
+  /// 초기화 버튼 활성화 조건: 현재 입력된 서버 정보가 초기 서버 정보와 다른지 확인
+  bool _isDifferentFromInitialServer() {
     final viewModel = context.read<ElectrumServerViewModel>();
-    final currentServerHost = viewModel.currentServer.host;
-    final currentPort = viewModel.currentServer.port;
-    final currentSsl = viewModel.currentServer.ssl;
-
-    return _serverAddressController.text == currentServerHost &&
-        _portController.text == currentPort.toString() &&
-        useSsl == currentSsl;
+    return viewModel.isDifferentFromInitialServer(
+        _serverAddressController.text, _portController.text, _currentSslState);
   }
 
-  /// 현재 입력된 서버 정보가 초기 서버 정보와 다른지 확인
-  bool _isDifferentFromInitialServer(bool useSsl) {
-    return _serverAddressController.text != _initialServer.host ||
-        _portController.text != _initialServer.port.toString() ||
-        useSsl != _initialServer.ssl;
+  /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
+  bool _hasActualChanges() {
+    final viewModel = context.read<ElectrumServerViewModel>();
+    return !viewModel.isSameWithCurrentServer(
+        _serverAddressController.text, _portController.text, _currentSslState);
   }
 
   @override
@@ -313,8 +263,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                           onPressed: () {
                             _serverAddressController.text = serverList[i].host;
                             _portController.text = serverList[i].port.toString();
-                            // SSL 설정도 기본 서버에 맞춰 변경
-                            context.read<ElectrumServerViewModel>().setUseSsl(serverList[i].ssl);
+                            setState(() {
+                              _currentSslState = serverList[i].ssl; // 화면 SSL 상태 업데이트
+                            });
                             _onServerInputChanged(); // 변경 플래그 설정
                             _unFocus();
                           },
@@ -619,18 +570,22 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
               CoconutColors.gray400,
             ),
           ),
-          Selector<ElectrumServerViewModel, Tuple2<bool, NodeConnectionStatus>>(
-            selector: (_, viewModel) => Tuple2(viewModel.useSsl, viewModel.nodeConnectionStatus),
-            builder: (context, data, child) {
-              final useSsl = data.item1;
-              final isNodeConnecting = data.item2 == NodeConnectionStatus.connecting;
+          Selector<ElectrumServerViewModel, NodeConnectionStatus>(
+            selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+            builder: (context, nodeConnectionStatus, child) {
+              final isNodeConnecting = nodeConnectionStatus == NodeConnectionStatus.connecting;
               return IgnorePointer(
                 ignoring: isNodeConnecting,
                 child: CoconutSwitch(
-                  isOn: useSsl,
+                  isOn: _currentSslState,
                   onChanged: (value) {
-                    context.read<ElectrumServerViewModel>().setUseSsl(value);
-                    _onServerInputChanged(); // SSL 변경 시에도 상태 변경
+                    if (_currentSslState != value) {
+                      vibrateLight(); // 진동 추가
+                      setState(() {
+                        _currentSslState = value;
+                      });
+                      _onServerInputChanged();
+                    }
                   },
                   activeColor: isNodeConnecting ? CoconutColors.gray500 : null,
                   trackColor: isNodeConnecting ? CoconutColors.gray750 : null,
@@ -733,26 +688,19 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   Widget _buildBottomButton() {
-    final viewModel = context.read<ElectrumServerViewModel>();
-    return Selector<ElectrumServerViewModel, Tuple4<NodeConnectionStatus, bool, bool, bool>>(
-        selector: (_, viewModel) => Tuple4(
-            viewModel.nodeConnectionStatus,
-            viewModel.isServerAddressFormatError,
-            viewModel.isPortOutOfRangeError,
-            viewModel.useSsl),
+    return Selector<ElectrumServerViewModel, Tuple3<NodeConnectionStatus, bool, bool>>(
+        selector: (_, viewModel) => Tuple3(viewModel.nodeConnectionStatus,
+            viewModel.isServerAddressFormatError, viewModel.isPortOutOfRangeError),
         builder: (context, data, child) {
           final nodeConnectionStatus = data.item1;
           final isServerAddressFormatError = data.item2;
           final isPortOutOfRangeError = data.item3;
-          final useSsl = data.item4;
 
-          // Save 버튼: 실제 변경 여부 확인 (viewModel.currentServer와 비교)
-          final hasActualChanges = _isServerChanged &&
-              !viewModel.isSameWithCurrentServer(
-                  _serverAddressController.text, _portController.text, useSsl);
+          // Save 버튼: 실제 변경 여부 확인
+          final hasActualChanges = _hasActualChanges();
 
           // Reset 버튼: 초기 서버 정보와 다른지 확인
-          final isDifferentFromInitial = _isDifferentFromInitialServer(useSsl);
+          final isDifferentFromInitial = _isDifferentFromInitialServer();
 
           return Align(
             alignment: Alignment.bottomCenter,
@@ -773,8 +721,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: SizedBox(
                         width: MediaQuery.sizeOf(context).width,
                         child: ShrinkAnimationButton(
-                          isActive: nodeConnectionStatus != NodeConnectionStatus.connecting &&
-                              isDifferentFromInitial, // 초기 서버와 다른지 확인
+                          isActive: true,
+                          // nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                          //     isDifferentFromInitial,
                           defaultColor: CoconutColors.white,
                           pressedColor: CoconutColors.gray350,
                           onPressed: _onReset,
@@ -796,22 +745,23 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: SizedBox(
                         width: MediaQuery.sizeOf(context).width,
                         child: ShrinkAnimationButton(
-                          isActive: _serverAddressController.text.isNotEmpty &&
-                              _portController.text.isNotEmpty &&
-                              !isServerAddressFormatError &&
-                              !isPortOutOfRangeError &&
-                              nodeConnectionStatus != NodeConnectionStatus.connecting &&
-                              hasActualChanges, // 현재 서버와 다른지 확인 (Save 조건)
+                          isActive: true,
+                          // _serverAddressController.text.isNotEmpty &&
+                          //     _portController.text.isNotEmpty &&
+                          //     !isServerAddressFormatError &&
+                          //     !isPortOutOfRangeError &&
+                          //     nodeConnectionStatus != NodeConnectionStatus.connecting &&
+                          //     hasActualChanges,
                           defaultColor: CoconutColors.white,
                           pressedColor: CoconutColors.gray350,
                           onPressed: () {
                             _unFocus();
 
-                            if (viewModel.isServerAddressFormatError ||
-                                viewModel.isPortOutOfRangeError ||
-                                _serverAddressController.text.isEmpty ||
-                                _portController.text.isEmpty ||
-                                !hasActualChanges) return;
+                            // if (isServerAddressFormatError ||
+                            //     isPortOutOfRangeError ||
+                            //     _serverAddressController.text.isEmpty ||
+                            //     _portController.text.isEmpty ||
+                            //     !hasActualChanges) return;
 
                             _onSave();
                           },

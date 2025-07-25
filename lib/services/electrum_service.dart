@@ -9,6 +9,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 
 part 'model/request/electrum_request_types.dart';
@@ -21,7 +22,8 @@ class ElectrumService {
 
   int get reqId => _idCounter;
 
-  SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
+  bool _connectionFailed = false;
+  int _requestId = 0;
 
   ElectrumService._() : _socketManager = SocketManager();
 
@@ -32,16 +34,36 @@ class ElectrumService {
     return instance;
   }
 
+  /// 연결 시도 후 성공/실패를 bool로 반환
   Future<bool> connect(String host, int port, {bool ssl = true}) async {
-    final isConnected = await _socketManager.connect(host, port, ssl: ssl);
+    _connectionFailed = false;
 
-    if (isConnected) {
-      _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
-        ping();
-      });
+    // 연결 실패/손실 콜백 설정
+    _socketManager.onConnectionLost = () {
+      _connectionFailed = true;
+      Logger.log('ElectrumService: Connection lost callback triggered');
+    };
+
+    try {
+      final success = await _socketManager.connect(host, port, ssl: ssl);
+
+      if (!success || _socketManager.connectionStatus != SocketConnectionStatus.connected) {
+        return false;
+      }
+
+      // 서버 버전 확인으로 실제 통신 가능한지 테스트
+      try {
+        await getServerVersion().timeout(const Duration(seconds: 5));
+        return true;
+      } catch (e) {
+        Logger.error('ElectrumService: Server communication failed: $e');
+        await close();
+        return false;
+      }
+    } catch (e) {
+      Logger.error('ElectrumService: Connection failed: $e');
+      return false;
     }
-
-    return isConnected;
   }
 
   Future<ElectrumResponse<T>> _call<T>(_ElectrumRequest request,
@@ -297,11 +319,52 @@ class ElectrumService {
 
   Future<void> close() async {
     _pingTimer?.cancel();
-    await _socketManager.disconnect();
+    try {
+      await _socketManager.disconnect();
+    } catch (e) {
+      Logger.error('ElectrumService: close failed: $e');
+    }
   }
 
   /// 소켓 연결 종료 콜백 등록
   void setOnConnectionLostCallback(void Function() callback) {
     _socketManager.onConnectionLost = callback;
+  }
+
+  /// connectionStatus getter 추가
+  SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
+
+  /// 연결 테스트를 위한 서버 버전 확인 연결
+  Future<Map<String, dynamic>> getServerVersion() async {
+    if (connectionStatus != SocketConnectionStatus.connected) {
+      throw Exception('Socket is not connected');
+    }
+
+    // 간단한 ping 요청
+    try {
+      final request = {
+        'id': DateTime.now().millisecondsSinceEpoch,
+        'method': 'server.version',
+        'params': ['coconut-wallet', '1.4']
+      };
+
+      return await _sendSimpleRequest(request);
+    } catch (e) {
+      throw Exception('Server version check failed: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> _sendSimpleRequest(Map<String, dynamic> request) async {
+    final completer = Completer<Map<String, dynamic>>();
+    final requestId = request['id'] as int;
+
+    _socketManager.setCompleter(requestId, completer);
+
+    try {
+      await _socketManager.send(jsonEncode(request));
+      return await completer.future.timeout(const Duration(seconds: 5));
+    } catch (e) {
+      throw Exception('Request failed: $e');
+    }
   }
 }
