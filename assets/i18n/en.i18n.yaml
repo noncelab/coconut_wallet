@@ -116,6 +116,48 @@ faucet_already_request: "Already requested. It may take up to 5 minutes for the 
 faucet_failed: "Request failed. Please try again later."
 bio_auth_required: "Biometric auth required"
 
+donation:
+  coconut: "Coconut Donation"
+  donate: "Donate"
+  supportImpactMessage: "Thanks to your support, we can bring the freedom of money to more people."
+  encourageSupportMessage: "Help us keep Coconut running with your support."
+  coffee: "☕️ A Cup of Coffee"
+  late_meal: "🍜️ Late-night Meal"
+  maintenance: "⚒️️ Maintenance Costs"
+  support_heart: "🩷 A Heartfelt Support"
+  onchain: "On-chain Donation"
+  lightning: "Lightning Donation"
+  under_dust_error: "Please enter an amount greater than ${dust} (dust).\n"
+  over_donation_max_value_error: "You can donate up to a maximum of $value sats.\n"
+  donation_wallet: "Donation Wallet"
+  total_donation_amount: "Total Donation Amount"
+  donation_address: "Donation Address"
+  empty_enough_balance_wallet: "No wallet with sufficient balance."
+  unsigned_qr_tooltip: "Scan the QR code to sign."
+  signed_qr_tooltip: "Scan the signed transaction."
+  user_messages: [
+    "With love",
+    "With heartfelt support",
+    "Cheering you on",
+    "To keep you grinding",
+    "Stay strong",
+    "With gratitude",
+    "Because you’re proud of us",
+  ]
+  user_messages_description_1: "To the Coconut Dev Team"
+  user_messages_description_2: "${amount} sats"
+  donate_confirm: "Confirm Donation"
+  complete:
+    thank_you: "Thank You!"
+    description: "Your donation is more than just Bitcoin.\nIt keeps Coconut moving toward better wallets\nand wider adoption."
+
+  # Donation - Lightning
+  donation_amount: "Donation Amount"
+  ln_invoice: "Lightning Invoice"
+  ln_address: "Lightning Address"
+  ln_address_pow: "powbitcoiner@speed.app"
+  ln_invoice_api_error: "Failed to generate Lightning invoice."
+
 # lib/enums
 transaction_enums:
   high_priority: "Fast"
