@@ -19,6 +19,7 @@ import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -385,14 +386,7 @@ class SendUtxoSelectionViewModel extends ChangeNotifier {
   }
 
   Future<bool> _setRecommendedFees() async {
-    final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
-
-    if (recommendedFeesResult.isFailure) {
-      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
-      return false;
-    }
-
-    final recommendedFees = recommendedFeesResult.value;
+    final recommendedFees = await getRecommendedFees(_nodeProvider);
 
     feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();

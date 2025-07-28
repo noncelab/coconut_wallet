@@ -14,9 +14,9 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
-import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
@@ -339,15 +339,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Future<void> _setRecommendedFees() async {
-    final recommendedFeesResult = await _viewModel.nodeprovider.getRecommendedFees();
-    if (recommendedFeesResult.isFailure) {
-      setState(() {
-        _isRecommendedFeeFetchSuccess = false;
-      });
-      return;
-    }
-
-    final RecommendedFee recommendedFees = recommendedFeesResult.value;
+    final recommendedFees = await getRecommendedFees(_viewModel.nodeprovider);
 
     feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
