@@ -234,10 +234,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                       },
                     ),
                   ],
-                  SizedBox(
-                      height: MediaQuery.of(context).viewPadding.bottom > 0
-                          ? MediaQuery.of(context).viewPadding.bottom
-                          : Sizes.size16)
+                  const SizedBox(height: Sizes.size32)
                 ]),
               ));
         }));
