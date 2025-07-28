@@ -11,6 +11,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
@@ -70,11 +71,22 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     );
 
     if (result.isFailure) {
-      _isRecommendedFeeFetchSuccess = false;
-      return;
+      // FeeService 사용하여 수수료 조회
+      try {
+        debugPrint('NodeProvider fee fetch failed, using FeeService fallback');
+        final feeService = FeeService();
+        final recommendedFee = await feeService.getRecommendedFees();
+        satsPerVb = recommendedFee.hourFee.toDouble();
+        debugPrint('FeeService fallback success: $satsPerVb sats/vB');
+      } catch (e) {
+        debugPrint('FeeService fallback also failed: $e');
+        _isRecommendedFeeFetchSuccess = false;
+        return;
+      }
+    } else {
+      satsPerVb = result.value.hourFee.toDouble();
+      debugPrint('NodeProvider fee fetch success: $satsPerVb sats/vB');
     }
-
-    satsPerVb = result.value.hourFee.toDouble();
 
     _availableDonationWalletList.clear(); // 지갑 동기화 완료 후 initialize 호출 시 기존 목록 초기화
     for (var wallet in singlesigWalletList) {
