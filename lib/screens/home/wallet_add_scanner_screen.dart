@@ -326,7 +326,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     } catch (e) {
       vibrateLightDouble();
       if (mounted) {
-        String errorMessage = t.wallet_add_input_screen.format_error_text;
+        String errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
         if (e.toString().contains("network type")) {
           errorMessage = NetworkType.currentNetworkType == NetworkType.mainnet
               ? t.wallet_add_input_screen.mainnet_wallet_error_text
