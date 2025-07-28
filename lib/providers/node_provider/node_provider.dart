@@ -4,6 +4,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -13,6 +15,7 @@ import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -24,9 +27,7 @@ class NodeProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final ValueNotifier<WalletLoadState> _walletLoadStateNotifier;
   final ValueNotifier<List<WalletListItemBase>> _walletItemListNotifier;
-  final String _host;
-  final int _port;
-  final bool _ssl;
+  ElectrumServer _electrumServer;
   final NetworkType _networkType;
   final AnalyticsService? _analyticsService;
 
@@ -39,6 +40,7 @@ class NodeProvider extends ChangeNotifier {
   bool _isInitializing = false;
   bool _isClosing = false;
   bool _isPendingInitialization = false;
+  bool _isServerChanging = false;
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
@@ -73,11 +75,12 @@ class NodeProvider extends ChangeNotifier {
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
-  String get host => _host;
-  int get port => _port;
-  bool get ssl => _ssl;
+  String get host => _electrumServer.host;
+  int get port => _electrumServer.port;
+  bool get ssl => _electrumServer.ssl;
+  bool get isServerChanging => _isServerChanging;
 
-  NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
+  NodeProvider(this._electrumServer, this._networkType, this._connectivityProvider,
       this._walletLoadStateNotifier, this._walletItemListNotifier, this._analyticsService,
       {IsolateManager? isolateManager})
       : _isolateManager = isolateManager ?? IsolateManager() {
@@ -403,6 +406,69 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider: 연결 종료 중 오류 발생: $e');
     } finally {
       _isClosing = false;
+    }
+  }
+
+  Future<Result<bool>> checkServerConnection(ElectrumServer electrumServer) async {
+    final electrumService = ElectrumService();
+
+    try {
+      await _establishSocketConnection(electrumService, electrumServer);
+      await _verifyProtocolCommunication(electrumService);
+
+      Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
+      return Result.success(true);
+    } catch (e) {
+      Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
+      await electrumService.close();
+      return Result.failure(ErrorCodes.networkError);
+    } finally {
+      await electrumService.close();
+    }
+  }
+
+  Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
+    await service
+        .connect(server.host, server.port, ssl: server.ssl)
+        .timeout(const Duration(seconds: 3));
+
+    if (service.connectionStatus != SocketConnectionStatus.connected) {
+      throw Exception('Socket connection failed');
+    }
+  }
+
+  Future<void> _verifyProtocolCommunication(ElectrumService service) async {
+    await service.serverVersion().timeout(const Duration(seconds: 5));
+  }
+
+  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
+    _isServerChanging = true;
+    await closeConnection();
+    _electrumServer = electrumServer;
+
+    Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+
+    try {
+      await initialize();
+
+      subscribeWallets().then((result) {
+        if (result.isFailure) {
+          Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
+          _stateManager?.setNodeSyncStateToFailed();
+          notifyListeners();
+        }
+      });
+
+      Logger.log('NodeProvider: 서버 변경 성공');
+      notifyListeners();
+      return Result.success(true);
+    } catch (e) {
+      Logger.error('NodeProvider: 서버 변경 중 초기화 실패: $e');
+      _stateManager?.setNodeSyncStateToFailed();
+      notifyListeners();
+      return Result.failure(ErrorCodes.networkError);
+    } finally {
+      _isServerChanging = false;
     }
   }
 

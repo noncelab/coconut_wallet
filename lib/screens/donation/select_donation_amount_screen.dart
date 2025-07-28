@@ -359,7 +359,6 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
       child: ConstrainedBox(
         constraints: const BoxConstraints(minWidth: 1, minHeight: 1),
         child: Container(
-          width: MediaQuery.sizeOf(context).width,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           decoration: BoxDecoration(
             border: Border.all(
@@ -380,107 +379,104 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                 style: CoconutTypography.body2_14_Bold,
               ),
               isEditable
-                  ? ConstrainedBox(
-                      constraints: const BoxConstraints(minWidth: 150, maxWidth: 300),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Flexible(
-                            fit: FlexFit.loose,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(minWidth: 80, maxWidth: 80),
-                              child: TextField(
-                                controller: _controller,
-                                autofocus: false,
-                                onTap: () {
-                                  donationSelectedType = DonationSelectedType.custom;
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          fit: FlexFit.loose,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 80),
+                            child: TextField(
+                              controller: _controller,
+                              autofocus: false,
+                              onTap: () {
+                                donationSelectedType = DonationSelectedType.custom;
+                                setState(() {
+                                  isDustErrorTextVisible = false;
+                                  isOverDonationMaxValue = false;
+                                });
+                                _controller.selection = TextSelection.fromPosition(
+                                  TextPosition(offset: _controller.text.length),
+                                );
+
+                                Future.delayed(const Duration(milliseconds: 200)).then((_) {
+                                  scrollToBottom();
+                                });
+                              },
+                              onChanged: (input) {
+                                if (isDustErrorTextVisible) {
                                   setState(() {
                                     isDustErrorTextVisible = false;
+                                  });
+                                }
+
+                                if (isOverDonationMaxValue) {
+                                  setState(() {
                                     isOverDonationMaxValue = false;
                                   });
-                                  _controller.selection = TextSelection.fromPosition(
-                                    TextPosition(offset: _controller.text.length),
-                                  );
+                                }
 
-                                  Future.delayed(const Duration(milliseconds: 200)).then((_) {
-                                    scrollToBottom();
+                                if (input.isEmpty) {
+                                  customDonateValue = null;
+                                  return;
+                                }
+
+                                customDonateValue = int.parse(input);
+                              },
+                              focusNode: _focusNode,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (value) {
+                                if (donationSelectedType == DonationSelectedType.custom &&
+                                    customDonateValue != null &&
+                                    customDonateValue! <= dustLimit) {
+                                  setState(() {
+                                    isDustErrorTextVisible = true;
                                   });
-                                },
-                                onChanged: (input) {
-                                  if (isDustErrorTextVisible) {
-                                    setState(() {
-                                      isDustErrorTextVisible = false;
-                                    });
-                                  }
-
-                                  if (isOverDonationMaxValue) {
-                                    setState(() {
-                                      isOverDonationMaxValue = false;
-                                    });
-                                  }
-
-                                  if (input.isEmpty) {
-                                    customDonateValue = null;
-                                    return;
-                                  }
-
-                                  customDonateValue = int.parse(input);
-                                },
-                                focusNode: _focusNode,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (value) {
-                                  if (donationSelectedType == DonationSelectedType.custom &&
-                                      customDonateValue != null &&
-                                      customDonateValue! <= dustLimit) {
-                                    setState(() {
-                                      isDustErrorTextVisible = true;
-                                    });
-                                  }
-                                },
-                                textAlign: TextAlign.center,
-                                style: CoconutTypography.body3_12.setColor(
-                                  isDustErrorTextVisible || isOverDonationMaxValue
-                                      ? CoconutColors.warningText
-                                      : CoconutColors.gray100,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: t.input_directly,
-                                  hintStyle: CoconutTypography.body3_12.setColor(
-                                    CoconutColors.gray600,
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: isDustErrorTextVisible || isOverDonationMaxValue
-                                          ? CoconutColors.warningText
-                                          : CoconutColors.gray600,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  focusedBorder: const UnderlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: CoconutColors.gray100,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.only(bottom: 4),
-                                ),
-                                cursorColor: CoconutColors.gray100,
+                                }
+                              },
+                              textAlign: TextAlign.center,
+                              style: CoconutTypography.body3_12.setColor(
+                                isDustErrorTextVisible || isOverDonationMaxValue
+                                    ? CoconutColors.warningText
+                                    : CoconutColors.gray100,
                               ),
+                              decoration: InputDecoration(
+                                hintText: t.input_directly,
+                                hintStyle: CoconutTypography.body3_12.setColor(
+                                  CoconutColors.gray600,
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: isDustErrorTextVisible || isOverDonationMaxValue
+                                        ? CoconutColors.warningText
+                                        : CoconutColors.gray600,
+                                    width: 1,
+                                  ),
+                                ),
+                                focusedBorder: const UnderlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: CoconutColors.gray100,
+                                    width: 1,
+                                  ),
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.only(bottom: 4),
+                              ),
+                              cursorColor: CoconutColors.gray100,
                             ),
                           ),
-                          CoconutLayout.spacing_50w,
-                          Text(
-                            t.sats,
-                            style: CoconutTypography.body2_14_NumberBold.setColor(
-                              CoconutColors.gray400,
-                            ),
+                        ),
+                        CoconutLayout.spacing_50w,
+                        Text(
+                          t.sats,
+                          style: CoconutTypography.body2_14_NumberBold.setColor(
+                            CoconutColors.gray400,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     )
                   : Row(
                       children: [

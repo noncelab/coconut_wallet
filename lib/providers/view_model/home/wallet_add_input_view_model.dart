@@ -71,7 +71,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
     } else if (e.toString().contains("not supported")) {
       errorMessage = t.wallet_add_input_screen.unsupported_wallet_error_text;
     } else {
-      errorMessage = t.wallet_add_input_screen.format_error_text;
+      errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
     }
     notifyListeners();
   }
