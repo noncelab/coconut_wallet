@@ -413,35 +413,32 @@ class NodeProvider extends ChangeNotifier {
     final electrumService = ElectrumService();
 
     try {
-      // 1. 소켓 연결 시도
-      await electrumService
-          .connect(electrumServer.host, electrumServer.port, ssl: electrumServer.ssl)
-          .timeout(const Duration(seconds: 10));
+      await _establishSocketConnection(electrumService, electrumServer);
+      await _verifyProtocolCommunication(electrumService).timeout(const Duration(seconds: 5));
 
-      // 2. 연결 상태 확인
-      if (electrumService.connectionStatus != SocketConnectionStatus.connected) {
-        await electrumService.close();
-        Logger.log('NodeProvider: 소켓 연결 실패 - ${electrumServer.host}:${electrumServer.port}');
-        return Result.failure(ErrorCodes.networkError);
-      }
-
-      // 3. 서버 통신 테스트
-      try {
-        await electrumService.getServerVersion().timeout(const Duration(seconds: 5));
-        Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
-      } catch (e) {
-        await electrumService.close();
-        Logger.error('NodeProvider: 서버 통신 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
-        return Result.failure(ErrorCodes.networkError);
-      }
-
-      await electrumService.close();
+      Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
       return Result.success(true);
     } catch (e) {
       Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       await electrumService.close();
       return Result.failure(ErrorCodes.networkError);
+    } finally {
+      await electrumService.close();
     }
+  }
+
+  Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
+    await service
+        .connect(server.host, server.port, ssl: server.ssl)
+        .timeout(const Duration(seconds: 3));
+
+    if (service.connectionStatus != SocketConnectionStatus.connected) {
+      throw Exception('Socket connection failed');
+    }
+  }
+
+  Future<void> _verifyProtocolCommunication(ElectrumService service) async {
+    await service.serverVersion().timeout(const Duration(seconds: 5));
   }
 
   Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {

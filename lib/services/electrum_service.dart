@@ -23,7 +23,6 @@ class ElectrumService {
   int get reqId => _idCounter;
 
   bool _connectionFailed = false;
-  int _requestId = 0;
 
   ElectrumService._() : _socketManager = SocketManager();
 
@@ -45,21 +44,21 @@ class ElectrumService {
     };
 
     try {
-      final success = await _socketManager.connect(host, port, ssl: ssl);
+      final isConnected = await _socketManager.connect(host, port, ssl: ssl);
 
-      if (!success || _socketManager.connectionStatus != SocketConnectionStatus.connected) {
+      if (!isConnected || _socketManager.connectionStatus != SocketConnectionStatus.connected) {
         return false;
       }
 
-      // 서버 버전 확인으로 실제 통신 가능한지 테스트
-      try {
-        await getServerVersion().timeout(const Duration(seconds: 5));
-        return true;
-      } catch (e) {
-        Logger.error('ElectrumService: Server communication failed: $e');
-        await close();
-        return false;
+      /// 1분 이내 요청이 없으면 소켓 연결 중단
+      /// 소켓 연결 유지를 위해 ping 요청 필요
+      if (isConnected) {
+        _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
+          ping();
+        });
       }
+
+      return isConnected;
     } catch (e) {
       Logger.error('ElectrumService: Connection failed: $e');
       return false;
@@ -333,38 +332,4 @@ class ElectrumService {
 
   /// connectionStatus getter 추가
   SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
-
-  /// 연결 테스트를 위한 서버 버전 확인 연결
-  Future<Map<String, dynamic>> getServerVersion() async {
-    if (connectionStatus != SocketConnectionStatus.connected) {
-      throw Exception('Socket is not connected');
-    }
-
-    // 간단한 ping 요청
-    try {
-      final request = {
-        'id': DateTime.now().millisecondsSinceEpoch,
-        'method': 'server.version',
-        'params': ['coconut-wallet', '1.4']
-      };
-
-      return await _sendSimpleRequest(request);
-    } catch (e) {
-      throw Exception('Server version check failed: $e');
-    }
-  }
-
-  Future<Map<String, dynamic>> _sendSimpleRequest(Map<String, dynamic> request) async {
-    final completer = Completer<Map<String, dynamic>>();
-    final requestId = request['id'] as int;
-
-    _socketManager.setCompleter(requestId, completer);
-
-    try {
-      await _socketManager.send(jsonEncode(request));
-      return await completer.future.timeout(const Duration(seconds: 5));
-    } catch (e) {
-      throw Exception('Request failed: $e');
-    }
-  }
 }

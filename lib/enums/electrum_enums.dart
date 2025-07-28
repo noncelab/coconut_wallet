@@ -133,12 +133,6 @@ enum DefaultElectrumServer {
     );
   }
 
-  static final List<ElectrumServer> all = (() {
-    final servers = DefaultElectrumServer.values.toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
-    return List<ElectrumServer>.unmodifiable(servers.map((e) => e.server).toList());
-  })();
-
   /// Flavor에 따른 서버 리스트 반환
   static List<ElectrumServer> getServersByFlavor(bool isRegtestFlavor) {
     final filteredServers = DefaultElectrumServer.values
