@@ -6,6 +6,16 @@ class HomeFeature {
     required this.homeFeatureTypeString,
     required this.isEnabled,
   });
+
+  Map<String, dynamic> toJson() => {
+        'homeFeatureTypeString': homeFeatureTypeString,
+        'isEnabled': isEnabled,
+      };
+
+  factory HomeFeature.fromJson(Map<String, dynamic> json) => HomeFeature(
+        homeFeatureTypeString: json['homeFeatureTypeString'],
+        isEnabled: json['isEnabled'],
+      );
 }
 
 // RealmHomeFeature 수정 불필요

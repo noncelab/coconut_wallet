@@ -32,11 +32,6 @@ import 'package:realm/realm.dart';
 /// 4. RealmWalletAddress 의 id 를 재생성
 /// 5. TempBroadcastTimeRecord 삭제
 ///
-/// [addWalletPreferences] (5 -> 6)
-/// 1. RealmWalletPreferences 추가
-///   - walletOrder: 홈 화면, 지갑 목록 화면에 표시되는 지갑의 순서
-///   - favoriteWalletIds: 홈 화면에 표시될 지갑
-///   - homeFeatures: 홈 화면에 표시될 기능(eg., 최근 거래, 분석)
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
@@ -49,16 +44,10 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 3) removeIsLatestTxBlockHeightZero(migration.newRealm);
     if (oldVersion < 4) addIsDeletedToUtxo(migration.newRealm);
     if (oldVersion < 5) migrationV5(migration);
-    if (oldVersion < 6) addWalletPreferences(migration.newRealm);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
-}
-
-void addWalletPreferences(Realm realm) {
-  // 별도 추가 작업 없음
-  Logger.log('addWalletPreferences');
 }
 
 void migrationV5(Migration migration) {

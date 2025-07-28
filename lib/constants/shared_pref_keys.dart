@@ -18,6 +18,13 @@ class SharedPrefKeys {
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
 
+  /// Home Features
+  static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
+  static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
+  static const String kExcludedFromTotalBalanceWalletIds =
+      "EXCLUDED_FROM_TOTAL_BALANCE_WALLET_IDS"; // 홈화면 총 잔액에서 제외할 지갑 목록
+  static const String kHomeFeatures = "HOME_FEATURES"; // 홈 화면에 표시할 기능(최근 거래, 분석, ...)
+
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';
   static const String kHaveReviewed = 'HAVE_REVIEWED';

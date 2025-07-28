@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:realm/realm.dart';
 
 /// 스키마 수정/추가 시 검토해야 할 코드
@@ -26,8 +25,6 @@ final realmAllSchemas = [
   RealmRbfHistory.schema,
   RealmCpfpHistory.schema,
   RealmTransactionMemo.schema,
-  RealmWalletPreferences.schema,
-  RealmHomeFeature.schema,
 ];
 
 @RealmModel()
@@ -215,24 +212,4 @@ class _RealmCpfpHistory {
   late double originalFee;
   late double newFee;
   late DateTime timestamp;
-}
-
-@RealmModel()
-class _RealmWalletPreferences {
-  @PrimaryKey()
-  late int id;
-  // UI에서 표시되는 지갑 순서를 저장
-  late List<int> walletOrder;
-  // 즐겨찾기된 지갑 ID 목록 (최대 5개까지 사용).
-  late List<int> favoriteWalletIds;
-  // 총 잔액에서 제외되는 지갑 ID 목록.
-  late List<int> excludedFromTotalBalanceWalletIds;
-  // 홈 화면에 표시되는 기능 Map
-  late List<_RealmHomeFeature> homeFeatures;
-}
-
-@RealmModel()
-class _RealmHomeFeature {
-  late String homeFeatureTypeString;
-  late bool isEnabled;
 }

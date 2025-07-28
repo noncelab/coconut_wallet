@@ -16,7 +16,6 @@ import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
-import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
@@ -102,6 +101,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ChangeNotifierProvider(create: (_) => VisibilityProvider()),
           ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => PreferenceProvider()),
 
           Provider.value(value: _realmManager),
 
@@ -120,16 +120,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ),
           Provider<SubscriptionRepository>(
             create: (context) => SubscriptionRepository(context.read<RealmManager>()),
-          ),
-          Provider<WalletPreferencesRepository>(
-            create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
-          ),
-
-          ChangeNotifierProvider(
-              create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
-
-          ChangeNotifierProvider(
-            create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>()),
           ),
 
           ChangeNotifierProvider<PriceProvider>(

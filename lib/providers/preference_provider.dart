@@ -4,7 +4,6 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
@@ -13,7 +12,6 @@ import 'package:collection/collection.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
-  final WalletPreferencesRepository _walletPreferencesRepository;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -58,7 +56,7 @@ class PreferenceProvider extends ChangeNotifier {
   late List<HomeFeature> _homeFeatures;
   List<HomeFeature> get homeFeatures => _homeFeatures;
 
-  PreferenceProvider(this._walletPreferencesRepository) {
+  PreferenceProvider() {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
@@ -66,11 +64,10 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
-    _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
-    _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
-    _excludedFromTotalBalanceWalletIds =
-        _walletPreferencesRepository.getExcludedWalletIds().toList();
-    _homeFeatures = _walletPreferencesRepository.getHomeFeatures();
+    _walletOrder = _getWalletOrder();
+    _favoriteWalletIds = _getFavoriteWalletIds();
+    _excludedFromTotalBalanceWalletIds = _getExcludedFromTotalBalanceWalletIds();
+    _homeFeatures = _getHomeFeatures();
     _initializeFiat();
     _initializeLanguageFromSystem();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -252,43 +249,79 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
 
+  /// 지갑 순서 불러오기
+  List<int> _getWalletOrder() {
+    final encoded = _sharedPrefs.getString(SharedPrefKeys.kWalletOrder);
+    if (encoded.isEmpty) return [];
+    final List<dynamic> decoded = jsonDecode(encoded);
+    return decoded.cast<int>();
+  }
+
   /// 지갑 순서 설정
   Future<void> setWalletOrder(List<int> walletOrder) async {
     _walletOrder = walletOrder;
-    await _walletPreferencesRepository.setWalletOrder(walletOrder);
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletOrder, jsonEncode(walletOrder));
     notifyListeners();
   }
 
+  /// 지갑 순서 단일 제거
   Future<void> removeWalletOrder(int walletId) async {
     _walletOrder.remove(walletId);
-    await _walletPreferencesRepository.setWalletOrder(_walletOrder);
+    await setWalletOrder(_walletOrder);
     notifyListeners();
   }
 
-  /// 지갑 즐겨찾기 설정
-  Future<void> setFavoriteWalletIds(List<int> ids) async {
-    _favoriteWalletIds = ids;
-    await _walletPreferencesRepository.setFavoriteWalletIds(ids);
+  /// 지갑 즐겨찾기 목록 불러오기
+  List<int> _getFavoriteWalletIds() {
+    final encoded = _sharedPrefs.getString(SharedPrefKeys.kFavoriteWalletIds);
+    if (encoded.isEmpty) return [];
+    final List<dynamic> decoded = jsonDecode(encoded);
+    return decoded.cast<int>();
+  }
+
+  /// 지갑 즐겨찾기 목록 설정
+  Future<void> setFavoriteWalletIds(List<int> favoriteWalletIds) async {
+    _favoriteWalletIds = favoriteWalletIds;
+    await _sharedPrefs.setString(SharedPrefKeys.kFavoriteWalletIds, jsonEncode(favoriteWalletIds));
     notifyListeners();
   }
 
+  /// 지갑 즐겨찾기 단일 제거
   Future<void> removeFavoriteWalletId(int walletId) async {
     _favoriteWalletIds.remove(walletId);
-    await _walletPreferencesRepository.setFavoriteWalletIds(_favoriteWalletIds);
+    await setFavoriteWalletIds(_favoriteWalletIds);
     notifyListeners();
+  }
+
+  /// 총 잔액에서 제외할 지갑 목록 불러오기
+  List<int> _getExcludedFromTotalBalanceWalletIds() {
+    final encoded = _sharedPrefs.getString(SharedPrefKeys.kExcludedFromTotalBalanceWalletIds);
+    if (encoded.isEmpty) return [];
+    final List<dynamic> decoded = jsonDecode(encoded);
+    return decoded.cast<int>();
   }
 
   /// 총 잔액에서 제외할 지갑 설정
   Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
     _excludedFromTotalBalanceWalletIds = ids;
-    await _walletPreferencesRepository.setExcludedWalletIds(ids);
+    await _sharedPrefs.setString(
+        SharedPrefKeys.kExcludedFromTotalBalanceWalletIds, jsonEncode(ids));
     notifyListeners();
   }
 
+  /// 총 잔액에서 제외할 지갑 단일 제거
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
-    await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
+    await setExcludedFromTotalBalanceWalletIds(_excludedFromTotalBalanceWalletIds);
     notifyListeners();
+  }
+
+  /// 홈 화면에 표시할 기능
+  List<HomeFeature> _getHomeFeatures() {
+    final encoded = _sharedPrefs.getString(SharedPrefKeys.kHomeFeatures);
+    if (encoded.isEmpty) return [];
+    final List<dynamic> decoded = jsonDecode(encoded);
+    return decoded.map((e) => HomeFeature.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<void> setHomeFeautres(List<HomeFeature> features) async {
@@ -296,7 +329,10 @@ class PreferenceProvider extends ChangeNotifier {
     // 토글 가능한 항목('최근 거래', '분석'...)만 리스트에 포함됩니다.
     // 추후 홈 화면 기능이 추가됨에 따라 kHomeFeatures를 수정할 필요가 있습니다.
     _homeFeatures = List.from(features);
-    await _walletPreferencesRepository.setHomeFeatures(features);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kHomeFeatures,
+      jsonEncode(features.map((e) => e.toJson()).toList()),
+    );
     notifyListeners();
   }
 
