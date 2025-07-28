@@ -87,6 +87,8 @@ selection: "선택"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
 view_balance: "잔액 보기"
+network: "네트워크"
+electrum_server: "일렉트럼 서버"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"
@@ -356,6 +358,21 @@ settings_screen:
   language: "언어"
   korean: "한국어"
   english: "English"
+  electrum_server: 
+    server_address: "서버 주소"
+    port: "포트"
+    use_ssl: "SSL 사용"
+    ssl_port: "SSL 포트: $port"
+    default_server: "기본 서버"
+    reset: "초기화"
+    save: "저장"
+    error_msg:
+      invalid_domain_format: "도메인 형식이 아니에요"
+      port_out_of_range: "유효한 포트를 입력해주세요 (1~65535)"
+    alert: 
+      connection_failed: "연결할 수 없습니다!"
+      connecting: "연결 중입니다"
+      connected: "연결되었습니다"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
