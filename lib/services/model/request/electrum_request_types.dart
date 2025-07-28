@@ -30,8 +30,8 @@ class _VersionReq extends _ElectrumRequest {
 
   @override
   List<dynamic> get params => [
-        "electrs/0.10.5",
-        ["coconut-wallet", "1.4"]
+        "coconut-wallet",
+        ["1.4", "1.4"]
       ];
 }
 

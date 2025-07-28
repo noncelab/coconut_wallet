@@ -414,7 +414,7 @@ class NodeProvider extends ChangeNotifier {
 
     try {
       await _establishSocketConnection(electrumService, electrumServer);
-      await _verifyProtocolCommunication(electrumService).timeout(const Duration(seconds: 5));
+      await _verifyProtocolCommunication(electrumService);
 
       Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
       return Result.success(true);
