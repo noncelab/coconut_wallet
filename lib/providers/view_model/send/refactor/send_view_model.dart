@@ -206,6 +206,16 @@ class SendViewModel extends ChangeNotifier {
     return recipientMap;
   }
 
+  double get _amountSumExceptLast {
+    double amountSumExceptLast = 0;
+    for (int i = 0; i < lastIndex; ++i) {
+      if (_recipientList[i].amount.isNotEmpty) {
+        amountSumExceptLast += double.parse(_recipientList[i].amount);
+      }
+    }
+    return amountSumExceptLast;
+  }
+
   bool isMaxModeIndex(int index) {
     return _isMaxMode && index == lastIndex;
   }
@@ -264,7 +274,7 @@ class SendViewModel extends ChangeNotifier {
 
     _txBuilder = TransactionBuilder(
       availableUtxos: _selectedUtxoList,
-      recipients: _recipientMap,
+      recipients: _getRecipientMapForTx(_recipientMap),
       feeRate: double.parse(_feeRateText),
       changeDerivationPath: _changeAddressDerivationPath,
       walletListItemBase: _selectedWalletItem!,
@@ -350,19 +360,12 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _adjustLastReceiverAmount(int validateAmountIndex) {
-    double amountSumExceptLast = 0;
-    for (int i = 0; i < lastIndex; ++i) {
-      if (_recipientList[i].amount.isNotEmpty) {
-        amountSumExceptLast += double.parse(_recipientList[i].amount);
-      }
-    }
-
+    double amountSumExceptLast = _amountSumExceptLast;
     int estimatedFeeInSats = _estimatedFee ?? 0;
     int maxBalanceInSats = balance -
         (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast)
             .toInt() -
-        estimatedFeeInSats -
-        dustLimit;
+        estimatedFeeInSats;
     _recipientList[lastIndex].amount = maxBalanceInSats > 0
         ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
             .toString()
@@ -412,6 +415,7 @@ class SendViewModel extends ChangeNotifier {
     _isUtxoSelectionAuto = isUtxoSelectionAuto;
     _changeAddressDerivationPath =
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
+
     _initBalances();
     _validateAmount(-1);
     _updateFeeBoardVisibility();
@@ -657,8 +661,8 @@ class SendViewModel extends ChangeNotifier {
     // 부동 소수점 오차가 생길 수 있으므로 소수점 8자리만 다시 파싱
     double amountSumWithEstimatedFee = amountSum + _estimatedFeeByUnit;
     if (isBtcUnit) {
-      amountSumWithEstimatedFee = amountSumWithEstimatedFee.truncateTo8();
-      amountSum = amountSum.truncateTo8();
+      amountSumWithEstimatedFee = amountSumWithEstimatedFee.roundTo8Digits();
+      amountSum = amountSum.roundTo8Digits();
     }
 
     if (amountSumWithEstimatedFee > 0 &&
@@ -790,23 +794,46 @@ class SendViewModel extends ChangeNotifier {
     return _recipientList.where((e) => e.address == address).length >= 2;
   }
 
+  Map<String, int> _getRecipientMapForTx(Map<String, int> map) {
+    if (!_isMaxMode) return map;
+    // 모두 보내기 상황에서 마지막 수신자의 amount에 수수료를 제하지 않은 상태로 반환한다. (트랜잭션 처리를 위해)
+    double amountSumExceptLast = _amountSumExceptLast;
+    int maxBalanceInSats = balance -
+        (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast)
+            .toInt();
+    String lastRecipientAddress = _recipientList[lastIndex].address;
+    map[lastRecipientAddress] = maxBalanceInSats;
+    return map;
+  }
+
   void saveSendInfo() {
-    final recipientMap =
+    final recipientMapInBtc =
         _recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
+    var txBuilder = _txBuilder!.copyWith(recipients: _getRecipientMapForTx(_recipientMap));
+
+    // 모두 보내기 모드가 아니고 수수료 수신자 부담 옵션을 활성화한 경우, 마지막 수신자의 amount에서 수수료를 뺀다. (보기용)
+    if (!_isMaxMode && _isFeeSubtractedFromSendAmount) {
+      String lastRecipientAddress = _recipientList[lastIndex].address;
+      recipientMapInBtc[lastRecipientAddress] = (recipientMapInBtc[lastRecipientAddress]! -
+              UnitUtil.convertSatoshiToBitcoin(estimatedFeeInSats!))
+          .roundTo8Digits();
+    }
+
     // 이전에 사용한 정보 초기화
     _sendInfoProvider.setRecipientsForBatch(null);
     _sendInfoProvider.setRecipientAddress(null);
     _sendInfoProvider.setAmount(null);
 
     if (isBatchMode) {
-      _sendInfoProvider.setRecipientsForBatch(recipientMap);
+      _sendInfoProvider.setRecipientsForBatch(recipientMapInBtc);
     } else {
-      final firstEntry = recipientMap.entries.first;
+      final firstEntry = recipientMapInBtc.entries.first;
       _sendInfoProvider.setRecipientAddress(firstEntry.key);
       _sendInfoProvider.setAmount(firstEntry.value);
     }
 
-    _sendInfoProvider.setTransaction(_txBuilder!.build().transaction!);
+    var result = txBuilder.build();
+    _sendInfoProvider.setTransaction(result.transaction!);
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
   }

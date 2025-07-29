@@ -51,7 +51,7 @@ class SendConfirmViewModel extends ChangeNotifier {
       totalSendAmount += value;
       addresses.add('$key ($value ${t.btc})');
     });
-    _amount = totalSendAmount.truncateTo8();
+    _amount = totalSendAmount.roundTo8Digits();
     _addresses = addresses;
   }
 
