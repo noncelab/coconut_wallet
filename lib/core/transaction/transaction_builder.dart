@@ -57,6 +57,8 @@ class TransactionBuildResult {
 ///
 /// 모두 보내기 일 때는 수수료 수신자 부담 on
 class TransactionBuilder {
+  static const int _maxIterationCount = 10;
+
   final List<UtxoState> availableUtxos;
   final Map<String, int> recipients;
   final double feeRate;
@@ -230,14 +232,27 @@ class TransactionBuilder {
     }
 
     Exception? exception;
-    for (int i = 0; i < 2; i++) {
+
+    /// 최대 3회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
+    for (int i = 0; i < _maxIterationCount; i++) {
       try {
         Transaction tx = Transaction.forSinglePayment(_selectedUtxos!, recipients.entries.first.key,
             changeDerivationPath, sendAmount, feeRate, walletListItemBase.walletBase);
-        _estimatedFeeByTransaction = initialFee;
+        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType);
+        if (initialFee != realEstimatedFee) {
+          initialFee = realEstimatedFee;
+          sendAmount = maxUsedAmount - realEstimatedFee;
+          if (sendAmount <= dustLimit) {
+            /// estimatedFee + sendAmount < maxUsedAmount이더라도 반환
+            return tx;
+          }
+          continue;
+        }
+
+        //_estimatedFeeByTransaction = initialFee;
         return tx;
       } on Exception catch (e) {
-        if (i == 1) {
+        if (i == _maxIterationCount) {
           exception = e;
           break;
         }
@@ -267,9 +282,11 @@ class TransactionBuilder {
     if (lastSendAmount <= dustLimit) {
       throw const SendAmountTooLowException();
     }
+    final lastRecipient = recipients.entries.last;
 
     int initialFee = _estimatedFeeByFeeEstimator!;
     int finalLastSendAmount = lastSendAmount - initialFee;
+    //int finalLastSendAmount = lastRecipient.value - initialFee;
     if (finalLastSendAmount <= dustLimit) {
       throw const SendAmountTooLowException();
     }
@@ -277,12 +294,12 @@ class TransactionBuilder {
     final updatedRecipients = Map<String, int>.of(recipients);
     updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
     Exception? exception;
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < _maxIterationCount; i++) {
       try {
         return Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients, changeDerivationPath,
             feeRate, walletListItemBase.walletBase);
       } on Exception catch (e) {
-        if (i == 1) {
+        if (i == _maxIterationCount) {
           exception = e;
           break;
         }
@@ -291,7 +308,7 @@ class TransactionBuilder {
         final int? estimatedFee = extractEstimatedFeeFromException(e);
         if (estimatedFee != null) {
           initialFee = estimatedFee;
-          finalLastSendAmount = lastSendAmount - initialFee;
+          finalLastSendAmount = lastRecipient.value - initialFee;
           if (finalLastSendAmount <= dustLimit) {
             throw SendAmountTooLowException(estimatedFee: initialFee);
           }
