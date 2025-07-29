@@ -556,8 +556,11 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                 WalletImportSource.jade,
                               ),
                             ),
-                            const Expanded(
-                              child: SizedBox(),
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.coldCard),
+                                WalletImportSource.coldCard,
+                              ),
                             ),
                             const Expanded(
                               child: SizedBox(),
@@ -814,6 +817,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       case WalletImportSource.seedSigner:
         svgPath = kSeedSignerIconPath;
         scanText = t.wallet_add_scanner_screen.seed_signer;
+        break;
+      case WalletImportSource.coldCard:
+        svgPath = kColdCardIconPath;
+        scanText = t.wallet_add_scanner_screen.cold_card;
         break;
       case WalletImportSource.extendedPublicKey:
         svgPath = kZpubIconPath;

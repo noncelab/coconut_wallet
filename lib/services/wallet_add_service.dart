@@ -21,6 +21,11 @@ class WalletAddService {
     return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.jade);
   }
 
+  WatchOnlyWallet createColdCardWallet(Map<String, dynamic> json, String name) {
+    return createWalletFromJson(
+        json: json, name: name, walletImportSource: WalletImportSource.coldCard);
+  }
+
   WatchOnlyWallet createExtendedPublicKeyWallet(
       String extendedPublicKey, String name, String? masterFingerPrint) {
     final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(
@@ -48,5 +53,70 @@ class WalletAddService {
     final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
     return WatchOnlyWallet(
         name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+  }
+
+  WatchOnlyWallet createWalletFromJson(
+      {required Map<String, dynamic> json,
+      required String name,
+      required WalletImportSource walletImportSource}) {
+    // BBQR 스캔 결과에서 xpub과 fingerprint 추출
+    String? xpub;
+    String? fingerprint;
+
+    // bip84 (native segwit) 우선 사용
+    if (json['bip84'] != null) {
+      xpub = json['bip84']['xpub'];
+      fingerprint = json['bip84']['xfp'];
+    }
+    // bip49 (segwit)  사용
+    else if (json['bip49'] != null) {
+      xpub = json['bip49']['xpub'];
+      fingerprint = json['bip49']['xfp'];
+    }
+    // bip49가 없으면 bip44 사용
+    else if (json['bip44'] != null) {
+      xpub = json['bip44']['xpub'];
+      fingerprint = json['bip44']['xfp'];
+    }
+    // bip84 (native segwit) 사용
+    if (json['bip84'] != null) {
+      xpub = json['bip84']['xpub'];
+      fingerprint = json['bip84']['xfp'];
+    }
+
+    if (xpub == null) {
+      throw Exception('No valid xpub found in BBQR data');
+    }
+
+    try {
+      // descriptor로 지갑 생성 시도
+      String? descriptor;
+      if (json['bip84'] != null && json['bip84']['desc'] != null) {
+        descriptor = json['bip84']['desc'];
+      } else if (json['bip49'] != null && json['bip49']['desc'] != null) {
+        descriptor = json['bip49']['desc'];
+      } else if (json['bip44'] != null && json['bip44']['desc'] != null) {
+        descriptor = json['bip44']['desc'];
+      }
+
+      if (descriptor != null) {
+        final singleSigWallet = SingleSignatureWallet.fromDescriptor(descriptor);
+        return WatchOnlyWallet(
+          name,
+          0,
+          0,
+          singleSigWallet.descriptor,
+          null,
+          null,
+          walletImportSource.name,
+        );
+      }
+    } catch (e) {
+      // descriptor 파싱 실패 시 xpub으로 지갑 생성
+      print('Descriptor parsing failed, using xpub: $e');
+    }
+
+    // xpub으로 지갑 생성 (fallback)
+    return createExtendedPublicKeyWallet(xpub, name, fingerprint);
   }
 }

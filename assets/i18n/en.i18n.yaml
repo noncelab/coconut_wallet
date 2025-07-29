@@ -140,6 +140,7 @@ wallet_add_scanner_screen:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
   self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
@@ -176,6 +177,17 @@ wallet_add_scanner_screen:
     step2_em: " Wallet"
     step3: "3. "
     step3_em: " Export Xpub"
+  guide_coldcard:
+    step1: "1. "
+    step1_em: " Advanced/Tools"
+    step2: "2. "
+    step2_em: " Export Wallet"
+    step3: "3. "
+    step3_em: " Sparrow"
+    step4: "4. "
+    step4_preposition: "Press the "
+    step4_em: "QR "
+    step4_end: "Button"
 
 wallet_add_input_screen:
   app_bar_title_text: "Add Manually"
@@ -607,6 +619,7 @@ third_party:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
   zpub: "zpub"
 
 trade_exchange:

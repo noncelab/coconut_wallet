@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
@@ -33,6 +34,9 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       case WalletImportSource.seedSigner:
         _qrDataHandler = DescriptorQrScanDataHandler();
         break;
+      case WalletImportSource.coldCard:
+        _qrDataHandler = BbQrScanDataHandler();
+        break;
       case WalletImportSource.extendedPublicKey:
         throw 'No Support extendedPublicKey';
       default:
@@ -53,6 +57,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         return addJadeWallet(additionInfo as UR);
       case WalletImportSource.seedSigner:
         return addSeedSignerWallet(additionInfo as String);
+      case WalletImportSource.coldCard:
+        return addColdCardWallet(additionInfo as Map<String, dynamic>);
       case WalletImportSource.extendedPublicKey:
         throw 'No Support extendedPublicKey';
       default:
@@ -82,6 +88,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.seedSigner, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createSeedSignerWallet(descriptor, name);
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> addColdCardWallet(Map<String, dynamic> json) async {
+    final name = getNextThirdPartyWalletName(
+        WalletImportSource.coldCard, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createColdCardWallet(json, name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

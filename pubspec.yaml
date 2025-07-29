@@ -88,6 +88,7 @@ dependencies:
   firebase_analytics: ^11.3.0
   coconut_design_system: ^0.9.1
   coconut_lib: ^0.10.5
+  base32: ^2.1.3
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
@@ -252,6 +253,7 @@ flutter:
     - assets/svg/seed-signer.svg
     - assets/svg/jade.svg
     - assets/svg/keystone.svg
+    - assets/svg/cold-card.svg
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg

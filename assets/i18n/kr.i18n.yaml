@@ -182,6 +182,7 @@ wallet_add_scanner_screen:
   keystone: "키스톤"
   jade: "제이드"
   seed_signer: "시드사이너"
+  cold_card: "콜드카드"
   self: "직접 입력"
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
@@ -218,6 +219,17 @@ wallet_add_scanner_screen:
     step2_em: "Wallet"
     step3: "3. "
     step3_em: "Export Xpub"
+  guide_coldcard:
+    step1: "1. "
+    step1_em: "Advanced/Tools"
+    step2: "2. "
+    step2_em: "Export Wallet"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_preposition: ""
+    step4_em: "QR "
+    step4_end: "버튼 누르기"
 
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
@@ -649,6 +661,7 @@ third_party:
   keystone: "키스톤"
   jade: "제이드"
   seed_signer: "시드사이너"
+  cold_card: "콜드카드"
   zpub: "zpub"
 
 trade_exchange:
