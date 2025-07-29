@@ -78,11 +78,6 @@ class WalletAddService {
       xpub = json['bip44']['xpub'];
       fingerprint = json['bip44']['xfp'];
     }
-    // bip84 (native segwit) 사용
-    if (json['bip84'] != null) {
-      xpub = json['bip84']['xpub'];
-      fingerprint = json['bip84']['xfp'];
-    }
 
     if (xpub == null) {
       throw Exception('No valid xpub found in BBQR data');
