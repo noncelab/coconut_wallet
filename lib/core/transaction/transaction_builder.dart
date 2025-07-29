@@ -286,7 +286,7 @@ class TransactionBuilder {
 
     int initialFee = _estimatedFeeByFeeEstimator!;
     int finalLastSendAmount = lastSendAmount - initialFee;
-    int finalLastSendAmount = lastRecipient.value - initialFee;
+    //int finalLastSendAmount = lastRecipient.value - initialFee;
     if (finalLastSendAmount <= dustLimit) {
       throw const SendAmountTooLowException();
     }
@@ -294,11 +294,10 @@ class TransactionBuilder {
     final updatedRecipients = Map<String, int>.of(recipients);
     updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
     Exception? exception;
-    for (int i = 0; i < 2; i++) {
     for (int i = 0; i < _maxIterationCount; i++) {
       try {
         return Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients, changeDerivationPath,
-
+            feeRate, walletListItemBase.walletBase);
       } on Exception catch (e) {
         if (i == _maxIterationCount) {
           exception = e;
