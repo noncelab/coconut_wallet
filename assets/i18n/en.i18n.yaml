@@ -276,6 +276,10 @@ unsigned_tx_qr_screen:
     step1_em: "Scan QR"
     step1_end: "select"
     step2: "2. Scan the QR code below with camera"
+  guide_coldcard:
+    step1_preposition: "Press the "
+    step1_em: "QR "
+    step1_end: "button on the Coldcard."
   fast_scan_mode: "Fast scan mode"
   low_density_qr: "Simple QR"
   high_density_qr: "Complex QR"
@@ -522,6 +526,7 @@ tooltip:
     by_seed_signer: "SeedSigner"
     by_jade: "Jade"
     by_keystone: "Keystone"
+    by_coldcard: "Coldcard"
     by_hardware_wallet: "hardware wallet"
     by_vault_app: "Vault app"
   unsigned_tx_qr:

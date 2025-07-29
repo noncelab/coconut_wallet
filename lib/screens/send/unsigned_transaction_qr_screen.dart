@@ -387,6 +387,17 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           }
         }
+      case WalletImportSource.coldCard:
+        {
+          return [
+            TextSpan(
+                text:
+                    '${t.third_party.cold_card} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+            TextSpan(text: t.unsigned_tx_qr_screen.guide_coldcard.step1_preposition),
+            _em(t.unsigned_tx_qr_screen.guide_coldcard.step1_em),
+            TextSpan(text: t.unsigned_tx_qr_screen.guide_coldcard.step1_end),
+          ];
+        }
       // case WalletImportSource.coconutVault: TODO: 추후 BC_UR QR로 변경합니다.
       default:
         return [TextSpan(text: t.unsigned_tx_qr_screen.guide_hardware_wallet.step1)];

@@ -318,6 +318,10 @@ unsigned_tx_qr_screen:
     step1_em: "Scan QR"
     step1_end: "선택"
     step2: "2. 카메라로 아래 QR 코드 스캔"
+  guide_coldcard:
+    step1_preposition: "콜드카드에서 "
+    step1_em: "QR "
+    step1_end: "버튼을 눌러주세요."
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
@@ -564,6 +568,7 @@ tooltip:
     by_seed_signer: "시드사이너로"
     by_jade: "제이드로"
     by_keystone: "키스톤으로"
+    by_coldcard: "콜드카드로"
     by_hardware_wallet: "하드웨어 월렛으로"
     by_vault_app: "볼트 앱으로"
   unsigned_tx_qr:

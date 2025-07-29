@@ -235,6 +235,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         return [t.tooltip.scan_signed_psbt.by_jade, t.third_party.jade];
       case WalletImportSource.seedSigner:
         return [t.tooltip.scan_signed_psbt.by_seed_signer, t.third_party.seed_signer];
+      case WalletImportSource.coldCard:
+        return [t.tooltip.scan_signed_psbt.by_coldcard, t.third_party.cold_card];
       default:
         return [t.tooltip.scan_signed_psbt.by_hardware_wallet, t.hardware_wallet];
     }
