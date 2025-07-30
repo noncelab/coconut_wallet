@@ -216,7 +216,9 @@ class TransactionBuilder {
             _selectedUtxos!, recipients.entries.first.key, feeRate, walletListItemBase.walletBase);
         if (tx.outputs.first.amount <= dustLimit) {
           throw SendAmountTooLowException(
-              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType));
+              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+                  requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+                  totalSigner: walletListItemBase.multisigConfig?.totalSigner));
         }
         return tx;
       } on Exception catch (e) {
@@ -245,7 +247,9 @@ class TransactionBuilder {
       try {
         Transaction tx = Transaction.forSinglePayment(_selectedUtxos!, recipients.entries.first.key,
             changeDerivationPath, sendAmount, feeRate, walletListItemBase.walletBase);
-        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType);
+        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+            requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+            totalSigner: walletListItemBase.multisigConfig?.totalSigner);
         if (initialFee != realEstimatedFee) {
           if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
             return Transaction.forSweep(_selectedUtxos!, recipients.entries.first.key, feeRate,
@@ -303,7 +307,9 @@ class TransactionBuilder {
             _selectedUtxos!, recipients, feeRate, walletListItemBase.walletBase);
         if (tx.outputs.last.amount <= dustLimit) {
           throw SendAmountTooLowException(
-              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType));
+              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+                  requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+                  totalSigner: walletListItemBase.multisigConfig?.totalSigner));
         }
         return tx;
       } on Exception catch (e) {
@@ -335,7 +341,9 @@ class TransactionBuilder {
       try {
         Transaction tx = Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients,
             changeDerivationPath, feeRate, walletListItemBase.walletBase);
-        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType);
+        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+            requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+            totalSigner: walletListItemBase.multisigConfig?.totalSigner);
         if (initialFee != realEstimatedFee) {
           if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
             return Transaction.forBatchSweep(
