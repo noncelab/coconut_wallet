@@ -10,7 +10,7 @@ import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_
 class TransactionBuildResult {
   final Transaction? transaction;
   final List<UtxoState>? selectedUtxos;
-  final int? estimatedFee;
+  final int estimatedFee;
   final Exception? exception;
 
   bool get isSuccess => transaction != null;
@@ -87,9 +87,12 @@ class TransactionBuilder {
       if (isUtxoFixed) {
         _selectedUtxos = availableUtxos;
         double virtualByte = WalletUtility.estimateVirtualByte(
-            walletListItemBase.walletType.addressType,
-            _selectedUtxos!.length,
-            recipients.length + 1); // change output 있다고 가정
+          walletListItemBase.walletType.addressType,
+          _selectedUtxos!.length,
+          recipients.length + 1,
+          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+          totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+        ); // change output 있다고 가정
         _estimatedFeeByFeeEstimator = (virtualByte * feeRate).ceil();
       } else {
         final utxoSelectionResult = UtxoSelector.selectOptimalUtxos(
@@ -112,7 +115,7 @@ class TransactionBuilder {
       return TransactionBuildResult(
         transaction: _transaction,
         selectedUtxos: _selectedUtxos,
-        estimatedFee: e.estimatedFee ?? _estimatedFeeByFeeEstimator,
+        estimatedFee: e.estimatedFee,
         exception: e,
       );
     }
@@ -139,6 +142,7 @@ class TransactionBuilder {
   }
 
   Transaction? _createTransaction() {
+    assert(_estimatedFeeByFeeEstimator != null);
     List<UtxoState>? leftAvailableUtxos;
 
     /// 1. 선택한 utxo를 이용해서 트랜잭션을 생성한다.
@@ -175,7 +179,8 @@ class TransactionBuilder {
 
           /// 4. 더이상 추가로 사용할 수 있는 utxo가 없음
           //_estimatedFeeByTransaction = estimatedFee;
-          throw InsufficientBalanceException(estimatedFee: estimatedFee);
+          throw InsufficientBalanceException(
+              estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!);
         }
 
         if (e is TransactionCreationException) {
@@ -184,7 +189,7 @@ class TransactionBuilder {
 
         /// TODO: TEST
         throw TransactionCreationException(
-            message: e.toString(), estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator);
+            message: e.toString(), estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!);
       }
     }
   }
@@ -220,7 +225,8 @@ class TransactionBuilder {
         if (estimatedFee != null) {
           throw InsufficientBalanceException(estimatedFee: estimatedFee);
         } else {
-          throw TransactionCreationException(message: e.toString());
+          throw TransactionCreationException(
+              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -228,7 +234,7 @@ class TransactionBuilder {
     int initialFee = _estimatedFeeByFeeEstimator!;
     int sendAmount = maxUsedAmount - initialFee;
     if (sendAmount <= dustLimit) {
-      throw const SendAmountTooLowException();
+      throw SendAmountTooLowException(estimatedFee: _estimatedFeeByFeeEstimator!);
     }
 
     Exception? exception;
@@ -268,7 +274,8 @@ class TransactionBuilder {
           }
           continue;
         } else {
-          throw TransactionCreationException(message: e.toString());
+          throw TransactionCreationException(
+              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -276,7 +283,8 @@ class TransactionBuilder {
     /// TODO: 여기 오는 상황이 있나?
     throw TransactionCreationException(
         message: exception?.toString() ??
-            'Failed to create single transaction when fee subtracted from amount.');
+            'Failed to create single transaction when fee subtracted from amount.',
+        estimatedFee: initialFee);
   }
 
   Transaction _createBatchWhenFeeSubtractedFromAmount() {
@@ -300,7 +308,8 @@ class TransactionBuilder {
         if (estimatedFee != null) {
           throw InsufficientBalanceException(estimatedFee: estimatedFee);
         } else {
-          throw TransactionCreationException(message: e.toString());
+          throw TransactionCreationException(
+              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -309,7 +318,7 @@ class TransactionBuilder {
     int initialFee = _estimatedFeeByFeeEstimator!;
     int finalLastSendAmount = lastRecipient.value - initialFee;
     if (finalLastSendAmount <= dustLimit) {
-      throw const SendAmountTooLowException();
+      throw SendAmountTooLowException(estimatedFee: _estimatedFeeByFeeEstimator!);
     }
 
     final updatedRecipients = Map<String, int>.of(recipients);
@@ -352,14 +361,16 @@ class TransactionBuilder {
           updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
           continue;
         } else {
-          throw TransactionCreationException(message: e.toString());
+          throw TransactionCreationException(
+              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
 
     throw TransactionCreationException(
         message: exception?.toString() ??
-            'Failed to create batch transaction when fee subtracted from amount.');
+            'Failed to create batch transaction when fee subtracted from amount.',
+        estimatedFee: _estimatedFeeByFeeEstimator!);
   }
 
   int _estimateFee() {
