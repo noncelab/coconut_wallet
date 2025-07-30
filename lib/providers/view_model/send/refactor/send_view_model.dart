@@ -804,7 +804,6 @@ class SendViewModel extends ChangeNotifier {
   void saveSendInfo() {
     final recipientMapInBtc =
         _recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
-    var txBuilder = _txBuilder!.copyWith(recipients: _getRecipientMapForTx(_recipientMap));
 
     // 모두 보내기 모드가 아니고 수수료 수신자 부담 옵션을 활성화한 경우, 마지막 수신자의 amount에서 수수료를 뺀다. (보기용)
     if (!_isMaxMode && _isFeeSubtractedFromSendAmount) {
@@ -827,7 +826,7 @@ class SendViewModel extends ChangeNotifier {
       _sendInfoProvider.setAmount(firstEntry.value);
     }
 
-    var result = txBuilder.build();
+    var result = _txBuilder!.build();
     _sendInfoProvider.setTransaction(result.transaction!);
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
