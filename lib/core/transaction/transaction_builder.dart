@@ -260,7 +260,7 @@ class TransactionBuilder {
         //_estimatedFeeByTransaction = realEstimatedFee;
         return tx;
       } on Exception catch (e) {
-        if (i == _maxIterationCount) {
+        if (i == _maxIterationCount - 1) {
           exception = e;
           break;
         }
@@ -345,7 +345,7 @@ class TransactionBuilder {
         //_estimatedFeeByTransaction = realEstimatedFee;
         return tx;
       } on Exception catch (e) {
-        if (i == _maxIterationCount) {
+        if (i == _maxIterationCount - 1) {
           exception = e;
           break;
         }
