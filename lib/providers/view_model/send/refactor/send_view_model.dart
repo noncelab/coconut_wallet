@@ -29,8 +29,45 @@ typedef WalletInfoUpdateCallback = void Function(
   bool isUtxoSelectionAuto,
 );
 
+enum AddressError {
+  none,
+  invalid,
+  invalidNetworkAddress,
+  duplicated;
+
+  bool get isError => this != AddressError.none;
+}
+
+extension AddressErrorMessage on AddressError {
+  String get message {
+    switch (this) {
+      case AddressError.invalid:
+        return t.errors.address_error.invalid;
+      case AddressError.duplicated:
+        return t.errors.address_error.duplicated;
+      case AddressError.invalidNetworkAddress:
+        {
+          if (NetworkType.currentNetworkType == NetworkType.testnet) {
+            return t.errors.address_error.not_for_testnet;
+          } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {
+            return t.errors.address_error.not_for_mainnet;
+          } else if (NetworkType.currentNetworkType == NetworkType.regtest) {
+            return t.errors.address_error.not_for_regtest;
+          } else {
+            throw "Unknown network type";
+          }
+        }
+      case AddressError.none:
+      default:
+        return "";
+    }
+  }
+}
+
 enum SendError {
   none,
+  empty,
+  zero,
   invalidAddress,
   noTestnetAddress,
   noMainnetAddress,
@@ -160,7 +197,6 @@ class SendViewModel extends ChangeNotifier {
 
   SendError _insufficientBalanceError = SendError.none;
   SendError _insufficientBalanceErrorOfLastRecipient = SendError.none;
-  SendError _qrAddressError = SendError.none;
 
   bool _hasFinalError = true;
   bool get hasFinalError => _hasFinalError;
@@ -172,7 +208,6 @@ class SendViewModel extends ChangeNotifier {
   bool get hasInsufficientBalanceError => _insufficientBalanceError.isError;
   bool get hasInsufficientBalanceErrorOfLastRecipient =>
       _insufficientBalanceErrorOfLastRecipient.isError;
-  String get qrErrorMessage => _qrAddressError.getMessage(_currentUnit);
 
   bool _showFeeBoard = false;
   bool get showFeeBoard => _showFeeBoard;
@@ -192,7 +227,7 @@ class SendViewModel extends ChangeNotifier {
         .where((e) =>
             e.address.isNotEmpty &&
             e.amount.isNotEmpty &&
-            e.addressError.isNotError &&
+            e.addressError == AddressError.none &&
             e.minimumAmountError.isNotError)
         .toList();
   }
@@ -462,7 +497,10 @@ class SendViewModel extends ChangeNotifier {
     _onRecipientPageDeleted(_currentIndex);
 
     _calculateEstimatedFee();
-    _validateAddresses();
+
+    /// 중복이었던 것이 제거되었는지 확인
+    //_validateAddresses();
+    checkAndSetDuplicationError();
     _validateAmount(-1);
     vibrateLight();
     notifyListeners();
@@ -491,29 +529,58 @@ class SendViewModel extends ChangeNotifier {
       message = _insufficientBalanceErrorOfLastRecipient.getMessage(currentUnit);
     } else if (_recipientList.any((r) => r.minimumAmountError.isError)) {
       message = SendError.minimumAmount.getMessage(currentUnit);
-    } else if (_recipientList.any((r) => r.addressError == SendError.invalidAddress)) {
-      message = SendError.invalidAddress.getMessage(currentUnit);
-    } else if (_recipientList.any((r) => r.addressError == SendError.duplicatedAddress)) {
-      message = SendError.duplicatedAddress.getMessage(currentUnit);
     } else if (_recipientList
         .any((r) => r.address.isEmpty || r.amount.isEmpty || r.amount == "0")) {
       message = finalErrorMessageSpaceText;
     } else if (_estimatedFee == null || _txBuilder == null) {
       message = finalErrorMessageSpaceText;
+    } else {
+      int addressErrorIndex = _recipientList.indexWhere((r) => r.addressError.isError);
+      if (addressErrorIndex != -1) {
+        message = _recipientList[addressErrorIndex].addressError.message;
+      }
     }
 
     _setFinalErrorMessage(message);
   }
 
-  void _validateAddresses() {
+  // void _validateAddresses() {
+  //   for (int i = 0; i < _recipientList.length; i++) {
+  //     validateAddress(_recipientList[i].address, index: i);
+  //   }
+  // }
+
+  void checkAndSetDuplicationError() {
+    // 주소별 갯수 집계
+    final Map<String, int> addressCount = {};
+    for (final recipient in _recipientList) {
+      if (recipient.address.isEmpty) continue;
+      addressCount[recipient.address] = (addressCount[recipient.address] ?? 0) + 1;
+    }
+
     for (int i = 0; i < _recipientList.length; i++) {
-      validateAddress(_recipientList[i].address, index: i);
+      final recipient = _recipientList[i];
+      if (recipient.address.isEmpty) continue;
+      if (recipient.addressError != AddressError.none &&
+          recipient.addressError != AddressError.duplicated) {
+        // 중복 오류가 아닌 다른 오류는 건드리지 않음
+        continue;
+      }
+
+      if (addressCount[recipient.address]! >= 2) {
+        // 중복인 경우 duplicated 오류 설정
+        _setAddressError(AddressError.duplicated, i);
+      } else {
+        // 더 이상 중복이 아니면 오류 해제
+        _setAddressError(AddressError.none, i);
+      }
     }
   }
 
-  void setAddressText(String text, int index) {
-    _recipientList[index].address = text;
-    _validateAddresses();
+  void setAddressText(String text, int recipientIndex) {
+    _recipientList[recipientIndex].address = text;
+    validateAddress(text, recipientIndex);
+    checkAndSetDuplicationError();
     _calculateEstimatedFee();
     _updateFeeBoardVisibility();
     notifyListeners();
@@ -711,12 +778,7 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _setAddressError(SendError error, int index) {
-    if (index == -1) {
-      _qrAddressError = error;
-      return;
-    }
-
+  void _setAddressError(AddressError error, int index) {
     if (_recipientList[index].addressError != error) {
       _recipientList[index].addressError = error;
       _updateFinalError();
@@ -728,74 +790,27 @@ class SendViewModel extends ChangeNotifier {
     return AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
   }
 
-  bool validateAddress(String address, {int index = -1}) {
-    if (address.isEmpty) {
-      _setAddressError(SendError.none, index);
-      return false;
-    }
+  bool validateAddress(String address, int recipientIndex) {
+    AddressValidationError? error =
+        AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
 
-    final normalized = address.toLowerCase();
-
-    // Bech32m(T2R) 주소
-    if (normalized.length < 26) {
-      _setAddressError(SendError.invalidAddress, index);
-      return false;
-    }
-
-    if (NetworkType.currentNetworkType == NetworkType.testnet) {
-      if (normalized.startsWith('1') ||
-          normalized.startsWith('3') ||
-          normalized.startsWith('bc1')) {
-        _setAddressError(SendError.noTestnetAddress, index);
+    switch (error) {
+      case AddressValidationError.noTestnetAddress:
+      case AddressValidationError.noMainnetAddress:
+      case AddressValidationError.noRegtestnetAddress:
+        _setAddressError(AddressError.invalidNetworkAddress, recipientIndex);
         return false;
-      }
-    } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {
-      if (normalized.startsWith('m') ||
-          normalized.startsWith('n') ||
-          normalized.startsWith('2') ||
-          normalized.startsWith('tb1')) {
-        _setAddressError(SendError.noMainnetAddress, index);
+      case AddressValidationError.minimumLength:
+      case AddressValidationError.unknown:
+        _setAddressError(AddressError.invalid, recipientIndex);
         return false;
-      }
-    } else if (NetworkType.currentNetworkType == NetworkType.regtest) {
-      if (!normalized.startsWith('bcrt1')) {
-        _setAddressError(SendError.noRegtestnetAddress, index);
-        return false;
-      }
+      case AddressValidationError.empty:
+      default:
+        break;
     }
 
-    bool result = false;
-    try {
-      final addressForValidation = _isBech32(normalized) ? normalized : address;
-      result = WalletUtility.validateAddress(addressForValidation);
-    } catch (e) {
-      _setAddressError(SendError.invalidAddress, index);
-      return false;
-    }
-
-    if (!result) {
-      _setAddressError(SendError.invalidAddress, index);
-      return false;
-    }
-
-    if (_isAddressDuplicated(address)) {
-      _setAddressError(SendError.duplicatedAddress, index);
-      return false;
-    }
-
-    _setAddressError(SendError.none, index);
+    _setAddressError(AddressError.none, recipientIndex);
     return true;
-  }
-
-  bool _isBech32(String address) {
-    final normalizedAddress = address.toLowerCase();
-    return normalizedAddress.startsWith('bc1') ||
-        normalizedAddress.startsWith('tb1') ||
-        normalizedAddress.startsWith('bcrt1');
-  }
-
-  bool _isAddressDuplicated(String address) {
-    return _recipientList.where((e) => e.address == address).length >= 2;
   }
 
   Map<String, int> _getRecipientMapForTx(Map<String, int> map) {
@@ -845,12 +860,14 @@ class SendViewModel extends ChangeNotifier {
 class RecipientInfo {
   String address;
   String amount;
-  SendError addressError; // 주소가 틀린 경우, 이전 주소와 중복된 경우
+  AddressError addressError;
   SendError minimumAmountError; // 전송량이 적은 경우
 
   RecipientInfo(
       {this.address = '',
       this.amount = '',
-      this.addressError = SendError.none,
+      this.addressError = AddressError.none,
       this.minimumAmountError = SendError.none});
+
+  // bool get isCompleted =>
 }

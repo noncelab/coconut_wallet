@@ -831,7 +831,7 @@ class _SendScreenState extends State<SendScreen> {
                     );
                   }),
               CoconutLayout.spacing_500h,
-              Selector<SendViewModel, Tuple2<String, SendError>>(
+              Selector<SendViewModel, Tuple2<String, AddressError>>(
                   selector: (_, viewModel) => Tuple2(viewModel.recipientList[index].address,
                       viewModel.recipientList[index].addressError),
                   builder: (context, data, child) {
