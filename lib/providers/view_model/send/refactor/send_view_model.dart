@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -488,14 +489,14 @@ class SendViewModel extends ChangeNotifier {
       message = _insufficientBalanceError.getMessage(currentUnit);
     } else if (_insufficientBalanceErrorOfLastRecipient.isError) {
       message = _insufficientBalanceErrorOfLastRecipient.getMessage(currentUnit);
-    } else if (_recipientList.any((e) => e.minimumAmountError.isError)) {
+    } else if (_recipientList.any((r) => r.minimumAmountError.isError)) {
       message = SendError.minimumAmount.getMessage(currentUnit);
-    } else if (_recipientList.any((e) => e.addressError == SendError.invalidAddress)) {
+    } else if (_recipientList.any((r) => r.addressError == SendError.invalidAddress)) {
       message = SendError.invalidAddress.getMessage(currentUnit);
-    } else if (_recipientList.any((e) => e.addressError == SendError.duplicatedAddress)) {
+    } else if (_recipientList.any((r) => r.addressError == SendError.duplicatedAddress)) {
       message = SendError.duplicatedAddress.getMessage(currentUnit);
     } else if (_recipientList
-        .any((e) => e.address.isEmpty || e.amount.isEmpty || e.amount == "0")) {
+        .any((r) => r.address.isEmpty || r.amount.isEmpty || r.amount == "0")) {
       message = finalErrorMessageSpaceText;
     } else if (_estimatedFee == null || _txBuilder == null) {
       message = finalErrorMessageSpaceText;
@@ -655,7 +656,7 @@ class SendViewModel extends ChangeNotifier {
     _incomingBalance = incomingBalance;
   }
 
-  void _validateAmount(int index) {
+  void _validateAmount(int recipientIndex) {
     // insufficientBalance 전체 범위 적용
     double amountSum = recipientList
         .where((r) => r.amount.isNotEmpty)
@@ -678,8 +679,8 @@ class SendViewModel extends ChangeNotifier {
     }
 
     // minimumAmount 수신자 범위 적용
-    if (index != -1) {
-      final recipient = recipientList[index];
+    if (recipientIndex != -1) {
+      final recipient = recipientList[recipientIndex];
       if (recipient.amount.isNotEmpty && double.parse(recipient.amount) > 0) {
         if (double.parse(recipient.amount) <= dustLimit / _dustLimitDenominator) {
           recipient.minimumAmountError = SendError.minimumAmount;
@@ -721,6 +722,10 @@ class SendViewModel extends ChangeNotifier {
       _updateFinalError();
       notifyListeners();
     }
+  }
+
+  AddressValidationError? validateScannedAddress(String address) {
+    return AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
   }
 
   bool validateAddress(String address, {int index = -1}) {

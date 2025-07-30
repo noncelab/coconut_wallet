@@ -531,6 +531,7 @@ errors:
     recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."
     insufficient_utxo: "Selected UTXOs are insufficient"
   address_error:
+    empty: "Address is empty"
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"

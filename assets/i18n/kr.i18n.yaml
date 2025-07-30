@@ -577,6 +577,7 @@ errors:
     recommended_fee_unavailable: "추천 수수료를 조회하지 못했어요.\n'직접 입력하기' 버튼을 눌러 수수료를 직접 입력해 주세요."
     insufficient_utxo: "UTXO 합계가 모자라요"
   address_error:
+    empty: "주소가 비어 있습니다."
     invalid: "올바른 주소가 아니에요."
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."

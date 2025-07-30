@@ -1125,14 +1125,13 @@ class _SendScreenState extends State<SendScreen> {
       if (scanData.code!.isEmpty) return;
 
       _isQrDataHandling = true;
-      if (_viewModel.validateAddress(scanData.code!)) {
-        if (mounted) {
+      final validationResult = _viewModel.validateScannedAddress(scanData.code!);
+      if (mounted) {
+        if (validationResult == null) {
           Navigator.pop(context, scanData.code!);
-        }
-      } else {
-        if (mounted) {
+        } else {
           CoconutToast.showToast(
-              isVisibleIcon: true, context: context, text: _viewModel.qrErrorMessage);
+              isVisibleIcon: true, context: context, text: validationResult.message);
         }
       }
 
