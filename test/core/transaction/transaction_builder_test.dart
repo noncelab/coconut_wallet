@@ -61,6 +61,10 @@ void main() {
     'bcrt1qktkhznpjp6gg7waacvcgxrv3hd6aj8nj90rw8q': 150000,
     'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 1000,
   };
+  Map<String, int> batchRecipientsEdgeBalance = {
+    'bcrt1qve37yvsmqksx93j6gqsnz862qpzfa0xya0yvve': 150000,
+    'bcrt1qktkhznpjp6gg7waacvcgxrv3hd6aj8nj90rw8q': 150000 - dustThreshold,
+  };
 
   group('SingleTx - Auto UTXO Selection', () {
     test('Single / Auto Utxo / 수수료 발신자 부담 / availableUtxos가 비어있을 때', () {
@@ -238,11 +242,15 @@ void main() {
       final estimatedFeeOfTx = result.transaction!.estimateFee(1.0, wallet.walletType.addressType);
 
       /// result.estimatedFee는 dustOutput도 포함해서 보여주므로 다름
+      /// TODO: 추후 변경 가능성 있음
       expect(result.estimatedFee!, isNot(equals(estimatedFeeOfTx)));
 
-      /// 사용하는 금액 = 예상 수수료 + 보내는 금액
-      expect(singleRecipientEdgeBalance2.values.first,
-          same(estimatedFeeOfTx + result.transaction!.outputs[0].amount));
+      // tx의 outputs의 amount 합 + 수수료 = singleRecipientEdgeBalance2의 합
+      final totalOutputAmount = result.transaction!.outputs
+          .fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalSendAmount = singleRecipientEdgeBalance2.values
+          .fold(0, (previousValue, element) => previousValue + element);
+      expect(totalOutputAmount + estimatedFeeOfTx, totalSendAmount);
       expect(result.selectedUtxos, isNotNull);
     });
   });
@@ -466,7 +474,7 @@ void main() {
           .fold(0, (previousValue, element) => previousValue + element.amount);
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
-      expect(totalOutputAmount + result.estimatedFee!, lessThanOrEqualTo(totalBalance));
+      expect(totalOutputAmount + result.estimatedFee!, equals(totalBalance));
 
       expect(result.transaction!.outputs[1].amount,
           lessThan(batchRecipientsSameBalance.entries.last.value));
@@ -490,6 +498,34 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNull);
       expect(result.exception, isA<InsufficientBalanceException>());
+    });
+
+    /// 1) initialFee: 250 / lastSendAmount: 149706-250 = 149456 / realFee: 240 / dustThreshold: 294 < 304
+    /// 2) initialFee: 240 / lastSendAmount: 149706-240 = 149466 / realFee: 240 / dustThreshold: 294 >= 294
+    test('Batch / Auto Utxo / 수수료 수신자 부담 / Edge Case', () {
+      final result = TransactionBuilder(
+        availableUtxos: availableUtxos,
+        recipients: batchRecipientsEdgeBalance,
+        feeRate: 1.0,
+        changeDerivationPath: "m/84'/1'/0'/0/0",
+        walletListItemBase: wallet,
+        isFeeSubtractedFromAmount: true,
+        isUtxoFixed: false,
+      ).build();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.estimatedFee, isPositive);
+      expect(result.transaction, isNotNull);
+      expect(result.transaction!.inputs.length, 2);
+      expect(result.transaction!.outputs.length, 2);
+      expect(result.selectedUtxos, isNotNull);
+      final totalOutputAmount = result.transaction!.outputs
+          .fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalBalance =
+          availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
+      expect(totalOutputAmount + result.estimatedFee!, equals(totalBalance));
+      //TODO: TxBuildResult의 estimatedFee를 어떻게 제공할지에 따라 결과가 달라짐
+      //expect(totalOutputAmount + result.estimatedFee!, equals(totalBalance - dustThreshold));
     });
   });
 

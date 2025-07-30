@@ -88,7 +88,10 @@ dependencies:
   firebase_core: ^3.4.0
   firebase_analytics: ^11.3.0
   coconut_design_system: ^0.9.1
-  coconut_lib: ^0.10.5
+  coconut_lib:
+    git: 
+      url: https://github.com/Noncelab/coconut_lib.git
+      ref: feat/tx-batch-sweep
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2

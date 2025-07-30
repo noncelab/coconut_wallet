@@ -233,7 +233,8 @@ class TransactionBuilder {
 
     Exception? exception;
 
-    /// 최대 3회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
+    /// 최대 2회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
+    /// transaction_builder_test.dart: Single / Auto Utxo / 수수료 수신자 부담 / Edge Case
     for (int i = 0; i < _maxIterationCount; i++) {
       try {
         Transaction tx = Transaction.forSinglePayment(_selectedUtxos!, recipients.entries.first.key,
@@ -241,6 +242,7 @@ class TransactionBuilder {
         final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType);
         if (initialFee != realEstimatedFee) {
           initialFee = realEstimatedFee;
+
           sendAmount = maxUsedAmount - realEstimatedFee;
           if (sendAmount <= dustLimit) {
             /// estimatedFee + sendAmount < maxUsedAmount이더라도 반환
@@ -248,8 +250,8 @@ class TransactionBuilder {
           }
           continue;
         }
-
-        //_estimatedFeeByTransaction = initialFee;
+        // TODO: 추후 변경 가능성 있음
+        //_estimatedFeeByTransaction = realEstimatedFee;
         return tx;
       } on Exception catch (e) {
         if (i == _maxIterationCount) {
@@ -278,15 +280,34 @@ class TransactionBuilder {
   }
 
   Transaction _createBatchWhenFeeSubtractedFromAmount() {
-    final lastSendAmount = recipients.entries.last.value;
-    if (lastSendAmount <= dustLimit) {
-      throw const SendAmountTooLowException();
-    }
-    final lastRecipient = recipients.entries.last;
+    final totalInputAmount =
+        _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
+    final maxUsedAmount =
+        recipients.entries.fold(0, (previousValue, element) => previousValue + element.value);
 
+    if (totalInputAmount == maxUsedAmount) {
+      try {
+        final tx = Transaction.forBatchSweep(
+            _selectedUtxos!, recipients, feeRate, walletListItemBase.walletBase);
+        if (tx.outputs.last.amount <= dustLimit) {
+          throw SendAmountTooLowException(
+              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType));
+        }
+        return tx;
+      } on Exception catch (e) {
+        /// 보내는 수량 합 + 예상 수수료 > 잔액
+        final int? estimatedFee = extractEstimatedFeeFromException(e);
+        if (estimatedFee != null) {
+          throw InsufficientBalanceException(estimatedFee: estimatedFee);
+        } else {
+          throw TransactionCreationException(message: e.toString());
+        }
+      }
+    }
+
+    final lastRecipient = recipients.entries.last;
     int initialFee = _estimatedFeeByFeeEstimator!;
-    int finalLastSendAmount = lastSendAmount - initialFee;
-    //int finalLastSendAmount = lastRecipient.value - initialFee;
+    int finalLastSendAmount = lastRecipient.value - initialFee;
     if (finalLastSendAmount <= dustLimit) {
       throw const SendAmountTooLowException();
     }
@@ -294,10 +315,26 @@ class TransactionBuilder {
     final updatedRecipients = Map<String, int>.of(recipients);
     updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
     Exception? exception;
+
+    /// 최대 2회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
+    /// transaction_builder_test.dart: Batch / Auto Utxo / 수수료 수신자 부담 / Edge Case
     for (int i = 0; i < _maxIterationCount; i++) {
       try {
-        return Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients, changeDerivationPath,
-            feeRate, walletListItemBase.walletBase);
+        Transaction tx = Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients,
+            changeDerivationPath, feeRate, walletListItemBase.walletBase);
+        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType);
+        if (initialFee != realEstimatedFee) {
+          initialFee = realEstimatedFee;
+          finalLastSendAmount = lastRecipient.value - initialFee;
+          if (finalLastSendAmount <= dustLimit) {
+            return tx;
+          }
+          updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
+          continue;
+        }
+        // TODO: 추후 변경 가능성 있음
+        //_estimatedFeeByTransaction = realEstimatedFee;
+        return tx;
       } on Exception catch (e) {
         if (i == _maxIterationCount) {
           exception = e;
