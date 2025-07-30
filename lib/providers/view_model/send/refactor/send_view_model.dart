@@ -653,24 +653,19 @@ class SendViewModel extends ChangeNotifier {
 
   void _validateAmount(int index) {
     // insufficientBalance 전체 범위 적용
-    double amountSum = 0;
-    for (final recipient in recipientList) {
-      if (recipient.amount.isNotEmpty) amountSum += double.parse(recipient.amount);
-    }
+    double amountSum = recipientList
+        .where((r) => r.amount.isNotEmpty)
+        .fold(0, (sum, r) => sum + double.parse(r.amount));
 
+    double total = _isFeeSubtractedFromSendAmount ? amountSum : amountSum + _estimatedFeeByUnit;
     // 부동 소수점 오차가 생길 수 있으므로 소수점 8자리만 다시 파싱
-    double amountSumWithEstimatedFee = amountSum + _estimatedFeeByUnit;
     if (isBtcUnit) {
-      amountSumWithEstimatedFee = amountSumWithEstimatedFee.roundTo8Digits();
-      amountSum = amountSum.roundTo8Digits();
+      total = total.roundTo8Digits();
     }
 
-    if (amountSumWithEstimatedFee > 0 &&
-        amountSumWithEstimatedFee > balance / _dustLimitDenominator) {
-      _insufficientBalanceError = SendError.insufficientBalance;
-    } else {
-      _insufficientBalanceError = SendError.none;
-    }
+    _insufficientBalanceError = total > 0 && total > balance / _dustLimitDenominator
+        ? SendError.insufficientBalance
+        : SendError.none;
 
     if (isBtcUnit) {
       _amountSum = UnitUtil.convertBitcoinToSatoshi(amountSum);
