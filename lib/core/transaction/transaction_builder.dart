@@ -247,6 +247,10 @@ class TransactionBuilder {
             changeDerivationPath, sendAmount, feeRate, walletListItemBase.walletBase);
         final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType);
         if (initialFee != realEstimatedFee) {
+          if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+            return Transaction.forSweep(_selectedUtxos!, recipients.entries.first.key, feeRate,
+                walletListItemBase.walletBase);
+          }
           initialFee = realEstimatedFee;
 
           sendAmount = maxUsedAmount - realEstimatedFee;
@@ -333,6 +337,10 @@ class TransactionBuilder {
             changeDerivationPath, feeRate, walletListItemBase.walletBase);
         final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType);
         if (initialFee != realEstimatedFee) {
+          if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+            return Transaction.forBatchSweep(
+                _selectedUtxos!, recipients, feeRate, walletListItemBase.walletBase);
+          }
           initialFee = realEstimatedFee;
           finalLastSendAmount = lastRecipient.value - initialFee;
           if (finalLastSendAmount <= dustLimit) {

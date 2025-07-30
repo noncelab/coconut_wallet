@@ -309,7 +309,7 @@ void main() {
       expect(result.selectedUtxos, isNotNull);
     });
 
-    test('Single / Auto Utxo / 수수료 수신자 부담', () {
+    test('Single / Manual Utxo / 수수료 수신자 부담', () {
       final result = TransactionBuilder(
         availableUtxos: availableUtxos,
         recipients: singleRecipient,
@@ -332,7 +332,7 @@ void main() {
           equals(singleRecipient.values.first));
     });
 
-    test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
+    test('Single / Manual Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
       final result = TransactionBuilder(
         availableUtxos: availableUtxos,
         recipients: singleRecipientSameBalance,
@@ -355,7 +355,25 @@ void main() {
           equals(singleRecipientSameBalance.values.first));
     });
 
-    test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
+    test('Single / Manual Utxo / 수수료 수신자 부담 / 잔액 - 보내는 금액 <= dustLimit', () {
+      final result = TransactionBuilder(
+        availableUtxos: availableUtxos,
+        recipients: singleRecipientNearBalance,
+        feeRate: 1.0,
+        changeDerivationPath: "m/84'/1'/0'/0/0",
+        walletListItemBase: wallet,
+        isFeeSubtractedFromAmount: true,
+        isUtxoFixed: true,
+      ).build();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.estimatedFee, isPositive);
+      expect(result.transaction, isNotNull);
+      expect(result.selectedUtxos, isNotNull);
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount, equals(sumOfBalance));
+    });
+
+    test('Single / Manual Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
       final result = TransactionBuilder(
         availableUtxos: availableUtxos,
         recipients: singleRecipientSameBalance,
@@ -589,6 +607,26 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.exception, isA<SendAmountTooLowException>());
+    });
+
+    test('Batch / Manual Utxo / 수수료 수신자 부담 / 잔액 - 보내는 금액 <= dustLimit', () {
+      final result = TransactionBuilder(
+        availableUtxos: availableUtxos,
+        recipients: batchRecipientsEdgeBalance,
+        feeRate: 1.0,
+        changeDerivationPath: "m/84'/1'/0'/0/0",
+        walletListItemBase: wallet,
+        isFeeSubtractedFromAmount: true,
+        isUtxoFixed: true,
+      ).build();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.estimatedFee, isPositive);
+      expect(result.transaction, isNotNull);
+      expect(result.selectedUtxos, isNotNull);
+      final sumOfOutputs = result.transaction!.outputs
+          .fold(0, (previousValue, element) => previousValue + element.amount);
+      expect(result.estimatedFee + sumOfOutputs, equals(sumOfBalance));
     });
   });
 
