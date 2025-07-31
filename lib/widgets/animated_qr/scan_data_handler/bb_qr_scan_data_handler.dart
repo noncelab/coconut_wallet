@@ -6,6 +6,7 @@ import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_h
 class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
   BbqrDecoder _bbqrDecoder;
   int? _sequenceLength;
+  String? _dataType; // BBQR 데이터 타입 저장
 
   BbQrScanDataHandler() : _bbqrDecoder = BbqrDecoder();
 
@@ -26,6 +27,11 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
       final sequenceLength = parseSequenceLength(data);
       if (sequenceLength == null) return false;
       _sequenceLength = sequenceLength;
+
+      // 데이터 타입 저장
+      if (data.startsWith('B\$') && data.length >= 8) {
+        _dataType = data[3];
+      }
     }
     Logger.log('--> [QR] joinData: $data');
     final receivePartResult = _bbqrDecoder.receivePart(data);
@@ -34,9 +40,15 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
       if (!sequenceValidationResult) throw SequenceLengthMismatchException();
     }
 
-    // 조각이 모두 모이면 JSON 파싱하여 result 설정
+    // 조각이 모두 모이면 데이터 타입에 따라 처리
     if (_bbqrDecoder.isComplete && _bbqrDecoder.result == null) {
-      _bbqrDecoder.parseJson();
+      if (_dataType == 'T') {
+        // 'T' 타입은 바이너리 데이터로 처리
+        _bbqrDecoder.parseBinaryData();
+      } else {
+        // 기타 타입은 JSON으로 처리
+        _bbqrDecoder.parseJson();
+      }
     }
 
     return receivePartResult;
@@ -75,8 +87,8 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
       // encoding: 2(base32), Z(zlib+base32)
       if (encoding != '2' && encoding != 'Z') return false;
 
-      // dataType: J(Json), P(PSBT), A(Address), M(Multisig Info), S(Seed)
-      if (!['J', 'P', 'A', 'M', 'S'].contains(dataType)) return false;
+      // dataType: J(Json), P(PSBT), A(Address), M(Multisig Info), S(Seed), T(Transaction/Text)
+      if (!['J', 'P', 'A', 'M', 'S', 'T'].contains(dataType)) return false;
 
       // total, index가 base36 숫자인지 확인
       try {

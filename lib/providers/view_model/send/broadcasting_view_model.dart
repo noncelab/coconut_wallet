@@ -103,7 +103,11 @@ class BroadcastingViewModel extends ChangeNotifier {
       signedPsbt = Psbt.parse(signedTransaction);
     } else {
       signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
-      final signedTx = Transaction.parse(signedTransaction);
+
+      // raw transaction 데이터 처리 (hex 또는 base64)
+      String hexTransaction = decodeTransactionToHex(signedTransaction);
+
+      final signedTx = Transaction.parse(hexTransaction);
       final unSingedTx = signedPsbt.unsignedTransaction;
 
       // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
@@ -249,5 +253,22 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   bool _hasAllInputsBip32Derivation(Psbt psbt) {
     return psbt.inputs.every((input) => input.bip32Derivation != null);
+  }
+
+  /// 트랜잭션 문자열을 hex 형식으로 디코딩하는 헬퍼 메서드
+  String decodeTransactionToHex(String transactionString) {
+    try {
+      // 먼저 hex 문자열인지 확인
+      if (RegExp(r'^[0-9a-fA-F]+$').hasMatch(transactionString)) {
+        // 이미 hex 문자열인 경우
+        return transactionString;
+      } else {
+        // base64 문자열인 경우 디코딩
+        final bytes = base64.decode(transactionString);
+        return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
+      }
+    } catch (e) {
+      throw InvalidTransactionException('Failed to decode transaction: $e');
+    }
   }
 }

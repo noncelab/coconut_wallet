@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -79,7 +81,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       signedTx = Psbt.parse(_viewModel.signedTransaction)
           .getSignedTransaction(_viewModel.walletAddressType);
     } else {
-      signedTx = Transaction.parse(_viewModel.signedTransaction);
+      String hexTransaction = _viewModel.decodeTransactionToHex(_viewModel.signedTransaction);
+      signedTx = Transaction.parse(hexTransaction);
     }
 
     try {

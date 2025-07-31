@@ -95,6 +95,25 @@ class BbqrDecoder {
     }
   }
 
+  /// 바이너리 데이터 파싱 결과 반환 (완성된 경우에만)
+  dynamic parseBinaryData() {
+    if (!_isComplete) return null;
+
+    final combinedBytes = <int>[];
+    for (int i = 0; i < _expectedTotal!; i++) {
+      if (!_chunks.containsKey(i)) return null;
+      combinedBytes.addAll(_chunks[i]!);
+    }
+
+    try {
+      // 바이너리 데이터를 base64로 인코딩하여 반환
+      _result = base64Encode(combinedBytes);
+      return _result;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 진행률 (0~1)
   double get progress {
     if (_expectedTotal == null || _expectedTotal == 0) return 0;
