@@ -15,8 +15,7 @@ class SignedPsbtScannerViewModel {
 
   bool get isMultisig => _sendInfoProvider.isMultisig!;
   bool get isSendingDonation => _isSendingDonation;
-  WalletImportSource get walletImportSource =>
-      _sendInfoProvider.walletImportSource!;
+  WalletImportSource get walletImportSource => _sendInfoProvider.walletImportSource!;
 
   int getMissingSignaturesCount(Psbt psbt) {
     if (!isMultisig) return 0;
@@ -24,27 +23,23 @@ class SignedPsbtScannerViewModel {
     MultisignatureWallet multisigWallet = _walletProvider
         .getWalletById(_sendInfoProvider.walletId!)
         .walletBase as MultisignatureWallet;
-    int signedCount = multisigWallet.keyStoreList
-        .where((keyStore) => psbt.isSigned(keyStore))
-        .length;
+    int signedCount =
+        multisigWallet.keyStoreList.where((keyStore) => psbt.isSigned(keyStore)).length;
     int difference = multisigWallet.requiredSignature - signedCount;
     return difference;
   }
 
   WalletBase getWalletBase() {
-    return _walletProvider
-        .getWalletById(_sendInfoProvider.walletId!)
-        .walletBase;
+    return _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
   }
 
   bool isSignedPsbtMatchingUnsignedPsbt(Psbt signedPsbt) {
     try {
       var unsignedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
 
-      final defaultCheckResult =
-          unsignedPsbt.sendingAmount == signedPsbt.sendingAmount &&
-              unsignedPsbt.unsignedTransaction?.transactionHash ==
-                  signedPsbt.unsignedTransaction?.transactionHash;
+      final defaultCheckResult = unsignedPsbt.sendingAmount == signedPsbt.sendingAmount &&
+          unsignedPsbt.unsignedTransaction?.transactionHash ==
+              signedPsbt.unsignedTransaction?.transactionHash;
 
       if (isMultisig || defaultCheckResult) {
         return defaultCheckResult;
@@ -56,10 +51,8 @@ class SignedPsbtScannerViewModel {
       Transaction tx = signedPsbt.getSignedTransaction(AddressType.p2wpkh);
       for (int inputIndex = 0; inputIndex < tx.inputs.length; inputIndex++) {
         // 1. 서명 검증
-        if (!tx.validateEcdsa(
-            inputIndex,
-            TransactionOutput.parse(
-                unsignedPsbt.psbtMap["inputs"][inputIndex]["01"]))) {
+        if (!tx.validateEcdsa(inputIndex,
+            TransactionOutput.parse(unsignedPsbt.psbtMap["inputs"][inputIndex]["01"]))) {
           return false;
         }
         // 2. 공개키 검증

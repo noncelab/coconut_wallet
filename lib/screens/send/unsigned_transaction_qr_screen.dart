@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -15,7 +14,6 @@ import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_vi
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:convert/convert.dart';
 
@@ -58,45 +56,8 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
     final hexStr = hex.encode(base64.decode(_psbtBase64));
     final spacedHex = hexStr.replaceAllMapped(RegExp(r'.{4}'), (match) => '${match.group(0)} ');
-    printLongString('psbtBase64:::::: $spacedHex');
-    debugPrint('bbqr:::::: ${BbqrEncoder().encodeBase64(_psbtBase64)}');
-    // 스패로우 BBQR
-    // B$ZP0100FMUE4KXZZ7EFBSGEYDAMBOGE2IVXLWJGI3NWYRTP2Z7ULZK4F6VJZJLT5JWBW3Y2PIS32PMYO
-    // 2NQCBH673777H3JGY3ZRTJAYYQFE47XJ2JHJITG6LR5YDNPVWL3AX2LHWYFJYD5FIRUZ6SWRLE65R3NG4
-    // XFZN6QP4W3BOVR3I2HVQYGZZD24DH6RQWKN3PHTF4RU7JUDOACVZO7FQ5PYI7TPGFK3VU3XBVITQ726PJ
-    // RRXRMHZI65EKXZVX7N2WXDV36NE2L7NTE52EI7R5FJ7OUZMDW5U3YNYPD47TO74FQ5C6AKN5XYVME2M2Q
-    // L6CZGOOUGGAYDKADNAYMNRQGAZEUW6WYJO7DUPQND75JJ6VHPPFZ3VNJZ2DY7HLY3RJ2XGGMYLBAPESTM
-    // ZW7Y4H75LXRCRUP74BR6TC6PXKSDWZ4HZ24TBWVI3T6N6OXD2Q72WRJ6EXIU2B7IVMDRRLGEYRW3P2PRU
-    // 5PNPV2VYY26RXV7KGLRFHUTL3WXJSHDZWJ3KMSX7TVDU6LUG2DGNEN62UIMYTNLXWFUKGP65QYCVU67XL
-    // LH2QSSJTK6X66SJTZTSF3Y3TMNO55QUM5RLK6MGUQMYAA
-
-    // 코코넛 월렛 BBQR
-    // B$ZP0100FMUE4KXZZ7EFBSGEYDAMBOGE2IVXLWJGI3NWYRTP2Z7ULZK4F6VJZJLT5JWBW3Y2PIS32PMYO
-    // 2NQCBH677777H3JGY3ZRTJAYYQFE47XJ2JHJITG6LR5YDNPVWL3AX2LHWYFJYD5FIRUZ6SWRLE65R3NG4
-    // XFZN6QP4W3BOVR3I2HVQYGSCKD6I4LNH5XSZU6IYP42BQGAYDPSN4LB374Q7E6MKV7KJVOLLRLB7X4GSD
-    // DPC2PSR56IVPTTO67U5OHTX46JUV6TEJTUIV7DZKT75PSQHNTJHU3Q6HZ7W77QLBSF4GUDZPRLYLUJUAX
-    // 5VSM44IANBQGUDGSAAY3DAMBTZLNFPQ656BIPD2H72UT5IOW63VXCYTTUXX6OVR3CTROEMZQWSC6RGG5T
-    // 57RQO7WWPAF3I7XYDD56F43OVGH5TYDSF3GDOKZXX23M6OPUR5V5CTQJOXJEB65KYFTSWMJQVD3C6FTF7
-    // W3MFKKJPLXV74YJJUYVDK7PJ434RYS54V2WGW62YSHOUVFNXJVEDGQA===
-
-    // 스패로우 PSBT base64
-    // cHNidP8BAHECAAAAAaQ5SmWmsgE9awFLBf5ydwroekMbbH49gdkxSmLtwWbbAAAAAAD9////ApsLAAAAA
-    // AAAFgAUfN3cYhthKWPjbbDrO6QH1mXApRDvZQEAAAAAABYAFNpkNLvjhtjQ1zgv6xCrgXs1W7CwCeJFAE
-    // 8BBDWHzwMMgUwpgAAAAB/sosP4aedkPSrsXnsYwy+fZgDso8h3SG57Dzbq+txHA8mljpmQiFn1xSfK6eB
-    // GlgzZw8fOv+gIOFHKvE0kE2cpEA8FaUNUAACAAQAAgAAAAIAAAQEfPXkBAAAAAAAWABTxEcX/ZeR7uOzb
-    // hXNhQdP62KMsbQEDBAEAAAAiBgNN4+D9rEkQh/DxVejzuxqIm1ec0JsydzferjNl/CVy+RgPBWlDVAAAg
-    // AEAAIAAAACAAQAAAHsAAAAAIgIDNrLj8vrWrntegC/b0H5sX2Rne0LSOMzkrZmo/orBxbsYDwVpQ1QAAI
-    // ABAACAAAAAgAAAAACrAAAAACICAiWNoxUB/rgyciu9vTeQglxaq9+XNG4JokrYtobRiHtlGA8FaUNUAAC
-    // AAQAAgAAAAIABAAAAfAAAAAA=
-
-    // 코코넛 월렛 PSBT base64
-    // cHNidP8BAHECAAAAAaQ5SmWmsgE9awFLBf5ydwroekMbbH49gdkxSmLtwWbbAAAAAAD/////ApsLAAAAA
-    // AAAFgAUfN3cYhthKWPjbbDrO6QH1mXApRDvZQEAAAAAABYAFNpkNLvjhtjQ1zgv6xCrgXs1W7CwAAAAAE
-    // 8BBDWHzwMMgUwpgAAAAB/sosP4aedkPSrsXnsYwy+fZgDso8h3SG57Dzbq+txHA8mljpmQiFn1xSfK6eB
-    // GlgzZw8fOv+gIOFHKvE0kE2cpEA8FaUNUAACAAQAAgAAAAIAAAQEfPXkBAAAAAAAWABTxEcX/ZeR7uOzb
-    // hXNhQdP62KMsbQEDBAEAAAAiBgNN4+D9rEkQh/DxVejzuxqIm1ec0JsydzferjNl/CVy+RgPBWlDVAAAg
-    // AEAAIAAAACAAQAAAHsAAAAAACICAiWNoxUB/rgyciu9vTeQglxaq9+XNG4JokrYtobRiHtlGA8FaUNUAA
-    // CAAQAAgAAAAIABAAAAfAAAAAA=
+    printLongString('[Hex]:: $spacedHex');
+    // debugPrint('bbqr:::::: ${BbqrEncoder().encodeBase64(_psbtBase64)}');
   }
 
   @override
