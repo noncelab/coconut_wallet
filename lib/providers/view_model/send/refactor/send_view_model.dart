@@ -669,8 +669,8 @@ class SendViewModel extends ChangeNotifier {
           recipient.amount += newInput;
         }
       } else {
-        /// 자연수인 경우 추가 8자리 제한
-        if (recipient.amount.length < 8) {
+        /// 자연수인 경우 BTC 8자리 제한, sats 16자리 제한
+        if (recipient.amount.length < (isBtcUnit ? 8 : 16)) {
           recipient.amount += newInput;
         }
       }
