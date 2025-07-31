@@ -7,7 +7,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
@@ -64,10 +63,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             setQrViewController: _setQRViewController,
             onComplete: _qrScanDataHandler is BcUrQrScanDataHandler
                 ? _onCompletedScanningForBcUr
-                : _qrScanDataHandler
-                        is RawSignedBitcoinTransactionScanDataHandler
-                    ? _onCompletedScanningForRawData
-                    : _onCompletedScanningForBbQr,
+                : _onCompletedScanningForRawData,
             onFailed: _onFailedScanning,
             qrDataHandler: _qrScanDataHandler,
           ),
@@ -167,50 +163,13 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
   }
 
-  Future<void> _onCompletedScanningForBbQr(dynamic signedPsbt) async {
-    assert(signedPsbt is String);
-    if (_isProcessing) return;
-    _isProcessing = true;
-
-    try {
-      // BBQR에서 받은 raw transaction 데이터 처리
-      final transactionData = signedPsbt as String;
-      Logger.log('BBQR raw transaction 데이터 길이: ${transactionData.length}');
-      Logger.log(
-          'BBQR raw transaction 데이터 (처음 200자): ${transactionData.substring(0, transactionData.length > 500 ? 500 : transactionData.length)}');
-
-      // base64 디코딩하여 hex로 변환 (디버깅용)
-      try {
-        final bytes = base64.decode(transactionData);
-        final hexTransaction =
-            bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
-        Logger.log(
-            '트랜잭션 hex 데이터 (처음 100자): ${hexTransaction.substring(0, 100)}...');
-      } catch (e) {
-        Logger.error('base64 디코딩 실패: $e');
-      }
-
-      // raw transaction 데이터 저장
-      _viewModel.setSignedPsbt(transactionData);
-      Logger.error('raw transaction 데이터 저장 완료');
-
-      controller?.pauseCamera();
-      await _stopCamera();
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/broadcasting');
-      }
-    } catch (e) {
-      Logger.error('BBQR raw transaction 처리 중 에러: $e');
-      await _showErrorDialog(t.alert.scan_failed_description(error: e));
-    }
-  }
-
   Future<void> _onCompletedScanningForRawData(dynamic signedPsbt) async {
     assert(signedPsbt is String);
     if (_isProcessing) return;
     _isProcessing = true;
 
     try {
+      // raw transaction 데이터 저장
       _viewModel.setSignedPsbt(signedPsbt);
 
       controller?.pauseCamera();
