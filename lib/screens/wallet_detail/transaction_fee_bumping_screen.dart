@@ -427,7 +427,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               Text(
                 t.transaction_fee_bumping_screen.total_fee(
                   fee: widget.transaction.fee.toThousandsSeparatedString(),
-                  vb: widget.transaction.vSize.toInt().toThousandsSeparatedString(),
+                  vB: widget.transaction.vSize.toInt().toThousandsSeparatedString(),
                 ),
                 style: CoconutTypography.body2_14,
               ),

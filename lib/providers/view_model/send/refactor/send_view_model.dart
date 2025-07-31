@@ -21,6 +21,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
 typedef WalletInfoUpdateCallback = void Function(
@@ -36,10 +37,9 @@ enum AddressError {
   duplicated;
 
   bool get isError => this != AddressError.none;
-}
+  bool get isNotError => this == AddressError.none;
 
-extension AddressErrorMessage on AddressError {
-  String get message {
+  String getMessage() {
     switch (this) {
       case AddressError.invalid:
         return t.errors.address_error.invalid;
@@ -64,46 +64,29 @@ extension AddressErrorMessage on AddressError {
   }
 }
 
-enum SendError {
+enum AmountError {
   none,
-  empty,
-  zero,
-  invalidAddress,
-  noTestnetAddress,
-  noMainnetAddress,
-  noRegtestnetAddress,
-  duplicatedAddress,
   insufficientBalance,
   minimumAmount;
 
+  bool get isError => this != AmountError.none;
+  bool get isNotError => this == AmountError.none;
+
   String getMessage(BitcoinUnit currentUnit) {
     switch (this) {
-      case SendError.invalidAddress:
-        return t.errors.address_error.invalid;
-      case SendError.noTestnetAddress:
-        return t.errors.address_error.not_for_testnet;
-      case SendError.noMainnetAddress:
-        return t.errors.address_error.not_for_mainnet;
-      case SendError.noRegtestnetAddress:
-        return t.errors.address_error.not_for_regtest;
-      case SendError.duplicatedAddress:
-        return t.errors.address_error.duplicated;
-      case SendError.insufficientBalance:
+      case AmountError.insufficientBalance:
         return t.errors.insufficient_balance;
-      case SendError.minimumAmount:
+      case AmountError.minimumAmount:
         return t.alert.error_send.minimum_amount(
             bitcoin: currentUnit == BitcoinUnit.btc
                 ? UnitUtil.convertSatoshiToBitcoin(dustLimit + 1)
                 : (dustLimit + 1).toThousandsSeparatedString(),
             unit: currentUnit.symbol);
-      case SendError.none:
+      case AmountError.none:
       default:
         return "";
     }
   }
-
-  bool get isError => this != SendError.none;
-  bool get isNotError => this == SendError.none;
 }
 
 class SendViewModel extends ChangeNotifier {
@@ -195,19 +178,14 @@ class SendViewModel extends ChangeNotifier {
       : selectedUtxoAmountSum;
   int get incomingBalance => _incomingBalance;
 
-  SendError _insufficientBalanceError = SendError.none;
-  SendError _insufficientBalanceErrorOfLastRecipient = SendError.none;
-
-  bool _hasFinalError = true;
-  bool get hasFinalError => _hasFinalError;
+  AmountError _isAmountSumExceedsBalance = AmountError.none;
+  AmountError _isLastAmountInsufficient = AmountError.none;
 
   String _finalErrorMessage = "";
   String get finalErrorMessage => _finalErrorMessage;
-  bool get hasErrorMessage => _hasFinalError && _finalErrorMessage != finalErrorMessageSpaceText;
 
-  bool get hasInsufficientBalanceError => _insufficientBalanceError.isError;
-  bool get hasInsufficientBalanceErrorOfLastRecipient =>
-      _insufficientBalanceErrorOfLastRecipient.isError;
+  bool get isTotalSendAmountExceedsBalance => _isAmountSumExceedsBalance.isError;
+  bool get isLastAmountInsufficient => _isLastAmountInsufficient.isError;
 
   bool _showFeeBoard = false;
   bool get showFeeBoard => _showFeeBoard;
@@ -227,7 +205,7 @@ class SendViewModel extends ChangeNotifier {
         .where((e) =>
             e.address.isNotEmpty &&
             e.amount.isNotEmpty &&
-            e.addressError == AddressError.none &&
+            e.addressError.isNotError &&
             e.minimumAmountError.isNotError)
         .toList();
   }
@@ -250,6 +228,20 @@ class SendViewModel extends ChangeNotifier {
       }
     }
     return amountSumExceptLast;
+  }
+
+  bool get isReadyToSend {
+    if (_isAmountSumExceedsBalance.isError || _isLastAmountInsufficient.isError) {
+      return false;
+    }
+
+    for (final recipient in _recipientList) {
+      if (!recipient.isInputValid) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   bool isMaxModeIndex(int index) {
@@ -291,10 +283,11 @@ class SendViewModel extends ChangeNotifier {
     if (_estimatedFee == estimatedFee) return;
 
     _estimatedFee = estimatedFee;
+
     if (_isMaxMode) {
-      _adjustLastReceiverAmount(-1);
+      _adjustLastReceiverAmount();
     } else {
-      _validateAmount(-1);
+      _updateAmountValidationState();
     }
   }
 
@@ -321,8 +314,8 @@ class SendViewModel extends ChangeNotifier {
     var result = _txBuilder!.build();
     _setEstimatedFee(result.estimatedFee);
 
-    Logger.log(_txBuilder);
-    Logger.log(result);
+    //Logger.log(_txBuilder);
+    //Logger.log(result);
   }
 
   void _initWalletAddressList() {
@@ -395,7 +388,7 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _adjustLastReceiverAmount(int validateAmountIndex) {
+  void _adjustLastReceiverAmount({int? recipientIndex}) {
     double amountSumExceptLast = _amountSumExceptLast;
     int estimatedFeeInSats = _estimatedFee ?? 0;
     int maxBalanceInSats = balance -
@@ -411,7 +404,7 @@ class SendViewModel extends ChangeNotifier {
       _onAmountTextUpdate(recipientList[lastIndex].amount);
     }
 
-    _validateAmount(validateAmountIndex);
+    _updateAmountValidationState(recipientIndex: recipientIndex);
   }
 
   void setMaxMode(bool isEnabled) {
@@ -419,8 +412,9 @@ class SendViewModel extends ChangeNotifier {
 
     _isMaxMode = isEnabled;
     if (_isMaxMode) {
-      _adjustLastReceiverAmount(-1);
+      _adjustLastReceiverAmount();
       _updateFeeBoardVisibility();
+      //setShowAddressBoard(false);
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
     } else {
@@ -453,7 +447,7 @@ class SendViewModel extends ChangeNotifier {
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
     _initBalances();
-    _validateAmount(-1);
+    _updateAmountValidationState();
     _updateFeeBoardVisibility();
     _calculateEstimatedFee();
     notifyListeners();
@@ -494,10 +488,9 @@ class SendViewModel extends ChangeNotifier {
 
     _calculateEstimatedFee();
 
-    /// 중복이었던 것이 제거되었는지 확인
-    //_validateAddresses();
+    /// AddressError.duplicate였던 것을 해제
     checkAndSetDuplicationError();
-    _validateAmount(-1);
+    _updateAmountValidationState();
     vibrateLight();
     notifyListeners();
   }
@@ -505,46 +498,30 @@ class SendViewModel extends ChangeNotifier {
   void _updateFeeBoardVisibility() {
     if (_showFeeBoard) return;
 
-    _showFeeBoard = _insufficientBalanceError.isNotError && _hasValidRecipient;
+    _showFeeBoard = _isAmountSumExceedsBalance.isNotError && _hasValidRecipient;
     if (_showFeeBoard) _calculateEstimatedFee();
-    notifyListeners();
-  }
-
-  void _setFinalErrorMessage(String message) {
-    _finalErrorMessage = message;
-    _hasFinalError = message.isNotEmpty;
     notifyListeners();
   }
 
   void _updateFinalError() {
     String message = "";
     // [전체] 충분하지 않은 Balance > [마지막 수신자] 전송 금액 - 예상 수수료가 dustLimit보다 크지 않음 > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값 또는 0이 존재 > 예상 수수료 오류
-    if (_insufficientBalanceError.isError) {
-      message = _insufficientBalanceError.getMessage(currentUnit);
-    } else if (_insufficientBalanceErrorOfLastRecipient.isError) {
-      message = _insufficientBalanceErrorOfLastRecipient.getMessage(currentUnit);
+    if (_isAmountSumExceedsBalance.isError) {
+      message = _isAmountSumExceedsBalance.getMessage(currentUnit);
     } else if (_recipientList.any((r) => r.minimumAmountError.isError)) {
-      message = SendError.minimumAmount.getMessage(currentUnit);
-    } else if (_recipientList
-        .any((r) => r.address.isEmpty || r.amount.isEmpty || r.amount == "0")) {
-      message = finalErrorMessageSpaceText;
-    } else if (_estimatedFee == null || _txBuilder == null) {
-      message = finalErrorMessageSpaceText;
+      message = AmountError.minimumAmount.getMessage(currentUnit);
+    } else if (_isLastAmountInsufficient.isError) {
+      message = _isLastAmountInsufficient.getMessage(currentUnit);
     } else {
       int addressErrorIndex = _recipientList.indexWhere((r) => r.addressError.isError);
       if (addressErrorIndex != -1) {
-        message = _recipientList[addressErrorIndex].addressError.message;
+        message = _recipientList[addressErrorIndex].addressError.getMessage();
       }
     }
 
-    _setFinalErrorMessage(message);
+    _finalErrorMessage = message;
+    notifyListeners();
   }
-
-  // void _validateAddresses() {
-  //   for (int i = 0; i < _recipientList.length; i++) {
-  //     validateAddress(_recipientList[i].address, index: i);
-  //   }
-  // }
 
   void checkAndSetDuplicationError() {
     // 주소별 갯수 집계
@@ -590,7 +567,7 @@ class SendViewModel extends ChangeNotifier {
       var feeRateValue = double.parse(feeRate);
       _isFeeRateLowerThanMin = _minimumFeeRate != null && feeRateValue < _minimumFeeRate!;
     } catch (e) {
-      Logger.log(e);
+      Logger.error(e);
       _isFeeRateLowerThanMin = false;
     }
 
@@ -623,7 +600,7 @@ class SendViewModel extends ChangeNotifier {
       vibrateLight();
       notifyListeners();
     } catch (e) {
-      Logger.log(e);
+      Logger.error(e);
     }
   }
 
@@ -677,9 +654,9 @@ class SendViewModel extends ChangeNotifier {
     }
 
     if (_isMaxMode) {
-      _adjustLastReceiverAmount(_currentIndex);
+      _adjustLastReceiverAmount(recipientIndex: _currentIndex);
     } else {
-      _validateAmount(_currentIndex);
+      _updateAmountValidationState(recipientIndex: _currentIndex);
     }
 
     _calculateEstimatedFee();
@@ -690,7 +667,7 @@ class SendViewModel extends ChangeNotifier {
   void clearAmountText() {
     if (_currentIndex == _recipientList.length) return;
     _recipientList[_currentIndex].amount = "";
-    _validateAmount(_currentIndex);
+    _updateAmountValidationState(recipientIndex: _currentIndex);
     notifyListeners();
   }
 
@@ -720,43 +697,47 @@ class SendViewModel extends ChangeNotifier {
     _incomingBalance = incomingBalance;
   }
 
-  void _validateAmount(int recipientIndex) {
-    // insufficientBalance 전체 범위 적용
+  void _updateAmountSum() {
     double amountSum = recipientList
         .where((r) => r.amount.isNotEmpty)
         .fold(0, (sum, r) => sum + double.parse(r.amount));
+    _amountSum = isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSum) : amountSum.toInt();
 
+    _updateIsAmountSumExceedsBalance(amountSum);
+    notifyListeners();
+  }
+
+  void _updateIsAmountSumExceedsBalance(double amountSum) {
     double total = _isFeeSubtractedFromSendAmount ? amountSum : amountSum + _estimatedFeeByUnit;
-    // 부동 소수점 오차가 생길 수 있으므로 소수점 8자리만 다시 파싱
-    if (isBtcUnit) {
-      total = total.roundTo8Digits();
-    }
+    _isAmountSumExceedsBalance = total > 0 && total > balance / _dustLimitDenominator
+        ? AmountError.insufficientBalance
+        : AmountError.none;
+  }
 
-    _insufficientBalanceError = total > 0 && total > balance / _dustLimitDenominator
-        ? SendError.insufficientBalance
-        : SendError.none;
-
-    if (isBtcUnit) {
-      _amountSum = UnitUtil.convertBitcoinToSatoshi(amountSum);
-    } else {
-      _amountSum = amountSum.toInt();
-    }
-
-    // minimumAmount 수신자 범위 적용
-    if (recipientIndex != -1) {
-      final recipient = recipientList[recipientIndex];
-      if (recipient.amount.isNotEmpty && double.parse(recipient.amount) > 0) {
-        if (double.parse(recipient.amount) <= dustLimit / _dustLimitDenominator) {
-          recipient.minimumAmountError = SendError.minimumAmount;
-        } else {
-          recipient.minimumAmountError = SendError.none;
-        }
+  void _validateOneAmount(int recipientIndex) {
+    assert(recipientIndex != -1);
+    final recipient = recipientList[recipientIndex];
+    if (recipient.amount.isNotEmpty && double.parse(recipient.amount) > 0) {
+      if (double.parse(recipient.amount) <= dustLimit / _dustLimitDenominator) {
+        recipient.minimumAmountError = AmountError.minimumAmount;
       } else {
-        recipient.minimumAmountError = SendError.none;
+        recipient.minimumAmountError = AmountError.none;
       }
+    } else {
+      recipient.minimumAmountError = AmountError.none;
+    }
+  }
+
+  // 마지막 수신자의 전송 금액을 확인한다. (전송 금액 - 예상 수수료 <= dust)
+  // _isFeeSubtractedFromSendAmount가 true일 때만 체크되어야 함
+  void _updateLastAmountErrorIfInsufficient() {
+    if (!_isFeeSubtractedFromSendAmount) {
+      if (_isLastAmountInsufficient.isError) {
+        _isLastAmountInsufficient = AmountError.none;
+      }
+      return;
     }
 
-    // 마지막 수신자의 전송 금액을 확인한다. (전송 금액 - 예상 수수료 <= dust)
     if (_recipientList[lastIndex].amount.isNotEmpty) {
       double amount = double.parse(_recipientList[lastIndex].amount);
       int estimatedFeeInSats = _estimatedFee ?? 0;
@@ -764,12 +745,19 @@ class SendViewModel extends ChangeNotifier {
           (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amount) : amount).toInt() -
                   estimatedFeeInSats <=
               dustLimit;
-      if (isAmountInsufficientForFee) {
-        _insufficientBalanceErrorOfLastRecipient = SendError.insufficientBalance;
-      } else {
-        _insufficientBalanceErrorOfLastRecipient = SendError.none;
-      }
+
+      _isLastAmountInsufficient =
+          isAmountInsufficientForFee ? AmountError.insufficientBalance : AmountError.none;
+      Logger.log("_insufficientBalanceErrorOfLastRecipient: $_isLastAmountInsufficient");
     }
+  }
+
+  void _updateAmountValidationState({int? recipientIndex}) {
+    _updateAmountSum();
+    if (recipientIndex != null) {
+      _validateOneAmount(recipientIndex);
+    }
+    _updateLastAmountErrorIfInsufficient();
 
     _updateFinalError();
     notifyListeners();
@@ -858,13 +846,21 @@ class RecipientInfo {
   String address;
   String amount;
   AddressError addressError;
-  SendError minimumAmountError; // 전송량이 적은 경우
+  AmountError minimumAmountError; // 전송량이 적은 경우
 
   RecipientInfo(
       {this.address = '',
       this.amount = '',
       this.addressError = AddressError.none,
-      this.minimumAmountError = SendError.none});
+      this.minimumAmountError = AmountError.none});
 
-  // bool get isCompleted =>
+  bool get isInputValid {
+    final amountDecimal = Decimal.tryParse(amount);
+    return address.trim().isNotEmpty &&
+        amount.trim().isNotEmpty &&
+        amountDecimal != null &&
+        amountDecimal != Decimal.zero &&
+        addressError.isNotError &&
+        minimumAmountError.isNotError;
+  }
 }

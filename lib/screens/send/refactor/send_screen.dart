@@ -16,6 +16,7 @@ import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
@@ -269,12 +270,13 @@ class _SendScreenState extends State<SendScreen> {
   Widget _buildFinalButton(BuildContext context) {
     return Selector<SendViewModel, Tuple3<String, bool, bool>>(
         selector: (_, viewModel) => Tuple3(
-            viewModel.finalErrorMessage, viewModel.hasFinalError, viewModel.isFeeRateLowerThanMin),
+            viewModel.finalErrorMessage, viewModel.isFeeRateLowerThanMin, viewModel.isReadyToSend),
         builder: (context, data, child) {
           final textColor =
-              _viewModel.hasErrorMessage ? CoconutColors.hotPink : CoconutColors.white;
+              _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
           String message = "";
-          if (_viewModel.hasErrorMessage) {
+          if (_viewModel.finalErrorMessage.isNotEmpty) {
+            Logger.log('--> finalMessage: $message');
             message = _viewModel.finalErrorMessage;
           } else if (_viewModel.isFeeRateLowerThanMin) {
             message = t.toast.min_fee(minimum: _viewModel.minimumFeeRate ?? 0);
@@ -289,7 +291,7 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_300h,
               CoconutButton(
                 backgroundColor: CoconutColors.white,
-                isActive: !_viewModel.hasFinalError,
+                isActive: _viewModel.isReadyToSend && message.isEmpty,
                 onPressed: () async {
                   FocusScope.of(context).unfocus();
                   if (mounted) {
@@ -660,10 +662,11 @@ class _SendScreenState extends State<SendScreen> {
               return PageView.builder(
                 controller: _recipientPageController,
                 onPageChanged: (index) => _viewModel.setCurrentPage(index),
+                // isMaxMode: 수신자 추가 버튼 안보임
                 itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == recipientListLength) {
-                    return _buildAddRecipientCard();
+                    return _buildAddRecipientAddCard();
                   }
                   return _buildRecipientPage(context, index);
                 },
@@ -671,7 +674,7 @@ class _SendScreenState extends State<SendScreen> {
             }));
   }
 
-  Widget _buildAddRecipientCard() {
+  Widget _buildAddRecipientAddCard() {
     return Padding(
       padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
       child: ShrinkAnimationButton(
@@ -726,8 +729,8 @@ class _SendScreenState extends State<SendScreen> {
                       viewModel.currentUnit,
                       viewModel.recipientList[index].amount,
                       viewModel.isMaxMode,
-                      viewModel.hasInsufficientBalanceError,
-                      viewModel.hasInsufficientBalanceErrorOfLastRecipient,
+                      viewModel.isTotalSendAmountExceedsBalance,
+                      viewModel.isLastAmountInsufficient,
                       viewModel.recipientList[index].minimumAmountError.isError,
                       viewModel.estimatedFeeInSats),
                   builder: (context, data, child) {
@@ -737,7 +740,7 @@ class _SendScreenState extends State<SendScreen> {
                         data.item5 && index == _viewModel.lastIndex;
 
                     Color amountTextColor;
-                    if (_viewModel.hasInsufficientBalanceError ||
+                    if (_viewModel.isTotalSendAmountExceedsBalance ||
                         isMinimumAmount ||
                         hasInsufficientBalanceErrorOfLastRecipient) {
                       amountTextColor = CoconutColors.hotPink;
