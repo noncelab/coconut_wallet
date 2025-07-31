@@ -74,8 +74,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     _setOverlayLoading(true);
     await Future.delayed(const Duration(seconds: 1));
 
-    Psbt psbt = Psbt.parse(_viewModel.signedTransaction);
-    Transaction signedTx = psbt.getSignedTransaction(_viewModel.walletAddressType);
+    Transaction signedTx;
+    if (_viewModel.isPsbt(_viewModel.signedTransaction)) {
+      signedTx = Psbt.parse(_viewModel.signedTransaction)
+          .getSignedTransaction(_viewModel.walletAddressType);
+    } else {
+      signedTx = Transaction.parse(_viewModel.signedTransaction);
+    }
 
     try {
       Result<String> result = await _viewModel.broadcast(signedTx);

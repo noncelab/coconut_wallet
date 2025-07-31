@@ -8,13 +8,16 @@ class SignedPsbtScannerViewModel {
   late final WalletProvider _walletProvider;
 
   bool _isSendingDonation = false;
+  bool _isRawType = false;
 
   SignedPsbtScannerViewModel(this._sendInfoProvider, this._walletProvider) {
     _isSendingDonation = _sendInfoProvider.isDonation ?? false;
+    _isRawType = _sendInfoProvider.walletImportSource == WalletImportSource.coldCard;
   }
 
   bool get isMultisig => _sendInfoProvider.isMultisig!;
   bool get isSendingDonation => _isSendingDonation;
+  bool get isRawType => _isRawType;
   WalletImportSource get walletImportSource => _sendInfoProvider.walletImportSource!;
 
   int getMissingSignaturesCount(Psbt psbt) {

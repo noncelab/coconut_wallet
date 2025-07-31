@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -12,7 +13,9 @@ import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/raw_signed_bitcoin_transaction_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:convert/convert.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -55,7 +58,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
           CoconutQrScanner(
             setQrViewController: _setQRViewController,
-            onComplete: _onCompletedScanningForBcUr,
+            onComplete: _qrScanDataHandler is BcUrQrScanDataHandler
+                ? _onCompletedScanningForBcUr
+                : _onCompletedScanningForRawData,
             onFailed: _onFailedScanning,
             qrDataHandler: _qrScanDataHandler,
           ),
@@ -90,7 +95,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     super.initState();
     _viewModel = SignedPsbtScannerViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
-    _qrScanDataHandler = BcUrQrScanDataHandler();
+    _qrScanDataHandler = _viewModel.isRawType
+        ? RawSignedBitcoinTransactionScanDataHandler()
+        : BcUrQrScanDataHandler();
   }
 
   Future<void> _onCompletedScanningForBcUr(dynamic signedPsbt) async {
@@ -132,6 +139,56 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       controller?.pauseCamera();
       await _stopCamera();
       if (mounted) {
+        Navigator.pushReplacementNamed(context, '/broadcasting');
+      }
+    } catch (e) {
+      await _showErrorDialog(t.alert.scan_failed_description(error: e));
+    }
+  }
+
+  Future<void> _onCompletedScanningForRawData(dynamic signedPsbt) async {
+    assert(signedPsbt is String);
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    // Psbt psbt;
+    // try {
+    //   final hexSignedTx = signedPsbt as String;
+    //   final bytes = base64.decode(hexSignedTx);
+    //   psbt = _viewModel.parseBase64EncodedToPsbt(base64Encode(bytes));
+    // } catch (e) {
+    //   await _showErrorDialog(t.alert.invalid_qr);
+    //   return;
+    // }
+
+    try {
+      // if (!_viewModel.isSignedPsbtMatchingUnsignedPsbt(psbt)) {
+      //   await _showErrorDialog(t.alert.signed_psbt.wrong_send_info);
+      //   return;
+      // }
+
+      // if (_viewModel.isMultisig) {
+      //   int missingCount = _viewModel.getMissingSignaturesCount(psbt);
+      //   if (missingCount > 0) {
+      //     await _showErrorDialog(t.alert.signed_psbt.need_more_sign(count: missingCount));
+      //     controller?.pauseCamera();
+      //     await _stopCamera();
+      //     return;
+      //   }
+      // }
+
+      _viewModel.setSignedPsbt(signedPsbt);
+      SendInfoProvider sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
+      print('_sendInfo:::::: ${sendInfoProvider.amount}');
+      print('_sendInfo:::::: ${sendInfoProvider.estimatedFee}');
+      print('_sendInfo:::::: ${sendInfoProvider.recipientAddress}');
+      print('_sendInfo:::::: ${sendInfoProvider.signedPsbt}');
+
+      controller?.pauseCamera();
+      await _stopCamera();
+      if (mounted) {
+        print('_sendInfo:::::: pushReplacementNamed');
+
         Navigator.pushReplacementNamed(context, '/broadcasting');
       }
     } catch (e) {

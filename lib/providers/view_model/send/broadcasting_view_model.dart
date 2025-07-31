@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -11,6 +12,14 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
+
+class InvalidTransactionException implements Exception {
+  final String message;
+  InvalidTransactionException([this.message = 'Invalid transaction']);
+
+  @override
+  String toString() => 'InvalidSignedTransactionException: $message';
+}
 
 class BroadcastingViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
@@ -72,8 +81,37 @@ class BroadcastingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 전달된 문자열이 Base64로 인코딩된 PSBT인지 확인하는 함수
+  bool isPsbt(String hexOrBase64) {
+    try {
+      final decoded = base64Decode(hexOrBase64);
+      return decoded.length >= 5 &&
+          decoded[0] == 0x70 &&
+          decoded[1] == 0x73 &&
+          decoded[2] == 0x62 &&
+          decoded[3] == 0x74 &&
+          decoded[4] == 0xff;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void setTxInfo() async {
-    Psbt signedPsbt = Psbt.parse(signedTransaction);
+    Psbt signedPsbt;
+
+    if (isPsbt(signedTransaction)) {
+      signedPsbt = Psbt.parse(signedTransaction);
+    } else {
+      signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+      final signedTx = Transaction.parse(signedTransaction);
+      final unSingedTx = signedPsbt.unsignedTransaction;
+
+      // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
+      if (!validateSignedTransaction(signedTx, unSingedTx)) {
+        throw InvalidTransactionException();
+      }
+    }
+
     Psbt psbt;
     if (_hasAllInputsBip32Derivation(signedPsbt)) {
       psbt = signedPsbt;
@@ -81,7 +119,6 @@ class BroadcastingViewModel extends ChangeNotifier {
       psbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
     }
 
-    // print("!!! -> ${_model.signedTransaction!}");
     List<PsbtOutput> outputs = psbt.outputs;
 
     // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)
@@ -156,6 +193,32 @@ class BroadcastingViewModel extends ChangeNotifier {
     _totalAmount = psbt.sendingAmount + psbt.fee;
     _isInitDone = true;
     notifyListeners();
+  }
+
+  bool validateSignedTransaction(Transaction signedTx, Transaction? unSignedTx) {
+    if (unSignedTx == null) return false;
+
+    debugPrint('unsignedPsbt:: $unSignedTx');
+
+    // inputs, outputs 길이가 같은지 비교
+    if (signedTx.inputs.length != unSignedTx.inputs.length) return false;
+    if (signedTx.outputs.length != unSignedTx.outputs.length) return false;
+
+    // outputs에서 각 output의 amount가 같은지 비교
+    for (int i = 0; i < signedTx.outputs.length; i++) {
+      if (signedTx.outputs[i].amount != unSignedTx.outputs[i].amount) return false;
+    }
+
+    // totalInputAmount 비교
+    if (signedTx.totalInputAmount != unSignedTx.totalInputAmount) return false;
+
+    // 트랜잭션 버전 비교
+    if (signedTx.version != unSignedTx.version) return false;
+
+    // lockTime 비교 - 추후 필요시 구현, 현재는 다르기 때문에 사용안함
+    // if (tx.lockTime != unSignedTx.lockTime) return false;
+
+    return true;
   }
 
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함

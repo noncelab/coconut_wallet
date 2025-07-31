@@ -1,15 +1,23 @@
+import 'dart:convert';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/utils/bbqr/bbqr_encoder.dart';
+import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:convert/convert.dart';
 
 enum QrScanDensity { slow, normal, fast }
 
@@ -40,6 +48,55 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     _isMultisig = _sendInfoProvider.isMultisig!;
     _walletImportSource = _sendInfoProvider.walletImportSource!;
     _isDonation = _sendInfoProvider.isDonation;
+
+    // [spacedHex] psbt파일로 저장해서 콜드카드 시뮬레이터에서 인식될 때 사용됨
+    // [.psbt 파일 경로] firmware/unix/work/MicroSD/
+    // 주의할 점: psbt 확장자여야 하며, 일반 txt파일을 psbt로 확장자명을 변환하면 인식이 안될 수도 있음
+    // -> Sparrow에서 트랜잭션 생성, File - Save PSBT - As Binary로 저장 후 Sublime Text 앱으로 열어서 수정 후 저장
+    // -> [ColdCard Q1] Ready To Sign -> (Enter) -> Sending Amount, fee 등 정보 맞는지 확인
+    // -> (Enter) -> (QR 버튼)
+
+    final hexStr = hex.encode(base64.decode(_psbtBase64));
+    final spacedHex = hexStr.replaceAllMapped(RegExp(r'.{4}'), (match) => '${match.group(0)} ');
+    printLongString('psbtBase64:::::: $spacedHex');
+    debugPrint('bbqr:::::: ${BbqrEncoder().encodeBase64(_psbtBase64)}');
+    // 스패로우 BBQR
+    // B$ZP0100FMUE4KXZZ7EFBSGEYDAMBOGE2IVXLWJGI3NWYRTP2Z7ULZK4F6VJZJLT5JWBW3Y2PIS32PMYO
+    // 2NQCBH673777H3JGY3ZRTJAYYQFE47XJ2JHJITG6LR5YDNPVWL3AX2LHWYFJYD5FIRUZ6SWRLE65R3NG4
+    // XFZN6QP4W3BOVR3I2HVQYGZZD24DH6RQWKN3PHTF4RU7JUDOACVZO7FQ5PYI7TPGFK3VU3XBVITQ726PJ
+    // RRXRMHZI65EKXZVX7N2WXDV36NE2L7NTE52EI7R5FJ7OUZMDW5U3YNYPD47TO74FQ5C6AKN5XYVME2M2Q
+    // L6CZGOOUGGAYDKADNAYMNRQGAZEUW6WYJO7DUPQND75JJ6VHPPFZ3VNJZ2DY7HLY3RJ2XGGMYLBAPESTM
+    // ZW7Y4H75LXRCRUP74BR6TC6PXKSDWZ4HZ24TBWVI3T6N6OXD2Q72WRJ6EXIU2B7IVMDRRLGEYRW3P2PRU
+    // 5PNPV2VYY26RXV7KGLRFHUTL3WXJSHDZWJ3KMSX7TVDU6LUG2DGNEN62UIMYTNLXWFUKGP65QYCVU67XL
+    // LH2QSSJTK6X66SJTZTSF3Y3TMNO55QUM5RLK6MGUQMYAA
+
+    // 코코넛 월렛 BBQR
+    // B$ZP0100FMUE4KXZZ7EFBSGEYDAMBOGE2IVXLWJGI3NWYRTP2Z7ULZK4F6VJZJLT5JWBW3Y2PIS32PMYO
+    // 2NQCBH677777H3JGY3ZRTJAYYQFE47XJ2JHJITG6LR5YDNPVWL3AX2LHWYFJYD5FIRUZ6SWRLE65R3NG4
+    // XFZN6QP4W3BOVR3I2HVQYGSCKD6I4LNH5XSZU6IYP42BQGAYDPSN4LB374Q7E6MKV7KJVOLLRLB7X4GSD
+    // DPC2PSR56IVPTTO67U5OHTX46JUV6TEJTUIV7DZKT75PSQHNTJHU3Q6HZ7W77QLBSF4GUDZPRLYLUJUAX
+    // 5VSM44IANBQGUDGSAAY3DAMBTZLNFPQ656BIPD2H72UT5IOW63VXCYTTUXX6OVR3CTROEMZQWSC6RGG5T
+    // 57RQO7WWPAF3I7XYDD56F43OVGH5TYDSF3GDOKZXX23M6OPUR5V5CTQJOXJEB65KYFTSWMJQVD3C6FTF7
+    // W3MFKKJPLXV74YJJUYVDK7PJ434RYS54V2WGW62YSHOUVFNXJVEDGQA===
+
+    // 스패로우 PSBT base64
+    // cHNidP8BAHECAAAAAaQ5SmWmsgE9awFLBf5ydwroekMbbH49gdkxSmLtwWbbAAAAAAD9////ApsLAAAAA
+    // AAAFgAUfN3cYhthKWPjbbDrO6QH1mXApRDvZQEAAAAAABYAFNpkNLvjhtjQ1zgv6xCrgXs1W7CwCeJFAE
+    // 8BBDWHzwMMgUwpgAAAAB/sosP4aedkPSrsXnsYwy+fZgDso8h3SG57Dzbq+txHA8mljpmQiFn1xSfK6eB
+    // GlgzZw8fOv+gIOFHKvE0kE2cpEA8FaUNUAACAAQAAgAAAAIAAAQEfPXkBAAAAAAAWABTxEcX/ZeR7uOzb
+    // hXNhQdP62KMsbQEDBAEAAAAiBgNN4+D9rEkQh/DxVejzuxqIm1ec0JsydzferjNl/CVy+RgPBWlDVAAAg
+    // AEAAIAAAACAAQAAAHsAAAAAIgIDNrLj8vrWrntegC/b0H5sX2Rne0LSOMzkrZmo/orBxbsYDwVpQ1QAAI
+    // ABAACAAAAAgAAAAACrAAAAACICAiWNoxUB/rgyciu9vTeQglxaq9+XNG4JokrYtobRiHtlGA8FaUNUAAC
+    // AAQAAgAAAAIABAAAAfAAAAAA=
+
+    // 코코넛 월렛 PSBT base64
+    // cHNidP8BAHECAAAAAaQ5SmWmsgE9awFLBf5ydwroekMbbH49gdkxSmLtwWbbAAAAAAD/////ApsLAAAAA
+    // AAAFgAUfN3cYhthKWPjbbDrO6QH1mXApRDvZQEAAAAAABYAFNpkNLvjhtjQ1zgv6xCrgXs1W7CwAAAAAE
+    // 8BBDWHzwMMgUwpgAAAAB/sosP4aedkPSrsXnsYwy+fZgDso8h3SG57Dzbq+txHA8mljpmQiFn1xSfK6eB
+    // GlgzZw8fOv+gIOFHKvE0kE2cpEA8FaUNUAACAAQAAgAAAAIAAAQEfPXkBAAAAAAAWABTxEcX/ZeR7uOzb
+    // hXNhQdP62KMsbQEDBAEAAAAiBgNN4+D9rEkQh/DxVejzuxqIm1ec0JsydzferjNl/CVy+RgPBWlDVAAAg
+    // AEAAIAAAACAAQAAAHsAAAAAACICAiWNoxUB/rgyciu9vTeQglxaq9+XNG4JokrYtobRiHtlGA8FaUNUAA
+    // CAAQAAgAAAAIABAAAAfAAAAAA=
   }
 
   @override
@@ -121,16 +178,23 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                   decoration: BoxDecoration(
                       color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
                   child: Center(
-                    child: AnimatedQrView(
-                      key: ValueKey(_qrScanDensity),
-                      qrScanDensity: _qrScanDensity,
-                      qrViewDataHandler:
-                          BcUrQrViewHandler(_psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
-                    ),
+                    child: _isBbQrType()
+                        ? QrImageView(
+                            data: BbqrEncoder().encodeBase64(_psbtBase64).first,
+                            version: QrVersions.auto,
+                          )
+                        : AnimatedQrView(
+                            key: ValueKey(_qrScanDensity),
+                            qrScanDensity: _qrScanDensity,
+                            qrViewDataHandler: BcUrQrViewHandler(
+                                _psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
+                          ),
                   ),
                 ),
-                CoconutLayout.spacing_800h,
-                _buildDensitySliderWidget(context),
+                if (!_isBbQrType()) ...[
+                  CoconutLayout.spacing_800h,
+                  _buildDensitySliderWidget(context),
+                ],
               ],
             ),
           ),
@@ -189,6 +253,11 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         ],
       ),
     );
+  }
+
+  bool _isBbQrType() {
+    // BbQR이 지원되면 추가 되어야 함
+    return _sendInfoProvider.walletImportSource == WalletImportSource.coldCard;
   }
 
   int _getSnappedValue(double value) {
