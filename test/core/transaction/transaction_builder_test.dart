@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -66,6 +67,7 @@ void main() {
     'bcrt1qktkhznpjp6gg7waacvcgxrv3hd6aj8nj90rw8q': 150000 - dustThreshold,
   };
 
+  NetworkType.setNetworkType(NetworkType.regtest);
   group('SingleTx - Auto UTXO Selection', () {
     test('Single / Auto Utxo / 수수료 발신자 부담 / availableUtxos가 비어있을 때', () {
       final TransactionBuildResult result = TransactionBuilder(
@@ -225,7 +227,7 @@ void main() {
     /// 1) initialFee: 216 / sendAmount: 299706-216 = 299490 / realFee: 209 / dustThreshold: 294 < 301
     /// 2) initialFee: 209 / sendAmount: 299706-209 = 299497 / realFee: 209 / dustThreshold: 294 >= 294
     /// 3) initialFee: 178 / sendAmount: 299706-178 = 299528 / realFee: 178 / dustThreshold: 294 > 263
-    test('Single / Auto Utxo / 수수료 수신자 부담 / Edge Case', () {
+    test('Single / Auto Utxo / 수수료 수신자 부담 / Sweep Edge Case', () {
       final result = TransactionBuilder(
         availableUtxos: availableUtxos,
         recipients: singleRecipientEdgeBalance2,
@@ -239,19 +241,21 @@ void main() {
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isNotNull);
       expect(result.transaction, isNotNull);
-      final estimatedFeeOfTx = result.transaction!.estimateFee(1.0, wallet.walletType.addressType);
-
-      /// result.estimatedFee는 dustOutput도 포함해서 보여주므로 다름
-      /// TODO: 추후 변경 가능성 있음
-      expect(result.estimatedFee, isNot(equals(estimatedFeeOfTx)));
+      expect(result.selectedUtxos, isNotNull);
+      expect(
+          result.transaction!.outputs.first.getAddress(), singleRecipientEdgeBalance2.keys.first);
 
       // tx의 outputs의 amount 합 + 수수료 = singleRecipientEdgeBalance2의 합
       final totalOutputAmount = result.transaction!.outputs
           .fold(0, (previousValue, element) => previousValue + element.amount);
-      final totalSendAmount = singleRecipientEdgeBalance2.values
-          .fold(0, (previousValue, element) => previousValue + element);
-      expect(totalOutputAmount + estimatedFeeOfTx, totalSendAmount);
-      expect(result.selectedUtxos, isNotNull);
+      // expect(totalOutputAmount + estimatedFeeOfTx, sumOfBalance);
+
+      final estimatedFeeOfTx = result.transaction!.estimateFee(1.0, AddressType.p2wpkh);
+      expect(estimatedFeeOfTx, lessThan(result.estimatedFee));
+
+      final sendAmount = singleRecipientEdgeBalance2.values.first;
+      expect(sendAmount + (result.estimatedFee - estimatedFeeOfTx), equals(sumOfBalance));
+      expect(totalOutputAmount + result.estimatedFee, equals(sumOfBalance));
     });
   });
 
@@ -520,7 +524,7 @@ void main() {
 
     /// 1) initialFee: 250 / lastSendAmount: 149706-250 = 149456 / realFee: 240 / dustThreshold: 294 < 304
     /// 2) initialFee: 240 / lastSendAmount: 149706-240 = 149466 / realFee: 240 / dustThreshold: 294 >= 294
-    test('Batch / Auto Utxo / 수수료 수신자 부담 / Edge Case', () {
+    test('Batch / Auto Utxo / 수수료 수신자 부담 / Sweep Edge Case', () {
       final result = TransactionBuilder(
         availableUtxos: availableUtxos,
         recipients: batchRecipientsEdgeBalance,
@@ -539,11 +543,14 @@ void main() {
       expect(result.selectedUtxos, isNotNull);
       final totalOutputAmount = result.transaction!.outputs
           .fold(0, (previousValue, element) => previousValue + element.amount);
+      final estimatedFee = result.transaction!.estimateFee(1.0, AddressType.p2wpkh);
+      expect(estimatedFee, lessThan(result.estimatedFee));
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalSendAmount = batchRecipientsEdgeBalance.values
+          .fold(0, (previousValue, element) => previousValue + element);
+      expect(totalSendAmount + (result.estimatedFee - estimatedFee), equals(totalBalance));
       expect(totalOutputAmount + result.estimatedFee, equals(totalBalance));
-      //TODO: TxBuildResult의 estimatedFee를 어떻게 제공할지에 따라 결과가 달라짐
-      //expect(totalOutputAmount + result.estimatedFee, equals(totalBalance - dustThreshold));
     });
   });
 

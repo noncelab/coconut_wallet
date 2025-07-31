@@ -251,10 +251,10 @@ class TransactionBuilder {
             requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
             totalSigner: walletListItemBase.multisigConfig?.totalSigner);
         if (initialFee != realEstimatedFee) {
-          if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
-            return Transaction.forSweep(_selectedUtxos!, recipients.entries.first.key, feeRate,
-                walletListItemBase.walletBase);
-          }
+          // if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+          //   return Transaction.forSweep(_selectedUtxos!, recipients.entries.first.key, feeRate,
+          //       walletListItemBase.walletBase);
+          // }
           initialFee = realEstimatedFee;
 
           sendAmount = maxUsedAmount - realEstimatedFee;
@@ -303,8 +303,9 @@ class TransactionBuilder {
 
     if (totalInputAmount == maxUsedAmount) {
       try {
-        final tx = Transaction.forBatchSweep(
-            _selectedUtxos!, recipients, feeRate, walletListItemBase.walletBase);
+        final recipientsWithoutLast = Map.of(recipients)..remove(recipients.keys.last);
+        final tx = Transaction.forBatchSweep(_selectedUtxos!, recipientsWithoutLast,
+            recipients.keys.first, feeRate, walletListItemBase.walletBase);
         if (tx.outputs.last.amount <= dustLimit) {
           throw SendAmountTooLowException(
               estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
@@ -345,10 +346,11 @@ class TransactionBuilder {
             requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
             totalSigner: walletListItemBase.multisigConfig?.totalSigner);
         if (initialFee != realEstimatedFee) {
-          if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
-            return Transaction.forBatchSweep(
-                _selectedUtxos!, recipients, feeRate, walletListItemBase.walletBase);
-          }
+          // if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+          //   final recipientsWithoutLast = Map.of(recipients)..remove(recipients.keys.last);
+          //   return Transaction.forBatchSweep(
+          //       _selectedUtxos!, recipientsWithoutLast, recipients.keys.last, feeRate, walletListItemBase.walletBase);
+          // }
           initialFee = realEstimatedFee;
           finalLastSendAmount = lastRecipient.value - initialFee;
           if (finalLastSendAmount <= dustLimit) {

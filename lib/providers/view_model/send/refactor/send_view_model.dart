@@ -90,7 +90,6 @@ enum AmountError {
 }
 
 class SendViewModel extends ChangeNotifier {
-  static const finalErrorMessageSpaceText = " ";
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
@@ -162,7 +161,6 @@ class SendViewModel extends ChangeNotifier {
   }
 
   bool _isFeeRateLowerThanMin = false;
-  bool get isFeeRateLowerThanMin => _isFeeRateLowerThanMin;
 
   double? _minimumFeeRate;
   double? get minimumFeeRate => _minimumFeeRate;
@@ -198,9 +196,12 @@ class SendViewModel extends ChangeNotifier {
   num get _dustLimitDenominator => (isBtcUnit ? 1e8 : 1);
   bool get isAmountDisabled => _isMaxMode && _currentIndex == lastIndex;
   bool get isEstimatedFeeGreaterThanBalance => balance < (_estimatedFee ?? 0);
-  bool get _hasValidRecipient => _validRecipientList.isNotEmpty;
+  bool get hasValidRecipient => validRecipientList.isNotEmpty;
 
-  List<RecipientInfo> get _validRecipientList {
+  int? _unintendedDustFee;
+  int? get unintendedDustFee => _unintendedDustFee;
+
+  List<RecipientInfo> get validRecipientList {
     return _recipientList
         .where((e) =>
             e.address.isNotEmpty &&
@@ -210,9 +211,9 @@ class SendViewModel extends ChangeNotifier {
         .toList();
   }
 
-  Map<String, int> get _recipientMap {
+  Map<String, int> get recipientMap {
     final Map<String, int> recipientMap = {};
-    for (final recipient in _validRecipientList) {
+    for (final recipient in validRecipientList) {
       recipientMap[recipient.address] = (isBtcUnit
           ? UnitUtil.convertBitcoinToSatoshi(double.parse(recipient.amount))
           : int.parse(recipient.amount));
@@ -221,13 +222,13 @@ class SendViewModel extends ChangeNotifier {
   }
 
   double get _amountSumExceptLast {
-    double amountSumExceptLast = 0;
+    double sumExceptLast = 0;
     for (int i = 0; i < lastIndex; ++i) {
       if (_recipientList[i].amount.isNotEmpty) {
-        amountSumExceptLast += double.parse(_recipientList[i].amount);
+        sumExceptLast += double.parse(_recipientList[i].amount);
       }
     }
-    return amountSumExceptLast;
+    return sumExceptLast;
   }
 
   bool get isReadyToSend {
@@ -269,7 +270,7 @@ class SendViewModel extends ChangeNotifier {
 
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
-      if (walletIndex != -1) _selectWallet(walletIndex);
+      if (walletIndex != -1) _initializeWithSelectedWallet(walletIndex);
     }
 
     _recipientList = [RecipientInfo()];
@@ -277,6 +278,22 @@ class SendViewModel extends ChangeNotifier {
     _initWalletAddressList();
     _initBalances();
     _setRecommendedFees();
+  }
+
+  void _initializeWithSelectedWallet(int index) {
+    if (index == -1) return;
+    if (_selectedWalletItem != null &&
+        _selectedWalletItem!.id == _walletProvider.walletItemList[index].id) return;
+
+    _selectedWalletItem = _walletProvider.walletItemList[index];
+    _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
+    _changeAddressDerivationPath =
+        _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
+
+    // UTXO 자동 선택 모드이므로 전체 UTXO 리스트 설정
+    _selectedUtxoList = _walletProvider.getUtxoList(_selectedWalletItem!.id);
+    selectedUtxoAmountSum =
+        _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
 
   void _setEstimatedFee(int? estimatedFee) {
@@ -293,7 +310,7 @@ class SendViewModel extends ChangeNotifier {
 
   void _calculateEstimatedFee() {
     if (_selectedWalletItem == null ||
-        !_hasValidRecipient ||
+        !hasValidRecipient ||
         _feeRateText.isEmpty ||
         _feeRateText == "0" ||
         _changeAddressDerivationPath.isEmpty) {
@@ -301,10 +318,11 @@ class SendViewModel extends ChangeNotifier {
       return;
     }
 
+    final feeRate = double.parse(_feeRateText);
     _txBuilder = TransactionBuilder(
       availableUtxos: _selectedUtxoList,
-      recipients: _getRecipientMapForTx(_recipientMap),
-      feeRate: double.parse(_feeRateText),
+      recipients: _getRecipientMapForTx(recipientMap),
+      feeRate: feeRate,
       changeDerivationPath: _changeAddressDerivationPath,
       walletListItemBase: _selectedWalletItem!,
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
@@ -312,10 +330,25 @@ class SendViewModel extends ChangeNotifier {
     );
 
     var result = _txBuilder!.build();
-    _setEstimatedFee(result.estimatedFee);
+
+    final estimatedFee = result.isSuccess
+        ? result.transaction!.estimateFee(feeRate, _selectedWalletItem!.walletType.addressType)
+        : result.estimatedFee;
+    _setEstimatedFee(estimatedFee);
+
+    final unintendedDustFee = result.isSuccess && estimatedFee < result.estimatedFee
+        ? result.estimatedFee - estimatedFee
+        : null;
+    _setUnintendedDustFee(unintendedDustFee);
 
     //Logger.log(_txBuilder);
     //Logger.log(result);
+  }
+
+  void _setUnintendedDustFee(int? unintendedDustFee) {
+    if (_unintendedDustFee == unintendedDustFee) return;
+    _unintendedDustFee = unintendedDustFee;
+    notifyListeners();
   }
 
   void _initWalletAddressList() {
@@ -414,7 +447,6 @@ class SendViewModel extends ChangeNotifier {
     if (_isMaxMode) {
       _adjustLastReceiverAmount();
       _updateFeeBoardVisibility();
-      //setShowAddressBoard(false);
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
     } else {
@@ -422,6 +454,7 @@ class SendViewModel extends ChangeNotifier {
     }
 
     _calculateEstimatedFee();
+    _updateFinalErrorMessage();
     vibrateLight();
     notifyListeners();
   }
@@ -453,28 +486,10 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _selectWallet(int index) {
-    if (index == -1) return;
-    if (_selectedWalletItem != null &&
-        _selectedWalletItem!.id == _walletProvider.walletItemList[index].id) return;
-
-    _selectedWalletItem = _walletProvider.walletItemList[index];
-    _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
-    _changeAddressDerivationPath =
-        _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
-
-    // UTXO 자동 선택 모드이므로 전체 UTXO 리스트 설정
-    _selectedUtxoList = _walletProvider.getUtxoList(_selectedWalletItem!.id);
-    selectedUtxoAmountSum =
-        _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
-
-    notifyListeners();
-  }
-
   void addRecipient() {
     final newList = [..._recipientList, RecipientInfo(address: '', amount: '')];
     _recipientList = newList;
-    _updateFinalError();
+    _updateFinalErrorMessage();
     vibrateLight();
     notifyListeners();
   }
@@ -498,12 +513,12 @@ class SendViewModel extends ChangeNotifier {
   void _updateFeeBoardVisibility() {
     if (_showFeeBoard) return;
 
-    _showFeeBoard = _isAmountSumExceedsBalance.isNotError && _hasValidRecipient;
+    _showFeeBoard = _isAmountSumExceedsBalance.isNotError && hasValidRecipient;
     if (_showFeeBoard) _calculateEstimatedFee();
     notifyListeners();
   }
 
-  void _updateFinalError() {
+  void _updateFinalErrorMessage() {
     String message = "";
     // [전체] 충분하지 않은 Balance > [마지막 수신자] 전송 금액 - 예상 수수료가 dustLimit보다 크지 않음 > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값 또는 0이 존재 > 예상 수수료 오류
     if (_isAmountSumExceedsBalance.isError) {
@@ -512,11 +527,13 @@ class SendViewModel extends ChangeNotifier {
       message = AmountError.minimumAmount.getMessage(currentUnit);
     } else if (_isLastAmountInsufficient.isError) {
       message = _isLastAmountInsufficient.getMessage(currentUnit);
-    } else {
+    } else if (_recipientList.any((r) => r.addressError.isError)) {
       int addressErrorIndex = _recipientList.indexWhere((r) => r.addressError.isError);
       if (addressErrorIndex != -1) {
         message = _recipientList[addressErrorIndex].addressError.getMessage();
       }
+    } else if (_isFeeRateLowerThanMin) {
+      message = t.toast.min_fee(minimum: _minimumFeeRate ?? 0);
     }
 
     _finalErrorMessage = message;
@@ -759,14 +776,14 @@ class SendViewModel extends ChangeNotifier {
     }
     _updateLastAmountErrorIfInsufficient();
 
-    _updateFinalError();
+    _updateFinalErrorMessage();
     notifyListeners();
   }
 
   void _setAddressError(AddressError error, int index) {
     if (_recipientList[index].addressError != error) {
       _recipientList[index].addressError = error;
-      _updateFinalError();
+      _updateFinalErrorMessage();
       notifyListeners();
     }
   }
@@ -812,7 +829,7 @@ class SendViewModel extends ChangeNotifier {
 
   void saveSendInfo() {
     final recipientMapInBtc =
-        _recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
+        recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
 
     // 모두 보내기 모드가 아니고 수수료 수신자 부담 옵션을 활성화한 경우, 마지막 수신자의 amount에서 수수료를 뺀다. (보기용)
     if (!_isMaxMode && _isFeeSubtractedFromSendAmount) {

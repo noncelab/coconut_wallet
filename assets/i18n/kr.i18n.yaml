@@ -321,6 +321,7 @@ send_screen:
   tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
   tooltip_max_mode_text: "모두 보내기 중"
   max_mode_insufficient_balance: "잔액 부족"
+  unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
 
 utxo_selection_screen:
   title: "UTXO 고르기"

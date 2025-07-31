@@ -268,18 +268,17 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple3<String, bool, bool>>(
-        selector: (_, viewModel) => Tuple3(
-            viewModel.finalErrorMessage, viewModel.isFeeRateLowerThanMin, viewModel.isReadyToSend),
+    return Selector<SendViewModel, Tuple2<String, bool>>(
+        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.isReadyToSend),
         builder: (context, data, child) {
           final textColor =
               _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
           String message = "";
           if (_viewModel.finalErrorMessage.isNotEmpty) {
-            Logger.log('--> finalMessage: $message');
             message = _viewModel.finalErrorMessage;
-          } else if (_viewModel.isFeeRateLowerThanMin) {
-            message = t.toast.min_fee(minimum: _viewModel.minimumFeeRate ?? 0);
+          } else if (_viewModel.unintendedDustFee != null) {
+            message = t.send_screen
+                .unintended_dust_fee(unintendedDustFee: _viewModel.unintendedDustFee.toString());
           }
 
           return Column(
@@ -291,7 +290,7 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_300h,
               CoconutButton(
                 backgroundColor: CoconutColors.white,
-                isActive: _viewModel.isReadyToSend && message.isEmpty,
+                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
                 onPressed: () async {
                   FocusScope.of(context).unfocus();
                   if (mounted) {

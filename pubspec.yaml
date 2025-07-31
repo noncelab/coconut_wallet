@@ -91,7 +91,7 @@ dependencies:
   coconut_lib:
     git: 
       url: https://github.com/Noncelab/coconut_lib.git
-      ref: feat/tx-batch-sweep
+      ref: develop
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
