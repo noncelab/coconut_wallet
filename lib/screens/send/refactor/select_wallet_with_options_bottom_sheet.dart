@@ -79,6 +79,13 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
     return false;
   }
 
+  /// 변경사항이 있고 처리 가능한지 확인
+  bool get isButtonActive {
+    return hasChanges &&
+        _selectedWalletItem != null &&
+        (_isUtxoSelectionAuto || _selectedUtxoList.isNotEmpty);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -127,7 +134,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
         },
         disabledBackgroundColor: CoconutColors.gray800,
         disabledForegroundColor: CoconutColors.gray700,
-        isActive: hasChanges,
+        isActive: isButtonActive,
         backgroundColor: CoconutColors.white,
         foregroundColor: CoconutColors.black,
         pressedTextColor: CoconutColors.black,

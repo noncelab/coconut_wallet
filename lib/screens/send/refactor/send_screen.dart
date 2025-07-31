@@ -652,17 +652,15 @@ class _SendScreenState extends State<SendScreen> {
     return SizedBox(
         height: kPageViewHeight,
         width: MediaQuery.of(context).size.width,
-        child: Selector<SendViewModel, Tuple3<int, bool, bool>>(
-            selector: (_, viewModel) =>
-                Tuple3(viewModel.recipientList.length, viewModel.isMaxMode, viewModel.showFeeBoard),
+        child: Selector<SendViewModel, Tuple2<int, bool>>(
+            selector: (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
             builder: (context, data, child) {
               final recipientListLength = data.item1;
               final isMaxMode = data.item2;
-              final showFeeBoard = data.item3;
               return PageView.builder(
                 controller: _recipientPageController,
                 onPageChanged: (index) => _viewModel.setCurrentPage(index),
-                itemCount: recipientListLength + (!isMaxMode && showFeeBoard ? 1 : 0),
+                itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == recipientListLength) {
                     return _buildAddRecipientCard();

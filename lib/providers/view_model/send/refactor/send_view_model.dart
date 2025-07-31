@@ -447,10 +447,6 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _isUtxoSelectionAuto = isUtxoSelectionAuto;
     _selectedUtxoList = selectedUtxoList;
-    // UTXO 자동 선택 옵션만 OFF로 변경되는 경우, 전체 UTXO 리스트를 설정한다.
-    if (!_isUtxoSelectionAuto && _selectedUtxoList.isEmpty) {
-      _selectedUtxoList = _walletProvider.getUtxoList(_selectedWalletItem!.id);
-    }
     selectedUtxoAmountSum =
         _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
     _changeAddressDerivationPath =
@@ -578,6 +574,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void setAddressText(String text, int recipientIndex) {
+    if (_recipientList[recipientIndex].address == text) return;
     _recipientList[recipientIndex].address = text;
     validateAddress(text, recipientIndex);
     checkAndSetDuplicationError();
