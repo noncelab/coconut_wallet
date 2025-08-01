@@ -197,7 +197,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
                   child: ValueListenableBuilder<double>(
                     valueListenable: _progressNotifier,
                     builder: (context, value, _) {
-                      bool isScanningExtraData = value >= 0.99;
+                      bool isScanningExtraData = value > 0.99;
                       return Padding(
                         padding: EdgeInsets.only(top: isScanningExtraData ? 24 : 0),
                         child: Text(
