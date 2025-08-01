@@ -16,7 +16,9 @@ import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -31,8 +33,9 @@ import 'package:tuple/tuple.dart';
 
 class SendScreen extends StatefulWidget {
   final int? walletId;
+  final SendEntryPoint sendEntryPoint;
 
-  const SendScreen({super.key, this.walletId});
+  const SendScreen({super.key, this.walletId, required this.sendEntryPoint});
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -41,12 +44,18 @@ class SendScreen extends StatefulWidget {
 class _SendScreenState extends State<SendScreen> {
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
+  // 스크롤 범위 연산에 사용하는 값들
   final double kCoconutAppbarHeight = 60;
   final double kPageViewHeight = 225;
   final double kAddressBoardPosition = 185;
-  final double kTooltipHeight = 39;
+  final double kTooltipHeight = 43;
   final double kTooltipPadding = 5;
   final double kAmountHeight = 34;
+  final double kFeeBoardBottomPadding = 12;
+  double get addressBoardHeight => walletAddressListHeight + 84;
+  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 48;
+  double get keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
+  double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
 
   late final SendViewModel _viewModel;
   final _recipientPageController = PageController();
@@ -71,12 +80,6 @@ class _SendScreenState extends State<SendScreen> {
 
   bool get _isAddressFocused => _addressFocusNodeList.any((e) => e.hasFocus);
 
-  double get _keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
-
-  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 40;
-
-  double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 147;
-
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
       bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
       unit: _viewModel.currentUnit.symbol);
@@ -94,7 +97,8 @@ class _SendScreenState extends State<SendScreen> {
         _onAmountTextUpdate,
         _onFeeRateTextUpdate,
         _onRecipientPageDeleted,
-        widget.walletId);
+        widget.walletId,
+        widget.sendEntryPoint);
 
     _amountFocusNode.addListener(() => setState(() {}));
     _feeRateFocusNode.addListener(() => setState(() {}));
@@ -199,10 +203,10 @@ class _SendScreenState extends State<SendScreen> {
                   final currentUnit = data.item5;
 
                   if (selectedWalletItem == null) {
-                    return const Center(
+                    return Center(
                       child: Text(
                         '-',
-                        style: CoconutTypography.body1_16,
+                        style: CoconutTypography.body1_16.setColor(CoconutColors.white),
                       ),
                     );
                   }
@@ -218,13 +222,16 @@ class _SendScreenState extends State<SendScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(selectedWalletItem.name, style: CoconutTypography.body1_16),
+                          Text(selectedWalletItem.name,
+                              style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
                           CoconutLayout.spacing_50w,
                           const Icon(Icons.keyboard_arrow_down_sharp,
                               color: CoconutColors.white, size: 16),
                         ],
                       ),
-                      Text(amountText, style: CoconutTypography.body3_12_NumberBold),
+                      Text(amountText,
+                          style:
+                              CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white)),
                     ],
                   );
                 }),
@@ -262,24 +269,34 @@ class _SendScreenState extends State<SendScreen> {
 
   Widget _buildFinalButton(BuildContext context) {
     return Selector<SendViewModel, Tuple2<String, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.hasFinalError),
+        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.isReadyToSend),
         builder: (context, data, child) {
+          final textColor =
+              _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
+          String message = "";
+          if (_viewModel.finalErrorMessage.isNotEmpty) {
+            message = _viewModel.finalErrorMessage;
+          } else if (_viewModel.unintendedDustFee != null) {
+            message = t.send_screen
+                .unintended_dust_fee(unintendedDustFee: _viewModel.unintendedDustFee.toString());
+          }
+
           return Column(
             children: [
               Text(
-                _viewModel.finalErrorMessage,
-                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                message,
+                style: CoconutTypography.body3_12.setColor(textColor),
               ),
               CoconutLayout.spacing_300h,
               CoconutButton(
                 backgroundColor: CoconutColors.white,
-                isActive: !_viewModel.hasFinalError,
+                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
                 onPressed: () async {
                   FocusScope.of(context).unfocus();
                   if (mounted) {
-                    _viewModel.setTxWaitingForSign();
-                    Navigator.pushNamed(context, '/unsigned-transaction-qr',
-                        arguments: {'walletName': _viewModel.selectedWalletItem!.name});
+                    _viewModel.saveSendInfo();
+                    Navigator.pushNamed(context, '/send-confirm',
+                        arguments: {"currentUnit": _viewModel.currentUnit});
                   }
                 },
                 text: t.complete,
@@ -308,7 +325,7 @@ class _SendScreenState extends State<SendScreen> {
             ),
             CoconutLayout.spacing_150w,
             Text("${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body3_12_Number),
+                style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
           ],
         ));
 
@@ -332,7 +349,7 @@ class _SendScreenState extends State<SendScreen> {
 
   Widget _buildKeyboardToolbar(BuildContext context) {
     return Positioned(
-      bottom: _keyboardHeight,
+      bottom: keyboardHeight,
       child: GestureDetector(
           onTap: () {}, // ignore
           child: Container(
@@ -368,7 +385,8 @@ class _SendScreenState extends State<SendScreen> {
                           height: 10,
                         ),
                         CoconutLayout.spacing_100w,
-                        Text(t.send_screen.use_btc_unit, style: CoconutTypography.body3_12),
+                        Text(t.send_screen.use_btc_unit,
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
                       ],
                     );
                   })),
@@ -388,7 +406,7 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_200w,
               if (isFailed) ...[
                 SvgPicture.asset('assets/svg/triangle-warning.svg',
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                     width: 24),
                 CoconutLayout.spacing_200w,
                 Column(
@@ -396,9 +414,9 @@ class _SendScreenState extends State<SendScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(t.send_screen.recommended_fee_unavailable,
-                        style: CoconutTypography.body3_12_Bold),
+                        style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white)),
                     Text(t.send_screen.recommended_fee_unavailable_description,
-                        style: CoconutTypography.body3_12),
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
                   ],
                 ),
               ] else ...[
@@ -423,94 +441,116 @@ class _SendScreenState extends State<SendScreen> {
         builder: (context, data, child) {
           return Column(
             children: [
-              if (_viewModel.isBatchMode)
-                Padding(
-                  padding: EdgeInsets.only(bottom: kTooltipPadding),
-                  child: CoconutToolTip(
-                    backgroundColor: CoconutColors.gray800,
-                    borderColor: CoconutColors.gray800,
-                    borderRadius: 12,
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    icon: SvgPicture.asset(
-                      'assets/svg/receipt.svg',
-                      colorFilter: const ColorFilter.mode(
-                        CoconutColors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    tooltipType: CoconutTooltipType.fixed,
-                    richText: RichText(
-                      text: TextSpan(
-                        text: t.send_screen.tooltip_text(
-                            count: _viewModel.recipientList.length,
-                            amount: _viewModel.amountSumText),
-                        style: CoconutTypography.body3_12_Bold,
-                      ),
-                    ),
-                  ),
-                ),
-              if (_viewModel.isMaxMode)
-                CoconutToolTip(
-                  backgroundColor: CoconutColors.gray800,
-                  borderColor: CoconutColors.gray800,
-                  borderRadius: 12,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                  icon: SvgPicture.asset(
-                    'assets/svg/broom.svg',
-                    colorFilter: const ColorFilter.mode(
-                      CoconutColors.white,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  tooltipType: CoconutTooltipType.fixed,
-                  richText: RichText(
-                    text: TextSpan(
-                      text: t.send_screen.tooltip_max_mode_text,
-                      style: CoconutTypography.body3_12_Bold,
-                    ),
-                  ),
-                ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                child: _viewModel.isBatchMode
+                    ? Padding(
+                        key: const ValueKey('batch_tooltip'),
+                        padding: EdgeInsets.only(bottom: kTooltipPadding),
+                        child: _buildTooltip(
+                          iconPath: 'assets/svg/receipt.svg',
+                          text: t.send_screen.tooltip_text(
+                              count: _viewModel.recipientList.length,
+                              amount: _viewModel.amountSumText),
+                        ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('batch_empty')),
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: child,
+                  );
+                },
+                child: _viewModel.isMaxMode
+                    ? _buildTooltip(
+                        key: const ValueKey('max_tooltip'),
+                        iconPath: 'assets/svg/broom.svg',
+                        text: t.send_screen.tooltip_max_mode_text,
+                      )
+                    : const SizedBox.shrink(key: ValueKey('max_empty')),
+              ),
             ],
           );
         });
   }
 
+  Widget _buildTooltip({
+    required String iconPath,
+    required String text,
+    Key? key,
+  }) {
+    return SizedBox(
+      height: kTooltipHeight,
+      child: CoconutToolTip(
+        key: key,
+        backgroundColor: CoconutColors.gray800,
+        borderColor: CoconutColors.gray800,
+        borderRadius: 12,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        icon: SvgPicture.asset(
+          iconPath,
+          colorFilter: const ColorFilter.mode(
+            CoconutColors.white,
+            BlendMode.srcIn,
+          ),
+        ),
+        tooltipType: CoconutTooltipType.fixed,
+        richText: RichText(
+          text: TextSpan(
+            text: text,
+            style: CoconutTypography.body3_12_Bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFeeBoard(BuildContext context) {
     return Column(
       children: [
-        Selector<SendViewModel, Tuple2<bool, int>>(
-            selector: (_, viewModel) => Tuple2(viewModel.showFeeBoard, viewModel.estimatedFee),
+        Selector<SendViewModel, Tuple5<bool, int?, int, bool, bool>>(
+            selector: (_, viewModel) => Tuple5(viewModel.showFeeBoard, viewModel.estimatedFeeInSats,
+                viewModel.balance, viewModel.isMaxMode, viewModel.isFeeSubtractedFromSendAmount),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(bottom: kFeeBoardBottomPadding),
                 child: Container(
-                  padding: const EdgeInsets.only(left: 14, right: 14, top: 12, bottom: 20),
-                  margin: const EdgeInsets.only(top: 0),
+                  height: feeBoardHeight,
+                  padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
                   decoration: BoxDecoration(
                       border: Border.all(
                         color: CoconutColors.gray700,
                         width: 1,
                       ),
-                      borderRadius: const BorderRadius.all(Radius.circular(8))),
+                      borderRadius: const BorderRadius.all(Radius.circular(12))),
                   child: Column(
                     children: [
                       child!,
                       CoconutLayout.spacing_200h,
                       Row(
                         children: [
-                          Text(
-                            t.send_screen.estimated_fee,
-                            style: CoconutTypography.body3_12,
-                          ),
+                          _buildFeeRowLabel(t.send_screen.estimated_fee),
                           const Spacer(),
                           Text(
-                            "${_viewModel.estimatedFee} sats",
-                            style: CoconutTypography.body2_14_NumberBold,
+                            "${_viewModel.estimatedFeeInSats ?? '-'} sats",
+                            style: CoconutTypography.body2_14_NumberBold.setColor(
+                                _viewModel.isEstimatedFeeGreaterThanBalance
+                                    ? CoconutColors.hotPink
+                                    : CoconutColors.white),
                           ),
                         ],
                       ),
-                      _buildFeeSubtractedFromSendAmount(),
+                      if (!_viewModel.isMaxMode) _buildFeeSubtractedFromSendAmount(),
                     ],
                   ),
                 ),
@@ -523,56 +563,46 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildFeeSubtractedFromSendAmount() {
-    return Selector<SendViewModel, Tuple2<bool, bool>>(
-        selector: (_, viewModel) =>
-            Tuple2(viewModel.isMaxMode, viewModel.isFeeSubtractedFromSendAmount),
-        builder: (context, data, child) {
-          if (_viewModel.isMaxMode) return const SizedBox();
-          return Column(
-            children: [
-              CoconutLayout.spacing_400h,
-              Row(
+    return Column(
+      children: [
+        CoconutLayout.spacing_400h,
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.send_screen.fee_subtracted_from_send_amount,
-                        style: CoconutTypography.body3_12,
-                      ),
-                      Text(
-                        _viewModel.isFeeSubtractedFromSendAmount
-                            ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
-                            : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-                      ),
-                    ],
+                  _buildFeeRowLabel(t.send_screen.fee_subtracted_from_send_amount),
+                  Text(
+                    _viewModel.isFeeSubtractedFromSendAmount
+                        ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
+                        : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                    maxLines: 2, // en - right overflow 방지
+                    softWrap: true,
                   ),
-                  const Spacer(),
-                  Align(
-                      alignment: Alignment.centerRight,
-                      child: CoconutSwitch(
-                          scale: 0.7,
-                          isOn: _viewModel.isFeeSubtractedFromSendAmount,
-                          activeColor: CoconutColors.gray100,
-                          trackColor: CoconutColors.gray600,
-                          thumbColor: CoconutColors.gray800,
-                          onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn))),
                 ],
-              )
-            ],
-          );
-        });
+              ),
+            ),
+            CoconutLayout.spacing_200w,
+            CoconutSwitch(
+                scale: 0.7,
+                isOn: _viewModel.isFeeSubtractedFromSendAmount,
+                activeColor: CoconutColors.gray100,
+                trackColor: CoconutColors.gray600,
+                thumbColor: CoconutColors.gray800,
+                onChanged: (isOn) => _viewModel.setIsFeeSubtractedFromSendAmount(isOn)),
+          ],
+        )
+      ],
+    );
   }
 
   Widget _buildFeeRateRow() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          t.send_screen.fee_rate,
-          style: CoconutTypography.body3_12,
-        ),
+        _buildFeeRowLabel(t.send_screen.fee_rate),
         const Spacer(),
         IntrinsicWidth(
           child: Padding(
@@ -588,21 +618,23 @@ class _SendScreenState extends State<SendScreen> {
               focusNode: _feeRateFocusNode,
               backgroundColor: feeRateFieldGray,
               height: 30,
-              padding: const EdgeInsets.only(left: 10),
+              padding: const EdgeInsets.only(left: 12, right: 2),
               onChanged: (text) {
+                if (text == "-") return;
                 String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
                 _feeRateController.text = formattedText;
-                _viewModel.onFeeRateUpdated(formattedText);
+                _viewModel.setFeeRateText(formattedText);
               },
               maxLines: 1,
               fontFamily: 'SpaceGrotesk',
-              fontSize: 12,
+              fontSize: 14,
+              activeColor: CoconutColors.white,
               fontWeight: FontWeight.bold,
               borderRadius: 8,
               suffix: Container(
-                  padding: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.only(right: 12),
                   child: Text(t.send_screen.fee_rate_suffix,
-                      style: CoconutTypography.body3_12_NumberBold)),
+                      style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white))),
             ),
           ),
         )
@@ -610,24 +642,30 @@ class _SendScreenState extends State<SendScreen> {
     );
   }
 
+  Widget _buildFeeRowLabel(String label) {
+    return Text(
+      label,
+      style: CoconutTypography.body2_14.setColor(CoconutColors.gray300),
+    );
+  }
+
   Widget _buildPageView(BuildContext context) {
     return SizedBox(
         height: kPageViewHeight,
         width: MediaQuery.of(context).size.width,
-        child: Selector<SendViewModel, Tuple3<int, bool, bool>>(
-            selector: (_, viewModel) =>
-                Tuple3(viewModel.recipientList.length, viewModel.isMaxMode, viewModel.showFeeBoard),
+        child: Selector<SendViewModel, Tuple2<int, bool>>(
+            selector: (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
             builder: (context, data, child) {
               final recipientListLength = data.item1;
               final isMaxMode = data.item2;
-              final showFeeBoard = data.item3;
               return PageView.builder(
                 controller: _recipientPageController,
                 onPageChanged: (index) => _viewModel.setCurrentPage(index),
-                itemCount: recipientListLength + (!isMaxMode && showFeeBoard ? 1 : 0),
+                // isMaxMode: 수신자 추가 버튼 안보임
+                itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == recipientListLength) {
-                    return _buildAddRecipientCard();
+                    return _buildAddRecipientAddCard();
                   }
                   return _buildRecipientPage(context, index);
                 },
@@ -635,7 +673,7 @@ class _SendScreenState extends State<SendScreen> {
             }));
   }
 
-  Widget _buildAddRecipientCard() {
+  Widget _buildAddRecipientAddCard() {
     return Padding(
       padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
       child: ShrinkAnimationButton(
@@ -654,7 +692,7 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_100w,
               Text(
                 t.send_screen.add_recipient,
-                style: CoconutTypography.body2_14,
+                style: CoconutTypography.body2_14.setColor(CoconutColors.white),
               ),
             ],
           ),
@@ -685,20 +723,27 @@ class _SendScreenState extends State<SendScreen> {
           padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
           child: Column(
             children: [
-              Selector<SendViewModel, Tuple5<BitcoinUnit, String, bool, bool, bool>>(
-                  selector: (_, viewModel) => Tuple5(
+              Selector<SendViewModel, Tuple7<BitcoinUnit, String, bool, bool, bool, bool, int?>>(
+                  selector: (_, viewModel) => Tuple7(
                       viewModel.currentUnit,
                       viewModel.recipientList[index].amount,
                       viewModel.isMaxMode,
-                      viewModel.hasInsufficientBalanceError,
-                      viewModel.recipientList[index].minimumAmountError.isError),
+                      viewModel.isTotalSendAmountExceedsBalance,
+                      viewModel.isLastAmountInsufficient,
+                      viewModel.recipientList[index].minimumAmountError.isError,
+                      viewModel.estimatedFeeInSats),
                   builder: (context, data, child) {
-                    final amountText = data.item2;
-                    final isMinimumAmount = data.item5;
+                    String amountText = data.item2;
+                    final isMinimumAmount = data.item6;
+                    final hasInsufficientBalanceErrorOfLastRecipient =
+                        data.item5 && index == _viewModel.lastIndex;
+
                     Color amountTextColor;
-                    if (_viewModel.hasInsufficientBalanceError || isMinimumAmount) {
+                    if (_viewModel.isTotalSendAmountExceedsBalance ||
+                        isMinimumAmount ||
+                        hasInsufficientBalanceErrorOfLastRecipient) {
                       amountTextColor = CoconutColors.hotPink;
-                    } else if (_viewModel.isMaxMode && index == _viewModel.lastIndex) {
+                    } else if (_viewModel.isMaxModeIndex(index)) {
                       amountTextColor = CoconutColors.gray600;
                     } else if (amountText.isEmpty) {
                       amountTextColor = MyColors.transparentWhite_20;
@@ -723,17 +768,23 @@ class _SendScreenState extends State<SendScreen> {
                               child: RichText(
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
-                                text: TextSpan(
-                                  text:
-                                      '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
-                                  style: CoconutTypography.heading2_28_NumberBold
-                                      .setColor(amountTextColor),
-                                  children: [
-                                    TextSpan(
-                                        text: _viewModel.currentUnit.symbol,
-                                        style: CoconutTypography.heading4_18_Number)
-                                  ],
-                                ),
+                                text: _viewModel.isAmountInsufficient(index)
+                                    ? TextSpan(
+                                        text: t.send_screen.max_mode_insufficient_balance,
+                                        style: CoconutTypography.heading3_21_Bold
+                                            .setColor(CoconutColors.hotPink),
+                                      )
+                                    : TextSpan(
+                                        text:
+                                            '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
+                                        style: CoconutTypography.heading2_28_NumberBold
+                                            .setColor(amountTextColor),
+                                        children: [
+                                          TextSpan(
+                                              text: _viewModel.currentUnit.symbol,
+                                              style: CoconutTypography.heading4_18_Number)
+                                        ],
+                                      ),
                               ),
                             ),
                           ),
@@ -741,37 +792,38 @@ class _SendScreenState extends State<SendScreen> {
                         CoconutLayout.spacing_200h,
                         IgnorePointer(
                           ignoring: index != _viewModel.lastIndex,
-                          child: GestureDetector(
-                            onTap: () {
-                              _viewModel.setMaxMode(!_viewModel.isMaxMode);
-                              _clearFocus();
-                            },
-                            child: Opacity(
-                              opacity: index == _viewModel.lastIndex ? 1.0 : 0.0,
+                          child: Opacity(
+                            opacity: index == _viewModel.lastIndex ? 1.0 : 0.0,
+                            child: ShrinkAnimationButton(
+                              onPressed: () {
+                                _viewModel.setMaxMode(!_viewModel.isMaxMode);
+                                _clearFocus();
+                              },
+                              defaultColor: MyColors.grey,
+                              pressedColor: MyColors.grey.withOpacity(0.8),
+                              borderRadius: 4.0,
                               child: Container(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(4.0),
-                                      color: MyColors.grey),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SvgPicture.asset(
-                                        'assets/svg/broom.svg',
-                                        colorFilter: ColorFilter.mode(
-                                            CoconutColors.white
-                                                .withOpacity(_viewModel.isMaxMode ? 1.0 : 0.3),
-                                            BlendMode.srcIn),
-                                      ),
-                                      CoconutLayout.spacing_100w,
-                                      Text(maxButtonText,
-                                          style: Styles.caption.merge(TextStyle(
-                                              color: CoconutColors.white,
-                                              fontFamily: CustomFonts.text.getFontFamily))),
-                                    ],
-                                  )),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SvgPicture.asset(
+                                      'assets/svg/broom.svg',
+                                      colorFilter: ColorFilter.mode(
+                                          CoconutColors.white
+                                              .withOpacity(_viewModel.isMaxMode ? 1.0 : 0.3),
+                                          BlendMode.srcIn),
+                                    ),
+                                    CoconutLayout.spacing_100w,
+                                    Text(maxButtonText,
+                                        style: Styles.caption.merge(TextStyle(
+                                            color: CoconutColors.white,
+                                            fontFamily: CustomFonts.text.getFontFamily))),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -779,7 +831,7 @@ class _SendScreenState extends State<SendScreen> {
                     );
                   }),
               CoconutLayout.spacing_500h,
-              Selector<SendViewModel, Tuple2<String, SendError>>(
+              Selector<SendViewModel, Tuple2<String, AddressError>>(
                   selector: (_, viewModel) => Tuple2(viewModel.recipientList[index].address,
                       viewModel.recipientList[index].addressError),
                   builder: (context, data, child) {
@@ -865,7 +917,8 @@ class _SendScreenState extends State<SendScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("${currentIndex + 1} ", style: CoconutTypography.body3_12),
+                  Text("${currentIndex + 1} ",
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
                   Text("/ $recipientListLength",
                       style: CoconutTypography.body3_12.setColor(CoconutColors.gray600)),
                 ],
@@ -879,110 +932,121 @@ class _SendScreenState extends State<SendScreen> {
     double bottomPadding = index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () {
+      child: ShrinkAnimationButton(
+        onPressed: () {
           _addressControllerList[_viewModel.currentIndex].text = address;
           _viewModel.markWalletAddressForUpdate(index);
           _clearFocus();
+          vibrateLight();
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              shortenAddress(address, head: 10),
-              style: CoconutTypography.body3_12_Number,
-            ),
-            Text(
-              "$walletName • $derivationPath",
-              style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-            ),
-          ],
+        defaultColor: Colors.transparent,
+        pressedColor: CoconutColors.gray800,
+        borderRadius: 4.0,
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CoconutLayout.spacing_100h,
+              Text(
+                shortenAddress(address, head: 10),
+                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+              ),
+              Text(
+                "$walletName • $derivationPath",
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+              ),
+              CoconutLayout.spacing_100h,
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildAddressBoard(BuildContext context) {
-    return Column(
-      children: [
-        CoconutLayout.spacing_50h,
-        GestureDetector(
-          onTap: () => {}, // ignore
-          child: Container(
-            decoration: BoxDecoration(
-                color: CoconutColors.black,
-                border: Border.all(
-                  color: CoconutColors.gray700,
-                  width: 1,
-                ),
-                borderRadius: const BorderRadius.all(Radius.circular(8))),
-            child: Padding(
-              padding: const EdgeInsets.only(left: 14, bottom: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 14),
-                    child: Row(
-                      children: [
-                        Text(
-                          t.send_screen.my_address,
-                          style: CoconutTypography.body3_12_Bold,
-                        ),
-                        const Spacer(),
-                        CoconutUnderlinedButton(
-                          text: t.close,
-                          onTap: () => _viewModel.setShowAddressBoard(false),
-                          textStyle: CoconutTypography.body3_12,
-                          padding: const EdgeInsets.only(right: 14, left: 24),
-                        ),
-                      ],
+    return SizedBox(
+      height: addressBoardHeight,
+      child: Column(
+        children: [
+          CoconutLayout.spacing_50h,
+          GestureDetector(
+            onTap: () => {}, // ignore
+            child: Container(
+              decoration: BoxDecoration(
+                  color: CoconutColors.black,
+                  border: Border.all(
+                    color: CoconutColors.gray700,
+                    width: 1,
+                  ),
+                  borderRadius: const BorderRadius.all(Radius.circular(8))),
+              child: Padding(
+                padding: const EdgeInsets.only(left: 14, bottom: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Row(
+                        children: [
+                          Text(
+                            t.send_screen.my_address,
+                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                          ),
+                          const Spacer(),
+                          CoconutUnderlinedButton(
+                            text: t.close,
+                            onTap: () => _viewModel.setShowAddressBoard(false),
+                            textStyle: CoconutTypography.body3_12,
+                            padding: const EdgeInsets.only(right: 14, left: 24),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  CoconutLayout.spacing_200h,
-                  SizedBox(
-                    height: walletAddressListHeight,
-                    child: ListView.builder(
-                        itemCount: _viewModel.walletItemList.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final address = _viewModel.walletAddressList[index].address;
-                          final walletName = _viewModel.walletItemList[index].name;
-                          final derivationPath = _viewModel.walletAddressList[index].derivationPath;
-                          return _buildAddressRow(index, address, walletName, derivationPath);
-                        }),
-                  ),
-                  CoconutLayout.spacing_200h,
-                  CoconutUnderlinedButton(
-                    text: t.view_more,
-                    onTap: () {
-                      _clearFocus();
-                      if (_viewModel.walletItemList.length == 1) {
-                        _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
-                        return;
-                      }
+                    CoconutLayout.spacing_200h,
+                    SizedBox(
+                      height: walletAddressListHeight,
+                      child: ListView.builder(
+                          itemCount: _viewModel.walletItemList.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final walletListItem = _viewModel.walletItemList[index];
+                            final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                            return _buildAddressRow(index, walletAddress.address,
+                                walletListItem.name, walletAddress.derivationPath);
+                          }),
+                    ),
+                    CoconutLayout.spacing_200h,
+                    CoconutUnderlinedButton(
+                      text: t.view_more,
+                      onTap: () {
+                        _clearFocus();
+                        if (_viewModel.walletItemList.length == 1) {
+                          _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
+                          return;
+                        }
 
-                      CommonBottomSheets.showDraggableBottomSheet(
-                          context: context,
-                          childBuilder: (scrollController) => SelectWalletBottomSheet(
-                                scrollController: scrollController,
-                                currentUnit: _viewModel.currentUnit,
-                                walletId: -1,
-                                onWalletChanged: (id) {
-                                  Navigator.pop(context);
-                                  _showAddressListBottomSheet(id);
-                                },
-                              ));
-                    },
-                    textStyle: CoconutTypography.body3_12,
-                    padding: EdgeInsets.zero,
-                  ),
-                ],
+                        CommonBottomSheets.showDraggableBottomSheet(
+                            context: context,
+                            childBuilder: (scrollController) => SelectWalletBottomSheet(
+                                  scrollController: scrollController,
+                                  currentUnit: _viewModel.currentUnit,
+                                  walletId: -1,
+                                  onWalletChanged: (id) {
+                                    Navigator.pop(context);
+                                    _showAddressListBottomSheet(id);
+                                  },
+                                ));
+                      },
+                      textStyle: CoconutTypography.body3_12,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1005,9 +1069,10 @@ class _SendScreenState extends State<SendScreen> {
     double scrollbarHeight = usableHeight;
     if (_viewModel.showAddressBoard) {
       // AddressBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
-      final addressBoardHeight = walletAddressListHeight + 80;
       final addressBoardBottomPos = kAddressBoardPosition + addressBoardHeight;
-      final keyboardGap = usableHeight - _keyboardHeight - addressBoardBottomPos;
+
+      // 사용 가능 높이에 키보드 높이와 보드의 바텀 위치를 빼서 스크롤 가능 범위를 구한다.
+      final keyboardGap = usableHeight - keyboardHeight - addressBoardBottomPos;
       if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
     } else if (_viewModel.showFeeBoard && _isAddressFocused) {
       // FeeBoard와 키보드간 간격만큼 스크롤 범위를 조정한다.
@@ -1015,10 +1080,15 @@ class _SendScreenState extends State<SendScreen> {
       int tooltipCount = 0;
       if (_viewModel.isBatchMode) ++tooltipCount;
       if (_viewModel.isMaxMode) ++tooltipCount;
-      if (tooltipCount > 0) bottomPos += 12;
-      if (tooltipCount == 2) bottomPos += kTooltipPadding;
+
+      // 수수료 보드와 툴팁 사이 패딩
+      if (tooltipCount > 0) bottomPos += kFeeBoardBottomPadding;
+      // 툴팁 개수에 따른 패딩 계산
+      if (tooltipCount > 1) bottomPos += kTooltipPadding * (tooltipCount - 1);
+      // 툴팁 개수에 따른 높이 계산
       bottomPos += tooltipCount * kTooltipHeight;
-      final keyboardGap = usableHeight - _keyboardHeight - bottomPos;
+
+      final keyboardGap = usableHeight - keyboardHeight - bottomPos;
       if (keyboardGap < 0) scrollbarHeight += -keyboardGap + CoconutLayout.defaultPadding;
     }
 
@@ -1055,14 +1125,13 @@ class _SendScreenState extends State<SendScreen> {
       if (scanData.code!.isEmpty) return;
 
       _isQrDataHandling = true;
-      if (_viewModel.validateAddress(scanData.code!)) {
-        if (mounted) {
+      final validationResult = _viewModel.validateScannedAddress(scanData.code!);
+      if (mounted) {
+        if (validationResult == null) {
           Navigator.pop(context, scanData.code!);
-        }
-      } else {
-        if (mounted) {
+        } else {
           CoconutToast.showToast(
-              isVisibleIcon: true, context: context, text: _viewModel.qrErrorMessage);
+              isVisibleIcon: true, context: context, text: validationResult.message);
         }
       }
 

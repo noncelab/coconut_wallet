@@ -56,10 +56,18 @@ class WalletHomeViewModel extends ChangeNotifier {
         .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
 
+    // NodeProvider의 변경사항 listening 추가
+    _nodeProvider.addListener(_onNodeProviderChanged);
+
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+  }
+
+  void _onNodeProviderChanged() {
+    // NodeProvider의 hasConnectionError 등이 변경되었을 때 UI 업데이트
+    notifyListeners();
   }
 
   bool get isEmptyFavoriteWallet => _isEmptyFavoriteWallet;
@@ -90,11 +98,14 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {
+    print(
+        'DEBUG - _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}');
+
     if (!(_isNetworkOn ?? false)) {
       return NetworkStatus.offline;
     }
 
-    if (_nodeSyncState == NodeSyncState.failed) {
+    if (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) {
       return NetworkStatus.connectionFailed;
     }
 
@@ -106,6 +117,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
+    print('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
@@ -117,6 +129,7 @@ class WalletHomeViewModel extends ChangeNotifier {
         vibrateLightDouble();
       }
       _nodeSyncState = syncState;
+      print('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
       notifyListeners();
     } else if (_nodeSyncState == NodeSyncState.completed &&
         syncState == NodeSyncState.completed &&
@@ -132,7 +145,17 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateWalletBalances() async {
+  Future<void> onRefresh() async {
+    updateWalletBalances();
+
+    if (networkStatus != NetworkStatus.connectionFailed) {
+      return;
+    }
+
+    _nodeProvider.reconnect();
+  }
+
+  void updateWalletBalances() {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
     notifyListeners();
@@ -267,6 +290,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _syncNodeStateSubscription?.cancel();
+    _nodeProvider.removeListener(_onNodeProviderChanged);
     super.dispose();
   }
 }

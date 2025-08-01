@@ -15,7 +15,9 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 class SendConfirmScreen extends StatefulWidget {
-  const SendConfirmScreen({super.key});
+  final BitcoinUnit? currentUnit;
+
+  const SendConfirmScreen({super.key, this.currentUnit});
 
   @override
   State<SendConfirmScreen> createState() => _SendConfirmScreenState();
@@ -112,7 +114,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                       isNumber: true),
                                 ],
                               ))),
-                    )
+                    ),
+                    CoconutLayout.spacing_400h,
                   ]),
                 ),
               ));
@@ -125,7 +128,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   void initState() {
     super.initState();
     context.loaderOverlay.show();
-    _currentUnit = context.read<PreferenceProvider>().currentUnit;
+    _currentUnit = widget.currentUnit ?? context.read<PreferenceProvider>().currentUnit;
     _viewModel = SendConfirmViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
     _viewModel.setEstimatedFeeAndTotalUsedAmount().then((_) {

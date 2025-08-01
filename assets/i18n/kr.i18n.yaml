@@ -93,7 +93,7 @@ view_balance: "잔액 보기"
 view: "보기"
 
 apply_item: "$count개에 적용"
-fee_sats: " ($value sats/vb)"
+fee_sats: " ($value sats/vB)"
 utxo_count: "($count개)"
 total_item_count: "(총 $count개)"
 
@@ -230,6 +230,8 @@ wallet_list:
   view_all_wallets: "내 지갑 전체보기"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
+  home_balance: "홈 화면 총액"
+  excluded_balance: "제외 총액"
   settings:
     primary_wallet: "대표 지갑 설정"
     primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요."
@@ -317,7 +319,9 @@ send_screen:
   recommended_fee_unavailable: "추천 수수료 조회 실패"
   recommended_fee_unavailable_description: "수수료를 직접 입력해 주세요."
   tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
-  tooltip_max_mode_text: "모두 보내기 모드 중"
+  tooltip_max_mode_text: "모두 보내기 중"
+  max_mode_insufficient_balance: "잔액 부족"
+  unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
 
 utxo_selection_screen:
   title: "UTXO 고르기"
@@ -468,13 +472,13 @@ transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
   existing_fee: "기존 수수료"
-  existing_fee_value: "${value} sats/vb"
-  total_fee: "총 $fee sats / ${vb} vb"
+  existing_fee_value: "${value} sats/vB"
+  total_fee: "총 $fee sats / ${vB} vB"
   new_fee: "새 수수료"
-  sats_vb: "sats/vb"
-  recommend_fee: "최소 수수료: ${fee} sats/vb 이상"
-  recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요."
-  recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vb, 추천 수수료율 = ${recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb"
+  sats_vb: "sats/vB"
+  recommend_fee: "최소 수수료: ${fee} sats/vB 이상"
+  recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vB 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vB 미만으로 보일 수 있어요."
+  recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vB, 추천 수수료율 = ${recommendedFeeRate} sat/vB\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "추천 수수료"
   estimated_fee: "예상 총 수수료 약 ${fee} sats"
   estimated_fee_too_high_error: "예상 총 수수료가 0.01 BTC 이상이에요!"
@@ -574,6 +578,7 @@ errors:
     recommended_fee_unavailable: "추천 수수료를 조회하지 못했어요.\n'직접 입력하기' 버튼을 눌러 수수료를 직접 입력해 주세요."
     insufficient_utxo: "UTXO 합계가 모자라요"
   address_error:
+    empty: "주소가 비어 있습니다."
     invalid: "올바른 주소가 아니에요."
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
@@ -594,7 +599,7 @@ errors:
   utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
 
 text_field:
-  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vb)"
+  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vB)"
   enter_fee_directly: "직접 입력하기"
   search_mnemonic_word: "영문으로 검색해 보세요"
 
@@ -630,7 +635,7 @@ tooltip:
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
-  min_fee: "현재 최소 수수료는 $minimum sats/vb 입니다."
+  min_fee: "현재 최소 수수료율은 $minimum sats/vB 입니다."
   fetching_onchain_data: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요."
   screen_capture: "스크린 캡처가 감지되었습니다."
   no_balance: "잔액이 없습니다."

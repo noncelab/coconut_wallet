@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -43,10 +44,47 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
   int selectedUtxoAmountSum = 0;
   bool _isUtxoSelectionAuto = true;
 
+  // 초기 상태 저장
+  late final int _initialSelectedWalletId;
+  late final bool _initialIsUtxoSelectionAuto;
+  late final List<UtxoState> _initialSelectedUtxoList;
+
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
 
   int get selectedWalletBalance =>
       _selectedWalletItem != null ? _walletBalanceMap[_selectedWalletItem!.id]!.confirmed : 0;
+
+  /// 변경사항이 있는지 확인
+  bool get hasChanges {
+    // 선택된 지갑이 없으면 비활성화
+    if (_selectedWalletItem == null) return false;
+
+    // 지갑 변경 확인
+    if (_selectedWalletItem!.id != _initialSelectedWalletId) return true;
+
+    // UTXO 선택 모드 변경 확인
+    if (_isUtxoSelectionAuto != _initialIsUtxoSelectionAuto) return true;
+
+    // 수동 모드일 때 UTXO 선택 변경 확인
+    if (!_isUtxoSelectionAuto) {
+      if (_selectedUtxoList.length != _initialSelectedUtxoList.length) return true;
+
+      for (final utxo in _selectedUtxoList) {
+        if (!_initialSelectedUtxoList.any((initial) => initial.utxoId == utxo.utxoId)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /// 변경사항이 있고 처리 가능한지 확인
+  bool get isButtonActive {
+    return hasChanges &&
+        _selectedWalletItem != null &&
+        (_isUtxoSelectionAuto || _selectedUtxoList.isNotEmpty);
+  }
 
   @override
   void initState() {
@@ -64,6 +102,11 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
       _selectedWalletItem = selectedWalletItem;
       _initConfirmedUtxoList();
     }
+
+    // 초기 상태 저장
+    _initialSelectedWalletId = widget.selectedWalletId;
+    _initialIsUtxoSelectionAuto = widget.isUtxoSelectionAuto;
+    _initialSelectedUtxoList = List.from(widget.selectedUtxoList);
   }
 
   @override
@@ -84,14 +127,14 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
       padding: const EdgeInsets.only(left: 16, right: 16),
       child: CoconutButton(
         onPressed: () {
+          vibrateMedium();
           Navigator.of(context).pop();
           final utxoList = _isUtxoSelectionAuto ? _confirmedUtxoList : _selectedUtxoList;
           widget.onWalletInfoUpdated(_selectedWalletItem!, utxoList, _isUtxoSelectionAuto);
         },
         disabledBackgroundColor: CoconutColors.gray800,
         disabledForegroundColor: CoconutColors.gray700,
-        isActive:
-            _selectedWalletItem != null && (_isUtxoSelectionAuto || _selectedUtxoList.isNotEmpty),
+        isActive: isButtonActive,
         backgroundColor: CoconutColors.white,
         foregroundColor: CoconutColors.black,
         pressedTextColor: CoconutColors.black,

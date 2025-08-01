@@ -34,6 +34,8 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
 
+  final List<UtxoState> _initialSelectedUtxoList = []; // 초기 선택 상태 저장
+
   UtxoSelectionViewModel(
       this._walletProvider,
       this._tagProvider,
@@ -43,8 +45,10 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       List<UtxoState> selectedUtxoList,
       UtxoOrder initialUtxoOrder) {
     try {
+      // 모든 UTXO (locked 포함)를 리스트에 추가
       _walletProvider.getUtxoList(_walletId).fold<int>(0, (sum, utxo) {
-        if (utxo.status == UtxoStatus.unspent) {
+        // unspent와 locked 모두 포함
+        if (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked) {
           _confirmedUtxoList.add(utxo);
         }
         return utxo.status == UtxoStatus.unspent ? sum + utxo.amount : sum;
@@ -52,10 +56,12 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       _sortConfirmedUtxoList(initialUtxoOrder);
       _initUtxoTagMap();
 
-      _confirmedUtxoList.where((utxo) => utxo.status != UtxoStatus.locked).toList();
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
-      _selectedUtxoList = selectedUtxoList;
+      // 초기 선택 상태 저장
+      _selectedUtxoList = List.from(selectedUtxoList);
+      _initialSelectedUtxoList.addAll(selectedUtxoList);
+
       _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
       _priceProvider.addListener(_updateBitcoinPriceKrw);
     } catch (e) {
@@ -108,6 +114,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void selectAllUtxo() {
+    // locked 상태가 아닌 UTXO만 선택
     setSelectedUtxoList(confirmedUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
   }
 
@@ -155,7 +162,56 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void _sortConfirmedUtxoList(UtxoOrder basis) {
-    UtxoState.sortUtxo(_confirmedUtxoList, basis);
+    // 먼저 status에 따라 분리 (unlock된 것 먼저, locked는 뒤에)
+    _confirmedUtxoList.sort((a, b) {
+      // locked 상태 우선순위: unspent가 먼저, locked가 나중에
+      if (a.status != b.status) {
+        if (a.status == UtxoStatus.unspent && b.status == UtxoStatus.locked) {
+          return -1; // a가 먼저
+        } else if (a.status == UtxoStatus.locked && b.status == UtxoStatus.unspent) {
+          return 1; // b가 먼저
+        }
+      }
+
+      // 같은 status 내에서는 기존 정렬 기준 적용
+      return 0;
+    });
+
+    // unlock된 UTXO들만 따로 정렬
+    final unlockedUtxos =
+        _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
+    final lockedUtxos =
+        _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
+
+    // 각각 별도로 정렬
+    UtxoState.sortUtxo(unlockedUtxos, basis);
+    UtxoState.sortUtxo(lockedUtxos, basis);
+
+    // 다시 합치기 (unlock 먼저, lock 나중에)
+    _confirmedUtxoList.clear();
+    _confirmedUtxoList.addAll(unlockedUtxos);
+    _confirmedUtxoList.addAll(lockedUtxos);
+  }
+
+  /// 선택 상태가 초기 상태와 다른지 확인
+  bool get hasSelectionChanged {
+    // 선택된 UTXO가 하나도 없으면 비활성화
+    if (_selectedUtxoList.isEmpty) {
+      return false;
+    }
+
+    if (_selectedUtxoList.length != _initialSelectedUtxoList.length) {
+      return true;
+    }
+
+    // 같은 UTXO들이 선택되어 있는지 확인 (순서는 상관없음)
+    for (final utxo in _selectedUtxoList) {
+      if (!_initialSelectedUtxoList.any((initial) => initial.utxoId == utxo.utxoId)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   @override
