@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -13,9 +14,9 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_fee_selection_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/text_field_bottom_sheet.dart';
-import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/card/send_fee_selection_item_card.dart';
@@ -50,7 +51,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   int? _estimatedFee = 0;
   FeeInfo? _customFeeInfo;
   bool? _isRecommendedFeeFetchSuccess;
-  bool _isLoading = false;
+  bool _isLoading = true;
 
   String get feeText => _currentUnit.displayBitcoinAmount(_estimatedFee ?? 0);
 
@@ -90,13 +91,11 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                 usePrimaryActiveColor: true,
                 nextButtonTitle: t.complete,
                 onNextPressed: () {
-                  double finalFeeRate = _customSelected
-                      ? _customFeeInfo!.satsPerVb!
-                      : feeInfos
-                          .firstWhere((element) => element.level == _selectedLevel)
-                          .satsPerVb!;
+                  TransactionFeeLevel? finalFeeLevel = _customSelected
+                      ? null
+                      : feeInfos.firstWhere((element) => element.level == _selectedLevel).level;
 
-                  _viewModel.saveFinalSendInfo(_estimatedFee!, finalFeeRate);
+                  _viewModel.saveFinalSendInfo(finalFeeLevel);
                   Navigator.pushNamed(context, '/send-confirm');
                 }),
             body: SafeArea(
@@ -151,6 +150,7 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
                               tooltipState: CoconutTooltipState.warning,
                               richText: RichText(text: TextSpan(text: recommendedFeeTooltipText)),
                             ),
+                          // TODO: 선택한 수수료에 따라 잔액이 부족하다...
                           if (_estimatedFee != null &&
                               _estimatedFee! != 0 &&
                               !_viewModel.isBalanceEnough(_estimatedFee) &&
@@ -252,13 +252,14 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   bool _canGoNext() {
-    double? finalFeeRate = _customSelected
-        ? _customFeeInfo?.satsPerVb
-        : feeInfos.firstWhere((element) => element.level == _selectedLevel).satsPerVb;
+    if (_isLoading) return false;
+
+    TransactionBuildResult finalTxBuildResult = _customSelected
+        ? _viewModel.getFinalBuildResult(null)
+        : _viewModel.getFinalBuildResult(_selectedLevel);
 
     return _viewModel.isNetworkOn &&
-        (finalFeeRate != null && finalFeeRate > 0) &&
-        _viewModel.isBalanceEnough(_estimatedFee) &&
+        finalTxBuildResult.isSuccess == true &&
         _estimatedFee != null &&
         _estimatedFee! < maxFeeLimit &&
         !_isLoading;
@@ -300,27 +301,18 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
     });
 
     try {
-      int estimatedFee = _viewModel.estimateFee(customSatsPerVb);
-
+      int estimatedFee =
+          _viewModel.estimateFeeWithCustomFee(customSatsPerVb, isUserSelection: true);
       setState(() {
         _customFeeInfo = FeeInfo(satsPerVb: customSatsPerVb);
         _setFeeInfo(_customFeeInfo!, estimatedFee);
       });
     } catch (error) {
-      int? estimatedFee = _handleFeeEstimationError(error as Exception);
-      if (estimatedFee != null) {
-        setState(() {
-          _customFeeInfo = FeeInfo(satsPerVb: customSatsPerVb);
-          _setFeeInfo(_customFeeInfo!, estimatedFee);
-        });
-      } else {
-        // custom 수수료 조회 실패 알림
-        if (mounted) {
-          CoconutToast.showWarningToast(
-              context: context,
-              text:
-                  ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString()).message);
-        }
+      // custom 수수료 조회 실패 알림
+      if (mounted) {
+        CoconutToast.showWarningToast(
+            context: context,
+            text: ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString()).message);
       }
     }
     _customFeeController.clear();
@@ -329,28 +321,6 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  int? _handleFeeEstimationError(Exception e) {
-    try {
-      if (e.toString().contains("Insufficient amount. Estimated fee is")) {
-        // get finalFee from error message : 'Insufficient amount. Estimated fee is $finalFee'
-        var estimatedFee =
-            int.parse(e.toString().split("Insufficient amount. Estimated fee is ")[1]);
-        return estimatedFee;
-      }
-
-      if (e.toString().contains("Not enough amount for sending. (Fee")) {
-        // get finalFee from error message : 'Not enough amount for sending. (Fee : $finalFee)'
-        var estimatedFee = int.parse(
-            e.toString().split("Not enough amount for sending. (Fee : ")[1].split(")")[0]);
-        return estimatedFee;
-      }
-    } catch (_) {
-      return null;
-    }
-
-    return null;
   }
 
   void _setFeeInfo(FeeInfo feeInfo, int estimatedFee) {
@@ -370,52 +340,37 @@ class _SendFeeSelectionScreenState extends State<SendFeeSelectionScreen> {
   }
 
   Future<void> _setRecommendedFees() async {
-    final recommendedFeesResult = await _viewModel.nodeprovider.getRecommendedFees();
-    if (recommendedFeesResult.isFailure) {
-      setState(() {
-        _isRecommendedFeeFetchSuccess = false;
-      });
-      return;
-    }
-
-    final RecommendedFee recommendedFees = recommendedFeesResult.value;
+    final recommendedFees = await getRecommendedFees(_viewModel.nodeprovider);
 
     feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
     feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
     feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
+    // for TEST
+    // feeInfos[0].satsPerVb = 102.0;
+    // feeInfos[1].satsPerVb = 5.0;
+    // feeInfos[2].satsPerVb = 2.0;
 
     setState(() => _minimumSatsPerVb = recommendedFees.minimumFee);
 
-    for (var feeInfo in feeInfos) {
-      try {
-        int estimatedFee = _viewModel.estimateFee(feeInfo.satsPerVb!);
-        setState(() {
-          _setFeeInfo(feeInfo, estimatedFee);
-        });
-      } catch (error) {
-        int? estimatedFee = _handleFeeEstimationError(error as Exception);
-        if (estimatedFee != null) {
-          setState(() {
-            _setFeeInfo(feeInfo, estimatedFee);
-          });
-        } else {
-          _isRecommendedFeeFetchSuccess = false;
-          // custom 수수료 조회 실패 알림
-          WidgetsBinding.instance.addPostFrameCallback((duration) {
-            CoconutToast.showWarningToast(
-                context: context,
-                text: ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString())
-                    .message);
-          });
-        }
-      }
+    try {
+      final txsWithRecommendedFees = _viewModel.setRecommendedFeeTxs(feeInfos);
+      setState(() {
+        _setFeeInfo(feeInfos[0], txsWithRecommendedFees[0].estimatedFee);
+        _setFeeInfo(feeInfos[1], txsWithRecommendedFees[1].estimatedFee);
+        _setFeeInfo(feeInfos[2], txsWithRecommendedFees[2].estimatedFee);
+      });
+    } catch (error) {
+      _isRecommendedFeeFetchSuccess = false;
+      // custom 수수료 조회 실패 알림
+      WidgetsBinding.instance.addPostFrameCallback((duration) {
+        CoconutToast.showWarningToast(
+            context: context,
+            text: ErrorCodes.withMessage(ErrorCodes.feeEstimationError, error.toString()).message);
+      });
     }
   }
 
   Future<void> _startToSetRecommendedFee() async {
-    setState(() {
-      _isLoading = true;
-    });
     await _setRecommendedFees();
     if (mounted) {
       setState(() {

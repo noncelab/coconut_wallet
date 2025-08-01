@@ -1,11 +1,15 @@
 import 'dart:convert';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -30,6 +34,14 @@ class PreferenceProvider extends ChangeNotifier {
   /// 전체 주소 보기 화면 '사용 전 주소만 보기' 여부
   late bool _showOnlyUnusedAddresses;
   bool get showOnlyUnusedAddresses => _showOnlyUnusedAddresses;
+
+  /// 전체 주소 보기 화면 [입금] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
+  late bool _isReceivingTooltipDisabled;
+  bool get isReceivingTooltipDisabled => language == 'kr' ? _isReceivingTooltipDisabled : true;
+
+  /// 전체 주소 보기 화면 [잔돈] 툴팁 표시 여부 - 영문 버전에서는 표시 안함
+  late bool _isChangeTooltipDisabled;
+  bool get isChangeTooltipDisabled => language == 'kr' ? _isChangeTooltipDisabled : true;
 
   /// 언어 설정
   late String _language;
@@ -66,6 +78,10 @@ class PreferenceProvider extends ChangeNotifier {
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
     _excludedFromTotalBalanceWalletIds =
         _walletPreferencesRepository.getExcludedWalletIds().toList();
+    _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
+    _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
+
+    // 통화 설정 초기화
     _initializeFiat();
     _initializeLanguageFromSystem();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,20 +123,20 @@ class PreferenceProvider extends ChangeNotifier {
   /// 언어 설정 적용 (동기 버전)
   void _applyLanguageSettingSync() {
     try {
-      print('Applying language setting: $_language');
+      Logger.log('Applying language setting: $_language');
       if (isKorean) {
         LocaleSettings.setLocaleSync(AppLocale.kr);
-        print('Korean locale applied successfully');
+        Logger.log('Korean locale applied successfully');
       } else if (isEnglish) {
         LocaleSettings.setLocaleSync(AppLocale.en);
-        print('English locale applied successfully');
+        Logger.log('English locale applied successfully');
       }
 
       // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
       notifyListeners();
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
-      print('Language initialization failed: $e');
+      Logger.log('Language initialization failed: $e');
     }
   }
 
@@ -137,7 +153,7 @@ class PreferenceProvider extends ChangeNotifier {
       }
     } catch (e) {
       // 언어 초기화 실패 시 로그 출력 (선택사항)
-      print('Language initialization failed: $e');
+      Logger.log('Language initialization failed: $e');
     }
   }
 
@@ -174,6 +190,20 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeShowOnlyUnusedAddresses(bool show) async {
     _showOnlyUnusedAddresses = show;
     await _sharedPrefs.setBool(SharedPrefKeys.kShowOnlyUnusedAddresses, show);
+    notifyListeners();
+  }
+
+  /// 주소 리스트 화면 '입금' 툴팁 다시 보지 않기 설정
+  Future<void> setReceivingTooltipDisabledPermanently() async {
+    _isReceivingTooltipDisabled = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsReceivingTooltipDisabled, true);
+    notifyListeners();
+  }
+
+  /// 주소 리스트 화면 '잔돈' 툴팁 다시 보지 않기 설정
+  Future<void> setChangeTooltipDisabledPermanently() async {
+    _isChangeTooltipDisabled = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsChangeTooltipDisabled, true);
     notifyListeners();
   }
 
@@ -284,5 +314,57 @@ class PreferenceProvider extends ChangeNotifier {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
     await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
     notifyListeners();
+  }
+
+  /// 커스텀 일렉트럼 서버 파라미터 검증
+  void _validateCustomElectrumServerParams(String host, int port, bool ssl) {
+    if (host.trim().isEmpty) {
+      throw ArgumentError('Host cannot be empty');
+    }
+
+    if (port <= 0 || port > 65535) {
+      throw ArgumentError('Port must be between 1 and 65535');
+    }
+  }
+
+  /// 일렉트럼 서버 설정
+  Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
+    await _sharedPrefs.setString(
+        SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
+  }
+
+  /// 커스텀 일렉트럼 서버 설정
+  Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
+    _validateCustomElectrumServerParams(host, port, ssl);
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, 'CUSTOM');
+    await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host);
+    await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port);
+    await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl);
+  }
+
+  /// 일렉트럼 서버 설정 불러오기
+  ElectrumServer getElectrumServer() {
+    final serverName = _sharedPrefs.getString(SharedPrefKeys.kElectrumServerName);
+    debugPrint('PREFERNECE_PROVIDER:: getElectrumServer() serverName: $serverName');
+
+    if (serverName.isEmpty) {
+      if (NetworkType.currentNetworkType == NetworkType.mainnet) {
+        setDefaultElectrumServer(DefaultElectrumServer.coconut);
+        return DefaultElectrumServer.coconut.server;
+      } else {
+        setDefaultElectrumServer(DefaultElectrumServer.regtest);
+        return DefaultElectrumServer.regtest.server;
+      }
+    }
+
+    if (serverName == 'CUSTOM') {
+      return ElectrumServer.custom(
+        _sharedPrefs.getString(SharedPrefKeys.kCustomElectrumHost),
+        _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumPort),
+        _sharedPrefs.getBool(SharedPrefKeys.kCustomElectrumIsSsl),
+      );
+    }
+
+    return DefaultElectrumServer.fromServerType(serverName).server;
   }
 }

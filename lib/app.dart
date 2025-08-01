@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
@@ -29,6 +30,7 @@ import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
+import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
@@ -65,9 +67,6 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 enum AppEntryFlow { splash, main, pinCheck }
 
 class CoconutWalletApp extends StatefulWidget {
-  static late String kElectrumHost;
-  static late int kElectrumPort;
-  static late bool kElectrumIsSSL;
   static late String kMempoolHost;
   static late String kFaucetHost;
   static late String kDonationAddress;
@@ -175,9 +174,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               create: (context) {
                 final walletProvider = context.read<WalletProvider>();
                 return NodeProvider(
-                  CoconutWalletApp.kElectrumHost,
-                  CoconutWalletApp.kElectrumPort,
-                  CoconutWalletApp.kElectrumIsSSL,
+                  context.read<PreferenceProvider>().getElectrumServer(),
                   CoconutWalletApp.kNetworkType,
                   context.read<ConnectivityProvider>(),
                   walletProvider.walletLoadStateNotifier,
@@ -382,6 +379,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                   ),
               '/coconut-crew': (context) => const CoconutCrewScreen(),
+              '/electrum-server': (context) => ChangeNotifierProvider<ElectrumServerViewModel>(
+                    create: (context) => ElectrumServerViewModel(
+                        Provider.of<NodeProvider>(context, listen: false),
+                        Provider.of<PreferenceProvider>(context, listen: false)),
+                    child: const ElectrumServerScreen(),
+                  ),
             },
           ),
         ));

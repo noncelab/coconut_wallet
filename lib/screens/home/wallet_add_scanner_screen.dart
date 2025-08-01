@@ -340,7 +340,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     } catch (e) {
       vibrateLightDouble();
       if (mounted) {
-        String errorMessage = t.wallet_add_input_screen.format_error_text;
+        String errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
         if (e.toString().contains("network type")) {
           errorMessage = NetworkType.currentNetworkType == NetworkType.mainnet
               ? t.wallet_add_input_screen.mainnet_wallet_error_text
@@ -351,8 +351,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           errorMessage,
         );
       }
-      // TODO: remove rethrow; after test
-      //rethrow;
     } finally {
       vibrateMedium();
       if (mounted) {
@@ -361,14 +359,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     }
   }
 
-  // TODO: 변경된 로직에 맞게 에러 핸들링 점검
   void _onFailedScanning(String message) async {
     if (_isProcessing) return;
     _isProcessing = true;
 
     String errorMessage;
-    if (message.contains('Invalid Scheme')) {
-      errorMessage = t.alert.signed_psbt.invalid_signature;
+    if (message == CoconutQrScanner.qrFormatErrorMessage) {
+      errorMessage = t.alert.invalid_qr;
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
     }

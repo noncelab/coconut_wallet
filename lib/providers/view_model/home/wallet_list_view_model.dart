@@ -102,7 +102,9 @@ class WalletListViewModel extends ChangeNotifier {
         }
         updateWalletBalances();
       } else if (syncState == NodeSyncState.failed) {
-        vibrateLightDouble();
+        if (!_nodeProvider.isServerChanging) {
+          vibrateLightDouble();
+        }
       }
       _nodeSyncState = syncState;
       notifyListeners();

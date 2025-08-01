@@ -17,6 +17,9 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -554,17 +557,24 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   void _generateSinglePayment(
       List<Utxo> inputs, String recipient, String changeAddress, double feeRate, int amount) {
-    _bumpingTransaction = Transaction.forSinglePayment(
-        inputs,
-        recipient,
-        _addressRepository.getDerivationPath(_walletId, changeAddress),
-        amount,
-        feeRate,
-        walletListItemBase.walletBase);
-    _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(amount));
-    _sendInfoProvider.setIsMaxMode(false);
-    _setInsufficientUtxo(false);
-    debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');
+    try {
+      _bumpingTransaction = Transaction.forSinglePayment(
+          inputs,
+          recipient,
+          _addressRepository.getDerivationPath(_walletId, changeAddress),
+          amount,
+          feeRate,
+          walletListItemBase.walletBase);
+      _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(amount));
+      _sendInfoProvider.setIsMaxMode(false);
+      _setInsufficientUtxo(false);
+      debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');
+    } on Exception catch (e) {
+      int? estimatedFee = extractEstimatedFeeFromException(e);
+      if (estimatedFee != null) {
+        _generateSweepPayment(inputs, recipient, feeRate);
+      }
+    }
   }
 
   void _generateSweepPayment(List<Utxo> inputs, String recipient, double feeRate) {
@@ -697,18 +707,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // 노드 프로바이더에서 추천 수수료 조회
   Future<void> _fetchRecommendedFees() async {
-    // TODO: 실제 멤풀 수수료 참조 코드
-    // 🚨 주의 🚨
-    // 아래 코드 주석 시 unused import, 변수가 보이지만
-    // 실제 로직에서 사용되는 Node Provider 관련 참조이므로 지우지 말 것!
-    final recommendedFeesResult = await _nodeProvider.getRecommendedFees();
-    if (recommendedFeesResult.isFailure) {
-      _isFeeFetchSuccess = false;
-      notifyListeners();
-      return;
-    }
-
-    final recommendedFees = recommendedFeesResult.value;
+    final recommendedFees = await getRecommendedFees(_nodeProvider);
 
     // TODO: 테스트 코드 - 추천수수료 mock
     // final recommendedFees = await DioClient().getRecommendedFee();

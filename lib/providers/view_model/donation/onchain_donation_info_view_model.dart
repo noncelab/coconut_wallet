@@ -5,13 +5,13 @@ import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
@@ -61,20 +61,8 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _isNetworkOn = isNetworkOn;
 
-    var result = await _nodeProvider.getRecommendedFees().timeout(
-      const Duration(seconds: 10), // 타임아웃 초
-      onTimeout: () {
-        return Result.failure(
-            const AppError('NodeProvider', 'TimeoutException: Isolate response timeout'));
-      },
-    );
-
-    if (result.isFailure) {
-      _isRecommendedFeeFetchSuccess = false;
-      return;
-    }
-
-    satsPerVb = result.value.hourFee.toDouble();
+    RecommendedFee result = await getRecommendedFees(_nodeProvider);
+    satsPerVb = result.hourFee.toDouble();
 
     _availableDonationWalletList.clear(); // 지갑 동기화 완료 후 initialize 호출 시 기존 목록 초기화
     for (var wallet in singlesigWalletList) {

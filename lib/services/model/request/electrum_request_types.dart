@@ -29,10 +29,7 @@ class _VersionReq extends _ElectrumRequest {
   String get method => 'server.version';
 
   @override
-  List<dynamic> get params => [
-        "electrs/0.10.5",
-        ["1.1", "1.4"]
-      ];
+  List<dynamic> get params => ["coconut-wallet", "1.4"];
 }
 
 // blockchain.block.header
