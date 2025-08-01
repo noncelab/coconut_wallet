@@ -315,6 +315,9 @@ unsigned_tx_qr_screen:
   guide_hardware_wallet:
     step1: "하드웨어 월렛으로 아래 QR 코드를 스캔하여 서명 과정을 시작해 주세요."
 
+coconut_qr_scanner:
+  reading_extra_data: "추가로 수집할 데이터를 읽고 있습니다.\n계속 스캔해 주세요."
+
 # lib/screens/settings
 app_info_screen:
   made_by_team_pow: "포우팀이 만듭니다."

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
@@ -32,11 +33,11 @@ class CoconutQrScanner extends StatefulWidget {
 
 class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
   final double _borderWidth = 8;
   double scannerLoadingVerticalPos = 0;
 
   late AnimationController _loadingBarController;
-  late Animation<double> _animation;
 
   Timer? _scanTimeoutTimer;
   bool _showLoadingBar = false;
@@ -50,10 +51,6 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       vsync: this,
     )..repeat(reverse: true);
 
-    _animation = Tween<double>(begin: -1.0, end: 1.0).animate(CurvedAnimation(
-      parent: _loadingBarController,
-      curve: Curves.easeInOut,
-    ));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final rect = getQrViewRect();
       if (rect != null) {
@@ -72,6 +69,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   @override
   void dispose() {
+    _progressNotifier.dispose();
     _scanTimeoutTimer?.cancel();
     _loadingBarController.dispose();
     super.dispose();
@@ -111,6 +109,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           try {
             bool result = handler.joinData(scanData.code!);
             Logger.log('--> progress: ${handler.progress}');
+            _progressNotifier.value = handler.progress;
             if (!result && handler is! IFragmentedQrScanDataHandler) {
               widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage);
               resetScanState();
@@ -195,33 +194,21 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
               child: Visibility(
                 visible: _showLoadingBar,
                 child: Center(
-                  child: Container(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(horizontal: 100),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: _showLoadingBar
-                        ? AnimatedBuilder(
-                            animation: _animation,
-                            builder: (context, child) {
-                              return Align(
-                                alignment: Alignment(_animation.value, 0),
-                                child: child,
-                              );
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: _progressNotifier,
+                    builder: (context, value, _) {
+                      bool isScanningExtraData = value >= 0.99;
+                      return Padding(
+                        padding: EdgeInsets.only(top: isScanningExtraData ? 24 : 0),
+                        child: Text(
+                          textAlign: TextAlign.center,
+                          isScanningExtraData
+                              ? t.coconut_qr_scanner.reading_extra_data
+                              : "${(value * 100).toStringAsFixed(1)}%",
+                          style: CoconutTypography.body1_16,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
