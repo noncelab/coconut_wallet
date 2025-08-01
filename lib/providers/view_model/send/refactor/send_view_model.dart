@@ -332,7 +332,9 @@ class SendViewModel extends ChangeNotifier {
     var result = _txBuilder!.build();
 
     final estimatedFee = result.isSuccess
-        ? result.transaction!.estimateFee(feeRate, _selectedWalletItem!.walletType.addressType)
+        ? result.transaction!.estimateFee(feeRate, _selectedWalletItem!.walletType.addressType,
+            requiredSignature: _selectedWalletItem!.multisigConfig?.requiredSignature,
+            totalSigner: _selectedWalletItem!.multisigConfig?.totalSigner)
         : result.estimatedFee;
     _setEstimatedFee(estimatedFee);
 
