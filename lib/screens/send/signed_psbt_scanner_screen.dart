@@ -187,6 +187,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         _qrScannerKey++; // QR 스캐너 재생성을 위한 key 변경
       });
 
+      // 카메라 스캔 모드 전환 팝업 표시
+      _showCameraInitializingDialog();
+
       _isProcessing = false;
       return;
     }
@@ -206,6 +209,41 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         title: t.alert.scan_failed, message: errorMessage, onConfirm: () {
       _isProcessing = false;
       Navigator.pop(context);
+    });
+  }
+
+  void _showCameraInitializingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: CoconutColors.gray900,
+          content: SizedBox(
+            width: 120,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CoconutCircularIndicator(size: 120),
+                Text(
+                  t.signed_psbt_scanner_screen.bbqr_mode_switching,
+                  style: CoconutTypography.body2_14.copyWith(
+                    color: CoconutColors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     });
   }
 
