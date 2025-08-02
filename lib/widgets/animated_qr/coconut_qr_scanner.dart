@@ -205,7 +205,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
                           isScanningExtraData
                               ? t.coconut_qr_scanner.reading_extra_data
                               : "${(value * 100).toStringAsFixed(1)}%",
-                          style: CoconutTypography.body1_16,
+                          style: CoconutTypography.body1_16.setColor(CoconutColors.white),
                         ),
                       );
                     },
