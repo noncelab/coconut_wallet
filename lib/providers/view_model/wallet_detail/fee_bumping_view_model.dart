@@ -21,14 +21,10 @@ import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
-enum PaymentType {
-  sweep,
-  singlePayment,
-  batchPayment,
-}
 
 class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
@@ -155,554 +151,60 @@ class FeeBumpingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<TransactionAddress> _getExternalOutputs() => _pendingTx.outputAddressList
-      .where(
-          (output) => !_walletProvider.containsAddress(_walletId, output.address, isChange: true))
-      .toList();
-
   List<TransactionAddress> _getMyOutputs() => _pendingTx.outputAddressList
       .where((output) => _walletProvider.containsAddress(_walletId, output.address))
       .toList();
 
-  PaymentType? _getPaymentType() {
-    int inputCount = _pendingTx.inputAddressList.length;
-    int outputCount = _pendingTx.outputAddressList.length;
-
-    if (inputCount == 0 || outputCount == 0) {
-      return null; // wrong tx
-    }
-
-    final externalOutputs = _getExternalOutputs();
-
-    switch (outputCount) {
-      case 1:
-        return PaymentType.sweep;
-      case 2:
-        if (externalOutputs.length == 1) {
-          return PaymentType.singlePayment;
-        }
-      default:
-        return PaymentType.batchPayment;
-    }
-
-    return null;
-  }
-
   // 새 수수료로 트랜잭션 생성
   Future<void> initializeBumpingTransaction(double newFeeRate) async {
     if (_type == FeeBumpingType.cpfp) {
-      _initializeCpfpTransaction(newFeeRate);
+      await _initializeCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {
       await _initializeRbfTransaction(newFeeRate);
     }
   }
 
-  void _initializeCpfpTransaction(double newFeeRate) {
-    final myAddressList = _getMyOutputs();
-    int amount = myAddressList.fold(0, (sum, output) => sum + output.amount);
-    final List<Utxo> utxoList = [];
-    // 내 주소와 일치하는 utxo 찾기
-    for (var myAddress in myAddressList) {
-      final utxoStateList = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.incoming);
-      for (var utxoState in utxoStateList) {
-        if (myAddress.address == utxoState.to &&
-            myAddress.amount == utxoState.amount &&
-            _pendingTx.transactionHash == utxoState.transactionHash &&
-            _pendingTx.outputAddressList[utxoState.index].address == utxoState.to) {
-          utxoList.add(utxoState);
-        }
-      }
-    }
-
-    assert(utxoList.isNotEmpty);
-
-    // Transaction 생성
-    final recipient = _walletProvider.getReceiveAddress(_walletId).address;
-    double estimatedVSize;
-    try {
-      _bumpingTransaction =
-          Transaction.forSweep(utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
-      estimatedVSize = _estimateVirtualByte(_bumpingTransaction!);
-    } catch (e) {
-      // insufficient utxo for sweep
-      double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-      estimatedVSize = _pendingTx.vSize.toDouble();
-
-      debugPrint(
-          '😇 CPFP utxo (${utxoList.length})개 input: $inputSum / output: $amount / 👉🏻 입력한 fee rate: $newFeeRate');
-      if (!_ensureSufficientUtxos(utxoList, amount.toDouble(), estimatedVSize, newFeeRate)) {
-        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
-        return;
-      }
-
-      _bumpingTransaction =
-          Transaction.forSweep(utxoList, recipient, newFeeRate, walletListItemBase.walletBase);
-    }
-
-    debugPrint('😇 CPFP utxo (${utxoList.length})개');
-    _sendInfoProvider.setRecipientAddress(recipient);
-    _sendInfoProvider.setIsMaxMode(true);
-    _sendInfoProvider.setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
-    _setInsufficientUtxo(false);
-  }
-
   Future<void> _initializeRbfTransaction(double newFeeRate) async {
-    final type = _getPaymentType();
-    if (type == null) return;
-
-    final externalOutputs = _getExternalOutputs();
-    var externalSendingAmount = externalOutputs.fold(0, (sum, output) => sum + output.amount);
-
-    final int changeOutputIndex = _pendingTx.outputAddressList.lastIndexWhere((output) {
-      return _walletProvider.containsAddress(_walletId, output.address, isChange: true);
-    });
-    TransactionAddress changeTxAddress = changeOutputIndex == -1
-        ? TransactionAddress('', 0)
-        : _pendingTx.outputAddressList[changeOutputIndex];
-    var changeAddress = changeTxAddress.address;
-    var changeAmount = changeTxAddress.amount;
-    final bool hasChange = changeAddress.isNotEmpty && changeAmount > 0;
-
-    //input 정보 추출
-    List<Utxo> utxoList = await _getUtxoListForRbf();
-    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    double estimatedVSize = _bumpingTransaction == null
-        ? _pendingTx.vSize.toDouble()
-        : _estimateVirtualByte(_bumpingTransaction!);
-    // 내 주소가 output에 있는지 확인
-    final selfOutputs = externalOutputs
-        .where((output) => _walletProvider.containsAddress(_walletId, output.address))
-        .toList();
-    final containsSelfOutputs = selfOutputs.isNotEmpty;
-
-    List<TransactionAddress> newOutputList = List.from(_pendingTx.outputAddressList);
-    if (changeOutputIndex != -1) {
-      newOutputList.removeAt(changeOutputIndex);
-    }
-    double outputSum = newOutputList.fold(0, (sum, utxo) => sum + utxo.amount);
-
-    double requiredFee = estimatedVSize * newFeeRate;
-    debugPrint(
-        'RBF:: inputSum ($inputSum) outputSum ($outputSum) requiredFee ($requiredFee) newFeeRate ($newFeeRate)');
-    if (inputSum < outputSum + requiredFee) {
-      debugPrint('RBF:: ❌ input이 부족함');
-      // 1. 충분한 잔돈이 있음 - singlePayment or batchPayment
-      if (hasChange) {
-        if (changeAmount >= requiredFee) {
-          debugPrint('RBF:: 1️⃣ Change로 충당 가능함');
-          if (type == PaymentType.batchPayment) {
-            debugPrint('RBF:: 1.1.1. 배치 트잭');
-            _generateBatchTransation(
-                utxoList, _createPaymentMapForRbfBatchTx(newOutputList), changeAddress, newFeeRate);
-            return;
-          }
-
-          if (changeAmount == requiredFee) {
-            debugPrint('RBF:: 1.1.2. Change = newFee >>> 스윕 트잭');
-            _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
-            return;
-          }
-
-          debugPrint('RBF:: 1.1.3. Change > newFee >>> 싱글 트잭');
-          if (makeDust(utxoList, outputSum, requiredFee)) {
-            _generateSweepTransaction(type, utxoList, externalOutputs, newFeeRate, newOutputList,
-                outputSum, estimatedVSize, changeAddress);
-            return;
-          }
-
-          _generateSinglePayment(utxoList, externalOutputs[0].address, changeAddress, newFeeRate,
-              externalSendingAmount);
-          return;
-        } else {
-          debugPrint('RBF:: 2️⃣ Change로는 부족');
-          if (containsSelfOutputs) {
-            debugPrint('RBF::   내 아웃풋 조정');
-            final success = _handleTransactionWithSelfOutputs(
-              type,
-              utxoList,
-              newOutputList,
-              selfOutputs,
-              newFeeRate,
-              estimatedVSize,
-            );
-            if (!success) {
-              debugPrint('RBF:: ❌ _handleTransactionWithSelfOutputs 실패');
-            }
-            return;
-          }
-          debugPrint('RBF:: 2.2 내 아웃풋 없음');
-          if (!_ensureSufficientUtxos(utxoList, outputSum, estimatedVSize, newFeeRate)) {
-            return;
-          }
-        }
-      }
-      // 2. output에 내 주소가 있는 경우 amount 조정
-      else if (containsSelfOutputs) {
-        debugPrint('RBF:: 3️⃣ 내 아웃풋이 있음!');
-        final success = _handleTransactionWithSelfOutputs(
-            type, utxoList, newOutputList, selfOutputs, newFeeRate, estimatedVSize);
-        if (!success) {
-          debugPrint('RBF:: ❌ _handleTransactionWithSelfOutputs 실패');
-        }
-        return;
-      } else {
-        debugPrint('RBF:: 4️⃣ change도 없고, 내 아웃풋도 없음 >>> utxo 추가!');
-        if (!_ensureSufficientUtxos(utxoList, outputSum, estimatedVSize, newFeeRate)) {
-          return;
-        }
-        changeAddress = _walletProvider.getChangeAddress(_walletId).address;
-      }
-    }
-
-    debugPrint('RBF:: [$inputSum 합계 > $outputSum 합계] 또는 [if (inputSum < outputSum) 문 빠져나옴!!]');
-
-    if (makeDust(utxoList, outputSum, requiredFee)) {
-      _generateSweepTransaction(type, utxoList, externalOutputs, newFeeRate, newOutputList,
-          outputSum, estimatedVSize, changeAddress);
-      return;
-    }
-
-    if (type == PaymentType.sweep && changeAddress.isEmpty) {
-      _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
-      return;
-    }
-
-    if (changeAddress.isEmpty) {
-      changeAddress = _walletProvider.getChangeAddress(_walletId).address;
-    }
-
-    switch (type) {
-      case PaymentType.sweep:
-      case PaymentType.singlePayment:
-        _generateSinglePayment(
-            utxoList, externalOutputs[0].address, changeAddress, newFeeRate, externalSendingAmount);
-        break;
-      case PaymentType.batchPayment:
-        Map<String, int> paymentMap = _createPaymentMapForRbfBatchTx(newOutputList);
-        _generateBatchTransation(utxoList, paymentMap, changeAddress, newFeeRate);
-        break;
-      default:
-        break;
-    }
-  }
-
-  void _generateSweepTransaction(
-      PaymentType type,
-      List<Utxo> utxoList,
-      List<TransactionAddress> externalOutputs,
-      double newFeeRate,
-      List<TransactionAddress> newOutputList,
-      double outputSum,
-      double estimatedVSize,
-      String changeAddress) {
-    switch (type) {
-      case PaymentType.sweep:
-      case PaymentType.singlePayment:
-        _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
-        break;
-      case PaymentType.batchPayment:
-        Map<String, int> paymentMap = _createPaymentMapForRbfBatchTx(newOutputList);
-        final maxFee = utxoList.fold(0, (sum, utxo) => sum + utxo.amount) - outputSum;
-        final maxFeeRate = maxFee / estimatedVSize;
-        _generateBatchTransation(utxoList, paymentMap, changeAddress, maxFeeRate);
-        break;
-    }
-    return;
-  }
-
-  bool makeDust(List<Utxo> utxoList, double outputSum, double requiredFee) {
-    return utxoList.fold(0, (sum, utxo) => sum + utxo.amount) - outputSum - requiredFee < dustLimit;
-  }
-
-  bool _handleTransactionWithSelfOutputs(
-    PaymentType type,
-    List<Utxo> utxoList,
-    List<TransactionAddress> newOutputList,
-    List<TransactionAddress> selfOutputs,
-    double newFeeRate,
-    double estimatedVSize,
-  ) {
-    if (type == PaymentType.batchPayment) {
-      debugPrint('RBF:: _handleBatchTransactionWithSelfOutputs 호출');
-      return _handleBatchTransactionWithSelfOutputs(
-        utxoList,
-        newOutputList,
-        selfOutputs,
-        newFeeRate,
-        estimatedVSize,
-      );
-    }
-    return _handleSingleOrSweepWithSelfOutputs(
-        utxoList, newOutputList, selfOutputs, newFeeRate, estimatedVSize);
-  }
-
-  bool _handleBatchTransactionWithSelfOutputs(
-    List<Utxo> utxoList,
-    List<TransactionAddress> newOutputList,
-    List<TransactionAddress> selfOutputs,
-    double newFeeRate,
-    double estimatedVSize,
-  ) {
-    Map<String, int> paymentMap = {};
-    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    double outputSum = newOutputList.fold(0, (sum, output) => sum + output.amount);
-
-    // debugPrint(
-    //     'RBF:: inputSum: $inputSum, outputSum: $outputSum fee current: ${outputSum - inputSum}');
-
-    double requiredFee = estimatedVSize * newFeeRate;
-    int remainingFee = (requiredFee - _pendingTx.fee).toInt();
-    debugPrint('필요 : $requiredFee 기존: ${_pendingTx.fee} 추가할 remainingFee: $remainingFee');
-    debugPrint('☑️ 기존 전송 정보');
-    for (var output in newOutputList) {
-      debugPrint('output: ${output.address} ${output.amount}');
-    }
-
-    for (var output in newOutputList) {
-      if (selfOutputs.any((selfOutput) => selfOutput.address == output.address)) {
-        debugPrint('내 리시빙 주소!');
-        debugPrint(
-            '${output.address.substring(output.address.length - 5, output.address.length)} ${output.amount}');
-        if (remainingFee == 0) {
-          paymentMap[output.address] = output.amount;
-        } else {
-          int deduction =
-              remainingFee > output.amount ? output.amount.toInt() : remainingFee.toInt();
-
-          if (output.amount - deduction > 0) {
-            paymentMap[output.address] = output.amount - deduction;
-          }
-          remainingFee -= deduction;
-        }
-      } else {
-        debugPrint('남의 주소!');
-        debugPrint(
-            '${output.address.substring(output.address.length - 5, output.address.length)} ${output.amount}');
-        paymentMap[output.address] = output.amount;
-      }
-    }
-
-    debugPrint('✅ 조정된 전송 정보');
-    for (var output in paymentMap.entries) {
-      debugPrint(
-          'output: ${output.key} ${output.value} 내 주소? ${selfOutputs.any((selfOutput) => selfOutput.address == output.key)}');
-    }
-    try {
-      int totalAmount = paymentMap.values.reduce((a, b) => a + b);
-      if (remainingFee > 0) {
-        if (!_ensureSufficientUtxos(utxoList, totalAmount.toDouble(), estimatedVSize, newFeeRate)) {
-          debugPrint('RBF:: ❌ _handleBatchTransactionWithSelfOutputs 실패');
-          return false;
-        }
-      }
-      debugPrint('✅ estimated fee: ${estimatedVSize * newFeeRate}');
-      debugPrint('✅ total input/output  : $inputSum / $outputSum');
-      debugPrint('✅ change  : ${inputSum - outputSum}');
-      debugPrint('✅ total fee to send: $totalAmount');
-
-      _generateBatchTransation(
-          utxoList, paymentMap, _walletProvider.getChangeAddress(_walletId).address, newFeeRate);
-    } catch (e) {
-      _setInsufficientUtxo(true);
-      debugPrint('RBF:: ❌ _handleBatchTransactionWithSelfOutputs 실패');
-      return false;
-    }
-
-    return true;
-  }
-
-  bool _handleSingleOrSweepWithSelfOutputs(
-    List<Utxo> utxoList,
-    List<TransactionAddress> outputList,
-    List<TransactionAddress> selfOutputs,
-    double newFeeRate,
-    double estimatedVSize,
-  ) {
-    double outputSum = outputList.fold(0, (sum, output) => sum + output.amount);
-    final newFee = estimatedVSize * newFeeRate;
-    final myOutputAmount = selfOutputs[0].amount;
-
-    // debugPrint('RBF:: 싱글 또는 스윕 >> amount 조정 $externalSendingAmount');
-    int adjustedMyOuputAmount = myOutputAmount - (newFee - _pendingTx.fee).toInt();
-    debugPrint('RBF::                        조정 후 $adjustedMyOuputAmount');
-
-    if (adjustedMyOuputAmount == 0) {
-      debugPrint('RBF:: 조정해서 내가 받을 금액 0 - 남의 주소에게 보내는 스윕 트잭');
-      _generateSweepPayment(utxoList, selfOutputs[0].address, newFeeRate);
-      return true;
-    }
-
-    if (adjustedMyOuputAmount > 0 && adjustedMyOuputAmount > dustLimit) {
-      debugPrint('RBF:: 금액 조정 - $adjustedMyOuputAmount');
-      _generateSinglePayment(utxoList, selfOutputs[0].address,
-          _walletProvider.getChangeAddress(_walletId).address, newFeeRate, adjustedMyOuputAmount);
-      return true;
-    }
-
-    debugPrint('RBF:: ❌ amount 조정해도 안됨 > utxo 추가 - amount 조정 없이 utxo 추가');
-    if (!_ensureSufficientUtxos(
-      utxoList,
-      outputSum,
-      estimatedVSize,
+    final rbfBuilder = RbfBuilder(
+      _walletProvider,
+      _sendInfoProvider,
+      _pendingTx,
+      _walletId,
       newFeeRate,
-    )) {
-      debugPrint('RBF:: ❌ _handleSingleOrSweepWithSelfOutputs 실패');
-      return false;
-    }
-    debugPrint('RBF:: ✅ utxo 추가 완료 보낼 수량 ${outputList[0].amount}}');
-    _generateSinglePayment(utxoList, outputList[0].address,
-        _walletProvider.getChangeAddress(_walletId).address, newFeeRate, outputList[0].amount);
-    return true;
+      _nodeProvider,
+      _addressRepository,
+      _utxoRepository,
+      _walletListItemBase,
+    );
+
+    // RbfBuilder를 사용하여 RBF 트랜잭션 초기화
+    _bumpingTransaction = await rbfBuilder.build();
+
+    // RbfBuilder의 insufficientUtxos 상태를 FeeBumpingViewModel에 반영
+    _setInsufficientUtxo(rbfBuilder.insufficientUtxos);
   }
 
-  void _generateSinglePayment(
-      List<Utxo> inputs, String recipient, String changeAddress, double feeRate, int amount) {
-    try {
-      _bumpingTransaction = Transaction.forSinglePayment(
-          inputs,
-          recipient,
-          _addressRepository.getDerivationPath(_walletId, changeAddress),
-          amount,
-          feeRate,
-          walletListItemBase.walletBase);
-      _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(amount));
-      _sendInfoProvider.setIsMaxMode(false);
-      _setInsufficientUtxo(false);
-      debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');
-    } on Exception catch (e) {
-      int? estimatedFee = extractEstimatedFeeFromException(e);
-      if (estimatedFee != null) {
-        _generateSweepPayment(inputs, recipient, feeRate);
-      }
-    }
-  }
+  Future<void> _initializeCpfpTransaction(double newFeeRate) async {
+    final cpfpBuilder = CpfpBuilder(
+      _walletProvider,
+      _sendInfoProvider,
+      _pendingTx,
+      _walletId,
+      newFeeRate,
+      _utxoRepository,
+      _walletListItemBase,
+    );
 
-  void _generateSweepPayment(List<Utxo> inputs, String recipient, double feeRate) {
-    _bumpingTransaction =
-        Transaction.forSweep(inputs, recipient, feeRate, _walletListItemBase.walletBase);
-    _sendInfoProvider.setRecipientAddress(recipient);
-    _sendInfoProvider.setIsMaxMode(true);
-    _setInsufficientUtxo(false);
-    debugPrint('RBF::    ▶️ 스윕 트잭 생성(fee rate: $feeRate)');
-  }
+    // CpfpBuilder를 사용하여 CPFP 트랜잭션 초기화
+    _bumpingTransaction = await cpfpBuilder.build();
 
-  void _generateBatchTransation(
-      List<Utxo> inputs, Map<String, int> paymentMap, String changeAddress, double feeRate) {
-    _bumpingTransaction = Transaction.forBatchPayment(
-        inputs,
-        paymentMap,
-        _addressRepository.getDerivationPath(_walletId, changeAddress),
-        feeRate,
-        _walletListItemBase.walletBase);
-    _sendInfoProvider
-        .setRecipientsForBatch(paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
-    _sendInfoProvider.setIsMaxMode(false);
-    _setInsufficientUtxo(false);
-    debugPrint('RBF::    ▶️ 배치 트잭 생성(fee rate: $feeRate)');
-  }
-
-  bool _ensureSufficientUtxos(
-      List<Utxo> utxoList, double outputSum, double estimatedVSize, double newFeeRate) {
-    double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    double requiredAmount = outputSum + estimatedVSize * newFeeRate;
-
-    List<UtxoState> unspentUtxos = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
-    unspentUtxos.sort((a, b) => b.amount.compareTo(a.amount));
-    int sublistIndex = 0; // for unspentUtxos
-    while (inputSum <= requiredAmount && sublistIndex < unspentUtxos.length) {
-      final additionalUtxos =
-          _getAdditionalUtxos(unspentUtxos.sublist(sublistIndex), outputSum - inputSum);
-      if (additionalUtxos.isEmpty) {
-        debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
-        _setInsufficientUtxo(true);
-        return false;
-      }
-      utxoList.addAll(additionalUtxos);
-      sublistIndex += additionalUtxos.length;
-
-      int additionalVSize = _getVSizeIncreasement() * additionalUtxos.length;
-      requiredAmount = outputSum + (estimatedVSize + additionalVSize) * newFeeRate;
-      inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
-    }
-
-    if (inputSum <= requiredAmount) {
-      _setInsufficientUtxo(true);
-      return false;
-    }
-
-    _setInsufficientUtxo(false);
-    return true;
+    // CpfpBuilder의 insufficientUtxos 상태를 FeeBumpingViewModel에 반영
+    _setInsufficientUtxo(cpfpBuilder.insufficientUtxos);
   }
 
   void _setInsufficientUtxo(bool value) {
     _insufficientUtxos = value;
     notifyListeners();
-  }
-
-  int _getVSizeIncreasement() {
-    switch (walletListItemBase.walletType) {
-      case WalletType.singleSignature:
-        return 68;
-      case WalletType.multiSignature:
-        final wallet = walletListItemBase.walletBase as MultisignatureWallet;
-        final m = wallet.requiredSignature;
-        final n = wallet.totalSigner;
-        return 1 + (m * 73) + (n * 34) + 2;
-      default:
-        return 68;
-    }
-  }
-
-  // todo: utxo lock 기능 추가 시 utxo 제외 로직 필요
-  List<Utxo> _getAdditionalUtxos(List<Utxo> unspentUtxo, double requiredAmount) {
-    List<Utxo> additionalUtxos = [];
-    double sum = 0;
-    if (unspentUtxo.isNotEmpty) {
-      for (var utxo in unspentUtxo) {
-        sum += utxo.amount;
-        additionalUtxos.add(utxo);
-        if (sum >= requiredAmount) {
-          break;
-        }
-      }
-    }
-
-    if (sum < requiredAmount) {
-      return [];
-    }
-
-    return additionalUtxos;
-  }
-
-  Map<String, int> _createPaymentMapForRbfBatchTx(List<TransactionAddress> outputAddressList) {
-    Map<String, int> paymentMap = {};
-
-    for (TransactionAddress addressInfo in outputAddressList) {
-      paymentMap[addressInfo.address] = addressInfo.amount;
-    }
-
-    return paymentMap;
-  }
-
-  Future<List<Utxo>> _getUtxoListForRbf() async {
-    final txResult = await _nodeProvider.getTransaction(_pendingTx.transactionHash);
-    if (txResult.isFailure) {
-      debugPrint('❌ 트랜잭션 조회 실패');
-      return [];
-    }
-
-    final tx = txResult.value;
-    final List<TransactionInput> inputList = Transaction.parse(tx).inputs;
-    List<Utxo> utxoList = [];
-    for (var input in inputList) {
-      var utxo =
-          _utxoRepository.getUtxoState(_walletId, getUtxoId(input.transactionHash, input.index));
-      if (utxo != null) {
-        utxoList.add(Utxo(utxo.transactionHash, utxo.index, utxo.amount, utxo.derivationPath));
-      }
-    }
-
-    return utxoList;
   }
 
   // 노드 프로바이더에서 추천 수수료 조회
