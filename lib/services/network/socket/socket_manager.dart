@@ -79,11 +79,14 @@ class SocketManager {
   }
 
   Future<bool> connect(String host, int port, {bool ssl = true}) async {
-    Logger.log('SocketManager: Connecting to $host:$port (SSL: $ssl)');
-
     _host = host;
     _port = port;
     _ssl = ssl;
+
+    final isOnionHost = _isOnionAddress(host);
+    _ssl = isOnionHost ? false : ssl;
+
+    Logger.log('SocketManager: Connecting to $host:$port (SSL: $_ssl)');
 
     if (_connectionAttempts >= _maxConnectionAttempts) {
       _connectionStatus = SocketConnectionStatus.terminated;
@@ -99,24 +102,10 @@ class SocketManager {
     _connectionStatus = SocketConnectionStatus.connecting;
 
     final isTailscale = await _detectTailscaleNetwork();
-    final isOnionHost = _isOnionAddress(host);
+
     final connectionTimeout = getConnectionTimeout(isOnionHost, isTailscale);
 
     try {
-      // Orbot 설치 여부 확인
-      if (isOnionHost && Platform.isAndroid) {
-        final isOrbotInstalled = await _checkOrbotInstallation();
-        if (!isOrbotInstalled) {
-          onConnectionFailed?.call();
-          Logger.log('🧅 SocketManager: Detected .onion address, but Orbot is not installed');
-          return false;
-        }
-        Logger.log(
-            '🧅 SocketManager: Detected .onion address, and Orbit installed $isOrbotInstalled');
-      }
-
-      Logger.log('🧅 SocketManager: Detected .onion address? $isOnionHost');
-
       // ssl false이거나 tailscale이 감지되는 경우, 일반 연결 사용
       if (!_ssl || isTailscale || isOnionHost) {
         Logger.log('Socket connection: $_host:$_port');
@@ -140,12 +129,6 @@ class SocketManager {
 
   bool _isOnionAddress(String host) {
     return host.toLowerCase().endsWith('.onion');
-  }
-
-  Future<bool> _checkOrbotInstallation() async {
-    const platform = MethodChannel('orbot_check');
-    final bool installed = await platform.invokeMethod('isOrbotInstalled') ?? false;
-    return installed;
   }
 
   Future<bool> _detectTailscaleNetwork() async {
