@@ -599,7 +599,7 @@ class SendViewModel extends ChangeNotifier {
     try {
       _currentUnit = isBtcUnit ? BitcoinUnit.sats : BitcoinUnit.btc;
       for (RecipientInfo recipient in recipientList) {
-        if (recipient.amount.isNotEmpty && recipient.amount != '0' && recipient.amount != '0.0') {
+        if (recipient.amount.isNotEmpty && recipient.amount != '0') {
           recipient.amount = (isBtcUnit
                   ? UnitUtil.convertSatoshiToBitcoin(int.parse(recipient.amount))
                   : UnitUtil.convertBitcoinToSatoshi(double.parse(recipient.amount)))
