@@ -59,5 +59,22 @@
 	<true/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- 외부 URL 스킴 접근 허용 -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>orbot</string>
+		<string>onionbrowser</string>
+		<string>http</string>
+		<string>https</string>
+	</array>
+	
+	<!-- 네트워크 사용 권한 -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

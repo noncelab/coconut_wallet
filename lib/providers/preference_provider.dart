@@ -310,4 +310,21 @@ class PreferenceProvider extends ChangeNotifier {
 
     return DefaultElectrumServer.fromServerType(serverName).server;
   }
+
+  /// 사용자 서버 정보 불러오기
+  Future<List<ElectrumServer>> getUserServers() async {
+    return (await _sharedPrefs.getUserServers()) ?? [];
+  }
+
+  /// 사용자 서버 추가
+  Future<void> addUserServer(String host, int port, bool ssl) async {
+    await _sharedPrefs.addUserServer(ElectrumServer.custom(host, port, ssl));
+    notifyListeners();
+  }
+
+  /// 사용자 서버 삭제
+  Future<void> removeUserServer(ElectrumServer server) async {
+    await _sharedPrefs.removeUserServer(server);
+    notifyListeners();
+  }
 }

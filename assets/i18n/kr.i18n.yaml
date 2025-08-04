@@ -364,6 +364,7 @@ settings_screen:
     use_ssl: "SSL 사용"
     ssl_port: "SSL 포트: $port"
     default_server: "기본 서버"
+    user_servers: "내 서버"
     reset: "초기화"
     save: "저장"
     error_msg:
@@ -373,6 +374,9 @@ settings_screen:
       connection_failed: "연결할 수 없습니다!"
       connecting: "연결 중입니다"
       connected: "연결되었습니다"
+    popup:
+      delete_server_info: "서버 정보 삭제"
+      delete_server_info_description: "저장된 서버 정보를 삭제하시겠어요?"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
