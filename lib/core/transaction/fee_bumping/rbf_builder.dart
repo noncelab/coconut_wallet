@@ -22,6 +22,28 @@ enum PaymentType {
   batchPayment,
 }
 
+enum TransactionType {
+  single,
+  sweep,
+  batch,
+}
+
+class RbfTransactionResult {
+  final Transaction transaction;
+  final TransactionType type;
+  final String? recipientAddress;
+  final double? amount;
+  final Map<String, double>? recipientsForBatch;
+
+  RbfTransactionResult({
+    required this.transaction,
+    required this.type,
+    this.recipientAddress,
+    this.amount,
+    this.recipientsForBatch,
+  });
+}
+
 // RBF 컨텍스트 데이터 클래스
 class _RbfContext {
   final List<Utxo> utxoList;
@@ -95,8 +117,8 @@ class _ChangeInfo {
 }
 
 class RbfBuilder {
-  final WalletProvider _walletProvider;
-  final SendInfoProvider _sendInfoProvider;
+  final Function(int, String, {bool? isChange}) _containsAddress;
+  final Function(int) _getChangeAddress;
   final TransactionRecord _pendingTx;
   final int _walletId;
   final double feeRate;
@@ -110,8 +132,8 @@ class RbfBuilder {
   bool get insufficientUtxos => _insufficientUtxos;
 
   RbfBuilder(
-    this._walletProvider,
-    this._sendInfoProvider,
+    this._containsAddress,
+    this._getChangeAddress,
     this._pendingTx,
     this._walletId,
     this.feeRate,
@@ -121,9 +143,62 @@ class RbfBuilder {
     this._walletListItemBase,
   );
 
-  Future<Transaction?> build() async {
+  Future<RbfTransactionResult?> build() async {
     await _initializeTransaction(feeRate);
-    return _bumpingTransaction;
+    if (_bumpingTransaction == null) return null;
+
+    return _createTransactionResult();
+  }
+
+  RbfTransactionResult _createTransactionResult() {
+    // 트랜잭션 타입을 판단하기 위해 PaymentType을 확인
+    final paymentType = _getPaymentType();
+
+    switch (paymentType) {
+      case PaymentType.singlePayment:
+        return RbfTransactionResult(
+          transaction: _bumpingTransaction!,
+          type: TransactionType.single,
+          amount: _bumpingTransaction!.outputs.first.amount.toDouble(),
+        );
+      case PaymentType.sweep:
+        return RbfTransactionResult(
+          transaction: _bumpingTransaction!,
+          type: TransactionType.sweep,
+          recipientAddress: _bumpingTransaction!.outputs.first.getAddress(),
+        );
+      case PaymentType.batchPayment:
+        final recipientsForBatch = <String, double>{};
+        for (var output in _bumpingTransaction!.outputs) {
+          recipientsForBatch[output.getAddress()] = output.amount.toDouble();
+        }
+        return RbfTransactionResult(
+          transaction: _bumpingTransaction!,
+          type: TransactionType.batch,
+          recipientsForBatch: recipientsForBatch,
+        );
+      default:
+        return RbfTransactionResult(
+          transaction: _bumpingTransaction!,
+          type: TransactionType.single,
+        );
+    }
+  }
+
+  RbfBuilder copyWith({
+    double? feeRate,
+  }) {
+    return RbfBuilder(
+      _containsAddress,
+      _getChangeAddress,
+      _pendingTx,
+      _walletId,
+      feeRate ?? this.feeRate,
+      _nodeProvider,
+      _addressRepository,
+      _utxoRepository,
+      _walletListItemBase,
+    );
   }
 
   Future<void> _initializeTransaction(double newFeeRate) async {
@@ -157,9 +232,8 @@ class RbfBuilder {
         ? _pendingTx.vSize.toDouble()
         : _estimateVirtualByte(_bumpingTransaction!);
 
-    final selfOutputs = externalOutputs
-        .where((output) => _walletProvider.containsAddress(_walletId, output.address))
-        .toList();
+    final selfOutputs =
+        externalOutputs.where((output) => _containsAddress(_walletId, output.address)).toList();
     final containsSelfOutputs = selfOutputs.isNotEmpty;
 
     final newOutputList = _getNewOutputList(changeInfo.changeOutputIndex);
@@ -190,7 +264,7 @@ class RbfBuilder {
   // Change 정보 추출
   _ChangeInfo _getChangeInfo() {
     final changeOutputIndex = _pendingTx.outputAddressList.lastIndexWhere((output) {
-      return _walletProvider.containsAddress(_walletId, output.address, isChange: true);
+      return _containsAddress(_walletId, output.address, isChange: true);
     });
 
     final changeTxAddress = changeOutputIndex == -1
@@ -313,9 +387,8 @@ class RbfBuilder {
       return;
     }
 
-    final finalChangeAddress = context.changeAddress.isEmpty
-        ? _walletProvider.getChangeAddress(_walletId).address
-        : context.changeAddress;
+    final finalChangeAddress =
+        context.changeAddress.isEmpty ? _getChangeAddress(_walletId) : context.changeAddress;
 
     switch (context.type) {
       case PaymentType.sweep:
@@ -413,8 +486,7 @@ class RbfBuilder {
   }
 
   List<TransactionAddress> _getExternalOutputs() => _pendingTx.outputAddressList
-      .where(
-          (output) => !_walletProvider.containsAddress(_walletId, output.address, isChange: true))
+      .where((output) => !_containsAddress(_walletId, output.address, isChange: true))
       .toList();
   PaymentType? _getPaymentType() {
     int inputCount = _pendingTx.inputAddressList.length;
@@ -551,7 +623,7 @@ class RbfBuilder {
       debugPrint('✅ total fee to send: $totalAmount');
 
       _generateBatchTransation(
-          utxoList, paymentMap, _walletProvider.getChangeAddress(_walletId).address, newFeeRate);
+          utxoList, paymentMap, _getChangeAddress(_walletId).address, newFeeRate);
     } catch (e) {
       _setInsufficientUtxo(true);
       debugPrint('RBF:: ❌ _handleBatchTransactionWithSelfOutputs 실패');
@@ -584,8 +656,8 @@ class RbfBuilder {
 
     if (adjustedMyOuputAmount > 0 && adjustedMyOuputAmount > dustLimit) {
       debugPrint('RBF:: 금액 조정 - $adjustedMyOuputAmount');
-      _generateSinglePayment(utxoList, selfOutputs[0].address,
-          _walletProvider.getChangeAddress(_walletId).address, newFeeRate, adjustedMyOuputAmount);
+      _generateSinglePayment(utxoList, selfOutputs[0].address, _getChangeAddress(_walletId).address,
+          newFeeRate, adjustedMyOuputAmount);
       return true;
     }
 
@@ -600,8 +672,8 @@ class RbfBuilder {
       return false;
     }
     debugPrint('RBF:: ✅ utxo 추가 완료 보낼 수량 ${outputList[0].amount}}');
-    _generateSinglePayment(utxoList, outputList[0].address,
-        _walletProvider.getChangeAddress(_walletId).address, newFeeRate, outputList[0].amount);
+    _generateSinglePayment(utxoList, outputList[0].address, _getChangeAddress(_walletId).address,
+        newFeeRate, outputList[0].amount);
     return true;
   }
 
@@ -615,8 +687,6 @@ class RbfBuilder {
           amount,
           feeRate,
           _walletListItemBase.walletBase);
-      _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(amount));
-      _sendInfoProvider.setIsMaxMode(false);
       _setInsufficientUtxo(false);
       debugPrint('RBF::    ▶️ 싱글 트잭 생성(fee rate: $feeRate)');
     } on Exception catch (e) {
@@ -630,8 +700,6 @@ class RbfBuilder {
   void _generateSweepPayment(List<Utxo> inputs, String recipient, double feeRate) {
     _bumpingTransaction =
         Transaction.forSweep(inputs, recipient, feeRate, _walletListItemBase.walletBase);
-    _sendInfoProvider.setRecipientAddress(recipient);
-    _sendInfoProvider.setIsMaxMode(true);
     _setInsufficientUtxo(false);
     debugPrint('RBF::    ▶️ 스윕 트잭 생성(fee rate: $feeRate)');
   }
@@ -644,9 +712,6 @@ class RbfBuilder {
         _addressRepository.getDerivationPath(_walletId, changeAddress),
         feeRate,
         _walletListItemBase.walletBase);
-    _sendInfoProvider
-        .setRecipientsForBatch(paymentMap.map((key, value) => MapEntry(key, value.toDouble())));
-    _sendInfoProvider.setIsMaxMode(false);
     _setInsufficientUtxo(false);
     debugPrint('RBF::    ▶️ 배치 트잭 생성(fee rate: $feeRate)');
   }

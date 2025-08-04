@@ -14,6 +14,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
 import 'package:flutter/foundation.dart';
@@ -155,8 +156,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   Future<void> _initializeRbfTransaction(double newFeeRate) async {
     final rbfBuilder = RbfBuilder(
-      _walletProvider,
-      _sendInfoProvider,
+      _walletProvider.containsAddress,
+      _walletProvider.getChangeAddress,
       _pendingTx,
       _walletId,
       newFeeRate,
@@ -167,7 +168,34 @@ class FeeBumpingViewModel extends ChangeNotifier {
     );
 
     // RbfBuilder를 사용하여 RBF 트랜잭션 초기화
-    _bumpingTransaction = await rbfBuilder.build();
+    final rbfResult = await rbfBuilder.build();
+
+    if (rbfResult != null) {
+      _bumpingTransaction = rbfResult.transaction;
+
+      // 트랜잭션 타입에 따라 _sendInfoProvider 설정
+      switch (rbfResult.type) {
+        case TransactionType.single:
+          if (rbfResult.amount != null) {
+            _sendInfoProvider
+                .setAmount(UnitUtil.convertSatoshiToBitcoin(rbfResult.amount!.toInt()));
+          }
+          _sendInfoProvider.setIsMaxMode(false);
+          break;
+        case TransactionType.sweep:
+          if (rbfResult.recipientAddress != null) {
+            _sendInfoProvider.setRecipientAddress(rbfResult.recipientAddress!);
+          }
+          _sendInfoProvider.setIsMaxMode(true);
+          break;
+        case TransactionType.batch:
+          if (rbfResult.recipientsForBatch != null) {
+            _sendInfoProvider.setRecipientsForBatch(rbfResult.recipientsForBatch!);
+          }
+          _sendInfoProvider.setIsMaxMode(false);
+          break;
+      }
+    }
 
     // RbfBuilder의 insufficientUtxos 상태를 FeeBumpingViewModel에 반영
     _setInsufficientUtxo(rbfBuilder.insufficientUtxos);
@@ -175,8 +203,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   Future<void> _initializeCpfpTransaction(double newFeeRate) async {
     final cpfpBuilder = CpfpBuilder(
-      _walletProvider,
-      _sendInfoProvider,
+      _walletProvider.containsAddress,
+      _walletProvider.getReceiveAddress,
       _pendingTx,
       _walletId,
       newFeeRate,
@@ -185,7 +213,16 @@ class FeeBumpingViewModel extends ChangeNotifier {
     );
 
     // CpfpBuilder를 사용하여 CPFP 트랜잭션 초기화
-    _bumpingTransaction = await cpfpBuilder.build();
+    final cpfpResult = await cpfpBuilder.build();
+
+    if (cpfpResult != null) {
+      _bumpingTransaction = cpfpResult.transaction;
+
+      // CPFP 트랜잭션에 따라 _sendInfoProvider 설정
+      _sendInfoProvider.setRecipientAddress(cpfpResult.recipientAddress);
+      _sendInfoProvider.setIsMaxMode(true);
+      _sendInfoProvider.setAmount(UnitUtil.convertSatoshiToBitcoin(cpfpResult.amount.toInt()));
+    }
 
     // CpfpBuilder의 insufficientUtxos 상태를 FeeBumpingViewModel에 반영
     _setInsufficientUtxo(cpfpBuilder.insufficientUtxos);

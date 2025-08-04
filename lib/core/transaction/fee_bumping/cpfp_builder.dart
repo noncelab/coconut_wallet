@@ -10,9 +10,21 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:flutter/foundation.dart';
 
+class CpfpTransactionResult {
+  final Transaction transaction;
+  final String recipientAddress;
+  final double amount;
+
+  CpfpTransactionResult({
+    required this.transaction,
+    required this.recipientAddress,
+    required this.amount,
+  });
+}
+
 class CpfpBuilder {
-  final WalletProvider _walletProvider;
-  final SendInfoProvider _sendInfoProvider;
+  final Function(int, String) _containsAddress;
+  final Function(int) _getReceiveAddress;
   final TransactionRecord _pendingTx;
   final int _walletId;
   final double feeRate;
@@ -24,8 +36,8 @@ class CpfpBuilder {
   bool get insufficientUtxos => _insufficientUtxos;
 
   CpfpBuilder(
-    this._walletProvider,
-    this._sendInfoProvider,
+    this._containsAddress,
+    this._getReceiveAddress,
     this._pendingTx,
     this._walletId,
     this.feeRate,
@@ -33,9 +45,34 @@ class CpfpBuilder {
     this._walletListItemBase,
   );
 
-  Future<Transaction?> build() async {
+  Future<CpfpTransactionResult?> build() async {
     await _initializeTransaction(feeRate);
-    return _bumpingTransaction;
+    if (_bumpingTransaction == null) return null;
+
+    return _createTransactionResult();
+  }
+
+  CpfpBuilder copyWith({
+    Function(int)? getReceiveAddress,
+    Function(int, String)? containsAddress,
+  }) {
+    return CpfpBuilder(
+      containsAddress ?? _containsAddress,
+      getReceiveAddress ?? _getReceiveAddress,
+      _pendingTx,
+      _walletId,
+      feeRate,
+      _utxoRepository,
+      _walletListItemBase,
+    );
+  }
+
+  CpfpTransactionResult _createTransactionResult() {
+    return CpfpTransactionResult(
+      transaction: _bumpingTransaction!,
+      recipientAddress: _getReceiveAddress(_walletId).address,
+      amount: _bumpingTransaction!.outputs[0].amount.toDouble(),
+    );
   }
 
   Future<void> _initializeTransaction(double newFeeRate) async {
@@ -59,7 +96,7 @@ class CpfpBuilder {
     assert(utxoList.isNotEmpty);
 
     // Transaction 생성
-    final recipient = _walletProvider.getReceiveAddress(_walletId).address;
+    final recipient = _getReceiveAddress(_walletId).address;
     double estimatedVSize;
     try {
       _bumpingTransaction =
@@ -82,14 +119,11 @@ class CpfpBuilder {
     }
 
     debugPrint('😇 CPFP utxo (${utxoList.length})개');
-    _sendInfoProvider.setRecipientAddress(recipient);
-    _sendInfoProvider.setIsMaxMode(true);
-    _sendInfoProvider.setAmount(_bumpingTransaction!.outputs[0].amount.toDouble());
     _setInsufficientUtxo(false);
   }
 
   List<TransactionAddress> _getMyOutputs() => _pendingTx.outputAddressList
-      .where((output) => _walletProvider.containsAddress(_walletId, output.address))
+      .where((output) => _containsAddress(_walletId, output.address))
       .toList();
 
   void _setInsufficientUtxo(bool value) {
