@@ -110,6 +110,7 @@ class SendViewModel extends ChangeNotifier {
   int _currentIndex = 0;
   int get currentIndex => _currentIndex;
   int get lastIndex => _recipientList.length - 1;
+  int get addRecipientCardIndex => _recipientList.length;
 
   bool _showAddressBoard = false;
   bool get showAddressBoard => _showAddressBoard;
@@ -526,7 +527,7 @@ class SendViewModel extends ChangeNotifier {
 
   void _updateFinalErrorMessage() {
     String message = "";
-    // [전체] 충분하지 않은 Balance > [마지막 수신자] 전송 금액 - 예상 수수료가 dustLimit보다 크지 않음 > [수신자] dust 보다 적은 금액을 보내는 경우 > [수신자] 주소가 틀림 > [수신자] 중복된 주소가 있는 경우 > [수신자] empty 값 또는 0이 존재 > 예상 수수료 오류
+    // [전체] 충분하지 않은 Balance 입력 > [수신자] dust 보다 적은 금액을 입력 > [마지막 수신자] 전송 금액 - 예상 수수료가 dustLimit보다 크지 않음 > [수신자] 주소에 에러가 있는 경우 > 최소값보다 낮은 수수료 입력
     if (_isAmountSumExceedsBalance.isError) {
       message = _isAmountSumExceedsBalance.getMessage(currentUnit);
     } else if (_recipientList.any((r) => r.minimumAmountError.isError)) {

@@ -43,6 +43,10 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isChangeTooltipDisabled;
   bool get isChangeTooltipDisabled => language == 'kr' ? _isChangeTooltipDisabled : true;
 
+  /// 보내기 화면 [수신자 추가하기 카드] 확인 여부
+  late bool _hasSeenAddRecipientCard;
+  bool get hasSeenAddRecipientCard => _hasSeenAddRecipientCard;
+
   /// 언어 설정
   late String _language;
   String get language => _language;
@@ -80,6 +84,7 @@ class PreferenceProvider extends ChangeNotifier {
         _walletPreferencesRepository.getExcludedWalletIds().toList();
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
+    _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -313,6 +318,13 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
     await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
+    notifyListeners();
+  }
+
+  /// 보내기 화면 [수신자 추가 카드] 확인 여부 활성화 - 보내기 화면 진입시 Bounce 애니메이션을 처리하지 않음
+  Future<void> setHasSeenAddRecipientCard() async {
+    _hasSeenAddRecipientCard = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kHasSeenAddRecipientCard, _hasSeenAddRecipientCard);
     notifyListeners();
   }
 
