@@ -15,10 +15,14 @@ import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/multi_button.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -155,7 +159,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                       ),
                                     ] else if (viewModel.didFetchRecommendedFeesSuccessfully ==
                                         false)
-                                      _buildFetchFailedWidget()
+                                      _buildFetchFailedWidget(),
+                                    CoconutLayout.spacing_300h,
+                                    _buildUtxoAutoSelectionWidget(),
                                   ],
                                 ),
                               ),
@@ -695,6 +701,60 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildUtxoAutoSelectionWidget() {
+    return MultiButton(
+      backgroundColor: CoconutColors.gray800,
+      dividerColor: CoconutColors.gray850,
+      children: [
+        SingleButton(
+          buttonPosition: _viewModel.isAutoSelectUtxoEnabled
+              ? SingleButtonPosition.single_12_16
+              : SingleButtonPosition.top_12_16,
+          title: t.transaction_fee_bumping_screen.select_utxo_auto,
+          subtitle: _viewModel.isAutoSelectUtxoEnabled
+              ? t.transaction_fee_bumping_screen.auto_select_utxo_on_low_fee_message
+              : t.transaction_fee_bumping_screen.auto_select_additional_utxo_on_low_fee_message,
+          titleStyle: CoconutTypography.body3_12,
+          subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+          rightElement: Padding(
+            padding: const EdgeInsets.only(left: 30),
+            child: CoconutSwitch(
+              isOn: _viewModel.isAutoSelectUtxoEnabled,
+              onChanged: (isOn) async {
+                _viewModel.setIsAutoSelectUtxoEnabled(isOn);
+              },
+              scale: 0.8,
+            ),
+          ),
+        ),
+        if (!_viewModel.isAutoSelectUtxoEnabled)
+          SingleButton(
+            buttonPosition: SingleButtonPosition.bottom_12_16,
+            title: t.transaction_fee_bumping_screen.utxo_selected_value(
+                btc: "0.0000 0000", count: 1), // TODO: 미선택시 '수수료를 선택해주세요', 선택시 수수료 충분한지 계산이 필요
+            titleStyle: CoconutTypography.body3_12_Number,
+            rightElement: ShrinkAnimationButton(
+              // border: Border.all(color: CoconutColors.gray400, width: 0.5),
+              borderWidth: 1.5,
+              borderRadius: 8,
+              borderGradientColors: const [
+                CoconutColors.gray400,
+                CoconutColors.gray400,
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 13.5, vertical: 7.5),
+                child: Text(
+                  t.transaction_fee_bumping_screen.select_utxo,
+                  style: CoconutTypography.body3_12,
+                ),
+              ),
+              onPressed: () {},
+            ),
+          ),
+      ],
     );
   }
 

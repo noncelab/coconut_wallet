@@ -32,6 +32,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Transaction? _bumpingTransaction;
   late WalletListItemBase _walletListItemBase;
   late bool? _isNetworkOn;
+  late bool _isAutoSelectUtxoEnabled;
 
   final List<FeeInfoWithLevel> _feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
@@ -56,6 +57,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._isNetworkOn,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
+    _isAutoSelectUtxoEnabled = true;
   }
 
   double? get recommendFeeRate => _recommendedFeeRate;
@@ -74,6 +76,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   bool _insufficientUtxos = false;
   bool get insufficientUtxos => _insufficientUtxos;
+
+  bool get isAutoSelectUtxoEnabled => _isAutoSelectUtxoEnabled;
 
   Future<void> initialize() async {
     await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
@@ -309,5 +313,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   String _formatNumber(double value) {
     return value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(2);
+  }
+
+  void setIsAutoSelectUtxoEnabled(bool value) {
+    _isAutoSelectUtxoEnabled = value;
+    notifyListeners();
   }
 }

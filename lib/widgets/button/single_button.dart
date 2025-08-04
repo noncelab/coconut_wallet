@@ -2,7 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
-enum SingleButtonPosition { none, top, middle, bottom }
+enum SingleButtonPosition { none, top, top_12_16, middle, bottom, bottom_12_16, single_12_16 }
 
 extension SingleButtonBorderRadiusExtension on SingleButtonPosition {
   BorderRadius get radius {
@@ -13,11 +13,24 @@ extension SingleButtonBorderRadiusExtension on SingleButtonPosition {
         return const BorderRadius.vertical(
           top: Radius.circular(Sizes.size24),
         );
+      case SingleButtonPosition.top_12_16:
+        return const BorderRadius.vertical(
+          top: Radius.circular(Sizes.size12),
+        );
       case SingleButtonPosition.middle:
         return BorderRadius.zero;
       case SingleButtonPosition.bottom:
         return const BorderRadius.vertical(
           bottom: Radius.circular(Sizes.size24),
+        );
+      case SingleButtonPosition.bottom_12_16:
+        return const BorderRadius.vertical(
+          bottom: Radius.circular(Sizes.size12),
+        );
+      case SingleButtonPosition.single_12_16:
+        return const BorderRadius.vertical(
+          top: Radius.circular(Sizes.size12),
+          bottom: Radius.circular(Sizes.size12),
         );
     }
   }
@@ -29,11 +42,20 @@ extension SingleButtonBorderRadiusExtension on SingleButtonPosition {
       case SingleButtonPosition.top:
         return const EdgeInsets.only(
             left: Sizes.size20, right: Sizes.size20, top: Sizes.size24, bottom: Sizes.size20);
+      case SingleButtonPosition.top_12_16:
+        return const EdgeInsets.only(
+            left: Sizes.size20, right: Sizes.size20, top: Sizes.size16, bottom: Sizes.size12);
       case SingleButtonPosition.middle:
         return const EdgeInsets.all(Sizes.size20);
       case SingleButtonPosition.bottom:
         return const EdgeInsets.only(
             left: Sizes.size20, right: Sizes.size20, top: Sizes.size20, bottom: Sizes.size24);
+      case SingleButtonPosition.bottom_12_16:
+        return const EdgeInsets.only(
+            left: Sizes.size20, right: Sizes.size20, top: Sizes.size12, bottom: Sizes.size16);
+      case SingleButtonPosition.single_12_16:
+        return const EdgeInsets.only(
+            left: Sizes.size20, right: Sizes.size20, top: Sizes.size16, bottom: Sizes.size16);
     }
   }
 }
@@ -46,6 +68,7 @@ class SingleButton extends StatelessWidget {
   final Widget? rightElement;
   final Widget? leftElement;
   final SingleButtonPosition buttonPosition;
+  final TextStyle? titleStyle;
   final TextStyle? subtitleStyle;
   final bool enableShrinkAnim;
   final double animationEndValue;
@@ -61,6 +84,7 @@ class SingleButton extends StatelessWidget {
       this.buttonPosition = SingleButtonPosition.none,
       this.enableShrinkAnim = false,
       this.animationEndValue = 0.95,
+      this.titleStyle,
       this.subtitleStyle});
 
   @override
@@ -88,7 +112,8 @@ class SingleButton extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title,
-                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                          style: titleStyle ??
+                              CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
                       if (subtitle != null)
                         Text(subtitle!,
                             style: subtitleStyle ??
@@ -118,10 +143,12 @@ class SingleButton extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title,
-                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                          style: titleStyle ??
+                              CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
                       if (subtitle != null)
                         Text(subtitle!,
-                            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                            style: subtitleStyle ??
+                                CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
                     ],
                   )),
                   rightElement ?? _rightArrow(),

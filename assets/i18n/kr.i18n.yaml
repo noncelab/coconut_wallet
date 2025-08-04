@@ -510,6 +510,13 @@ transaction_fee_bumping_screen:
     confirmed_alert_description: "처리 대기 중이던 거래가 완료되었어요."
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
+  select_utxo_auto: "UTXO 자동 선택"
+  select_utxo: "UTXO 선택"
+  auto_select_additional_utxo_on_low_fee_message: "수수료가 부족할 경우, 선택한 UTXO를 추가로 사용할게요"
+  auto_select_utxo_on_low_fee_message: "수수료가 부족하면 UTXO를 자동 선택할게요"
+  pay_fee_with_selected_utxo: "선택한 UTXO로 수수료를 낼게요"
+  utxo_selected_value: "${btc} BTC • ${count}개 선택"
+  insufficient_fee: "수수료가 부족해요"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

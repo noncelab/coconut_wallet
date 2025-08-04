@@ -507,6 +507,13 @@ transaction_fee_bumping_screen:
     confirmed_alert_description: "The transaction that was pending has been completed."
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
+  select_utxo_auto: "Auto-select UTXOs"
+  select_utxo: "Select UTXOs"
+  auto_select_additional_utxo_on_low_fee_message: "If the fee is insufficient, additional selected UTXOs will be used"
+  auto_select_utxo_on_low_fee_message: "If the fee is too low, UTXOs will be selected automatically"
+  pay_fee_with_selected_utxo: "Pay fee with selected UTXOs"
+  utxo_selected_value: "${btc} BTC • ${count} selected"
+  insufficient_fee: "Insufficient fee"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
