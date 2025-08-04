@@ -38,9 +38,9 @@ bool isBech32(String address) {
 enum AddressValidationError {
   empty,
   minimumLength,
-  noTestnetAddress,
-  noMainnetAddress,
-  noRegtestnetAddress,
+  notTestnetAddress,
+  notMainnetAddress,
+  notRegtestnetAddress,
   unknown
 }
 
@@ -49,11 +49,11 @@ extension AddressValidationErrorMessage on AddressValidationError {
     switch (this) {
       case AddressValidationError.empty:
         return t.errors.address_error.empty;
-      case AddressValidationError.noTestnetAddress:
+      case AddressValidationError.notTestnetAddress:
         return t.errors.address_error.not_for_testnet;
-      case AddressValidationError.noMainnetAddress:
+      case AddressValidationError.notMainnetAddress:
         return t.errors.address_error.not_for_mainnet;
-      case AddressValidationError.noRegtestnetAddress:
+      case AddressValidationError.notRegtestnetAddress:
         return t.errors.address_error.not_for_regtest;
       case AddressValidationError.minimumLength:
       case AddressValidationError.unknown:
@@ -78,18 +78,18 @@ class AddressValidator {
       if (normalized.startsWith('1') ||
           normalized.startsWith('3') ||
           normalized.startsWith('bc1')) {
-        return AddressValidationError.noTestnetAddress;
+        return AddressValidationError.notTestnetAddress;
       }
     } else if (networkType == NetworkType.mainnet) {
       if (normalized.startsWith('m') ||
           normalized.startsWith('n') ||
           normalized.startsWith('2') ||
           normalized.startsWith('tb1')) {
-        return AddressValidationError.noMainnetAddress;
+        return AddressValidationError.notMainnetAddress;
       }
     } else if (networkType == NetworkType.regtest) {
       if (!normalized.startsWith('bcrt1')) {
-        return AddressValidationError.noRegtestnetAddress;
+        return AddressValidationError.notRegtestnetAddress;
       }
     }
 

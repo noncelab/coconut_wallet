@@ -8,9 +8,9 @@ import 'package:flutter/services.dart';
 
 class SendAddressViewModel extends ChangeNotifier {
   final invalidAddressMessage = t.errors.address_error.invalid;
-  final noTestnetAddressMessage = t.errors.address_error.not_for_testnet;
-  final noMainnetAddressMessage = t.errors.address_error.not_for_mainnet;
-  final noRegtestnetAddressMessage = t.errors.address_error.not_for_regtest;
+  final notTestnetAddressMessage = t.errors.address_error.not_for_testnet;
+  final notMainnetAddressMessage = t.errors.address_error.not_for_mainnet;
+  final notRegtestnetAddressMessage = t.errors.address_error.not_for_regtest;
 
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
@@ -64,18 +64,18 @@ class SendAddressViewModel extends ChangeNotifier {
       if (normalized.startsWith('1') ||
           normalized.startsWith('3') ||
           normalized.startsWith('bc1')) {
-        throw noTestnetAddressMessage;
+        throw notTestnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {
       if (normalized.startsWith('m') ||
           normalized.startsWith('n') ||
           normalized.startsWith('2') ||
           normalized.startsWith('tb1')) {
-        throw noMainnetAddressMessage;
+        throw notMainnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.regtest) {
       if (!normalized.startsWith('bcrt1')) {
-        throw noRegtestnetAddressMessage;
+        throw notRegtestnetAddressMessage;
       }
     }
 

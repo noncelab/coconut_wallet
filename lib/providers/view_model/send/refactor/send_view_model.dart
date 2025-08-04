@@ -799,9 +799,9 @@ class SendViewModel extends ChangeNotifier {
         AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
 
     switch (error) {
-      case AddressValidationError.noTestnetAddress:
-      case AddressValidationError.noMainnetAddress:
-      case AddressValidationError.noRegtestnetAddress:
+      case AddressValidationError.notTestnetAddress:
+      case AddressValidationError.notMainnetAddress:
+      case AddressValidationError.notRegtestnetAddress:
         _setAddressError(AddressError.invalidNetworkAddress, recipientIndex);
         return false;
       case AddressValidationError.minimumLength:
