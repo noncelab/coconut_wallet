@@ -1,11 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -13,12 +10,8 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
-import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
@@ -150,10 +143,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
   }
-
-  List<TransactionAddress> _getMyOutputs() => _pendingTx.outputAddressList
-      .where((output) => _walletProvider.containsAddress(_walletId, output.address))
-      .toList();
 
   // 새 수수료로 트랜잭션 생성
   Future<void> initializeBumpingTransaction(double newFeeRate) async {
