@@ -35,19 +35,12 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   final double _borderWidth = 8;
   double scannerLoadingVerticalPos = 0;
   bool _isScanningExtraData = false;
-
-  late AnimationController _loadingBarController;
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
 
   @override
   void initState() {
     super.initState();
-    _loadingBarController = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    )..repeat(reverse: true);
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final rect = getQrViewRect();
       if (rect != null) {
@@ -67,7 +60,6 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   @override
   void dispose() {
     _progressNotifier.dispose();
-    _loadingBarController.dispose();
     super.dispose();
   }
 
