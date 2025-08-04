@@ -16,7 +16,6 @@ import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
@@ -268,8 +267,9 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple2<String, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.isReadyToSend),
+    return Selector<SendViewModel, Tuple3<String, bool, int?>>(
+        selector: (_, viewModel) => Tuple3(
+            viewModel.finalErrorMessage, viewModel.isReadyToSend, viewModel.estimatedFeeInSats),
         builder: (context, data, child) {
           final textColor =
               _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
@@ -290,7 +290,9 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_300h,
               CoconutButton(
                 backgroundColor: CoconutColors.white,
-                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
+                isActive: _viewModel.isReadyToSend &&
+                    _viewModel.finalErrorMessage.isEmpty &&
+                    _viewModel.estimatedFeeInSats != null,
                 onPressed: () async {
                   FocusScope.of(context).unfocus();
                   if (mounted) {

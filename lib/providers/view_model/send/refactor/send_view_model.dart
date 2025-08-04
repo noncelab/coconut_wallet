@@ -447,7 +447,7 @@ class SendViewModel extends ChangeNotifier {
 
     _isMaxMode = isEnabled;
     if (_isMaxMode) {
-      _adjustLastReceiverAmount();
+      _adjustLastReceiverAmount(recipientIndex: lastIndex);
       _updateFeeBoardVisibility();
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
