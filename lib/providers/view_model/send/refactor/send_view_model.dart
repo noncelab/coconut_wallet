@@ -242,6 +242,10 @@ class SendViewModel extends ChangeNotifier {
       }
     }
 
+    if (_estimatedFee == null) {
+      return false;
+    }
+
     return true;
   }
 

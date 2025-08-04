@@ -267,9 +267,8 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple3<String, bool, int?>>(
-        selector: (_, viewModel) => Tuple3(
-            viewModel.finalErrorMessage, viewModel.isReadyToSend, viewModel.estimatedFeeInSats),
+    return Selector<SendViewModel, Tuple2<String, bool>>(
+        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.isReadyToSend),
         builder: (context, data, child) {
           final textColor =
               _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
@@ -290,9 +289,7 @@ class _SendScreenState extends State<SendScreen> {
               CoconutLayout.spacing_300h,
               CoconutButton(
                 backgroundColor: CoconutColors.white,
-                isActive: _viewModel.isReadyToSend &&
-                    _viewModel.finalErrorMessage.isEmpty &&
-                    _viewModel.estimatedFeeInSats != null,
+                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
                 onPressed: () async {
                   FocusScope.of(context).unfocus();
                   if (mounted) {
