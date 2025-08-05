@@ -228,7 +228,7 @@ class SendViewModel extends ChangeNotifier {
         sumExceptLast += double.parse(_recipientList[i].amount);
       }
     }
-    return sumExceptLast;
+    return sumExceptLast.roundTo8Digits();
   }
 
   bool get isReadyToSend {
@@ -724,6 +724,7 @@ class SendViewModel extends ChangeNotifier {
     double amountSum = recipientList
         .where((r) => r.amount.isNotEmpty)
         .fold(0, (sum, r) => sum + double.parse(r.amount));
+    amountSum = amountSum.roundTo8Digits();
     _amountSum = isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSum) : amountSum.toInt();
 
     _updateIsAmountSumExceedsBalance(amountSum);
