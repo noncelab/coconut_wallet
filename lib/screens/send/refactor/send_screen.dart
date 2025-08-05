@@ -1097,7 +1097,7 @@ class _SendScreenState extends State<SendScreen> {
 
   void _onAppBarTitlePressed() {
     _clearFocus();
-    CommonBottomSheets.showBottomSheet_50(
+    CommonBottomSheets.showBottomSheet_40(
         context: context,
         child: SelectWalletWithOptionsBottomSheet(
           currentUnit: _viewModel.currentUnit,
