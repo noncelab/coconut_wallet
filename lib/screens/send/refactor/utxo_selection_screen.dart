@@ -15,7 +15,6 @@ import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
@@ -74,62 +73,73 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         return viewModel;
       },
       child: Consumer<UtxoSelectionViewModel>(
-        builder: (context, viewModel, child) => Scaffold(
-          appBar: CoconutAppBar.build(
-            backgroundColor: CoconutColors.black,
-            title: t.utxo_selection_screen.title,
-            context: context,
-            onBackPressed: () => Navigator.pop(context),
-          ),
-          body: Column(
-            children: [
-              Visibility(
-                visible: !viewModel.isNetworkOn,
-                maintainSize: false,
-                maintainAnimation: false,
-                maintainState: false,
-                child: NetworkErrorTooltip(
-                  isNetworkOn: viewModel.isNetworkOn,
+        builder: (context, viewModel, child) => Stack(
+          children: [
+            GestureDetector(
+              onTap: () => _removeUtxoOrderDropdown(),
+              child: Scaffold(
+                appBar: CoconutAppBar.build(
+                  backgroundColor: CoconutColors.black,
+                  title: t.utxo_selection_screen.title,
+                  context: context,
+                  onBackPressed: () => Navigator.pop(context),
                 ),
-              ),
-              Expanded(
-                child: Stack(
+                body: Stack(
                   children: [
-                    SingleChildScrollView(
-                      controller: _scrollController,
-                      child: Column(
-                        children: [
-                          _buildSendInfoHeader(
-                            viewModel,
+                    Column(
+                      children: [
+                        Visibility(
+                          visible: !viewModel.isNetworkOn,
+                          maintainSize: false,
+                          maintainAnimation: false,
+                          maintainState: false,
+                          child: NetworkErrorTooltip(
+                            isNetworkOn: viewModel.isNetworkOn,
                           ),
-                          _buildUtxoTagList(viewModel),
-                          _buildUtxoList(viewModel),
-                          CoconutLayout.spacing_400h,
-                          const SizedBox(height: 50)
-                        ],
-                      ),
-                    ),
-                    _buildStickyHeader(viewModel),
-                    _buildUtxoOrderDropdown(viewModel),
-                    FixedBottomButton(
-                      buttonHeight: 50,
-                      onButtonClicked: () {
-                        vibrateLight();
-                        Navigator.pop(context, _viewModel.selectedUtxoList);
-                      },
-                      text: t.complete,
-                      isActive: _viewModel.hasSelectionChanged,
-                      showGradient: true,
-                      gradientPadding:
-                          const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
-                      horizontalPadding: 16,
-                      backgroundColor: CoconutColors.white,
+                        ),
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              SingleChildScrollView(
+                                controller: _scrollController,
+                                child: Column(
+                                  children: [
+                                    _buildSendInfoHeader(
+                                      viewModel,
+                                    ),
+                                    _buildUtxoTagList(viewModel),
+                                    _buildUtxoList(viewModel),
+                                    CoconutLayout.spacing_400h,
+                                    const SizedBox(height: 50)
+                                  ],
+                                ),
+                              ),
+                              _buildStickyHeader(viewModel),
+                              FixedBottomButton(
+                                buttonHeight: 50,
+                                onButtonClicked: () {
+                                  vibrateLight();
+                                  Navigator.pop(context, _viewModel.selectedUtxoList);
+                                },
+                                text: t.complete,
+                                isActive: _viewModel.hasSelectionChanged,
+                                showGradient: true,
+                                gradientPadding: const EdgeInsets.only(
+                                    left: 16, right: 16, bottom: 40, top: 110),
+                                horizontalPadding: 16,
+                                backgroundColor: CoconutColors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+            _buildUtxoOrderDropdown(viewModel),
+          ],
         ),
       ),
     );
@@ -156,7 +166,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           _selectedUtxoOrder);
 
       _scrollController.addListener(() {
-        double threshold = /*_headerTopContainerSize.height +*/ 24;
+        double threshold = 24;
         double offset = _scrollController.offset;
         if ((_isOrderDropdownVisible || _isScrolledOrderDropdownVisible) && offset > 0) {
           _removeUtxoOrderDropdown();
@@ -398,8 +408,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       child: CoconutPulldownMenu(
         entries:
             _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
-        shadowColor: CoconutColors.gray800,
-        dividerColor: CoconutColors.gray800,
+        dividerColor: CoconutColors.black,
         onSelected: (index, selectedText) async {
           bool isChanged = _selectedUtxoOrder != _utxoOrderOptions[index];
           setState(() {
@@ -471,9 +480,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   Widget _buildUtxoOrderDropdown(UtxoSelectionViewModel viewModel) {
     if (_isOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
-        top: _orderDropdownButtonPosition.dy -
-            _scrollController.offset -
-            MediaQuery.of(context).padding.top,
+        top: _orderDropdownButtonPosition.dy - _scrollController.offset + 30,
         left: 16,
         child: _utxoOrderDropdownMenu(),
       );
@@ -481,7 +488,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
     if (_isScrolledOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
-        top: _scrolledOrderDropdownButtonPosition.dy - MediaQuery.of(context).padding.top - 55,
+        top: _scrolledOrderDropdownButtonPosition.dy,
         left: 16,
         child: _utxoOrderDropdownMenu(),
       );
