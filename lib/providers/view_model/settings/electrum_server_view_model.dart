@@ -83,7 +83,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
   /// 사용자 서버 목록 로드
   Future<void> _loadUserServers() async {
     try {
-      _userServers = (await _preferenceProvider.getUserServers())!;
+      _userServers = (await _preferenceProvider.getUserServers());
       notifyListeners();
     } catch (e) {
       Logger.error('Failed to load user servers: $e');
@@ -191,8 +191,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     // 연결된 서버가 default 서버에도 없고, 사용자 서버에도 없으면 사용자 서버 추가
     if (!_isDefaultServer(newServer) && !_isUserServer(newServer)) {
-      _preferenceProvider.addUserServer(newServer.host, newServer.port, newServer.ssl);
-      // 사용자 서버 목록 새로고침
+      await _preferenceProvider.addUserServer(newServer.host, newServer.port, newServer.ssl);
       await _loadUserServers();
     }
 

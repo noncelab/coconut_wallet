@@ -341,6 +341,14 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       selector: (_, viewModel) =>
           _selectedTab == ServerTab.defaultServer ? _getDefaultServerList() : viewModel.userServers,
       builder: (context, serverList, child) {
+        if (serverList.isEmpty && _selectedTab == ServerTab.userServer) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _selectedTab = ServerTab.defaultServer;
+            });
+          });
+        }
+
         final shouldScroll = serverList.length > 3;
 
         final serverListWidget = Column(
@@ -362,25 +370,40 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                   _unFocus();
                 },
                 onLongPress: _selectedTab == ServerTab.userServer
-                    ? () => CustomDialogs.showCustomAlertDialog(
-                          context,
-                          title: t.settings_screen.electrum_server.popup.delete_server_info,
-                          message: t
-                              .settings_screen.electrum_server.popup.delete_server_info_description,
-                          onConfirm: () async {
-                            final navigator = Navigator.of(context);
-                            await context
-                                .read<ElectrumServerViewModel>()
-                                .removeUserServer(serverList[i]);
-                            if (!mounted) return;
-                            vibrateLight();
-                            navigator.pop();
-                          },
-                          onCancel: () {
-                            Navigator.of(context).pop();
-                          },
-                          confirmButtonText: t.delete,
-                        )
+                    ? () {
+                        final viewModel = context.read<ElectrumServerViewModel>();
+                        final currentServer = viewModel.currentServer;
+                        final serverToDelete = serverList[i];
+
+                        // 현재 구동 중인 서버인지 확인
+                        final isCurrentServer = currentServer != null &&
+                            currentServer.host == serverToDelete.host &&
+                            currentServer.port == serverToDelete.port &&
+                            currentServer.ssl == serverToDelete.ssl;
+
+                        // 현재 구동 중인 서버인 경우 삭제 불가
+                        if (!isCurrentServer) {
+                          CustomDialogs.showCustomAlertDialog(
+                            context,
+                            title: t.settings_screen.electrum_server.popup.delete_server_info,
+                            message: t.settings_screen.electrum_server.popup
+                                .delete_server_info_description,
+                            onConfirm: () async {
+                              final navigator = Navigator.of(context);
+                              await context
+                                  .read<ElectrumServerViewModel>()
+                                  .removeUserServer(serverList[i]);
+                              if (!mounted) return;
+                              vibrateLight();
+                              navigator.pop();
+                            },
+                            onCancel: () {
+                              Navigator.of(context).pop();
+                            },
+                            confirmButtonText: t.delete,
+                          );
+                        }
+                      }
                     : null,
                 child: Selector<ElectrumServerViewModel, NodeConnectionStatus?>(
                   selector: (_, viewModel) => viewModel.connectionStatusMap[serverList[i]],

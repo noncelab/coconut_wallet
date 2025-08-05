@@ -2,16 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/services.dart';
-
-// 네트워크 연결 타임아웃 상수
-const kRegularConnectionTimeout = Duration(seconds: 10);
-const kOnionConnectionTimeout = Duration(seconds: 30);
-const kTailscaleConnectionTimeout = Duration(seconds: 5);
 
 class SocketManager {
   /// Socket
@@ -70,11 +66,11 @@ class SocketManager {
   // .onion 주소인 경우 타임아웃을 길게 설정
   Duration getConnectionTimeout(bool isOnionHost, bool isTailscale) {
     if (isOnionHost) {
-      return kOnionConnectionTimeout;
+      return kIsolateInitTimeoutForOnion;
     } else if (isTailscale) {
-      return kTailscaleConnectionTimeout;
+      return kIsolateInitTimeout;
     } else {
-      return kRegularConnectionTimeout;
+      return kIsolateInitTimeout;
     }
   }
 
