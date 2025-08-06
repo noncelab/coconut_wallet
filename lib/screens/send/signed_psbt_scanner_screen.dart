@@ -7,7 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
@@ -119,7 +119,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       final cborBytes = ur.cbor;
       final decodedCbor = cbor.decode(cborBytes) as CborBytes;
 
-      printLongString('--> _onCompletedScanningForBcUr: ${base64Encode(decodedCbor.bytes)}');
+      Logger.logLongString('--> _onCompletedScanningForBcUr: ${base64Encode(decodedCbor.bytes)}');
       psbt = _viewModel.parseBase64EncodedToPsbt(base64Encode(decodedCbor.bytes));
     } catch (e) {
       await _showErrorDialog(t.alert.invalid_qr);

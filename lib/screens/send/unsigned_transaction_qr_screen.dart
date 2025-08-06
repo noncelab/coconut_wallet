@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/bbqr/bbqr_encoder.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
@@ -56,7 +57,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
     final hexStr = hex.encode(base64.decode(_psbtBase64));
     final spacedHex = hexStr.replaceAllMapped(RegExp(r'.{4}'), (match) => '${match.group(0)} ');
-    printLongString('[Hex]:: $spacedHex');
+    Logger.logLongString('[Hex]:: $spacedHex');
     // debugPrint('bbqr:::::: ${BbqrEncoder().encodeBase64(_psbtBase64)}');
   }
 

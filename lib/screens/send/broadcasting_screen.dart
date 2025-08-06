@@ -75,11 +75,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     await Future.delayed(const Duration(seconds: 1));
 
     Transaction signedTx;
-    if (_viewModel.isPsbt(_viewModel.signedTransaction)) {
+    if (_viewModel.isPsbt()) {
       signedTx = Psbt.parse(_viewModel.signedTransaction)
           .getSignedTransaction(_viewModel.walletAddressType);
     } else {
-      String hexTransaction = _viewModel.decodeTransactionToHex(_viewModel.signedTransaction);
+      String hexTransaction = _viewModel.decodeTransactionToHex();
       signedTx = Transaction.parse(hexTransaction);
     }
 

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:base32/base32.dart';
-import 'package:archive/archive.dart';
 
 class BbqrEncoder {
   final int maxChunkSize;

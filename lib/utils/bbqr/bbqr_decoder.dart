@@ -1,16 +1,6 @@
 import 'dart:convert';
 import 'package:base32/base32.dart';
 
-class InvalidScheme implements Exception {}
-
-class InvalidType implements Exception {}
-
-class InvalidPathLength implements Exception {}
-
-class InvalidSequenceComponent implements Exception {}
-
-class InvalidFragment implements Exception {}
-
 class BbqrDecoder {
   // ColdCard Q1 Export Wallet Data
   /// ex: B$2J0700... (B$[encoding][dataType][total][index][payload])

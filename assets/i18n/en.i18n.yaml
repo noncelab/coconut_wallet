@@ -258,6 +258,8 @@ send_confirm_screen:
   title: "Review Details"
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
+  bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
+  
 unsigned_tx_qr_screen:
   hardware_wallet_screen_guide: "Guide"
   guide_keystone:

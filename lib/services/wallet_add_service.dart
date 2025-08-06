@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'package:ur/ur.dart';
 
@@ -62,21 +63,16 @@ class WalletAddService {
     // BBQR 스캔 결과에서 xpub과 fingerprint 추출
     String? xpub;
     String? fingerprint;
+    String? descriptor;
 
-    // bip84 (native segwit) 우선 사용
+    // bip84 (native segwit)
     if (json['bip84'] != null) {
       xpub = json['bip84']['xpub'];
       fingerprint = json['bip84']['xfp'];
-    }
-    // bip49 (segwit)  사용
-    else if (json['bip49'] != null) {
-      xpub = json['bip49']['xpub'];
-      fingerprint = json['bip49']['xfp'];
-    }
-    // bip49가 없으면 bip44 사용
-    else if (json['bip44'] != null) {
-      xpub = json['bip44']['xpub'];
-      fingerprint = json['bip44']['xfp'];
+
+      if (json['bip84']['desc'] != null) {
+        descriptor = json['bip84']['desc'];
+      }
     }
 
     if (xpub == null) {
@@ -84,16 +80,6 @@ class WalletAddService {
     }
 
     try {
-      // descriptor로 지갑 생성 시도
-      String? descriptor;
-      if (json['bip84'] != null && json['bip84']['desc'] != null) {
-        descriptor = json['bip84']['desc'];
-      } else if (json['bip49'] != null && json['bip49']['desc'] != null) {
-        descriptor = json['bip49']['desc'];
-      } else if (json['bip44'] != null && json['bip44']['desc'] != null) {
-        descriptor = json['bip44']['desc'];
-      }
-
       if (descriptor != null) {
         final singleSigWallet = SingleSignatureWallet.fromDescriptor(descriptor);
         return WatchOnlyWallet(
@@ -108,7 +94,7 @@ class WalletAddService {
       }
     } catch (e) {
       // descriptor 파싱 실패 시 xpub으로 지갑 생성
-      print('Descriptor parsing failed, using xpub: $e');
+      Logger.error('Descriptor parsing failed, using xpub: $e');
     }
 
     // xpub으로 지갑 생성 (fallback)

@@ -300,7 +300,7 @@ send_confirm_screen:
   title: "입력 정보 확인"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
-  bbqr_mode_switching: "BBQR 모드로 전환 중이에요. 잠시만 기다려주세요."
+  bbqr_mode_switching: "BBQR 모드로 전환 중이에요.\n잠시만 기다려주세요."
   
 unsigned_tx_qr_screen:
   hardware_wallet_screen_guide: "화면 안내"

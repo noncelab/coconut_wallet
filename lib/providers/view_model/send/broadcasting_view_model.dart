@@ -82,9 +82,9 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   /// 전달된 문자열이 Base64로 인코딩된 PSBT인지 확인하는 함수
-  bool isPsbt(String hexOrBase64) {
+  bool isPsbt() {
     try {
-      final decoded = base64Decode(hexOrBase64);
+      final decoded = base64Decode(signedTransaction);
       return decoded.length >= 5 &&
           decoded[0] == 0x70 &&
           decoded[1] == 0x73 &&
@@ -99,19 +99,19 @@ class BroadcastingViewModel extends ChangeNotifier {
   void setTxInfo() async {
     Psbt signedPsbt;
 
-    if (isPsbt(signedTransaction)) {
+    if (isPsbt()) {
       signedPsbt = Psbt.parse(signedTransaction);
     } else {
       signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
 
       // raw transaction 데이터 처리 (hex 또는 base64)
-      String hexTransaction = decodeTransactionToHex(signedTransaction);
+      String hexTransaction = decodeTransactionToHex();
 
       final signedTx = Transaction.parse(hexTransaction);
       final unSingedTx = signedPsbt.unsignedTransaction;
 
       // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
-      if (!validateSignedTransaction(signedTx, unSingedTx)) {
+      if (!isTxContentEqual(signedTx, unSingedTx)) {
         throw InvalidTransactionException();
       }
     }
@@ -199,7 +199,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool validateSignedTransaction(Transaction signedTx, Transaction? unSignedTx) {
+  bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
     if (unSignedTx == null) return false;
 
     debugPrint('unsignedPsbt:: $unSignedTx');
@@ -256,15 +256,15 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   /// 트랜잭션 문자열을 hex 형식으로 디코딩하는 헬퍼 메서드
-  String decodeTransactionToHex(String transactionString) {
+  String decodeTransactionToHex() {
     try {
       // 먼저 hex 문자열인지 확인
-      if (RegExp(r'^[0-9a-fA-F]+$').hasMatch(transactionString)) {
+      if (RegExp(r'^[0-9a-fA-F]+$').hasMatch(signedTransaction)) {
         // 이미 hex 문자열인 경우
-        return transactionString;
+        return signedTransaction;
       } else {
         // base64 문자열인 경우 디코딩
-        final bytes = base64.decode(transactionString);
+        final bytes = base64.decode(signedTransaction);
         return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
       }
     } catch (e) {
