@@ -428,13 +428,23 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                                 fakeBalanceTotalAmount.toInt())
                                             : BitcoinUnit.sats.displayBitcoinAmount(
                                                 fakeBalanceTotalAmount.toInt()),
-                                        style: CoconutTypography.heading3_21_NumberBold,
+                                        style: CoconutTypography.heading3_21_NumberBold.merge(
+                                          const TextStyle(
+                                            height: 1.4,
+                                          ),
+                                        ),
                                       )
                                     : Text(
                                         t.view_balance,
-                                        style: CoconutTypography.heading3_21_NumberBold.setColor(
-                                          CoconutColors.gray600,
-                                        ),
+                                        style: CoconutTypography.heading3_21_NumberBold
+                                            .setColor(
+                                              CoconutColors.gray600,
+                                            )
+                                            .merge(
+                                              const TextStyle(
+                                                height: 1.3,
+                                              ),
+                                            ),
                                       )
                                 : Selector<WalletHomeViewModel, List<int>>(
                                     selector: (_, viewModel) =>
@@ -458,7 +468,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                         prevValue: prevValue,
                                         value: currentValue,
                                         currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                                        textStyle: CoconutTypography.heading3_21_NumberBold,
+                                        textStyle: CoconutTypography.heading3_21_NumberBold.merge(
+                                          const TextStyle(
+                                            height: 1.4,
+                                          ),
+                                        ),
                                       );
                                     },
                                   ),
@@ -578,7 +592,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: Text(
                             t.receive,
-                            style: CoconutTypography.body3_12,
+                            style: CoconutTypography.body2_14,
                           ),
                         ),
                       ),
@@ -614,7 +628,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           child: Text(
                             t.send,
-                            style: CoconutTypography.body3_12,
+                            style: CoconutTypography.body2_14,
                           ),
                         ),
                       ),
@@ -731,8 +745,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               borderRadius: CoconutStyles.radius_200,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 20,
+                  vertical: 16,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -748,16 +762,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           style: CoconutTypography.body3_12,
                         ),
                         CoconutLayout.spacing_200w,
-                        Padding(
-                          padding: const EdgeInsets.only(right: 9),
-                          child: SvgPicture.asset(
-                            'assets/svg/arrow-right.svg',
-                            width: 6,
-                            height: 10,
-                            colorFilter: const ColorFilter.mode(
-                              CoconutColors.gray400,
-                              BlendMode.srcIn,
-                            ),
+                        SvgPicture.asset(
+                          'assets/svg/arrow-right.svg',
+                          width: 6,
+                          height: 10,
+                          colorFilter: const ColorFilter.mode(
+                            CoconutColors.gray400,
+                            BlendMode.srcIn,
                           ),
                         ),
                       ],
