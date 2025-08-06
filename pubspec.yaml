@@ -263,6 +263,7 @@ flutter:
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
     - assets/svg/clip.svg
+    - testnet.env
 
 
   fonts:
