@@ -40,7 +40,7 @@ class SendScreen extends StatefulWidget {
   State<SendScreen> createState() => _SendScreenState();
 }
 
-class _SendScreenState extends State<SendScreen> {
+class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin {
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
@@ -69,6 +69,11 @@ class _SendScreenState extends State<SendScreen> {
 
   final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
+
+  // Bounce animation
+  late AnimationController _animationController;
+  late Animation<double> _offsetAnimation;
+  late bool hasSeenAddRecipientCard;
 
   QRViewController? _qrViewController;
   bool _isQrDataHandling = false;
@@ -103,10 +108,23 @@ class _SendScreenState extends State<SendScreen> {
     _feeRateFocusNode.addListener(() => setState(() {}));
     _amountController.addListener(_amountTextListener);
     _recipientPageController.addListener(_recipientPageListener);
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    hasSeenAddRecipientCard = context.read<PreferenceProvider>().hasSeenAddRecipientCard;
+    if (!hasSeenAddRecipientCard) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 300));
+        _startBounce();
+      });
+    }
   }
 
   @override
   void dispose() {
+    _animationController.dispose();
     _recipientPageController.dispose();
     _feeRateController.dispose();
     _feeRateFocusNode.dispose();
@@ -659,12 +677,20 @@ class _SendScreenState extends State<SendScreen> {
               final isMaxMode = data.item2;
               return PageView.builder(
                 controller: _recipientPageController,
-                onPageChanged: (index) => _viewModel.setCurrentPage(index),
+                onPageChanged: (index) {
+                  // 수신자 추가 카드 확인 여부 업데이트
+                  if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
+                    hasSeenAddRecipientCard = true;
+                    context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
+                  }
+
+                  _viewModel.setCurrentPage(index);
+                },
                 // isMaxMode: 수신자 추가 버튼 안보임
                 itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == recipientListLength) {
-                    return _buildAddRecipientAddCard();
+                    return _buildAddRecipientCard();
                   }
                   return _buildRecipientPage(context, index);
                 },
@@ -672,7 +698,7 @@ class _SendScreenState extends State<SendScreen> {
             }));
   }
 
-  Widget _buildAddRecipientAddCard() {
+  Widget _buildAddRecipientCard() {
     return Padding(
       padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 25),
       child: ShrinkAnimationButton(
@@ -1279,4 +1305,45 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   void _clearFocus() => FocusManager.instance.primaryFocus?.unfocus();
+
+  Future<void> _startBounce() async {
+    final pageWidth = _recipientPageController.position.viewportDimension;
+    _offsetAnimation = TweenSequence<double>([
+      // 오른쪽으로 10% 이동
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0.0,
+          end: pageWidth * 0.1,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 3,
+      ),
+      // 왼쪽으로 약간 튕김 (-25px)
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: pageWidth * 0.1,
+          end: -25.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 3,
+      ),
+      // 다시 원위치 (0)
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 3,
+      ),
+    ]).animate(_animationController);
+
+    _animationController.addListener(() {
+      if (_recipientPageController.hasClients) {
+        final offset = _offsetAnimation.value.clamp(
+          _recipientPageController.position.minScrollExtent,
+          _recipientPageController.position.maxScrollExtent,
+        );
+        _recipientPageController.jumpTo(offset);
+      }
+    });
+    _animationController.forward();
+  }
 }

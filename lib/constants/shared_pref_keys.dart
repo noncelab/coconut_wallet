@@ -33,6 +33,9 @@ class SharedPrefKeys {
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
 
+  /// 보내기 화면 수신자 추가 카드 확인 여부
+  static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
+
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
   static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';
