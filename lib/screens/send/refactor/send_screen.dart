@@ -19,6 +19,7 @@ import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
@@ -175,12 +176,7 @@ class _SendScreenState extends State<SendScreen> {
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: Sizes.size24,
-                    left: Sizes.size16,
-                    right: Sizes.size16,
-                    child: _buildFinalButton(context),
-                  ),
+                  _buildFinalButton(context),
                 ],
               ),
             )),
@@ -284,17 +280,22 @@ class _SendScreenState extends State<SendScreen> {
                 .unintended_dust_fee(unintendedDustFee: _viewModel.unintendedDustFee.toString());
           }
 
-          return Column(
+          return Stack(
+            alignment: Alignment.center,
             children: [
-              Text(
-                message,
-                style: CoconutTypography.body3_12.setColor(textColor),
+              Positioned(
+                bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+                    FixedBottomButton.fixedBottomButtonDefaultHeight +
+                    12,
+                child: Text(
+                  message,
+                  style: CoconutTypography.body3_12.setColor(textColor),
+                ),
               ),
-              CoconutLayout.spacing_300h,
-              CoconutButton(
-                backgroundColor: CoconutColors.white,
-                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
-                onPressed: () async {
+              FixedBottomButton(
+                showGradient: false,
+                adjustForKeyboard: false,
+                onButtonClicked: () {
                   FocusScope.of(context).unfocus();
                   if (mounted) {
                     _viewModel.saveSendInfo();
@@ -302,7 +303,10 @@ class _SendScreenState extends State<SendScreen> {
                         arguments: {"currentUnit": _viewModel.currentUnit});
                   }
                 },
+                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
                 text: t.complete,
+                backgroundColor: CoconutColors.gray100,
+                pressedBackgroundColor: CoconutColors.gray500,
               ),
             ],
           );

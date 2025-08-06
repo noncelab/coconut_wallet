@@ -10,6 +10,7 @@ class FixedBottomButton extends StatefulWidget {
     required this.onButtonClicked,
     required this.text,
     this.showGradient = true,
+    this.adjustForKeyboard = true,
     this.isActive = true,
     this.buttonHeight,
     this.horizontalPadding = CoconutLayout.defaultPadding,
@@ -23,6 +24,7 @@ class FixedBottomButton extends StatefulWidget {
   final Function onButtonClicked;
   final String text;
   final bool showGradient;
+  final bool adjustForKeyboard;
   final bool isActive;
   final double? buttonHeight;
   final double horizontalPadding;
@@ -39,6 +41,8 @@ class FixedBottomButton extends StatefulWidget {
 class _FixedBottomButtonState extends State<FixedBottomButton> {
   @override
   Widget build(BuildContext context) {
+    double keyboardHeight =
+        (widget.adjustForKeyboard ? MediaQuery.of(context).viewInsets.bottom : 0);
     return SizedBox(
       width: MediaQuery.sizeOf(context).width,
       child: Stack(
@@ -47,7 +51,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: keyboardHeight,
               child: IgnorePointer(
                 ignoring: true,
                 child: Container(
@@ -70,7 +74,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
           Positioned(
             left: widget.horizontalPadding,
             right: widget.horizontalPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom + widget.bottomPadding,
+            bottom: keyboardHeight + widget.bottomPadding,
             child: Column(
               children: [
                 widget.subWidget ?? Container(),
