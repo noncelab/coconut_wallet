@@ -305,7 +305,7 @@ class TransactionBuilder {
       try {
         final recipientsWithoutLast = Map.of(recipients)..remove(recipients.keys.last);
         final tx = Transaction.forBatchSweep(_selectedUtxos!, recipientsWithoutLast,
-            recipients.keys.first, feeRate, walletListItemBase.walletBase);
+            recipients.keys.last, feeRate, walletListItemBase.walletBase);
         if (tx.outputs.last.amount <= dustLimit) {
           throw SendAmountTooLowException(
               estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
