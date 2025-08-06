@@ -48,7 +48,7 @@ dependencies:
   json_annotation: ^4.8.1
   shared_preferences: ^2.2.2
   qr_flutter: ^4.1.0
-  qr_code_scanner: ^1.0.1
+  qr_code_scanner: ^1.0.0
   flutter_svg: ^2.0.10+1
   fluttertoast: ^8.2.4
   loader_overlay: ^4.0.0

@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
@@ -32,28 +31,16 @@ class CoconutQrScanner extends StatefulWidget {
 
 class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
   final double _borderWidth = 8;
   double scannerLoadingVerticalPos = 0;
-
-  late AnimationController _loadingBarController;
-  late Animation<double> _animation;
-
-  Timer? _scanTimeoutTimer;
+  bool _isScanningExtraData = false;
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
 
   @override
   void initState() {
     super.initState();
-    _loadingBarController = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _animation = Tween<double>(begin: -1.0, end: 1.0).animate(CurvedAnimation(
-      parent: _loadingBarController,
-      curve: Curves.easeInOut,
-    ));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final rect = getQrViewRect();
       if (rect != null) {
@@ -72,8 +59,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   @override
   void dispose() {
-    _scanTimeoutTimer?.cancel();
-    _loadingBarController.dispose();
+    _progressNotifier.dispose();
     super.dispose();
   }
 
@@ -88,13 +74,6 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
     controller.scannedDataStream.distinct((previous, next) => previous.code == next.code).listen(
         (scanData) async {
       if (scanData.code == null) return;
-
-      _scanTimeoutTimer?.cancel();
-      _scanTimeoutTimer = Timer(const Duration(seconds: 1), () {
-        setState(() {
-          _showLoadingBar = false;
-        });
-      });
       try {
         if (_isFirstScanData) {
           if (!handler.validateFormat(scanData.code!)) {
@@ -111,6 +90,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           try {
             bool result = handler.joinData(scanData.code!);
             Logger.log('--> progress: ${handler.progress}');
+            _progressNotifier.value = handler.progress;
             if (!result && handler is! IFragmentedQrScanDataHandler) {
               widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage);
               resetScanState();
@@ -128,6 +108,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
         if (!_showLoadingBar) {
           setState(() {
+            _isScanningExtraData = handler.progress > 0.99;
             _showLoadingBar = true;
           });
         }
@@ -152,12 +133,13 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   }
 
   void _resetLoadingBarState() {
-    _scanTimeoutTimer?.cancel();
-    if (_showLoadingBar) {
-      setState(() {
+    _progressNotifier.value = 0;
+    setState(() {
+      _isScanningExtraData = false;
+      if (_showLoadingBar) {
         _showLoadingBar = false;
-      });
-    }
+      }
+    });
   }
 
   QrScannerOverlayShape _getOverlayShape() {
@@ -188,43 +170,25 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
               overlay: _getOverlayShape(),
             ),
             Positioned(
-              top: scannerLoadingVerticalPos,
+              top: scannerLoadingVerticalPos + 25,
               left: 0,
               right: 0,
               bottom: 0,
               child: Visibility(
-                visible: _showLoadingBar,
-                child: Center(
-                  child: Container(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(horizontal: 100),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: _showLoadingBar
-                        ? AnimatedBuilder(
-                            animation: _animation,
-                            builder: (context, child) {
-                              return Align(
-                                alignment: Alignment(_animation.value, 0),
-                                child: child,
-                              );
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-              ),
+                  visible: _showLoadingBar,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CoconutLayout.spacing_1300w,
+                      if (!_isScanningExtraData) ...[
+                        _buildProgressBar(),
+                        CoconutLayout.spacing_300w,
+                        _buildProgressText(),
+                      ],
+                      if (_isScanningExtraData) _buildReadingExtraText(),
+                      CoconutLayout.spacing_1300w,
+                    ],
+                  )),
             )
           ],
         );
@@ -240,5 +204,68 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       return position & size;
     }
     return null;
+  }
+
+  Widget _buildReadingExtraText() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(
+        textAlign: TextAlign.center,
+        t.coconut_qr_scanner.reading_extra_data,
+        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+      ),
+    );
+  }
+
+  Widget _buildProgressText() {
+    return ValueListenableBuilder<double>(
+        valueListenable: _progressNotifier,
+        builder: (context, value, _) {
+          return SizedBox(
+            width: 35,
+            child: Text(
+              textAlign: TextAlign.center,
+              "${(value * 100).toInt()}%",
+              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+            ),
+          );
+        });
+  }
+
+  Widget _buildProgressBar() {
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double maxWidth = constraints.maxWidth;
+          return Stack(
+            children: [
+              Container(
+                width: maxWidth,
+                height: 8,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  color: CoconutColors.gray350,
+                ),
+              ),
+              ValueListenableBuilder<double>(
+                valueListenable: _progressNotifier,
+                builder: (context, value, _) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: maxWidth * _progressNotifier.value,
+                    height: 6,
+                    margin: const EdgeInsets.all(1),
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      color: Colors.black,
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
