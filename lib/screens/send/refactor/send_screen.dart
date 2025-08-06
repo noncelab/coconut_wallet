@@ -73,6 +73,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   // Bounce animation
   late AnimationController _animationController;
   late Animation<double> _offsetAnimation;
+  late bool hasSeenAddRecipientCard;
 
   QRViewController? _qrViewController;
   bool _isQrDataHandling = false;
@@ -109,11 +110,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _recipientPageController.addListener(_recipientPageListener);
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 1000),
     );
 
-    if (!context.read<PreferenceProvider>().hasSeenAddRecipientCard) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    hasSeenAddRecipientCard = context.read<PreferenceProvider>().hasSeenAddRecipientCard;
+    if (!hasSeenAddRecipientCard) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 300));
         _startBounce();
       });
     }
@@ -676,10 +679,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 controller: _recipientPageController,
                 onPageChanged: (index) {
                   // 수신자 추가 카드 확인 여부 업데이트
-                  var preferenceProvider = context.read<PreferenceProvider>();
-                  if (index == _viewModel.addRecipientCardIndex &&
-                      !preferenceProvider.hasSeenAddRecipientCard) {
-                    preferenceProvider.setHasSeenAddRecipientCard();
+                  if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
+                    hasSeenAddRecipientCard = true;
+                    context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
                   }
 
                   _viewModel.setCurrentPage(index);
@@ -1307,29 +1309,29 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Future<void> _startBounce() async {
     final pageWidth = _recipientPageController.position.viewportDimension;
     _offsetAnimation = TweenSequence<double>([
-      // 오른쪽으로 50% 이동
+      // 오른쪽으로 10% 이동
       TweenSequenceItem(
         tween: Tween<double>(
           begin: 0.0,
-          end: pageWidth * 0.5,
+          end: pageWidth * 0.1,
         ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 5,
+        weight: 3,
       ),
       // 왼쪽으로 약간 튕김 (-25px)
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: pageWidth * 0.5,
-          end: -25.0, // 더 깊게 당김
-        ).chain(CurveTween(curve: Curves.easeInOut)), // 강한 튕김 곡선
-        weight: 1,
+          begin: pageWidth * 0.1,
+          end: -25.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 3,
       ),
       // 다시 원위치 (0)
       TweenSequenceItem(
         tween: Tween<double>(
-          begin: -100.0,
+          begin: 0,
           end: 0.0,
         ).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 2,
+        weight: 3,
       ),
     ]).animate(_animationController);
 
