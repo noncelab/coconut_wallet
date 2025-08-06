@@ -316,7 +316,7 @@ unsigned_tx_qr_screen:
     step1: "Please scan the QR code below with your hardware wallet to start the signing process."
 
 coconut_qr_scanner:
-  reading_extra_data: "Reading additional data to collect.\nPlease keep scanning."
+  reading_extra_data: "Reading additional data to collect\nPlease keep scanning"
 
 # lib/screens/settings
 app_info_screen:
