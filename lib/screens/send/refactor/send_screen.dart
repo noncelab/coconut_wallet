@@ -928,21 +928,20 @@ class _SendScreenState extends State<SendScreen> {
   }
 
   Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
-    double bottomPadding = index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: ShrinkAnimationButton(
-        onPressed: () {
-          _addressControllerList[_viewModel.currentIndex].text = address;
-          _viewModel.markWalletAddressForUpdate(index);
-          _clearFocus();
-          vibrateLight();
-        },
-        defaultColor: Colors.transparent,
-        pressedColor: CoconutColors.gray800,
-        borderRadius: 4.0,
-        child: SizedBox(
-          width: double.infinity,
+    return ShrinkAnimationButton(
+      onPressed: () {
+        _addressControllerList[_viewModel.currentIndex].text = address;
+        _viewModel.markWalletAddressForUpdate(index);
+        _clearFocus();
+        vibrateLight();
+      },
+      defaultColor: Colors.transparent,
+      pressedColor: CoconutColors.gray800,
+      borderRadius: 12.0,
+      child: SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 14, right: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -979,43 +978,43 @@ class _SendScreenState extends State<SendScreen> {
                     width: 1,
                   ),
                   borderRadius: const BorderRadius.all(Radius.circular(8))),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 14, bottom: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 14),
-                      child: Row(
-                        children: [
-                          Text(
-                            t.send_screen.my_address,
-                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
-                          ),
-                          const Spacer(),
-                          CoconutUnderlinedButton(
-                            text: t.close,
-                            onTap: () => _viewModel.setShowAddressBoard(false),
-                            textStyle: CoconutTypography.body3_12,
-                            padding: const EdgeInsets.only(right: 14, left: 24),
-                          ),
-                        ],
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 14, top: 14),
+                    child: Row(
+                      children: [
+                        Text(
+                          t.send_screen.my_address,
+                          style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                        ),
+                        const Spacer(),
+                        CoconutUnderlinedButton(
+                          text: t.close,
+                          onTap: () => _viewModel.setShowAddressBoard(false),
+                          textStyle: CoconutTypography.body3_12,
+                          padding: const EdgeInsets.only(right: 14, left: 24),
+                        ),
+                      ],
                     ),
-                    CoconutLayout.spacing_200h,
-                    SizedBox(
-                      height: walletAddressListHeight,
-                      child: ListView.builder(
-                          itemCount: _viewModel.walletItemList.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final walletListItem = _viewModel.walletItemList[index];
-                            final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
-                            return _buildAddressRow(index, walletAddress.address,
-                                walletListItem.name, walletAddress.derivationPath);
-                          }),
-                    ),
-                    CoconutLayout.spacing_200h,
-                    CoconutUnderlinedButton(
+                  ),
+                  CoconutLayout.spacing_200h,
+                  SizedBox(
+                    height: walletAddressListHeight,
+                    child: ListView.builder(
+                        itemCount: _viewModel.walletItemList.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final walletListItem = _viewModel.walletItemList[index];
+                          final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                          return _buildAddressRow(index, walletAddress.address, walletListItem.name,
+                              walletAddress.derivationPath);
+                        }),
+                  ),
+                  CoconutLayout.spacing_200h,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 14, bottom: 14),
+                    child: CoconutUnderlinedButton(
                       text: t.view_more,
                       onTap: () {
                         _clearFocus();
@@ -1023,7 +1022,6 @@ class _SendScreenState extends State<SendScreen> {
                           _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
                           return;
                         }
-
                         CommonBottomSheets.showDraggableBottomSheet(
                             context: context,
                             childBuilder: (scrollController) => SelectWalletBottomSheet(
@@ -1039,8 +1037,8 @@ class _SendScreenState extends State<SendScreen> {
                       textStyle: CoconutTypography.body3_12,
                       padding: EdgeInsets.zero,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
