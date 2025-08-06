@@ -79,22 +79,10 @@ class WalletAddInputViewModel extends ChangeNotifier {
   Future<ResultOfSyncFromVault> addWallet() async {
     assert(validExtendedPublicKey != null || validDescriptor != null);
     if (validExtendedPublicKey != null) {
-      return await addWalletFromExtendedPublicKey(validExtendedPublicKey!).then((result) {
-        if (result.result == WalletSyncResult.newWalletAdded) {
-          _walletProvider.addToWalletOrder(result.walletId!);
-          _walletProvider.addToFavoriteWallets(result.walletId!);
-        }
-        return result;
-      });
+      return await addWalletFromExtendedPublicKey(validExtendedPublicKey!);
     }
 
-    return await addWalletFromDescriptor(validDescriptor!).then((result) {
-      if (result.result == WalletSyncResult.newWalletAdded) {
-        _walletProvider.addToWalletOrder(result.walletId!);
-        _walletProvider.addToFavoriteWallets(result.walletId!);
-      }
-      return result;
-    });
+    return await addWalletFromDescriptor(validDescriptor!);
   }
 
   Future<ResultOfSyncFromVault> addWalletFromExtendedPublicKey(String extendedPublicKey) async {

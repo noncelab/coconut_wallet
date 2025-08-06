@@ -193,6 +193,10 @@ class WalletProvider extends ChangeNotifier {
 
     Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
 
+    if (result == WalletSyncResult.newWalletAdded) {
+      _handleNewWalletAdded(newWallet.id);
+    }
+
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
 
@@ -214,6 +218,10 @@ class WalletProvider extends ChangeNotifier {
     // case 1: 새 지갑 생성
     bool isMultisig = watchOnlyWallet.signers != null;
     var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
+
+    if (result == WalletSyncResult.newWalletAdded) {
+      _handleNewWalletAdded(newWallet.id);
+    }
 
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
@@ -414,6 +422,12 @@ class WalletProvider extends ChangeNotifier {
       favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
       await _preferenceProvider.setFavoriteWalletIds(favoriteWalletIds);
     }
+  }
+
+  /// 새 지갑이 추가되었을 때 처리하는 함수(즐겨찾기, 지갑 순서 추가)
+  void _handleNewWalletAdded(int walletId) {
+    addToWalletOrder(walletId);
+    addToFavoriteWallets(walletId);
   }
 
   @override
