@@ -294,7 +294,7 @@ class _SendScreenState extends State<SendScreen> {
               ),
               FixedBottomButton(
                 showGradient: false,
-                adjustForKeyboard: false,
+                isVisibleAboveKeyboard: false,
                 onButtonClicked: () {
                   FocusScope.of(context).unfocus();
                   if (mounted) {

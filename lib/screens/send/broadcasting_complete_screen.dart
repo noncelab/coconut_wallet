@@ -117,7 +117,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
               child: _buildMemoTags()),
         FixedBottomButton(
             showGradient: false,
-            adjustForKeyboard: false,
+            isVisibleAboveKeyboard: false,
             onButtonClicked: () => onTapConfirmButton(context),
             text: t.confirm),
       ],
