@@ -576,10 +576,6 @@ class SendViewModel extends ChangeNotifier {
   void setAddressText(String text, int recipientIndex) {
     if (_recipientList[recipientIndex].address == text) return;
     _recipientList[recipientIndex].address = text;
-    validateAddress(text, recipientIndex);
-    checkAndSetDuplicationError();
-    _calculateEstimatedFee();
-    _updateFeeBoardVisibility();
     notifyListeners();
   }
 
@@ -675,16 +671,18 @@ class SendViewModel extends ChangeNotifier {
         }
       }
     }
+    notifyListeners();
+  }
 
-    if (_isMaxMode) {
-      _adjustLastReceiverAmount(recipientIndex: _currentIndex);
-    } else {
+  void validateAllFieldsOnFocusLost() {
+    if (_isMaxMode) _adjustLastReceiverAmount();
+    for (int i = 0; i < _recipientList.length; ++i) {
       _updateAmountValidationState(recipientIndex: _currentIndex);
+      validateAddress(_recipientList[i].address, i);
     }
-
+    checkAndSetDuplicationError();
     _calculateEstimatedFee();
     _updateFeeBoardVisibility();
-    notifyListeners();
   }
 
   void clearAmountText() {

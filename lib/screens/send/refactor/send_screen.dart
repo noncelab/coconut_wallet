@@ -99,7 +99,11 @@ class _SendScreenState extends State<SendScreen> {
         widget.walletId,
         widget.sendEntryPoint);
 
-    _amountFocusNode.addListener(() => setState(() {}));
+    _amountFocusNode.addListener(() => setState(() {
+          if (!_amountFocusNode.hasFocus) {
+            _viewModel.validateAllFieldsOnFocusLost();
+          }
+        }));
     _feeRateFocusNode.addListener(() => setState(() {}));
     _amountController.addListener(_amountTextListener);
     _recipientPageController.addListener(_recipientPageListener);
@@ -572,13 +576,15 @@ class _SendScreenState extends State<SendScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildFeeRowLabel(t.send_screen.fee_subtracted_from_send_amount),
-                  Text(
-                    _viewModel.isFeeSubtractedFromSendAmount
-                        ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
-                        : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
-                    maxLines: 2, // en - right overflow 방지
-                    softWrap: true,
+                  FittedBox(
+                    child: Text(
+                      _viewModel.isFeeSubtractedFromSendAmount
+                          ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
+                          : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                      maxLines: 2, // en - right overflow 방지
+                      softWrap: true,
+                    ),
                   ),
                 ],
               ),
@@ -852,6 +858,7 @@ class _SendScreenState extends State<SendScreen> {
                             _showAddressScanner(index);
                           } else {
                             controller.clear();
+                            _viewModel.validateAllFieldsOnFocusLost();
                           }
                         },
                         icon: controller.text.isEmpty
@@ -1252,6 +1259,9 @@ class _SendScreenState extends State<SendScreen> {
     focusNode.addListener(() => setState(() {
           final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null;
           _viewModel.setShowAddressBoard(shouldShowBoard);
+          if (!focusNode.hasFocus) {
+            _viewModel.validateAllFieldsOnFocusLost();
+          }
         }));
     _addressFocusNodeList.add(focusNode);
   }
