@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -128,6 +129,25 @@ class WalletProvider extends ChangeNotifier {
     return -1;
   }
 
+  Future<void> addToWalletOrder(int walletId) async {
+    final walletOrder = _preferenceProvider.walletOrder.toList();
+    if (!walletOrder.contains(walletId)) {
+      walletOrder.add(walletId);
+
+      await _preferenceProvider.setWalletOrder(walletOrder);
+    }
+  }
+
+  Future<void> addToFavoriteWallets(int walletId) async {
+    final favoriteWallets = _preferenceProvider.favoriteWalletIds.toList();
+
+    // 즐겨찾기된 지갑이 5개이상이면 등록안함
+    if (favoriteWallets.length < kMaxStarLenght && !favoriteWallets.contains(walletId)) {
+      favoriteWallets.add(walletId);
+      await _preferenceProvider.setFavoriteWalletIds(favoriteWallets);
+    }
+  }
+
   /// case1. 새로운 pubkey인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
   /// case2. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
   /// case3. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
@@ -170,6 +190,8 @@ class WalletProvider extends ChangeNotifier {
 
     // case 1: 새 지갑 생성
     var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
+
+    Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
 
     return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
   }
