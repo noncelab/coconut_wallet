@@ -7,6 +7,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/svg.dart';
@@ -86,55 +87,61 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       backgroundColor: CoconutColors.black,
-      appBar: CoconutAppBar.buildWithNext(
-          title: (_isDonation ?? false) ? t.donation.donate : t.send,
-          context: context,
-          usePrimaryActiveColor: true,
-          nextButtonTitle: t.next,
-          onNextPressed: () {
-            Navigator.pushNamed(context, '/signed-psbt-scanner');
-          }),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            padding: Paddings.container,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(
-                      top: 8,
-                      left: CoconutLayout.defaultPadding,
-                      right: CoconutLayout.defaultPadding),
-                  child: _buildToolTip(),
-                ),
-                Container(
-                  margin: const EdgeInsets.only(top: 40),
-                  // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
-                  // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 16,
-                  ),
-                  decoration: BoxDecoration(
-                      color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
-                  child: Center(
-                    child: AnimatedQrView(
-                      key: ValueKey(_qrScanDensity),
-                      qrScanDensity: _qrScanDensity,
-                      qrViewDataHandler:
-                          BcUrQrViewHandler(_psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
+      appBar: CoconutAppBar.build(
+          title: (_isDonation ?? false) ? t.donation.donate : t.send, context: context),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                padding: Paddings.container,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(
+                          top: 8,
+                          left: CoconutLayout.defaultPadding,
+                          right: CoconutLayout.defaultPadding),
+                      child: _buildToolTip(),
                     ),
-                  ),
+                    Container(
+                      margin: const EdgeInsets.only(top: 40),
+                      // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
+                      // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                          color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
+                      child: Center(
+                        child: AnimatedQrView(
+                          key: ValueKey(_qrScanDensity),
+                          qrScanDensity: _qrScanDensity,
+                          qrViewDataHandler: BcUrQrViewHandler(
+                              _psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
+                        ),
+                      ),
+                    ),
+                    CoconutLayout.spacing_800h,
+                    _buildDensitySliderWidget(context),
+                  ],
                 ),
-                CoconutLayout.spacing_800h,
-                _buildDensitySliderWidget(context),
-              ],
+              ),
             ),
           ),
-        ),
+          FixedBottomButton(
+            onButtonClicked: () {
+              Navigator.pushNamed(context, '/signed-psbt-scanner');
+            },
+            text: t.next,
+            backgroundColor: CoconutColors.gray100,
+            pressedBackgroundColor: CoconutColors.gray500,
+          ),
+        ],
       ),
     );
   }

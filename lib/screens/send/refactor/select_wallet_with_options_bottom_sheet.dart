@@ -153,14 +153,14 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(t.select_wallet_with_options_bottom_sheet.select_utxo_auto,
-                  style: CoconutTypography.body3_12),
+                  style: CoconutTypography.body2_14),
               Text(
                   _isUtxoSelectionAuto
                       ? t.select_wallet_with_options_bottom_sheet
                           .select_utxo_auto_minimal_fee_description
                       : t.select_wallet_with_options_bottom_sheet
                           .select_utxo_auto_selected_utxo_description,
-                  style: CoconutTypography.caption_10.setColor(CoconutColors.gray400)),
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
             ],
           ),
           const Spacer(),

@@ -88,7 +88,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                 backgroundColor: CoconutColors.white,
                 foregroundColor: CoconutColors.black,
                 pressedTextColor: CoconutColors.black,
-                text: t.complete,
+                text: t.select,
               ),
             ),
             CoconutLayout.spacing_800h,

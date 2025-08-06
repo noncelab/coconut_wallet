@@ -72,6 +72,31 @@ class CommonBottomSheets {
     );
   }
 
+  static Future<T?> showBottomSheet_40<T>(
+      {required BuildContext context, required Widget child}) async {
+    return showModalBottomSheet<T>(
+      context: context,
+      builder: (context) {
+        return ClipRRect(
+          borderRadius:
+              const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              width: MediaQuery.of(context).size.width,
+              child: child,
+            ),
+          ),
+        );
+      },
+      backgroundColor: CoconutColors.black,
+      isScrollControlled: true,
+      enableDrag: true,
+      useSafeArea: true,
+    );
+  }
+
   static Future<T?> showBottomSheet_50<T>(
       {required BuildContext context, required Widget child}) async {
     return showModalBottomSheet<T>(
@@ -171,83 +196,84 @@ class CommonBottomSheets {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return ClipRRect(
-            borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-            child: DraggableScrollableSheet(
-              controller: draggableController,
-              initialChildSize: minChildSize,
-              minChildSize: minChildSize,
-              maxChildSize: maxChildSize,
-              expand: false,
-              builder: (context, scrollController) {
-                void handleDrag() {
-                  if (isAnimating) return;
-                  final extent = draggableController.size;
-                  final targetExtent = (extent - minChildSize).abs() < (extent - maxChildSize).abs()
-                      ? minChildSize + 0.01
-                      : maxChildSize;
+        return DraggableScrollableSheet(
+          controller: draggableController,
+          initialChildSize: minChildSize,
+          minChildSize: minChildSize,
+          maxChildSize: maxChildSize,
+          expand: false,
+          builder: (context, scrollController) {
+            void handleDrag() {
+              if (isAnimating) return;
+              final extent = draggableController.size;
+              final targetExtent = (extent - minChildSize).abs() < (extent - maxChildSize).abs()
+                  ? minChildSize + 0.01
+                  : maxChildSize;
 
-                  isAnimating = true;
-                  draggableController
-                      .animateTo(
-                    targetExtent,
-                    duration: const Duration(milliseconds: 50),
-                    curve: Curves.easeOut,
-                  )
-                      .whenComplete(() {
-                    isAnimating = false;
-                  });
+              isAnimating = true;
+              draggableController
+                  .animateTo(
+                targetExtent,
+                duration: const Duration(milliseconds: 50),
+                curve: Curves.easeOut,
+              )
+                  .whenComplete(() {
+                isAnimating = false;
+              });
+            }
+
+            return NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollEndNotification) {
+                  handleDrag();
+                  return true;
                 }
-
-                return NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollEndNotification) {
+                return false;
+              },
+              child: Column(
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragUpdate: (details) {
+                      final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                      draggableController.jumpTo(draggableController.size + delta);
+                    },
+                    onVerticalDragEnd: (details) {
                       handleDrag();
-                      return true;
-                    }
-                    return false;
-                  },
-                  child: Column(
-                    children: [
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onVerticalDragUpdate: (details) {
-                          final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                          draggableController.jumpTo(draggableController.size + delta);
-                        },
-                        onVerticalDragEnd: (details) {
-                          handleDrag();
-                        },
-                        onVerticalDragCancel: () {
-                          handleDrag();
-                        },
+                    },
+                    onVerticalDragCancel: () {
+                      handleDrag();
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
                         child: Container(
-                          color: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Center(
-                            child: Container(
-                              width: 55,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: CoconutColors.gray400,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
+                          width: 55,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: CoconutColors.gray400,
+                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                       ),
-                      Expanded(
-                        child: Padding(
-                            padding:
-                                EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                            child: childBuilder(scrollController)),
-                      )
-                    ],
+                    ),
                   ),
-                );
-              },
-            ));
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                      child: Padding(
+                          padding:
+                              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          child: childBuilder(scrollController)),
+                    ),
+                  )
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }

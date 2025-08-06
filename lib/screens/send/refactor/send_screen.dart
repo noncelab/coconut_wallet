@@ -19,6 +19,7 @@ import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
@@ -104,7 +105,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         widget.walletId,
         widget.sendEntryPoint);
 
-    _amountFocusNode.addListener(() => setState(() {}));
+    _amountFocusNode.addListener(() => setState(() {
+          if (!_amountFocusNode.hasFocus) {
+            _viewModel.validateAllFieldsOnFocusLost();
+          }
+        }));
     _feeRateFocusNode.addListener(() => setState(() {}));
     _amountController.addListener(_amountTextListener);
     _recipientPageController.addListener(_recipientPageListener);
@@ -189,12 +194,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: Sizes.size24,
-                    left: Sizes.size16,
-                    right: Sizes.size16,
-                    child: _buildFinalButton(context),
-                  ),
+                  _buildFinalButton(context),
                 ],
               ),
             )),
@@ -298,17 +298,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 .unintended_dust_fee(unintendedDustFee: _viewModel.unintendedDustFee.toString());
           }
 
-          return Column(
+          return Stack(
+            alignment: Alignment.center,
             children: [
-              Text(
-                message,
-                style: CoconutTypography.body3_12.setColor(textColor),
+              Positioned(
+                bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+                    FixedBottomButton.fixedBottomButtonDefaultHeight +
+                    12,
+                child: Text(
+                  message,
+                  style: CoconutTypography.body3_12.setColor(textColor),
+                ),
               ),
-              CoconutLayout.spacing_300h,
-              CoconutButton(
-                backgroundColor: CoconutColors.white,
-                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
-                onPressed: () async {
+              FixedBottomButton(
+                showGradient: false,
+                isVisibleAboveKeyboard: false,
+                onButtonClicked: () {
                   FocusScope.of(context).unfocus();
                   if (mounted) {
                     _viewModel.saveSendInfo();
@@ -316,7 +321,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         arguments: {"currentUnit": _viewModel.currentUnit});
                   }
                 },
+                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
                 text: t.complete,
+                backgroundColor: CoconutColors.gray100,
+                pressedBackgroundColor: CoconutColors.gray500,
               ),
             ],
           );
@@ -590,13 +598,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildFeeRowLabel(t.send_screen.fee_subtracted_from_send_amount),
-                  Text(
-                    _viewModel.isFeeSubtractedFromSendAmount
-                        ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
-                        : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
-                    maxLines: 2, // en - right overflow 방지
-                    softWrap: true,
+                  FittedBox(
+                    child: Text(
+                      _viewModel.isFeeSubtractedFromSendAmount
+                          ? t.send_screen.fee_subtracted_from_send_amount_enabled_description
+                          : t.send_screen.fee_subtracted_from_send_amount_disabled_description,
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                      maxLines: 2, // en - right overflow 방지
+                      softWrap: true,
+                    ),
                   ),
                 ],
               ),
@@ -878,6 +888,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                             _showAddressScanner(index);
                           } else {
                             controller.clear();
+                            _viewModel.validateAllFieldsOnFocusLost();
                           }
                         },
                         icon: controller.text.isEmpty
@@ -954,21 +965,20 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
-    double bottomPadding = index == _viewModel.walletItemList.length - 1 ? 0.0 : 10.0;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomPadding),
-      child: ShrinkAnimationButton(
-        onPressed: () {
-          _addressControllerList[_viewModel.currentIndex].text = address;
-          _viewModel.markWalletAddressForUpdate(index);
-          _clearFocus();
-          vibrateLight();
-        },
-        defaultColor: Colors.transparent,
-        pressedColor: CoconutColors.gray800,
-        borderRadius: 4.0,
-        child: SizedBox(
-          width: double.infinity,
+    return ShrinkAnimationButton(
+      onPressed: () {
+        _addressControllerList[_viewModel.currentIndex].text = address;
+        _viewModel.markWalletAddressForUpdate(index);
+        _clearFocus();
+        vibrateLight();
+      },
+      defaultColor: Colors.transparent,
+      pressedColor: CoconutColors.gray800,
+      borderRadius: 12.0,
+      child: SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 14, right: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1005,43 +1015,43 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     width: 1,
                   ),
                   borderRadius: const BorderRadius.all(Radius.circular(8))),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 14, bottom: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 14),
-                      child: Row(
-                        children: [
-                          Text(
-                            t.send_screen.my_address,
-                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
-                          ),
-                          const Spacer(),
-                          CoconutUnderlinedButton(
-                            text: t.close,
-                            onTap: () => _viewModel.setShowAddressBoard(false),
-                            textStyle: CoconutTypography.body3_12,
-                            padding: const EdgeInsets.only(right: 14, left: 24),
-                          ),
-                        ],
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 14, top: 14),
+                    child: Row(
+                      children: [
+                        Text(
+                          t.send_screen.my_address,
+                          style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                        ),
+                        const Spacer(),
+                        CoconutUnderlinedButton(
+                          text: t.close,
+                          onTap: () => _viewModel.setShowAddressBoard(false),
+                          textStyle: CoconutTypography.body3_12,
+                          padding: const EdgeInsets.only(right: 14, left: 24),
+                        ),
+                      ],
                     ),
-                    CoconutLayout.spacing_200h,
-                    SizedBox(
-                      height: walletAddressListHeight,
-                      child: ListView.builder(
-                          itemCount: _viewModel.walletItemList.length,
-                          itemBuilder: (BuildContext context, int index) {
-                            final walletListItem = _viewModel.walletItemList[index];
-                            final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
-                            return _buildAddressRow(index, walletAddress.address,
-                                walletListItem.name, walletAddress.derivationPath);
-                          }),
-                    ),
-                    CoconutLayout.spacing_200h,
-                    CoconutUnderlinedButton(
+                  ),
+                  CoconutLayout.spacing_200h,
+                  SizedBox(
+                    height: walletAddressListHeight,
+                    child: ListView.builder(
+                        itemCount: _viewModel.walletItemList.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          final walletListItem = _viewModel.walletItemList[index];
+                          final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                          return _buildAddressRow(index, walletAddress.address, walletListItem.name,
+                              walletAddress.derivationPath);
+                        }),
+                  ),
+                  CoconutLayout.spacing_200h,
+                  Padding(
+                    padding: const EdgeInsets.only(left: 14, bottom: 14),
+                    child: CoconutUnderlinedButton(
                       text: t.view_more,
                       onTap: () {
                         _clearFocus();
@@ -1049,7 +1059,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
                           return;
                         }
-
                         CommonBottomSheets.showDraggableBottomSheet(
                             context: context,
                             childBuilder: (scrollController) => SelectWalletBottomSheet(
@@ -1065,8 +1074,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       textStyle: CoconutTypography.body3_12,
                       padding: EdgeInsets.zero,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1123,7 +1132,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   void _onAppBarTitlePressed() {
     _clearFocus();
-    CommonBottomSheets.showBottomSheet_50(
+    CommonBottomSheets.showBottomSheet_40(
         context: context,
         child: SelectWalletWithOptionsBottomSheet(
           currentUnit: _viewModel.currentUnit,
@@ -1280,6 +1289,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     focusNode.addListener(() => setState(() {
           final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null;
           _viewModel.setShowAddressBoard(shouldShowBoard);
+          if (!focusNode.hasFocus) {
+            _viewModel.validateAllFieldsOnFocusLost();
+          }
         }));
     _addressFocusNodeList.add(focusNode);
   }

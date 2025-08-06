@@ -86,7 +86,7 @@ quick_receive: "Quick Recv"
 quick_send: "Quick Send"
 copied: "Copied"
 change_color: "Color"
-selection: "Selection"
+select: "Select"
 hardware_wallet: "Hardware Wallet"
 vault_app: "Vault App"
 view_balance: "Balance"
@@ -336,7 +336,7 @@ select_wallet_with_options_bottom_sheet:
 
 broadcasting_screen:
   title: "Final Review"
-  description: "I will send with the information below"
+  description: "Ready to send using the details below"
   self_sending: "This is a transaction sending to my own wallet."
   error_popup_title: "Broadcasting Failed"
   btn_submit: "Send"
