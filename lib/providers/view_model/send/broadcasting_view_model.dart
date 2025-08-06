@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -11,6 +12,14 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
+
+class InvalidTransactionException implements Exception {
+  final String message;
+  InvalidTransactionException([this.message = 'Invalid transaction']);
+
+  @override
+  String toString() => 'InvalidSignedTransactionException: $message';
+}
 
 class BroadcastingViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
@@ -72,8 +81,41 @@ class BroadcastingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 전달된 문자열이 Base64로 인코딩된 PSBT인지 확인하는 함수
+  bool isPsbt() {
+    try {
+      final decoded = base64Decode(signedTransaction);
+      return decoded.length >= 5 &&
+          decoded[0] == 0x70 &&
+          decoded[1] == 0x73 &&
+          decoded[2] == 0x62 &&
+          decoded[3] == 0x74 &&
+          decoded[4] == 0xff;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void setTxInfo() async {
-    Psbt signedPsbt = Psbt.parse(signedTransaction);
+    Psbt signedPsbt;
+
+    if (isPsbt()) {
+      signedPsbt = Psbt.parse(signedTransaction);
+    } else {
+      signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+
+      // raw transaction 데이터 처리 (hex 또는 base64)
+      String hexTransaction = decodeTransactionToHex();
+
+      final signedTx = Transaction.parse(hexTransaction);
+      final unSingedTx = signedPsbt.unsignedTransaction;
+
+      // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
+      if (!isTxContentEqual(signedTx, unSingedTx)) {
+        throw InvalidTransactionException();
+      }
+    }
+
     Psbt psbt;
     if (_hasAllInputsBip32Derivation(signedPsbt)) {
       psbt = signedPsbt;
@@ -81,7 +123,6 @@ class BroadcastingViewModel extends ChangeNotifier {
       psbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
     }
 
-    // print("!!! -> ${_model.signedTransaction!}");
     List<PsbtOutput> outputs = psbt.outputs;
 
     // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)
@@ -158,6 +199,32 @@ class BroadcastingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
+    if (unSignedTx == null) return false;
+
+    debugPrint('unsignedPsbt:: $unSignedTx');
+
+    // inputs, outputs 길이가 같은지 비교
+    if (signedTx.inputs.length != unSignedTx.inputs.length) return false;
+    if (signedTx.outputs.length != unSignedTx.outputs.length) return false;
+
+    // outputs에서 각 output의 amount가 같은지 비교
+    for (int i = 0; i < signedTx.outputs.length; i++) {
+      if (signedTx.outputs[i].amount != unSignedTx.outputs[i].amount) return false;
+    }
+
+    // totalInputAmount 비교
+    if (signedTx.totalInputAmount != unSignedTx.totalInputAmount) return false;
+
+    // 트랜잭션 버전 비교
+    if (signedTx.version != unSignedTx.version) return false;
+
+    // lockTime 비교 - 추후 필요시 구현, 현재는 다르기 때문에 사용안함
+    // if (tx.lockTime != unSignedTx.lockTime) return false;
+
+    return true;
+  }
+
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함
   bool _isBatchTransaction(List<PsbtOutput> outputToMyReceivingAddress,
       List<PsbtOutput> outputToMyChangeAddress, List<PsbtOutput> outputsToOther) {
@@ -186,5 +253,22 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   bool _hasAllInputsBip32Derivation(Psbt psbt) {
     return psbt.inputs.every((input) => input.bip32Derivation != null);
+  }
+
+  /// 트랜잭션 문자열을 hex 형식으로 디코딩하는 헬퍼 메서드
+  String decodeTransactionToHex() {
+    try {
+      // 먼저 hex 문자열인지 확인
+      if (RegExp(r'^[0-9a-fA-F]+$').hasMatch(signedTransaction)) {
+        // 이미 hex 문자열인 경우
+        return signedTransaction;
+      } else {
+        // base64 문자열인 경우 디코딩
+        final bytes = base64.decode(signedTransaction);
+        return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
+      }
+    } catch (e) {
+      throw InvalidTransactionException('Failed to decode transaction: $e');
+    }
   }
 }

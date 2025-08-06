@@ -200,6 +200,47 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ];
           }
         }
+      case WalletImportSource.coldCard:
+        {
+          if (isKorean) {
+            return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step2),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step2_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step3),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step3_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step4_em),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4_end),
+            ];
+          } else {
+            return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step2_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step3),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step3_em),
+              const TextSpan(text: '\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4_preposition),
+              _em(t.wallet_add_scanner_screen.guide_coldcard.step4_em),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step4_end),
+            ];
+          }
+        }
       default:
         return [];
     }
@@ -391,6 +432,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         WalletImportSource.keystone => t.wallet_add_scanner_screen.keystone,
         WalletImportSource.jade => t.wallet_add_scanner_screen.jade,
         WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
+        WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
         _ => '',
       };
 

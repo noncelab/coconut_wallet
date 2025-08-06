@@ -34,6 +34,7 @@ enum WalletImportSource {
   keystone,
   jade,
   seedSigner,
+  coldCard,
   extendedPublicKey,
 }
 
@@ -53,6 +54,8 @@ extension WalletImportSourceExtension on WalletImportSource {
         return kJadeIconPath;
       case WalletImportSource.seedSigner:
         return kSeedSignerIconPath;
+      case WalletImportSource.coldCard:
+        return kColdCardIconPath;
       default:
         return kZpubIconPath;
     }

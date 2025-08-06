@@ -184,6 +184,7 @@ wallet_add_scanner_screen:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
   self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
@@ -220,6 +221,17 @@ wallet_add_scanner_screen:
     step2_em: " Wallet"
     step3: "3. "
     step3_em: " Export Xpub"
+  guide_coldcard:
+    step1: "1. "
+    step1_em: " Advanced/Tools"
+    step2: "2. "
+    step2_em: " Export Wallet"
+    step3: "3. "
+    step3_em: " Sparrow"
+    step4: "4. "
+    step4_preposition: "Press the "
+    step4_em: "QR "
+    step4_end: "Button"
 
 wallet_add_input_screen:
   app_bar_title_text: "Add Manually"
@@ -290,6 +302,8 @@ send_confirm_screen:
   title: "Review Details"
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
+  bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
+  
 unsigned_tx_qr_screen:
   hardware_wallet_screen_guide: "Guide"
   guide_keystone:
@@ -308,6 +322,10 @@ unsigned_tx_qr_screen:
     step1_em: "Scan QR"
     step1_end: "select"
     step2: "2. Scan the QR code below with camera"
+  guide_coldcard:
+    step1_preposition: "Press the "
+    step1_em: "QR "
+    step1_end: "button on the Coldcard."
   fast_scan_mode: "Fast scan mode"
   low_density_qr: "Simple QR"
   high_density_qr: "Complex QR"
@@ -572,6 +590,7 @@ tooltip:
     by_seed_signer: "SeedSigner"
     by_jade: "Jade"
     by_keystone: "Keystone"
+    by_coldcard: "Coldcard"
     by_hardware_wallet: "hardware wallet"
     by_vault_app: "Vault app"
   unsigned_tx_qr:
@@ -669,6 +688,7 @@ third_party:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
   zpub: "zpub"
 
 trade_exchange:
