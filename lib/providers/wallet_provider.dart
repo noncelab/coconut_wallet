@@ -138,7 +138,7 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addToFavoriteWallets(int walletId) async {
+  Future<void> addToFavoriteWalletsUntilFive(int walletId) async {
     final favoriteWallets = _preferenceProvider.favoriteWalletIds.toList();
 
     // 즐겨찾기된 지갑이 5개이상이면 등록안함
@@ -427,7 +427,7 @@ class WalletProvider extends ChangeNotifier {
   /// 새 지갑이 추가되었을 때 처리하는 함수(즐겨찾기, 지갑 순서 추가)
   void _handleNewWalletAdded(int walletId) {
     addToWalletOrder(walletId);
-    addToFavoriteWallets(walletId);
+    addToFavoriteWalletsUntilFive(walletId);
   }
 
   @override
