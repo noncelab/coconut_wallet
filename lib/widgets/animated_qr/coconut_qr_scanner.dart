@@ -134,12 +134,12 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   void _resetLoadingBarState() {
     _progressNotifier.value = 0;
-    _isScanningExtraData = false;
-    if (_showLoadingBar) {
-      setState(() {
+    setState(() {
+      _isScanningExtraData = false;
+      if (_showLoadingBar) {
         _showLoadingBar = false;
-      });
-    }
+      }
+    });
   }
 
   QrScannerOverlayShape _getOverlayShape() {
