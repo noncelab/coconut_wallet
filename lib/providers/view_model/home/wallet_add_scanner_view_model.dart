@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
@@ -62,72 +63,29 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _addToWalletOrder(int walletId) async {
-    final walletOrder = _preferenceProvider.walletOrder.toList();
-    if (!walletOrder.contains(walletId)) {
-      walletOrder.add(walletId);
-
-      await _preferenceProvider.setWalletOrder(walletOrder);
-    }
-  }
-
-  Future<void> _addToFavoriteWallets(int walletId) async {
-    final favoriteWallets = _preferenceProvider.favoriteWalletIds.toList();
-
-    // 즐겨찾기된 지갑이 5개이상이면 등록안함
-    if (favoriteWallets.length < kMaxStarLenght && !favoriteWallets.contains(walletId)) {
-      favoriteWallets.add(walletId);
-      await _preferenceProvider.setFavoriteWalletIds(favoriteWallets);
-    }
-  }
-
   Future<ResultOfSyncFromVault> addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {
-    return await _walletProvider.syncFromCoconutVault(watchOnlyWallet).then((result) {
-      if (result.result == WalletSyncResult.newWalletAdded) {
-        _addToWalletOrder(result.walletId!);
-        _addToFavoriteWallets(result.walletId!);
-      }
-      return result;
-    });
+    return await _walletProvider.syncFromCoconutVault(watchOnlyWallet);
   }
 
   Future<ResultOfSyncFromVault> addKeystoneWallet(UR ur) async {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.keystone, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createKeystoneWallet(ur, name);
-    return await _walletProvider.syncFromThirdParty(wallet).then((result) {
-      if (result.result == WalletSyncResult.newWalletAdded) {
-        _addToWalletOrder(result.walletId!);
-        _addToFavoriteWallets(result.walletId!);
-      }
-      return result;
-    });
+    return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> addJadeWallet(UR ur) async {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.jade, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createJadeWallet(ur, name);
-    return await _walletProvider.syncFromThirdParty(wallet).then((result) {
-      if (result.result == WalletSyncResult.newWalletAdded) {
-        _addToWalletOrder(result.walletId!);
-        _addToFavoriteWallets(result.walletId!);
-      }
-      return result;
-    });
+    return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> addSeedSignerWallet(String descriptor) async {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.seedSigner, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createSeedSignerWallet(descriptor, name);
-    return await _walletProvider.syncFromThirdParty(wallet).then((result) {
-      if (result.result == WalletSyncResult.newWalletAdded) {
-        _addToWalletOrder(result.walletId!);
-        _addToFavoriteWallets(result.walletId!);
-      }
-      return result;
-    });
+    return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   String getWalletName(int walletId) {
