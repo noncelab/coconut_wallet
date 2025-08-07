@@ -82,7 +82,7 @@ class WalletItemCard extends StatelessWidget {
           'entryPoint': entryPoint,
         });
       },
-      onLongPressed: () {
+      onLongPress: () {
         onLongPressed?.call();
       },
       // ** gradient 사용안할수도 있음**
