@@ -99,7 +99,7 @@ utxo_count: "($count items)"
 total_item_count: "(Total $count items)"
 
 view_app_info: "App Info"
-view_tx_details: "View Tx Details"
+view_tx_details: "Transaction"
 view_more: "More"
 view_less: "Less"
 view_mempool: "Mempool"
