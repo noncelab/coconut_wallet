@@ -21,17 +21,6 @@ class ElectrumServer {
         useTor: useTor, torProxyHost: torProxyHost, torProxyPort: torProxyPort);
   }
 
-  // .onion 주소 자동 감지
-  factory ElectrumServer.withAutoTorDetection(String host, int port, bool ssl) {
-    final isOnionAddress = host.endsWith('.onion');
-    return ElectrumServer(
-      host,
-      port,
-      ssl,
-      useTor: isOnionAddress,
-    );
-  }
-
   String get effectiveTorProxyHost => torProxyHost ?? '127.0.0.1';
   int get effectiveTorProxyPort => torProxyPort ?? 9050;
 
