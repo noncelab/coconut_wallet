@@ -156,6 +156,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     CommonBottomSheets.showDraggableBottomSheet(
         context: context,
         childBuilder: (scrollController) => SelectWalletBottomSheet(
+              showOnlyMfpWallets: false,
               scrollController: scrollController,
               currentUnit: context.read<PreferenceProvider>().currentUnit,
               walletId: selectedWalletId,
