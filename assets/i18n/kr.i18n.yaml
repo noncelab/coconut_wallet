@@ -242,7 +242,9 @@ wallet_add_scanner_screen:
 wallet_list:
   wallet_count: "$count개"
   view_all_wallets: "내 지갑 전체보기"
+  primary: "대표"
   primary_wallet: "대표 지갑"
+  hidden_from_total: "홈 화면 총액에서 숨기기"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   home_balance: "홈 화면 총액"
   excluded_balance: "제외 총액"

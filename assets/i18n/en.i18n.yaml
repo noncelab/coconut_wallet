@@ -239,7 +239,9 @@ wallet_add_scanner_screen:
 wallet_list:
   wallet_count: "$count Items"
   view_all_wallets: "View All My Wallets"
+  primary: "Primary"
   primary_wallet: "Primary Wallet"
+  hidden_from_total: "Hidden from Total"
   exclude_from_total_amount: "Excluded from Home Total"
   home_balance: "Home Balance"
   excluded_balance: "Excluded Balance"

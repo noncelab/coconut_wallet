@@ -4,11 +4,13 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 
 class WalletItemCard extends StatelessWidget {
   /// External Wallet인 경우 iconIndex = colorIndex = null
@@ -63,14 +65,15 @@ class WalletItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isKorean = Provider.of<PreferenceProvider>(context, listen: false).isKorean;
+
     final displayedFakeBalance = currentUnit.displayBitcoinAmount(fakeBalance);
-    final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     if (isEditMode) {
       return _buildWalletItemContent(displayedFakeBalance, isEditMode: true, onTapStar: (pair) {
         if (isPrimaryWallet != null) {
           onTapStar?.call(pair);
         }
-      }, index: index);
+      }, index: index, isKorean: isKorean);
     }
     final row = ShrinkAnimationButton(
       defaultColor: backgroundColor ?? CoconutColors.gray800,
@@ -92,7 +95,7 @@ class WalletItemCard extends StatelessWidget {
       // borderGradientColors: signers?.isNotEmpty == true
       //     ? ColorUtil.getGradientColors(signers!)
       //     : [CoconutColors.gray800, CoconutColors.gray800],
-      child: _buildWalletItemContent(displayedFakeBalance),
+      child: _buildWalletItemContent(displayedFakeBalance, isKorean: isKorean),
     );
 
     if (isLastItem) {
@@ -111,6 +114,7 @@ class WalletItemCard extends StatelessWidget {
     bool isEditMode = false,
     ValueChanged<(bool, int)>? onTapStar,
     int? index,
+    bool isKorean = false,
   }) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isEditMode ? 8 : 20, vertical: 12),
@@ -201,14 +205,14 @@ class WalletItemCard extends StatelessWidget {
                     ),
                     if (isPrimaryWallet == true)
                       Text(
-                        ' • ${t.wallet_list.primary_wallet}',
+                        ' • ${isKorean ? t.wallet_list.primary_wallet : t.wallet_list.primary}',
                         style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
                       ),
                     if (isExcludeFromTotalBalance == true)
                       Text(
                         isPrimaryWallet == true
-                            ? ' | ${t.wallet_list.exclude_from_total_amount}'
-                            : ' • ${t.wallet_list.exclude_from_total_amount}',
+                            ? ' | ${isKorean ? t.wallet_list.exclude_from_total_amount : t.wallet_list.hidden_from_total}'
+                            : ' • ${isKorean ? t.wallet_list.exclude_from_total_amount : t.wallet_list.hidden_from_total}',
                         style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
                       ),
                   ],
