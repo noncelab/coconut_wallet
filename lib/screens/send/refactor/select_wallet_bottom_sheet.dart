@@ -4,6 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -14,12 +15,14 @@ class SelectWalletBottomSheet extends StatefulWidget {
   final ScrollController? scrollController;
   final int walletId;
   final BitcoinUnit currentUnit;
+  final bool showOnlyMfpWallets;
 
   const SelectWalletBottomSheet(
       {super.key,
       required this.walletId,
       required this.onWalletChanged,
       required this.currentUnit,
+      required this.showOnlyMfpWallets,
       this.scrollController});
 
   @override
@@ -27,7 +30,7 @@ class SelectWalletBottomSheet extends StatefulWidget {
 }
 
 class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
-  late final List<WalletListItemBase> _walletList;
+  late List<WalletListItemBase> _walletList;
   late final Map<int, Balance> _walletBalanceMap;
   int _selectedWalletId = -1;
 
@@ -36,6 +39,9 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     super.initState();
     final walletProvider = context.read<WalletProvider>();
     _walletList = walletProvider.walletItemList;
+    if (widget.showOnlyMfpWallets) {
+      _walletList = _walletList.where((wallet) => !isWalletNonMfp(wallet)).toList();
+    }
     _walletBalanceMap = walletProvider.fetchWalletBalanceMap();
     _selectedWalletId = widget.walletId;
   }

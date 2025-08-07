@@ -18,6 +18,7 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -118,11 +119,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       duration: const Duration(milliseconds: 1000),
     );
 
+    // 수신자 카드를 보기 전까지 Bounce 애니메이션을 처리한다.
     hasSeenAddRecipientCard = context.read<PreferenceProvider>().hasSeenAddRecipientCard;
     if (!hasSeenAddRecipientCard) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 300));
         _startBounce();
+      });
+    }
+
+    // MFP 없는 지갑이 선택된 경우 Toast 메시지 출력 하기
+    if (isWalletNonMfp(_viewModel.selectedWalletItem)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        CoconutToast.showToast(
+            isVisibleIcon: true,
+            context: context,
+            text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
       });
     }
   }
@@ -219,9 +231,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   final selectedUtxoListLength = data.item4;
                   final currentUnit = data.item5;
 
-                  if (selectedWalletItem == null) {
-                    return Center(
+                  if (_viewModel.isSelectedWalletNull ||
+                      isWalletNonMfp(_viewModel.selectedWalletItem)) {
+                    return Container(
+                      color: Colors.transparent,
+                      width: 50,
                       child: Text(
+                        textAlign: TextAlign.center,
                         '-',
                         style: CoconutTypography.body1_16.setColor(CoconutColors.white),
                       ),
@@ -239,7 +255,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(selectedWalletItem.name,
+                          Text(selectedWalletItem!.name,
                               style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
                           CoconutLayout.spacing_50w,
                           const Icon(Icons.keyboard_arrow_down_sharp,
@@ -253,7 +269,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   );
                 }),
         onTitlePressed: () {
-          if (_viewModel.selectedWalletItem != null) {
+          // 지갑이 적어도 1개 이상 있어야 하며, MFP를 가진 지갑이 존재하는 경우에 출력한다. (존재하지 않는 경우 지갑 선택, UTXO 옵션처리를 할 필요가 없음)
+          if (!_viewModel.isSelectedWalletNull && hasMfpWallet(_viewModel.walletItemList)) {
             _onAppBarTitlePressed();
           }
         },
@@ -1062,6 +1079,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         CommonBottomSheets.showDraggableBottomSheet(
                             context: context,
                             childBuilder: (scrollController) => SelectWalletBottomSheet(
+                                  showOnlyMfpWallets: false,
                                   scrollController: scrollController,
                                   currentUnit: _viewModel.currentUnit,
                                   walletId: -1,

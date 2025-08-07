@@ -17,7 +17,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
-import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
@@ -712,17 +711,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       (id) => id == firstWallet.id,
       orElse: () => firstWallet.id,
     );
-
-    final wallet = _viewModel.getWalletById(targetId);
-    if (wallet is! MultisigWalletListItem &&
-        (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
-            WalletAddService.masterFingerprintPlaceholder) {
-      CoconutToast.showToast(
-          isVisibleIcon: true,
-          context: context,
-          text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
-      return;
-    }
 
     if (!_checkStateAndShowToast(targetId)) return;
     Navigator.pushNamed(context, '/send',

@@ -250,6 +250,8 @@ class SendViewModel extends ChangeNotifier {
     return true;
   }
 
+  bool get isSelectedWalletNull => _selectedWalletItem == null;
+
   bool isMaxModeIndex(int index) {
     return _isMaxMode && index == lastIndex;
   }

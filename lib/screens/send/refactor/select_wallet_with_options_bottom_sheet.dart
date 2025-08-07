@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -144,9 +145,13 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
   }
 
   Widget _buildUtxoOption() {
+    bool isNonMpfWallet = isWalletNonMfp(_selectedWalletItem);
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onTap: () => _setUtxoSelectionAuto(!_isUtxoSelectionAuto),
+      onTap: () {
+        if (isNonMpfWallet) return;
+        _setUtxoSelectionAuto(!_isUtxoSelectionAuto);
+      },
       child: Row(
         children: [
           Column(
@@ -169,10 +174,13 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
               child: CoconutSwitch(
                   scale: 0.7,
                   isOn: _isUtxoSelectionAuto,
-                  activeColor: CoconutColors.gray100,
+                  activeColor: CoconutColors.gray100.withOpacity(isNonMpfWallet ? 0.3 : 1.0),
                   trackColor: CoconutColors.gray600,
                   thumbColor: CoconutColors.gray800,
-                  onChanged: (isOn) => _setUtxoSelectionAuto(isOn))),
+                  onChanged: (isOn) {
+                    if (isNonMpfWallet) return;
+                    _setUtxoSelectionAuto(isOn);
+                  })),
           CoconutLayout.spacing_100w,
         ],
       ),
@@ -235,9 +243,12 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
   Widget _buildWalletInfo(String amountText) {
     return GestureDetector(
       onTap: () {
+        // MFP를 가진 월렛이 존재하지 않는다면 바텀시트를 출력하지 않는다
+        if (!hasMfpWallet(_walletProvider.walletItemList)) return;
         CommonBottomSheets.showDraggableBottomSheet(
             context: context,
             childBuilder: (scrollController) => SelectWalletBottomSheet(
+                  showOnlyMfpWallets: true,
                   scrollController: scrollController,
                   currentUnit: widget.currentUnit,
                   walletId: selectedWalletId,
@@ -253,7 +264,9 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
           Row(
             children: [
               Text(
-                _selectedWalletItem?.name ?? t.send_screen.select_wallet,
+                isWalletNonMfp(_selectedWalletItem)
+                    ? '-'
+                    : _selectedWalletItem?.name ?? t.send_screen.select_wallet,
                 style: CoconutTypography.body3_12,
               ),
               CoconutLayout.spacing_50w,
