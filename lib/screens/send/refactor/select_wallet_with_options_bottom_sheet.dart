@@ -145,7 +145,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
   }
 
   Widget _buildUtxoOption() {
-    bool isNonMpfWallet = isWalletNonMfp(_selectedWalletItem);
+    bool isNonMpfWallet = isWalletWithoutMfp(_selectedWalletItem);
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
@@ -264,7 +264,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
           Row(
             children: [
               Text(
-                isWalletNonMfp(_selectedWalletItem)
+                isWalletWithoutMfp(_selectedWalletItem)
                     ? '-'
                     : _selectedWalletItem?.name ?? t.send_screen.select_wallet,
                 style: CoconutTypography.body3_12,

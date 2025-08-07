@@ -40,7 +40,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     final walletProvider = context.read<WalletProvider>();
     _walletList = walletProvider.walletItemList;
     if (widget.showOnlyMfpWallets) {
-      _walletList = _walletList.where((wallet) => !isWalletNonMfp(wallet)).toList();
+      _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
     }
     _walletBalanceMap = walletProvider.fetchWalletBalanceMap();
     _selectedWalletId = widget.walletId;

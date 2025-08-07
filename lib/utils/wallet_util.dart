@@ -3,7 +3,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 
-bool isWalletNonMfp(WalletListItemBase? wallet) {
+bool isWalletWithoutMfp(WalletListItemBase? wallet) {
   if (wallet != null &&
       wallet is! MultisigWalletListItem &&
       (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==

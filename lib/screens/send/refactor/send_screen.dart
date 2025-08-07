@@ -129,7 +129,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
 
     // MFP 없는 지갑이 선택된 경우 Toast 메시지 출력 하기
-    if (isWalletNonMfp(_viewModel.selectedWalletItem)) {
+    if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         CoconutToast.showToast(
             isVisibleIcon: true,
@@ -231,8 +231,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   final selectedUtxoListLength = data.item4;
                   final currentUnit = data.item5;
 
+                  // null 이거나, 대표지갑이 mfp가 없고 mfp 있는 지갑이 0개일 때
                   if (_viewModel.isSelectedWalletNull ||
-                      isWalletNonMfp(_viewModel.selectedWalletItem)) {
+                      (isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+                          !hasMfpWallet(_viewModel.walletItemList))) {
                     return Container(
                       color: Colors.transparent,
                       width: 50,
@@ -255,16 +257,20 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(selectedWalletItem!.name,
+                          Text(
+                              isWalletWithoutMfp(_viewModel.selectedWalletItem)
+                                  ? '-'
+                                  : selectedWalletItem!.name,
                               style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
                           CoconutLayout.spacing_50w,
                           const Icon(Icons.keyboard_arrow_down_sharp,
                               color: CoconutColors.white, size: 16),
                         ],
                       ),
-                      Text(amountText,
-                          style:
-                              CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white)),
+                      if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
+                        Text(amountText,
+                            style: CoconutTypography.body3_12_NumberBold
+                                .setColor(CoconutColors.white)),
                     ],
                   );
                 }),
