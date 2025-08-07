@@ -4,15 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 abstract class SocketFactory {
-  Future<Socket> createSocket(String host, int port);
+  Future<Socket> createSocket(String host, int port, {Duration timeout});
 
   Future<SecureSocket> createSecureSocket(String host, int port, {String? publicKey});
 }
 
 class DefaultSocketFactory implements SocketFactory {
   @override
-  Future<Socket> createSocket(String host, int port) {
-    return Socket.connect(host, port);
+  Future<Socket> createSocket(String host, int port,
+      {Duration timeout = const Duration(seconds: 3)}) {
+    Logger.log('SocketFactory: Creating socket to $host:$port, timeout: $timeout}');
+    return Socket.connect(host, port, timeout: timeout);
   }
 
   @override

@@ -85,14 +85,18 @@ dependencies:
     path: lib/packages/bc-ur-dart
   qr_code_scanner:
     path: lib/packages/qr-code-scanner
+  shimmer: ^3.0.0
   firebase_core: ^3.4.0
   firebase_analytics: ^11.3.0
-  # coconut_design_system: ^0.9.1
   coconut_design_system:
     git: 
       url: https://github.com/noncelab/coconut_design_system.git
       ref: main
-  coconut_lib: ^0.10.5
+  coconut_lib:
+    git:
+      url: https://github.com/noncelab/coconut_lib.git
+      ref: develop
+  base32: ^2.1.3
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
@@ -257,13 +261,25 @@ flutter:
     - assets/svg/seed-signer.svg
     - assets/svg/jade.svg
     - assets/svg/keystone.svg
+    - assets/svg/cold-card.svg
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
+    - assets/svg/cloud-disconnected.svg
+    - assets/svg/star-small.svg
+    - assets/svg/star-outlined.svg
+    - assets/svg/star-filled.svg
+    - assets/svg/hamburger.svg
+    - assets/svg/barefoot.svg
+    - assets/svg/car.svg
+    - assets/svg/rocket.svg
+    - assets/svg/plus.svg
+    - assets/svg/broom.svg
+    - assets/svg/receipt.svg
     - assets/svg/clip.svg
-
+    - testnet.env
 
   fonts:
     - family: SpaceGrotesk

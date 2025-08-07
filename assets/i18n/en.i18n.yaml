@@ -20,6 +20,8 @@ fee: "Fee"
 fee_rate: "Fee Rate"
 send: "Send"
 receive: "Receive"
+show: "Show"
+hide: "Hide"
 paste: "Paste"
 export: "Export"
 edit: "Edit"  
@@ -33,6 +35,7 @@ close: "Close"
 next: "Next"
 modify: "Modify"
 confirm: "Confirm"
+cancel: "Cancel"
 security: "Security"
 general: "General"
 unit: "Unit"
@@ -54,7 +57,7 @@ tx_memo: "Tx Memo"
 tx_id: "Tx ID"
 block_num: "Block Number"
 inquiry_details: "Inquiry"
-utxo_total: "UTXO Total"
+utxo_total: "Amount"
 receiver: "Send To"
 recipient: "Recipient"
 estimated_fee: "Est. Fee"
@@ -83,7 +86,7 @@ quick_receive: "Quick Recv"
 quick_send: "Quick Send"
 copied: "Copied"
 change_color: "Color"
-selection: "Selection"
+select: "Select"
 hardware_wallet: "Hardware Wallet"
 vault_app: "Vault App"
 view_balance: "Balance"
@@ -91,12 +94,12 @@ network: "Network"
 electrum_server: "Electrum Server"
 
 apply_item: "$count items"
-fee_sats: " ($value sats/vb)"
+fee_sats: " ($value sats/vB)"
 utxo_count: "($count items)"
 total_item_count: "(Total $count items)"
 
 view_app_info: "App Info"
-view_tx_details: "View Tx Details"
+view_tx_details: "Transaction"
 view_more: "More"
 view_less: "Less"
 view_mempool: "Mempool"
@@ -184,6 +187,7 @@ wallet_add_scanner_screen:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
   self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
@@ -220,6 +224,38 @@ wallet_add_scanner_screen:
     step2_em: " Wallet"
     step3: "3. "
     step3_em: " Export Xpub"
+  guide_coldcard:
+    step1: "1. "
+    step1_em: " Advanced/Tools"
+    step2: "2. "
+    step2_em: " Export Wallet"
+    step3: "3. "
+    step3_em: " Sparrow"
+    step4: "4. "
+    step4_preposition: "Press the "
+    step4_em: "QR "
+    step4_end: "Button"
+
+wallet_list:
+  wallet_count: "$count Items"
+  view_all_wallets: "View All My Wallets"
+  primary_wallet: "Primary Wallet"
+  exclude_from_total_amount: "Excluded from Home Total"
+  home_balance: "Home Balance"
+  excluded_balance: "Excluded Balance"
+  settings:
+    primary_wallet: "Set as Primary Wallet"
+    primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen."
+    primary_wallet_abled_description: "Setting another wallet as primary will automatically disable this setting."
+    exclude_from_total_amount: "Exclude from Total"
+    exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen."
+  edit:
+    wallet_list: "Edit Wallet List"
+    star_description: "Select up to 5 wallets to display on the home screen."
+    order_description: "Tap to change the order of wallets."
+    delete_description: "Swipe left on a wallet to delete it."
+    finish: "Finish Editing"
+    unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"    
 
 wallet_add_input_screen:
   app_bar_title_text: "Add Manually"
@@ -274,9 +310,45 @@ broadcasting_complete_screen:
     - "Allowance"
     - "Birthday gift"
 
+# send screen start ----
+send_screen:
+  select_wallet: "Select Wallet"
+  n_utxos: " • ${count} UTXOs"
+  delete: "Delete"
+  fee_rate: "Fee Rate"
+  fee_rate_suffix: "sat/vB"
+  estimated_fee: "Estimated Total Fee"
+  fee_subtracted_from_send_amount: "Fee subtracted from send amount"
+  fee_subtracted_from_send_amount_disabled_description: "Recipient receives the exact amount entered"
+  fee_subtracted_from_send_amount_enabled_description: "The fee will be subtracted from the recipient’s amount"
+  my_address: "My Addresses"
+  add_recipient: "Add Recipient"
+  use_btc_unit: "Use BTC Unit"
+  input_maximum_amount: "Send All"
+  address_placeholder: "Enter the recipient's address"
+  recommended_fee_unavailable: "Failed to Fetch Recommended Fee"
+  recommended_fee_unavailable_description: "Please enter the fee manually."
+  tooltip_text: "${count} addresses • Total ${amount}"
+  tooltip_max_mode_text: "Send All Mode Enabled"
+  max_mode_insufficient_balance: "Insufficient Balance"
+  unintended_dust_fee: "The change of ${unintendedDustFee} sat will be used as a fee."
+
+
+utxo_selection_screen:
+  title: "Select UTXOs"
+
+select_wallet_with_options_bottom_sheet:
+  select_utxo: "Select UTXOs"
+  select_utxo_auto: "Auto-Select UTXOs"
+  select_utxo_auto_minimal_fee_description: "Automatically selects UTXOs for minimal fee"
+  select_utxo_auto_selected_utxo_description: "Transaction will use your selected UTXOs only"
+  n_utxos: " • ${count} utxos"
+
+# send screen end ----
+
 broadcasting_screen:
   title: "Final Review"
-  description: "I will send with the information below"
+  description: "Ready to send using the details below"
   self_sending: "This is a transaction sending to my own wallet."
   error_popup_title: "Broadcasting Failed"
   btn_submit: "Send"
@@ -290,6 +362,8 @@ send_confirm_screen:
   title: "Review Details"
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
+  bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
+  
 unsigned_tx_qr_screen:
   hardware_wallet_screen_guide: "Guide"
   guide_keystone:
@@ -308,12 +382,19 @@ unsigned_tx_qr_screen:
     step1_em: "Scan QR"
     step1_end: "select"
     step2: "2. Scan the QR code below with camera"
+  guide_coldcard:
+    step1_preposition: "Press the "
+    step1_em: "QR "
+    step1_end: "button on the Coldcard."
   fast_scan_mode: "Fast scan mode"
   low_density_qr: "Simple QR"
   high_density_qr: "Complex QR"
 
   guide_hardware_wallet:
     step1: "Please scan the QR code below with your hardware wallet to start the signing process."
+
+coconut_qr_scanner:
+  reading_extra_data: "Reading additional data to collect\nPlease keep scanning"
 
 # lib/screens/settings
 app_info_screen:
@@ -363,7 +444,8 @@ settings_screen:
     port: "Port"
     use_ssl: "Use SSL"
     ssl_port: "SSL Port: $port"
-    default_server: "Default Server"
+    default_server: "Default Servers"
+    user_servers: "My Servers"
     reset: "Reset"
     save: "Save"
     error_msg:
@@ -373,6 +455,10 @@ settings_screen:
       connection_failed: "Cannot connect!"
       connecting: "Connecting..."
       connected: "Connected"
+    popup:
+      delete_server_info: "Delete Server Info"
+      delete_server_info_description: "Are you sure you want to delete the saved server information?"
+
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
@@ -426,13 +512,13 @@ transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
   existing_fee: "Existing Fee"
-  existing_fee_value: "${value} sats/vb"
-  total_fee: "Total $fee sats / ${vb} vb"
+  existing_fee_value: "${value} sats/vB"
+  total_fee: "Total $fee sats / ${vB} vB"
   new_fee: "New Fee"
-  sats_vb: "sats/vb"
-  recommend_fee: "Minimum fee: ${fee} sats/vb or higher"
-  recommend_fee_info_rbf: "Must be at least 1 sat/vb higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vb."
-  recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vb, Recommended fee rate = ${recommendedFeeRate} sat/vb\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb"
+  sats_vb: "sats/vB"
+  recommend_fee: "Minimum fee: ${fee} sats/vB or higher"
+  recommend_fee_info_rbf: "Must be at least 1 sat/vB higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vB."
+  recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, Recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "Recommended Fee"
   estimated_fee: "Estimated total fee about ${fee} sats"
   estimated_fee_too_high_error: "Estimated total fee is over 0.01 BTC!"
@@ -523,19 +609,21 @@ errors:
   node_unknown: "An unknown error occurred while connecting to node."
   broadcast_error: "Failed to broadcast transaction."
   network_connect: "No network connection."
+  network_disconnected: "Network disconnected"
   network_not_found: "Network is not connected!"
-  electrum_connection_failed: "Unable to connect to Electrum server."
+  electrum_connection_failed: "Unable to connect to Electrum server"
   insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"
-    recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Enter Manually' button to enter fee rate."
-    insufficient_utxo: "Insufficient UTXO total"
+    recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."
+    insufficient_utxo: "Selected UTXOs are insufficient"
   address_error:
-    invalid: "Not a valid address."
-    not_for_testnet: "Not a testnet address."
-    not_for_mainnet: "Not a mainnet address."
-    not_for_regtest: "Not a regtest address."
-    duplicated: "Address already entered"
+    empty: "Address is empty"
+    invalid: "Not a valid address"
+    not_for_testnet: "Not a testnet address"
+    not_for_mainnet: "Not a mainnet address"
+    not_for_regtest: "Not a regtest address"
+    duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"
     failed: "No more attempts allowed\nPlease close the app"
@@ -551,7 +639,7 @@ errors:
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
 
 text_field:
-  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sats/vb)"
+  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sats/vB)"
   enter_fee_directly: "Enter Manually"
   search_mnemonic_word: "Search in English"
 
@@ -569,6 +657,7 @@ tooltip:
     by_seed_signer: "SeedSigner"
     by_jade: "Jade"
     by_keystone: "Keystone"
+    by_coldcard: "Coldcard"
     by_hardware_wallet: "hardware wallet"
     by_vault_app: "Vault app"
   unsigned_tx_qr:
@@ -588,7 +677,7 @@ tooltip:
 
 toast:
   back_exit: "Press the back button once more to exit."
-  min_fee: "Current minimum fee is $minimum sats/vb."
+  min_fee: "Current minimum fee rate is $minimum sats/vB."
   fetching_onchain_data: "Fetching latest data. Please wait a moment."
   screen_capture: "Screen capture detected."
   no_balance: "No balance."
@@ -606,7 +695,7 @@ alert:
   error_send:
     broadcasting_failed: "[Send Failed]\n$error"
     insufficient_balance: "Insufficient balance"
-    minimum_amount: "You can send from $bitcoin $unit"
+    minimum_amount: "You can send at least $bitcoin $unit"
     insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
   signed_psbt:
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."
@@ -666,6 +755,7 @@ third_party:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
   zpub: "zpub"
 
 trade_exchange:

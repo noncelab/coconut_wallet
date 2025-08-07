@@ -4,6 +4,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -13,6 +14,7 @@ import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final WalletPreferencesRepository _walletPreferencesRepository;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -41,15 +43,34 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isChangeTooltipDisabled;
   bool get isChangeTooltipDisabled => language == 'kr' ? _isChangeTooltipDisabled : true;
 
+  /// 보내기 화면 [수신자 추가하기 카드] 확인 여부
+  late bool _hasSeenAddRecipientCard;
+  bool get hasSeenAddRecipientCard => _hasSeenAddRecipientCard;
+
   /// 언어 설정
   late String _language;
   String get language => _language;
+
+  bool get isKorean => _language == "kr";
+  bool get isEnglish => _language == "en";
 
   /// 선택된 통화
   late FiatCode _selectedFiat;
   FiatCode get selectedFiat => _selectedFiat;
 
-  PreferenceProvider() {
+  /// 지갑 순서
+  late List<int> _walletOrder;
+  List<int> get walletOrder => _walletOrder;
+
+  /// 지갑 즐겨찾기 목록
+  late List<int> _favoriteWalletIds;
+  List<int> get favoriteWalletIds => _favoriteWalletIds;
+
+  /// 총 잔액에서 제외할 지갑 목록
+  late List<int> _excludedFromTotalBalanceWalletIds;
+  List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
+
+  PreferenceProvider(this._walletPreferencesRepository) {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
@@ -57,15 +78,17 @@ class PreferenceProvider extends ChangeNotifier {
         ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
         : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
+    _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
+    _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
+    _excludedFromTotalBalanceWalletIds =
+        _walletPreferencesRepository.getExcludedWalletIds().toList();
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
+    _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
 
     // 통화 설정 초기화
     _initializeFiat();
-
-    // 언어 설정 초기화 - OS 설정에 따라 자동 선택
     _initializeLanguageFromSystem();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyLanguageSettingSync();
     });
@@ -106,10 +129,10 @@ class PreferenceProvider extends ChangeNotifier {
   void _applyLanguageSettingSync() {
     try {
       Logger.log('Applying language setting: $_language');
-      if (_language == 'kr') {
+      if (isKorean) {
         LocaleSettings.setLocaleSync(AppLocale.kr);
         Logger.log('Korean locale applied successfully');
-      } else if (_language == 'en') {
+      } else if (isEnglish) {
         LocaleSettings.setLocaleSync(AppLocale.en);
         Logger.log('English locale applied successfully');
       }
@@ -125,9 +148,9 @@ class PreferenceProvider extends ChangeNotifier {
   /// 언어 설정 적용
   Future<void> _applyLanguageSetting() async {
     try {
-      if (_language == 'kr') {
+      if (isKorean) {
         await LocaleSettings.setLocale(AppLocale.kr);
-      } else if (_language == 'en') {
+      } else if (isEnglish) {
         await LocaleSettings.setLocale(AppLocale.en);
       } else {
         // 기본값은 영어로 설정
@@ -259,6 +282,52 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
 
+  /// 지갑 순서 설정
+  Future<void> setWalletOrder(List<int> walletOrder) async {
+    _walletOrder = walletOrder;
+    await _walletPreferencesRepository.setWalletOrder(walletOrder);
+    notifyListeners();
+  }
+
+  Future<void> removeWalletOrder(int walletId) async {
+    _walletOrder.remove(walletId);
+    await _walletPreferencesRepository.setWalletOrder(_walletOrder);
+    notifyListeners();
+  }
+
+  /// 지갑 즐겨찾기 설정
+  Future<void> setFavoriteWalletIds(List<int> ids) async {
+    _favoriteWalletIds = ids;
+    await _walletPreferencesRepository.setFavoriteWalletIds(ids);
+    notifyListeners();
+  }
+
+  Future<void> removeFavoriteWalletId(int walletId) async {
+    _favoriteWalletIds.remove(walletId);
+    await _walletPreferencesRepository.setFavoriteWalletIds(_favoriteWalletIds);
+    notifyListeners();
+  }
+
+  /// 총 잔액에서 제외할 지갑 설정
+  Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
+    _excludedFromTotalBalanceWalletIds = ids;
+    await _walletPreferencesRepository.setExcludedWalletIds(ids);
+    notifyListeners();
+  }
+
+  Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
+    _excludedFromTotalBalanceWalletIds.remove(walletId);
+    await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
+    notifyListeners();
+  }
+
+  /// 보내기 화면 [수신자 추가 카드] 확인 여부 활성화 - 보내기 화면 진입시 Bounce 애니메이션을 처리하지 않음
+  Future<void> setHasSeenAddRecipientCard() async {
+    _hasSeenAddRecipientCard = true;
+    await _sharedPrefs.setBool(SharedPrefKeys.kHasSeenAddRecipientCard, _hasSeenAddRecipientCard);
+    notifyListeners();
+  }
+
   /// 커스텀 일렉트럼 서버 파라미터 검증
   void _validateCustomElectrumServerParams(String host, int port, bool ssl) {
     if (host.trim().isEmpty) {
@@ -309,5 +378,22 @@ class PreferenceProvider extends ChangeNotifier {
     }
 
     return DefaultElectrumServer.fromServerType(serverName).server;
+  }
+
+  /// 사용자 서버 정보 불러오기
+  Future<List<ElectrumServer>> getUserServers() async {
+    return (await _sharedPrefs.getUserServers()) ?? [];
+  }
+
+  /// 사용자 서버 추가
+  Future<void> addUserServer(String host, int port, bool ssl) async {
+    await _sharedPrefs.addUserServer(ElectrumServer.custom(host, port, ssl));
+    notifyListeners();
+  }
+
+  /// 사용자 서버 삭제
+  Future<void> removeUserServer(ElectrumServer server) async {
+    await _sharedPrefs.removeUserServer(server);
+    notifyListeners();
   }
 }

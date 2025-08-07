@@ -295,7 +295,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       return;
     }
 
-    _textEditingController.text = filterDecimalInput(input, 2);
+    _textEditingController.text = filterNumericInput(input, decimalPlaces: 2);
     _textEditingController.selection =
         TextSelection.collapsed(offset: _textEditingController.text.length);
 
@@ -427,7 +427,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               Text(
                 t.transaction_fee_bumping_screen.total_fee(
                   fee: widget.transaction.fee.toThousandsSeparatedString(),
-                  vb: widget.transaction.vSize.toInt().toThousandsSeparatedString(),
+                  vB: widget.transaction.vSize.toInt().toThousandsSeparatedString(),
                 ),
                 style: CoconutTypography.body2_14,
               ),

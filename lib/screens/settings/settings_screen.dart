@@ -52,36 +52,31 @@ class _SettingsScreen extends State<SettingsScreen> {
                   _category(t.security),
                   ButtonGroup(buttons: [
                     SingleButton(
-                        title: t.settings_screen.set_password,
-                        rightElement: CupertinoSwitch(
-                            value: viewModel.isSetPin,
-                            activeColor: CoconutColors.gray100,
-                            trackColor: CoconutColors.gray600,
-                            thumbColor: CoconutColors.gray800,
-                            onChanged: (isOn) async {
-                              if (isOn) {
-                                _showPinSettingScreen(useBiometrics: true);
-                                return;
-                              }
+                      title: t.settings_screen.set_password,
+                      rightElement: _buildSwitch(
+                          isOn: viewModel.isSetPin,
+                          onChanged: (isOn) async {
+                            if (isOn) {
+                              _showPinSettingScreen(useBiometrics: true);
+                              return;
+                            }
 
-                              final authProvider = viewModel.authProvider;
-                              if (await authProvider.isBiometricsAuthValid()) {
-                                viewModel.deletePin();
-                                return;
-                              }
+                            final authProvider = viewModel.authProvider;
+                            if (await authProvider.isBiometricsAuthValid()) {
+                              viewModel.deletePin();
+                              return;
+                            }
 
-                              if (await _isPinCheckValid()) {
-                                viewModel.deletePin();
-                              }
-                            })),
+                            if (await _isPinCheckValid()) {
+                              viewModel.deletePin();
+                            }
+                          }),
+                    ),
                     if (viewModel.canCheckBiometrics && viewModel.isSetPin)
                       SingleButton(
                         title: t.settings_screen.use_biometric,
-                        rightElement: CupertinoSwitch(
-                            value: viewModel.isSetBiometrics,
-                            activeColor: CoconutColors.gray100,
-                            trackColor: CoconutColors.gray600,
-                            thumbColor: CoconutColors.gray800,
+                        rightElement: _buildSwitch(
+                            isOn: viewModel.isSetBiometrics,
                             onChanged: (isOn) async {
                               if (isOn) {
                                 viewModel.authenticateWithBiometrics(isSave: true);
@@ -111,16 +106,12 @@ class _SettingsScreen extends State<SettingsScreen> {
                     MultiButton(
                       children: [
                         SingleButton(
-                          title: t.settings_screen.hide_balance,
-                          rightElement: CupertinoSwitch(
-                              value: viewModel.isBalanceHidden,
-                              activeColor: CoconutColors.gray100,
-                              trackColor: CoconutColors.gray600,
-                              thumbColor: CoconutColors.gray800,
-                              onChanged: (value) {
-                                viewModel.changeIsBalanceHidden(value);
-                              }),
-                        ),
+                            title: t.settings_screen.hide_balance,
+                            rightElement: _buildSwitch(
+                                isOn: viewModel.isBalanceHidden,
+                                onChanged: (value) {
+                                  viewModel.changeIsBalanceHidden(value);
+                                })),
                         if (viewModel.isBalanceHidden)
                           SingleButton(
                             enableShrinkAnim: true,
@@ -238,6 +229,18 @@ class _SettingsScreen extends State<SettingsScreen> {
                 ]),
               ));
         }));
+  }
+
+  Widget _buildSwitch({required bool isOn, required Function(bool) onChanged}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: CoconutSwitch(
+          isOn: isOn,
+          activeColor: CoconutColors.gray100,
+          trackColor: CoconutColors.gray600,
+          thumbColor: CoconutColors.gray800,
+          onChanged: onChanged),
+    );
   }
 
   Widget _category(String label) => Container(

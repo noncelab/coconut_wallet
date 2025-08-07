@@ -33,12 +33,16 @@ class SharedPrefKeys {
   /// Fiat
   static const String kSelectedFiat = 'SELECTED_FIAT';
 
+  /// 보내기 화면 수신자 추가 카드 확인 여부
+  static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
+
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
   static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';
   static const String kCustomElectrumHost = 'CUSTOM_ELECTRUM_HOST';
   static const String kCustomElectrumPort = 'CUSTOM_ELECTRUM_PORT';
   static const String kCustomElectrumIsSsl = 'CUSTOM_ELECTRUM_IS_SSL';
+  static const String kUserServers = 'USER_SERVERS';
 
   /// kHasLaunchedBefore 절대 초기화 금지
   static const String kHasLaunchedBefore = 'hasLaunchedBefore';

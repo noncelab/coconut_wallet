@@ -119,7 +119,12 @@ class WalletRepository extends BaseRepository {
   /// 지갑 삭제
   Future<void> deleteWallet(int walletId) async {
     final walletBaseResults = realm.query<RealmWalletBase>('id == $walletId');
-    final walletBase = walletBaseResults.first;
+    final walletBase = walletBaseResults.firstOrNull;
+
+    if (walletBase == null) {
+      return;
+    }
+
     final transactions = realm.query<RealmTransaction>('walletId == $walletId');
     final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
     final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');

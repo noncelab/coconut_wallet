@@ -20,6 +20,8 @@ fee: "수수료"
 fee_rate: "수수료율"
 send: "보내기"
 receive: "받기"
+show: "보기"
+hide: "숨기기"
 paste: "붙여넣기"
 export: "내보내기"
 edit: "편집"
@@ -33,6 +35,7 @@ close: "닫기"
 next: "다음"
 modify: "변경"
 confirm: "확인"
+cancel: "취소"
 security: "보안"
 general: "일반"
 unit: "단위"
@@ -83,15 +86,16 @@ quick_receive: "빨리 받기"
 quick_send: "빨리 보내기"
 copied: "복사 완료"
 change_color: "색 변경"
-selection: "선택"
+select: "선택"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
 view_balance: "잔액 보기"
+view: "보기"
 network: "네트워크"
 electrum_server: "일렉트럼 서버"
 
 apply_item: "$count개에 적용"
-fee_sats: " ($value sats/vb)"
+fee_sats: " ($value sats/vB)"
 utxo_count: "($count개)"
 total_item_count: "(총 $count개)"
 
@@ -115,6 +119,7 @@ faucet_request: "테스트 비트코인을 요청했어요. 잠시만 기다려 
 faucet_already_request: "해당 주소로 이미 요청했습니다. 입금까지 최대 5분이 걸릴 수 있습니다."
 faucet_failed: "요청에 실패했습니다. 잠시 후 다시 시도해 주세요."
 bio_auth_required: "생체 인증을 진행해 주세요"
+can_use_after_add_wallet: "지갑 추가 후 사용하실 수 있어요."
 
 donation:
   coconut: "코코넛 후원"
@@ -184,6 +189,7 @@ wallet_add_scanner_screen:
   keystone: "키스톤"
   jade: "제이드"
   seed_signer: "시드사이너"
+  cold_card: "콜드카드"
   self: "직접 입력"
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
@@ -220,6 +226,40 @@ wallet_add_scanner_screen:
     step2_em: "Wallet"
     step3: "3. "
     step3_em: "Export Xpub"
+  guide_coldcard:
+    step1: "1. "
+    step1_em: "Advanced/Tools"
+    step2: "2. "
+    step2_em: "Export Wallet"
+    step3: "3. "
+    step3_em: "Sparrow"
+    step4: "4. "
+    step4_preposition: ""
+    step4_em: "QR "
+    step4_end: "버튼 누르기"
+
+# lib/screens/wallet_list
+wallet_list:
+  wallet_count: "$count개"
+  view_all_wallets: "내 지갑 전체보기"
+  primary_wallet: "대표 지갑"
+  exclude_from_total_amount: "홈 화면 총액에서 제외"
+  home_balance: "홈 화면 총액"
+  excluded_balance: "제외 총액"
+  settings:
+    primary_wallet: "대표 지갑 설정"
+    primary_wallet_disabled_description: "홈 화면에서 받기•보내기할 때 기본으로 지정돼요."
+    primary_wallet_abled_description: "다른 지갑을 대표 지갑으로 설정하면, 자동 해제돼요."
+    exclude_from_total_amount: "총액에서 제외"
+    exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요."
+  edit:
+    wallet_list: "지갑 목록 편집"
+    star_description: "을 최대 5개 선택하여 홈 화면에 보이는 지갑을 선택할 수 있어요."
+    order_description: "을 눌러 지갑 순서를 변경할 수 있어요."
+    delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
+    finish: "편집 종료"
+    unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
+    
 
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
@@ -274,6 +314,41 @@ broadcasting_complete_screen:
     - "용돈"
     - "생일 선물"
 
+# send screen start ----
+send_screen:
+  select_wallet: "지갑 선택"
+  n_utxos: " • ${count}개"
+  delete: "삭제하기"
+  fee_rate: "수수료율"
+  fee_rate_suffix: "sat/vB"
+  estimated_fee: "예상 총 수수료"
+  fee_subtracted_from_send_amount: "수수료 수신자 부담"
+  fee_subtracted_from_send_amount_disabled_description: "수신자가 지정한 금액을 그대로 받아요"
+  fee_subtracted_from_send_amount_enabled_description: "수수료는 수신 금액에서 차감돼요"
+  my_address: "내 주소"
+  add_recipient: "수신자 추가하기"
+  use_btc_unit: "BTC 단위 사용"
+  input_maximum_amount: "모두 보내기"
+  address_placeholder: "보낼 주소를 입력해 주세요"
+  recommended_fee_unavailable: "추천 수수료 조회 실패"
+  recommended_fee_unavailable_description: "수수료를 직접 입력해 주세요."
+  tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
+  tooltip_max_mode_text: "모두 보내기 중"
+  max_mode_insufficient_balance: "잔액 부족"
+  unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
+
+utxo_selection_screen:
+  title: "UTXO 고르기"
+
+select_wallet_with_options_bottom_sheet:
+  select_utxo: "UTXO 선택"
+  select_utxo_auto: "UTXO 자동 선택"
+  select_utxo_auto_minimal_fee_description: "최소 수수료로 전송하도록 최적의 UTXO를 선택해요"
+  select_utxo_auto_selected_utxo_description: "선택한 UTXO를 사용해 거래를 생성해요"
+  n_utxos: " • ${count}개 선택"
+
+# send screen end ----
+
 broadcasting_screen:
   title: "최종 확인"
   description: "아래 정보로 송금할게요"
@@ -290,6 +365,8 @@ send_confirm_screen:
   title: "입력 정보 확인"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
+  bbqr_mode_switching: "BBQR 모드로 전환 중이에요.\n잠시만 기다려주세요."
+  
 unsigned_tx_qr_screen:
   hardware_wallet_screen_guide: "화면 안내"
   guide_keystone:
@@ -308,12 +385,19 @@ unsigned_tx_qr_screen:
     step1_em: "Scan QR"
     step1_end: "선택"
     step2: "2. 카메라로 아래 QR 코드 스캔"
+  guide_coldcard:
+    step1_preposition: "콜드카드에서 "
+    step1_em: "QR "
+    step1_end: "버튼을 눌러주세요."
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
 
   guide_hardware_wallet:
     step1: "하드웨어 월렛으로 아래 QR 코드를 스캔하여 서명 과정을 시작해 주세요."
+
+coconut_qr_scanner:
+   reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
 
 # lib/screens/settings
 app_info_screen:
@@ -364,6 +448,7 @@ settings_screen:
     use_ssl: "SSL 사용"
     ssl_port: "SSL 포트: $port"
     default_server: "기본 서버"
+    user_servers: "내 서버"
     reset: "초기화"
     save: "저장"
     error_msg:
@@ -373,6 +458,9 @@ settings_screen:
       connection_failed: "연결할 수 없습니다!"
       connecting: "연결 중입니다"
       connected: "연결되었습니다"
+    popup:
+      delete_server_info: "서버 정보 삭제"
+      delete_server_info_description: "저장된 서버 정보를 삭제하시겠어요?"
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
@@ -426,13 +514,13 @@ transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
   existing_fee: "기존 수수료"
-  existing_fee_value: "${value} sats/vb"
-  total_fee: "총 $fee sats / ${vb} vb"
+  existing_fee_value: "${value} sats/vB"
+  total_fee: "총 $fee sats / ${vB} vB"
   new_fee: "새 수수료"
-  sats_vb: "sats/vb"
-  recommend_fee: "최소 수수료: ${fee} sats/vb 이상"
-  recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vb 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vb 미만으로 보일 수 있어요."
-  recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vb, 추천 수수료율 = ${recommendedFeeRate} sat/vb\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb"
+  sats_vb: "sats/vB"
+  recommend_fee: "최소 수수료: ${fee} sats/vB 이상"
+  recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vB 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vB 미만으로 보일 수 있어요."
+  recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vB, 추천 수수료율 = ${recommendedFeeRate} sat/vB\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "추천 수수료"
   estimated_fee: "예상 총 수수료 약 ${fee} sats"
   estimated_fee_too_high_error: "예상 총 수수료가 0.01 BTC 이상이에요!"
@@ -524,6 +612,7 @@ errors:
   broadcast_error: "트랜잭션 전송에 실패했습니다."
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
+  network_disconnected: "네트워크 끊김"
   electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요."
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
@@ -531,11 +620,12 @@ errors:
     recommended_fee_unavailable: "추천 수수료를 조회하지 못했어요.\n'직접 입력하기' 버튼을 눌러 수수료를 직접 입력해 주세요."
     insufficient_utxo: "UTXO 합계가 모자라요"
   address_error:
+    empty: "주소가 비어 있습니다."
     invalid: "올바른 주소가 아니에요."
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
     not_for_regtest: "레그테스트넷 주소가 아니에요."
-    duplicated: "이미 입력한 주소예요"
+    duplicated: "이미 입력한 주소예요."
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"
     failed: "더 이상 시도할 수 없어요\n앱을 종료해 주세요"
@@ -551,7 +641,7 @@ errors:
   utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
 
 text_field:
-  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vb)"
+  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vB)"
   enter_fee_directly: "직접 입력하기"
   search_mnemonic_word: "영문으로 검색해 보세요"
 
@@ -569,6 +659,7 @@ tooltip:
     by_seed_signer: "시드사이너로"
     by_jade: "제이드로"
     by_keystone: "키스톤으로"
+    by_coldcard: "콜드카드로"
     by_hardware_wallet: "하드웨어 월렛으로"
     by_vault_app: "볼트 앱으로"
   unsigned_tx_qr:
@@ -588,7 +679,7 @@ tooltip:
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
-  min_fee: "현재 최소 수수료는 $minimum sats/vb 입니다."
+  min_fee: "현재 최소 수수료율은 $minimum sats/vB 입니다."
   fetching_onchain_data: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요."
   screen_capture: "스크린 캡처가 감지되었습니다."
   no_balance: "잔액이 없습니다."
@@ -606,7 +697,7 @@ alert:
   error_send:
     broadcasting_failed: "[전송 실패]\n$error"
     insufficient_balance: "잔액이 부족해요"
-    minimum_amount: "$bitcoin $unit 부터 전송할 수 있어요"
+    minimum_amount: "$bitcoin $unit 부터 전송할 수 있어요."
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
@@ -666,6 +757,7 @@ third_party:
   keystone: "키스톤"
   jade: "제이드"
   seed_signer: "시드사이너"
+  cold_card: "콜드카드"
   zpub: "zpub"
 
 trade_exchange:

@@ -66,7 +66,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       children: [
                         IntrinsicWidth(
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Expanded(
                                 child: Row(
@@ -79,7 +79,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                                   ],
                                 ),
                               ),
-                              CoconutLayout.spacing_100w,
+                              CoconutLayout.spacing_200w,
                               Text(
                                 widget.currentUnit.symbol,
                                 style: CoconutTypography.heading3_21_Number,

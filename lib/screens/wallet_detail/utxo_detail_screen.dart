@@ -343,7 +343,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     style: CoconutTypography.heading2_28_NumberBold,
                     children: <InlineSpan>[
               WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
+                  alignment: PlaceholderAlignment.baseline,
+                  baseline: TextBaseline.alphabetic,
                   child:
                       Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number))
             ]))),

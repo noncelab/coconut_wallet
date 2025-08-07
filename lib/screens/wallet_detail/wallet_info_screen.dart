@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
@@ -22,10 +22,15 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
+const String kEntryPointWalletList = '/wallet-list';
+const String kEntryPointWalletHome = '/wallet-home';
+
 class WalletInfoScreen extends StatefulWidget {
   final int id;
   final bool isMultisig;
-  const WalletInfoScreen({super.key, required this.id, required this.isMultisig});
+  final String entryPoint;
+  const WalletInfoScreen(
+      {super.key, required this.id, required this.isMultisig, required this.entryPoint});
 
   @override
   State<WalletInfoScreen> createState() => _WalletInfoScreenState();
@@ -211,7 +216,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       message: t.alert.wallet_delete.confirm_delete_description,
                                       onConfirm: () {
                                         _handleAuthFlow(onComplete: () async {
-                                          await _deleteWalletAndGoToWalletList(context, viewModel);
+                                          await _deleteWalletAndGoToEntryPoint(context, viewModel);
                                         });
                                       },
                                       onCancel: () {
@@ -315,18 +320,21 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
-  Future<void> _deleteWalletAndGoToWalletList(
+  Future<void> _deleteWalletAndGoToEntryPoint(
       BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
     _setOverlayLoading(true);
     await viewModel.deleteWallet();
     _setOverlayLoading(false);
     if (context.mounted) {
-      Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-              builder: (BuildContext context) => const AppGuard(child: WalletListScreen())),
-          (route) => false);
+      widget.entryPoint == kEntryPointWalletHome
+          ? Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (BuildContext context) => const AppGuard(child: WalletHomeScreen())),
+              (route) => false)
+          : Navigator.pushNamedAndRemoveUntil(
+              context, kEntryPointWalletList, (Route<dynamic> route) => route.settings.name == '/');
     }
   }
 

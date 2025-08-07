@@ -165,7 +165,6 @@ default.realm.management
 .cursor
 .cursorrules
 features/*
-
 .metadata
 
 # Google Services

@@ -61,15 +61,15 @@ void main() {
       test('mainnet 주소는 에러를 발생시켜야 함', () async {
         expect(
           () => viewModel.validateAddress('1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa'),
-          throwsA(viewModel.noTestnetAddressMessage),
+          throwsA(viewModel.notTestnetAddressMessage),
         );
         expect(
           () => viewModel.validateAddress('3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX'),
-          throwsA(viewModel.noTestnetAddressMessage),
+          throwsA(viewModel.notTestnetAddressMessage),
         );
         expect(
           () => viewModel.validateAddress('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'),
-          throwsA(viewModel.noTestnetAddressMessage),
+          throwsA(viewModel.notTestnetAddressMessage),
         );
       });
       test('유효한 testnet 주소는 검증을 통과해야 함 - m 주소', () async {
@@ -116,15 +116,15 @@ void main() {
       test('testnet 주소는 에러를 발생시켜야 함', () async {
         expect(
           () => viewModel.validateAddress('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'),
-          throwsA(viewModel.noMainnetAddressMessage),
+          throwsA(viewModel.notMainnetAddressMessage),
         );
         expect(
           () => viewModel.validateAddress('mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn'),
-          throwsA(viewModel.noMainnetAddressMessage),
+          throwsA(viewModel.notMainnetAddressMessage),
         );
         expect(
           () => viewModel.validateAddress('2MzQwSSnBHWHqSAqtTVQ6v47Xtais7Ja7Vb'),
-          throwsA(viewModel.noMainnetAddressMessage),
+          throwsA(viewModel.notMainnetAddressMessage),
         );
       });
 
@@ -165,11 +165,11 @@ void main() {
       test('regtest가 아닌 주소는 에러를 발생시켜야 함', () async {
         expect(
           () => viewModel.validateAddress('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'),
-          throwsA(viewModel.noRegtestnetAddressMessage),
+          throwsA(viewModel.notRegtestnetAddressMessage),
         );
         expect(
           () => viewModel.validateAddress('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'),
-          throwsA(viewModel.noRegtestnetAddressMessage),
+          throwsA(viewModel.notRegtestnetAddressMessage),
         );
       });
 

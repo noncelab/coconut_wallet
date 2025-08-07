@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 
 class AddressSearchViewModel extends ChangeNotifier {
   final invalidAddressMessage = t.errors.address_error.invalid;
-  final noTestnetAddressMessage = t.errors.address_error.not_for_testnet;
-  final noMainnetAddressMessage = t.errors.address_error.not_for_mainnet;
-  final noRegtestnetAddressMessage = t.errors.address_error.not_for_regtest;
+  final notTestnetAddressMessage = t.errors.address_error.not_for_testnet;
+  final notMainnetAddressMessage = t.errors.address_error.not_for_mainnet;
+  final notRegtestnetAddressMessage = t.errors.address_error.not_for_regtest;
 
   /// Common variables ---------------------------------------------------------
   final WalletProvider _walletProvider;
@@ -62,18 +62,18 @@ class AddressSearchViewModel extends ChangeNotifier {
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {
       if (recipient.startsWith('1') || recipient.startsWith('3') || recipient.startsWith('bc1')) {
-        throw noTestnetAddressMessage;
+        throw notTestnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {
       if (recipient.startsWith('m') ||
           recipient.startsWith('n') ||
           recipient.startsWith('2') ||
           recipient.startsWith('tb1')) {
-        throw noMainnetAddressMessage;
+        throw notMainnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.regtest) {
       if (!recipient.startsWith('bcrt1')) {
-        throw noRegtestnetAddressMessage;
+        throw notRegtestnetAddressMessage;
       }
     }
 

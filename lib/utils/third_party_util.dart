@@ -41,6 +41,8 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
       return t.third_party.jade;
     case WalletImportSource.seedSigner:
       return t.third_party.seed_signer;
+    case WalletImportSource.coldCard:
+      return t.third_party.cold_card;
     case WalletImportSource.extendedPublicKey:
       return t.third_party.zpub;
     case WalletImportSource.coconutVault:

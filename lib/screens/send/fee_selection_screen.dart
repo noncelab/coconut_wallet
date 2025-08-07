@@ -179,7 +179,8 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
                                               const TextInputType.numberWithOptions(decimal: true),
                                           visibleTextLimit: false,
                                           formatInput: (text) {
-                                            String finalText = filterDecimalInput(text, 2);
+                                            String finalText =
+                                                filterNumericInput(text, decimalPlaces: 2);
                                             return finalText;
                                           },
                                           maxLength: 10,

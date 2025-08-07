@@ -26,7 +26,6 @@ import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_faucet_request_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/tooltip/faucet_tooltip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -38,8 +37,13 @@ import 'package:lottie/lottie.dart';
 
 class WalletDetailScreen extends StatefulWidget {
   final int id;
+  final String entryPoint;
 
-  const WalletDetailScreen({super.key, required this.id});
+  const WalletDetailScreen({
+    super.key,
+    required this.id,
+    required this.entryPoint,
+  });
 
   @override
   State<WalletDetailScreen> createState() => _WalletDetailScreenState();
@@ -145,7 +149,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   void _navigateToWalletInfo(BuildContext context) async {
     await Navigator.pushNamed(context, '/wallet-info', arguments: {
       'id': widget.id,
-      'isMultisig': _viewModel.walletType == WalletType.multiSignature
+      'isMultisig': _viewModel.walletType == WalletType.multiSignature,
+      'entryPoint': widget.entryPoint,
     });
 
     _viewModel.updateWalletName();
@@ -391,16 +396,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _onTapReceive() {
-    CommonBottomSheets.showBottomSheet_90(
-      context: context,
-      child: ChangeNotifierProvider.value(
-        value: _viewModel,
-        child: ReceiveAddressBottomSheet(
-          id: widget.id,
-          paddingTop: MediaQuery.of(context).padding.top,
-        ),
-      ),
-    );
+    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
   }
 
   void _onTapSend() {
@@ -414,7 +410,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (!_checkStateAndShowToast()) return;
     _viewModel.clearSendInfo();
-    Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});
+    // 이전 화면
+    // Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, '/send', arguments: {
+      'walletId': _viewModel.walletId,
+      'sendEntryPoint': SendEntryPoint.walletDetail
+    });
   }
 
   void _toggleUnit() {
