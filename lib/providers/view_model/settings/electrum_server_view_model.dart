@@ -133,7 +133,8 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     // .onion 주소 확인
     if (input.trim().toLowerCase().endsWith('.onion')) {
-      return true;
+      final onionRegex = RegExp(r'^[a-z0-9]+.onion$', caseSensitive: false);
+      return onionRegex.hasMatch(input.trim().toLowerCase());
     }
 
     // 일반 도메인 패턴
