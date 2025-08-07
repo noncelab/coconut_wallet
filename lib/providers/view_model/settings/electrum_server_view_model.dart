@@ -132,7 +132,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
     }
 
     // .onion 주소 확인
-    if (input.toLowerCase().endsWith('.onion')) {
+    if (input.trim().toLowerCase().endsWith('.onion')) {
       return true;
     }
 
