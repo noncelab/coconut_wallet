@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class ElectrumServerViewModel extends ChangeNotifier {
@@ -15,6 +16,11 @@ class ElectrumServerViewModel extends ChangeNotifier {
   late ElectrumServer _currentServer;
   ElectrumServer get initialServer => _initialServer;
   ElectrumServer? get currentServer => _currentServer;
+
+  List<ElectrumServer> _userServers = [];
+
+  List<ElectrumServer> get userServers => _userServers;
+  bool get hasUserServers => _userServers.isNotEmpty;
 
   NodeConnectionStatus _nodeConnectionStatus = NodeConnectionStatus.waiting;
   final Map<ElectrumServer, NodeConnectionStatus> _connectionStatusMap = {};
@@ -40,6 +46,9 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     // 모든 ElectrumServer 연결 테스트
     _checkAllElectrumServerConnections();
+
+    // 사용자 서버 정보 불러오기
+    _loadUserServers();
   }
 
   /// 초기 NodeProvider 상태 확인
@@ -71,6 +80,16 @@ class ElectrumServerViewModel extends ChangeNotifier {
     }
   }
 
+  /// 사용자 서버 목록 로드
+  Future<void> _loadUserServers() async {
+    try {
+      _userServers = (await _preferenceProvider.getUserServers());
+      notifyListeners();
+    } catch (e) {
+      Logger.error('Failed to load user servers: $e');
+    }
+  }
+
   void setNodeConnectionStatus(NodeConnectionStatus status) {
     _nodeConnectionStatus = status;
     notifyListeners();
@@ -98,6 +117,27 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   /// 도메인 유효성 검사
   bool isValidDomain(String input) {
+    // IPv4 주소 패턴
+    final ipv4Pattern = RegExp(r'^(\d{1,3}\.){3}\d{1,3}$');
+    if (ipv4Pattern.hasMatch(input)) {
+      // 각 옥텟이 0-255 범위인지 확인
+      final parts = input.split('.');
+      for (final part in parts) {
+        final octet = int.tryParse(part) ?? -1;
+        if (octet < 0 || octet > 255) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // .onion 주소 확인
+    if (input.trim().toLowerCase().endsWith('.onion')) {
+      final onionRegex = RegExp(r'^[a-z0-9]+.onion$', caseSensitive: false);
+      return onionRegex.hasMatch(input.trim().toLowerCase());
+    }
+
+    // 일반 도메인 패턴
     final domainRegExp =
         RegExp(r'^(?!:\/\/)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$');
     return domainRegExp.hasMatch(input);
@@ -132,15 +172,29 @@ class ElectrumServerViewModel extends ChangeNotifier {
   /// 서버 변경 및 상태 업데이트
   Future<bool> changeServerAndUpdateState(ElectrumServer newServer) async {
     setNodeConnectionStatus(NodeConnectionStatus.connecting);
+
+    // 서버 연결 테스트
+    final connectionResult = await _nodeProvider.checkServerConnection(newServer);
+    if (connectionResult.isFailure) {
+      setNodeConnectionStatus(NodeConnectionStatus.failed);
+      return false;
+    }
+
     final result = await _nodeProvider.changeServer(newServer);
 
-    // 상태 상관없이 서버 정보 업데이트
+    // 서버 연결 상태 상관없이 서버 정보 업데이트
     _setCurrentServer(newServer);
     _preferenceProvider.setCustomElectrumServer(
       newServer.host,
       newServer.port,
       newServer.ssl,
     );
+
+    // 연결된 서버가 default 서버에도 없고, 사용자 서버에도 없으면 사용자 서버 추가
+    if (!_isDefaultServer(newServer) && !_isUserServer(newServer)) {
+      await _preferenceProvider.addUserServer(newServer.host, newServer.port, newServer.ssl);
+      await _loadUserServers();
+    }
 
     debugPrint('서버 정보 업데이트: ${newServer.host} ${newServer.port} ${newServer.ssl}');
 
@@ -151,6 +205,31 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     setNodeConnectionStatus(NodeConnectionStatus.connected);
     return true;
+  }
+
+  Future<void> removeUserServer(ElectrumServer server) async {
+    await _preferenceProvider.removeUserServer(server);
+    await _loadUserServers();
+  }
+
+  bool _isDefaultServer(ElectrumServer server) {
+    final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
+    final defaultServers = isRegtestFlavor
+        ? DefaultElectrumServer.regtestServers
+        : DefaultElectrumServer.mainnetServers;
+
+    return defaultServers.any((defaultServer) =>
+        defaultServer.host == server.host &&
+        defaultServer.port == server.port &&
+        defaultServer.ssl == server.ssl);
+  }
+
+  /// 사용자 서버 목록에 포함되어 있는지 확인
+  bool _isUserServer(ElectrumServer server) {
+    return _userServers.any((userServer) =>
+        userServer.host == server.host &&
+        userServer.port == server.port &&
+        userServer.ssl == server.ssl);
   }
 
   /// 서버 연결 테스트 수행

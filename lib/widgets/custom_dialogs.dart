@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -9,9 +10,11 @@ class CustomDialogs {
       required String message,
       required VoidCallback onConfirm,
       VoidCallback? onCancel,
-      String confirmButtonText = '확인',
-      String cancelButtonText = '취소',
+      String? confirmButtonText,
+      String? cancelButtonText,
       Color confirmButtonColor = CoconutColors.white}) async {
+    final confirmText = confirmButtonText ?? t.confirm;
+    final cancelText = cancelButtonText ?? t.cancel;
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -30,11 +33,11 @@ class CustomDialogs {
                 CupertinoDialogAction(
                     isDefaultAction: true,
                     onPressed: onCancel,
-                    child: Text(cancelButtonText, style: Styles.label)),
+                    child: Text(cancelText, style: Styles.label)),
               CupertinoDialogAction(
                   isDefaultAction: true,
                   onPressed: onConfirm,
-                  child: Text(confirmButtonText,
+                  child: Text(confirmText,
                       style: Styles.label.merge(TextStyle(color: confirmButtonColor)))),
             ]);
       },

@@ -444,7 +444,8 @@ settings_screen:
     port: "Port"
     use_ssl: "Use SSL"
     ssl_port: "SSL Port: $port"
-    default_server: "Default Server"
+    default_server: "Default Servers"
+    user_servers: "My Servers"
     reset: "Reset"
     save: "Save"
     error_msg:
@@ -454,6 +455,10 @@ settings_screen:
       connection_failed: "Cannot connect!"
       connecting: "Connecting..."
       connected: "Connected"
+    popup:
+      delete_server_info: "Delete Server Info"
+      delete_server_info_description: "Are you sure you want to delete the saved server information?"
+
 
 # lib/screens/wallet_detail
 wallet_detail_screen:

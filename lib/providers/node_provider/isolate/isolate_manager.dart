@@ -26,6 +26,7 @@ class IsolateManager {
   Stream<IsolateStateMessage>? _stateStream;
   bool _receivePortListening = false;
   bool _isInitializing = false;
+  String _host = '';
 
   bool get isInitialized => (_mainToIsolateSendPort != null && _isolate != null);
 
@@ -72,6 +73,7 @@ class IsolateManager {
       return; // 이미 성공적으로 완료된 경우
     }
     _isInitializing = true;
+    _host = host;
 
     try {
       await _forceCleanup();
@@ -86,13 +88,13 @@ class IsolateManager {
       _isolate = await Isolate.spawn<SpawnIsolateDto>(_isolateEntry, data);
       _setUpReceivePortListener();
 
+      final timeout = _getTimeout();
       // 초기화 완료 대기
       await _isolateReady!.future.timeout(
-        kIsolateInitTimeout,
+        timeout,
         onTimeout: () {
-          Logger.error(
-              'IsolateManager: Initialize timeout after ${kIsolateInitTimeout.inSeconds} seconds');
-          throw TimeoutException('Isolate initialization timeout', kIsolateInitTimeout);
+          Logger.error('IsolateManager: Initialize timeout after ${timeout.inSeconds} seconds');
+          throw TimeoutException('Isolate initialization timeout', timeout);
         },
       );
 
@@ -105,6 +107,10 @@ class IsolateManager {
     } finally {
       _isInitializing = false;
     }
+  }
+
+  Duration _getTimeout() {
+    return _host.contains('.onion') ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
   }
 
   Future<void> _forceCleanup() async {
@@ -313,13 +319,16 @@ class IsolateManager {
       case IsolateControllerCommand.getTransactionRecord:
         return kIsolateResponseTimeout;
 
-      // 간단한 작업: 3s
+      // 간단한 작업: .onion인 경우 30s, 그 외 3s
       case IsolateControllerCommand.broadcast:
       case IsolateControllerCommand.getNetworkMinimumFeeRate:
       case IsolateControllerCommand.getLatestBlock:
       case IsolateControllerCommand.getTransaction:
       case IsolateControllerCommand.getRecommendedFees:
-        return kIsolateSimpleResponseTimeout;
+        final timeout = _host.contains('.onion')
+            ? kIsolateSimpleResponseTimeoutForOnion
+            : kIsolateSimpleResponseTimeout;
+        return timeout;
     }
   }
 
@@ -362,11 +371,12 @@ class IsolateManager {
   Future<Result<T>> _send<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
     try {
       // 초기화 상태 확인 및 대기
+      final timeout = _getTimeout();
       if (!isInitialized) {
         if (_isolateReady != null && !_isolateReady!.isCompleted) {
           await _isolateReady!.future.timeout(
-            kIsolateInitTimeout,
-            onTimeout: () => throw TimeoutException('Isolate not ready', kIsolateInitTimeout),
+            timeout,
+            onTimeout: () => throw TimeoutException('Isolate not ready', timeout),
           );
         } else if (!isInitialized) {
           throw ErrorCodes.nodeIsolateError;
