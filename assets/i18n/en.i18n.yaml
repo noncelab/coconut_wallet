@@ -363,7 +363,7 @@ settings_screen:
     port: "Port"
     use_ssl: "Use SSL"
     ssl_port: "SSL Port: $port"
-    default_server: "Default Server"
+    default_server: "Default Servers"
     user_servers: "My Servers"
     reset: "Reset"
     save: "Save"
