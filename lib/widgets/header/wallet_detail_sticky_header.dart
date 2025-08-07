@@ -32,7 +32,7 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: widget.height,
+      top: widget.height.floorToDouble(),
       left: 0,
       right: 0,
       child: IgnorePointer(

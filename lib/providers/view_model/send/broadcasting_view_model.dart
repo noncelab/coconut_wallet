@@ -66,6 +66,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? get totalAmount => _totalAmount;
   AddressType get walletAddressType => _walletBase.addressType;
   int get walletId => _walletId;
+  SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
 
   UtxoTagProvider get tagProvider => _tagProvider;
 

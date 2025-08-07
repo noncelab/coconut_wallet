@@ -84,6 +84,7 @@ dependencies:
   cbor: ^6.3.5
   ur:
     path: lib/packages/bc-ur-dart
+  shimmer: ^3.0.0
   firebase_core: ^3.4.0
   firebase_analytics: ^11.3.0
   coconut_design_system:
@@ -265,9 +266,19 @@ flutter:
     - assets/svg/lock.svg
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
+    - assets/svg/cloud-disconnected.svg
+    - assets/svg/star-small.svg
+    - assets/svg/star-outlined.svg
+    - assets/svg/star-filled.svg
+    - assets/svg/hamburger.svg
+    - assets/svg/barefoot.svg
+    - assets/svg/car.svg
+    - assets/svg/rocket.svg
+    - assets/svg/plus.svg
+    - assets/svg/broom.svg
+    - assets/svg/receipt.svg
     - assets/svg/clip.svg
     - testnet.env
-
 
   fonts:
     - family: SpaceGrotesk

@@ -5,6 +5,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,8 @@ import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_sc
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/coconut_wallet_add_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/descriptor_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
+
+const kMaxStarLenght = 5;
 
 class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletImportSource _walletImportSource;

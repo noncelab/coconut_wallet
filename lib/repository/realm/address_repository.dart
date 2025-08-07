@@ -12,6 +12,7 @@ import 'package:coconut_wallet/repository/realm/converter/address.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:realm/realm.dart';
 
 class AddressRepository extends BaseRepository {
   AddressRepository(super._realmManager);
@@ -98,13 +99,13 @@ class AddressRepository extends BaseRepository {
 
     if (realmWalletBase.generatedReceiveIndex < 0) {
       addressesToAdd.add(
-        _generateAddress(walletItemBase.walletBase, 0, false),
+        generateAddress(walletItemBase.walletBase, 0, false),
       );
     }
 
     if (realmWalletBase.generatedChangeIndex < 0) {
       addressesToAdd.add(
-        _generateAddress(walletItemBase.walletBase, 0, true),
+        generateAddress(walletItemBase.walletBase, 0, true),
       );
     }
 
@@ -259,7 +260,7 @@ class AddressRepository extends BaseRepository {
   }
 
   /// 단일 주소 생성
-  WalletAddress _generateAddress(WalletBase wallet, int index, bool isChange) {
+  WalletAddress generateAddress(WalletBase wallet, int index, bool isChange) {
     String address = wallet.getAddress(index, isChange: isChange);
     String derivationPath = '${wallet.derivationPath}${isChange ? '/1' : '/0'}/$index';
 
@@ -281,7 +282,7 @@ class AddressRepository extends BaseRepository {
       required int startIndex,
       required int count,
       required bool isChange}) {
-    return List.generate(count, (index) => _generateAddress(wallet, startIndex + index, isChange));
+    return List.generate(count, (index) => generateAddress(wallet, startIndex + index, isChange));
   }
 
   /// 여러 주소 생성 (비동기 - UI 렉 방지)
@@ -294,7 +295,7 @@ class AddressRepository extends BaseRepository {
 
     for (int i = 0; i < count; i++) {
       await Future.delayed(Duration.zero);
-      final address = _generateAddress(wallet, startIndex + i, isChange);
+      final address = generateAddress(wallet, startIndex + i, isChange);
       addresses.add(address);
     }
 
@@ -351,6 +352,23 @@ class AddressRepository extends BaseRepository {
     ).first;
 
     return mapRealmToWalletAddress(realmWalletAddress);
+  }
+
+  /// 모든 월렛의 수신 주소를 1개씩 조회
+  Map<int, WalletAddress> getReceiveAddressMap() {
+    Map<int, WalletAddress> walletAddressMap = {};
+    for (final walletBase in realm.all<RealmWalletBase>().query('TRUEPREDICATE SORT(id DESC)')) {
+      final realmWalletAddress = realm.query<RealmWalletAddress>(
+        r'walletId == $0 AND isChange == false AND index == $1',
+        [walletBase.id, walletBase.usedReceiveIndex + 1],
+      ).firstOrNull;
+
+      if (realmWalletAddress != null) {
+        walletAddressMap[walletBase.id] = mapRealmToWalletAddress(realmWalletAddress);
+      }
+    }
+
+    return walletAddressMap;
   }
 
   /// 지갑 Base 정보 조회

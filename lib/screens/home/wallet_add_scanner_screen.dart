@@ -10,6 +10,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
@@ -24,9 +25,11 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class WalletAddScannerScreen extends StatefulWidget {
   final WalletImportSource importSource;
+  final Function(ResultOfSyncFromVault)? onNewWalletAdded;
   const WalletAddScannerScreen({
     super.key,
     required this.importSource,
+    this.onNewWalletAdded,
   });
 
   @override
@@ -62,8 +65,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final currentLanguage = Provider.of<PreferenceProvider>(context, listen: false).language;
-    final isKorean = currentLanguage == 'kr';
+    final isKorean = Provider.of<PreferenceProvider>(context, listen: false).isKorean;
 
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:
@@ -324,7 +326,19 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                   AnalyticsParameterNames.walletAddImportSource: widget.importSource.name
                 });
             await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
-            Navigator.pop(context, addResult);
+
+            if (widget.onNewWalletAdded != null) {
+              widget.onNewWalletAdded!(addResult);
+            }
+            Navigator.pushReplacementNamed(
+              context,
+              '/wallet-detail',
+              arguments: {
+                'id': addResult.walletId,
+                'entryPoint': kEntryPointWalletHome,
+              },
+            );
+
             break;
           }
         case WalletSyncResult.existingWalletUpdated:

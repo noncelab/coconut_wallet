@@ -15,21 +15,24 @@ abstract class WalletListItemBase {
   WalletImportSource walletImportSource;
   int receiveUsedIndex;
   int changeUsedIndex;
+  // bool isFavorite = false;
 
   late WalletBase walletBase;
 
   Map<String, UnaddressedScriptStatus> subscribedScriptMap = {}; // { ScriptPubKey: ScriptStatus }
 
-  WalletListItemBase(
-      {required this.id,
-      required this.name,
-      required this.colorIndex,
-      required this.iconIndex,
-      required this.descriptor,
-      required this.walletType,
-      required this.walletImportSource,
-      this.receiveUsedIndex = -1,
-      this.changeUsedIndex = -1});
+  WalletListItemBase({
+    required this.id,
+    required this.name,
+    required this.colorIndex,
+    required this.iconIndex,
+    required this.descriptor,
+    required this.walletType,
+    required this.walletImportSource,
+    this.receiveUsedIndex = -1,
+    this.changeUsedIndex = -1,
+    // this.isFavorite = false,
+  });
 
   @override
   String toString() =>
