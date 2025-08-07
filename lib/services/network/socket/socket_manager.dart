@@ -124,7 +124,7 @@ class SocketManager {
   }
 
   bool _isOnionAddress(String host) {
-    return host.toLowerCase().endsWith('.onion');
+    return host.trim().toLowerCase().endsWith('.onion');
   }
 
   Future<bool> _detectTailscaleNetwork() async {
