@@ -137,6 +137,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             context: context,
             text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send);
       });
+    } else if (_viewModel.incomingBalance > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        String amountText = _viewModel.currentUnit
+            .displayBitcoinAmount(_viewModel.incomingBalance, withUnit: false);
+        CoconutToast.showToast(
+            isVisibleIcon: true,
+            context: context,
+            seconds: 5,
+            text: t.tooltip
+                .amount_to_be_sent(bitcoin: amountText, unit: _viewModel.currentUnit.symbol));
+      });
     }
   }
 

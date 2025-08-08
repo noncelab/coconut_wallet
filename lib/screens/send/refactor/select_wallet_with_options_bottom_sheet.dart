@@ -3,11 +3,11 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
@@ -37,11 +37,11 @@ class SelectWalletWithOptionsBottomSheet extends StatefulWidget {
 
 class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOptionsBottomSheet> {
   late final WalletProvider _walletProvider;
-  late final Map<int, Balance> _walletBalanceMap;
 
   WalletListItemBase? _selectedWalletItem;
   List<UtxoState> _selectedUtxoList = [];
-  List<UtxoState> _confirmedUtxoList = [];
+  List<UtxoState> _unspentUtxoList = [];
+  int _unspentUtxoAmountSum = 0;
   int selectedUtxoAmountSum = 0;
   bool _isUtxoSelectionAuto = true;
 
@@ -52,8 +52,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
 
-  int get selectedWalletBalance =>
-      _selectedWalletItem != null ? _walletBalanceMap[_selectedWalletItem!.id]!.confirmed : 0;
+  int get selectedWalletBalance => _selectedWalletItem != null ? _unspentUtxoAmountSum : 0;
 
   /// 변경사항이 있는지 확인
   bool get hasChanges {
@@ -91,7 +90,6 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
   void initState() {
     super.initState();
     _walletProvider = context.read<WalletProvider>();
-    _walletBalanceMap = _walletProvider.fetchWalletBalanceMap();
     _isUtxoSelectionAuto = widget.isUtxoSelectionAuto;
     _selectedUtxoList = widget.selectedUtxoList;
     selectedUtxoAmountSum =
@@ -101,7 +99,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
         _walletProvider.walletItemList.where((e) => e.id == widget.selectedWalletId).firstOrNull;
     if (selectedWalletItem != null) {
       _selectedWalletItem = selectedWalletItem;
-      _initConfirmedUtxoList();
+      _initConfirmedUtxoListAndAmountSum();
     }
 
     // 초기 상태 저장
@@ -130,7 +128,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
         onPressed: () {
           vibrateLight();
           Navigator.of(context).pop();
-          final utxoList = _isUtxoSelectionAuto ? _confirmedUtxoList : _selectedUtxoList;
+          final utxoList = _isUtxoSelectionAuto ? _unspentUtxoList : _selectedUtxoList;
           widget.onWalletInfoUpdated(_selectedWalletItem!, utxoList, _isUtxoSelectionAuto);
         },
         disabledBackgroundColor: CoconutColors.gray800,
@@ -256,6 +254,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
                     _selectWalletItem(id);
                     Navigator.pop(context);
                   },
+                  balanceMode: BalanceMode.onlyUnspent,
                 ));
       },
       child: Column(
@@ -323,12 +322,20 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
     );
   }
 
-  void _initConfirmedUtxoList() {
+  void _initConfirmedUtxoListAndAmountSum() {
     if (_selectedWalletItem == null) return;
-    _confirmedUtxoList = _walletProvider
-        .getUtxoList(selectedWalletId)
-        .where((e) => e.status == UtxoStatus.unspent)
-        .toList();
+
+    int sum = 0;
+    final List<UtxoState> unspentUtxos = [];
+    _walletProvider.getUtxoList(selectedWalletId).forEach((utxo) {
+      if (utxo.status == UtxoStatus.unspent) {
+        unspentUtxos.add(utxo);
+        sum += utxo.amount;
+      }
+    });
+
+    _unspentUtxoList = unspentUtxos;
+    _unspentUtxoAmountSum = sum;
   }
 
   void _selectWalletItem(int walletId) {
@@ -336,7 +343,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
     _selectedWalletItem = _walletProvider.walletItemList.firstWhere((e) => e.id == walletId);
     _selectedUtxoList = [];
     selectedUtxoAmountSum = 0;
-    _initConfirmedUtxoList();
+    _initConfirmedUtxoListAndAmountSum();
     setState(() {});
   }
 

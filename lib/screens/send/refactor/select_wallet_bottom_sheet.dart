@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -10,12 +11,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
+enum BalanceMode {
+  includingPending,
+  onlyUnspent // UtxoStatus.unspent (UtxoStatus.locked 제외)
+}
+
 class SelectWalletBottomSheet extends StatefulWidget {
   final Function(int) onWalletChanged;
   final ScrollController? scrollController;
   final int walletId;
   final BitcoinUnit currentUnit;
   final bool showOnlyMfpWallets;
+  final BalanceMode balanceMode;
 
   const SelectWalletBottomSheet(
       {super.key,
@@ -23,7 +30,8 @@ class SelectWalletBottomSheet extends StatefulWidget {
       required this.onWalletChanged,
       required this.currentUnit,
       required this.showOnlyMfpWallets,
-      this.scrollController});
+      this.scrollController,
+      this.balanceMode = BalanceMode.includingPending});
 
   @override
   State<SelectWalletBottomSheet> createState() => _SelectWalletBottomSheetState();
@@ -31,20 +39,8 @@ class SelectWalletBottomSheet extends StatefulWidget {
 
 class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   late List<WalletListItemBase> _walletList;
-  late final Map<int, Balance> _walletBalanceMap;
+  late final Map<int, int> _walletBalanceMap;
   int _selectedWalletId = -1;
-
-  @override
-  void initState() {
-    super.initState();
-    final walletProvider = context.read<WalletProvider>();
-    _walletList = walletProvider.walletItemList;
-    if (widget.showOnlyMfpWallets) {
-      _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
-    }
-    _walletBalanceMap = walletProvider.fetchWalletBalanceMap();
-    _selectedWalletId = widget.walletId;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,9 +98,55 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
         ));
   }
 
-  Widget _buildWalletItem(WalletListItemBase walletBase, Balance? balance, bool isChecked) {
-    int balanceInt = balance != null ? balance.confirmed : 0;
-    String amountText = widget.currentUnit.displayBitcoinAmount(balanceInt, withUnit: true);
+  @override
+  void initState() {
+    super.initState();
+    final walletProvider = context.read<WalletProvider>();
+    _walletList = walletProvider.walletItemList;
+    if (widget.showOnlyMfpWallets) {
+      _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
+    }
+    _walletBalanceMap = _initBalanceMap();
+    _selectedWalletId = widget.walletId;
+  }
+
+  Map<int, int> _initBalanceMap() {
+    switch (widget.balanceMode) {
+      case BalanceMode.includingPending:
+        return _initBalanceMapIncludingPendingMode();
+      case BalanceMode.onlyUnspent:
+        return _initBalanceMapOnlyUnspent();
+    }
+  }
+
+  Map<int, int> _initBalanceMapIncludingPendingMode() {
+    final walletProvider = context.read<WalletProvider>();
+    return walletProvider.fetchWalletBalanceMap().map((key, Balance value) {
+      return MapEntry(key, value.total);
+    });
+  }
+
+  Map<int, int> _initBalanceMapOnlyUnspent() {
+    final walletProvider = context.read<WalletProvider>();
+    Map<int, int> balanceMap = {};
+    for (var wallet in _walletList) {
+      balanceMap[wallet.id] = getUnspentUtxoSum(walletProvider.getUtxoList(wallet.id));
+    }
+
+    return balanceMap;
+  }
+
+  int getUnspentUtxoSum(List<UtxoState> utxos) {
+    return utxos.fold(0, (accu, utxo) {
+      if (utxo.status == UtxoStatus.unspent) {
+        return accu + utxo.amount;
+      }
+      return accu;
+    });
+  }
+
+  Widget _buildWalletItem(WalletListItemBase walletBase, int? balance, bool isChecked) {
+    String amountText = widget.currentUnit.displayBitcoinAmount(balance ?? 0, withUnit: true);
     return Row(
       children: [
         SizedBox(
