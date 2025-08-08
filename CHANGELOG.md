@@ -1,3 +1,14 @@
+## mainnet 0.4.0, regtest 3.2.0 - 2025-08-08
+### Fixed
+* coconut_lib 1.0.0 적용
+* Android API 35로 업데이트 (qr-code-scanner 라이브러리 내부로 옮김)
+* 가짜 잔액 버그 수정
+### Added
+* VPN 통한 일렉트럼 서버 연결 지원
+* 새로운 홈화면, 보내기 화면
+* QR 스캔 프로그레스 UI 추가
+* 콜드카드 지원
+
 ## mainnet 0.3.0 - 2025-07-28
 ### Fixed
 * 지갑 추가 예외 메시지 프롬프트에 추가
