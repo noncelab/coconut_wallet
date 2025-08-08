@@ -384,7 +384,14 @@ class SendViewModel extends ChangeNotifier {
     _walletAddressNeedsUpdate[index] = true;
   }
 
+  Future<void> refreshRecommendedFees() async {
+    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) return;
+    await _setRecommendedFees();
+    notifyListeners();
+  }
+
   Future<bool> _setRecommendedFees() async {
+    _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
     final recommendedFeesResult = await _nodeProvider
         .getRecommendedFees()
         .timeout(const Duration(seconds: 10), onTimeout: () {
@@ -697,6 +704,9 @@ class SendViewModel extends ChangeNotifier {
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
+    if (isNetworkOn == true && _recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed) {
+      refreshRecommendedFees();
+    }
     notifyListeners();
   }
 
