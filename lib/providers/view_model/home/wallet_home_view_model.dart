@@ -239,8 +239,22 @@ class WalletHomeViewModel extends ChangeNotifier {
     return _fakeBalanceMap[id] ?? _fakeBalanceTotalAmount;
   }
 
-  int? getFakeTotalBalance() {
-    return _fakeBalanceTotalAmount;
+  int getHomeFakeBalanceTotal() {
+    if (_fakeBalanceTotalAmount == null) return 0;
+
+    int totalAmount = 0;
+
+    // excludedFromTotalBalanceWalletIds에 포함되지 않은 지갑들의 가짜 잔액을 더함
+    for (final wallet in walletItemList) {
+      if (!_excludedFromTotalBalanceWalletIds.contains(wallet.id)) {
+        final fakeBalance = _fakeBalanceMap[wallet.id];
+        if (fakeBalance != null && fakeBalance is num) {
+          totalAmount += fakeBalance.toInt();
+        }
+      }
+    }
+
+    return totalAmount;
   }
 
   void onNodeProviderUpdated() {
