@@ -23,10 +23,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.delayed(const Duration(milliseconds: 300));
-      _mfpFocusNode.requestFocus();
-    });
+
     _mfpController.addListener(() {
       if (_mfpController.text.length < 8) {
         setState(() {
