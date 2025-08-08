@@ -54,7 +54,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   final double kAmountHeight = 34;
   final double kFeeBoardBottomPadding = 12;
   double get addressBoardHeight => walletAddressListHeight + 84;
-  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 80 : 48;
+  double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 100 : 48;
   double get keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
   double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
 
@@ -537,17 +537,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     Key? key,
   }) {
     return SizedBox(
-      height: kTooltipHeight,
       child: CoconutToolTip(
         key: key,
         backgroundColor: CoconutColors.gray800,
         borderColor: CoconutColors.gray800,
         borderRadius: 12,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         icon: SvgPicture.asset(
           iconPath,
           colorFilter: const ColorFilter.mode(
-            CoconutColors.white,
+            CoconutColors.gray300,
             BlendMode.srcIn,
           ),
         ),
@@ -555,7 +554,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         richText: RichText(
           text: TextSpan(
             text: text,
-            style: CoconutTypography.body3_12_Bold,
+            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300),
           ),
         ),
       ),
@@ -1344,32 +1343,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Future<void> _startBounce() async {
     final pageWidth = _recipientPageController.position.viewportDimension;
-    _offsetAnimation = TweenSequence<double>([
-      // 오른쪽으로 10% 이동
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0.0,
-          end: pageWidth * 0.1,
-        ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 3,
-      ),
-      // 왼쪽으로 약간 튕김 (-25px)
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: pageWidth * 0.1,
-          end: -25.0,
-        ).chain(CurveTween(curve: Curves.easeInOut)),
-        weight: 3,
-      ),
-      // 다시 원위치 (0)
-      TweenSequenceItem(
-        tween: Tween<double>(
-          begin: 0,
-          end: 0.0,
-        ).chain(CurveTween(curve: Curves.easeOutBack)),
-        weight: 3,
-      ),
-    ]).animate(_animationController);
+    _offsetAnimation = Tween<double>(
+      begin: 0.0,
+      end: pageWidth * 0.20,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticOut,
+    ));
 
     _animationController.addListener(() {
       if (_recipientPageController.hasClients) {

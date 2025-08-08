@@ -42,12 +42,13 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
-    debugPrint(
-        '_preferenceProvider.fakeBalanceTotalAmount: ${_preferenceProvider.fakeBalanceTotalAmount}');
     _fakeBalanceTotalBtc = _preferenceProvider.fakeBalanceTotalAmount != null
         ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
         : null;
     _isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
+    debugPrint(
+        '_preferenceProvider.fakeBalanceTotalAmount: ${_preferenceProvider.fakeBalanceTotalAmount}\n_isFakeBalanceActive: $_isFakeBalanceActive');
+
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _minimumSatoshi = _walletProvider.walletItemList.length;
     if (_fakeBalanceTotalBtc != null) {
@@ -247,6 +248,11 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
       return;
     }
     if (_fakeBalanceTotalBtc == null || wallets.isEmpty) return;
+
+    // fake balance 토글 상태 변경 시 상태 업데이트
+    if (_preferenceProvider.isFakeBalanceActive != _isFakeBalanceActive) {
+      await _preferenceProvider.changeIsFakeBalanceActive(_isFakeBalanceActive);
+    }
 
     if (_fakeBalanceTotalBtc == 0) {
       await _preferenceProvider.setFakeBalanceTotalAmount(0);

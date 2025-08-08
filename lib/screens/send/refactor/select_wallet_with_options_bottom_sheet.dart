@@ -128,7 +128,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
       padding: const EdgeInsets.only(left: 16, right: 16),
       child: CoconutButton(
         onPressed: () {
-          vibrateMedium();
+          vibrateLight();
           Navigator.of(context).pop();
           final utxoList = _isUtxoSelectionAuto ? _confirmedUtxoList : _selectedUtxoList;
           widget.onWalletInfoUpdated(_selectedWalletItem!, utxoList, _isUtxoSelectionAuto);
@@ -267,11 +267,11 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
                 isWalletWithoutMfp(_selectedWalletItem)
                     ? '-'
                     : _selectedWalletItem?.name ?? t.send_screen.select_wallet,
-                style: CoconutTypography.body3_12,
+                style: CoconutTypography.body2_14_Bold,
               ),
               CoconutLayout.spacing_50w,
               const Icon(Icons.keyboard_arrow_down_sharp,
-                  color: CoconutColors.white, size: Sizes.size16),
+                  color: CoconutColors.white, size: Sizes.size20),
             ],
           ),
           FittedBox(

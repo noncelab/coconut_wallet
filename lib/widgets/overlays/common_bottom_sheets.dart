@@ -194,7 +194,7 @@ class CommonBottomSheets {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: CoconutColors.gray900,
       builder: (context) {
         return DraggableScrollableSheet(
           controller: draggableController,
