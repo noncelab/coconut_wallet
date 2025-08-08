@@ -16,6 +16,7 @@ import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -167,13 +168,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, SendViewModel>(
       create: (_) => _viewModel,
-      update: (_, connectivityProvider, walletProvider, viewModel) {
-        if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
+      update: (_, connectivityProvider, walletProvider, previous) {
+        if (connectivityProvider.isNetworkOn != previous?.isNetworkOn) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            previous?.setIsNetworkOn(connectivityProvider.isNetworkOn);
           });
         }
-        return viewModel;
+        return previous ?? _viewModel;
       },
       child: GestureDetector(
         onTap: _clearFocus,
@@ -356,13 +357,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
     final child = Container(
-        height: 30,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         decoration: BoxDecoration(
             border: Border.all(
               width: 1,
-              color: CoconutColors.gray600,
+              color: CoconutColors.gray700,
             ),
-            borderRadius: const BorderRadius.all(Radius.circular(8))),
+            borderRadius: const BorderRadius.all(Radius.circular(6))),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -373,7 +374,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             ),
             CoconutLayout.spacing_150w,
             Text("${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
           ],
         ));
 
@@ -402,7 +403,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           onTap: () {}, // ignore
           child: Container(
               width: MediaQuery.of(context).size.width,
-              height: 50,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
               color: keyboardToolbarGray,
               child: _amountFocusNode.hasFocus
                   ? _buildAmountKeyboardToolbar(context)
@@ -418,7 +419,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           onTap: _viewModel.toggleUnit,
           child: Container(
               color: Colors.transparent,
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
               child: Selector<SendViewModel, BitcoinUnit>(
                   selector: (_, viewModel) => viewModel.currentUnit,
                   builder: (context, data, child) {
@@ -432,9 +433,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           width: 10,
                           height: 10,
                         ),
-                        CoconutLayout.spacing_100w,
+                        CoconutLayout.spacing_200w,
                         Text(t.send_screen.use_btc_unit,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+                            style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
                       ],
                     );
                   })),
@@ -444,39 +445,48 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeRateKeyboardToolbar(BuildContext context) {
-    return Selector<SendViewModel, RecommendedFeeFetchStatus>(
-        selector: (_, viewModel) => _viewModel.recommendedFeeFetchStatus,
-        builder: (context, recommendedFeeFetchStatus, child) {
+    return Selector<SendViewModel, Tuple2<RecommendedFeeFetchStatus, bool>>(
+        selector: (_, viewModel) =>
+            Tuple2(viewModel.recommendedFeeFetchStatus, viewModel.isNetworkOn),
+        builder: (context, data, child) {
+          final recommendedFeeFetchStatus = data.item1;
+          final isNetworkOn = data.item2;
+
+          if (isNetworkOn && recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _viewModel.refreshRecommendedFees();
+            });
+          }
+
           final isFailed = recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed;
           final isFetching = recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching;
+
           return Row(
             children: [
-              CoconutLayout.spacing_200w,
               if (isFailed) ...[
                 SvgPicture.asset('assets/svg/triangle-warning.svg',
                     colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                    width: 24),
+                    width: 20),
                 CoconutLayout.spacing_200w,
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(t.send_screen.recommended_fee_unavailable,
-                        style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white)),
+                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
                     Text(t.send_screen.recommended_fee_unavailable_description,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray300)),
                   ],
                 ),
               ] else ...[
                 _buildFeeItem(
                     'assets/svg/rocket.svg', _viewModel.feeInfos[0].satsPerVb, isFetching),
-                CoconutLayout.spacing_200w,
+                CoconutLayout.spacing_150w,
                 _buildFeeItem('assets/svg/car.svg', _viewModel.feeInfos[1].satsPerVb, isFetching),
-                CoconutLayout.spacing_200w,
+                CoconutLayout.spacing_150w,
                 _buildFeeItem(
                     'assets/svg/barefoot.svg', _viewModel.feeInfos[2].satsPerVb, isFetching),
               ],
-              CoconutLayout.spacing_200w,
             ],
           );
         });
