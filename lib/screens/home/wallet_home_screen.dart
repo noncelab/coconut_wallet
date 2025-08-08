@@ -144,7 +144,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             onRefresh: viewModel.onRefresh,
                           ),
                           _buildLoadingIndicator(viewModel),
-                          _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance(),
+                          _buildHeader(isBalanceHidden, viewModel.fakeBalanceTotalAmount,
                               shouldShowLoadingIndicator, viewModel.walletItemList.isEmpty),
                           if (!shouldShowLoadingIndicator)
                             SliverToBoxAdapter(
@@ -424,9 +424,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                     ? Text(
                                         isBtcUnit
                                             ? BitcoinUnit.btc.displayBitcoinAmount(
-                                                fakeBalanceTotalAmount.toInt())
+                                                _viewModel.getHomeFakeBalanceTotal().toInt())
                                             : BitcoinUnit.sats.displayBitcoinAmount(
-                                                fakeBalanceTotalAmount.toInt()),
+                                                _viewModel.getHomeFakeBalanceTotal().toInt()),
                                         style: CoconutTypography.heading3_21_NumberBold.merge(
                                           const TextStyle(
                                             height: 1.4,
