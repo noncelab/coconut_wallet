@@ -17,12 +17,17 @@ import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
@@ -46,8 +51,8 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
@@ -96,16 +101,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
           ChangeNotifierProvider(create: (_) => AuthProvider()),
 
-          // 언어 설정은 모든 플로우에서 필요하므로 항상 생성 (PriceProvider보다 먼저)
-          ChangeNotifierProvider(create: (_) => PreferenceProvider()),
-
-          ChangeNotifierProvider<PriceProvider>(
-            create: (context) => PriceProvider(
-              context.read<ConnectivityProvider>(),
-              context.read<PreferenceProvider>(),
-            ),
-          ),
-
           Provider.value(value: _realmManager),
 
           Provider<AnalyticsService>(
@@ -130,6 +125,23 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           ),
           Provider<SubscriptionRepository>(
             create: (context) => SubscriptionRepository(context.read<RealmManager>()),
+          ),
+          Provider<WalletPreferencesRepository>(
+            create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
+          ),
+
+          ChangeNotifierProvider(
+              create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+
+          ChangeNotifierProvider(
+            create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>()),
+          ),
+
+          ChangeNotifierProvider<PriceProvider>(
+            create: (context) => PriceProvider(
+              context.read<ConnectivityProvider>(),
+              context.read<PreferenceProvider>(),
+            ),
           ),
 
           ChangeNotifierProvider(
@@ -223,7 +235,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 ? StartScreen(onComplete: _completeSplash)
                 : _appEntryFlow == AppEntryFlow.main
                     ? const AppGuard(
-                        child: WalletListScreen(),
+                        child: WalletHomeScreen(),
                       )
                     : CustomLoadingOverlay(
                         child: PinCheckScreen(
@@ -236,6 +248,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         ),
                       ),
             routes: {
+              '/wallet-list': (context) => const WalletListScreen(),
               '/wallet-add-scanner': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(
@@ -248,14 +261,26 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     child: WalletAddInputScreen(),
                   ),
               '/app-info': (context) => const AppInfoScreen(),
+              '/receive-address': (context) => buildScreenWithArguments(
+                    context,
+                    (args) => ReceiveAddressScreen(
+                      id: args['id'],
+                    ),
+                  ),
               '/wallet-detail': (context) => buildScreenWithArguments(
                     context,
-                    (args) => WalletDetailScreen(id: args['id']),
+                    (args) => WalletDetailScreen(
+                      id: args['id'],
+                      entryPoint: args['entryPoint'],
+                    ),
                   ),
               '/wallet-info': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(
-                        child: WalletInfoScreen(id: args['id'], isMultisig: args['isMultisig'])),
+                        child: WalletInfoScreen(
+                            id: args['id'],
+                            isMultisig: args['isMultisig'],
+                            entryPoint: args['entryPoint'])),
                   ),
               '/address-list': (context) => buildScreenWithArguments(
                     context,
@@ -292,6 +317,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                             txHash: args['txHash'],
                             isDonation: args['isDonation'])),
                   ),
+              '/send': (context) => buildScreenWithArguments(
+                    context,
+                    (args) => SendScreen(
+                      walletId: args['walletId'],
+                      sendEntryPoint: args['sendEntryPoint'],
+                    ),
+                  ),
               '/send-address': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
@@ -301,7 +333,20 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               '/utxo-selection': (context) => const CustomLoadingOverlay(
                     child: SendUtxoSelectionScreen(),
                   ),
-              '/send-confirm': (context) => const CustomLoadingOverlay(child: SendConfirmScreen()),
+              '/refactor-utxo-selection': (context) => CustomLoadingOverlay(
+                    child: buildScreenWithArguments(
+                      context,
+                      (args) => UtxoSelectionScreen(
+                          selectedUtxoList: args['selectedUtxoList'],
+                          walletId: args['walletId'],
+                          currentUnit: args['currentUnit']),
+                    ),
+                  ),
+              '/send-confirm': (context) => buildScreenWithArguments(
+                    context,
+                    (args) => CustomLoadingOverlay(
+                        child: SendConfirmScreen(currentUnit: args['currentUnit'])),
+                  ),
               '/utxo-list': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(

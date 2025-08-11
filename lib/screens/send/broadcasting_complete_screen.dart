@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -114,21 +115,11 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           Positioned(
               bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
               child: _buildMemoTags()),
-        Positioned(
-          bottom: Sizes.size24,
-          left: Sizes.size16,
-          right: Sizes.size16,
-          child: CoconutButton(
-            onPressed: () => onTapConfirmButton(context),
-            textStyle: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray800),
-            disabledBackgroundColor: CoconutColors.gray800,
-            disabledForegroundColor: CoconutColors.gray700,
-            backgroundColor: CoconutColors.primary,
-            foregroundColor: CoconutColors.black,
-            pressedTextColor: CoconutColors.black,
-            text: t.confirm,
-          ),
-        ),
+        FixedBottomButton(
+            showGradient: false,
+            isVisibleAboveKeyboard: false,
+            onButtonClicked: () => onTapConfirmButton(context),
+            text: t.confirm),
       ],
     );
   }
@@ -289,59 +280,11 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   Widget _buildMemoTag(String text) {
     return Padding(
       padding: const EdgeInsets.all(Sizes.size4),
-      child: _MemoTagItem(
-          text: text,
+      child: RippleEffect(
+          borderRadius: Sizes.size14,
           onTap: () {
             _memoController.text = text;
-          }),
-    );
-  }
-}
-
-class _MemoTagItem extends StatefulWidget {
-  final String text;
-  final VoidCallback? onTap;
-
-  const _MemoTagItem({required this.text, this.onTap});
-
-  @override
-  State<_MemoTagItem> createState() => _MemoTagItemState();
-}
-
-class _MemoTagItemState extends State<_MemoTagItem> {
-  double _opacity = 1.0;
-
-  void _handleTapDown(TapDownDetails details) {
-    setState(() {
-      _opacity = 0.5;
-    });
-  }
-
-  void _handleTapUp(TapUpDetails details) {
-    setState(() {
-      _opacity = 1.0;
-    });
-  }
-
-  void _handleTapCancel() {
-    setState(() {
-      _opacity = 1.0;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(Sizes.size14),
-        onTapDown: _handleTapDown,
-        onTapUp: _handleTapUp,
-        onTapCancel: _handleTapCancel,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 100),
-          opacity: _opacity,
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: Sizes.size8,
@@ -352,12 +295,10 @@ class _MemoTagItemState extends State<_MemoTagItem> {
               border: Border.all(width: 1, color: CoconutColors.gray600),
             ),
             child: Text(
-              widget.text,
+              text,
               style: CoconutTypography.caption_10.setColor(CoconutColors.gray300),
             ),
-          ),
-        ),
-      ),
+          )),
     );
   }
 }

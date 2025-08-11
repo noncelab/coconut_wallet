@@ -22,6 +22,26 @@ class TransactionBuildResult {
     required this.estimatedFee,
     this.exception,
   });
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    buffer.writeln("┌──────────────── Transaction Build Result Info ────────────────┐");
+    buffer.writeln("│ isSuccess = $isSuccess");
+    if (transaction == null) buffer.writeln("│ transaction = null");
+    if (selectedUtxos == null) {
+      buffer.writeln("│ selectedUtxos = null");
+    } else {
+      buffer.writeln("│ selectedUtxos(${selectedUtxos!.length}):");
+      for (var utxo in selectedUtxos!) {
+        buffer.writeln("│   - amount: ${utxo.amount}");
+      }
+    }
+    buffer.writeln("│ estimatedFee = $estimatedFee");
+    buffer.writeln("│ exception = $exception");
+    buffer.writeln("└───────────────────────────────────────────────────────────────┘");
+    return buffer.toString();
+  }
 }
 
 /// [SingleTx]
@@ -37,6 +57,8 @@ class TransactionBuildResult {
 ///
 /// 모두 보내기 일 때는 수수료 수신자 부담 on
 class TransactionBuilder {
+  static const int _maxIterationCount = 10;
+
   final List<UtxoState> availableUtxos;
   final Map<String, int> recipients;
   final double feeRate;
@@ -194,7 +216,9 @@ class TransactionBuilder {
             _selectedUtxos!, recipients.entries.first.key, feeRate, walletListItemBase.walletBase);
         if (tx.outputs.first.amount <= dustLimit) {
           throw SendAmountTooLowException(
-              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType));
+              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+                  requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+                  totalSigner: walletListItemBase.multisigConfig?.totalSigner));
         }
         return tx;
       } on Exception catch (e) {
@@ -212,18 +236,39 @@ class TransactionBuilder {
     int initialFee = _estimatedFeeByFeeEstimator!;
     int sendAmount = maxUsedAmount - initialFee;
     if (sendAmount <= dustLimit) {
-      throw SendAmountTooLowException(estimatedFee: initialFee);
+      throw SendAmountTooLowException(estimatedFee: _estimatedFeeByFeeEstimator!);
     }
 
     Exception? exception;
-    for (int i = 0; i < 2; i++) {
+
+    /// 최대 2회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
+    /// transaction_builder_test.dart: Single / Auto Utxo / 수수료 수신자 부담 / Edge Case
+    for (int i = 0; i < _maxIterationCount; i++) {
       try {
         Transaction tx = Transaction.forSinglePayment(_selectedUtxos!, recipients.entries.first.key,
             changeDerivationPath, sendAmount, feeRate, walletListItemBase.walletBase);
-        _estimatedFeeByTransaction = initialFee;
+        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+            requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+            totalSigner: walletListItemBase.multisigConfig?.totalSigner);
+        if (initialFee != realEstimatedFee) {
+          // if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+          //   return Transaction.forSweep(_selectedUtxos!, recipients.entries.first.key, feeRate,
+          //       walletListItemBase.walletBase);
+          // }
+          initialFee = realEstimatedFee;
+
+          sendAmount = maxUsedAmount - realEstimatedFee;
+          if (sendAmount <= dustLimit) {
+            /// estimatedFee + sendAmount < maxUsedAmount이더라도 반환
+            return tx;
+          }
+          continue;
+        }
+        // TODO: 추후 변경 가능성 있음
+        //_estimatedFeeByTransaction = realEstimatedFee;
         return tx;
       } on Exception catch (e) {
-        if (i == 1) {
+        if (i == _maxIterationCount - 1) {
           exception = e;
           break;
         }
@@ -251,26 +296,74 @@ class TransactionBuilder {
   }
 
   Transaction _createBatchWhenFeeSubtractedFromAmount() {
-    final lastSendAmount = recipients.entries.last.value;
-    if (lastSendAmount <= dustLimit) {
-      throw SendAmountTooLowException(estimatedFee: _estimatedFeeByFeeEstimator!);
+    final totalInputAmount =
+        _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
+    final maxUsedAmount =
+        recipients.entries.fold(0, (previousValue, element) => previousValue + element.value);
+
+    if (totalInputAmount == maxUsedAmount) {
+      try {
+        final recipientsWithoutLast = Map.of(recipients)..remove(recipients.keys.last);
+        final tx = Transaction.forBatchSweep(_selectedUtxos!, recipientsWithoutLast,
+            recipients.keys.last, feeRate, walletListItemBase.walletBase);
+        if (tx.outputs.last.amount <= dustLimit) {
+          throw SendAmountTooLowException(
+              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+                  requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+                  totalSigner: walletListItemBase.multisigConfig?.totalSigner));
+        }
+        return tx;
+      } on Exception catch (e) {
+        /// 보내는 수량 합 + 예상 수수료 > 잔액
+        final int? estimatedFee = extractEstimatedFeeFromException(e);
+        if (estimatedFee != null) {
+          throw InsufficientBalanceException(estimatedFee: estimatedFee);
+        } else {
+          throw TransactionCreationException(
+              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
+        }
+      }
     }
 
+    final lastRecipient = recipients.entries.last;
     int initialFee = _estimatedFeeByFeeEstimator!;
-    int finalLastSendAmount = lastSendAmount - initialFee;
+    int finalLastSendAmount = lastRecipient.value - initialFee;
     if (finalLastSendAmount <= dustLimit) {
-      throw SendAmountTooLowException(estimatedFee: initialFee);
+      throw SendAmountTooLowException(estimatedFee: _estimatedFeeByFeeEstimator!);
     }
 
     final updatedRecipients = Map<String, int>.of(recipients);
     updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
     Exception? exception;
-    for (int i = 0; i < 2; i++) {
+
+    /// 최대 2회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
+    /// transaction_builder_test.dart: Batch / Auto Utxo / 수수료 수신자 부담 / Edge Case
+    for (int i = 0; i < _maxIterationCount; i++) {
       try {
-        return Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients, changeDerivationPath,
-            feeRate, walletListItemBase.walletBase);
+        Transaction tx = Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients,
+            changeDerivationPath, feeRate, walletListItemBase.walletBase);
+        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
+            requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+            totalSigner: walletListItemBase.multisigConfig?.totalSigner);
+        if (initialFee != realEstimatedFee) {
+          // if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+          //   final recipientsWithoutLast = Map.of(recipients)..remove(recipients.keys.last);
+          //   return Transaction.forBatchSweep(
+          //       _selectedUtxos!, recipientsWithoutLast, recipients.keys.last, feeRate, walletListItemBase.walletBase);
+          // }
+          initialFee = realEstimatedFee;
+          finalLastSendAmount = lastRecipient.value - initialFee;
+          if (finalLastSendAmount <= dustLimit) {
+            return tx;
+          }
+          updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
+          continue;
+        }
+        // TODO: 추후 변경 가능성 있음
+        //_estimatedFeeByTransaction = realEstimatedFee;
+        return tx;
       } on Exception catch (e) {
-        if (i == 1) {
+        if (i == _maxIterationCount - 1) {
           exception = e;
           break;
         }
@@ -279,14 +372,15 @@ class TransactionBuilder {
         final int? estimatedFee = extractEstimatedFeeFromException(e);
         if (estimatedFee != null) {
           initialFee = estimatedFee;
-          finalLastSendAmount = lastSendAmount - initialFee;
+          finalLastSendAmount = lastRecipient.value - initialFee;
           if (finalLastSendAmount <= dustLimit) {
             throw SendAmountTooLowException(estimatedFee: initialFee);
           }
           updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
           continue;
         } else {
-          throw TransactionCreationException(message: e.toString(), estimatedFee: initialFee);
+          throw TransactionCreationException(
+              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -294,7 +388,7 @@ class TransactionBuilder {
     throw TransactionCreationException(
         message: exception?.toString() ??
             'Failed to create batch transaction when fee subtracted from amount.',
-        estimatedFee: initialFee);
+        estimatedFee: _estimatedFeeByFeeEstimator!);
   }
 
   int _estimateFee() {
@@ -327,5 +421,25 @@ class TransactionBuilder {
 
     final selectedUtxoIds = _selectedUtxos!.map((e) => e.utxoId).toSet();
     return availableUtxos.where((utxo) => !selectedUtxoIds.contains(utxo.utxoId)).toList();
+  }
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    buffer.writeln("┌──────────────────── Transaction Builder Info ────────────────────┐");
+    buffer.writeln("│ availableUtxos(${availableUtxos.length}):");
+    for (var utxo in availableUtxos) {
+      buffer.writeln("│   - amount: ${utxo.amount}");
+    }
+    buffer.writeln("│ recipients(${recipients.length}):");
+    for (var entry in recipients.entries) {
+      buffer.writeln("│   - ${entry.key}: ${entry.value}");
+    }
+    buffer.writeln("│ feeRate = $feeRate");
+    buffer.writeln("│ changeDerivationPath = $changeDerivationPath");
+    buffer.writeln("│ isFeeSubtractedFromAmount = $isFeeSubtractedFromAmount");
+    buffer.writeln("│ isUtxoFixed = $isUtxoFixed");
+    buffer.writeln("└─────────────────────────────────────────────────────────────────┘");
+    return buffer.toString();
   }
 }

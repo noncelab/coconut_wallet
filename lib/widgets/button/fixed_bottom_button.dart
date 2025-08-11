@@ -2,15 +2,19 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomButton extends StatefulWidget {
+  static const fixedBottomButtonDefaultHeight = 50.0;
+  static const fixedBottomButtonDefaultBottomPadding = 30.0;
+
   const FixedBottomButton({
     super.key,
     required this.onButtonClicked,
     required this.text,
     this.showGradient = true,
+    this.isVisibleAboveKeyboard = true,
     this.isActive = true,
     this.buttonHeight,
     this.horizontalPadding = CoconutLayout.defaultPadding,
-    this.bottomPadding = Sizes.size30,
+    this.bottomPadding = FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
     this.gradientPadding,
     this.subWidget,
     this.backgroundColor = CoconutColors.primary,
@@ -20,6 +24,7 @@ class FixedBottomButton extends StatefulWidget {
   final Function onButtonClicked;
   final String text;
   final bool showGradient;
+  final bool isVisibleAboveKeyboard;
   final bool isActive;
   final double? buttonHeight;
   final double horizontalPadding;
@@ -36,6 +41,8 @@ class FixedBottomButton extends StatefulWidget {
 class _FixedBottomButtonState extends State<FixedBottomButton> {
   @override
   Widget build(BuildContext context) {
+    double keyboardHeight =
+        (widget.isVisibleAboveKeyboard ? MediaQuery.of(context).viewInsets.bottom : 0);
     return SizedBox(
       width: MediaQuery.sizeOf(context).width,
       child: Stack(
@@ -44,7 +51,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: MediaQuery.of(context).viewInsets.bottom,
+              bottom: keyboardHeight,
               child: IgnorePointer(
                 ignoring: true,
                 child: Container(
@@ -67,7 +74,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
           Positioned(
             left: widget.horizontalPadding,
             right: widget.horizontalPadding,
-            bottom: MediaQuery.of(context).viewInsets.bottom + widget.bottomPadding,
+            bottom: keyboardHeight + widget.bottomPadding,
             child: Column(
               children: [
                 widget.subWidget ?? Container(),
@@ -80,7 +87,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                   disabledBackgroundColor: CoconutColors.gray800,
                   disabledForegroundColor: CoconutColors.gray700,
                   isActive: widget.isActive,
-                  height: widget.buttonHeight ?? 50,
+                  height: widget.buttonHeight ?? FixedBottomButton.fixedBottomButtonDefaultHeight,
                   backgroundColor: widget.backgroundColor,
                   foregroundColor: CoconutColors.black,
                   pressedTextColor: CoconutColors.black,

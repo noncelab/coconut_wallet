@@ -71,6 +71,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       height: 36,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           AnimatedBalance(
             prevValue: widget.animatedBalanceData.previous,

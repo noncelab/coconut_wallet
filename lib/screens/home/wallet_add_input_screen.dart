@@ -288,8 +288,10 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
         }));
   }
 
-  void showMfpInputBottomSheet(WalletAddInputViewModel viewModel) {
+  void showMfpInputBottomSheet(WalletAddInputViewModel viewModel) async {
     _closeKeyboard();
+
+    await Future.delayed(const Duration(milliseconds: 300));
 
     showModalBottomSheet(
       context: context,

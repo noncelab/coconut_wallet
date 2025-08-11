@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -15,7 +16,9 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
 class SendConfirmScreen extends StatefulWidget {
-  const SendConfirmScreen({super.key});
+  final BitcoinUnit? currentUnit;
+
+  const SendConfirmScreen({super.key, this.currentUnit});
 
   @override
   State<SendConfirmScreen> createState() => _SendConfirmScreenState();
@@ -44,76 +47,81 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         builder: (context, viewModel, child) {
           return Scaffold(
               backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.buildWithNext(
-                  title: t.send_confirm_screen.title,
-                  context: context,
-                  isActive: true,
-                  usePrimaryActiveColor: true,
-                  nextButtonTitle: t.next,
-                  onNextPressed: () {
-                    context.loaderOverlay.show();
-                    viewModel.setTxWaitingForSign();
-                    if (context.mounted) {
-                      context.loaderOverlay.hide();
-                      Navigator.pushNamed(context, '/unsigned-transaction-qr',
-                          arguments: {'walletName': viewModel.walletName});
-                    }
-                  }),
+              appBar: CoconutAppBar.build(title: t.send_confirm_screen.title, context: context),
               body: SafeArea(
-                child: SingleChildScrollView(
-                  child: Column(children: [
-                    GestureDetector(
-                      onTap: _toggleUnit,
-                      child: Column(
-                        children: [
-                          Container(
-                              margin: const EdgeInsets.only(top: 40),
-                              child: Center(
-                                child: Text.rich(
-                                  TextSpan(text: confirmText, children: <TextSpan>[
-                                    TextSpan(text: ' $unitText', style: Styles.unit)
-                                  ]),
-                                  style: Styles.balance1,
-                                ),
-                              )),
-                          FiatPrice(
-                            satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.amount),
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
+                      child: Column(children: [
+                        GestureDetector(
+                          onTap: _toggleUnit,
+                          child: Column(
+                            children: [
+                              Container(
+                                  margin: const EdgeInsets.only(top: 40),
+                                  child: Center(
+                                    child: Text.rich(
+                                      TextSpan(text: confirmText, children: <TextSpan>[
+                                        TextSpan(text: ' $unitText', style: Styles.unit)
+                                      ]),
+                                      style: Styles.balance1,
+                                    ),
+                                  )),
+                              FiatPrice(
+                                satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.amount),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                    CoconutLayout.spacing_1000h,
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28.0),
-                            color: MyColors.transparentWhite_06,
-                          ),
+                        ),
+                        CoconutLayout.spacing_1000h,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                           child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: Column(
-                                children: [
-                                  InformationItemCard(
-                                    label: t.receiver,
-                                    value: viewModel.addresses,
-                                    isNumber: true,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                  ),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
-                                  InformationItemCard(
-                                      label: t.estimated_fee,
-                                      value: ["$estimatedFeeText $unitText"],
-                                      isNumber: true),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
-                                  InformationItemCard(
-                                      label: t.total_cost,
-                                      value: ["$totalCostText $unitText"],
-                                      isNumber: true),
-                                ],
-                              ))),
-                    )
-                  ]),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(28.0),
+                                color: MyColors.transparentWhite_06,
+                              ),
+                              child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                                  child: Column(
+                                    children: [
+                                      InformationItemCard(
+                                        label: t.receiver,
+                                        value: viewModel.addresses,
+                                        isNumber: true,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                      ),
+                                      const Divider(color: MyColors.transparentWhite_12, height: 1),
+                                      InformationItemCard(
+                                          label: t.estimated_fee,
+                                          value: ["$estimatedFeeText $unitText"],
+                                          isNumber: true),
+                                      const Divider(color: MyColors.transparentWhite_12, height: 1),
+                                      InformationItemCard(
+                                          label: t.total_cost,
+                                          value: ["$totalCostText $unitText"],
+                                          isNumber: true),
+                                    ],
+                                  ))),
+                        ),
+                        CoconutLayout.spacing_400h,
+                      ]),
+                    ),
+                    FixedBottomButton(
+                      onButtonClicked: () {
+                        context.loaderOverlay.show();
+                        viewModel.setTxWaitingForSign();
+                        if (context.mounted) {
+                          context.loaderOverlay.hide();
+                          Navigator.pushNamed(context, '/unsigned-transaction-qr',
+                              arguments: {'walletName': viewModel.walletName});
+                        }
+                      },
+                      text: t.next,
+                      backgroundColor: CoconutColors.gray100,
+                      pressedBackgroundColor: CoconutColors.gray500,
+                    ),
+                  ],
                 ),
               ));
         },
@@ -125,7 +133,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   void initState() {
     super.initState();
     context.loaderOverlay.show();
-    _currentUnit = context.read<PreferenceProvider>().currentUnit;
+    _currentUnit = widget.currentUnit ?? context.read<PreferenceProvider>().currentUnit;
     _viewModel = SendConfirmViewModel(Provider.of<SendInfoProvider>(context, listen: false),
         Provider.of<WalletProvider>(context, listen: false));
     _viewModel.setEstimatedFeeAndTotalUsedAmount().then((_) {

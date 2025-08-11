@@ -48,16 +48,16 @@ if (flavor == "mainnet") {
 
 android {
     namespace "onl.coconut.wallet"
-    compileSdk flutter.compileSdkVersion
+    compileSdk 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 
     sourceSets {
@@ -67,7 +67,7 @@ android {
     defaultConfig {
         applicationId "onl.coconut.wallet"
         minSdkVersion 23
-        targetSdkVersion flutter.targetSdkVersion
+        targetSdkVersion 35
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

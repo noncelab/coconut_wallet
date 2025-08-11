@@ -359,7 +359,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                     final tagListKey = data.item2;
                     final totalCount = data.item3;
                     final animatedBalanceData = data.item4;
-                    final selectedTagName = data.item5;
 
                     return UtxoListStickyHeader(
                       key: ValueKey('sticky_$tagListKey'),
@@ -380,12 +379,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         _hideDropdown();
                       },
                       currentUnit: _currentUnit,
-                      tagListWidget: UtxoTagListWidget(
-                        selectedUtxoTagName: selectedTagName,
-                        onTagSelected: (tagName) {
-                          context.read<UtxoListViewModel>().setSelectedUtxoTagName(tagName);
-                        },
-                      ),
                     );
                   },
                 );
@@ -611,9 +604,7 @@ class _UtxoListState extends State<UtxoList> {
                   key: Key(utxo.utxoId),
                   currentUnit: widget.currentUnit,
                   onPressed: () async {
-                    if (widget.onRemoveDropdown != null) {
-                      widget.onRemoveDropdown!();
-                    }
+                    widget.onRemoveDropdown();
 
                     await Navigator.pushNamed(
                       context,

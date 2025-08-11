@@ -264,6 +264,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(walletId);
     _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _sendInfoProvider.setIsDonation(true);
+    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.home);
     _sendInfoProvider.setAmount(_amount.toDouble() - estimatedFee.toDouble());
     _sendInfoProvider.setEstimatedFee(estimatedFee);
     _sendInfoProvider.setWalletImportSource(walletImportSource);

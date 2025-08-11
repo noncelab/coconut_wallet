@@ -44,14 +44,9 @@ class _DonationBannerCardState extends State<DonationBannerCard>
         width: double.maxFinite,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
-          color: _isTapped ? CoconutColors.gray900 : CoconutColors.gray800,
+          color: _isTapped ? CoconutColors.gray750 : CoconutColors.gray800,
         ),
-        margin: const EdgeInsets.only(
-          left: CoconutLayout.defaultPadding,
-          right: CoconutLayout.defaultPadding,
-          bottom: 12,
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,

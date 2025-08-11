@@ -37,10 +37,15 @@ class ElectrumService {
   Future<bool> connect(String host, int port, {bool ssl = true}) async {
     _connectionFailed = false;
 
+    // // 이전 타이머 정리
+    // _pingTimer?.cancel();
+
     // 연결 실패/손실 콜백 설정
     _socketManager.onConnectionLost = () {
       _connectionFailed = true;
-      Logger.log('ElectrumService: Connection lost callback triggered');
+      Logger.log('ElectrumService: $host:$port Connection lost callback triggered');
+      // // 연결 손실 시 타이머 정리
+      // _pingTimer?.cancel();
     };
 
     try {
@@ -50,7 +55,7 @@ class ElectrumService {
         return false;
       }
 
-      /// 1분 이내 요청이 없으면 소켓 연결 중단
+      /// 1분 이내 요청이 없으면 소켓 연결 중단됨
       /// 소켓 연결 유지를 위해 ping 요청 필요
       if (isConnected) {
         _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
@@ -60,7 +65,7 @@ class ElectrumService {
 
       return isConnected;
     } catch (e) {
-      Logger.error('ElectrumService: Connection failed: $e');
+      Logger.error('ElectrumService: $host:$port Connection failed: $e');
       return false;
     }
   }
