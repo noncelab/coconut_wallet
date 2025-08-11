@@ -224,12 +224,20 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
 
   bool _shouldEnableCompleteButton() {
     if (isLoading) return false;
+    if (_textEditingController.text.isEmpty) return false;
 
     final text = _textEditingController.text;
-    final isTextChanged = text != _preferenceProvider.fakeBalanceTotalAmount.toString();
     final isToggleChanged = _isFakeBalanceActive != _preferenceProvider.isFakeBalanceActive;
 
+    // satoshi를 BTC로 변환
+    double fakeBalanceTotalAmount = (_preferenceProvider.fakeBalanceTotalAmount ?? 0) / 100000000;
+
     if (_isFakeBalanceActive) {
+      // text가 "0"일 때와 fakeBalanceTotalAmount가 0일 때를 동일하게 처리
+      // text를 double로 파싱해서 비교
+      final textAsDouble = double.tryParse(text) ?? 0;
+      final isTextChanged = textAsDouble != fakeBalanceTotalAmount;
+
       if (text.isEmpty || !isTextChanged) return false;
 
       final parsed = double.tryParse(text);

@@ -167,11 +167,6 @@ class PreferenceProvider extends ChangeNotifier {
     _isBalanceHidden = isOn;
     await _sharedPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, isOn);
 
-    if (!isOn) {
-      _isFakeBalanceActive = false;
-      await clearFakeBalanceTotalAmount();
-    }
-
     notifyListeners();
   }
 

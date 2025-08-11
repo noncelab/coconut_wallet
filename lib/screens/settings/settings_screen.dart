@@ -112,15 +112,14 @@ class _SettingsScreen extends State<SettingsScreen> {
                                 onChanged: (value) {
                                   viewModel.changeIsBalanceHidden(value);
                                 })),
-                        if (viewModel.isBalanceHidden)
-                          SingleButton(
-                            enableShrinkAnim: true,
-                            title: t.settings_screen.fake_balance.fake_balance_setting,
-                            onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
-                                  context: context, child: const FakeBalanceBottomSheet());
-                            },
-                          ),
+                        SingleButton(
+                          enableShrinkAnim: true,
+                          title: t.settings_screen.fake_balance.fake_balance_setting,
+                          onPressed: () async {
+                            CommonBottomSheets.showBottomSheet_50(
+                                context: context, child: const FakeBalanceBottomSheet());
+                          },
+                        ),
                       ],
                     ),
                   ],
