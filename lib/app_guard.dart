@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
 
@@ -28,7 +29,7 @@ class _AppGuardState extends State<AppGuard> {
   late NodeProvider _nodeProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   late ConnectivityProvider _connectivityProvider;
-  bool _isPause = false;
+  bool _isPaused = false;
   late final AppLifecycleListener _lifecycleListener;
 
   @override
@@ -68,8 +69,10 @@ class _AppGuardState extends State<AppGuard> {
   void _handleAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.resumed:
-        if (_isPause) {
-          _isPause = false;
+        if (_isPaused) {
+          setState(() {
+            _isPaused = false;
+          });
           _authProvider.checkDeviceBiometrics();
           _priceProvider.initWebSocketService();
           _nodeProvider.reconnect();
@@ -78,19 +81,42 @@ class _AppGuardState extends State<AppGuard> {
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
       case AppLifecycleState.paused:
-        if (_isPause) break;
-        _isPause = true;
+        if (_isPaused) break;
+        setState(() {
+          _isPaused = true;
+        });
         _priceProvider.disposeWebSocketService();
         unawaited(_nodeProvider.closeConnection());
         break;
       case AppLifecycleState.inactive:
+        setState(() {
+          _isPaused = true;
+        });
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return widget.child;
+    return Stack(children: [
+      widget.child,
+      if (_isPaused)
+        Container(
+          color: CoconutColors.black,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/splash_logo_$appFlavor.png',
+                  width: 48,
+                  height: 48,
+                ),
+              ],
+            ),
+          ),
+        ),
+    ]);
   }
 
   @override
