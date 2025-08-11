@@ -158,12 +158,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
     final rbfBuilder = RbfBuilder(
       _walletProvider.containsAddress,
       _walletProvider.getChangeAddress,
+      _nodeProvider.getTransaction,
+      _addressRepository.getDerivationPath,
+      _utxoRepository.getUtxosByStatus,
+      _utxoRepository.getUtxoState,
       _pendingTx,
       _walletId,
       newFeeRate,
-      _nodeProvider,
-      _addressRepository,
-      _utxoRepository,
       _walletListItemBase,
     );
 

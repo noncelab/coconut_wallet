@@ -3,13 +3,7 @@ import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -119,12 +113,13 @@ class _ChangeInfo {
 class RbfBuilder {
   final Function(int, String, {bool? isChange}) _containsAddress;
   final Function(int) _getChangeAddress;
+  final Function(String) _getTransaction;
+  final Function(int, String) _getDerivationPath;
+  final Function(int, UtxoStatus) _getUtxosByStatus;
+  final Function(int, String) _getUtxoState;
   final TransactionRecord _pendingTx;
   final int _walletId;
   final double feeRate;
-  final NodeProvider _nodeProvider;
-  final AddressRepository _addressRepository;
-  final UtxoRepository _utxoRepository;
   final WalletListItemBase _walletListItemBase;
 
   Transaction? _bumpingTransaction;
@@ -134,12 +129,13 @@ class RbfBuilder {
   RbfBuilder(
     this._containsAddress,
     this._getChangeAddress,
+    this._getTransaction,
+    this._getDerivationPath,
+    this._getUtxosByStatus,
+    this._getUtxoState,
     this._pendingTx,
     this._walletId,
     this.feeRate,
-    this._nodeProvider,
-    this._addressRepository,
-    this._utxoRepository,
     this._walletListItemBase,
   );
 
@@ -191,12 +187,13 @@ class RbfBuilder {
     return RbfBuilder(
       _containsAddress,
       _getChangeAddress,
+      _getTransaction,
+      _getDerivationPath,
+      _getUtxosByStatus,
+      _getUtxoState,
       _pendingTx,
       _walletId,
       feeRate ?? this.feeRate,
-      _nodeProvider,
-      _addressRepository,
-      _utxoRepository,
       _walletListItemBase,
     );
   }
@@ -423,7 +420,7 @@ class RbfBuilder {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     double requiredAmount = outputSum + estimatedVSize * newFeeRate;
 
-    List<UtxoState> unspentUtxos = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
+    List<UtxoState> unspentUtxos = _getUtxosByStatus(_walletId, UtxoStatus.unspent);
     unspentUtxos.sort((a, b) => b.amount.compareTo(a.amount));
     int sublistIndex = 0;
     while (inputSum <= requiredAmount && sublistIndex < unspentUtxos.length) {
@@ -683,7 +680,7 @@ class RbfBuilder {
       _bumpingTransaction = Transaction.forSinglePayment(
           inputs,
           recipient,
-          _addressRepository.getDerivationPath(_walletId, changeAddress),
+          _getDerivationPath(_walletId, changeAddress),
           amount,
           feeRate,
           _walletListItemBase.walletBase);
@@ -706,12 +703,8 @@ class RbfBuilder {
 
   void _generateBatchTransation(
       List<Utxo> inputs, Map<String, int> paymentMap, String changeAddress, double feeRate) {
-    _bumpingTransaction = Transaction.forBatchPayment(
-        inputs,
-        paymentMap,
-        _addressRepository.getDerivationPath(_walletId, changeAddress),
-        feeRate,
-        _walletListItemBase.walletBase);
+    _bumpingTransaction = Transaction.forBatchPayment(inputs, paymentMap,
+        _getDerivationPath(_walletId, changeAddress), feeRate, _walletListItemBase.walletBase);
     _setInsufficientUtxo(false);
     debugPrint('RBF::    ▶️ 배치 트잭 생성(fee rate: $feeRate)');
   }
@@ -727,7 +720,7 @@ class RbfBuilder {
   }
 
   Future<List<Utxo>> _getUtxoList() async {
-    final txResult = await _nodeProvider.getTransaction(_pendingTx.transactionHash);
+    final txResult = await _getTransaction(_pendingTx.transactionHash);
     if (txResult.isFailure) {
       debugPrint('❌ 트랜잭션 조회 실패');
       return [];
@@ -736,13 +729,12 @@ class RbfBuilder {
     final tx = txResult.value;
     final List<TransactionInput> inputList = Transaction.parse(tx).inputs;
     debugPrint('inputList:::::::::::: ${inputList.map((e) {
-      var utxo = _utxoRepository.getUtxoState(_walletId, getUtxoId(e.transactionHash, e.index));
+      var utxo = _getUtxoState(_walletId, getUtxoId(e.transactionHash, e.index));
       return utxo?.amount;
     })}');
     List<Utxo> utxoList = [];
     for (var input in inputList) {
-      var utxo =
-          _utxoRepository.getUtxoState(_walletId, getUtxoId(input.transactionHash, input.index));
+      var utxo = _getUtxoState(_walletId, getUtxoId(input.transactionHash, input.index));
       if (utxo != null) {
         utxoList.add(Utxo(utxo.transactionHash, utxo.index, utxo.amount, utxo.derivationPath));
       }
