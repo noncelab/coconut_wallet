@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
-import 'package:coconut_wallet/firebase_options.dart';
+//import 'package:coconut_wallet/firebase_options.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
-import 'package:firebase_core/firebase_core.dart';
+//import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -89,11 +89,11 @@ void main() {
     CoconutWalletApp.kIsFirebaseAnalyticsUsed =
         const bool.fromEnvironment('USE_FIREBASE', defaultValue: false);
     Logger.log('👉 Firebase 사용 여부: ${CoconutWalletApp.kIsFirebaseAnalyticsUsed}');
-    if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
+    // if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) {
+    //   await Firebase.initializeApp(
+    //     options: DefaultFirebaseOptions.currentPlatform,
+    //   );
+    // }
 
     runApp(const CoconutWalletApp());
   }, (error, stackTrace) {

@@ -1,10 +1,25 @@
 import 'dart:io';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
+//import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 part 'model/request/analytics_request_types.dart';
+
+/// 안드로이드 학습용 배포 시 활용, 아닐 때는 주석처리 필요
+class FirebaseAnalytics {
+  Future<void> setDefaultEventParameters(Map<String, Object> parameters) {
+    throw Exception('Must not be called.');
+  }
+
+  Future<void> logEvent({required String name, required Map<String, Object> parameters}) {
+    throw Exception('Must not be called.');
+  }
+
+  Future<void> setUserProperty({required String name, required String value}) {
+    throw Exception('Must not be called.');
+  }
+}
 
 /// Firebase Analytics를 래핑하는 공통 서비스 클래스
 /// 플랫폼 정보, 타임스탬프, 유료 사용자 비활성화 옵션을 제공

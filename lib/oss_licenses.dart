@@ -610,14 +610,14 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
     isSdk: false,
     dependencies: [PackageRef('collection'), PackageRef('flutter')]);
 
-/// base32 2.1.3
+/// base32 2.2.0
 const _base32 = Package(
     name: 'base32',
     description:
         'Base32 Encoder and Decoder for Dart, primarily used for One Time Password secrets.',
     homepage: 'https://github.com/Daegalus/dart-base32',
     authors: [],
-    version: '2.1.3',
+    version: '2.2.0',
     license: '''Copyright (c) 2012 Yulian Kuncheff
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -1616,7 +1616,7 @@ const _clock = Package(
     isSdk: false,
     dependencies: []);
 
-/// coconut_design_system 0.9.1
+/// coconut_design_system 0.9.2
 const _coconut_design_system = Package(
     name: 'coconut_design_system',
     description:
@@ -1624,7 +1624,7 @@ const _coconut_design_system = Package(
     homepage: 'https://www.noncelab.com',
     repository: 'https://github.com/noncelab/coconut_design_system',
     authors: [],
-    version: '0.9.1',
+    version: '0.9.2',
     license: '''MIT License
 
 Copyright 2025 Nonce Lab
@@ -1657,14 +1657,14 @@ Licensor: Nonce Lab''',
       PackageRef('lottie')
     ]);
 
-/// coconut_lib 0.10.5
+/// coconut_lib 1.0.0
 const _coconut_lib = Package(
     name: 'coconut_lib',
     description:
         'The coconut_lib is a development tool for mobile air gap Bitcoin wallets. It is written in Dart. Coconut Vault and Coconut Wallet were created using this library.',
     repository: 'https://github.com/noncelab/coconut_lib.git',
     authors: [],
-    version: '0.10.5',
+    version: '1.0.0',
     license: '''Copyright 2025 Nonce Lab
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:

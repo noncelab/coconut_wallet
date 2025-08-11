@@ -54,7 +54,7 @@ import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
+//import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -105,7 +105,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
           Provider<AnalyticsService>(
             create: (context) => AnalyticsService(
-              CoconutWalletApp.kIsFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null,
+              //CoconutWalletApp.kIsFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null,
+              null,
               !CoconutWalletApp.kIsFirebaseAnalyticsUsed,
             ),
           ),
@@ -191,8 +192,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           child: CupertinoApp(
             navigatorObservers: [
               routeObserver,
-              if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
-                FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)
+              // if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
+              //   FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance)
             ],
             localizationsDelegates: const [
               DefaultMaterialLocalizations.delegate,
