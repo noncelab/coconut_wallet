@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -16,7 +17,6 @@ import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/multi_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -147,13 +147,15 @@ class _SettingsScreen extends State<SettingsScreen> {
                           String fiatDisplayName;
                           switch (fiatCode) {
                             case 'KRW':
-                              fiatDisplayName = t.fiat.krw_code;
+                              fiatDisplayName = FiatCode.KRW.code;
+                              break;
+                            case 'JPY':
+                              fiatDisplayName = FiatCode.JPY.code;
                               break;
                             case 'USD':
-                              fiatDisplayName = t.fiat.usd_code;
-                              break;
                             default:
-                              fiatDisplayName = t.fiat.usd_code;
+                              fiatDisplayName = FiatCode.USD.code;
+                              break;
                           }
 
                           return SingleButton(
