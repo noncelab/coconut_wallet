@@ -69,6 +69,18 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
         if (_textEditingController.text.isEmpty) {
           _fakeBalanceTotalBtc = null;
         }
+
+        if (_textEditingController.text.length > 1 &&
+            _textEditingController.text[0] == '0' &&
+            _textEditingController.text[1] == '0' &&
+            !_textEditingController.text.contains('.')) {
+          // 정수 자리의 첫번째가 0인 경우 0의 추가입력을 막음
+          _textEditingController.text = _textEditingController.text.substring(1);
+          _textEditingController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _textEditingController.text.length),
+          );
+        }
+
         try {
           input = double.parse(_textEditingController.text);
         } catch (e) {
@@ -229,6 +241,9 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
     final text = _textEditingController.text;
     final isToggleChanged = _isFakeBalanceActive != _preferenceProvider.isFakeBalanceActive;
 
+    if (_preferenceProvider.fakeBalanceTotalAmount == null) {
+      return isToggleChanged;
+    }
     // satoshi를 BTC로 변환
     double fakeBalanceTotalAmount = (_preferenceProvider.fakeBalanceTotalAmount ?? 0) / 100000000;
 
@@ -323,5 +338,6 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
     }
 
     await _preferenceProvider.setFakeBalanceMap(fakeBalanceMap);
+    await _preferenceProvider.changeIsBalanceHidden(false); // 가짜 잔액 설정 시 잔액 숨기기 해제
   }
 }
