@@ -325,7 +325,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                 parameters: {
                   AnalyticsParameterNames.walletAddImportSource: widget.importSource.name
                 });
-            await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
+
+            // 가짜 잔액 활성화 상태라면 재분배 작업 수행
+            if (Provider.of<PreferenceProvider>(context, listen: false).isFakeBalanceActive) {
+              final wallets = Provider.of<WalletProvider>(context, listen: false).walletItemList;
+              await Provider.of<PreferenceProvider>(context, listen: false)
+                  .initializeFakeBalance(wallets);
+            }
 
             if (widget.onNewWalletAdded != null) {
               widget.onNewWalletAdded!(addResult);

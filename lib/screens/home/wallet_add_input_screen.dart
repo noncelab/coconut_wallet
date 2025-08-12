@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
@@ -60,7 +59,13 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                   AnalyticsParameterNames.walletAddImportSource:
                       WalletImportSource.extendedPublicKey.name
                 });
-            await viewModel.setFakeBalanceIfEnabled(addResult.walletId);
+
+            // 가짜 잔액 활성화 상태라면 재분배 작업 수행
+            if (Provider.of<PreferenceProvider>(context, listen: false).isFakeBalanceActive) {
+              final wallets = Provider.of<WalletProvider>(context, listen: false).walletItemList;
+              await Provider.of<PreferenceProvider>(context, listen: false)
+                  .initializeFakeBalance(wallets);
+            }
             Navigator.pop(context, addResult);
             break;
           }
@@ -229,9 +234,12 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                                     CoconutColors.white, BlendMode.srcIn),
                                               ),
                                               CoconutLayout.spacing_100w,
-                                              Text(
-                                                  t.wallet_add_input_screen.wallet_description_text,
-                                                  style: CoconutTypography.body2_14)
+                                              Expanded(
+                                                child: Text(
+                                                    t.wallet_add_input_screen
+                                                        .wallet_description_text,
+                                                    style: CoconutTypography.body2_14),
+                                              ),
                                             ],
                                           ),
                                         ),

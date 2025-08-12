@@ -80,15 +80,6 @@ class WalletAddInputViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setFakeBalanceIfEnabled(int? walletId) async {
-    if (fakeBalanceTotalAmount == null || walletId == null) return;
-
-    // 가짜 잔액이 설정되어 있는 경우 FakeBalanceTotalAmount 이하의 값 랜덤 배정
-    final randomFakeBalance = (Random().nextDouble() * fakeBalanceTotalAmount! + 1).toInt();
-
-    await _preferenceProvider.setFakeBalance(walletId, randomFakeBalance);
-  }
-
   Future<ResultOfSyncFromVault> addWallet() async {
     assert(validExtendedPublicKey != null || validDescriptor != null);
     if (validExtendedPublicKey != null) {
