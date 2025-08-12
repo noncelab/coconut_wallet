@@ -529,7 +529,7 @@ class SendViewModel extends ChangeNotifier {
   void _updateFeeBoardVisibility() {
     if (_showFeeBoard) return;
 
-    _showFeeBoard = _isAmountSumExceedsBalance.isNotError && hasValidRecipient;
+    _showFeeBoard = hasValidRecipient;
     if (_showFeeBoard) _calculateEstimatedFee();
     notifyListeners();
   }
