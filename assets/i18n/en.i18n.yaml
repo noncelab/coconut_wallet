@@ -184,7 +184,7 @@ wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"
   vault: "Coconut Vault"
-  keystone: "Keystone"
+  keystone: "Keystone 3 Pro"
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
@@ -209,6 +209,7 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
+    step0: "Devices other than the Keystone 3 Pro are not supported."
     step1: "1. On the home screen, "
     step1_em: " More(•••)"
     step2: "2. "

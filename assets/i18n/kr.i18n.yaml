@@ -186,7 +186,7 @@ wallet_add_scanner_screen:
   add_wallet: "지갑 추가"
   add_watch_only_wallet: "보기 전용 지갑 추가"
   vault: "코코넛 볼트"
-  keystone: "키스톤"
+  keystone: "키스톤 3 프로"
   jade: "제이드"
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
@@ -211,6 +211,7 @@ wallet_add_scanner_screen:
     step6_em: "I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
+    step0: "키스톤 3 프로를 제외한 기기는 호환되지 않습니다."
     step1: "1. 홈 화면에서 "
     step1_em: "더보기(•••)"
     step2: "2. "

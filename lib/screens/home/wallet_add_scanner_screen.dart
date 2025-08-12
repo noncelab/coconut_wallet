@@ -139,6 +139,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         {
           if (isKorean) {
             return [
+              // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
+              const TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
               _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
@@ -151,6 +154,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ];
           } else {
             return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
+              const TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
@@ -330,15 +335,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             if (widget.onNewWalletAdded != null) {
               widget.onNewWalletAdded!(addResult);
             }
-            Navigator.pushReplacementNamed(
-              context,
-              '/wallet-detail',
-              arguments: {
-                'id': addResult.walletId,
-                'entryPoint': kEntryPointWalletHome,
-              },
-            );
-
+            if (mounted) {
+              Navigator.pushReplacementNamed(
+                context,
+                '/wallet-detail',
+                arguments: {
+                  'id': addResult.walletId,
+                  'entryPoint': kEntryPointWalletHome,
+                },
+              );
+            }
             break;
           }
         case WalletSyncResult.existingWalletUpdated:
