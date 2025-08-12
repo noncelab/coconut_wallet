@@ -43,7 +43,8 @@ class SendScreen extends StatefulWidget {
   State<SendScreen> createState() => _SendScreenState();
 }
 
-class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin {
+class _SendScreenState extends State<SendScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
@@ -90,6 +91,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
       bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
       unit: _viewModel.currentUnit.symbol);
+
+  double _previousKeyboardHeight = 0;
 
   @override
   void initState() {
@@ -149,10 +152,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 .amount_to_be_sent(bitcoin: amountText, unit: _viewModel.currentUnit.symbol));
       });
     }
+
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _previousKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
     _animationController.dispose();
     _recipientPageController.dispose();
     _feeRateController.dispose();
@@ -167,6 +177,34 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       controller.dispose();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+      if (_previousKeyboardHeight > 0 && currentKeyboardHeight == 0) {
+        _clearFocusOnKeyboardDismiss();
+      }
+
+      _previousKeyboardHeight = currentKeyboardHeight;
+    });
+  }
+
+  void _clearFocusOnKeyboardDismiss() {
+    _amountFocusNode.unfocus();
+    _feeRateFocusNode.unfocus();
+
+    for (var focusNode in _addressFocusNodeList) {
+      focusNode.unfocus();
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    setState(() {});
   }
 
   @override
