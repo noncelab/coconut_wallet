@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
@@ -11,13 +14,14 @@ class WalletAddInputViewModel extends ChangeNotifier {
   final WalletImportSource importSource = WalletImportSource.extendedPublicKey;
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
+  final PreferenceProvider _preferenceProvider;
   String? validExtendedPublicKey;
   String? validDescriptor;
   String? errorMessage;
   String? masterFingerPrint;
 
-  WalletAddInputViewModel(this._walletProvider);
-
+  WalletAddInputViewModel(this._walletProvider, this._preferenceProvider);
+  int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
   bool isExtendedPublicKey(String xpub) {
     try {
       _validateXpubPrefixSupport(xpub);
@@ -74,6 +78,15 @@ class WalletAddInputViewModel extends ChangeNotifier {
       errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
     }
     notifyListeners();
+  }
+
+  Future<void> setFakeBalanceIfEnabled(int? walletId) async {
+    if (fakeBalanceTotalAmount == null || walletId == null) return;
+
+    // 가짜 잔액이 설정되어 있는 경우 FakeBalanceTotalAmount 이하의 값 랜덤 배정
+    final randomFakeBalance = (Random().nextDouble() * fakeBalanceTotalAmount! + 1).toInt();
+
+    await _preferenceProvider.setFakeBalance(walletId, randomFakeBalance);
   }
 
   Future<ResultOfSyncFromVault> addWallet() async {

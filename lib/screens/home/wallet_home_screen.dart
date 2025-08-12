@@ -391,7 +391,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
                         builder: (context, excludedIds, child) {
                           final balance = _viewModel.fakeBalanceTotalAmount != null
-                              ? _viewModel.fakeBalanceTotalAmount!
+                              ? _viewModel.fakeBalanceMap.entries
+                                  .where((entry) => !excludedIds.contains(entry.key))
+                                  .map((entry) => entry.value as int)
+                                  .fold<int>(0, (current, element) => current + element)
                               : Map.fromEntries(
                                   _viewModel.walletBalanceMap.entries.where(
                                     (entry) => !excludedIds.contains(entry.key),

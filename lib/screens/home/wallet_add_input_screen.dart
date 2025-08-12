@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
@@ -58,6 +60,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                   AnalyticsParameterNames.walletAddImportSource:
                       WalletImportSource.extendedPublicKey.name
                 });
+            await viewModel.setFakeBalanceIfEnabled(addResult.walletId);
             Navigator.pop(context, addResult);
             break;
           }
@@ -128,6 +131,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
     return ChangeNotifierProvider(
         create: (_) => WalletAddInputViewModel(
               context.read<WalletProvider>(),
+              context.read<PreferenceProvider>(),
             ),
         child: Consumer<WalletAddInputViewModel>(builder: (context, viewModel, child) {
           if (!_hasAddedListener) {
