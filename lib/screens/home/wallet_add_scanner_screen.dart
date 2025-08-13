@@ -326,25 +326,19 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                   AnalyticsParameterNames.walletAddImportSource: widget.importSource.name
                 });
 
-            // 가짜 잔액 활성화 상태라면 재분배 작업 수행
-            if (Provider.of<PreferenceProvider>(context, listen: false).isFakeBalanceActive) {
-              final wallets = Provider.of<WalletProvider>(context, listen: false).walletItemList;
-              await Provider.of<PreferenceProvider>(context, listen: false)
-                  .initializeFakeBalance(wallets);
-            }
-
             if (widget.onNewWalletAdded != null) {
               widget.onNewWalletAdded!(addResult);
             }
-            Navigator.pushReplacementNamed(
-              context,
-              '/wallet-detail',
-              arguments: {
-                'id': addResult.walletId,
-                'entryPoint': kEntryPointWalletHome,
-              },
-            );
-
+            if (mounted) {
+              Navigator.pushReplacementNamed(
+                context,
+                '/wallet-detail',
+                arguments: {
+                  'id': addResult.walletId,
+                  'entryPoint': kEntryPointWalletHome,
+                },
+              );
+            }
             break;
           }
         case WalletSyncResult.existingWalletUpdated:

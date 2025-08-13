@@ -60,13 +60,9 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                       WalletImportSource.extendedPublicKey.name
                 });
 
-            // 가짜 잔액 활성화 상태라면 재분배 작업 수행
-            if (Provider.of<PreferenceProvider>(context, listen: false).isFakeBalanceActive) {
-              final wallets = Provider.of<WalletProvider>(context, listen: false).walletItemList;
-              await Provider.of<PreferenceProvider>(context, listen: false)
-                  .initializeFakeBalance(wallets);
+            if (mounted) {
+              Navigator.pop(context, addResult);
             }
-            Navigator.pop(context, addResult);
             break;
           }
         case WalletSyncResult.existingWalletUpdateImpossible:
