@@ -202,6 +202,8 @@ class SendViewModel extends ChangeNotifier {
   int? _unintendedDustFee;
   int? get unintendedDustFee => _unintendedDustFee;
 
+  TransactionBuildResult? _txBuildResult;
+
   List<RecipientInfo> get validRecipientList {
     return _recipientList
         .where((e) =>
@@ -315,7 +317,7 @@ class SendViewModel extends ChangeNotifier {
     }
   }
 
-  void _calculateEstimatedFee() {
+  void _buildTransaction() {
     if (_selectedWalletItem == null ||
         !hasValidRecipient ||
         _feeRateText.isEmpty ||
@@ -336,22 +338,12 @@ class SendViewModel extends ChangeNotifier {
       isUtxoFixed: !_isUtxoSelectionAuto,
     );
 
-    var result = _txBuilder!.build();
-
-    final estimatedFee = result.isSuccess
-        ? result.transaction!.estimateFee(feeRate, _selectedWalletItem!.walletType.addressType,
-            requiredSignature: _selectedWalletItem!.multisigConfig?.requiredSignature,
-            totalSigner: _selectedWalletItem!.multisigConfig?.totalSigner)
-        : result.estimatedFee;
-    _setEstimatedFee(estimatedFee);
-
-    final unintendedDustFee = result.isSuccess && estimatedFee < result.estimatedFee
-        ? result.estimatedFee - estimatedFee
-        : null;
-    _setUnintendedDustFee(unintendedDustFee);
-
-    //Logger.log(_txBuilder);
-    //Logger.log(result);
+    _txBuildResult = _txBuilder!.build();
+    _setEstimatedFee(_txBuildResult!.estimatedFee - (_txBuildResult!.unintendedDustFee ?? 0));
+    _setUnintendedDustFee(
+        (_txBuildResult!.unintendedDustFee ?? 0) == 0 ? null : _txBuildResult!.unintendedDustFee);
+    _updateFinalErrorMessage();
+    Logger.log(_txBuilder.toString());
   }
 
   void _setUnintendedDustFee(int? unintendedDustFee) {
@@ -466,11 +458,16 @@ class SendViewModel extends ChangeNotifier {
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
     } else {
+      /// maxMode 꺼지면 마지막 수신자 금액 초기화
+      _recipientList[lastIndex].amount = "";
+      if (_currentIndex == lastIndex) {
+        _onAmountTextUpdate(_recipientList[lastIndex].amount);
+      }
       _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
     }
 
-    _calculateEstimatedFee();
-    _updateFinalErrorMessage();
+    _buildTransaction();
+    _updateAmountValidationState();
     vibrateLight();
     notifyListeners();
   }
@@ -498,7 +495,7 @@ class SendViewModel extends ChangeNotifier {
     _initBalances();
     _updateAmountValidationState();
     _updateFeeBoardVisibility();
-    _calculateEstimatedFee();
+    _buildTransaction();
     notifyListeners();
   }
 
@@ -517,7 +514,7 @@ class SendViewModel extends ChangeNotifier {
     setCurrentPage(_currentIndex);
     _onRecipientPageDeleted(_currentIndex);
 
-    _calculateEstimatedFee();
+    _buildTransaction();
 
     /// AddressError.duplicate였던 것을 해제
     checkAndSetDuplicationError();
@@ -530,7 +527,7 @@ class SendViewModel extends ChangeNotifier {
     if (_showFeeBoard) return;
 
     _showFeeBoard = hasValidRecipient;
-    if (_showFeeBoard) _calculateEstimatedFee();
+    if (_showFeeBoard) _buildTransaction();
     notifyListeners();
   }
 
@@ -548,6 +545,8 @@ class SendViewModel extends ChangeNotifier {
       if (addressErrorIndex != -1) {
         message = _recipientList[addressErrorIndex].addressError.getMessage();
       }
+    } else if (_txBuildResult?.exception != null) {
+      message = _txBuildResult!.exception.toString();
     } else if (_isFeeRateLowerThanMin) {
       message = t.toast.min_fee(minimum: _minimumFeeRate ?? 0);
     }
@@ -600,7 +599,7 @@ class SendViewModel extends ChangeNotifier {
       _isFeeRateLowerThanMin = false;
     }
 
-    _calculateEstimatedFee();
+    _buildTransaction();
     notifyListeners();
   }
 
@@ -636,7 +635,8 @@ class SendViewModel extends ChangeNotifier {
   void setIsFeeSubtractedFromSendAmount(bool isEnabled) {
     if (_isFeeSubtractedFromSendAmount == isEnabled) return;
     _isFeeSubtractedFromSendAmount = isEnabled;
-    _calculateEstimatedFee();
+    _buildTransaction();
+    _updateAmountValidationState();
     notifyListeners();
   }
 
@@ -691,14 +691,17 @@ class SendViewModel extends ChangeNotifier {
       validateAddress(_recipientList[i].address, i);
     }
     checkAndSetDuplicationError();
-    _calculateEstimatedFee();
+    _buildTransaction();
     _updateFeeBoardVisibility();
+    Logger.log('--> validateAllFieldsOnFocusLost');
   }
 
   void clearAmountText() {
     if (_currentIndex == _recipientList.length) return;
     _recipientList[_currentIndex].amount = "";
     _updateAmountValidationState(recipientIndex: _currentIndex);
+    _txBuildResult = null;
+    _updateFinalErrorMessage();
     notifyListeners();
   }
 
@@ -846,6 +849,8 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void saveSendInfo() {
+    assert(_txBuildResult!.isSuccess);
+
     final recipientMapInBtc =
         recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
 
@@ -870,8 +875,7 @@ class SendViewModel extends ChangeNotifier {
       _sendInfoProvider.setAmount(firstEntry.value);
     }
 
-    var result = _txBuilder!.build();
-    _sendInfoProvider.setTransaction(result.transaction!);
+    _sendInfoProvider.setTransaction(_txBuildResult!.transaction!);
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
   }

@@ -6,12 +6,14 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 
 class TransactionBuildResult {
   final Transaction? transaction;
   final List<UtxoState>? selectedUtxos;
   final int estimatedFee;
   final Exception? exception;
+  final int? unintendedDustFee;
 
   bool get isSuccess => transaction != null;
   bool get isFailure => transaction == null;
@@ -21,6 +23,7 @@ class TransactionBuildResult {
     required this.selectedUtxos,
     required this.estimatedFee,
     this.exception,
+    this.unintendedDustFee,
   });
 
   @override
@@ -71,6 +74,7 @@ class TransactionBuilder {
   Transaction? _transaction;
   int? _estimatedFeeByFeeEstimator; // 처음엔 추정된 값으로 초기화됨
   int? _estimatedFeeByTransaction; // 트랜잭션 생성 후에 Transaction 객체에서 추정한 값 (더 정확)
+  int? _subtractedFeeFromAmount; // 최종 생성된 tx.estimateFee()와 실제로 사용되는 fee가 다를 때 설정됨
 
   TransactionBuilder({
     required this.availableUtxos,
@@ -105,11 +109,23 @@ class TransactionBuilder {
 
       _createTransaction();
 
+      /// 아래 결과는 changeOutput의 amount가 dust여서 수수료로 포함되는 값을 포함하지 않음
+      final estimatedFeeByTransaction = _transaction!.estimateFee(
+          feeRate, walletListItemBase.walletType.addressType,
+          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+          totalSigner: walletListItemBase.multisigConfig?.totalSigner);
+
+      /// 아래 결과는 changeOutput의 amount가 dust여서 수수료로 포함되는 값을 포함함
+      final realFee = _calculateRealFee(_transaction!);
+
       return TransactionBuildResult(
         transaction: _transaction,
         selectedUtxos: _selectedUtxos!,
-        estimatedFee: _estimatedFeeByTransaction!,
+        estimatedFee: realFee,
         exception: null,
+        unintendedDustFee: _subtractedFeeFromAmount != null
+            ? realFee - _subtractedFeeFromAmount!
+            : realFee - estimatedFeeByTransaction,
       );
     } on TransactionCreationException catch (e) {
       return TransactionBuildResult(
@@ -156,10 +172,6 @@ class TransactionBuilder {
                 ? _createSingleWhenFeeSubtractedFromAmount()
                 : _createSingleTransaction());
 
-        /// 수수료 수신자 부담일 때는 생성 시 할당한 값이 _estimatedFeeByTransaction에 미리 할당된 상태이므로
-        /// null일 때만 _estimateFee() 결과를 할당합니다.
-        _estimatedFeeByTransaction ??= _estimateFee();
-
         return _transaction!;
       } on Exception catch (e) {
         final int? estimatedFee = extractEstimatedFeeFromException(e);
@@ -178,7 +190,6 @@ class TransactionBuilder {
           }
 
           /// 4. 더이상 추가로 사용할 수 있는 utxo가 없음
-          //_estimatedFeeByTransaction = estimatedFee;
           throw InsufficientBalanceException(
               estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!);
         }
@@ -187,7 +198,6 @@ class TransactionBuilder {
           rethrow;
         }
 
-        /// TODO: TEST
         throw TransactionCreationException(
             message: e.toString(), estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!);
       }
@@ -243,7 +253,11 @@ class TransactionBuilder {
 
     /// 최대 2회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
     /// transaction_builder_test.dart: Single / Auto Utxo / 수수료 수신자 부담 / Edge Case
+    Transaction? finalTxWhenInfiniteLoop;
+    int? finalSubtractedFeeFromAmount;
+    Set<int> initialFeeSet = <int>{initialFee};
     for (int i = 0; i < _maxIterationCount; i++) {
+      Logger.log('--> i: $i');
       try {
         Transaction tx = Transaction.forSinglePayment(_selectedUtxos!, recipients.entries.first.key,
             changeDerivationPath, sendAmount, feeRate, walletListItemBase.walletBase);
@@ -251,12 +265,18 @@ class TransactionBuilder {
             requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
             totalSigner: walletListItemBase.multisigConfig?.totalSigner);
         if (initialFee != realEstimatedFee) {
-          // if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
-          //   return Transaction.forSweep(_selectedUtxos!, recipients.entries.first.key, feeRate,
-          //       walletListItemBase.walletBase);
-          // }
-          initialFee = realEstimatedFee;
+          if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+            finalSubtractedFeeFromAmount = initialFee;
+            finalTxWhenInfiniteLoop = tx;
+          }
+          // fee 최적화 패턴 반복되는 경우
+          if (initialFeeSet.contains(realEstimatedFee)) {
+            break;
+          } else {
+            initialFeeSet.add(realEstimatedFee);
+          }
 
+          initialFee = realEstimatedFee;
           sendAmount = maxUsedAmount - realEstimatedFee;
           if (sendAmount <= dustLimit) {
             /// estimatedFee + sendAmount < maxUsedAmount이더라도 반환
@@ -264,8 +284,6 @@ class TransactionBuilder {
           }
           continue;
         }
-        // TODO: 추후 변경 가능성 있음
-        //_estimatedFeeByTransaction = realEstimatedFee;
         return tx;
       } on Exception catch (e) {
         if (i == _maxIterationCount - 1) {
@@ -288,7 +306,11 @@ class TransactionBuilder {
       }
     }
 
-    /// TODO: 여기 오는 상황이 있나?
+    if (finalTxWhenInfiniteLoop != null) {
+      _subtractedFeeFromAmount = finalSubtractedFeeFromAmount;
+      return finalTxWhenInfiniteLoop;
+    }
+
     throw TransactionCreationException(
         message: exception?.toString() ??
             'Failed to create single transaction when fee subtracted from amount.',
@@ -338,6 +360,9 @@ class TransactionBuilder {
 
     /// 최대 2회까지 조정되는 케이스 테스트 완료. 최대 몇회까지 조정될지 정확히 가늠하지 못해 10으로 임의 설정했습니다.
     /// transaction_builder_test.dart: Batch / Auto Utxo / 수수료 수신자 부담 / Edge Case
+    Transaction? finalTxWhenInfiniteLoop;
+    int? finalSubtractedFeeFromAmount;
+    Set<int> initialFeeSet = <int>{initialFee};
     for (int i = 0; i < _maxIterationCount; i++) {
       try {
         Transaction tx = Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients,
@@ -346,11 +371,17 @@ class TransactionBuilder {
             requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
             totalSigner: walletListItemBase.multisigConfig?.totalSigner);
         if (initialFee != realEstimatedFee) {
-          // if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
-          //   final recipientsWithoutLast = Map.of(recipients)..remove(recipients.keys.last);
-          //   return Transaction.forBatchSweep(
-          //       _selectedUtxos!, recipientsWithoutLast, recipients.keys.last, feeRate, walletListItemBase.walletBase);
-          // }
+          if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
+            finalTxWhenInfiniteLoop = tx;
+            finalSubtractedFeeFromAmount = initialFee;
+          }
+          // fee 최적화 패턴 반복되는 경우
+          if (initialFeeSet.contains(realEstimatedFee)) {
+            break;
+          } else {
+            initialFeeSet.add(realEstimatedFee);
+          }
+
           initialFee = realEstimatedFee;
           finalLastSendAmount = lastRecipient.value - initialFee;
           if (finalLastSendAmount <= dustLimit) {
@@ -359,8 +390,6 @@ class TransactionBuilder {
           updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
           continue;
         }
-        // TODO: 추후 변경 가능성 있음
-        //_estimatedFeeByTransaction = realEstimatedFee;
         return tx;
       } on Exception catch (e) {
         if (i == _maxIterationCount - 1) {
@@ -385,10 +414,23 @@ class TransactionBuilder {
       }
     }
 
+    if (finalTxWhenInfiniteLoop != null) {
+      _subtractedFeeFromAmount = finalSubtractedFeeFromAmount;
+      return finalTxWhenInfiniteLoop;
+    }
+
     throw TransactionCreationException(
         message: exception?.toString() ??
             'Failed to create batch transaction when fee subtracted from amount.',
         estimatedFee: _estimatedFeeByFeeEstimator!);
+  }
+
+  int _calculateRealFee(Transaction transaction) {
+    final inputSum =
+        _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
+    final outputSum =
+        _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+    return inputSum - outputSum;
   }
 
   int _estimateFee() {
@@ -402,6 +444,7 @@ class TransactionBuilder {
           _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
       final outputSum =
           _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+
       return inputSum - outputSum;
     }
 

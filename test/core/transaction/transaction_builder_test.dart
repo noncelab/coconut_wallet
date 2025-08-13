@@ -92,6 +92,7 @@ void main() {
       expect(result.estimatedFee, isNotNull);
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isEmpty);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담', () {
@@ -110,6 +111,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 1);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 받는 주소가 다중서명지갑 주소', () {
@@ -128,6 +130,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 1);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성', () {
@@ -146,6 +149,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 2);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성 / 받는 주소가 다중서명지갑 주소', () {
@@ -164,6 +168,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 2);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
@@ -182,6 +187,7 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, isNotNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 + 예상 수수료 > 잔액', () {
@@ -200,6 +206,7 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, isNotNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담', () {
@@ -228,6 +235,8 @@ void main() {
       /// 예상 수수료 + amount <= maxUsedAmount
       expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipient.values.first));
+
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
@@ -251,6 +260,7 @@ void main() {
       expect(singleRecipientSameBalance.values.first,
           same(estimatedFeeOfTx + result.transaction!.outputs[0].amount));
       expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
@@ -269,6 +279,7 @@ void main() {
       expect(result.exception, isA<SendAmountTooLowException>());
       expect(result.estimatedFee, isNotNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     /// recipient: 299706
@@ -304,6 +315,7 @@ void main() {
       final sendAmount = singleRecipientEdgeBalance2.values.first;
       expect(sendAmount + (result.estimatedFee - estimatedFeeOfTx), equals(sumOfBalance));
       expect(totalOutputAmount + result.estimatedFee, equals(sumOfBalance));
+      expect(result.unintendedDustFee, 294);
     });
   });
 
@@ -323,6 +335,7 @@ void main() {
       expect(result.transaction!.inputs.length, 1);
       expect(result.transaction!.outputs.length, 2);
       expect(result.estimatedFee, 141);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / input 2개', () {
@@ -341,6 +354,7 @@ void main() {
       expect(result.transaction!.outputs.length, 2);
       expect(result.estimatedFee, 141 + 68);
       expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
@@ -359,6 +373,7 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, 141 + 68);
       expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Manual Utxo / 수수료 수신자 부담', () {
@@ -382,6 +397,7 @@ void main() {
       /// 예상 수수료 + amount = maxUsedAmount
       expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           equals(singleRecipient.values.first));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
@@ -405,6 +421,7 @@ void main() {
       /// 예상 수수료 + amount = maxUsedAmount
       expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           equals(singleRecipientSameBalance.values.first));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 수신자 부담 / 잔액 - 보내는 금액 <= dustLimit', () {
@@ -423,8 +440,11 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.estimatedFee + result.transaction!.outputs.first.amount, equals(sumOfBalance));
+      expect(result.unintendedDustFee, 148);
     });
 
+    /// 0 < 보내는 금액 - 예상 수수료 <= dustLimit 만드는 상세조건
+    /// UTXO 2개 (합 0.2330 2576) / 수수료율 107880 (sat/vB) / 예상 총 수수료 23302080
     test('Single / Manual Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
       final result = TransactionBuilder(
         availableUtxos: availableUtxos,
@@ -441,6 +461,37 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, isNotNull);
       expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, isNull);
+    });
+
+    test('Single / Manual Utxo / 수수료 수신자 부담 / 잔돈 1sat (엣지케이스) ', () {
+      final result = TransactionBuilder(
+        availableUtxos: [
+          UtxoState(
+            transactionHash: 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
+            index: 0,
+            amount: 100000000, // 1 BTC
+            blockHeight: 100,
+            to: 'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66',
+            derivationPath: "m/84'/1'/0'/0/0",
+            timestamp: DateTime.now(),
+          ),
+        ], //100000000
+        recipients: {
+          'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 99999999,
+        },
+        feeRate: 1.0,
+        changeDerivationPath: "m/84'/1'/0'/0/0",
+        walletListItemBase: wallet,
+        isFeeSubtractedFromAmount: true,
+        isUtxoFixed: true,
+      ).build();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.transaction, isNotNull);
+      expect(result.estimatedFee, 142);
+      expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, 1);
     });
   });
 
@@ -460,6 +511,7 @@ void main() {
       expect(result.estimatedFee, isPositive);
       expect(result.transaction!.inputs.length, 1);
       expect(result.transaction!.outputs.length, 3);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 수수료율 높음', () {
@@ -478,6 +530,7 @@ void main() {
       expect(result.estimatedFee, isPositive);
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 합 = 잔액', () {
@@ -496,6 +549,7 @@ void main() {
       expect(result.estimatedFee, isPositive);
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담', () {
@@ -520,6 +574,7 @@ void main() {
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
       expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 = 잔액', () {
@@ -550,6 +605,7 @@ void main() {
           lessThan(batchRecipientsSameBalance.entries.last.value));
       expect(result.transaction!.outputs[1].amount + result.estimatedFee,
           lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 > 잔액', () {
@@ -568,6 +624,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNull);
       expect(result.exception, isA<InsufficientBalanceException>());
+      expect(result.unintendedDustFee, isNull);
     });
 
     /// 1) initialFee: 250 / lastSendAmount: 149706-250 = 149456 / realFee: 240 / dustThreshold: 294 < 304
@@ -599,6 +656,7 @@ void main() {
           .fold(0, (previousValue, element) => previousValue + element);
       expect(totalSendAmount + (result.estimatedFee - estimatedFee), equals(totalBalance));
       expect(totalOutputAmount + result.estimatedFee, equals(totalBalance));
+      expect(result.unintendedDustFee, 294);
     });
   });
 
@@ -622,6 +680,7 @@ void main() {
       expect(result.transaction!.outputs[1].amount, equals(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount,
           equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담', () {
@@ -644,6 +703,7 @@ void main() {
       expect(result.transaction!.outputs[1].amount + result.estimatedFee,
           equals(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount, equals(sumOfBalance - sumOfBatchRecipients));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담 / 마지막 보내는 금액 dustLimit 이하', () {
@@ -662,6 +722,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.exception, isA<SendAmountTooLowException>());
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담 / 잔액 - 보내는 금액 <= dustLimit', () {
@@ -682,6 +743,7 @@ void main() {
       final sumOfOutputs = result.transaction!.outputs
           .fold(0, (previousValue, element) => previousValue + element.amount);
       expect(result.estimatedFee + sumOfOutputs, equals(sumOfBalance));
+      expect(result.unintendedDustFee, dustThreshold);
     });
   });
 
@@ -745,6 +807,7 @@ void main() {
       expect(result.estimatedFee, isNotNull);
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isEmpty);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담', () {
@@ -763,6 +826,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 1);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 받는 주소가 다중서명지갑 주소', () {
@@ -781,6 +845,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 1);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성', () {
@@ -799,6 +864,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 2);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성 / 받는 주소가 다중서명지갑 주소', () {
@@ -817,6 +883,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.selectedUtxos!.length, 2);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
@@ -835,6 +902,7 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, greaterThan(189));
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 + 예상 수수료 > 잔액', () {
@@ -853,6 +921,7 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, greaterThan(189));
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담', () {
@@ -875,6 +944,7 @@ void main() {
       /// 예상 수수료 + amount <= maxUsedAmount
       expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipient.values.first));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
@@ -897,6 +967,7 @@ void main() {
       /// 예상 수수료 + amount <= maxUsedAmount
       expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipientSameBalance.values.first));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
@@ -915,6 +986,7 @@ void main() {
       expect(result.exception, isA<SendAmountTooLowException>());
       expect(result.estimatedFee, isNotNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
   });
 
@@ -934,6 +1006,7 @@ void main() {
       expect(result.transaction!.inputs.length, 1);
       expect(result.transaction!.outputs.length, 2);
       expect(result.estimatedFee, 189);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / input 2개', () {
@@ -952,6 +1025,7 @@ void main() {
       expect(result.transaction!.outputs.length, 2);
       expect(result.estimatedFee, greaterThan(189));
       expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
@@ -970,6 +1044,7 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, greaterThan(189));
       expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담', () {
@@ -992,6 +1067,7 @@ void main() {
       /// 예상 수수료 + amount <= maxUsedAmount
       expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipient.values.first));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
@@ -1015,6 +1091,7 @@ void main() {
       /// 예상 수수료 + amount <= maxUsedAmount
       expect(result.estimatedFee + result.transaction!.outputs.first.amount,
           lessThanOrEqualTo(singleRecipientSameBalance.values.first));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
@@ -1033,6 +1110,7 @@ void main() {
       expect(result.exception, isA<InsufficientBalanceException>());
       expect(result.estimatedFee, isNotNull);
       expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, isNull);
     });
   });
 
@@ -1052,6 +1130,7 @@ void main() {
       expect(result.estimatedFee, isPositive);
       expect(result.transaction!.inputs.length, 1);
       expect(result.transaction!.outputs.length, 3);
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 수수료율 높음', () {
@@ -1070,6 +1149,7 @@ void main() {
       expect(result.estimatedFee, isPositive);
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 합 = 잔액', () {
@@ -1088,6 +1168,7 @@ void main() {
       expect(result.estimatedFee, isPositive);
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNull);
+      expect(result.unintendedDustFee, isNull);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담', () {
@@ -1112,6 +1193,7 @@ void main() {
       final totalBalance =
           availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
       expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 = 잔액', () {
@@ -1142,6 +1224,7 @@ void main() {
           lessThan(batchRecipientsSameBalance.entries.last.value));
       expect(result.transaction!.outputs[1].amount + result.estimatedFee,
           lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 > 잔액', () {
@@ -1160,6 +1243,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNull);
       expect(result.exception, isA<InsufficientBalanceException>());
+      expect(result.unintendedDustFee, isNull);
     });
   });
 
@@ -1183,6 +1267,7 @@ void main() {
       expect(result.transaction!.outputs[1].amount, equals(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount,
           equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담', () {
@@ -1206,6 +1291,7 @@ void main() {
           lessThanOrEqualTo(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount,
           greaterThanOrEqualTo(sumOfBalance - sumOfBatchRecipients));
+      expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담 / 마지막 보내는 금액 dustLimit 이하', () {
@@ -1224,6 +1310,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.selectedUtxos, isNotNull);
       expect(result.exception, isA<SendAmountTooLowException>());
+      expect(result.unintendedDustFee, isNull);
     });
   });
 
