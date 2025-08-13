@@ -389,13 +389,16 @@ class _SendScreenState extends State<SendScreen>
                 isVisibleAboveKeyboard: false,
                 onButtonClicked: () {
                   FocusScope.of(context).unfocus();
+                  if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
                   if (mounted) {
                     _viewModel.saveSendInfo();
                     Navigator.pushNamed(context, '/send-confirm',
                         arguments: {"currentUnit": _viewModel.currentUnit});
                   }
                 },
-                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
+                isActive: !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+                    _viewModel.isReadyToSend &&
+                    _viewModel.finalErrorMessage.isEmpty,
                 text: t.complete,
                 backgroundColor: CoconutColors.gray100,
                 pressedBackgroundColor: CoconutColors.gray500,
