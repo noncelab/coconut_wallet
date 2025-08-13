@@ -767,9 +767,6 @@ trade_exchange:
 
 fiat:
   fiat: "법정화폐"
-  krw_symbol: "₩"
-  usd_symbol: "$"
-  krw_code: "KRW"
-  usd_code: "USD"
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
+  jpy_price: "비트플라이어 기준"

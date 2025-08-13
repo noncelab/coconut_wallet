@@ -765,9 +765,6 @@ trade_exchange:
 
 fiat:
   fiat: "Fiat"
-  krw_symbol: "₩"
-  usd_symbol: "$"
-  krw_code: "KRW"
-  usd_code: "USD"
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
+  jpy_price: "Bitflyer Price"
