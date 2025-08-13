@@ -86,54 +86,64 @@ class PinInputPadState extends State<PinInputPad> {
                     ),
             )
           : null,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            SizedBox(height: widget.initOptionVisible ? 60 : 24),
-            Text(
-              widget.title,
-              style: CoconutTypography.body1_16_Bold,
-              textAlign: TextAlign.center,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          // initOptionVisible: 앱진입 핀체크 화면(true), 핀 설정 화면(false)
+          // centerWidget: 앱진입 핀체크 화면(null), 핀 설정 화면(notNull)
+          if (widget.initOptionVisible) const SizedBox(height: 60),
+          Text(
+            widget.title,
+            style: CoconutTypography.body1_16_Bold,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 50,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.pinLength, (index) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: PinBox(
+                      isSet: widget.pin.length > index, size: widget.pinLength == 4 ? null : 40),
+                );
+              }),
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 50,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(widget.pinLength, (index) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: PinBox(
-                        isSet: widget.pin.length > index, size: widget.pinLength == 4 ? null : 40),
-                  );
-                }),
-              ),
-            ),
-            if (widget.centerWidget == null)
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Text(widget.errorMessage,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
-                    textAlign: TextAlign.center),
-              ),
-            Padding(
+          ),
+          Visibility(
+            visible: widget.errorMessage.isNotEmpty,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: SizedBox(height: 40, child: widget.centerWidget ?? const SizedBox()),
-            ),
-            const SizedBox(height: 16),
-            if (widget.centerWidget != null)
-              Text(widget.errorMessage,
+              child: Text(widget.errorMessage,
                   style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
                   textAlign: TextAlign.center),
-            const SizedBox(height: 40),
-            Expanded(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: GridView.count(
+            ),
+          ),
+          if (!widget.initOptionVisible)
+            Visibility(
+              visible: widget.centerWidget != null,
+              maintainSize: true,
+              maintainAnimation: true,
+              maintainState: true,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: SizedBox(height: 40, child: widget.centerWidget ?? const SizedBox()),
+              ),
+            ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                GridView.count(
                   crossAxisCount: 3,
-                  childAspectRatio: 2,
+                  childAspectRatio: MediaQuery.of(context).size.width > 600
+                      ? 2.5 // 폴드 펼친화면에서는 버튼 사이즈 줄여서 공간 확보
+                      : 2,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: _pinShuffleNumbers.map((key) {
@@ -146,24 +156,24 @@ class PinInputPadState extends State<PinInputPad> {
                     );
                   }).toList(),
                 ),
-              ),
-            ),
-            SizedBox(height: widget.initOptionVisible ? 40 : 50),
-            if (widget.initOptionVisible)
-              Padding(
-                  padding: const EdgeInsets.only(bottom: 60.0),
-                  child: GestureDetector(
-                    onTap: () {
-                      widget.onReset?.call();
-                    },
-                    child: Text(
-                      t.forgot_password,
-                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray600),
-                      textAlign: TextAlign.center,
+                if (widget.initOptionVisible)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 50, top: 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        widget.onReset?.call();
+                      },
+                      child: Text(
+                        t.forgot_password,
+                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray600),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  )),
-          ],
-        ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
