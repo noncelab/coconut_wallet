@@ -320,8 +320,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple2<String, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.isReadyToSend),
+    return Selector<SendViewModel, Tuple3<String, bool, int?>>(
+        selector: (_, viewModel) => Tuple3(
+            viewModel.finalErrorMessage, viewModel.isReadyToSend, viewModel.unintendedDustFee),
         builder: (context, data, child) {
           final textColor =
               _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
@@ -926,13 +927,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       suffix: IconButton(
                         iconSize: 14,
                         padding: EdgeInsets.zero,
-                        onPressed: () {
+                        onPressed: () async {
                           if (controller.text.isEmpty) {
-                            _showAddressScanner(index);
+                            await _showAddressScanner(index);
                           } else {
                             controller.clear();
-                            _viewModel.validateAllFieldsOnFocusLost();
                           }
+                          _viewModel.validateAllFieldsOnFocusLost();
                         },
                         icon: controller.text.isEmpty
                             ? SvgPicture.asset('assets/svg/scan.svg')
@@ -1219,7 +1220,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     });
   }
 
-  void _showAddressScanner(int index) async {
+  Future<void> _showAddressScanner(int index) async {
     final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
     final String? scannedAddress = await CommonBottomSheets.showBottomSheet_100(
         context: context,
