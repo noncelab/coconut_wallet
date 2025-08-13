@@ -330,7 +330,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                 parameters: {
                   AnalyticsParameterNames.walletAddImportSource: widget.importSource.name
                 });
-            await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
 
             if (widget.onNewWalletAdded != null) {
               widget.onNewWalletAdded!(addResult);

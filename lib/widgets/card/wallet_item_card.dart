@@ -141,7 +141,12 @@ class WalletItemCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 isBalanceHidden
-                    ? fakeBalance != null
+                    ? Text(
+                        t.view_balance,
+                        style:
+                            CoconutTypography.body2_14_Bold.copyWith(color: CoconutColors.gray600),
+                      )
+                    : fakeBalance != null
                         ? FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
@@ -161,33 +166,28 @@ class WalletItemCard extends StatelessWidget {
                               ],
                             ),
                           )
-                        : Text(
-                            t.view_balance,
-                            style: CoconutTypography.body2_14_Bold
-                                .copyWith(color: CoconutColors.gray600),
-                          )
-                    : FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            AnimatedBalance(
-                                prevValue: animatedBalanceData.previous,
-                                value: animatedBalanceData.current,
-                                currentUnit: currentUnit == BitcoinUnit.btc
-                                    ? BitcoinUnit.btc
-                                    : BitcoinUnit.sats,
-                                textStyle: CoconutTypography.body2_14_NumberBold
-                                    .setColor(CoconutColors.white)),
-                            Text(
-                              " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
-                              style: CoconutTypography.body2_14_NumberBold
-                                  .setColor(CoconutColors.white),
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                AnimatedBalance(
+                                    prevValue: animatedBalanceData.previous,
+                                    value: animatedBalanceData.current,
+                                    currentUnit: currentUnit == BitcoinUnit.btc
+                                        ? BitcoinUnit.btc
+                                        : BitcoinUnit.sats,
+                                    textStyle: CoconutTypography.body2_14_NumberBold
+                                        .setColor(CoconutColors.white)),
+                                Text(
+                                  " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                                  style: CoconutTypography.body2_14_NumberBold
+                                      .setColor(CoconutColors.white),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
                 Row(
                   children: [
                     Flexible(
