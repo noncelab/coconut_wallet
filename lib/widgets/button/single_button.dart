@@ -87,12 +87,18 @@ class SingleButton extends StatelessWidget {
                       child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title,
-                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(title,
+                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                      ),
                       if (subtitle != null)
-                        Text(subtitle!,
-                            style: subtitleStyle ??
-                                CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(subtitle!,
+                              style: subtitleStyle ??
+                                  CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                        ),
                     ],
                   )),
                   rightElement ?? _rightArrow(),

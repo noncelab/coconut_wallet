@@ -35,43 +35,68 @@ class InputOutputDetailRow extends StatelessWidget {
         MediaQuery.of(context).size.width * 0.3;
     return Row(
       children: [
-        Text(
-          shouldTrimText
-              ? TextUtils.truncate(address, 14, 8, 6)
-              : TextUtils.truncate(address, 19, 11, 8),
-          style: CoconutTypography.body2_14_Number.copyWith(
-            color: rowProperty.leftItemColor,
-            fontSize: 14,
-            height: 16 / 14,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                shouldTrimText
+                    ? TextUtils.truncate(address, 14, 8, 6)
+                    : TextUtils.truncate(address, 19, 11, 8),
+                style: CoconutTypography.body2_14_Number.copyWith(
+                  color: rowProperty.leftItemColor,
+                  fontSize: 14,
+                  height: 16 / 14,
+                ),
+                maxLines: 1,
+              ),
+            ),
           ),
-          maxLines: 1,
         ),
+        CoconutLayout.spacing_300w,
         if (rowType == InputOutputRowType.output || rowType == InputOutputRowType.fee)
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SvgPicture.asset(
-                  rowProperty.svgPath,
-                  width: 16,
-                  height: 12,
-                  colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                SizedBox(
-                  width: balanceMaxWidth,
-                  child: Text(
-                    textAlign: TextAlign.end,
-                    balanceText,
-                    style: CoconutTypography.body2_14_Number.copyWith(
-                      color: rowProperty.rightItemColor,
-                      height: 16 / 14,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: balanceMaxWidth + 26,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SvgPicture.asset(
+                        rowProperty.svgPath,
+                        width: 16,
+                        height: 12,
+                        colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
+                      ),
                     ),
-                  ),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                          width: balanceMaxWidth,
+                          child: FittedBox(
+                            child: Text(
+                              textAlign: TextAlign.end,
+                              balanceText,
+                              style: CoconutTypography.body2_14_Number.copyWith(
+                                color: rowProperty.rightItemColor,
+                                height: 16 / 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         if (rowType == InputOutputRowType.input)
@@ -79,18 +104,25 @@ class InputOutputDetailRow extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                SizedBox(
-                  width: balanceMaxWidth,
-                  child: Text(
-                    balanceText,
-                    style: CoconutTypography.body2_14_Number.copyWith(
-                      color: rowProperty.rightItemColor,
-                      height: 16 / 14,
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: balanceMaxWidth,
+                      child: FittedBox(
+                        child: Text(
+                          balanceText,
+                          style: CoconutTypography.body2_14_Number.copyWith(
+                            color: rowProperty.rightItemColor,
+                            height: 16 / 14,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(
-                  width: 10,
+                  width: 14,
                 ),
                 SvgPicture.asset(
                   rowProperty.svgPath,

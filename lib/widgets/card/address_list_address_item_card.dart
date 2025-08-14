@@ -45,22 +45,28 @@ class AddressItemCard extends StatelessWidget {
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8), color: MyColors.transparentBlack_50),
                 child: Text(index, style: Styles.caption)),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${address.substring(0, 10)}...${address.substring(address.length - 10, address.length)}',
-                  style: Styles.body1Number,
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${address.substring(0, 10)}...${address.substring(address.length - 10, address.length)}',
+                      style: Styles.body1Number,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(currentUnit.displayBitcoinAmount(balanceInSats, withUnit: true),
+                        style: Styles.label.merge(TextStyle(
+                            fontFamily: CustomFonts.number.getFontFamily,
+                            fontWeight: FontWeight.normal,
+                            color: MyColors.transparentWhite_50)))
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(currentUnit.displayBitcoinAmount(balanceInSats, withUnit: true),
-                    style: Styles.label.merge(TextStyle(
-                        fontFamily: CustomFonts.number.getFontFamily,
-                        fontWeight: FontWeight.normal,
-                        color: MyColors.transparentWhite_50)))
-              ],
+              ),
             ),
-            const Spacer(),
+            CoconutLayout.spacing_200w,
             Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(

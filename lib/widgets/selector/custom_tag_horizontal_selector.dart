@@ -78,16 +78,18 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
         color: isSelected ? CoconutColors.white : CoconutColors.gray800,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Text(
-        name,
-        style: CoconutTypography.body3_12_Number.copyWith(
-          color: isSelected ? CoconutColors.gray800 : CoconutColors.white,
-          height: 1.3,
-          fontWeight: isFixedTag
-              ? FontWeight.w400
-              : isSelected
-                  ? FontWeight.w700
-                  : FontWeight.w400,
+      child: FittedBox(
+        child: Text(
+          name,
+          style: CoconutTypography.body3_12_Number.copyWith(
+            color: isSelected ? CoconutColors.gray800 : CoconutColors.white,
+            height: 1.3,
+            fontWeight: isFixedTag
+                ? FontWeight.w400
+                : isSelected
+                    ? FontWeight.w700
+                    : FontWeight.w400,
+          ),
         ),
       ),
     );

@@ -44,9 +44,12 @@ class _FiatPriceState extends State<FiatPrice> {
             return const SizedBox.shrink();
           }
 
-          return Text(
-            priceText,
-            style: appliedStyle,
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              priceText,
+              style: appliedStyle,
+            ),
           );
         } catch (e) {
           // 오류 발생 시 빈 공간으로 표시

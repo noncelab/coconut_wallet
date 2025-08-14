@@ -86,11 +86,16 @@ class UtxoListStickyHeader extends StatelessWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            AnimatedBalance(
-                              prevValue: animatedBalanceData.previous,
-                              value: animatedBalanceData.current,
-                              currentUnit: currentUnit,
-                              textStyle: CoconutTypography.heading4_18_NumberBold,
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: AnimatedBalance(
+                                  prevValue: animatedBalanceData.previous,
+                                  value: animatedBalanceData.current,
+                                  currentUnit: currentUnit,
+                                  textStyle: CoconutTypography.heading4_18_NumberBold,
+                                ),
+                              ),
                             ),
                             CoconutLayout.spacing_100w,
                             Text(

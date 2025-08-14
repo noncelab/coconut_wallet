@@ -129,19 +129,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           onTap: _toggleUnit,
                           child: Column(
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  _amountText(tx),
-                                  CoconutLayout.spacing_100w,
-                                  Text(
-                                    _currentUnit.symbol,
-                                    style: CoconutTypography.body2_14_Number
-                                        .setColor(CoconutColors.gray350),
-                                  ),
-                                ],
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    _amountText(tx),
+                                    CoconutLayout.spacing_100w,
+                                    Text(
+                                      _currentUnit.symbol,
+                                      style: CoconutTypography.body2_14_Number
+                                          .setColor(CoconutColors.gray350),
+                                    ),
+                                  ],
+                                ),
                               ),
                               CoconutLayout.spacing_100h,
                               FiatPrice(

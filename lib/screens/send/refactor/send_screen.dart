@@ -950,24 +950,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               CoconutLayout.spacing_100h,
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    Selector<SendViewModel, int>(
-                        selector: (_, viewModel) => viewModel.recipientList.length,
-                        builder: (context, data, child) {
-                          if (!_viewModel.isBatchMode) return const SizedBox();
-                          return CoconutUnderlinedButton(
-                            text: t.send_screen.delete,
-                            onTap: () {
-                              _deleteAddressField(_viewModel.currentIndex);
-                              _viewModel.deleteRecipient();
-                            },
-                            textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                            padding: EdgeInsets.zero,
-                          );
-                        }),
-                  ],
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Selector<SendViewModel, int>(
+                      selector: (_, viewModel) => viewModel.recipientList.length,
+                      builder: (context, data, child) {
+                        if (!_viewModel.isBatchMode) return const SizedBox();
+                        return CoconutUnderlinedButton(
+                          text: t.send_screen.delete,
+                          onTap: () {
+                            _deleteAddressField(_viewModel.currentIndex);
+                            _viewModel.deleteRecipient();
+                          },
+                          textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          padding: EdgeInsets.zero,
+                        );
+                      }),
                 ),
               ),
             ],

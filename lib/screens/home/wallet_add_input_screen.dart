@@ -225,9 +225,12 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                                     CoconutColors.white, BlendMode.srcIn),
                                               ),
                                               CoconutLayout.spacing_100w,
-                                              Text(
-                                                  t.wallet_add_input_screen.wallet_description_text,
-                                                  style: CoconutTypography.body2_14)
+                                              Expanded(
+                                                child: Text(
+                                                    t.wallet_add_input_screen
+                                                        .wallet_description_text,
+                                                    style: CoconutTypography.body2_14),
+                                              ),
                                             ],
                                           ),
                                         ),

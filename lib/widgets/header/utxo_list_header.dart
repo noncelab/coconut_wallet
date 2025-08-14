@@ -49,6 +49,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
               padding: const EdgeInsets.only(
                 left: 20,
                 top: 28,
+                right: 20,
               ),
               width: MediaQuery.sizeOf(context).width,
               child: Column(
@@ -64,11 +65,12 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IntrinsicWidth(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
                                 child: Row(
                                   children: [
                                     AnimatedBalance(
@@ -79,13 +81,13 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                                   ],
                                 ),
                               ),
-                              CoconutLayout.spacing_200w,
-                              Text(
-                                widget.currentUnit.symbol,
-                                style: CoconutTypography.heading3_21_Number,
-                              ),
-                            ],
-                          ),
+                            ),
+                            CoconutLayout.spacing_200w,
+                            Text(
+                              widget.currentUnit.symbol,
+                              style: CoconutTypography.heading3_21_Number,
+                            ),
+                          ],
                         ),
                         CoconutLayout.spacing_50h,
                         FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
@@ -116,7 +118,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       ),
                       CupertinoButton(
                         key: widget.dropdownGlobalKey,
-                        padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
+                        padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 0),
                         minSize: 0,
                         onPressed: () {
                           if (!widget.isLoadComplete) return;

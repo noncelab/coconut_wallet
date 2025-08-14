@@ -73,15 +73,21 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          AnimatedBalance(
-            prevValue: widget.animatedBalanceData.previous,
-            value: widget.animatedBalanceData.current,
-            currentUnit: widget.currentUnit,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: AnimatedBalance(
+              prevValue: widget.animatedBalanceData.previous,
+              value: widget.animatedBalanceData.current,
+              currentUnit: widget.currentUnit,
+            ),
           ),
           const SizedBox(width: 4.0),
-          Text(
-            widget.currentUnit.symbol,
-            style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              widget.currentUnit.symbol,
+              style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
+            ),
           ),
         ],
       ),
