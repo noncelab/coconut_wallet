@@ -64,16 +64,60 @@ class BalanceSyncService {
     try {
       List<UpdateAddressBalanceDto> balanceUpdates = [];
 
-      for (var script in scriptStatuses) {
-        final balanceResponse =
-            await _electrumService.getBalance(walletItem.walletBase.addressType, script.address);
+      const batchSize = 50; // 배치 사이즈 임의 설정
+      final isOnionHost =
+          scriptStatuses.isNotEmpty && scriptStatuses.first.address.contains('.onion');
 
-        balanceUpdates.add(UpdateAddressBalanceDto(
-          scriptStatus: script,
-          confirmed: balanceResponse.confirmed,
-          unconfirmed: balanceResponse.unconfirmed,
-        ));
+      for (int i = 0; i < scriptStatuses.length; i += batchSize) {
+        final endIndex =
+            (i + batchSize < scriptStatuses.length) ? i + batchSize : scriptStatuses.length;
+        final batch = scriptStatuses.sublist(i, endIndex);
+
+        Logger.log(
+            'BalanceSyncService: Processing batch ${(i ~/ batchSize) + 1}/${(scriptStatuses.length / batchSize).ceil()}');
+
+        // 배치 내에서 병렬 처리
+        final batchFutures = batch.map((script) async {
+          try {
+            final balanceResponse = await _electrumService.getBalance(
+                walletItem.walletBase.addressType, script.address);
+
+            return UpdateAddressBalanceDto(
+              scriptStatus: script,
+              confirmed: balanceResponse.confirmed,
+              unconfirmed: balanceResponse.unconfirmed,
+            );
+          } catch (e) {
+            Logger.error('BalanceSyncService: Error fetching balance for ${script.address}: $e');
+            // 에러가 발생한 경우 기본값 반환
+            return UpdateAddressBalanceDto(
+              scriptStatus: script,
+              confirmed: 0,
+              unconfirmed: 0,
+            );
+          }
+        });
+
+        final batchResults = await Future.wait(batchFutures);
+        balanceUpdates.addAll(batchResults);
+
+        // .onion 주소인 경우 배치 간 짧은 대기
+        if (isOnionHost && i + batchSize < scriptStatuses.length) {
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
       }
+
+      // 기존 방식
+      // for (var script in scriptStatuses) {
+      //   final balanceResponse =
+      //       await _electrumService.getBalance(walletItem.walletBase.addressType, script.address);
+
+      //   balanceUpdates.add(UpdateAddressBalanceDto(
+      //     scriptStatus: script,
+      //     confirmed: balanceResponse.confirmed,
+      //     unconfirmed: balanceResponse.unconfirmed,
+      //   ));
+      // }
 
       final totalBalanceDiff = await _addressRepository.updateAddressBalanceBatch(
         walletItem.id,
@@ -85,6 +129,8 @@ class BalanceSyncService {
 
       // 동기화 완료 state 업데이트
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.balance);
+
+      Logger.log('BalanceSyncService: Completed processing ${scriptStatuses.length} scripts');
     } catch (e, stack) {
       Logger.error('fetchScriptBalanceBatch error: $e');
       Logger.error(stack);

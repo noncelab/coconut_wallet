@@ -70,15 +70,13 @@ class NodeProviderState {
     final walletKeys = registeredWallets.keys.toList();
 
     // 테이블 헤더 출력 (connectionState 포함)
-    final headerBuffer = StringBuffer();
-    headerBuffer.writeln('\n');
-    headerBuffer.writeln('┌─────────────────────────────────────────────────┐');
-    headerBuffer
-        .writeln('│ 연결 상태: $connectionStateSymbol${' ' * (33 - connectionStateSymbol.length)}│');
-    headerBuffer.writeln('├─────────┬─────────┬─────────┬─────────┬─────────┤');
-    headerBuffer.writeln('│ 지갑 ID │  구독   │  잔액   │  거래   │  UTXO   │');
-    headerBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
-    Logger.log(headerBuffer.toString());
+    final logBuffer = StringBuffer();
+    logBuffer.writeln('\n┌─────────────────────────────────────────────────┐');
+    logBuffer
+        .writeln('│ 연결 상태: $connectionStateSymbol${' ' * (38 - connectionStateSymbol.length)}│');
+    logBuffer.writeln('├─────────┬─────────┬─────────┬─────────┬─────────┤');
+    logBuffer.writeln('│ 지갑 ID  │  구독    │   잔액   │   거래    │  UTXO   │');
+    logBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
 
     // 각 지갑 상태를 개별적으로 출력 (긴 로그 방지)
     for (int i = 0; i < walletKeys.length; i++) {
@@ -90,19 +88,19 @@ class NodeProviderState {
       final transactionSymbol = statusToSymbol(value.transaction);
       final utxoSymbol = statusToSymbol(value.utxo);
 
-      final rowBuffer = StringBuffer();
-      rowBuffer.writeln(
-          '│ ${key.toString().padRight(7)} │   $subscriptionSymbol    │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
+      // final rowBuffer = StringBuffer();
+      logBuffer.writeln(
+          '│ ${key.toString().padRight(7)} │   $subscriptionSymbol     │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
 
       // 마지막 행이 아니면 행 구분선 추가
       if (i < walletKeys.length - 1) {
-        rowBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
+        logBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
       }
-
-      Logger.log(rowBuffer.toString());
     }
 
     // 테이블 하단 테두리 출력
-    Logger.log('└─────────┴─────────┴─────────┴─────────┴─────────┘');
+    logBuffer.writeln('└─────────┴─────────┴─────────┴─────────┴─────────┘\n');
+
+    Logger.logLongString(logBuffer.toString());
   }
 }

@@ -139,26 +139,52 @@ class ScriptSyncService {
   }) async {
     try {
       final now = DateTime.now();
+      final totalStartTime = DateTime.now();
 
       // Balance 병렬 처리
+      final balanceStartTime = DateTime.now();
       await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
+      final balanceEndTime = DateTime.now();
+      final balanceDuration = balanceEndTime.difference(balanceStartTime);
+      Logger.performance(
+          'Balance sync completed in ${balanceDuration.inMilliseconds}ms for ${walletItem.name}');
 
       // Transaction 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
+      final transactionStartTime = DateTime.now();
 
-      final transactionFutures = scriptStatuses.map(
-        (status) => _transactionSyncService.fetchScriptTransaction(
-          walletItem,
-          status,
-          inBatchProcess: true,
-          now: now,
-        ),
+      // final transactionFutures = scriptStatuses.map(
+      //   (status) => _transactionSyncService.fetchScriptTransaction(
+      //     walletItem,
+      //     status,
+      //     inBatchProcess: true,
+      //     now: now,
+      //   ),
+      // );
+      // await Future.wait(transactionFutures);
+
+      final transactionResults = await _transactionSyncService.fetchScriptTransactionBatch(
+        walletItem,
+        scriptStatuses,
+        inBatchProcess: true,
+        now: now,
       );
-      await Future.wait(transactionFutures);
+
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
+
+      final transactionEndTime = DateTime.now();
+      final transactionDuration = transactionEndTime.difference(transactionStartTime);
+      // 배치 결과 요약 로깅
+      // final totalTransactions = transactionResults.values
+      //     .map((txHashes) => txHashes.length)
+      //     .fold(0, (sum, count) => sum + count);
+      Logger.performance(
+          'Transaction sync completed in ${transactionDuration.inMilliseconds}ms for ${walletItem.name} (${scriptStatuses.length} scripts)');
 
       // UTXO 병렬 처리
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.utxo);
+      final utxoStartTime = DateTime.now();
+
       await Future.wait(
         scriptStatuses.map(
             (status) => _utxoSyncService.fetchScriptUtxo(walletItem, status, inBatchProcess: true)),
@@ -168,6 +194,19 @@ class ScriptSyncService {
       await _utxoSyncService.createOutgoingUtxos(walletItem);
 
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
+
+      final utxoEndTime = DateTime.now();
+      final utxoDuration = utxoEndTime.difference(utxoStartTime);
+      Logger.performance(
+          'UTXO sync completed in ${utxoDuration.inMilliseconds}ms for ${walletItem.name} (${scriptStatuses.length} scripts)');
+
+      // 전체 소요 시간 로그
+      final totalEndTime = DateTime.now();
+      final totalDuration = totalEndTime.difference(totalStartTime);
+      Logger.performance(
+          'Total batch sync completed in ${totalDuration.inMilliseconds}ms for ${walletItem.name} (${scriptStatuses.length} scripts)');
+      Logger.performance(
+          'Sync breakdown - Balance: ${balanceDuration.inMilliseconds}ms, Transaction: ${transactionDuration.inMilliseconds}ms, UTXO: ${utxoDuration.inMilliseconds}ms');
     } catch (e, stackTrace) {
       Logger.error('Failed to handle batch script status change: $e');
       Logger.error('Stack trace: $stackTrace');

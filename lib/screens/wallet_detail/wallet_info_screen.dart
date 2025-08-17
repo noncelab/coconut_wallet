@@ -300,14 +300,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         _tooltipTopPadding =
             _walletTooltipIconPosition.dy + _walletTooltipIconRenderBox!.size.height;
 
-        debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
-        debugPrint('kToolbarHeight = $kToolbarHeight');
-        debugPrint(
-            '_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
-        debugPrint('_tooltipTopPadding: $_tooltipTopPadding');
+        // debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
+        // debugPrint('kToolbarHeight = $kToolbarHeight');
+        // debugPrint(
+        //     '_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
+        // debugPrint('_tooltipTopPadding: $_tooltipTopPadding');
       }
     } catch (e) {
-      debugPrint('Tooltip position initialization failed: $e');
+      // debugPrint('Tooltip position initialization failed: $e');
       _walletTooltipIconPosition = Offset.zero;
     }
   }
