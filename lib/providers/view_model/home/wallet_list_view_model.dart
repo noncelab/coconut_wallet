@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -26,6 +27,7 @@ class WalletListViewModel extends ChangeNotifier {
   late final ConnectivityProvider _connectivityProvider;
   late final AuthProvider _authProvider;
   late final NodeProvider _nodeProvider;
+  late final PriceProvider _priceProvider;
   late Stream<NodeSyncState> _syncNodeStateStream;
   late PreferenceProvider _preferenceProvider;
   late bool? _isNetworkOn;
@@ -58,6 +60,7 @@ class WalletListViewModel extends ChangeNotifier {
     this._authProvider,
     this._nodeProvider,
     this._preferenceProvider,
+    this._priceProvider,
   ) {
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _walletOrder = _preferenceProvider.walletOrder;
@@ -70,6 +73,15 @@ class WalletListViewModel extends ChangeNotifier {
         .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
     _preferenceProvider.addListener(_onPreferenceChanged);
+    _priceProvider.addListener(_updateBitcoinPrice);
+  }
+
+  void _updateBitcoinPrice() {
+    notifyListeners();
+  }
+
+  String getBitcoinPrice(int satoshiAmount) {
+    return _priceProvider.getFiatPrice(satoshiAmount);
   }
 
   void _onPreferenceChanged() {
@@ -332,6 +344,7 @@ class WalletListViewModel extends ChangeNotifier {
   void dispose() {
     _syncNodeStateSubscription?.cancel();
     _preferenceProvider.removeListener(_onPreferenceChanged);
+    _priceProvider.removeListener(_updateBitcoinPrice);
     super.dispose();
   }
 }
