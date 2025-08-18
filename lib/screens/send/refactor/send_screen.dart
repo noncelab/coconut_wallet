@@ -267,63 +267,62 @@ class _SendScreenState extends State<SendScreen>
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
         height: kCoconutAppbarHeight,
-        customTitle:
-            Selector<SendViewModel, Tuple5<WalletListItemBase?, bool, int, int, BitcoinUnit>>(
-                selector: (_, viewModel) => Tuple5(
-                    viewModel.selectedWalletItem,
-                    viewModel.isUtxoSelectionAuto,
-                    viewModel.selectedUtxoAmountSum,
-                    viewModel.selectedUtxoListLength,
-                    viewModel.currentUnit),
-                builder: (context, data, child) {
-                  final selectedWalletItem = data.item1;
-                  final isUtxoSelectionAuto = data.item2;
-                  final selectedUtxoListLength = data.item4;
-                  final currentUnit = data.item5;
+        customTitle: Selector<SendViewModel,
+                Tuple5<WalletListItemBase?, bool, int, int, BitcoinUnit>>(
+            selector: (_, viewModel) => Tuple5(
+                viewModel.selectedWalletItem,
+                viewModel.isUtxoSelectionAuto,
+                viewModel.selectedUtxoAmountSum,
+                viewModel.selectedUtxoListLength,
+                viewModel.currentUnit),
+            builder: (context, data, child) {
+              final selectedWalletItem = data.item1;
+              final isUtxoSelectionAuto = data.item2;
+              final selectedUtxoListLength = data.item4;
+              final currentUnit = data.item5;
 
-                  // null 이거나, 대표지갑이 mfp가 없고 mfp 있는 지갑이 0개일 때
-                  if (_viewModel.isSelectedWalletNull ||
-                      (isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-                          !hasMfpWallet(_viewModel.walletItemList))) {
-                    return Container(
-                      color: Colors.transparent,
-                      width: 50,
-                      child: Text(
-                        textAlign: TextAlign.center,
-                        '-',
-                        style: CoconutTypography.body1_16.setColor(CoconutColors.white),
-                      ),
-                    );
-                  }
+              // null 이거나, 대표지갑이 mfp가 없고 mfp 있는 지갑이 0개일 때
+              if (_viewModel.isSelectedWalletNull ||
+                  (isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+                      !hasMfpWallet(_viewModel.walletItemList))) {
+                return Container(
+                  color: Colors.transparent,
+                  width: 50,
+                  child: Text(
+                    textAlign: TextAlign.center,
+                    '-',
+                    style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                  ),
+                );
+              }
 
-                  String amountText =
-                      currentUnit.displayBitcoinAmount(_viewModel.balance, withUnit: true);
-                  if (!isUtxoSelectionAuto && selectedUtxoListLength > 0) {
-                    amountText += t.send_screen.n_utxos(count: selectedUtxoListLength);
-                  }
+              String amountText =
+                  currentUnit.displayBitcoinAmount(_viewModel.balance, withUnit: true);
+              if (!isUtxoSelectionAuto && selectedUtxoListLength > 0) {
+                amountText += t.send_screen.n_utxos(count: selectedUtxoListLength);
+              }
 
-                  return Column(
+              return Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                              isWalletWithoutMfp(_viewModel.selectedWalletItem)
-                                  ? '-'
-                                  : selectedWalletItem!.name,
-                              style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
-                          CoconutLayout.spacing_50w,
-                          const Icon(Icons.keyboard_arrow_down_sharp,
-                              color: CoconutColors.white, size: 16),
-                        ],
-                      ),
-                      if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
-                        Text(amountText,
-                            style: CoconutTypography.body3_12_NumberBold
-                                .setColor(CoconutColors.white)),
+                      Text(
+                          isWalletWithoutMfp(_viewModel.selectedWalletItem)
+                              ? '-'
+                              : selectedWalletItem!.name,
+                          style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
+                      CoconutLayout.spacing_50w,
+                      const Icon(Icons.keyboard_arrow_down_sharp,
+                          color: CoconutColors.white, size: 16),
                     ],
-                  );
-                }),
+                  ),
+                  if (!isWalletWithoutMfp(_viewModel.selectedWalletItem) && !isUtxoSelectionAuto)
+                    Text(amountText,
+                        style: CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white)),
+                ],
+              );
+            }),
         onTitlePressed: () {
           // 지갑이 적어도 1개 이상 있어야 하며, MFP를 가진 지갑이 존재하는 경우에 출력한다. (존재하지 않는 경우 지갑 선택, UTXO 옵션처리를 할 필요가 없음)
           if (!_viewModel.isSelectedWalletNull && hasMfpWallet(_viewModel.walletItemList)) {
