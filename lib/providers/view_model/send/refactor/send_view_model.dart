@@ -437,7 +437,10 @@ class SendViewModel extends ChangeNotifier {
             .toInt() -
         estimatedFeeInSats;
     _recipientList[lastIndex].amount = maxBalanceInSats > dustLimit
-        ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoinString(maxBalanceInSats) : maxBalanceInSats)
+        ? (isBtcUnit
+                ? BalanceFormatUtil.formatBitcoinStringToReadableBitcoin(
+                    UnitUtil.convertSatoshiToBitcoinString(maxBalanceInSats))
+                : maxBalanceInSats)
             .toString()
         : "0";
 
