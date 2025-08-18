@@ -337,6 +337,7 @@ send_screen:
   tooltip_max_mode_text: "모두 보내기 중"
   max_mode_insufficient_balance: "잔액 부족"
   unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
+  fee_rate_too_low: "0.1 미만으로는 설정할 수 없어요"
 
 utxo_selection_screen:
   title: "UTXO 고르기"
@@ -680,7 +681,7 @@ tooltip:
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
-  min_fee: "현재 최소 수수료율은 $minimum sats/vB 입니다."
+  min_fee: "현재 최소 추천 수수료율은 $minimum sats/vB 입니다."
   fetching_onchain_data: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요."
   screen_capture: "스크린 캡처가 감지되었습니다."
   no_balance: "잔액이 없습니다."

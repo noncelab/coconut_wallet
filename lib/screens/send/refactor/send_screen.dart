@@ -16,7 +16,6 @@ import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -28,6 +27,7 @@ import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:shimmer/shimmer.dart';
@@ -398,7 +398,8 @@ class _SendScreenState extends State<SendScreen>
                 },
                 isActive: !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
                     _viewModel.isReadyToSend &&
-                    _viewModel.finalErrorMessage.isEmpty,
+                    (double.tryParse(_feeRateController.text) ?? 0) >= 0.1 &&
+                    (_viewModel.finalErrorMessage.isEmpty || _viewModel.isFeeRateLowerThanMin),
                 text: t.complete,
                 backgroundColor: CoconutColors.gray100,
                 pressedBackgroundColor: CoconutColors.gray500,
@@ -729,11 +730,27 @@ class _SendScreenState extends State<SendScreen>
               controller: _feeRateController,
               focusNode: _feeRateFocusNode,
               backgroundColor: feeRateFieldGray,
+              onEditingComplete: () {
+                _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+                FocusScope.of(context).unfocus();
+              },
               height: 30,
               padding: const EdgeInsets.only(left: 12, right: 2),
               onChanged: (text) {
                 if (text == "-") return;
                 String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
+                double? parsedFeeRate = double.tryParse(formattedText);
+
+                if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
+                    (parsedFeeRate != null && parsedFeeRate < 0.1)) {
+                  Fluttertoast.showToast(
+                    msg: t.send_screen.fee_rate_too_low,
+                    backgroundColor: CoconutColors.gray700,
+                    toastLength: Toast.LENGTH_SHORT,
+                  );
+                  _feeRateController.text = '0.';
+                  return;
+                }
                 _feeRateController.text = formattedText;
                 _viewModel.setFeeRateText(formattedText);
               },
@@ -1373,6 +1390,8 @@ class _SendScreenState extends State<SendScreen>
 
     final focusNode = FocusNode();
     focusNode.addListener(() => setState(() {
+          _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+
           final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null;
           _viewModel.setShowAddressBoard(shouldShowBoard);
           if (!focusNode.hasFocus) {
@@ -1402,7 +1421,10 @@ class _SendScreenState extends State<SendScreen>
     }
   }
 
-  void _clearFocus() => FocusManager.instance.primaryFocus?.unfocus();
+  void _clearFocus() {
+    _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
 
   Future<void> _startBounce() async {
     final pageWidth = _recipientPageController.position.viewportDimension;
@@ -1424,5 +1446,13 @@ class _SendScreenState extends State<SendScreen>
       }
     });
     _animationController.forward();
+  }
+
+  /// 텍스트 끝의 소수점을 제거하는 함수
+  String _removeTrailingDot(String text) {
+    if (text.endsWith('.')) {
+      return text.substring(0, text.length - 1);
+    }
+    return text;
   }
 }

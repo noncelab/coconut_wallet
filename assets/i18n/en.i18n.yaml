@@ -333,6 +333,7 @@ send_screen:
   tooltip_max_mode_text: "Send All Mode Enabled"
   max_mode_insufficient_balance: "Insufficient Balance"
   unintended_dust_fee: "The change of ${unintendedDustFee} sat will be used as a fee."
+  fee_rate_too_low: "Minimum allowed value is 0.1"
 
 
 utxo_selection_screen:
@@ -678,7 +679,7 @@ tooltip:
 
 toast:
   back_exit: "Press the back button once more to exit."
-  min_fee: "Current minimum fee rate is $minimum sats/vB."
+  min_fee: "Current minimum recommended fee rate is $minimum sats/vB."
   fetching_onchain_data: "Fetching latest data. Please wait a moment."
   screen_capture: "Screen capture detected."
   no_balance: "No balance."

@@ -162,6 +162,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   bool _isFeeRateLowerThanMin = false;
+  bool get isFeeRateLowerThanMin => _isFeeRateLowerThanMin;
 
   double? _minimumFeeRate;
   double? get minimumFeeRate => _minimumFeeRate;
