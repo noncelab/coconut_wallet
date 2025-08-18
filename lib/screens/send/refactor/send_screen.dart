@@ -1263,7 +1263,7 @@ class _SendScreenState extends State<SendScreen>
 
   Future<void> _showAddressScanner(int index) async {
     final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-    final String? scannedAddress = await CommonBottomSheets.showBottomSheet_100(
+    final String? scannedData = await CommonBottomSheets.showBottomSheet_100(
         context: context,
         child: Scaffold(
             backgroundColor: CoconutColors.black,
@@ -1289,8 +1289,19 @@ class _SendScreenState extends State<SendScreen>
                   Navigator.of(context).pop<String>('');
                 }),
             body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)));
-    if (scannedAddress != null) {
-      _addressControllerList[index].text = scannedAddress;
+    if (scannedData != null) {
+      if (scannedData.startsWith('bitcoin:')) {
+        final bip21Data = parseBip21Uri(scannedData);
+        _addressControllerList[index].text = bip21Data.address;
+        _viewModel.setAddressText(bip21Data.address, index);
+
+        // amount 파라미터가 있는 경우
+        if (bip21Data.amount != null) {
+          _amountController.text = bip21Data.amount.toString();
+        }
+      } else {
+        _addressControllerList[index].text = scannedData;
+      }
     }
     _disposeQrViewController();
   }
