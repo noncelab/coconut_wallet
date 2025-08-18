@@ -362,14 +362,23 @@ class _SendScreenState extends State<SendScreen>
         selector: (_, viewModel) => Tuple3(
             viewModel.finalErrorMessage, viewModel.isReadyToSend, viewModel.unintendedDustFee),
         builder: (context, data, child) {
-          final textColor =
-              _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
+          final finalErrorMessage = data.item1;
+          final isReadyToSend = data.item2;
+          final unintendedDustFee = data.item3;
+
+          // 에러 메시지가 워닝에 해당하는 경우, yellow 표시
+          final textColor = _viewModel.finalErrorMessage.isNotEmpty
+              ? _viewModel.isFeeRateLowerThanMin
+                  ? CoconutColors.yellow
+                  : CoconutColors.hotPink
+              : CoconutColors.white;
+
           String message = "";
-          if (_viewModel.finalErrorMessage.isNotEmpty) {
-            message = _viewModel.finalErrorMessage;
-          } else if (_viewModel.unintendedDustFee != null) {
-            message = t.send_screen
-                .unintended_dust_fee(unintendedDustFee: _viewModel.unintendedDustFee.toString());
+          if (finalErrorMessage.isNotEmpty) {
+            message = finalErrorMessage;
+          } else if (unintendedDustFee != null) {
+            message =
+                t.send_screen.unintended_dust_fee(unintendedDustFee: unintendedDustFee.toString());
           }
 
           return Stack(
@@ -397,9 +406,9 @@ class _SendScreenState extends State<SendScreen>
                   }
                 },
                 isActive: !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-                    _viewModel.isReadyToSend &&
+                    isReadyToSend &&
                     (double.tryParse(_feeRateController.text) ?? 0) >= 0.1 &&
-                    (_viewModel.finalErrorMessage.isEmpty || _viewModel.isFeeRateLowerThanMin),
+                    (finalErrorMessage.isEmpty || _viewModel.isFeeRateLowerThanMin),
                 text: t.complete,
                 backgroundColor: CoconutColors.gray100,
                 pressedBackgroundColor: CoconutColors.gray500,

@@ -94,7 +94,7 @@ network: "Network"
 electrum_server: "Electrum Server"
 
 apply_item: "$count items"
-fee_sats: " ($value sats/vB)"
+fee_sats: " ($value sat/vB)"
 utxo_count: "($count items)"
 total_item_count: "(Total $count items)"
 
@@ -514,11 +514,11 @@ transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
   existing_fee: "Existing Fee"
-  existing_fee_value: "${value} sats/vB"
+  existing_fee_value: "${value} sat/vB"
   total_fee: "Total $fee sats / ${vB} vB"
   new_fee: "New Fee"
-  sats_vb: "sats/vB"
-  recommend_fee: "Minimum fee: ${fee} sats/vB or higher"
+  sats_vb: "sat/vB"
+  recommend_fee: "Minimum fee: ${fee} sat/vB or higher"
   recommend_fee_info_rbf: "Must be at least 1 sat/vB higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vB."
   recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, Recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "Recommended Fee"
@@ -641,7 +641,7 @@ errors:
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
 
 text_field:
-  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sats/vB)"
+  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
   enter_fee_directly: "Enter Manually"
   search_mnemonic_word: "Search in English"
 
@@ -679,7 +679,7 @@ tooltip:
 
 toast:
   back_exit: "Press the back button once more to exit."
-  min_fee: "Current minimum recommended fee rate is $minimum sats/vB."
+  min_fee: "Current minimum recommended fee rate is $minimum sat/vB."
   fetching_onchain_data: "Fetching latest data. Please wait a moment."
   screen_capture: "Screen capture detected."
   no_balance: "No balance."
