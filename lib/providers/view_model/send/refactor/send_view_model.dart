@@ -588,6 +588,16 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setAmountText(String satoshi, int recipientIndex) {
+    if (currentUnit == BitcoinUnit.sats) {
+      _recipientList[recipientIndex].amount = satoshi;
+    } else {
+      _recipientList[recipientIndex].amount =
+          UnitUtil.convertSatoshiToBitcoin(int.parse(satoshi)).toString();
+    }
+    notifyListeners();
+  }
+
   void setFeeRateText(String feeRate) {
     _feeRateText = feeRate;
 
