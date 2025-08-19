@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:base32/base32.dart';
 
@@ -9,23 +8,27 @@ class BbqrEncoder {
   final String dataType; // 예: 'P' (PSBT)
 
   BbqrEncoder({
-    this.maxChunkSize = 500,
+    this.maxChunkSize = 800, // Qr 버전 27에 더 적합한 크기
     this.encodingType = 'Z',
     this.dataType = 'P',
   });
 
   List<String> encodeBase64(String base64String) {
-    final compressedBytes = ZLibCodec(raw: true).encode(base64.decode(base64String));
-    final chunks = _chunkBytes(compressedBytes, maxChunkSize);
+    final originalBytes = base64.decode(base64String);
+    final chunks = _chunkBytes(originalBytes, maxChunkSize);
     final total = chunks.length;
 
     final encodedChunks = <String>[];
     for (int i = 0; i < total; i++) {
-      final base32Data = base32.encode(Uint8List.fromList(chunks[i]));
+      // Base32 패딩 제거
+      final base32Data =
+          base32.encode(Uint8List.fromList(chunks[i])).replaceAll(RegExp(r'=+$'), '');
       final totalStr = total.toRadixString(36).padLeft(2, '0').toUpperCase();
       final indexStr = i.toRadixString(36).padLeft(2, '0').toUpperCase();
-      final header = 'B\$$encodingType$dataType$totalStr$indexStr';
-      encodedChunks.add('$header$base32Data');
+      final header = 'B\$U$dataType$totalStr$indexStr'; // 'U' = uncompressed
+      final fullPart = '$header$base32Data';
+
+      encodedChunks.add(fullPart);
     }
     return encodedChunks;
   }

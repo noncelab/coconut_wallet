@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -8,7 +9,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/bbqr/bbqr_encoder.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
@@ -40,6 +40,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   late double _sliderValue;
   late bool? _isDonation;
 
+  int _currentBbqrIndex = 0;
+  late Timer _bbqrTimer;
+  late List<String> _bbqrParts;
+
   @override
   void initState() {
     super.initState();
@@ -58,8 +62,18 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
     final hexStr = hex.encode(base64.decode(_psbtBase64));
     final spacedHex = hexStr.replaceAllMapped(RegExp(r'.{4}'), (match) => '${match.group(0)} ');
-    Logger.logLongString('[Hex]:: $spacedHex');
-    // debugPrint('bbqr:::::: ${BbqrEncoder().encodeBase64(_psbtBase64)}');
+    // Logger.logLongString('[Hex]:: $spacedHex');
+
+    if (_walletImportSource == WalletImportSource.coldCard) {
+      _bbqrParts = BbqrEncoder().encodeBase64(_psbtBase64);
+      _bbqrTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
+        if (mounted) {
+          setState(() {
+            _currentBbqrIndex = (_currentBbqrIndex + 1) % _bbqrParts.length;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -93,6 +107,12 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         break;
     }
     _sliderValue = _qrScanDensity.index * 5;
+  }
+
+  @override
+  void dispose() {
+    _bbqrTimer.cancel();
+    super.dispose();
   }
 
   @override
@@ -139,7 +159,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                       child: Center(
                         child: _isBbQrType()
                             ? QrImageView(
-                                data: BbqrEncoder().encodeBase64(_psbtBase64).first,
+                                data: _bbqrParts[_currentBbqrIndex],
                                 version: QrVersions.auto,
                               )
                             : AnimatedQrView(
