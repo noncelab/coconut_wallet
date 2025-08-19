@@ -115,7 +115,9 @@ class _SendScreenState extends State<SendScreen>
             _viewModel.validateAllFieldsOnFocusLost();
           }
         }));
-    _feeRateFocusNode.addListener(() => setState(() {}));
+    _feeRateFocusNode.addListener(() => setState(() {
+          _amountController.text = _removeTrailingDot(_amountController.text);
+        }));
     _amountController.addListener(_amountTextListener);
     _recipientPageController.addListener(_recipientPageListener);
     _animationController = AnimationController(
@@ -349,9 +351,14 @@ class _SendScreenState extends State<SendScreen>
         focusNode: _amountFocusNode,
         showCursor: false,
         enableInteractiveSelection: false,
+        onEditingComplete: () {
+          _amountController.text = _removeTrailingDot(_amountController.text);
+          FocusScope.of(context).unfocus();
+        },
         keyboardType: const TextInputType.numberWithOptions(signed: false, decimal: true),
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          SingleDotInputFormatter(),
         ],
       ),
     );
@@ -1400,6 +1407,7 @@ class _SendScreenState extends State<SendScreen>
     final focusNode = FocusNode();
     focusNode.addListener(() => setState(() {
           _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+          _amountController.text = _removeTrailingDot(_amountController.text);
 
           final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null;
           _viewModel.setShowAddressBoard(shouldShowBoard);
@@ -1432,6 +1440,7 @@ class _SendScreenState extends State<SendScreen>
 
   void _clearFocus() {
     _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+    _amountController.text = _removeTrailingDot(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
@@ -1463,5 +1472,16 @@ class _SendScreenState extends State<SendScreen>
       return text.substring(0, text.length - 1);
     }
     return text;
+  }
+}
+
+class SingleDotInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    // 소수점이 2개 이상이면 입력 취소
+    if ('.'.allMatches(text).length > 1) return oldValue;
+
+    return newValue;
   }
 }
