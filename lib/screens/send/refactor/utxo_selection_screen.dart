@@ -61,8 +61,14 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
         if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
+          viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            // 네트워크 알림 툴팁이 생성되면 위젯이 밀리기 때문에 드롭다운 버튼 위치를 다시 계산
+            RenderBox orderDropdownButtonRenderBox =
+                _orderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
+
+            _orderDropdownButtonPosition = orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
           });
         }
         return viewModel;
@@ -222,7 +228,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
             borderRadius: BorderRadius.circular(24),
           ),
           margin: const EdgeInsets.only(
-            top: 10,
+            top: 0,
           ),
           child: Container(
             padding: const EdgeInsets.only(
@@ -271,7 +277,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           ),
         ),
         const SizedBox(
-          height: 40,
+          height: 32,
         ),
         Row(children: [
           CupertinoButton(
