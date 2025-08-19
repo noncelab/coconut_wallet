@@ -7,7 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/bbqr/bbqr_encoder.dart';
+import 'package:coconut_wallet/utils/bb_qr/bb_qr_encoder.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
@@ -65,7 +65,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     // Logger.logLongString('[Hex]:: $spacedHex');
 
     if (_walletImportSource == WalletImportSource.coldCard) {
-      _bbqrParts = BbqrEncoder().encodeBase64(_psbtBase64);
+      _bbqrParts = BbQrEncoder().encodeBase64(_psbtBase64);
       _bbqrTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
         if (mounted) {
           setState(() {

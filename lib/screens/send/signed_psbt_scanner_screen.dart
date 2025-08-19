@@ -7,7 +7,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';

@@ -1,15 +1,14 @@
-import 'package:coconut_wallet/utils/bbqr/bbqr_decoder.dart';
-import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/bb_qr/bbqr_decoder.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
 
 class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
-  BbqrDecoder _bbqrDecoder;
+  BbQrDecoder _bbqrDecoder;
   int? _sequenceLength;
   String? _dataType; // BBQR 데이터 타입 저장
   dynamic _rawResult; // Tx Raw 데이터 저장 (hex)
 
-  BbQrScanDataHandler() : _bbqrDecoder = BbqrDecoder();
+  BbQrScanDataHandler() : _bbqrDecoder = BbQrDecoder();
 
   @override
   dynamic get result {
@@ -83,7 +82,6 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
 
   @override
   bool validateFormat(String data) {
-    Logger.log('--> BbQrScanDataHandler.validateFormat: $data');
     try {
       // Raw Tx 데이터인 경우 true 반환
       if (data.startsWith('02000000')) {
@@ -130,7 +128,7 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
     _sequenceLength = null;
     _dataType = null;
     _rawResult = null;
-    _bbqrDecoder = BbqrDecoder();
+    _bbqrDecoder = BbQrDecoder();
   }
 
   @override

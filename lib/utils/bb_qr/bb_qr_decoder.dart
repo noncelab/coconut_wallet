@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:base32/base32.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
-class BbqrDecoder {
+class BbQrDecoder {
   // ColdCard Q1 Export Wallet Data
   /// ex: B$2J0700... (B$[encoding][dataType][total][index][payload])
   /// B$: 고정 prefix (BBQR 시작을 표시)

@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:base32/base32.dart';
 
-class BbqrEncoder {
+class BbQrEncoder {
   final int maxChunkSize;
   final String encodingType; // 예: 'Z' (zlib)
   final String dataType; // 예: 'P' (PSBT)
 
-  BbqrEncoder({
+  BbQrEncoder({
     this.maxChunkSize = 800, // Qr 버전 27에 더 적합한 크기
     this.encodingType = 'Z',
     this.dataType = 'P',
