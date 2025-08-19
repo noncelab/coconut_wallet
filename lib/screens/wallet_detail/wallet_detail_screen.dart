@@ -240,8 +240,14 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             ),
             child: Row(
               children: [
-                Text(t.tx_list,
-                    style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(t.tx_list,
+                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+                  ),
+                ),
                 CoconutLayout.spacing_100w,
                 if (txCount > 0)
                   Text(t.total_item_count(count: txCount),

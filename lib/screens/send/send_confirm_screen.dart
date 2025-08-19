@@ -104,7 +104,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                     ],
                                   ))),
                         ),
-                        CoconutLayout.spacing_400h,
+                        CoconutLayout.spacing_2500h,
                       ]),
                     ),
                     FixedBottomButton(

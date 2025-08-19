@@ -188,39 +188,40 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return Selector<PreferenceProvider, bool>(
         selector: (_, viewModel) => viewModel.showOnlyUnusedAddresses,
         builder: (context, showOnlyUnusedAddresses, child) {
-          return Row(
-            children: [
-              const Spacer(),
-              GestureDetector(
-                onTap: () {
-                  context
-                      .read<PreferenceProvider>()
-                      .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
-                  scrollToTop().then((_) => _initializeAddressList());
-                },
-                child: Container(
-                  color: Colors.transparent,
-                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
-                  child: Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/svg/check.svg',
-                        colorFilter: ColorFilter.mode(
-                            showOnlyUnusedAddresses ? CoconutColors.white : CoconutColors.gray700,
-                            BlendMode.srcIn),
-                        width: 10,
-                        height: 10,
-                      ),
-                      CoconutLayout.spacing_100w,
-                      Text(
+          return GestureDetector(
+            onTap: () {
+              context
+                  .read<PreferenceProvider>()
+                  .changeShowOnlyUnusedAddresses(!showOnlyUnusedAddresses);
+              scrollToTop().then((_) => _initializeAddressList());
+            },
+            child: Container(
+              color: Colors.transparent,
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/svg/check.svg',
+                    colorFilter: ColorFilter.mode(
+                        showOnlyUnusedAddresses ? CoconutColors.white : CoconutColors.gray700,
+                        BlendMode.srcIn),
+                    width: 10,
+                    height: 10,
+                  ),
+                  CoconutLayout.spacing_100w,
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
                         t.address_list_screen.show_only_unused_address,
                         style: CoconutTypography.body3_12,
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              )
-            ],
+                ],
+              ),
+            ),
           );
         });
   }

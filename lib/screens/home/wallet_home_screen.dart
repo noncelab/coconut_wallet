@@ -756,12 +756,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      t.wallet_list.view_all_wallets,
-                      style: CoconutTypography.body2_14,
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          t.wallet_list.view_all_wallets,
+                          style: CoconutTypography.body2_14,
+                        ),
+                      ),
                     ),
                     Row(
                       children: [
+                        CoconutLayout.spacing_200w,
                         Text(
                           t.wallet_list.wallet_count(count: walletCount),
                           style: CoconutTypography.body3_12,
@@ -1073,13 +1080,21 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         child: shouldShow
             ? Row(
                 key: const ValueKey('error_message'),
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   SvgPicture.asset('assets/svg/cloud-disconnected.svg', width: 16),
                   CoconutLayout.spacing_100w,
-                  Text(
-                    message,
-                    style: CoconutTypography.body3_12_Bold.setColor(
-                      CoconutColors.hotPink,
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width - 160,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        message,
+                        style: CoconutTypography.body3_12_Bold.setColor(
+                          CoconutColors.hotPink,
+                        ),
+                      ),
                     ),
                   )
                 ],

@@ -33,7 +33,7 @@ class InformationItemCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: crossAxisAlignment,
               children: [
-                Text(label, style: defaultTextStyle),
+                Expanded(child: Text(label, style: defaultTextStyle)),
                 showIcon ? const Spacer() : const SizedBox(width: 32),
                 if (value != null)
                   Expanded(

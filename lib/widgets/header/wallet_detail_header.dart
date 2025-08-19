@@ -122,7 +122,8 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   Widget _buildPendingAmountRow(bool condition, String animationPath, String text, Color color) {
     if (!condition) return const SizedBox.shrink();
 
-    return SizedBox(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

@@ -228,27 +228,40 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Row(
-                  children: [
-                    Text('${_filteredItems[index]['index']}. ',
-                        style: Styles.body1.merge(TextStyle(
-                            color: MyColors.transparentWhite_70,
-                            fontFamily: CustomFonts.number.getFontFamily))),
-                    RichText(
-                      text: TextSpan(
-                        children: highlightOccurrences(item, _searchController.text.toLowerCase()),
-                        style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
-                      ),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        Text('${_filteredItems[index]['index']}. ',
+                            style: Styles.body1.merge(TextStyle(
+                                color: MyColors.transparentWhite_70,
+                                fontFamily: CustomFonts.number.getFontFamily))),
+                        RichText(
+                          text: TextSpan(
+                            children:
+                                highlightOccurrences(item, _searchController.text.toLowerCase()),
+                            style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-              const Spacer(),
-              Text(
-                'Binary: ${(_filteredItems[index]['index'] - 1).toRadixString(2).padLeft(11, '0')}',
-                style: Styles.subLabel.merge(const TextStyle(color: MyColors.transparentWhite_50)),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'Binary: ${(_filteredItems[index]['index'] - 1).toRadixString(2).padLeft(11, '0')}',
+                    style:
+                        Styles.subLabel.merge(const TextStyle(color: MyColors.transparentWhite_50)),
+                  ),
+                ),
               ),
             ],
           ),

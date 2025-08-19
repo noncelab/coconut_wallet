@@ -177,9 +177,15 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Text(
-            t.unsigned_tx_qr_screen.low_density_qr,
-            style: CoconutTypography.body3_12,
+          Container(
+            constraints: const BoxConstraints(
+              maxWidth: 100,
+            ),
+            child: Text(
+              t.unsigned_tx_qr_screen.low_density_qr,
+              style: CoconutTypography.body3_12,
+              textAlign: TextAlign.center,
+            ),
           ),
           Expanded(
             child: SliderTheme(
@@ -215,9 +221,15 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               ),
             ),
           ),
-          Text(
-            t.unsigned_tx_qr_screen.high_density_qr,
-            style: CoconutTypography.body3_12,
+          Container(
+            constraints: const BoxConstraints(
+              maxWidth: 100,
+            ),
+            child: Text(
+              t.unsigned_tx_qr_screen.high_density_qr,
+              style: CoconutTypography.body3_12,
+              textAlign: TextAlign.center,
+            ),
           ),
         ],
       ),

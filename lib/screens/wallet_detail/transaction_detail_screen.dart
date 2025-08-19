@@ -416,6 +416,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           t.transaction_fee_bumping_screen
                               .existing_fee_value(value: feeHistory.feeRate),
                           style: CoconutTypography.body2_14_Number,
+                          textScaler: const TextScaler.linear(1.0),
                         ),
                       ],
                     ),
@@ -506,6 +507,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             t.transaction_fee_bumping_screen
                                 .existing_fee_value(value: feeHistory.feeRate),
                             style: CoconutTypography.body2_14_Number,
+                            textScaler: const TextScaler.linear(1.0),
                           ),
                         ],
                       ),
@@ -577,54 +579,63 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                   : Lottie.asset('assets/lottie/arrow-down.json', fit: BoxFit.fill, repeat: true),
             ),
           ),
-          Text.rich(
-            TextSpan(
-              text: _viewModel.isSendType! ? t.status_sending : t.status_receiving,
-              style: CoconutTypography.body2_14.copyWith(fontWeight: FontWeight.w500),
-              children: [
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text.rich(
                 TextSpan(
-                  text: ' (${_getTimeGapString()})',
-                  style: CoconutTypography.body3_12.copyWith(fontWeight: FontWeight.w300),
+                  text: _viewModel.isSendType! ? t.status_sending : t.status_receiving,
+                  style: CoconutTypography.body2_14.copyWith(fontWeight: FontWeight.w500),
+                  children: [
+                    TextSpan(
+                      text: ' (${_getTimeGapString()})',
+                      style: CoconutTypography.body3_12.copyWith(fontWeight: FontWeight.w300),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           CoconutLayout.spacing_50w,
           Expanded(
-            child: Align(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
               alignment: Alignment.centerRight,
-              child: Visibility(
-                visible:
-                    _viewModel.isSendType! || (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: GestureDetector(
-                  onTap: () async {
-                    if (!_viewModel.isNetworkOn) {
-                      CoconutToast.showWarningToast(
-                          context: context, text: ErrorCodes.networkError.message);
-                      return;
-                    }
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Visibility(
+                  visible:
+                      _viewModel.isSendType! || (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: GestureDetector(
+                    onTap: () async {
+                      if (!_viewModel.isNetworkOn) {
+                        CoconutToast.showWarningToast(
+                            context: context, text: ErrorCodes.networkError.message);
+                        return;
+                      }
 
-                    if (!canBumpingTx) return;
+                      if (!canBumpingTx) return;
 
-                    _viewModel.clearSendInfo();
-                    Navigator.pushNamed(context, '/transaction-fee-bumping', arguments: {
-                      'transaction': tx,
-                      'feeBumpingType':
-                          _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                      'walletId': widget.id,
-                      'walletName': _viewModel.getWalletName(),
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      _viewModel.isSendType! ? t.quick_send : t.quick_receive,
-                      style: CoconutTypography.body2_14.setColor(_viewModel.isSendType!
-                          ? CoconutColors.primary.withOpacity(canBumpingTx ? 1.0 : 0.5)
-                          : CoconutColors.cyan.withOpacity(canBumpingTx ? 1.0 : 0.5)),
+                      _viewModel.clearSendInfo();
+                      Navigator.pushNamed(context, '/transaction-fee-bumping', arguments: {
+                        'transaction': tx,
+                        'feeBumpingType':
+                            _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
+                        'walletId': widget.id,
+                        'walletName': _viewModel.getWalletName(),
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        _viewModel.isSendType! ? t.quick_send : t.quick_receive,
+                        style: CoconutTypography.body2_14.setColor(_viewModel.isSendType!
+                            ? CoconutColors.primary.withOpacity(canBumpingTx ? 1.0 : 0.5)
+                            : CoconutColors.cyan.withOpacity(canBumpingTx ? 1.0 : 0.5)),
+                      ),
                     ),
                   ),
                 ),
