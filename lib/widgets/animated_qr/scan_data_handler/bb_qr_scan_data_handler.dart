@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/utils/bb_qr/bbqr_decoder.dart';
+import 'package:coconut_wallet/utils/bb_qr/bb_qr_decoder.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
 
