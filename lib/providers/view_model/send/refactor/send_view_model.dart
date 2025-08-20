@@ -437,7 +437,10 @@ class SendViewModel extends ChangeNotifier {
             .toInt() -
         estimatedFeeInSats;
     _recipientList[lastIndex].amount = maxBalanceInSats > dustLimit
-        ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
+        ? (isBtcUnit
+                ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxBalanceInSats)
+                    .replaceAll(' ', '')
+                : maxBalanceInSats)
             .toString()
         : "0";
 
@@ -545,7 +548,8 @@ class SendViewModel extends ChangeNotifier {
       if (addressErrorIndex != -1) {
         message = _recipientList[addressErrorIndex].addressError.getMessage();
       }
-    } else if (_txBuildResult?.exception != null) {
+    } else if (_txBuildResult?.exception != null && _recipientList.every((r) => r.isInputValid)) {
+      // 모든 수신자 카드 amount, address가 유효한 경우에만 메시지 보여주기
       message = _txBuildResult!.exception.toString();
     } else if (_isFeeRateLowerThanMin) {
       message = t.toast.min_fee(minimum: _minimumFeeRate ?? 0);
@@ -585,6 +589,9 @@ class SendViewModel extends ChangeNotifier {
   void setAddressText(String text, int recipientIndex) {
     if (_recipientList[recipientIndex].address == text) return;
     _recipientList[recipientIndex].address = text;
+    if (text.isEmpty) {
+      _txBuildResult = null;
+    }
     notifyListeners();
   }
 
