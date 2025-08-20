@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/view_model/settings/settings_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/settings/log_viewer_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
@@ -206,6 +207,17 @@ class _SettingsScreen extends State<SettingsScreen> {
                     ],
                   ),
 
+                  CoconutLayout.spacing_400h,
+                  _category('도구'),
+                  ButtonGroup(buttons: [
+                    SingleButton(
+                      title: '로그 뷰어',
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/log-viewer');
+                      },
+                    ),
+                  ]),
+
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
@@ -226,6 +238,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                       },
                     ),
                   ],
+
                   const SizedBox(height: Sizes.size32)
                 ]),
               ));
