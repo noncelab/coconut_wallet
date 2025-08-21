@@ -11,7 +11,6 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -1500,3 +1499,5 @@ class FinalButtonMessage {
 
   FinalButtonMessage({required this.textColor, required this.message});
 }
+
+enum RecommendedFeeFetchStatus { fetching, succeed, failed }

@@ -15,7 +15,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
