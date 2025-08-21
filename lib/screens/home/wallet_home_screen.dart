@@ -383,8 +383,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,
-                  visible: (!isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) &&
-                      _viewModel.walletItemList.isNotEmpty,
+                  visible: (!isBalanceHidden) && _viewModel.walletItemList.isNotEmpty,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -392,7 +391,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
                         builder: (context, excludedIds, child) {
                           final balance = _viewModel.fakeBalanceTotalAmount != null
-                              ? _viewModel.fakeBalanceTotalAmount!
+                              ? _viewModel.fakeBalanceMap.entries
+                                  .where((entry) => !excludedIds.contains(entry.key))
+                                  .map((entry) => entry.value as int)
+                                  .fold<int>(0, (current, element) => current + element)
                               : Map.fromEntries(
                                   _viewModel.walletBalanceMap.entries.where(
                                     (entry) => !excludedIds.contains(entry.key),
@@ -420,7 +422,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         Row(
                           children: [
                             isBalanceHidden
-                                ? fakeBalanceTotalAmount != null
+                                ? Text(
+                                    t.view_balance,
+                                    style: CoconutTypography.heading3_21_NumberBold
+                                        .setColor(
+                                          CoconutColors.gray600,
+                                        )
+                                        .merge(
+                                          const TextStyle(
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                  )
+                                : fakeBalanceTotalAmount != null
                                     ? Text(
                                         isBtcUnit
                                             ? BitcoinUnit.btc.displayBitcoinAmount(
@@ -433,50 +447,40 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                           ),
                                         ),
                                       )
-                                    : Text(
-                                        t.view_balance,
-                                        style: CoconutTypography.heading3_21_NumberBold
-                                            .setColor(
-                                              CoconutColors.gray600,
-                                            )
-                                            .merge(
+                                    : Selector<WalletHomeViewModel, List<int>>(
+                                        selector: (_, viewModel) =>
+                                            viewModel.excludedFromTotalBalanceWalletIds,
+                                        builder: (context, excludedIds, child) {
+                                          // 총 잔액에서 숨기기 설정된 지갑 ID는 합에서 제외
+                                          final filteredBalanceMap = Map.fromEntries(
+                                            _viewModel.walletBalanceMap.entries.where(
+                                              (entry) => !excludedIds.contains(entry.key),
+                                            ),
+                                          );
+
+                                          final prevValue = filteredBalanceMap.values
+                                              .map((e) => e.previous)
+                                              .fold(0, (prev, element) => prev + element);
+
+                                          final currentValue = filteredBalanceMap.values
+                                              .map((e) => e.current)
+                                              .fold(0, (current, element) => current + element);
+                                          return AnimatedBalance(
+                                            prevValue: prevValue,
+                                            value: currentValue,
+                                            currentUnit:
+                                                isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                                            textStyle:
+                                                CoconutTypography.heading3_21_NumberBold.merge(
                                               const TextStyle(
-                                                height: 1.3,
+                                                height: 1.4,
                                               ),
                                             ),
-                                      )
-                                : Selector<WalletHomeViewModel, List<int>>(
-                                    selector: (_, viewModel) =>
-                                        viewModel.excludedFromTotalBalanceWalletIds,
-                                    builder: (context, excludedIds, child) {
-                                      // 총 잔액에서 숨기기 설정된 지갑 ID는 합에서 제외
-                                      final filteredBalanceMap = Map.fromEntries(
-                                        _viewModel.walletBalanceMap.entries.where(
-                                          (entry) => !excludedIds.contains(entry.key),
-                                        ),
-                                      );
-
-                                      final prevValue = filteredBalanceMap.values
-                                          .map((e) => e.previous)
-                                          .fold(0, (prev, element) => prev + element);
-
-                                      final currentValue = filteredBalanceMap.values
-                                          .map((e) => e.current)
-                                          .fold(0, (current, element) => current + element);
-                                      return AnimatedBalance(
-                                        prevValue: prevValue,
-                                        value: currentValue,
-                                        currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                                        textStyle: CoconutTypography.heading3_21_NumberBold.merge(
-                                          const TextStyle(
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                          );
+                                        },
+                                      ),
                             const SizedBox(width: 4.0),
-                            if (!isBalanceHidden || fakeBalanceTotalAmount != null)
+                            if (!isBalanceHidden)
                               Text(
                                 isBtcUnit ? t.btc : t.sats,
                                 style: CoconutTypography.heading3_21_NumberBold,
@@ -488,19 +492,17 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             defaultColor: CoconutColors.gray800,
                             pressedColor: CoconutColors.gray750,
                             onPressed: () {
-                              if (fakeBalanceTotalAmount != null) {
-                                _viewModel.clearFakeBlanceTotalAmount();
-                                _viewModel.setIsBalanceHidden(true);
-                                return;
-                              }
+                              // if (fakeBalanceTotalAmount != null) {
+                              //   _viewModel.clearFakeBlanceTotalAmount();
+                              //   _viewModel.setIsBalanceHidden(true);
+                              //   return;
+                              // }
                               _viewModel.setIsBalanceHidden(!isBalanceHidden);
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               child: Text(
-                                _viewModel.isBalanceHidden && fakeBalanceTotalAmount == null
-                                    ? t.show
-                                    : t.hide,
+                                _viewModel.isBalanceHidden ? t.show : t.hide,
                                 style: CoconutTypography.body3_12,
                               ),
                             ))

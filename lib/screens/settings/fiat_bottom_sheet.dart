@@ -19,34 +19,35 @@ class FiatBottomSheet extends StatelessWidget {
           selectedValue: selectedFiat,
           items: [
             SelectionItem<FiatCode>(
-              title: t.fiat.krw_code,
+              title: FiatCode.KRW.code,
               subtitle: t.fiat.krw_price,
               value: FiatCode.KRW,
-              onTap: () async {
-                vibrateExtraLight();
-                await context.read<PreferenceProvider>().changeFiat(FiatCode.KRW);
-
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
+              onTap: () => _onFiatSelected(context, FiatCode.KRW),
             ),
             SelectionItem<FiatCode>(
-              title: t.fiat.usd_code,
+              title: FiatCode.USD.code,
               subtitle: t.fiat.usd_price,
               value: FiatCode.USD,
-              onTap: () async {
-                vibrateExtraLight();
-                await context.read<PreferenceProvider>().changeFiat(FiatCode.USD);
-
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-              },
+              onTap: () => _onFiatSelected(context, FiatCode.USD),
+            ),
+            SelectionItem<FiatCode>(
+              title: FiatCode.JPY.code,
+              subtitle: t.fiat.jpy_price,
+              value: FiatCode.JPY,
+              onTap: () => _onFiatSelected(context, FiatCode.JPY),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _onFiatSelected(BuildContext context, FiatCode fiatCode) async {
+    vibrateExtraLight();
+    await context.read<PreferenceProvider>().changeFiat(fiatCode);
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }

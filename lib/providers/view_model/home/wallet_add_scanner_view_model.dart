@@ -5,7 +5,6 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
@@ -103,14 +102,5 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   String getWalletName(int walletId) {
     return _walletProvider.getWalletById(walletId).name;
-  }
-
-  Future<void> setFakeBalanceIfEnabled(int? walletId) async {
-    if (fakeBalanceTotalAmount == null || walletId == null) return;
-
-    // 가짜 잔액이 설정되어 있는 경우 FakeBalanceTotalAmount 이하의 값 랜덤 배정
-    final randomFakeBalance = (Random().nextDouble() * fakeBalanceTotalAmount! + 1).toInt();
-
-    await _preferenceProvider.setFakeBalance(walletId, randomFakeBalance);
   }
 }

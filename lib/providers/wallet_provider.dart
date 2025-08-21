@@ -20,6 +20,8 @@ import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:path/path.dart';
+import 'package:provider/provider.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
@@ -277,14 +279,18 @@ class WalletProvider extends ChangeNotifier {
     await _walletRepository.deleteWallet(walletId);
     _setWalletItemList(await _fetchWalletListFromDB());
     _saveWalletCount(_walletItemList.length);
-    await _preferenceProvider.removeFakeBalance(walletId);
     await _preferenceProvider.removeWalletOrder(walletId);
     await _preferenceProvider.removeFavoriteWalletId(walletId);
     await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
-
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
+      await _preferenceProvider.clearFakeBalanceTotalAmount();
+      await _preferenceProvider.changeIsFakeBalanceActive(false);
+    } else if (_preferenceProvider.isFakeBalanceActive) {
+      // 가짜 잔액 활성화 상태라면 재분배 작업 수행
+      await _preferenceProvider.initializeFakeBalance(_walletItemList);
     }
+
     notifyListeners();
   }
 
@@ -424,9 +430,17 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  /// 새 지갑이 추가되었을 때 처리하는 함수(즐겨찾기, 지갑 순서 추가)
-  void _handleNewWalletAdded(int walletId) {
+  /// 새 지갑이 추가되었을 때 처리하는 함수(가짜 잔액 재분배, 즐겨찾기, 지갑 순서 추가)
+  Future<void> _handleNewWalletAdded(int walletId) async {
+    // 가짜 잔액 활성화 상태라면 재분배 작업 수행
+    if (_preferenceProvider.isFakeBalanceActive) {
+      await _preferenceProvider.initializeFakeBalance(_walletItemList);
+    }
+
+    // 지갑 순서 목록에 추가
     addToWalletOrder(walletId);
+
+    // 5개 이하라면 즐겨찾기 목록에 추가
     addToFavoriteWalletsUntilFive(walletId);
   }
 

@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
@@ -11,13 +14,14 @@ class WalletAddInputViewModel extends ChangeNotifier {
   final WalletImportSource importSource = WalletImportSource.extendedPublicKey;
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
+  final PreferenceProvider _preferenceProvider;
   String? validExtendedPublicKey;
   String? validDescriptor;
   String? errorMessage;
   String? masterFingerPrint;
 
-  WalletAddInputViewModel(this._walletProvider);
-
+  WalletAddInputViewModel(this._walletProvider, this._preferenceProvider);
+  int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
   bool isExtendedPublicKey(String xpub) {
     try {
       _validateXpubPrefixSupport(xpub);
