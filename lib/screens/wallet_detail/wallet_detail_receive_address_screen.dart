@@ -99,20 +99,27 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    t.address_list_screen.address_index(index: receiveAddressIndex),
-                                    style: CoconutTypography.body1_16,
+                              Expanded(
+                                child: FittedBox(
+                                  alignment: Alignment.centerLeft,
+                                  fit: BoxFit.scaleDown,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        t.address_list_screen
+                                            .address_index(index: receiveAddressIndex),
+                                        style: CoconutTypography.body1_16,
+                                      ),
+                                      Text(
+                                        derivationPath,
+                                        style: CoconutTypography.body2_14.setColor(
+                                          CoconutColors.white.withOpacity(0.7),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    derivationPath,
-                                    style: CoconutTypography.body2_14.setColor(
-                                      CoconutColors.white.withOpacity(0.7),
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
                               GestureDetector(
                                 onTap: _onAddressListButtonPressed,

@@ -450,8 +450,14 @@ class _SendScreenState extends State<SendScreen>
               colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
             ),
             CoconutLayout.spacing_150w,
-            Text("${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+            Expanded(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text("${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
+                    style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+              ),
+            ),
           ],
         ));
 
@@ -576,6 +582,7 @@ class _SendScreenState extends State<SendScreen>
         builder: (context, data, child) {
           return Column(
             children: [
+              CoconutLayout.spacing_300h,
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (child, animation) {
@@ -656,37 +663,39 @@ class _SendScreenState extends State<SendScreen>
                 viewModel.balance, viewModel.isMaxMode, viewModel.isFeeSubtractedFromSendAmount),
             builder: (context, data, child) {
               if (!_viewModel.showFeeBoard) return const SizedBox();
-              return Padding(
-                padding: EdgeInsets.only(bottom: kFeeBoardBottomPadding),
-                child: Container(
-                  height: feeBoardHeight,
-                  padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
-                  decoration: BoxDecoration(
-                      border: Border.all(
-                        color: CoconutColors.gray700,
-                        width: 1,
-                      ),
-                      borderRadius: const BorderRadius.all(Radius.circular(12))),
-                  child: Column(
-                    children: [
-                      child!,
-                      CoconutLayout.spacing_200h,
-                      Row(
-                        children: [
-                          _buildFeeRowLabel(t.send_screen.estimated_fee),
-                          const Spacer(),
-                          Text(
-                            "${_viewModel.estimatedFeeInSats ?? '-'} sats",
-                            style: CoconutTypography.body2_14_NumberBold.setColor(
-                                _viewModel.isEstimatedFeeGreaterThanBalance
-                                    ? CoconutColors.hotPink
-                                    : CoconutColors.white),
+              return Container(
+                padding: const EdgeInsets.only(left: 16, right: 14, top: 12, bottom: 20),
+                decoration: BoxDecoration(
+                    border: Border.all(
+                      color: CoconutColors.gray700,
+                      width: 1,
+                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(12))),
+                child: Column(
+                  children: [
+                    child!,
+                    CoconutLayout.spacing_200h,
+                    Row(
+                      children: [
+                        _buildFeeRowLabel(t.send_screen.estimated_fee),
+                        CoconutLayout.spacing_200w,
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              "${_viewModel.estimatedFeeInSats ?? '-'} sats",
+                              style: CoconutTypography.body2_14_NumberBold.setColor(
+                                  _viewModel.isEstimatedFeeGreaterThanBalance
+                                      ? CoconutColors.hotPink
+                                      : CoconutColors.white),
+                            ),
                           ),
-                        ],
-                      ),
-                      if (!_viewModel.isMaxMode) _buildFeeSubtractedFromSendAmount(),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                    if (!_viewModel.isMaxMode) _buildFeeSubtractedFromSendAmount(),
+                  ],
                 ),
               );
             },
@@ -737,56 +746,65 @@ class _SendScreenState extends State<SendScreen>
   Widget _buildFeeRateRow() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildFeeRowLabel(t.send_screen.fee_rate),
-        const Spacer(),
-        IntrinsicWidth(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: CoconutTextField(
-              textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-              textInputFormatter: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-              ],
-              enableInteractiveSelection: false,
-              textAlign: TextAlign.end,
-              controller: _feeRateController,
-              focusNode: _feeRateFocusNode,
-              backgroundColor: feeRateFieldGray,
-              onEditingComplete: () {
-                _feeRateController.text = _removeTrailingDot(_feeRateController.text);
-                FocusScope.of(context).unfocus();
-              },
-              height: 30,
-              padding: const EdgeInsets.only(left: 12, right: 2),
-              onChanged: (text) {
-                if (text == "-") return;
-                String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
-                double? parsedFeeRate = double.tryParse(formattedText);
+        Expanded(child: _buildFeeRowLabel(t.send_screen.fee_rate)),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: IntrinsicWidth(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: CoconutTextField(
+                  textInputType:
+                      const TextInputType.numberWithOptions(signed: false, decimal: true),
+                  textInputFormatter: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
+                  enableInteractiveSelection: false,
+                  textAlign: TextAlign.end,
+                  controller: _feeRateController,
+                  focusNode: _feeRateFocusNode,
+                  backgroundColor: feeRateFieldGray,
+                  onEditingComplete: () {
+                    _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+                    FocusScope.of(context).unfocus();
+                  },
+                  height: 30,
+                  padding: const EdgeInsets.only(left: 12, right: 2),
+                  onChanged: (text) {
+                    if (text == "-") return;
+                    String formattedText =
+                        filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
+                    double? parsedFeeRate = double.tryParse(formattedText);
 
-                if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
-                    (parsedFeeRate != null && parsedFeeRate < 0.1)) {
-                  Fluttertoast.showToast(
-                    msg: t.send_screen.fee_rate_too_low,
-                    backgroundColor: CoconutColors.gray700,
-                    toastLength: Toast.LENGTH_SHORT,
-                  );
-                  _feeRateController.text = '0.';
-                  return;
-                }
-                _feeRateController.text = formattedText;
-                _viewModel.setFeeRateText(formattedText);
-              },
-              maxLines: 1,
-              fontFamily: 'SpaceGrotesk',
-              fontSize: 14,
-              activeColor: CoconutColors.white,
-              fontWeight: FontWeight.bold,
-              borderRadius: 8,
-              suffix: Container(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Text(t.send_screen.fee_rate_suffix,
-                      style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white))),
+                    if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
+                        (parsedFeeRate != null && parsedFeeRate < 0.1)) {
+                      Fluttertoast.showToast(
+                        msg: t.send_screen.fee_rate_too_low,
+                        backgroundColor: CoconutColors.gray700,
+                        toastLength: Toast.LENGTH_SHORT,
+                      );
+                      _feeRateController.text = '0.';
+                      return;
+                    }
+                    _feeRateController.text = formattedText;
+                    _viewModel.setFeeRateText(formattedText);
+                  },
+                  maxLines: 1,
+                  fontFamily: 'SpaceGrotesk',
+                  fontSize: 14,
+                  activeColor: CoconutColors.white,
+                  fontWeight: FontWeight.bold,
+                  borderRadius: 8,
+                  suffix: Container(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(t.send_screen.fee_rate_suffix,
+                          style:
+                              CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white))),
+                ),
+              ),
             ),
           ),
         )
@@ -1002,7 +1020,7 @@ class _SendScreenState extends State<SendScreen>
                       focusNode: _addressFocusNodeList[index],
                       backgroundColor: CoconutColors.black,
                       height: 52,
-                      padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                      padding: const EdgeInsets.only(left: 16, right: 0),
                       onChanged: (text) {},
                       maxLines: 1,
                       suffix: IconButton(
@@ -1030,26 +1048,30 @@ class _SendScreenState extends State<SendScreen>
                     );
                   }),
               CoconutLayout.spacing_100h,
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    Selector<SendViewModel, int>(
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Selector<SendViewModel, int>(
                         selector: (_, viewModel) => viewModel.recipientList.length,
                         builder: (context, data, child) {
                           if (!_viewModel.isBatchMode) return const SizedBox();
-                          return CoconutUnderlinedButton(
-                            text: t.send_screen.delete,
-                            onTap: () {
-                              _deleteAddressField(_viewModel.currentIndex);
-                              _viewModel.deleteRecipient();
-                            },
-                            textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                            padding: EdgeInsets.zero,
+                          return FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: CoconutUnderlinedButton(
+                              text: t.send_screen.delete,
+                              onTap: () {
+                                _deleteAddressField(_viewModel.currentIndex);
+                                _viewModel.deleteRecipient();
+                              },
+                              textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                              padding: EdgeInsets.zero,
+                            ),
                           );
                         }),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -1130,78 +1152,98 @@ class _SendScreenState extends State<SendScreen>
       child: Column(
         children: [
           CoconutLayout.spacing_50h,
-          GestureDetector(
-            onTap: () => {}, // ignore
-            child: Container(
-              decoration: BoxDecoration(
-                  color: CoconutColors.black,
-                  border: Border.all(
-                    color: CoconutColors.gray700,
-                    width: 1,
-                  ),
-                  borderRadius: const BorderRadius.all(Radius.circular(8))),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 14, top: 14),
-                    child: Row(
-                      children: [
-                        Text(
-                          t.send_screen.my_address,
-                          style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
-                        ),
-                        const Spacer(),
-                        CoconutUnderlinedButton(
-                          text: t.close,
-                          onTap: () => _viewModel.setShowAddressBoard(false),
-                          textStyle: CoconutTypography.body3_12,
-                          padding: const EdgeInsets.only(right: 14, left: 24),
-                        ),
-                      ],
+          Expanded(
+            child: GestureDetector(
+              onTap: () => {}, // ignore
+              child: Container(
+                decoration: BoxDecoration(
+                    color: CoconutColors.black,
+                    border: Border.all(
+                      color: CoconutColors.gray700,
+                      width: 1,
                     ),
-                  ),
-                  CoconutLayout.spacing_200h,
-                  SizedBox(
-                    height: walletAddressListHeight,
-                    child: ListView.builder(
-                        itemCount: _viewModel.walletItemList.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final walletListItem = _viewModel.walletItemList[index];
-                          final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
-                          return _buildAddressRow(index, walletAddress.address, walletListItem.name,
-                              walletAddress.derivationPath);
-                        }),
-                  ),
-                  CoconutLayout.spacing_200h,
-                  Padding(
-                    padding: const EdgeInsets.only(left: 14, bottom: 14),
-                    child: CoconutUnderlinedButton(
-                      text: t.view_more,
-                      onTap: () {
-                        _clearFocus();
-                        if (_viewModel.walletItemList.length == 1) {
-                          _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
-                          return;
-                        }
-                        CommonBottomSheets.showDraggableBottomSheet(
-                            context: context,
-                            childBuilder: (scrollController) => SelectWalletBottomSheet(
-                                  showOnlyMfpWallets: false,
-                                  scrollController: scrollController,
-                                  currentUnit: _viewModel.currentUnit,
-                                  walletId: -1,
-                                  onWalletChanged: (id) {
-                                    Navigator.pop(context);
-                                    _showAddressListBottomSheet(id);
-                                  },
-                                ));
-                      },
-                      textStyle: CoconutTypography.body3_12,
-                      padding: EdgeInsets.zero,
+                    borderRadius: const BorderRadius.all(Radius.circular(8))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 14, top: 14),
+                      child: Container(
+                        constraints: const BoxConstraints(maxHeight: 20),
+                        child: Row(
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                t.send_screen.my_address,
+                                style:
+                                    CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                              ),
+                            ),
+                            const Spacer(),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: CoconutUnderlinedButton(
+                                text: t.close,
+                                onTap: () => _viewModel.setShowAddressBoard(false),
+                                textStyle: CoconutTypography.body3_12,
+                                padding: const EdgeInsets.only(right: 14, left: 24),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    CoconutLayout.spacing_200h,
+                    SizedBox(
+                      height: walletAddressListHeight,
+                      child: ListView.builder(
+                          itemCount: _viewModel.walletItemList.length,
+                          itemBuilder: (BuildContext context, int index) {
+                            final walletListItem = _viewModel.walletItemList[index];
+                            final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                            return _buildAddressRow(index, walletAddress.address,
+                                walletListItem.name, walletAddress.derivationPath);
+                          }),
+                    ),
+                    CoconutLayout.spacing_200h,
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 14, bottom: 14),
+                          child: CoconutUnderlinedButton(
+                            text: t.view_more,
+                            onTap: () {
+                              _clearFocus();
+                              if (_viewModel.walletItemList.length == 1) {
+                                _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
+                                return;
+                              }
+                              CommonBottomSheets.showDraggableBottomSheet(
+                                  context: context,
+                                  childBuilder: (scrollController) => SelectWalletBottomSheet(
+                                        showOnlyMfpWallets: false,
+                                        scrollController: scrollController,
+                                        currentUnit: _viewModel.currentUnit,
+                                        walletId: -1,
+                                        onWalletChanged: (id) {
+                                          Navigator.pop(context);
+                                          _showAddressListBottomSheet(id);
+                                        },
+                                      ));
+                            },
+                            textStyle: CoconutTypography.body3_12,
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

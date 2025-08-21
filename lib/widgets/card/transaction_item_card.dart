@@ -71,8 +71,14 @@ class TransactionItemCard extends StatelessWidget {
         status == TransactionStatus.received || status == TransactionStatus.receiving;
     final String prefix = isReceived ? '+' : '';
 
-    return Text('$prefix$amountString',
-        style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white));
+    return Expanded(
+      child: FittedBox(
+        alignment: Alignment.centerRight,
+        fit: BoxFit.scaleDown,
+        child: Text('$prefix$amountString',
+            style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+      ),
+    );
   }
 
   Widget _buildTimestamp(List<String> transactionTimeStamp) {
@@ -136,7 +142,11 @@ class TransactionItemCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [_buildStatus(), _buildAmount()],
+                children: [
+                  _buildStatus(),
+                  CoconutLayout.spacing_200w,
+                  _buildAmount(),
+                ],
               ),
               if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(),
             ],

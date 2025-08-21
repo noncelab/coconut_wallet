@@ -65,6 +65,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                         TextSpan(text: ' $unitText', style: Styles.unit)
                                       ]),
                                       style: Styles.balance1,
+                                      textScaler: const TextScaler.linear(1.0),
                                     ),
                                   )),
                               FiatPrice(
@@ -104,7 +105,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                     ],
                                   ))),
                         ),
-                        CoconutLayout.spacing_400h,
+                        CoconutLayout.spacing_2500h,
                       ]),
                     ),
                     FixedBottomButton(

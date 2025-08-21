@@ -239,37 +239,45 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
             ),
             child: Row(
               children: [
-                Text(
-                  t.utxo_total,
-                  style: Styles.body2Bold.merge(
-                    const TextStyle(color: CoconutColors.white),
-                  ),
-                ),
-                const SizedBox(
-                  width: 4,
-                ),
-                Visibility(
-                  visible: selectedUtxoListLength != 0,
-                  child: Text(
-                    t.utxo_count(count: selectedUtxoListLength),
-                    style: Styles.caption.merge(
-                      const TextStyle(
-                          fontFamily: 'Pretendard', color: MyColors.transparentWhite_70),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        Text(
+                          t.utxo_total,
+                          style: Styles.body2Bold.merge(
+                            const TextStyle(color: CoconutColors.white),
+                          ),
+                        ),
+                        const SizedBox(
+                          width: 4,
+                        ),
+                        Visibility(
+                          visible: selectedUtxoListLength != 0,
+                          child: Text(
+                            t.utxo_count(count: selectedUtxoListLength),
+                            style: Styles.caption.merge(
+                              const TextStyle(
+                                  fontFamily: 'Pretendard', color: MyColors.transparentWhite_70),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        "$utxoSumText $unitText",
-                        style: Styles.body1Number.merge(const TextStyle(
-                            color: CoconutColors.white,
-                            fontWeight: FontWeight.w700,
-                            height: 16.8 / 14)),
-                      ),
-                    ],
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      "$utxoSumText $unitText",
+                      style: Styles.body1Number.merge(const TextStyle(
+                          color: CoconutColors.white,
+                          fontWeight: FontWeight.w700,
+                          height: 16.8 / 14)),
+                    ),
                   ),
                 ),
               ],

@@ -511,7 +511,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         width: MediaQuery.sizeOf(context).width,
                         height: 54,
                         padding: const EdgeInsets.symmetric(
-                          vertical: 16,
                           horizontal: 16,
                         ),
                         margin: const EdgeInsets.only(bottom: 4),
@@ -522,11 +521,15 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                           borderRadius: BorderRadius.circular(12),
                           color: Colors.transparent,
                         ),
-                        child: Text(
-                          _serverAddressController.text,
-                          style: CoconutTypography.body2_14.setColor(
-                            CoconutColors.gray600,
-                          ),
+                        child: Row(
+                          children: [
+                            Text(
+                              _serverAddressController.text,
+                              style: CoconutTypography.body2_14.setColor(
+                                CoconutColors.gray600,
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : CoconutTextField(
@@ -545,7 +548,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         },
                         height: 54,
                         padding: const EdgeInsets.symmetric(
-                          vertical: 16,
                           horizontal: 16,
                         ),
                         isError: _serverAddressController.text.isNotEmpty &&
@@ -617,7 +619,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         width: MediaQuery.sizeOf(context).width,
                         height: 54,
                         padding: const EdgeInsets.symmetric(
-                          vertical: 16,
                           horizontal: 16,
                         ),
                         margin: const EdgeInsets.only(bottom: 4),
@@ -648,7 +649,6 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         },
                         height: 54,
                         padding: const EdgeInsets.symmetric(
-                          vertical: 16,
                           horizontal: 16,
                         ),
                         isError: _portController.text.isNotEmpty &&
