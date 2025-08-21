@@ -405,13 +405,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     }
   }
 
-  void _onFailedScanning(String message) async {
+  void _onFailedScanning(String message, String? scannedData) async {
     if (_isProcessing) return;
     _isProcessing = true;
 
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
-      errorMessage = t.alert.invalid_qr;
+      errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata:$scannedData" : null}';
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
     }
