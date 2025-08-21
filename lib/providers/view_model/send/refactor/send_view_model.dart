@@ -250,6 +250,10 @@ class SendViewModel extends ChangeNotifier {
       return false;
     }
 
+    if ((double.tryParse(_feeRateText) ?? 0) < 0.1) {
+      return false;
+    }
+
     return true;
   }
 
@@ -548,8 +552,6 @@ class SendViewModel extends ChangeNotifier {
       }
     } else if (_txBuildResult?.exception != null) {
       message = _txBuildResult!.exception.toString();
-    } else if (_isFeeRateLowerThanMin) {
-      message = t.toast.min_fee(minimum: _minimumFeeRate ?? 0);
     }
 
     _finalErrorMessage = message;

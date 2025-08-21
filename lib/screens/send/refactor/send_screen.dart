@@ -365,41 +365,51 @@ class _SendScreenState extends State<SendScreen>
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple3<String, bool, int?>>(
-        selector: (_, viewModel) => Tuple3(
-            viewModel.finalErrorMessage, viewModel.isReadyToSend, viewModel.unintendedDustFee),
+    return Selector<SendViewModel, Tuple4<String, bool, bool, int?>>(
+        selector: (_, viewModel) => Tuple4(viewModel.finalErrorMessage, viewModel.isReadyToSend,
+            viewModel.isFeeRateLowerThanMin, viewModel.unintendedDustFee),
         builder: (context, data, child) {
-          final finalErrorMessage = data.item1;
+          final finalErrorMessage = data.item1; // error
           final isReadyToSend = data.item2;
-          final unintendedDustFee = data.item3;
+          final isFeeRateLowerThanMin = data.item3; // warning
+          final unintendedDustFee = data.item4; // info
 
-          // 에러 메시지가 워닝에 해당하는 경우, yellow 표시
-          final textColor = _viewModel.finalErrorMessage.isNotEmpty
-              ? _viewModel.isFeeRateLowerThanMin
-                  ? CoconutColors.yellow
-                  : CoconutColors.hotPink
-              : CoconutColors.white;
+          final finalButtonMessages = [];
 
-          String message = "";
-          if (finalErrorMessage.isNotEmpty) {
-            message = finalErrorMessage;
-          } else if (unintendedDustFee != null) {
-            message =
-                t.send_screen.unintended_dust_fee(unintendedDustFee: unintendedDustFee.toString());
+          /// errorMessage가 있으면 errorMessage만 표기
+          /// isFeeRateLowerThanMin, unintendedDustFee중에서는 있는 것을 모두 표시
+          if (_viewModel.finalErrorMessage.isNotEmpty) {
+            finalButtonMessages.add(FinalButtonMessage(
+                textColor: CoconutColors.hotPink, message: _viewModel.finalErrorMessage));
+          } else {
+            if (isFeeRateLowerThanMin) {
+              finalButtonMessages.add(FinalButtonMessage(
+                  textColor: CoconutColors.yellow,
+                  message: t.toast.min_fee(minimum: _viewModel.minimumFeeRate ?? 0)));
+            }
+            if (unintendedDustFee != null) {
+              finalButtonMessages.add(FinalButtonMessage(
+                  textColor: CoconutColors.white,
+                  message: t.send_screen
+                      .unintended_dust_fee(unintendedDustFee: unintendedDustFee.toString())));
+            }
           }
 
           return Stack(
             alignment: Alignment.center,
             children: [
-              Positioned(
-                bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-                    FixedBottomButton.fixedBottomButtonDefaultHeight +
-                    12,
-                child: Text(
-                  message,
-                  style: CoconutTypography.body3_12.setColor(textColor),
-                ),
-              ),
+              ...finalButtonMessages.asMap().entries.map(
+                    (entry) => Positioned(
+                      bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+                          FixedBottomButton.fixedBottomButtonDefaultHeight +
+                          12 +
+                          ((finalButtonMessages.length - 1 - entry.key) * 20),
+                      child: Text(
+                        entry.value.message,
+                        style: CoconutTypography.body3_12.setColor(entry.value.textColor),
+                      ),
+                    ),
+                  ),
               FixedBottomButton(
                 showGradient: false,
                 isVisibleAboveKeyboard: false,
@@ -414,8 +424,7 @@ class _SendScreenState extends State<SendScreen>
                 },
                 isActive: !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
                     isReadyToSend &&
-                    (double.tryParse(_feeRateController.text) ?? 0) >= 0.1 &&
-                    (finalErrorMessage.isEmpty || _viewModel.isFeeRateLowerThanMin),
+                    finalErrorMessage.isEmpty,
                 text: t.complete,
                 backgroundColor: CoconutColors.gray100,
                 pressedBackgroundColor: CoconutColors.gray500,
@@ -1484,4 +1493,11 @@ class SingleDotInputFormatter extends TextInputFormatter {
 
     return newValue;
   }
+}
+
+class FinalButtonMessage {
+  final Color textColor;
+  final String message;
+
+  FinalButtonMessage({required this.textColor, required this.message});
 }
