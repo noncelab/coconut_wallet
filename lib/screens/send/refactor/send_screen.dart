@@ -16,7 +16,6 @@ import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -28,6 +27,7 @@ import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:shimmer/shimmer.dart';
@@ -115,7 +115,9 @@ class _SendScreenState extends State<SendScreen>
             _viewModel.validateAllFieldsOnFocusLost();
           }
         }));
-    _feeRateFocusNode.addListener(() => setState(() {}));
+    _feeRateFocusNode.addListener(() => setState(() {
+          _amountController.text = _removeTrailingDot(_amountController.text);
+        }));
     _amountController.addListener(_amountTextListener);
     _recipientPageController.addListener(_recipientPageListener);
     _animationController = AnimationController(
@@ -348,41 +350,65 @@ class _SendScreenState extends State<SendScreen>
         focusNode: _amountFocusNode,
         showCursor: false,
         enableInteractiveSelection: false,
+        onEditingComplete: () {
+          _amountController.text = _removeTrailingDot(_amountController.text);
+          FocusScope.of(context).unfocus();
+        },
         keyboardType: const TextInputType.numberWithOptions(signed: false, decimal: true),
         inputFormatters: [
           FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+          SingleDotInputFormatter(),
         ],
       ),
     );
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple3<String, bool, int?>>(
-        selector: (_, viewModel) => Tuple3(
-            viewModel.finalErrorMessage, viewModel.isReadyToSend, viewModel.unintendedDustFee),
+    return Selector<SendViewModel, Tuple4<String, bool, bool, int?>>(
+        selector: (_, viewModel) => Tuple4(viewModel.finalErrorMessage, viewModel.isReadyToSend,
+            viewModel.isFeeRateLowerThanMin, viewModel.unintendedDustFee),
         builder: (context, data, child) {
-          final textColor =
-              _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
-          String message = "";
+          final finalErrorMessage = data.item1; // error
+          final isReadyToSend = data.item2;
+          final isFeeRateLowerThanMin = data.item3; // warning
+          final unintendedDustFee = data.item4; // info
+
+          final finalButtonMessages = [];
+
+          /// errorMessage가 있으면 errorMessage만 표기
+          /// isFeeRateLowerThanMin, unintendedDustFee중에서는 있는 것을 모두 표시
           if (_viewModel.finalErrorMessage.isNotEmpty) {
-            message = _viewModel.finalErrorMessage;
-          } else if (_viewModel.unintendedDustFee != null) {
-            message = t.send_screen
-                .unintended_dust_fee(unintendedDustFee: _viewModel.unintendedDustFee.toString());
+            finalButtonMessages.add(FinalButtonMessage(
+                textColor: CoconutColors.hotPink, message: _viewModel.finalErrorMessage));
+          } else {
+            if (isFeeRateLowerThanMin) {
+              finalButtonMessages.add(FinalButtonMessage(
+                  textColor: CoconutColors.yellow,
+                  message: t.toast.min_fee(minimum: _viewModel.minimumFeeRate ?? 0)));
+            }
+            if (unintendedDustFee != null) {
+              finalButtonMessages.add(FinalButtonMessage(
+                  textColor: CoconutColors.white,
+                  message: t.send_screen
+                      .unintended_dust_fee(unintendedDustFee: unintendedDustFee.toString())));
+            }
           }
 
           return Stack(
             alignment: Alignment.center,
             children: [
-              Positioned(
-                bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-                    FixedBottomButton.fixedBottomButtonDefaultHeight +
-                    12,
-                child: Text(
-                  message,
-                  style: CoconutTypography.body3_12.setColor(textColor),
-                ),
-              ),
+              ...finalButtonMessages.asMap().entries.map(
+                    (entry) => Positioned(
+                      bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+                          FixedBottomButton.fixedBottomButtonDefaultHeight +
+                          12 +
+                          ((finalButtonMessages.length - 1 - entry.key) * 20),
+                      child: Text(
+                        entry.value.message,
+                        style: CoconutTypography.body3_12.setColor(entry.value.textColor),
+                      ),
+                    ),
+                  ),
               FixedBottomButton(
                 showGradient: false,
                 isVisibleAboveKeyboard: false,
@@ -396,8 +422,8 @@ class _SendScreenState extends State<SendScreen>
                   }
                 },
                 isActive: !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-                    _viewModel.isReadyToSend &&
-                    _viewModel.finalErrorMessage.isEmpty,
+                    isReadyToSend &&
+                    finalErrorMessage.isEmpty,
                 text: t.complete,
                 backgroundColor: CoconutColors.gray100,
                 pressedBackgroundColor: CoconutColors.gray500,
@@ -728,11 +754,27 @@ class _SendScreenState extends State<SendScreen>
               controller: _feeRateController,
               focusNode: _feeRateFocusNode,
               backgroundColor: feeRateFieldGray,
+              onEditingComplete: () {
+                _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+                FocusScope.of(context).unfocus();
+              },
               height: 30,
               padding: const EdgeInsets.only(left: 12, right: 2),
               onChanged: (text) {
                 if (text == "-") return;
                 String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
+                double? parsedFeeRate = double.tryParse(formattedText);
+
+                if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
+                    (parsedFeeRate != null && parsedFeeRate < 0.1)) {
+                  Fluttertoast.showToast(
+                    msg: t.send_screen.fee_rate_too_low,
+                    backgroundColor: CoconutColors.gray700,
+                    toastLength: Toast.LENGTH_SHORT,
+                  );
+                  _feeRateController.text = '0.';
+                  return;
+                }
                 _feeRateController.text = formattedText;
                 _viewModel.setFeeRateText(formattedText);
               },
@@ -1372,6 +1414,9 @@ class _SendScreenState extends State<SendScreen>
 
     final focusNode = FocusNode();
     focusNode.addListener(() => setState(() {
+          _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+          _amountController.text = _removeTrailingDot(_amountController.text);
+
           final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null;
           _viewModel.setShowAddressBoard(shouldShowBoard);
           if (!focusNode.hasFocus) {
@@ -1401,7 +1446,11 @@ class _SendScreenState extends State<SendScreen>
     }
   }
 
-  void _clearFocus() => FocusManager.instance.primaryFocus?.unfocus();
+  void _clearFocus() {
+    _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+    _amountController.text = _removeTrailingDot(_amountController.text);
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
 
   Future<void> _startBounce() async {
     final pageWidth = _recipientPageController.position.viewportDimension;
@@ -1424,4 +1473,30 @@ class _SendScreenState extends State<SendScreen>
     });
     _animationController.forward();
   }
+
+  /// 텍스트 끝의 소수점을 제거하는 함수
+  String _removeTrailingDot(String text) {
+    if (text.endsWith('.')) {
+      return text.substring(0, text.length - 1);
+    }
+    return text;
+  }
+}
+
+class SingleDotInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    // 소수점이 2개 이상이면 입력 취소
+    if ('.'.allMatches(text).length > 1) return oldValue;
+
+    return newValue;
+  }
+}
+
+class FinalButtonMessage {
+  final Color textColor;
+  final String message;
+
+  FinalButtonMessage({required this.textColor, required this.message});
 }

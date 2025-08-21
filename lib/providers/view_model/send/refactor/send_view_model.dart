@@ -162,6 +162,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   bool _isFeeRateLowerThanMin = false;
+  bool get isFeeRateLowerThanMin => _isFeeRateLowerThanMin;
 
   double? _minimumFeeRate;
   double? get minimumFeeRate => _minimumFeeRate;
@@ -246,6 +247,10 @@ class SendViewModel extends ChangeNotifier {
     }
 
     if (_estimatedFee == null) {
+      return false;
+    }
+
+    if ((double.tryParse(_feeRateText) ?? 0) < 0.1) {
       return false;
     }
 
@@ -551,8 +556,6 @@ class SendViewModel extends ChangeNotifier {
     } else if (_txBuildResult?.exception != null && _recipientList.every((r) => r.isInputValid)) {
       // 모든 수신자 카드 amount, address가 유효한 경우에만 메시지 보여주기
       message = _txBuildResult!.exception.toString();
-    } else if (_isFeeRateLowerThanMin) {
-      message = t.toast.min_fee(minimum: _minimumFeeRate ?? 0);
     }
 
     _finalErrorMessage = message;
