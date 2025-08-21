@@ -65,29 +65,32 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Row(
-                                  children: [
-                                    AnimatedBalance(
-                                        prevValue: widget.animatedBalanceData.previous,
-                                        value: widget.animatedBalanceData.current,
-                                        currentUnit: widget.currentUnit,
-                                        textStyle: CoconutTypography.heading1_32_NumberBold),
-                                  ],
+                        IntrinsicWidth(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: FittedBox(
+                                  alignment: Alignment.centerLeft,
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    children: [
+                                      AnimatedBalance(
+                                          prevValue: widget.animatedBalanceData.previous,
+                                          value: widget.animatedBalanceData.current,
+                                          currentUnit: widget.currentUnit,
+                                          textStyle: CoconutTypography.heading1_32_NumberBold),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            CoconutLayout.spacing_200w,
-                            Text(
-                              widget.currentUnit.symbol,
-                              style: CoconutTypography.heading3_21_Number,
-                            ),
-                          ],
+                              CoconutLayout.spacing_200w,
+                              Text(
+                                widget.currentUnit.symbol,
+                                style: CoconutTypography.heading3_21_Number,
+                              ),
+                            ],
+                          ),
                         ),
                         CoconutLayout.spacing_50h,
                         FiatPrice(satoshiAmount: widget.animatedBalanceData.current),

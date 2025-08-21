@@ -65,6 +65,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                         TextSpan(text: ' $unitText', style: Styles.unit)
                                       ]),
                                       style: Styles.balance1,
+                                      textScaler: const TextScaler.linear(1.0),
                                     ),
                                   )),
                               FiatPrice(
