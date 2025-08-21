@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/type_converter_utils.dart';
 import 'package:ur/ur.dart';
@@ -47,13 +48,25 @@ class WalletAddService {
 
   WatchOnlyWallet createWalletFromUR(
       {required UR ur, required String name, required WalletImportSource walletImportSource}) {
-    final cborBytes = ur.cbor;
-    final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
-    Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
-    Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
-    final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
-    return WatchOnlyWallet(
-        name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+    const className = 'WalletAddService';
+    const methodName = 'createWalletFromUR';
+
+    try {
+      final cborBytes = ur.cbor;
+      final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
+      FileLogger.log(className, methodName, 'cbor.decode completed');
+      Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
+      FileLogger.log(className, methodName, 'decodedCbor converted to cborMap');
+      Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
+      FileLogger.log(className, methodName, 'convertKeysToString completed');
+      final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
+      FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');
+      return WatchOnlyWallet(
+          name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+    } catch (e, stackTrace) {
+      FileLogger.error(className, methodName, 'failed: $e', stackTrace);
+      rethrow;
+    }
   }
 
   WatchOnlyWallet createWalletFromJson(

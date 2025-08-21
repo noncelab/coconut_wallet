@@ -463,7 +463,24 @@ settings_screen:
     popup:
       delete_server_info: "서버 정보 삭제"
       delete_server_info_description: "저장된 서버 정보를 삭제하시겠어요?"
-
+  log_viewer_screen:
+    title: "로그 뷰어"
+    log_description_1: "문제가 발생하면 [공유] 버튼을 눌러 이메일로 보내주시거나, 디스코드 또는 포우 커뮤니티로 문의해 주세요."
+    log_description_2: "공유해주신 정보는 문제 해결을 위해서만 사용되며 문제 해결 즉시 폐기됩니다."
+    log_target: "[로깅 대상]"
+    log_target_description_1: "키스톤 3 프로 지갑 추가 시 일부 기기에서 문제가 발생함에 따라 증상 확인 및 문제 해결을 위해 정보를 로깅합니다."
+    clear_log: "로그 지우기"
+    clear_log_description: "로그를 지우시겠어요?"
+    email_subject: "[코코넛 월렛] Debug Log"
+    email_body: "상황: (여기에 어떤 상황에서 발생한 문제인지 간략히 적어주세요)"
+    email_error_msg: "이메일 앱을 열 수 없어요. 로그를 복사해서 디스코드 채널 또는 포우 커뮤니티에 올려주세요."
+    buttons:
+      discord: "디스코드 가기"
+      pow: "포우 가기"
+      copy: "로그 복사"
+      toast:
+        copy_success: "로그가 복사되었어요."
+    
 # lib/screens/wallet_detail
 wallet_detail_screen:
   toast:

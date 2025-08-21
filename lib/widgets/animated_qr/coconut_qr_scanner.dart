@@ -94,7 +94,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
             Logger.log('--> progress: ${handler.progress}');
             _progressNotifier.value = handler.progress;
             if (!result && handler is! IFragmentedQrScanDataHandler) {
-              widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage, null);
+              widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage, scanData.code);
               resetScanState();
               return;
             }

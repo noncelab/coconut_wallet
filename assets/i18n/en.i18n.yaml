@@ -460,6 +460,23 @@ settings_screen:
     popup:
       delete_server_info: "Delete Server Info"
       delete_server_info_description: "Are you sure you want to delete the saved server information?"
+  log_viewer_screen:
+    title: "Log Viewer"
+    log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord or POW community."
+    log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
+    log_target: "[Logging Target]"
+    log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
+    clear_log: "Clear Log"
+    clear_log_description: "Are you sure to clear log?"
+    email_subject: "[Coconut Wallet] Debug Log"
+    email_body: "Situation: (Please briefly describe the situation where the problem occurred)"
+    email_error_msg: "Unable to open email app. Please copy the log and post it on the Discord channel or POW community."
+    buttons:
+      discord: "Go to Discord"
+      pow: "Go to POW"
+      copy: "Copy Log"
+      toast:
+        copy_success: "Log copied successfully."
 
 
 # lib/screens/wallet_detail

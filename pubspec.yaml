@@ -92,8 +92,13 @@ dependencies:
     git:
       url: https://github.com/noncelab/coconut_design_system.git
       ref: main
-  coconut_lib: 1.0.0
+  # coconut_lib: 1.0.0
+  coconut_lib:
+    git:
+      url: https://github.com/noncelab/coconut_lib.git
+      ref: develop
   base32: ^2.1.3
+  share_plus: ^10.0.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2

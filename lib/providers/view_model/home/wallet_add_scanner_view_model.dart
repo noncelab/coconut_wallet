@@ -1,10 +1,9 @@
-import 'dart:math';
-
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +14,7 @@ import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/descriptor_
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
 const kMaxStarLenght = 5;
+const String className = 'WalletAddScannerViewModel';
 
 class WalletAddScannerViewModel extends ChangeNotifier {
   final WalletImportSource _walletImportSource;
@@ -25,6 +25,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   WalletAddScannerViewModel(
       this._walletImportSource, this._walletProvider, this._preferenceProvider) {
+    const methodName = 'constructor';
+    FileLogger.log(
+        className, methodName, 'WalletAddScannerViewModel created for ${_walletImportSource.name}');
+
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         _qrDataHandler = CoconutQrScanDataHandler();
@@ -42,6 +46,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       case WalletImportSource.extendedPublicKey:
         throw 'No Support extendedPublicKey';
       default:
+        FileLogger.error(className, methodName, 'No Support extendedPublicKey');
         throw 'wrong wallet import source: $_walletImportSource';
     }
   }
@@ -50,21 +55,33 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
-    switch (_walletImportSource) {
-      case WalletImportSource.coconutVault:
-        return addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
-      case WalletImportSource.keystone:
-        return addKeystoneWallet(additionInfo as UR);
-      case WalletImportSource.jade:
-        return addJadeWallet(additionInfo as UR);
-      case WalletImportSource.seedSigner:
-        return addSeedSignerWallet(additionInfo as String);
-      case WalletImportSource.coldCard:
-        return addColdCardWallet(additionInfo as Map<String, dynamic>);
-      case WalletImportSource.extendedPublicKey:
-        throw 'No Support extendedPublicKey';
-      default:
-        throw 'wrong wallet import source: $_walletImportSource';
+    const methodName = 'addWallet';
+
+    FileLogger.log(className, methodName,
+        'addWallet called with ${_walletImportSource.name} additionInfo type: ${additionInfo.runtimeType}');
+
+    try {
+      switch (_walletImportSource) {
+        case WalletImportSource.coconutVault:
+          return addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
+        case WalletImportSource.keystone:
+          return addKeystoneWallet(additionInfo as UR);
+        case WalletImportSource.jade:
+          return addJadeWallet(additionInfo as UR);
+        case WalletImportSource.seedSigner:
+          return addSeedSignerWallet(additionInfo as String);
+        case WalletImportSource.coldCard:
+          return addColdCardWallet(additionInfo as Map<String, dynamic>);
+        case WalletImportSource.extendedPublicKey:
+          throw 'No Support extendedPublicKey';
+        default:
+          FileLogger.error(
+              className, methodName, 'wrong wallet import source: $_walletImportSource');
+          throw 'wrong wallet import source: $_walletImportSource';
+      }
+    } catch (e, stackTrace) {
+      FileLogger.error(className, methodName, 'addWallet failed: $e', stackTrace);
+      rethrow;
     }
   }
 
@@ -73,10 +90,24 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   }
 
   Future<ResultOfSyncFromVault> addKeystoneWallet(UR ur) async {
-    final name = getNextThirdPartyWalletName(
-        WalletImportSource.keystone, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet = _walletAddService.createKeystoneWallet(ur, name);
-    return await _walletProvider.syncFromThirdParty(wallet);
+    const methodName = 'addKeystoneWallet';
+    FileLogger.log(className, methodName,
+        'addKeystoneWallet called UR type: ${ur.type} cbor length: ${ur.cbor.length}');
+
+    try {
+      final name = getNextThirdPartyWalletName(
+          WalletImportSource.keystone, _walletProvider.walletItemList.map((e) => e.name).toList());
+      final wallet = _walletAddService.createKeystoneWallet(ur, name);
+      FileLogger.log(className, methodName, 'createKeystoneWallet completed: $name');
+
+      final result = await _walletProvider.syncFromThirdParty(wallet);
+      FileLogger.log(className, methodName,
+          'syncFromThirdParty completed: ${result.result.name} named: $name');
+      return result;
+    } catch (e, stackTrace) {
+      FileLogger.error(className, methodName, 'addKeystoneWallet failed: $e', stackTrace);
+      rethrow;
+    }
   }
 
   Future<ResultOfSyncFromVault> addJadeWallet(UR ur) async {
