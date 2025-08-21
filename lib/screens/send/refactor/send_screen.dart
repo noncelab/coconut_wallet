@@ -43,7 +43,8 @@ class SendScreen extends StatefulWidget {
   State<SendScreen> createState() => _SendScreenState();
 }
 
-class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin {
+class _SendScreenState extends State<SendScreen>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
@@ -90,6 +91,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
       bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
       unit: _viewModel.currentUnit.symbol);
+
+  double _previousKeyboardHeight = 0;
 
   @override
   void initState() {
@@ -149,10 +152,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 .amount_to_be_sent(bitcoin: amountText, unit: _viewModel.currentUnit.symbol));
       });
     }
+
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _previousKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
     _animationController.dispose();
     _recipientPageController.dispose();
     _feeRateController.dispose();
@@ -167,6 +177,34 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       controller.dispose();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+      if (_previousKeyboardHeight > 0 && currentKeyboardHeight == 0) {
+        _clearFocusOnKeyboardDismiss();
+      }
+
+      _previousKeyboardHeight = currentKeyboardHeight;
+    });
+  }
+
+  void _clearFocusOnKeyboardDismiss() {
+    _amountFocusNode.unfocus();
+    _feeRateFocusNode.unfocus();
+
+    for (var focusNode in _addressFocusNodeList) {
+      focusNode.unfocus();
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    setState(() {});
   }
 
   @override
@@ -320,8 +358,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple2<String, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.finalErrorMessage, viewModel.isReadyToSend),
+    return Selector<SendViewModel, Tuple3<String, bool, int?>>(
+        selector: (_, viewModel) => Tuple3(
+            viewModel.finalErrorMessage, viewModel.isReadyToSend, viewModel.unintendedDustFee),
         builder: (context, data, child) {
           final textColor =
               _viewModel.finalErrorMessage.isNotEmpty ? CoconutColors.hotPink : CoconutColors.white;
@@ -350,13 +389,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 isVisibleAboveKeyboard: false,
                 onButtonClicked: () {
                   FocusScope.of(context).unfocus();
+                  if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
                   if (mounted) {
                     _viewModel.saveSendInfo();
                     Navigator.pushNamed(context, '/send-confirm',
                         arguments: {"currentUnit": _viewModel.currentUnit});
                   }
                 },
-                isActive: _viewModel.isReadyToSend && _viewModel.finalErrorMessage.isEmpty,
+                isActive: !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+                    _viewModel.isReadyToSend &&
+                    _viewModel.finalErrorMessage.isEmpty,
                 text: t.complete,
                 backgroundColor: CoconutColors.gray100,
                 pressedBackgroundColor: CoconutColors.gray500,
@@ -926,13 +968,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       suffix: IconButton(
                         iconSize: 14,
                         padding: EdgeInsets.zero,
-                        onPressed: () {
+                        onPressed: () async {
                           if (controller.text.isEmpty) {
-                            _showAddressScanner(index);
+                            await _showAddressScanner(index);
                           } else {
                             controller.clear();
-                            _viewModel.validateAllFieldsOnFocusLost();
                           }
+                          _viewModel.validateAllFieldsOnFocusLost();
                         },
                         icon: controller.text.isEmpty
                             ? SvgPicture.asset('assets/svg/scan.svg')
@@ -1219,7 +1261,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     });
   }
 
-  void _showAddressScanner(int index) async {
+  Future<void> _showAddressScanner(int index) async {
     final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
     final String? scannedAddress = await CommonBottomSheets.showBottomSheet_100(
         context: context,

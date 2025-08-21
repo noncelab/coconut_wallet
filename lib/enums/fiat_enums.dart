@@ -8,6 +8,7 @@ import '../utils/balance_format_util.dart';
 enum FiatCode {
   KRW('KRW', 'South Korean Won', '₩'),
   USD('USD', 'US Dollar', '\$'),
+  JPY('JPY', 'Japanese Yen', '¥'),
   ;
 
   final String code; // ISO 4217 코드
