@@ -17,13 +17,14 @@ class FileLogger {
       _logFile = File('${directory.path}/$_fileName');
 
       // 새 로그 파일 생성
-      await _logFile!.writeAsString('=== Debug Log Started: ${DateTime.now()} ===\n');
+      await _logFile!.writeAsString('=== Debug Log Started: ${_getSimpleTimestamp()} ===\n');
 
       // 주기적으로 큐를 플러시하는 타이머 시작
       _flushTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
         _flushQueue();
       });
     } catch (e) {
+      // ignore: avoid_print
       print('FileLogger initialization failed: $e');
     }
   }
@@ -84,6 +85,7 @@ class FileLogger {
         await _logFile!.writeAsString(logContent, mode: FileMode.append);
       }
     } catch (e) {
+      // ignore: avoid_print
       print('FileLogger._flushQueue failed: $e');
       // 실패한 로그들을 다시 큐에 추가
       for (final entry in entries) {
@@ -99,9 +101,13 @@ class FileLogger {
       if (_logFile != null && await _logFile!.exists()) {
         // 플러시 타이머를 일시 중지하고 큐를 비움
         await _flushQueue();
-        return await _logFile!.readAsString();
+        final content = await _logFile!.readAsString();
+        // ignore: avoid_print
+        print('FileLogger.getLogContent: content length = ${content.length}');
+        return content;
       }
     } catch (e) {
+      // ignore: avoid_print
       print('FileLogger.getLogContent failed: $e');
     }
     return null;
@@ -114,10 +120,11 @@ class FileLogger {
 
         await Share.share(
           logContent,
-          subject: 'Coconut Wallet Debug Log - ${DateTime.now()}',
+          subject: 'Coconut Wallet Debug Log - ${_getSimpleTimestamp()}',
         );
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Log sharing failed: $e');
     }
   }
@@ -132,6 +139,7 @@ class FileLogger {
         await _logFile!.writeAsString('=== Debug Log Cleared: ${_getSimpleTimestamp()} ===\n');
       }
     } catch (e) {
+      // ignore: avoid_print
       print('FileLogger.clearLog failed: $e');
     }
   }
@@ -141,6 +149,7 @@ class FileLogger {
       _flushTimer?.cancel();
       await _flushQueue();
     } catch (e) {
+      // ignore: avoid_print
       print('FileLogger.dispose failed: $e');
     }
   }
