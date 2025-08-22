@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -223,8 +222,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
                           onTapUnderlineButton: () {
                             tx.blockHeight != 0
-                                ? launchUrl(Uri.parse(
-                                    '${CoconutWalletApp.kMempoolHost}/block/${tx.blockHeight}'))
+                                ? launchUrl(
+                                    Uri.parse('${_viewModel.mempoolHost}/block/${tx.blockHeight}'))
                                 : ();
                           },
                           child: Text(
@@ -251,8 +250,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           label: t.tx_id,
                           underlineButtonLabel: t.view_mempool,
                           onTapUnderlineButton: () {
-                            launchUrl(Uri.parse(
-                                "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
+                            launchUrl(
+                                Uri.parse("${_viewModel.mempoolHost}/tx/${tx.transactionHash}"));
                           },
                           child: CopyTextContainer(
                             text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
