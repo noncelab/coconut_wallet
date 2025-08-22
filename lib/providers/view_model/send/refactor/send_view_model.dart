@@ -598,12 +598,12 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setAmountText(String satoshi, int recipientIndex) {
+  /// bip21 url에서 amount값 파싱 성공했을 때 사용
+  void setAmountText(int satoshi, int recipientIndex) {
     if (currentUnit == BitcoinUnit.sats) {
-      _recipientList[recipientIndex].amount = satoshi;
+      _recipientList[recipientIndex].amount = satoshi.toString();
     } else {
-      _recipientList[recipientIndex].amount =
-          UnitUtil.convertSatoshiToBitcoin(int.parse(satoshi)).toString();
+      _recipientList[recipientIndex].amount = UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
     }
     notifyListeners();
   }

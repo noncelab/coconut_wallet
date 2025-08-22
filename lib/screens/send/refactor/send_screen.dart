@@ -16,6 +16,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -859,6 +860,7 @@ class _SendScreenState extends State<SendScreen>
         defaultColor: CoconutColors.black,
         onPressed: () {
           _viewModel.addRecipient();
+          _amountController.text = '';
           _addAddressField();
         },
         child: CustomPaint(
@@ -1386,7 +1388,7 @@ class _SendScreenState extends State<SendScreen>
               ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!)
               : bip21Data.amount!.toString();
           _amountController.text = amountText;
-          _viewModel.setAmountText(bip21Data.amount!.toString(), index);
+          _viewModel.setAmountText(bip21Data.amount!, index);
         }
       } else {
         _addressControllerList[index].text = scannedData;
