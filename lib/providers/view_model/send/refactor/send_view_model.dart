@@ -598,6 +598,16 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setAmountText(String satoshi, int recipientIndex) {
+    if (currentUnit == BitcoinUnit.sats) {
+      _recipientList[recipientIndex].amount = satoshi;
+    } else {
+      _recipientList[recipientIndex].amount =
+          UnitUtil.convertSatoshiToBitcoin(int.parse(satoshi)).toString();
+    }
+    notifyListeners();
+  }
+
   void setFeeRateText(String feeRate) {
     _feeRateText = feeRate;
 
@@ -697,13 +707,12 @@ class SendViewModel extends ChangeNotifier {
   void validateAllFieldsOnFocusLost() {
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
-      _updateAmountValidationState(recipientIndex: _currentIndex);
+      _updateAmountValidationState(recipientIndex: i);
       validateAddress(_recipientList[i].address, i);
     }
     checkAndSetDuplicationError();
     _buildTransaction();
     _updateFeeBoardVisibility();
-    Logger.log('--> validateAllFieldsOnFocusLost');
   }
 
   void clearAmountText() {
