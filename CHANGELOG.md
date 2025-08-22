@@ -1,3 +1,14 @@
+## mainnet 0.4.2 - 2025-08-22
+### Fixed
+* recipient address prefix 3 허용
+* utxo 선택 화면 스크롤 멈춤 현상
+* 트랜잭션 생성시 추천 수수료율 미만, 0.1 이상의 수수료율 허용
+* 보내기 화면 utxo auto-select 모드일 때 잔액 보여주지 말기 (confirmed utxo의 전체 합이 노출됨)
+* 큰 글자 모드에서 잔액 가려지는 현상 수정
+* 콜드카드 에어갭 트랜잭션 호환성 해결
+### Added
+* wallet_list 법정화폐 가격 보여주기
+
 ## mainnet 0.4.1, regtest 3.2.1 - 2025-08-13
 ### Fixed
 * 보내기 화면 - 에러 처리 누락 버그 수정
