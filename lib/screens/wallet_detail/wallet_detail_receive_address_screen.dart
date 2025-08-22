@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -151,18 +152,20 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
 
   void _onAddressListButtonPressed() {
     CommonBottomSheets.showBottomSheet_90(
-      context: context,
-      child: AddressListScreen(
-        id: _selectedWalletItem!.id,
-        isFullScreen: false,
-      ),
-    );
+        context: context,
+        child: AppGuard(
+          child: AddressListScreen(
+            id: _selectedWalletItem!.id,
+            isFullScreen: false,
+          ),
+        ));
   }
 
   void _onAppBarTitlePressed() {
-    CommonBottomSheets.showDraggableBottomSheet(
+    CommonBottomSheets.showDraggableBottomSheetWithAppGuard(
         context: context,
-        childBuilder: (scrollController) => SelectWalletBottomSheet(
+        childBuilder: (scrollController) => AppGuard(
+                child: SelectWalletBottomSheet(
               showOnlyMfpWallets: false,
               scrollController: scrollController,
               currentUnit: context.read<PreferenceProvider>().currentUnit,
@@ -174,6 +177,6 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                 setState(() {});
                 Navigator.pop(context);
               },
-            ));
+            )));
   }
 }

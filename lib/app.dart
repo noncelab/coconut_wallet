@@ -248,19 +248,20 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         ),
                       ),
             routes: {
-              '/wallet-list': (context) => const WalletListScreen(),
+              '/wallet-list': (context) => const AppGuard(child: WalletListScreen()),
               '/wallet-add-scanner': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(
+                        child: AppGuard(
                       child: WalletAddScannerScreen(
                         importSource: args['walletImportSource'],
                       ),
-                    ),
+                    )),
                   ),
               '/wallet-add-input': (context) => const CustomLoadingOverlay(
-                    child: WalletAddInputScreen(),
+                    child: AppGuard(child: WalletAddInputScreen()),
                   ),
-              '/app-info': (context) => const AppInfoScreen(),
+              '/app-info': (context) => const AppGuard(child: AppInfoScreen()),
               '/receive-address': (context) => buildScreenWithArguments(
                     context,
                     (args) => ReceiveAddressScreen(
@@ -275,13 +276,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                   ),
               '/wallet-info': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(
-                        child: WalletInfoScreen(
-                            id: args['id'],
-                            isMultisig: args['isMultisig'],
-                            entryPoint: args['entryPoint'])),
-                  ),
+                  context,
+                  (args) => CustomLoadingOverlay(
+                        child: AppGuard(
+                            child: WalletInfoScreen(
+                                id: args['id'],
+                                isMultisig: args['isMultisig'],
+                                entryPoint: args['entryPoint'])),
+                      )),
               '/address-list': (context) => buildScreenWithArguments(
                     context,
                     (args) => AddressListScreen(id: args['id']),
@@ -307,8 +309,10 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     context,
                     (args) => UnsignedTransactionQrScreen(walletName: args['walletName']),
                   ),
-              '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
-              '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
+              '/signed-psbt-scanner': (context) => const AppGuard(child: SignedPsbtScannerScreen()),
+              '/broadcasting': (context) => const CustomLoadingOverlay(
+                    child: AppGuard(child: BroadcastingScreen()),
+                  ),
               '/broadcasting-complete': (context) => buildScreenWithArguments(
                     context,
                     (args) => CustomLoadingOverlay(
@@ -328,8 +332,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     context,
                     (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
                   ),
-              '/send-amount': (context) => const SendAmountScreen(),
-              '/fee-selection': (context) => const SendFeeSelectionScreen(),
+              '/send-amount': (context) => const AppGuard(child: SendAmountScreen()),
+              '/fee-selection': (context) => const AppGuard(child: SendFeeSelectionScreen()),
               '/refactor-utxo-selection': (context) => CustomLoadingOverlay(
                     child: buildScreenWithArguments(
                       context,
@@ -350,9 +354,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       child: UtxoListScreen(id: args['id']),
                     ),
                   ),
-              '/positive-feedback': (context) => const PositiveFeedbackScreen(),
-              '/negative-feedback': (context) => const NegativeFeedbackScreen(),
-              '/mnemonic-word-list': (context) => const Bip39ListScreen(),
+              '/positive-feedback': (context) => const AppGuard(child: PositiveFeedbackScreen()),
+              '/negative-feedback': (context) => const AppGuard(child: NegativeFeedbackScreen()),
+              '/mnemonic-word-list': (context) => const AppGuard(child: Bip39ListScreen()),
               '/utxo-tag': (context) =>
                   buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
               '/select-donation-amount': (context) => buildScreenWithArguments(
@@ -375,14 +379,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       ),
                     ),
                   ),
-              '/coconut-crew': (context) => const CoconutCrewScreen(),
+              '/coconut-crew': (context) => const AppGuard(child: CoconutCrewScreen()),
               '/electrum-server': (context) => ChangeNotifierProvider<ElectrumServerViewModel>(
                     create: (context) => ElectrumServerViewModel(
                         Provider.of<NodeProvider>(context, listen: false),
                         Provider.of<PreferenceProvider>(context, listen: false)),
-                    child: const ElectrumServerScreen(),
+                    child: const AppGuard(child: ElectrumServerScreen()),
                   ),
-              '/log-viewer': (context) => const LogViewerScreen(),
+              '/log-viewer': (context) => const AppGuard(child: LogViewerScreen()),
             },
           ),
         ));
@@ -391,6 +395,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   T buildScreenWithArguments<T>(BuildContext context, T Function(Map<String, dynamic>) builder) {
     final Map<String, dynamic> args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
-    return builder(args);
+    final screen = builder(args);
+
+    if (screen is Widget) {
+      return AppGuard(child: screen) as T;
+    }
+    return screen;
   }
 }

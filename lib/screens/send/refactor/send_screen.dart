@@ -16,7 +16,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -1226,7 +1225,7 @@ class _SendScreenState extends State<SendScreen>
                                 _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
                                 return;
                               }
-                              CommonBottomSheets.showDraggableBottomSheet(
+                              CommonBottomSheets.showDraggableBottomSheetWithAppGuard(
                                   context: context,
                                   childBuilder: (scrollController) => SelectWalletBottomSheet(
                                         showOnlyMfpWallets: false,

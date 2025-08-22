@@ -76,7 +76,11 @@ class _AppGuardState extends State<AppGuard> {
           });
           _authProvider.checkDeviceBiometrics();
           _priceProvider.initWebSocketService();
-          _nodeProvider.reconnect();
+          // 노드 연결이 필요하지 않다면 연결하지 않음
+          // TODO _nodeProvider.hasConnectionError 이 값으로 보장 가능?
+          if (_nodeProvider.hasConnectionError) {
+            _nodeProvider.reconnect();
+          }
         }
         break;
       case AppLifecycleState.hidden:
@@ -88,7 +92,8 @@ class _AppGuardState extends State<AppGuard> {
           _isPaused = true;
         });
         _priceProvider.disposeWebSocketService();
-        unawaited(_nodeProvider.closeConnection());
+        // 무조건 연결 끊던 것을 주석처리 해놓음
+        // unawaited(_nodeProvider.closeConnection());
         break;
       case AppLifecycleState.inactive:
         setState(() {
