@@ -501,6 +501,9 @@ class SendViewModel extends ChangeNotifier {
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
     _initBalances();
+    if (_isMaxMode) {
+      _adjustLastReceiverAmount(recipientIndex: lastIndex);
+    }
     _updateAmountValidationState();
     _updateFeeBoardVisibility();
     _buildTransaction();
