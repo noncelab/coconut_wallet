@@ -36,12 +36,14 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
   }
 
   Future<void> _clearLog() async {
-    //
     CustomDialogs.showCustomAlertDialog(context,
         title: t.settings_screen.log_viewer_screen.clear_log,
         message: t.settings_screen.log_viewer_screen.clear_log_description, onConfirm: () async {
       await FileLogger.clearLog();
       await _loadLogContent();
+      if (mounted) {
+        Navigator.pop(context);
+      }
     }, onCancel: () {
       Navigator.pop(context);
     });
