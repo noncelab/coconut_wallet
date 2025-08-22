@@ -430,12 +430,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
       errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
-      FileLogger.error(className, methodName,
-          'QR format error detected');
+      FileLogger.error(className, methodName, 'QR format error detected');
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
-      FileLogger.error(className, methodName,
-          'Non-QR format error detected');
+      FileLogger.error(className, methodName, 'Non-QR format error detected');
     }
 
     await CustomDialogs.showCustomAlertDialog(context,
