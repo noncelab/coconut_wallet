@@ -82,6 +82,8 @@ class InputOutputDetailRow extends StatelessWidget {
                         child: SizedBox(
                           width: balanceMaxWidth,
                           child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
                             child: Text(
                               textAlign: TextAlign.end,
                               balanceText,
