@@ -92,6 +92,8 @@ vault_app: "Vault App"
 view_balance: "Balance"
 network: "Network"
 electrum_server: "Electrum Server"
+block_explorer: "Block Explorer"
+log_viewer: "Log Viewer"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -460,8 +462,17 @@ settings_screen:
     popup:
       delete_server_info: "Delete Server Info"
       delete_server_info_description: "Are you sure you want to delete the saved server information?"
+  block_explorer:
+    default_explorer: "Default Explorer"
+    custom_explorer: "Custom Explorer"
+    custom_explorer_description: "Coconut uses the address you entered. However, since the transaction/address link format varies depending on the explorer, some links may not work properly."
+    save: "Save"
+    custom_explorer_input_placeholder: "Enter the address"
+    connection_status:
+      connecting: "Checking address..."
+      connected: "Address verified"
+      failed: "Address not found!"
   log_viewer_screen:
-    title: "Log Viewer"
     log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord or POW community."
     log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
     log_target: "[Logging Target]"

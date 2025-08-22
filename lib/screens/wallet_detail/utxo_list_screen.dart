@@ -632,9 +632,7 @@ class _UtxoListState extends State<UtxoList> {
                   key: Key(utxo.utxoId),
                   currentUnit: widget.currentUnit,
                   onPressed: () async {
-                    if (widget.onRemoveDropdown != null) {
-                      widget.onRemoveDropdown!();
-                    }
+                    widget.onRemoveDropdown();
 
                     await Navigator.pushNamed(
                       context,

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -205,18 +206,35 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 네트워크
                   _category(t.network),
-                  _buildAnimatedButton(
-                    title: t.electrum_server,
-                    onPressed: () async {
-                      Navigator.pushNamed(context, '/electrum-server');
-                    },
-                  ),
+                  // mainnet인 경우만 블록 익스플로러 표시
+                  NetworkType.currentNetworkType == NetworkType.mainnet
+                      ? ButtonGroup(buttons: [
+                          _buildAnimatedButton(
+                            title: t.electrum_server,
+                            onPressed: () async {
+                              Navigator.pushNamed(context, '/electrum-server');
+                            },
+                          ),
+                          _buildAnimatedButton(
+                            title: t.block_explorer,
+                            onPressed: () async {
+                              Navigator.pushNamed(context, '/block-explorer');
+                            },
+                          ),
+                        ])
+                      : _buildAnimatedButton(
+                          title: t.electrum_server,
+                          onPressed: () async {
+                            Navigator.pushNamed(context, '/electrum-server');
+                          },
+                        ),
+
                   CoconutLayout.spacing_400h,
 
                   // 도구
                   _category(t.tool),
                   _buildAnimatedButton(
-                    title: t.settings_screen.log_viewer_screen.title,
+                    title: t.log_viewer,
                     onPressed: () {
                       Navigator.pushNamed(context, '/log-viewer');
                     },
