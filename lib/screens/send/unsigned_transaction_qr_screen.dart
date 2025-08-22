@@ -41,8 +41,8 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   late bool? _isDonation;
 
   int _currentBbqrIndex = 0;
-  late Timer _bbqrTimer;
-  late List<String> _bbqrParts;
+  Timer? _bbqrTimer;
+  List<String> _bbqrParts = [];
 
   @override
   void initState() {
@@ -111,7 +111,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
   @override
   void dispose() {
-    _bbqrTimer.cancel();
+    _bbqrTimer?.cancel();
     super.dispose();
   }
 
@@ -157,7 +157,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                       decoration: BoxDecoration(
                           color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
                       child: Center(
-                        child: _isBbQrType()
+                        child: _isBbQrType() && _bbqrParts.isNotEmpty
                             ? QrImageView(
                                 data: _bbqrParts[_currentBbqrIndex],
                                 version: QrVersions.auto,
