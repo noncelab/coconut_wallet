@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/view_model/settings/settings_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/settings/log_viewer_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
 import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
@@ -50,6 +49,7 @@ class _SettingsScreen extends State<SettingsScreen> {
               body: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // 보안
                   _category(t.security),
                   ButtonGroup(buttons: [
                     SingleButton(
@@ -102,29 +102,30 @@ class _SettingsScreen extends State<SettingsScreen> {
                           }),
                   ]),
 
+                  // 홈 잔액 숨기기 + 가짜 잔액 설정
                   if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
                     CoconutLayout.spacing_200h,
-                    MultiButton(
-                      children: [
-                        SingleButton(
-                            title: t.settings_screen.hide_balance,
-                            rightElement: _buildSwitch(
-                                isOn: viewModel.isBalanceHidden,
-                                onChanged: (value) {
-                                  viewModel.changeIsBalanceHidden(value);
-                                })),
-                        SingleButton(
-                          enableShrinkAnim: true,
-                          title: t.settings_screen.fake_balance.fake_balance_setting,
-                          onPressed: () async {
-                            CommonBottomSheets.showBottomSheet_50(
-                                context: context, child: const FakeBalanceBottomSheet());
-                          },
-                        ),
-                      ],
-                    ),
+                    ButtonGroup(buttons: [
+                      SingleButton(
+                          title: t.settings_screen.hide_balance,
+                          rightElement: _buildSwitch(
+                              isOn: viewModel.isBalanceHidden,
+                              onChanged: (value) {
+                                viewModel.changeIsBalanceHidden(value);
+                              })),
+                      SingleButton(
+                        enableShrinkAnim: true,
+                        title: t.settings_screen.fake_balance.fake_balance_setting,
+                        onPressed: () async {
+                          CommonBottomSheets.showBottomSheet_50(
+                              context: context, child: const FakeBalanceBottomSheet());
+                        },
+                      ),
+                    ]),
                   ],
                   CoconutLayout.spacing_400h,
+
+                  // 단위
                   _category(t.unit),
                   ButtonGroup(buttons: [
                     Selector<PreferenceProvider, bool>(
@@ -170,8 +171,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                           );
                         }),
                   ]),
-
                   CoconutLayout.spacing_400h,
+
+                  // 일반
                   _category(t.general),
                   Selector<PreferenceProvider, String>(
                     selector: (_, provider) => provider.language,
@@ -191,8 +193,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                       );
                     },
                   ),
-
                   CoconutLayout.spacing_400h,
+
+                  // 네트워크
                   _category(t.network),
                   ButtonGroup(
                     buttons: [
@@ -206,12 +209,13 @@ class _SettingsScreen extends State<SettingsScreen> {
                       ),
                     ],
                   ),
-
                   CoconutLayout.spacing_400h,
-                  _category('도구'),
+
+                  // 도구
+                  _category(t.tool),
                   ButtonGroup(buttons: [
                     SingleButton(
-                      title: '로그 뷰어',
+                      title: t.settings_screen.log_viewer_screen.title,
                       onPressed: () {
                         Navigator.pushNamed(context, '/log-viewer');
                       },
