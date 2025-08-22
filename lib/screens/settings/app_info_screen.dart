@@ -252,6 +252,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 Expanded(
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

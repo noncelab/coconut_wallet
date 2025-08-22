@@ -49,6 +49,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   fontSize: 14,
                   height: 16 / 14,
                 ),
+                textScaler: const TextScaler.linear(1.0),
                 maxLines: 1,
               ),
             ),
@@ -112,6 +113,8 @@ class InputOutputDetailRow extends StatelessWidget {
                     child: SizedBox(
                       width: balanceMaxWidth,
                       child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           balanceText,
                           style: CoconutTypography.body2_14_Number.copyWith(
