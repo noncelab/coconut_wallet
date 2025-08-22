@@ -103,9 +103,10 @@ class _SettingsScreen extends State<SettingsScreen> {
                   ]),
 
                   // 홈 잔액 숨기기 + 가짜 잔액 설정
+                  // TODO: ButtonGroup과 MultiButton 통합 혹은 usage 구별이 필요함
                   if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
                     CoconutLayout.spacing_200h,
-                    ButtonGroup(buttons: [
+                    MultiButton(children: [
                       SingleButton(
                           title: t.settings_screen.hide_balance,
                           rightElement: _buildSwitch(
@@ -122,6 +123,22 @@ class _SettingsScreen extends State<SettingsScreen> {
                         },
                       ),
                     ]),
+                    // ButtonGroup(buttons: [
+                    //   SingleButton(
+                    //       title: t.settings_screen.hide_balance,
+                    //       rightElement: _buildSwitch(
+                    //           isOn: viewModel.isBalanceHidden,
+                    //           onChanged: (value) {
+                    //             viewModel.changeIsBalanceHidden(value);
+                    //           })),
+                    //   _buildAnimatedButton(
+                    //     title: t.settings_screen.fake_balance.fake_balance_setting,
+                    //     onPressed: () async {
+                    //       CommonBottomSheets.showBottomSheet_50(
+                    //           context: context, child: const FakeBalanceBottomSheet());
+                    //     },
+                    //   ),
+                    // ]),
                   ],
                   CoconutLayout.spacing_400h,
 
@@ -131,16 +148,13 @@ class _SettingsScreen extends State<SettingsScreen> {
                     Selector<PreferenceProvider, bool>(
                         selector: (_, viewModel) => viewModel.isBtcUnit,
                         builder: (context, isBtcUnit, child) {
-                          return SingleButton(
-                            enableShrinkAnim: true,
-                            animationEndValue: 0.97,
-                            title: t.bitcoin_kr,
-                            subtitle: isBtcUnit ? t.btc : t.sats,
-                            onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
-                                  context: context, child: const UnitBottomSheet());
-                            },
-                          );
+                          return _buildAnimatedButton(
+                              title: t.bitcoin_kr,
+                              subtitle: isBtcUnit ? t.btc : t.sats,
+                              onPressed: () async {
+                                CommonBottomSheets.showBottomSheet_50(
+                                    context: context, child: const UnitBottomSheet());
+                              });
                         }),
                     Selector<PreferenceProvider, String>(
                         selector: (_, provider) => provider.selectedFiat.code,
@@ -158,10 +172,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                               fiatDisplayName = FiatCode.USD.code;
                               break;
                           }
-
-                          return SingleButton(
-                            enableShrinkAnim: true,
-                            animationEndValue: 0.97,
+                          return _buildAnimatedButton(
                             title: t.fiat.fiat,
                             subtitle: fiatDisplayName,
                             onPressed: () async {
@@ -178,12 +189,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                   Selector<PreferenceProvider, String>(
                     selector: (_, provider) => provider.language,
                     builder: (context, language, child) {
-                      return SingleButton(
-                        enableShrinkAnim: true,
-                        animationEndValue: 0.97,
+                      return _buildAnimatedButton(
                         title: t.settings_screen.language,
                         subtitle: _getCurrentLanguageDisplayName(language),
-                        subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
                         onPressed: () async {
                           CommonBottomSheets.showBottomSheet_50(
                             context: context,
@@ -197,38 +205,28 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 네트워크
                   _category(t.network),
-                  ButtonGroup(
-                    buttons: [
-                      SingleButton(
-                        enableShrinkAnim: true,
-                        animationEndValue: 0.97,
-                        title: t.electrum_server,
-                        onPressed: () async {
-                          Navigator.pushNamed(context, '/electrum-server');
-                        },
-                      ),
-                    ],
+                  _buildAnimatedButton(
+                    title: t.electrum_server,
+                    onPressed: () async {
+                      Navigator.pushNamed(context, '/electrum-server');
+                    },
                   ),
                   CoconutLayout.spacing_400h,
 
                   // 도구
                   _category(t.tool),
-                  ButtonGroup(buttons: [
-                    SingleButton(
-                      title: t.settings_screen.log_viewer_screen.title,
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/log-viewer');
-                      },
-                    ),
-                  ]),
+                  _buildAnimatedButton(
+                    title: t.settings_screen.log_viewer_screen.title,
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/log-viewer');
+                    },
+                  ),
 
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
-                    SingleButton(
-                      enableShrinkAnim: true,
-                      animationEndValue: 0.97,
+                    _buildAnimatedButton(
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {
                         final realmManager = Provider.of<RealmManager>(context, listen: false);
@@ -264,6 +262,17 @@ class _SettingsScreen extends State<SettingsScreen> {
   Widget _category(String label) => Container(
       padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
       child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)));
+
+  Widget _buildAnimatedButton(
+      {required String title, required VoidCallback onPressed, String? subtitle}) {
+    return SingleButton(
+      enableShrinkAnim: true,
+      animationEndValue: 0.97,
+      title: title,
+      subtitle: subtitle,
+      onPressed: onPressed,
+    );
+  }
 
   void _showPinSettingScreen({required bool useBiometrics}) {
     CommonBottomSheets.showBottomSheet_90(

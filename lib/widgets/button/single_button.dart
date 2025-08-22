@@ -65,6 +65,8 @@ class SingleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final buttonContent = _buildButtonContent();
+
     return enableShrinkAnim
         ? ShrinkAnimationButton(
             onPressed: onPressed ?? () {},
@@ -77,33 +79,7 @@ class SingleButton extends StatelessWidget {
                 borderRadius: buttonPosition.radius,
               ),
               padding: buttonPosition.padding,
-              child: Row(
-                children: [
-                  if (leftElement != null) ...{
-                    Container(child: leftElement),
-                    CoconutLayout.spacing_400w,
-                  },
-                  Expanded(
-                      child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(title,
-                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                      ),
-                      if (subtitle != null)
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(subtitle!,
-                              style: subtitleStyle ??
-                                  CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
-                        ),
-                    ],
-                  )),
-                  rightElement ?? _rightArrow(),
-                ],
-              ),
+              child: buttonContent,
             ))
         : GestureDetector(
             onTap: onPressed,
@@ -113,29 +89,40 @@ class SingleButton extends StatelessWidget {
                 borderRadius: buttonPosition.radius,
               ),
               padding: buttonPosition.padding,
-              child: Row(
-                children: [
-                  if (leftElement != null) ...{
-                    Container(child: leftElement),
-                    CoconutLayout.spacing_400w,
-                  },
-                  Expanded(
-                      child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                      if (subtitle != null)
-                        Text(subtitle!,
-                            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
-                    ],
-                  )),
-                  rightElement ?? _rightArrow(),
-                ],
-              ),
+              child: buttonContent,
             ));
   }
 
+  Widget _buildButtonContent() {
+    return Row(
+      children: [
+        if (leftElement != null) ...{
+          Container(child: leftElement),
+          CoconutLayout.spacing_400w,
+        },
+        Expanded(
+            child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child:
+                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+            ),
+          ],
+        )),
+        if (subtitle != null)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(subtitle!,
+                style: subtitleStyle ??
+                    CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400)),
+          ),
+        rightElement ?? _rightArrow(),
+      ],
+    );
+  }
+
   Widget _rightArrow() =>
-      const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray600);
+      const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray400);
 }
