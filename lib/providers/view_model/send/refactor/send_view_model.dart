@@ -697,13 +697,12 @@ class SendViewModel extends ChangeNotifier {
   void validateAllFieldsOnFocusLost() {
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
-      _updateAmountValidationState(recipientIndex: _currentIndex);
+      _updateAmountValidationState(recipientIndex: i);
       validateAddress(_recipientList[i].address, i);
     }
     checkAndSetDuplicationError();
     _buildTransaction();
     _updateFeeBoardVisibility();
-    Logger.log('--> validateAllFieldsOnFocusLost');
   }
 
   void clearAmountText() {

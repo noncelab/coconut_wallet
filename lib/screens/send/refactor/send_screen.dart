@@ -15,6 +15,7 @@ import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
@@ -1265,39 +1266,45 @@ class _SendScreenState extends State<SendScreen>
     final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
     final String? scannedData = await CommonBottomSheets.showBottomSheet_100(
         context: context,
-        child: Scaffold(
-            backgroundColor: CoconutColors.black,
-            appBar: CoconutAppBar.build(
-                title: t.send,
-                context: context,
-                actionButtonList: [
-                  IconButton(
-                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
-                        width: 20,
-                        height: 20,
-                        colorFilter: const ColorFilter.mode(
-                          CoconutColors.white,
-                          BlendMode.srcIn,
-                        )),
-                    onPressed: () {
-                      _qrViewController?.flipCamera();
-                    },
-                  ),
-                ],
-                onBackPressed: () {
-                  _disposeQrViewController();
-                  Navigator.of(context).pop<String>('');
-                }),
-            body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)));
+        child: Builder(
+          builder: (sheetContext) => Scaffold(
+              backgroundColor: CoconutColors.black,
+              appBar: CoconutAppBar.build(
+                  title: t.send,
+                  context: sheetContext,
+                  actionButtonList: [
+                    IconButton(
+                      icon: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                          width: 20,
+                          height: 20,
+                          colorFilter: const ColorFilter.mode(
+                            CoconutColors.white,
+                            BlendMode.srcIn,
+                          )),
+                      onPressed: () {
+                        _qrViewController?.flipCamera();
+                      },
+                    ),
+                  ],
+                  onBackPressed: () {
+                    _disposeQrViewController();
+                    Navigator.of(sheetContext).pop<String>('');
+                  }),
+              body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)),
+        ));
+
     if (scannedData != null) {
       if (scannedData.startsWith('bitcoin:')) {
         final bip21Data = parseBip21Uri(scannedData);
         _addressControllerList[index].text = bip21Data.address;
         _viewModel.setAddressText(bip21Data.address, index);
 
-        // amount 파라미터가 있는 경우
         if (bip21Data.amount != null) {
-          _amountController.text = bip21Data.amount.toString();
+          final amountText = _viewModel.isBtcUnit
+              ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!)
+              : bip21Data.amount!.toString();
+          _amountController.text = amountText;
+          _viewModel.setAmountText(bip21Data.amount!.toString(), index);
         }
       } else {
         _addressControllerList[index].text = scannedData;
