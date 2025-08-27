@@ -98,9 +98,13 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         // 시드사이너는 좁은 화면에서 _qrScanDensity slow가 안정적임
         _qrScanDensity = isNarrowScreen ? QrScanDensity.slow : QrScanDensity.fast;
         break;
+
       case WalletImportSource.jade:
         // 제이드는 카메라 성능 최악
         _qrScanDensity = isNarrowScreen ? QrScanDensity.slow : QrScanDensity.normal;
+        break;
+      case WalletImportSource.krux:
+        _qrScanDensity = QrScanDensity.slow;
         break;
       default:
         _qrScanDensity = QrScanDensity.normal;
@@ -466,6 +470,36 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             _em(t.unsigned_tx_qr_screen.guide_coldcard.step1_em),
             TextSpan(text: t.unsigned_tx_qr_screen.guide_coldcard.step1_end),
           ];
+        }
+      case WalletImportSource.krux:
+        {
+          if (isKorean) {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step1} '),
+              _em(t.unsigned_tx_qr_screen.guide_krux.step1_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.select}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step2}'),
+              _em(t.unsigned_tx_qr_screen.guide_krux.step2_em),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.select}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step3}'),
+            ];
+          } else {
+            return [
+              TextSpan(
+                  text:
+                      '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step1}'),
+              TextSpan(text: '${t.unsigned_tx_qr_screen.guide_krux.select} '),
+              _em('${t.unsigned_tx_qr_screen.guide_krux.step1_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step2}'),
+              TextSpan(text: '${t.unsigned_tx_qr_screen.guide_krux.select} '),
+              _em('${t.unsigned_tx_qr_screen.guide_krux.step2_em}\n'),
+              TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step3}'),
+            ];
+          }
         }
       // case WalletImportSource.coconutVault: TODO: 추후 BC_UR QR로 변경합니다.
       default:

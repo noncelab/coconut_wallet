@@ -251,6 +251,31 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ];
           }
         }
+      case WalletImportSource.krux:
+        {
+          const prefix = 't.wallet_add_scanner_screen.guide_krux';
+          if (isKorean) {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
+              _em(t.wallet_add_scanner_screen.guide_krux.step1_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step2),
+              _em(t.wallet_add_scanner_screen.guide_krux.step2_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+            ];
+          } else {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_krux.step1_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_krux.step2_em}'),
+            ];
+          }
+        }
       default:
         return [];
     }
@@ -477,6 +502,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         WalletImportSource.jade => t.wallet_add_scanner_screen.jade,
         WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
         WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
+        WalletImportSource.krux => t.wallet_add_scanner_screen.krux,
         _ => '',
       };
 

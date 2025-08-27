@@ -38,6 +38,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = BcUrQrScanDataHandler();
         break;
       case WalletImportSource.seedSigner:
+      case WalletImportSource.krux:
         _qrDataHandler = DescriptorQrScanDataHandler();
         break;
       case WalletImportSource.coldCard:
@@ -65,13 +66,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         case WalletImportSource.coconutVault:
           return addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
         case WalletImportSource.keystone:
-          return addKeystoneWallet(additionInfo as UR);
         case WalletImportSource.jade:
-          return addJadeWallet(additionInfo as UR);
+          return _addBcUrWallet(_walletImportSource, additionInfo as UR);
         case WalletImportSource.seedSigner:
-          return addSeedSignerWallet(additionInfo as String);
+        case WalletImportSource.krux:
+          return _addDescriptorWallet(_walletImportSource, additionInfo as String);
         case WalletImportSource.coldCard:
-          return addColdCardWallet(additionInfo as Map<String, dynamic>);
+          return _addBbQrWallet(_walletImportSource, additionInfo as Map<String, dynamic>);
         case WalletImportSource.extendedPublicKey:
           throw 'No Support extendedPublicKey';
         default:
@@ -110,24 +111,29 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     }
   }
 
-  Future<ResultOfSyncFromVault> addJadeWallet(UR ur) async {
+  Future<ResultOfSyncFromVault> _addBcUrWallet(WalletImportSource walletImportSource, UR ur) async {
     final name = getNextThirdPartyWalletName(
-        WalletImportSource.jade, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet = _walletAddService.createJadeWallet(ur, name);
+        walletImportSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createWalletFromUR(
+        walletImportSource: walletImportSource, ur: ur, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
-  Future<ResultOfSyncFromVault> addSeedSignerWallet(String descriptor) async {
+  Future<ResultOfSyncFromVault> _addDescriptorWallet(
+      WalletImportSource walletImportSource, String descriptor) async {
     final name = getNextThirdPartyWalletName(
-        WalletImportSource.seedSigner, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet = _walletAddService.createSeedSignerWallet(descriptor, name);
+        walletImportSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createWalletFromDescriptor(
+        walletImportSource: walletImportSource, descriptor: descriptor, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
-  Future<ResultOfSyncFromVault> addColdCardWallet(Map<String, dynamic> json) async {
+  Future<ResultOfSyncFromVault> _addBbQrWallet(
+      WalletImportSource walletImportSource, Map<String, dynamic> json) async {
     final name = getNextThirdPartyWalletName(
-        WalletImportSource.coldCard, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet = _walletAddService.createColdCardWallet(json, name);
+        walletImportSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createBbQrWallet(
+        walletImportSource: walletImportSource, json: json, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
