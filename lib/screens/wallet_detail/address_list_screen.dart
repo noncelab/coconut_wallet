@@ -408,6 +408,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                               onPressed: () {
                                 CommonBottomSheets.showBottomSheet_90(
                                   context: context,
+                                  isAppGuard: false,
                                   child: QrcodeBottomSheet(
                                     qrcodeTopWidget: Text(
                                       addressList[index].derivationPath,

@@ -358,6 +358,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       return;
     }
 
+    if (!mounted) return;
     await CommonBottomSheets.showBottomSheet_90(
       context: context,
       child: CustomLoadingOverlay(
@@ -370,11 +371,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _showExtendedBottomSheet(String extendedPublicKey) {
     CommonBottomSheets.showBottomSheet_90(
-      context: context,
-      child: QrcodeBottomSheet(
-        qrData: extendedPublicKey,
-        title: t.extended_public_key,
-      ),
-    );
+        context: context,
+        child: AppGuard(
+          child: QrcodeBottomSheet(
+            qrData: extendedPublicKey,
+            title: t.extended_public_key,
+          ),
+        ));
   }
 }

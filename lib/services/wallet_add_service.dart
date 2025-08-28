@@ -55,10 +55,12 @@ class WalletAddService {
       final cborBytes = ur.cbor;
       final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
       FileLogger.log(className, methodName, 'cbor.decode completed');
+      print('decodedCbor: $decodedCbor');
       Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
       FileLogger.log(className, methodName, 'decodedCbor converted to cborMap');
       Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
-      FileLogger.log(className, methodName, 'convertKeysToString completed');
+      FileLogger.log(className, methodName, 'convertKeysToString completed $jsonCompatibleMap');
+      print('jsonCompatibleMap: $jsonCompatibleMap');
       final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
       FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');
       return WatchOnlyWallet(
