@@ -53,6 +53,8 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                   children: [
                     Expanded(
                       child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
                         child: Row(
                           children: [
                             AnimatedBalance(
