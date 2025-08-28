@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -74,11 +78,7 @@ class _AppGuardState extends State<AppGuard> {
           });
           _authProvider.checkDeviceBiometrics();
           _priceProvider.initWebSocketService();
-          // 노드 연결이 필요하지 않다면 연결하지 않음
-          // TODO _nodeProvider.hasConnectionError 이 값으로 보장 가능?
-          if (_nodeProvider.hasConnectionError) {
-            _nodeProvider.reconnect();
-          }
+          _handleReconnect();
         }
         break;
       case AppLifecycleState.hidden:
@@ -90,8 +90,7 @@ class _AppGuardState extends State<AppGuard> {
           _isPaused = true;
         });
         _priceProvider.disposeWebSocketService();
-        // 무조건 연결 끊던 것을 주석처리 해놓음
-        // unawaited(_nodeProvider.closeConnection());
+        _handleDisconnect();
         break;
       case AppLifecycleState.inactive:
         setState(() {
@@ -99,6 +98,43 @@ class _AppGuardState extends State<AppGuard> {
         });
         break;
     }
+  }
+
+  void _handleReconnect() {
+    // 1. 이미 초기화되어 있고 연결이 정상인 경우 재연결하지 않음
+    if (_nodeProvider.isInitialized &&
+        !_nodeProvider.hasConnectionError &&
+        _nodeProvider.state.nodeSyncState != NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection is healthy, skipping reconnect');
+      return;
+    }
+
+    // 2. 연결 에러가 있거나 ping이 실패한 경우 재연결
+    if (_nodeProvider.hasConnectionError ||
+        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection issues detected, attempting reconnect');
+      _nodeProvider.reconnect();
+    }
+  }
+
+  void _handleDisconnect() {
+    // 1. 네트워크가 끊어진 경우 연결 해제
+    if (!_connectivityProvider.isNetworkOn) {
+      Logger.log('AppGuard: Network disconnected, closing connection');
+      unawaited(_nodeProvider.closeConnection());
+      return;
+    }
+
+    // 2. 연결 에러가 있거나 ping이 실패한 경우 연결 해제
+    if (_nodeProvider.hasConnectionError ||
+        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection issues detected, closing connection');
+      unawaited(_nodeProvider.closeConnection());
+      return;
+    }
+
+    // 3. 그 외 연결 유지 (ping이 정상적으로 작동 중)
+    Logger.log('AppGuard: Connection is healthy, keeping connection alive');
   }
 
   @override
