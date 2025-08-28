@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -38,12 +39,15 @@ class CopyTextContainer extends StatefulWidget {
 class _CopyTextContainerState extends State<CopyTextContainer> {
   late Color _textColor;
   late Color _buttonColor;
+  late int _prefixLength;
 
   @override
   void initState() {
     super.initState();
     _textColor = CoconutColors.white;
     _buttonColor = CoconutColors.gray800;
+    // 네트워크 타입에 따라 P2WPKH prefix: bc1q(4자리), bcrt1q(6자리)
+    _prefixLength = NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
   }
 
   @override
@@ -99,14 +103,17 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
                 child: widget.isAddress
                     ? Text.rich(TextSpan(children: [
                         TextSpan(
-                            text: widget.text.substring(0, 8),
+                            text: widget.text.substring(0, _prefixLength),
+                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400)),
+                        TextSpan(
+                            text: widget.text.substring(_prefixLength, _prefixLength + 4),
                             style:
                                 CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue)),
                         TextSpan(
-                            text: widget.text.substring(8, widget.text.length - 5),
+                            text: widget.text.substring(_prefixLength + 4, widget.text.length - 4),
                             style: CoconutTypography.body2_14.setColor(CoconutColors.gray400)),
                         TextSpan(
-                            text: widget.text.substring(widget.text.length - 5),
+                            text: widget.text.substring(widget.text.length - 4),
                             style:
                                 CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue)),
                       ]))
