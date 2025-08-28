@@ -1225,7 +1225,7 @@ class _SendScreenState extends State<SendScreen>
                                 _showAddressListBottomSheet(_viewModel.walletItemList[0].id);
                                 return;
                               }
-                              CommonBottomSheets.showDraggableBottomSheetWithAppGuard(
+                              CommonBottomSheets.showDraggableBottomSheet(
                                   context: context,
                                   childBuilder: (scrollController) => SelectWalletBottomSheet(
                                         showOnlyMfpWallets: false,

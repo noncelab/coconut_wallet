@@ -18,6 +18,7 @@ import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// @deprecated
 class SendAmountScreen extends StatefulWidget {
   const SendAmountScreen({
     super.key,

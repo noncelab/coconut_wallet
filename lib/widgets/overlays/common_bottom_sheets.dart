@@ -130,16 +130,23 @@ class CommonBottomSheets {
   }
 
   static Future<T?> showBottomSheet_90<T>(
-      {required BuildContext context, required Widget child}) async {
+      {required BuildContext context, required Widget child, bool isAppGuard = true}) async {
     return showModalBottomSheet<T>(
         context: context,
         builder: (context) {
-          return AppGuard(
-            child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-                child: child),
-          ); // child screen에서 type <T>를 반환하면 반환됩니다.
+          if (isAppGuard) {
+            return AppGuard(
+              child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                  child: child),
+            ); // child screen에서 type <T>를 반환하면 반환됩니다.
+          }
+
+          return ClipRRect(
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+              child: child);
         },
         backgroundColor: CoconutColors.black,
         //isDismissible: false,
@@ -286,6 +293,103 @@ class CommonBottomSheets {
               );
             },
           ),
+        );
+      },
+    );
+  }
+
+  /// ScrollController has to be passed to child when child has a scrollView
+  /// child builder is a builder for making a widget with ScrollController
+  static Future<T?> showDraggableBottomSheet<T>(
+      {required BuildContext context,
+      required Widget Function(ScrollController) childBuilder,
+      double minChildSize = 0.5,
+      double maxChildSize = 0.9}) async {
+    final draggableController = DraggableScrollableController();
+    bool isAnimating = false;
+
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: CoconutColors.gray900,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          controller: draggableController,
+          initialChildSize: minChildSize,
+          minChildSize: minChildSize,
+          maxChildSize: maxChildSize,
+          expand: false,
+          builder: (context, scrollController) {
+            void handleDrag() {
+              if (isAnimating) return;
+              final extent = draggableController.size;
+              final targetExtent = (extent - minChildSize).abs() < (extent - maxChildSize).abs()
+                  ? minChildSize + 0.01
+                  : maxChildSize;
+
+              isAnimating = true;
+              draggableController
+                  .animateTo(
+                targetExtent,
+                duration: const Duration(milliseconds: 50),
+                curve: Curves.easeOut,
+              )
+                  .whenComplete(() {
+                isAnimating = false;
+              });
+            }
+
+            return NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollEndNotification) {
+                  handleDrag();
+                  return true;
+                }
+                return false;
+              },
+              child: Column(
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onVerticalDragUpdate: (details) {
+                      final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                      draggableController.jumpTo(draggableController.size + delta);
+                    },
+                    onVerticalDragEnd: (details) {
+                      handleDrag();
+                    },
+                    onVerticalDragCancel: () {
+                      handleDrag();
+                    },
+                    child: Container(
+                      color: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Center(
+                        child: Container(
+                          width: 55,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: CoconutColors.gray400,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+                      child: Padding(
+                          padding:
+                              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          child: childBuilder(scrollController)),
+                    ),
+                  )
+                ],
+              ),
+            );
+          },
         );
       },
     );

@@ -3,6 +3,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/electrum_server_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -37,6 +39,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   late final ValueChanged<Size> _onDefaultServerButtonSizeChanged;
   Size _defaultServerButtonSize = const Size(0, 0);
 
+  late ElectrumServerViewModel _viewModel;
+
   @override
   void initState() {
     super.initState();
@@ -49,17 +53,15 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     };
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = context.read<ElectrumServerViewModel>();
-
       setState(() {
-        _serverAddressController.text = viewModel.initialServer.host;
-        _portController.text = viewModel.initialServer.port.toString();
-        _currentSslState = viewModel.initialServer.ssl;
+        _serverAddressController.text = _viewModel.initialServer.host;
+        _portController.text = _viewModel.initialServer.port.toString();
+        _currentSslState = _viewModel.initialServer.ssl;
       });
 
       serverAddressFocusNode.addListener(() {
         if (serverAddressFocusNode.hasFocus) {
-          context.read<ElectrumServerViewModel>().setDefaultServerMenuVisible(true);
+          _viewModel.setDefaultServerMenuVisible(true);
         }
       });
     });
@@ -76,33 +78,28 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   void _unFocus() {
     FocusScope.of(context).unfocus();
-    context.read<ElectrumServerViewModel>().setDefaultServerMenuVisible(false);
+    _viewModel.setDefaultServerMenuVisible(false);
     _validInputFormat();
   }
 
   void _validInputFormat() {
-    final viewModel = context.read<ElectrumServerViewModel>();
-    viewModel.validateInputFormat(_serverAddressController.text, _portController.text);
+    _viewModel.validateInputFormat(_serverAddressController.text, _portController.text);
   }
 
   // 서버 입력 변경 감지
   void _onServerInputChanged() {
-    final viewModel = context.read<ElectrumServerViewModel>();
-
     // 서버 정보가 변경되면 waiting 상태로 변경 - 연결 상태 박스 숨김
-    viewModel.setNodeConnectionStatus(NodeConnectionStatus.waiting);
+    _viewModel.setNodeConnectionStatus(NodeConnectionStatus.waiting);
   }
 
   void _onSave() async {
-    final viewModel = context.read<ElectrumServerViewModel>();
-
     final newServer = ElectrumServer.custom(
       _serverAddressController.text,
       int.parse(_portController.text),
       _currentSslState,
     );
 
-    final success = await viewModel.changeServerAndUpdateState(newServer);
+    final success = await _viewModel.changeServerAndUpdateState(newServer);
 
     if (!mounted) return;
 
@@ -114,8 +111,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   void _onReset() async {
-    final viewModel = context.read<ElectrumServerViewModel>();
-    final initialServer = viewModel.initialServer;
+    final initialServer = _viewModel.initialServer;
 
     _onServerInputChanged(); // 상태 변경 감지
 
@@ -126,7 +122,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       _currentSslState = initialServer.ssl;
     });
 
-    final success = await viewModel.changeServerAndUpdateState(initialServer);
+    final success = await _viewModel.changeServerAndUpdateState(initialServer);
 
     if (!mounted) return;
 
@@ -145,85 +141,92 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   /// 초기화 버튼 활성화 조건: 현재 입력된 서버 정보가 초기 서버 정보와 다른지 확인
   bool _isDifferentFromInitialServer() {
-    final viewModel = context.read<ElectrumServerViewModel>();
-    return viewModel.isDifferentFromInitialServer(
+    return _viewModel.isDifferentFromInitialServer(
         _serverAddressController.text, _portController.text, _currentSslState);
   }
 
   /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
   bool _hasActualChanges() {
-    final viewModel = context.read<ElectrumServerViewModel>();
-
     if (_serverAddressController.text.isEmpty ||
         _portController.text.isEmpty ||
-        !viewModel.isValidDomain(_serverAddressController.text) ||
-        !viewModel.isValidPort(_portController.text)) return false;
+        !_viewModel.isValidDomain(_serverAddressController.text) ||
+        !_viewModel.isValidPort(_portController.text)) return false;
 
-    return !viewModel.isSameWithCurrentServer(
+    return !_viewModel.isSameWithCurrentServer(
         _serverAddressController.text, _portController.text, _currentSslState);
   }
 
   @override
   Widget build(BuildContext context) {
-    final canPop = context.select<ElectrumServerViewModel, bool>(
-      (viewModel) => viewModel.nodeConnectionStatus != NodeConnectionStatus.connecting,
-    );
-    return PopScope(
-      canPop: canPop,
-      child: GestureDetector(
-        onTap: () => _unFocus(),
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: CoconutColors.black,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight),
-            child: Selector<ElectrumServerViewModel, NodeConnectionStatus>(
-              selector: (_, viewModel) => viewModel.nodeConnectionStatus,
-              builder: (context, nodeConnectionStatus, _) {
-                return CoconutAppBar.build(
-                  title: t.electrum_server,
-                  context: context,
-                  isLeadingVisible: nodeConnectionStatus != NodeConnectionStatus.connecting,
-                );
-              },
-            ),
-          ),
-          body: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                ),
-                child: Column(
-                  children: [
-                    _buildServerAddressTextField(),
-                    _buildDefaultServerMenu(),
-                    Selector<ElectrumServerViewModel, Tuple2<bool, NodeConnectionStatus>>(
-                        selector: (_, viewModel) => Tuple2(
-                              viewModel.isDefaultServerMenuVisible,
-                              viewModel.nodeConnectionStatus,
-                            ),
-                        builder: (context, data, child) {
-                          final isDefaultServerMenuVisible = data.item1;
-                          final nodeConnectionStatus = data.item2;
-                          return isDefaultServerMenuVisible
-                              ? Container()
-                              : Column(
-                                  children: [
-                                    _buildPortTextField(),
-                                    _buildSslToggle(),
-                                    _buildAlertBox(nodeConnectionStatus),
-                                  ],
-                                );
-                        }),
-                  ],
+    return ChangeNotifierProvider<ElectrumServerViewModel>(
+      create: (_) {
+        _viewModel = ElectrumServerViewModel(
+          Provider.of<NodeProvider>(context, listen: false),
+          Provider.of<PreferenceProvider>(context, listen: false),
+        );
+        return _viewModel;
+      },
+      child: Consumer<ElectrumServerViewModel>(builder: (context, viewModel, child) {
+        final canPop = viewModel.nodeConnectionStatus != NodeConnectionStatus.connecting;
+
+        return PopScope(
+          canPop: canPop,
+          child: GestureDetector(
+            onTap: _unFocus,
+            child: Scaffold(
+              resizeToAvoidBottomInset: false,
+              backgroundColor: CoconutColors.black,
+              appBar: PreferredSize(
+                preferredSize: const Size.fromHeight(kToolbarHeight),
+                child: Selector<ElectrumServerViewModel, NodeConnectionStatus>(
+                  selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+                  builder: (context, nodeConnectionStatus, _) {
+                    return CoconutAppBar.build(
+                      title: t.electrum_server,
+                      context: context,
+                      isLeadingVisible: nodeConnectionStatus != NodeConnectionStatus.connecting,
+                    );
+                  },
                 ),
               ),
-              _buildBottomButtons(),
-            ],
+              body: Stack(
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                    ),
+                    child: Column(
+                      children: [
+                        _buildServerAddressTextField(),
+                        _buildDefaultServerMenu(),
+                        Selector<ElectrumServerViewModel, Tuple2<bool, NodeConnectionStatus>>(
+                            selector: (_, viewModel) => Tuple2(
+                                  viewModel.isDefaultServerMenuVisible,
+                                  viewModel.nodeConnectionStatus,
+                                ),
+                            builder: (context, data, child) {
+                              final isDefaultServerMenuVisible = data.item1;
+                              final nodeConnectionStatus = data.item2;
+                              return isDefaultServerMenuVisible
+                                  ? Container()
+                                  : Column(
+                                      children: [
+                                        _buildPortTextField(),
+                                        _buildSslToggle(),
+                                        _buildAlertBox(nodeConnectionStatus),
+                                      ],
+                                    );
+                            }),
+                      ],
+                    ),
+                  ),
+                  _buildBottomButtons(),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -305,7 +308,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                 text: t.close,
                 textStyle: CoconutTypography.body3_12,
                 onTap: () {
-                  context.read<ElectrumServerViewModel>().setDefaultServerMenuVisible(false);
+                  _viewModel.setDefaultServerMenuVisible(false);
                 },
               )
             ],
@@ -371,8 +374,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                 },
                 onLongPress: _selectedTab == ServerTab.userServer
                     ? () {
-                        final viewModel = context.read<ElectrumServerViewModel>();
-                        final currentServer = viewModel.currentServer;
+                        final currentServer = _viewModel.currentServer;
                         final serverToDelete = serverList[i];
 
                         // 현재 구동 중인 서버인지 확인
@@ -390,9 +392,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                 .delete_server_info_description,
                             onConfirm: () async {
                               final navigator = Navigator.of(context);
-                              await context
-                                  .read<ElectrumServerViewModel>()
-                                  .removeUserServer(serverList[i]);
+                              await _viewModel.removeUserServer(serverList[i]);
                               if (!mounted) return;
                               vibrateLight();
                               navigator.pop();
@@ -538,9 +538,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         focusNode: serverAddressFocusNode,
                         textInputAction: TextInputAction.next,
                         onEditingComplete: () {
-                          context
-                              .read<ElectrumServerViewModel>()
-                              .setDefaultServerMenuVisible(false);
+                          _viewModel.setDefaultServerMenuVisible(false);
                           _validInputFormat();
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             FocusScope.of(context).requestFocus(portFocusNode);
@@ -551,7 +549,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                           horizontal: 16,
                         ),
                         isError: _serverAddressController.text.isNotEmpty &&
-                            context.read<ElectrumServerViewModel>().isServerAddressFormatError,
+                            _viewModel.isServerAddressFormatError,
                         errorText:
                             t.settings_screen.electrum_server.error_msg.invalid_domain_format,
                         textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
@@ -580,12 +578,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         onChanged: (text) {
                           _onServerInputChanged(); // 입력 변경 감지
                           setState(() {
-                            if (context
-                                .read<ElectrumServerViewModel>()
-                                .isServerAddressFormatError) {
-                              context
-                                  .read<ElectrumServerViewModel>()
-                                  .setServerAddressFormatError(false);
+                            if (_viewModel.isServerAddressFormatError) {
+                              _viewModel.setServerAddressFormatError(false);
                             }
                           });
                         },
@@ -651,8 +645,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                         ),
-                        isError: _portController.text.isNotEmpty &&
-                            context.read<ElectrumServerViewModel>().isPortOutOfRangeError,
+                        isError:
+                            _portController.text.isNotEmpty && _viewModel.isPortOutOfRangeError,
                         errorText: t.settings_screen.electrum_server.error_msg.port_out_of_range,
                         textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                         textInputType: TextInputType.number,
@@ -679,8 +673,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                         onChanged: (text) {
                           _onServerInputChanged(); // 입력 변경 감지
                           setState(() {
-                            if (context.read<ElectrumServerViewModel>().isPortOutOfRangeError) {
-                              context.read<ElectrumServerViewModel>().setPortOutOfRangeError(false);
+                            if (_viewModel.isPortOutOfRangeError) {
+                              _viewModel.setPortOutOfRangeError(false);
                             }
                           });
                         },

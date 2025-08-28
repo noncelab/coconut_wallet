@@ -205,7 +205,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
           children: [
             CoconutButton(
               onPressed: () {
-                Navigator.pushNamed(context, "/refactor-utxo-selection", arguments: {
+                Navigator.pushNamed(context, "/utxo-selection", arguments: {
                   "selectedUtxoList": _selectedUtxoList,
                   "walletId": _selectedWalletItem!.id,
                   "currentUnit": widget.currentUnit,
