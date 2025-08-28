@@ -42,6 +42,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
   Size _fixedBottomButtonSize = const Size(0, 0);
 
   final FocusNode _textFieldFocusNode = FocusNode();
+  bool _showFakeBalanceInput = false;
   @override
   void initState() {
     super.initState();
@@ -66,6 +67,12 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
         } else {
           _textEditingController.text = _viewModel.tempFakeBalanceTotalBtc.toString();
         }
+      }
+
+      if (_viewModel.tempIsFakeBalanceActive) {
+        setState(() {
+          _showFakeBalanceInput = true;
+        });
       }
 
       _textFieldFocusNode.addListener(() {
@@ -263,51 +270,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                       ),
                                   ],
                                 ),
-                                AnimatedCrossFade(
-                                  duration: const Duration(milliseconds: 300),
-                                  firstChild: const SizedBox.shrink(),
-                                  secondChild: Column(
-                                    children: [
-                                      Container(
-                                        height: viewModel.tempIsFakeBalanceActive ? null : 0,
-                                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                                        child: CoconutTextField(
-                                          textInputType:
-                                              const TextInputType.numberWithOptions(decimal: true),
-                                          textInputFormatter: [
-                                            FilteringTextInputFormatter.allow(
-                                                RegExp(r'^\d*\.?\d{0,8}')),
-                                          ],
-                                          placeholderText: viewModel.tempFakeBalanceTotalBtc != null
-                                              ? ''
-                                              : t.wallet_home_screen.edit.fake_balance
-                                                  .fake_balance_input_placeholder,
-                                          isLengthVisible: false,
-                                          controller: _textEditingController,
-                                          focusNode: _textFieldFocusNode,
-                                          onChanged: (text) {},
-                                          backgroundColor: CoconutColors.black,
-                                          errorColor: CoconutColors.hotPink,
-                                          placeholderColor: CoconutColors.gray700,
-                                          activeColor: CoconutColors.white,
-                                          cursorColor: CoconutColors.white,
-                                          maxLength: viewModel.maxInputLength,
-                                          errorText: _viewModel.inputError ==
-                                                  FakeBalanceInputError.exceedsTotalSupply
-                                              ? '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_exceeds_error}'
-                                              : '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(viewModel.minimumSatoshi).toStringAsFixed(8), sats: viewModel.walletItemLength)}',
-                                          isError:
-                                              _viewModel.inputError != FakeBalanceInputError.none,
-                                          maxLines: 1,
-                                        ),
-                                      ),
-                                      CoconutLayout.spacing_400h,
-                                    ],
-                                  ),
-                                  crossFadeState: viewModel.tempIsFakeBalanceActive
-                                      ? CrossFadeState.showSecond
-                                      : CrossFadeState.showFirst,
-                                ),
+                                if (_showFakeBalanceInput) _buildDelayedFakeBalanceInput(),
                               ],
                             );
                           },
@@ -592,5 +555,51 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
     }
 
     return '';
+  }
+
+  Widget _buildDelayedFakeBalanceInput() {
+    return Consumer<WalletHomeEditViewModel>(
+      builder: (context, viewModel, child) {
+        return AnimatedCrossFade(
+          duration: const Duration(milliseconds: 300),
+          firstChild: const SizedBox.shrink(),
+          secondChild: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: CoconutTextField(
+                  textInputType: const TextInputType.numberWithOptions(decimal: true),
+                  textInputFormatter: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,8}')),
+                  ],
+                  placeholderText: viewModel.tempFakeBalanceTotalBtc != null
+                      ? ''
+                      : t.wallet_home_screen.edit.fake_balance.fake_balance_input_placeholder,
+                  isLengthVisible: false,
+                  controller: _textEditingController,
+                  focusNode: _textFieldFocusNode,
+                  onChanged: (text) {},
+                  backgroundColor: CoconutColors.black,
+                  errorColor: CoconutColors.hotPink,
+                  placeholderColor: CoconutColors.gray700,
+                  activeColor: CoconutColors.white,
+                  cursorColor: CoconutColors.white,
+                  maxLength: viewModel.maxInputLength,
+                  errorText: _viewModel.inputError == FakeBalanceInputError.exceedsTotalSupply
+                      ? '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_exceeds_error}'
+                      : '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(viewModel.minimumSatoshi).toStringAsFixed(8), sats: viewModel.walletItemLength)}',
+                  isError: _viewModel.inputError != FakeBalanceInputError.none,
+                  maxLines: 1,
+                ),
+              ),
+              CoconutLayout.spacing_400h,
+            ],
+          ),
+          crossFadeState: viewModel.tempIsFakeBalanceActive
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+        );
+      },
+    );
   }
 }
