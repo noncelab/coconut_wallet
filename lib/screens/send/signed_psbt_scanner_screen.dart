@@ -260,10 +260,11 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   List<TextSpan> _getGuideTextSpan() {
     final hardwareWalletWords = _getHardwareWalletWords();
     return [
-      TextSpan(
-        text: '[5] ',
-        style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
-      ),
+      // TODO: third party 추가 시 [5]가 갑자기 나와서 임시 주석 처리
+      // TextSpan(
+      //   text: '[5] ',
+      //   style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+      // ),
       TextSpan(
         text: t.tooltip.scan_signed_psbt.guide(
             by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1]),
@@ -284,6 +285,8 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         return [t.tooltip.scan_signed_psbt.by_seed_signer, t.third_party.seed_signer];
       case WalletImportSource.coldCard:
         return [t.tooltip.scan_signed_psbt.by_coldcard, t.third_party.cold_card];
+      case WalletImportSource.krux:
+        return [t.tooltip.scan_signed_psbt.by_krux, t.third_party.krux];
       default:
         return [t.tooltip.scan_signed_psbt.by_hardware_wallet, t.hardware_wallet];
     }

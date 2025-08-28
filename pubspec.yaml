@@ -257,6 +257,7 @@ flutter:
     - assets/svg/jade.svg
     - assets/svg/keystone.svg
     - assets/svg/cold-card.svg
+    - assets/svg/krux.svg
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg

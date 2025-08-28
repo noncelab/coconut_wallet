@@ -35,6 +35,7 @@ enum WalletImportSource {
   jade,
   seedSigner,
   coldCard,
+  krux,
   extendedPublicKey,
 }
 

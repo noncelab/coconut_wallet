@@ -23,9 +23,12 @@ class WalletAddService {
     return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.jade);
   }
 
-  WatchOnlyWallet createColdCardWallet(Map<String, dynamic> json, String name) {
-    return createWalletFromJson(
-        json: json, name: name, walletImportSource: WalletImportSource.coldCard);
+  WatchOnlyWallet createBbQrWallet({
+    required Map<String, dynamic> json,
+    required String name,
+    required WalletImportSource walletImportSource,
+  }) {
+    return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
   }
 
   WatchOnlyWallet createExtendedPublicKeyWallet(
