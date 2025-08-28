@@ -34,7 +34,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   late SignedPsbtScannerViewModel _viewModel;
   late IQrScanDataHandler _qrScanDataHandler;
   bool _isHandlerInitialized = false;
-  int _qrScannerKey = 0; // QR 스캐너 재생성을 위한 key
+  final int _qrScannerKey = 0; // QR 스캐너 재생성을 위한 key
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +249,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(
           text: TextSpan(
-            style: CoconutTypography.body3_12,
+            style: CoconutTypography.body2_14,
             children: _getGuideTextSpan(),
           ),
         ),

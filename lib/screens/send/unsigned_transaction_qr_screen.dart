@@ -128,66 +128,67 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       backgroundColor: CoconutColors.black,
       appBar: CoconutAppBar.build(
           title: (_isDonation ?? false) ? t.donation.donate : t.send, context: context),
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                padding: Paddings.container,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SafeArea(
+              child: SingleChildScrollView(
+                child: Container(
+                  width: MediaQuery.of(context).size.width,
+                  padding: Paddings.container,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(
                           top: 8,
-                          left: CoconutLayout.defaultPadding,
-                          right: CoconutLayout.defaultPadding),
-                      child: _buildToolTip(),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.only(top: 40),
-                      // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
-                      // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 16,
+                        ),
+                        child: _buildToolTip(),
                       ),
-                      decoration: BoxDecoration(
-                          color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
-                      child: Center(
-                        child: _isBbQrType() && _bbqrParts.isNotEmpty
-                            ? QrImageView(
-                                data: _bbqrParts[_currentBbqrIndex],
-                                version: QrVersions.auto,
-                              )
-                            : AnimatedQrView(
-                                key: ValueKey(_qrScanDensity),
-                                qrScanDensity: _qrScanDensity,
-                                qrViewDataHandler: BcUrQrViewHandler(
-                                    _psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
-                              ),
+                      Container(
+                        margin: const EdgeInsets.only(top: 40),
+                        // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
+                        // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 16,
+                        ),
+                        decoration: BoxDecoration(
+                            color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
+                        child: Center(
+                          child: _isBbQrType() && _bbqrParts.isNotEmpty
+                              ? QrImageView(
+                                  data: _bbqrParts[_currentBbqrIndex],
+                                  version: QrVersions.auto,
+                                )
+                              : AnimatedQrView(
+                                  key: ValueKey(_qrScanDensity),
+                                  qrScanDensity: _qrScanDensity,
+                                  qrViewDataHandler: BcUrQrViewHandler(
+                                      _psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
+                                ),
+                        ),
                       ),
-                    ),
-                    if (!_isBbQrType()) ...[
-                      CoconutLayout.spacing_800h,
-                      _buildDensitySliderWidget(context),
-                    ]
-                  ],
+                      if (!_isBbQrType()) ...[
+                        CoconutLayout.spacing_800h,
+                        _buildDensitySliderWidget(context),
+                      ]
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          FixedBottomButton(
-            onButtonClicked: () {
-              Navigator.pushNamed(context, '/signed-psbt-scanner');
-            },
-            text: t.next,
-            backgroundColor: CoconutColors.gray100,
-            pressedBackgroundColor: CoconutColors.gray500,
-          ),
-        ],
+            FixedBottomButton(
+              onButtonClicked: () {
+                Navigator.pushNamed(context, '/signed-psbt-scanner');
+              },
+              text: t.next,
+              backgroundColor: CoconutColors.gray100,
+              pressedBackgroundColor: CoconutColors.gray500,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -306,7 +307,9 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(
           text: TextSpan(
-            style: CoconutTypography.body3_12,
+            style: CoconutTypography.body2_14.copyWith(
+              height: 1,
+            ),
             children: _getGuideTextSpan(),
           ),
         ),
@@ -341,7 +344,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                style: CoconutTypography.body2_14.copyWith(height: 1.4),
+                style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
             ];
           } else {
