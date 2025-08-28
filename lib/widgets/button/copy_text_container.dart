@@ -17,6 +17,7 @@ class CopyTextContainer extends StatefulWidget {
   final TextAlign? textAlign;
   final TextStyle? textStyle;
   final bool showButton;
+  final bool isAddress;
 
   const CopyTextContainer(
       {super.key,
@@ -25,7 +26,8 @@ class CopyTextContainer extends StatefulWidget {
       this.middleText,
       this.textAlign,
       this.textStyle,
-      this.showButton = true});
+      this.showButton = true,
+      this.isAddress = false});
 
   static const MethodChannel _channel = MethodChannel(methodChannelOS);
 
@@ -94,13 +96,26 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                widget.text,
-                textAlign: widget.textAlign ?? TextAlign.start,
-                style: widget.textStyle?.setColor(_textColor) ??
-                    CoconutTypography.body1_16_Number.setColor(_textColor),
-              ),
-            ),
+                child: widget.isAddress
+                    ? Text.rich(TextSpan(children: [
+                        TextSpan(
+                            text: widget.text.substring(0, 8),
+                            style:
+                                CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue)),
+                        TextSpan(
+                            text: widget.text.substring(8, widget.text.length - 5),
+                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400)),
+                        TextSpan(
+                            text: widget.text.substring(widget.text.length - 5),
+                            style:
+                                CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue)),
+                      ]))
+                    : Text(
+                        widget.text,
+                        textAlign: widget.textAlign ?? TextAlign.start,
+                        style: widget.textStyle?.setColor(_textColor) ??
+                            CoconutTypography.body1_16_Number.setColor(_textColor),
+                      )),
             CoconutLayout.spacing_400w,
             if (widget.middleText != null) ...[
               Text(
