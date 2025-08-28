@@ -139,6 +139,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                           ),
                         ),
                         qrData: receiveAddress,
+                        isAddress: true,
                       )
                     ],
                   ),

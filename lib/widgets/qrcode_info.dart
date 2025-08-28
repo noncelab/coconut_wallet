@@ -6,8 +6,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 class QrCodeInfo extends StatefulWidget {
   final String qrData;
   final Widget? qrcodeTopWidget;
+  final bool isAddress;
 
-  const QrCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget});
+  const QrCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget, this.isAddress = false});
 
   @override
   State<QrCodeInfo> createState() => _QrCodeInfoState();
@@ -48,6 +49,7 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
             CopyTextContainer(
               text: widget.qrData,
               textStyle: CoconutTypography.body2_14,
+              isAddress: widget.isAddress,
             ),
           ],
         ));
