@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -10,6 +11,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +25,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   WalletProvider _walletProvider;
   final Stream<NodeSyncState> _syncNodeStateStream;
+  final Stream<BlockTimestamp?> _currentBlockStream;
   late final PreferenceProvider _preferenceProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
@@ -36,6 +39,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isEmptyFavoriteWallet = false; // 즐겨찾기 설정된 지갑이 없는지 여부
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
+  StreamSubscription<BlockTimestamp?>? _currentBlockSubscription;
   List<WalletListItemBase> _favoriteWallets = [];
   final List<HomeFeature> _homeFeatures = [];
 
@@ -44,21 +48,30 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   late WalletAddress _receiveAddress;
 
-  WalletHomeViewModel(
-    this._walletProvider,
-    this._preferenceProvider,
-    this._visibilityProvider,
-    this._connectivityProvider,
-    this._syncNodeStateStream,
-  ) {
+  // 현재 블록 높이 상태
+  BlockTimestamp? _currentBlock;
+
+  BlockTimestamp? get currentBlock => _currentBlock;
+  int? get currentBlockHeight => _currentBlock?.height;
+
+  bool _isFetchingLatestTx = false;
+  bool _isLatestTxAnalysisRunning = false;
+
+  Map<int, List<TransactionRecord>> _recentTransactions = {};
+  Map<int, List<TransactionRecord>> get recentTransactions => _recentTransactions;
+
+  WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._visibilityProvider,
+      this._connectivityProvider, this._syncNodeStateStream, this._currentBlockStream) {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
+    _currentBlockSubscription = _currentBlockStream.listen(_handleCurrentBlockUpdate);
+
     _walletBalance = _walletProvider
         .fetchWalletBalanceMap()
         .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
-    _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
+    _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalancesAndRecentTxs);
 
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
@@ -108,7 +121,7 @@ class WalletHomeViewModel extends ChangeNotifier {
           _isFirstLoaded = true;
           vibrateLight();
         }
-        updateWalletBalances();
+        updateWalletBalancesAndRecentTxs();
       } else if (syncState == NodeSyncState.failed) {
         vibrateLightDouble();
       }
@@ -122,15 +135,27 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
   }
 
+  void _handleCurrentBlockUpdate(BlockTimestamp? currentBlock) {
+    _currentBlock = currentBlock;
+    Logger.log('WalletHomeViewModel: 현재 블록 높이 업데이트 - ${currentBlock?.height}');
+    // latest tx 조회 및 analysis 수행
+    getPendingAndRecent7DaysTransactions(currentBlock?.height);
+    notifyListeners();
+  }
+
   void hideTermsShortcut() {
     _isTermsShortcutVisible = false;
     _visibilityProvider.hideTermsShortcut();
     notifyListeners();
   }
 
-  Future<void> updateWalletBalances() async {
+  Future<void> updateWalletBalancesAndRecentTxs() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
+
+    /// 임의로 여기서 호출
+    getPendingAndRecent7DaysTransactions(currentBlock?.height);
+    getRecentTransactionAnalysis(30);
     notifyListeners();
   }
 
@@ -276,8 +301,77 @@ class WalletHomeViewModel extends ChangeNotifier {
     Logger.log('--> 리시브주소: ${_receiveAddress.address}');
   }
 
+  // 필요한 경우 호출
+  void getPendingAndRecent7DaysTransactions(int? blockHeight) {
+    if (blockHeight == null || _isFetchingLatestTx) return;
+
+    // 홈 화면에 표시한 지갑 목록 아이디
+    _isFetchingLatestTx = true;
+
+    final walletIds = walletItemList.map((w) => w.id).toList();
+    final transactions = _walletProvider.getPendingAnd7DaysAgoTransactions(walletIds, blockHeight);
+    _recentTransactions = transactions;
+
+    // recentTransactions 로그 출력
+    for (var entry in _recentTransactions.entries) {
+      Logger.log('WalletHomeViewModel: 지갑 ID ${entry.key} - 트랜잭션 개수: ${entry.value.length}');
+      // 개별 트랜잭션의 해시와 value 출력
+      for (var tx in entry.value) {
+        Logger.log(
+            '\tTxHash: ${tx.transactionHash}, Type: ${tx.transactionType.name}, Amount: ${tx.amount}');
+      }
+    }
+
+    _isFetchingLatestTx = false;
+  }
+
+  // 필요한 경우 호출
+  void getRecentTransactionAnalysis(int days) {
+    if (_isLatestTxAnalysisRunning) return;
+
+    _isLatestTxAnalysisRunning = true;
+    // 최근 n days 동안의 트랜잭션을 분석한 결과
+    // 조회 기간 내 트랜잭션 개수
+    // 조회 기간 내 트랜잭션의 받은 총 금액
+    // 조회 기간 내 트랜잭션의 보낸 총 금액
+    final walletIds = walletItemList.map((w) => w.id).toList();
+
+    if (currentBlock?.height == null) return;
+    final currentBlockHeight = currentBlock!.height;
+
+    final transactions = _walletProvider.getConfirmedTransactionRecordListWithin(
+        walletIds, currentBlockHeight, days);
+
+    final receivedTxs =
+        transactions.where((t) => t.transactionType == TransactionType.received).toList();
+    final sentTxs = transactions.where((t) => t.transactionType == TransactionType.sent).toList();
+    final selfTxs = transactions.where((t) => t.transactionType == TransactionType.self).toList();
+
+    final receivedAmount = receivedTxs.fold(0, (sum, t) => sum + t.amount);
+    final sentAmount = sentTxs.fold(0, (sum, t) => sum + t.amount);
+    final selfAmount = selfTxs.fold(0, (sum, t) => sum + t.amount);
+
+    final totalAmount = receivedAmount + sentAmount + selfAmount;
+    final totalTransactionCount = receivedTxs.length + sentTxs.length + selfTxs.length;
+
+    Logger.log('WalletHomeViewModel: 최근 $days일 동안의 트랜잭션 분석 결과');
+    Logger.log('WalletHomeViewModel: ${totalAmount.abs()}${totalAmount > 0 ? ' 증가했어요' : ' 감소했어요'}');
+    // UTC 기간 출력 : 30일 전 - 오늘 yy.mm.dd 형식으로 출력
+    final startDate = DateTime.now().subtract(Duration(days: days)).toUtc();
+    final endDate = DateTime.now().toUtc();
+
+    Logger.log(
+        'WalletHomeViewModel: 기간: ${startDate.toLocal().toString().split(' ')[0]} ~ ${endDate.toLocal().toString().split(' ')[0]} | 트랜잭션 $totalTransactionCount 회');
+    Logger.log('WalletHomeViewModel: ⬇️ Received: ${receivedTxs.length}회 $receivedAmount ');
+    Logger.log('WalletHomeViewModel: ⬆️ Sent: ${sentTxs.length}회 $sentAmount ');
+    Logger.log('WalletHomeViewModel: 🔄 Self: ${selfTxs.length}회 $selfAmount ');
+
+    _isLatestTxAnalysisRunning = false;
+  }
+
   @override
   void dispose() {
+    _currentBlockSubscription?.cancel();
     _syncNodeStateSubscription?.cancel();
     super.dispose();
   }

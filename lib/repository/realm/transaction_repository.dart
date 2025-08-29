@@ -66,6 +66,19 @@ class TransactionRepository extends BaseRepository {
     ).toList();
   }
 
+  List<TransactionRecord> getTransactionRecordListAfterBlockHeight(int walletId, int blockHeight) {
+    final realmTxs = realm.query<RealmTransaction>(
+        'walletId == $walletId AND blockHeight >= $blockHeight SORT(createdAt DESC)');
+    if (realmTxs.isEmpty) return [];
+    List<TransactionRecord> result = [];
+
+    for (var t in realmTxs) {
+      result.add(mapRealmTransactionToTransaction(t));
+    }
+
+    return result;
+  }
+
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
   Result<TransactionRecord> updateTransactionMemo(int walletId, String txHash, String memo) {
     final realmMemo = realm.find<RealmTransactionMemo>(getTransactionMemoId(txHash, walletId));

@@ -145,7 +145,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         _buildAppBar(viewModel),
                         // pull to refresh시 로딩 인디케이터를 보이기 위함
                         CupertinoSliverRefreshControl(
-                          onRefresh: viewModel.updateWalletBalances,
+                          onRefresh: viewModel.updateWalletBalancesAndRecentTxs,
                         ),
                         _buildLoadingIndicator(viewModel),
                         _buildHeader(isBalanceHidden, viewModel.getFakeTotalBalance(),
@@ -183,7 +183,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           if (homeFeatures.isNotEmpty) ...[
                             buildFeatureSectionIfEnabled(
                               HomeFeatureType.recentTransaction,
-                              _buildRecentTransaction,
+                              _buildRecentTransactions,
                             ),
                             buildFeatureSectionIfEnabled(
                               HomeFeatureType.analysis,
@@ -283,6 +283,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false).syncStateStream,
+      Provider.of<NodeProvider>(context, listen: false).currentBlockStream,
     );
     return _viewModel;
   }
@@ -334,7 +335,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       _previousWalletList = List.from(walletList);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _viewModel.updateWalletBalances();
+        _viewModel.updateWalletBalancesAndRecentTxs();
       });
     } finally {
       _isWalletListLoading = false;
@@ -941,7 +942,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return SliverToBoxAdapter(child: Container());
   }
 
-  Widget _buildRecentTransaction() {
+  Widget _buildRecentTransactions() {
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.only(top: 12, left: 20, right: 20),

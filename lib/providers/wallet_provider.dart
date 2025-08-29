@@ -16,6 +16,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -42,6 +43,7 @@ class WalletProvider extends ChangeNotifier {
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
+  late final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier;
 
   void _setWalletItemList(List<WalletListItemBase> value) {
     _walletItemList = value;
@@ -59,6 +61,7 @@ class WalletProvider extends ChangeNotifier {
     // ValueNotifier들 초기화
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
+    currentBlockHeightNotifier = ValueNotifier(null);
 
     _loadWalletListFromDB().then((_) {
       _preferenceProvider.setWalletPreferences(walletItemList); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
@@ -348,6 +351,42 @@ class WalletProvider extends ChangeNotifier {
     return _transactionRepository.getTransactionRecordList(walletId);
   }
 
+  Map<int, List<TransactionRecord>> getPendingAnd7DaysAgoTransactions(
+      List<int> walletIds, int currentBlockHeight) {
+    Map<int, List<TransactionRecord>> result = {};
+    // 7일 전 블록 높이 (1008 blocks = 6 block/h * 24h * 7d)
+    final blockHeight = currentBlockHeight - 1008 > 0 ? currentBlockHeight - 1008 : 0;
+    for (int walletId in walletIds) {
+      final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
+      // 현재 트랜잭션 기준 7일 내 트랜잭션 조회
+      final recentTxs =
+          _transactionRepository.getTransactionRecordListAfterBlockHeight(walletId, blockHeight);
+
+      if (pendingTxs.isNotEmpty || recentTxs.isNotEmpty) {
+        result.addAll({
+          walletId: [...pendingTxs, ...recentTxs]
+        });
+      }
+    }
+
+    return result;
+  }
+
+  List<TransactionRecord> getConfirmedTransactionRecordListWithin(
+      List<int> walletIds, int currentBlockHeight, int daysAgo) {
+    final startBlockHeight =
+        currentBlockHeight - 6 * 24 * daysAgo > 0 ? currentBlockHeight - 6 * 24 * daysAgo : 0;
+
+    List<TransactionRecord> result = [];
+    for (int walletId in walletIds) {
+      final transactions = _transactionRepository.getTransactionRecordListAfterBlockHeight(
+          walletId, startBlockHeight);
+      result.addAll(transactions);
+    }
+
+    return result;
+  }
+
   UtxoState? getUtxoState(int walletId, String utxoId) {
     return _utxoRepository.getUtxoState(walletId, utxoId);
   }
@@ -376,11 +415,16 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
+  void setCurrentBlockHeight(BlockTimestamp? blockHeight) {
+    currentBlockHeightNotifier.value = blockHeight;
+  }
+
   @override
   void dispose() {
     // ValueNotifier들 해제
     walletLoadStateNotifier.dispose();
     walletItemListNotifier.dispose();
+    currentBlockHeightNotifier.dispose();
     super.dispose();
   }
 }
