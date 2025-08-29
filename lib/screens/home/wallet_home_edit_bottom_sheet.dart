@@ -43,6 +43,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
 
   final FocusNode _textFieldFocusNode = FocusNode();
   bool _showFakeBalanceInput = false;
+  bool _isRenderComplete = false;
   @override
   void initState() {
     super.initState();
@@ -115,6 +116,10 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
           }
         });
       });
+
+      setState(() {
+        _isRenderComplete = true;
+      });
     });
   }
 
@@ -131,6 +136,18 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
       context.read<PreferenceProvider>(),
     );
     return _viewModel;
+  }
+
+  void _onFakeBalanceToggleChanged(bool value) {
+    if (value) {
+      setState(() {
+        _showFakeBalanceInput = true;
+      });
+    } else {
+      setState(() {
+        _showFakeBalanceInput = false;
+      });
+    }
   }
 
   @override
@@ -246,8 +263,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                         subtitleStyle: CoconutTypography.body3_12.setColor(
                                           CoconutColors.gray400,
                                         ),
-                                        customPadding: EdgeInsets.fromLTRB(
-                                            20, 0, 20, _showFakeBalanceInput ? 12 : 24),
+                                        customPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                                         betweenGap: 16,
                                         onPressed: () async {
                                           if (_textFieldFocusNode.hasFocus) {
@@ -257,6 +273,8 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
 
                                           viewModel.setTempFakeBalanceActive(
                                               !viewModel.tempIsFakeBalanceActive);
+                                          _onFakeBalanceToggleChanged(
+                                              viewModel.tempIsFakeBalanceActive);
                                         },
                                         backgroundColor: Colors.transparent,
                                         rightElement: CoconutSwitch(
@@ -267,12 +285,13 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                           thumbColor: CoconutColors.gray800,
                                           onChanged: (value) {
                                             viewModel.setTempFakeBalanceActive(value);
+                                            _onFakeBalanceToggleChanged(value);
                                           },
                                         ),
                                       ),
                                   ],
                                 ),
-                                if (_showFakeBalanceInput) _buildDelayedFakeBalanceInput(),
+                                _buildDelayedFakeBalanceInput(),
                               ],
                             );
                           },
@@ -369,7 +388,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
           .replaceFirst(RegExp(r'\.?0*$'), '');
       final isTextChanged = text != expectedText;
       // 가짜 잔액 표시가 활성화 되더라도 입력값이 없으면 변동되지 않음
-      if (!isTextChanged) return false;
+      if (!isTextChanged) return isToggleChanged;
 
       final parsed = double.tryParse(text);
       if (parsed != 0 && _viewModel.inputError != FakeBalanceInputError.none) return false;
@@ -562,12 +581,16 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
   Widget _buildDelayedFakeBalanceInput() {
     return Consumer<WalletHomeEditViewModel>(
       builder: (context, viewModel, child) {
+        if (!_isRenderComplete) {
+          return const SizedBox(height: 12);
+        }
         return AnimatedCrossFade(
           duration: const Duration(milliseconds: 300),
-          firstChild: const SizedBox.shrink(),
+          firstChild: SizedBox(height: viewModel.tempIsBalanceHidden ? 12 : 0),
           secondChild: Column(
             children: [
               Container(
+                height: viewModel.tempIsFakeBalanceActive ? null : 0,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CoconutTextField(
                   textInputType: const TextInputType.numberWithOptions(decimal: true),
