@@ -48,6 +48,7 @@ class SingleButton extends StatelessWidget {
   final TextStyle? subtitleStyle;
   final Color? backgroundColor;
   final double? betweenGap;
+  final EdgeInsets? customPadding;
 
   const SingleButton({
     super.key,
@@ -61,6 +62,7 @@ class SingleButton extends StatelessWidget {
     this.subtitleStyle = CoconutTypography.body3_12,
     this.backgroundColor = CoconutColors.gray800,
     this.betweenGap = 0,
+    this.customPadding,
   });
 
   @override
@@ -72,7 +74,7 @@ class SingleButton extends StatelessWidget {
             color: backgroundColor,
             borderRadius: buttonPosition.radius,
           ),
-          padding: buttonPosition.padding,
+          padding: getPadding(),
           child: Row(
             children: [
               if (leftElement != null) ...{
@@ -95,6 +97,11 @@ class SingleButton extends StatelessWidget {
             ],
           ),
         ));
+  }
+
+  /// padding을 계산하는 메서드 - 하위 클래스에서 오버라이드 가능
+  EdgeInsets getPadding() {
+    return customPadding ?? buttonPosition.padding;
   }
 
   Widget _rightArrow() =>

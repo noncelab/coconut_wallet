@@ -246,6 +246,8 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                         subtitleStyle: CoconutTypography.body3_12.setColor(
                                           CoconutColors.gray400,
                                         ),
+                                        customPadding: EdgeInsets.fromLTRB(
+                                            20, 0, 20, _showFakeBalanceInput ? 12 : 24),
                                         betweenGap: 16,
                                         onPressed: () async {
                                           if (_textFieldFocusNode.hasFocus) {
@@ -456,7 +458,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet>
                                         child: Text(
                                           _getHomeFeatureLabel(
                                               widget['homeFeatureTypeString'].toString()),
-                                          style: CoconutTypography.body3_12
+                                          style: CoconutTypography.body2_14
                                               .setColor(CoconutColors.white),
                                         ),
                                       ),
