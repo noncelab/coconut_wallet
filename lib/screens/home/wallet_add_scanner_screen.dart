@@ -460,8 +460,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 50,
           ),
+          leftButtonText: t.cancel,
+          leftButtonColor: CoconutColors.black.withOpacity(0.7),
+          rightButtonText: t.confirm,
           rightButtonColor: CoconutColors.white,
-          rightButtonTextStyle: CoconutTypography.body2_14,
           onTapRight: () {
             _isProcessing = false;
             Navigator.pop(context);
