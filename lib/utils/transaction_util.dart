@@ -169,7 +169,6 @@ class TransactionUtil {
           description: t.transaction_fee_bumping_screen.dialog.confirmed_alert_description,
           backgroundColor: CoconutColors.gray800,
           rightButtonText: t.view_tx_details,
-          rightButtonTextStyle: CoconutTypography.body1_16,
           rightButtonColor: CoconutColors.white,
           onTapRight: () {
             Navigator.popUntil(context, (route) {
