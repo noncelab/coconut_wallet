@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
@@ -182,43 +183,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  // Positioned _buildOfflineWarningBar(BuildContext context, bool isOffline) {
-  //   return Positioned(
-  //     top: MediaQuery.of(context).padding.top,
-  //     left: 0,
-  //     right: 0,
-  //     child: AnimatedContainer(
-  //       duration: kOfflineWarningBarDuration,
-  //       curve: Curves.easeOut,
-  //       height: isOffline ? kOfflineWarningBarHeight : 0.0,
-  //       width: double.infinity,
-  //       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-  //       color: CoconutColors.hotPink,
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           SvgPicture.asset('assets/svg/triangle-warning.svg'),
-  //           CoconutLayout.spacing_100w,
-  //           Text(
-  //             t.errors.network_not_found,
-  //             style: CoconutTypography.body3_12,
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildPadding(bool isOffline) {
-  //   const kDefaultPadding = Sizes.size12;
-  //   return SliverToBoxAdapter(
-  //       child: AnimatedContainer(
-  //           duration: kOfflineWarningBarDuration,
-  //           height: isOffline ? kOfflineWarningBarHeight + kDefaultPadding : kDefaultPadding,
-  //           curve: Curves.easeInOut,
-  //           child: const SizedBox()));
-  // }
-
   @override
   void initState() {
     super.initState();
@@ -239,6 +203,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       Provider.of<AuthProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
+      Provider.of<PriceProvider>(context, listen: false),
     );
     return _viewModel;
   }
@@ -369,6 +334,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                       ),
                     ],
                   ),
+                  // 전체 총액 - Fiat Price
+                  Text(_viewModel.getBitcoinPrice(totalBalance),
+                      style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500)),
 
                   // 홈 화면 총액 (애니메이션)
                   AnimatedSwitcher(
@@ -413,24 +381,34 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     required int amount,
     required bool isBtcUnit,
   }) {
-    return Row(
+    return Column(
       children: [
-        Text(
-          label,
-          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+        Row(
+          children: [
+            Text(
+              label,
+              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+            ),
+            const Spacer(),
+            Text(
+              isBtcUnit
+                  ? BitcoinUnit.btc.displayBitcoinAmount(amount)
+                  : BitcoinUnit.sats.displayBitcoinAmount(amount),
+              style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+            ),
+            CoconutLayout.spacing_100w,
+            Text(
+              isBtcUnit ? t.btc : t.sats,
+              style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+            ),
+          ],
         ),
-        const Spacer(),
-        Text(
-          isBtcUnit
-              ? BitcoinUnit.btc.displayBitcoinAmount(amount)
-              : BitcoinUnit.sats.displayBitcoinAmount(amount),
-          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
-        ),
-        CoconutLayout.spacing_100w,
-        Text(
-          isBtcUnit ? t.btc : t.sats,
-          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
-        ),
+        // Fiat price
+        Row(children: [
+          const Spacer(),
+          Text(_viewModel.getBitcoinPrice(amount),
+              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500))
+        ]),
       ],
     );
   }

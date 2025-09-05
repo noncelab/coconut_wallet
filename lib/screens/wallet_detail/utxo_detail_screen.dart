@@ -210,11 +210,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         UtxoLockToggleButton(
                           isLocked: utxoStatus == UtxoStatus.locked,
                           onPressed: () async {
-                            Logger.log('>> toggleUtxoLockStatus');
                             final viewModel = context.read<UtxoDetailViewModel>();
                             final result = await viewModel.toggleUtxoLockStatus();
                             if (mounted && !result) {
-                              debugPrint('utxoStatue : $utxoStatus');
                               CoconutToast.showWarningToast(
                                 context: context,
                                 text: utxoStatus == UtxoStatus.locked
@@ -337,17 +335,19 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Padding(
         padding: const EdgeInsets.only(bottom: 2.0),
         child: Center(
-            child: RichText(
-                text: TextSpan(
-                    text: _currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                    style: CoconutTypography.heading2_28_NumberBold,
-                    children: <InlineSpan>[
-              WidgetSpan(
-                  alignment: PlaceholderAlignment.baseline,
-                  baseline: TextBaseline.alphabetic,
-                  child:
-                      Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number))
-            ]))),
+          child: FittedBox(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _currentUnit.displayBitcoinAmount(widget.utxo.amount),
+                  style: CoconutTypography.heading2_28_NumberBold,
+                ),
+                Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number)
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

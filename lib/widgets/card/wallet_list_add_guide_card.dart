@@ -30,17 +30,22 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
           painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0),
           child: Container(
             width: MediaQuery.sizeOf(context).width,
-            padding: const EdgeInsets.symmetric(vertical: 42),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset('assets/svg/wallet-eyes.svg'),
-                CoconutLayout.spacing_100w,
-                Text(
-                  t.wallet_list_add_guide_card.add_watch_only,
-                  style: CoconutTypography.body2_14,
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(
+              vertical: 42,
+            ),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture.asset('assets/svg/wallet-eyes.svg'),
+                  CoconutLayout.spacing_100w,
+                  Text(
+                    t.wallet_list_add_guide_card.add_watch_only,
+                    style: CoconutTypography.body2_14,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

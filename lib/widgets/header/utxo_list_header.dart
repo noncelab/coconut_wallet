@@ -49,6 +49,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
               padding: const EdgeInsets.only(
                 left: 20,
                 top: 28,
+                right: 20,
               ),
               width: MediaQuery.sizeOf(context).width,
               child: Column(
@@ -66,17 +67,21 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       children: [
                         IntrinsicWidth(
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Expanded(
-                                child: Row(
-                                  children: [
-                                    AnimatedBalance(
-                                        prevValue: widget.animatedBalanceData.previous,
-                                        value: widget.animatedBalanceData.current,
-                                        currentUnit: widget.currentUnit,
-                                        textStyle: CoconutTypography.heading1_32_NumberBold),
-                                  ],
+                                child: FittedBox(
+                                  alignment: Alignment.centerLeft,
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    children: [
+                                      AnimatedBalance(
+                                          prevValue: widget.animatedBalanceData.previous,
+                                          value: widget.animatedBalanceData.current,
+                                          currentUnit: widget.currentUnit,
+                                          textStyle: CoconutTypography.heading1_32_NumberBold),
+                                    ],
+                                  ),
                                 ),
                               ),
                               CoconutLayout.spacing_200w,
@@ -116,7 +121,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                       ),
                       CupertinoButton(
                         key: widget.dropdownGlobalKey,
-                        padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 26),
+                        padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 0),
                         minSize: 0,
                         onPressed: () {
                           if (!widget.isLoadComplete) return;

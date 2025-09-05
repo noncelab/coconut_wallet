@@ -31,6 +31,7 @@ import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart'
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
+import 'package:coconut_wallet/screens/settings/log_viewer_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
@@ -39,7 +40,6 @@ import 'package:coconut_wallet/screens/send/broadcasting_screen.dart';
 import 'package:coconut_wallet/screens/send/send_address_screen.dart';
 import 'package:coconut_wallet/screens/send/send_confirm_screen.dart';
 import 'package:coconut_wallet/screens/send/send_fee_selection_screen.dart';
-import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
@@ -330,9 +330,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   ),
               '/send-amount': (context) => const SendAmountScreen(),
               '/fee-selection': (context) => const SendFeeSelectionScreen(),
-              '/utxo-selection': (context) => const CustomLoadingOverlay(
-                    child: SendUtxoSelectionScreen(),
-                  ),
               '/refactor-utxo-selection': (context) => CustomLoadingOverlay(
                     child: buildScreenWithArguments(
                       context,
@@ -385,6 +382,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         Provider.of<PreferenceProvider>(context, listen: false)),
                     child: const ElectrumServerScreen(),
                   ),
+              '/log-viewer': (context) => const LogViewerScreen(),
             },
           ),
         ));

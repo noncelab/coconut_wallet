@@ -63,11 +63,14 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
           ),
         ),
         child: Center(
-          child: Text(
-            t.change_color,
-            style: CoconutTypography.caption_10
-                .setColor(CoconutColors.white)
-                .copyWith(decoration: TextDecoration.underline),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              t.change_color,
+              style: CoconutTypography.caption_10
+                  .setColor(CoconutColors.white)
+                  .copyWith(decoration: TextDecoration.underline),
+            ),
           ),
         ),
       ),

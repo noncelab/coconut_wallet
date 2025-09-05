@@ -15,7 +15,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/send/send_utxo_selection_screen.dart';
+import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -162,6 +162,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   bool _isFeeRateLowerThanMin = false;
+  bool get isFeeRateLowerThanMin => _isFeeRateLowerThanMin;
 
   double? _minimumFeeRate;
   double? get minimumFeeRate => _minimumFeeRate;
@@ -246,6 +247,10 @@ class SendViewModel extends ChangeNotifier {
     }
 
     if (_estimatedFee == null) {
+      return false;
+    }
+
+    if ((double.tryParse(_feeRateText) ?? 0) < 0.1) {
       return false;
     }
 
@@ -437,7 +442,10 @@ class SendViewModel extends ChangeNotifier {
             .toInt() -
         estimatedFeeInSats;
     _recipientList[lastIndex].amount = maxBalanceInSats > dustLimit
-        ? (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(maxBalanceInSats) : maxBalanceInSats)
+        ? (isBtcUnit
+                ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxBalanceInSats)
+                    .replaceAll(' ', '')
+                : maxBalanceInSats)
             .toString()
         : "0";
 
@@ -493,6 +501,9 @@ class SendViewModel extends ChangeNotifier {
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
     _initBalances();
+    if (_isMaxMode) {
+      _adjustLastReceiverAmount(recipientIndex: lastIndex);
+    }
     _updateAmountValidationState();
     _updateFeeBoardVisibility();
     _buildTransaction();
@@ -545,10 +556,9 @@ class SendViewModel extends ChangeNotifier {
       if (addressErrorIndex != -1) {
         message = _recipientList[addressErrorIndex].addressError.getMessage();
       }
-    } else if (_txBuildResult?.exception != null) {
+    } else if (_txBuildResult?.exception != null && _recipientList.every((r) => r.isInputValid)) {
+      // 모든 수신자 카드 amount, address가 유효한 경우에만 메시지 보여주기
       message = _txBuildResult!.exception.toString();
-    } else if (_isFeeRateLowerThanMin) {
-      message = t.toast.min_fee(minimum: _minimumFeeRate ?? 0);
     }
 
     _finalErrorMessage = message;
@@ -585,6 +595,19 @@ class SendViewModel extends ChangeNotifier {
   void setAddressText(String text, int recipientIndex) {
     if (_recipientList[recipientIndex].address == text) return;
     _recipientList[recipientIndex].address = text;
+    if (text.isEmpty) {
+      _txBuildResult = null;
+    }
+    notifyListeners();
+  }
+
+  /// bip21 url에서 amount값 파싱 성공했을 때 사용
+  void setAmountText(int satoshi, int recipientIndex) {
+    if (currentUnit == BitcoinUnit.sats) {
+      _recipientList[recipientIndex].amount = satoshi.toString();
+    } else {
+      _recipientList[recipientIndex].amount = UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
+    }
     notifyListeners();
   }
 
@@ -687,13 +710,12 @@ class SendViewModel extends ChangeNotifier {
   void validateAllFieldsOnFocusLost() {
     if (_isMaxMode) _adjustLastReceiverAmount();
     for (int i = 0; i < _recipientList.length; ++i) {
-      _updateAmountValidationState(recipientIndex: _currentIndex);
+      _updateAmountValidationState(recipientIndex: i);
       validateAddress(_recipientList[i].address, i);
     }
     checkAndSetDuplicationError();
     _buildTransaction();
     _updateFeeBoardVisibility();
-    Logger.log('--> validateAllFieldsOnFocusLost');
   }
 
   void clearAmountText() {

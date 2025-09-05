@@ -5,6 +5,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/firebase_options.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -94,6 +95,9 @@ void main() {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+
+    // FileLogger 초기화
+    await FileLogger.initialize();
 
     runApp(const CoconutWalletApp());
   }, (error, stackTrace) {

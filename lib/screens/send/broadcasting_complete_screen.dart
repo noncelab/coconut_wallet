@@ -28,6 +28,8 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   late AnimationController _animationController;
   final TextEditingController _memoController = TextEditingController();
   final FocusNode _memoFocusNode = FocusNode();
+  final GlobalKey _memoTagsKey = GlobalKey();
+  double _memoTagsHeight = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -94,27 +96,37 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     return Stack(
       alignment: Alignment.center,
       children: [
-        Positioned(
-          top: MediaQuery.of(context).size.height * 0.15,
-          child: Column(
-            children: [
-              SvgPicture.asset('assets/svg/completion-check.svg'),
-              CoconutLayout.spacing_400h,
-              Text(
-                t.broadcasting_complete_screen.complete,
-                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-              ),
-              CoconutLayout.spacing_400h,
-              _buildMemoInputField(),
-              if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
-                _buildMemoReadOnlyText(),
-            ],
+        SingleChildScrollView(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: _memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0
+                      ? MediaQuery.of(context).size.height * 0.1
+                      : MediaQuery.of(context).size.height * 0.3,
+                ),
+                SvgPicture.asset('assets/svg/completion-check.svg'),
+                CoconutLayout.spacing_400h,
+                Text(
+                  t.broadcasting_complete_screen.complete,
+                  style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                ),
+                CoconutLayout.spacing_400h,
+                _buildMemoInputField(),
+                if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
+                  _buildMemoReadOnlyText(),
+                if (_memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0) ...[
+                  CoconutLayout.spacing_1200h,
+                  _buildMemoTags()
+                ]
+              ],
+            ),
           ),
         ),
-        if (_memoFocusNode.hasFocus)
-          Positioned(
-              bottom: MediaQuery.of(context).viewInsets.bottom + Sizes.size16,
-              child: _buildMemoTags()),
+        // if (_memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0)
+        //   Positioned(bottom: Sizes.size16, child: _buildMemoTags()),
         FixedBottomButton(
             showGradient: false,
             isVisibleAboveKeyboard: false,
@@ -139,7 +151,21 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     _animationController.duration = const Duration(seconds: 2);
     Provider.of<SendInfoProvider>(context, listen: false).clear();
     _memoFocusNode.addListener(() {
-      setState(() {});
+      if (_memoFocusNode.hasFocus) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = _memoTagsKey.currentContext;
+          if (ctx != null) {
+            final box = ctx.findRenderObject() as RenderBox?;
+            final height = box?.size.height ?? 0;
+            if (height != _memoTagsHeight) {
+              setState(() {
+                _memoTagsHeight = height;
+              });
+            }
+          }
+        });
+      }
+      setState(() {}); // 기존 갱신 유지
     });
   }
 
@@ -172,24 +198,22 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   }
 
   Widget _buildMemoTags() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[0]),
-            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[1]),
-            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[2]),
-          ],
-        ),
-        Row(
-          children: [
-            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[3]),
-            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[4]),
-            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[5]),
-            _buildMemoTag(t.broadcasting_complete_screen.memo_tags[6]),
-          ],
-        ),
-      ],
+    return Container(
+      key: _memoTagsKey,
+      padding: const EdgeInsets.symmetric(horizontal: Sizes.size12),
+      width: MediaQuery.of(context).size.width,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        children: [
+          _buildMemoTag(t.broadcasting_complete_screen.memo_tags[0]),
+          _buildMemoTag(t.broadcasting_complete_screen.memo_tags[1]),
+          _buildMemoTag(t.broadcasting_complete_screen.memo_tags[2]),
+          _buildMemoTag(t.broadcasting_complete_screen.memo_tags[3]),
+          _buildMemoTag(t.broadcasting_complete_screen.memo_tags[4]),
+          _buildMemoTag(t.broadcasting_complete_screen.memo_tags[5]),
+          _buildMemoTag(t.broadcasting_complete_screen.memo_tags[6]),
+        ],
+      ),
     );
   }
 
@@ -201,78 +225,82 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
         );
         _memoFocusNode.requestFocus();
       },
-      child: Padding(
-        padding: const EdgeInsets.only(top: Sizes.size4),
+      child: IntrinsicWidth(
         child: Container(
-            height: Sizes.size24,
-            padding: const EdgeInsets.only(left: Sizes.size12, right: Sizes.size12),
-            decoration: BoxDecoration(
-              color: CoconutColors.gray800,
-              borderRadius: BorderRadius.circular(Sizes.size12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset('assets/svg/pen.svg',
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
-                    width: Sizes.size12),
-                CoconutLayout.spacing_100w,
-                Text(
-                  TextUtils.ellipsisIfLonger(_memoController.text, maxLength: 8),
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray100),
-                ),
-              ],
-            )),
-      ),
-    );
-  }
-
-  Widget _buildMemoInputField() {
-    double? memoInputFieldSize =
-        _memoFocusNode.hasFocus || _memoController.text.isEmpty ? null : 0.0;
-    return SizedBox(
-      width: memoInputFieldSize,
-      height: memoInputFieldSize,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // background
-          Container(
-            width: Sizes.size84,
-            height: Sizes.size24,
-            padding: const EdgeInsets.only(left: Sizes.size12, right: Sizes.size12),
-            decoration: BoxDecoration(
-              color: CoconutColors.gray800,
-              borderRadius: BorderRadius.circular(Sizes.size12),
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size4),
+          decoration: BoxDecoration(
+            color: CoconutColors.gray800,
+            borderRadius: BorderRadius.circular(Sizes.size24),
           ),
-          Row(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SvgPicture.asset('assets/svg/pen.svg',
                   colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
                   width: Sizes.size12),
               CoconutLayout.spacing_100w,
-              // text field
-              SizedBox(
-                  width: Sizes.size48,
-                  height: Sizes.size32,
+              Flexible(
+                fit: FlexFit.loose,
+                child: Text(
+                  TextUtils.ellipsisIfLonger(_memoController.text, maxLength: 8),
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray100),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMemoInputField() {
+    final showInput = _memoFocusNode.hasFocus || _memoController.text.isEmpty;
+
+    return Visibility(
+      visible: showInput,
+      maintainState: true,
+      child: IntrinsicWidth(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size4),
+          decoration: BoxDecoration(
+            color: CoconutColors.gray800,
+            borderRadius: BorderRadius.circular(Sizes.size24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SvgPicture.asset('assets/svg/pen.svg',
+                  colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                  width: Sizes.size12),
+              CoconutLayout.spacing_100w,
+              Flexible(
+                fit: FlexFit.loose,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 48, maxWidth: 160),
                   child: TextField(
                     controller: _memoController,
                     focusNode: _memoFocusNode,
+                    maxLines: 1,
+                    textAlignVertical: TextAlignVertical.center,
                     style: CoconutTypography.body3_12.setColor(CoconutColors.gray100),
                     cursorColor: CoconutColors.white,
                     decoration: InputDecoration(
+                      isDense: true,
                       border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
                       hintText: t.broadcasting_complete_screen.memo_placeholder,
                       hintStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray350),
-                      contentPadding: const EdgeInsets.only(
-                        bottom: 15.5,
-                      ),
                     ),
-                  )),
+                  ),
+                ),
+              ),
             ],
-          )
-        ],
+          ),
+        ),
       ),
     );
   }

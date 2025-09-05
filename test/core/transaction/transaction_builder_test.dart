@@ -552,6 +552,40 @@ void main() {
       expect(result.unintendedDustFee, isNull);
     });
 
+    test('Batch / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 + 수수료 - 잔액 < dustLimit', () {
+      late List<UtxoState> availableUtxos = [
+        UtxoState(
+          transactionHash: 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
+          index: 0,
+          amount: 1890,
+          blockHeight: 100,
+          to: 'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66',
+          derivationPath: "m/84'/1'/0'/0/0",
+          timestamp: DateTime.now(),
+        ),
+      ];
+
+      Map<String, int> batchRecipients = {
+        'bcrt1qve37yvsmqksx93j6gqsnz862qpzfa0xya0yvve': 800,
+        'bcrt1qktkhznpjp6gg7waacvcgxrv3hd6aj8nj90rw8q': 800,
+      };
+      final TransactionBuildResult result = TransactionBuilder(
+        availableUtxos: availableUtxos,
+        recipients: batchRecipients,
+        feeRate: 1.0,
+        changeDerivationPath: "m/84'/1'/0'/0/0",
+        walletListItemBase: wallet,
+        isFeeSubtractedFromAmount: false,
+        isUtxoFixed: false,
+      ).build();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.transaction, isNotNull);
+      expect(result.estimatedFee, 290);
+      expect(result.selectedUtxos, isNotNull);
+      expect(result.unintendedDustFee, 149);
+    });
+
     test('Batch / Auto Utxo / 수수료 수신자 부담', () {
       final result = TransactionBuilder(
         availableUtxos: availableUtxos,
