@@ -152,21 +152,27 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
       },
       child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(t.select_wallet_with_options_bottom_sheet.select_utxo_auto,
-                  style: CoconutTypography.body2_14),
-              Text(
-                  _isUtxoSelectionAuto
-                      ? t.select_wallet_with_options_bottom_sheet
-                          .select_utxo_auto_minimal_fee_description
-                      : t.select_wallet_with_options_bottom_sheet
-                          .select_utxo_auto_selected_utxo_description,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-            ],
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.select_wallet_with_options_bottom_sheet.select_utxo_auto,
+                      style: CoconutTypography.body2_14),
+                  Text(
+                      _isUtxoSelectionAuto
+                          ? t.select_wallet_with_options_bottom_sheet
+                              .select_utxo_auto_minimal_fee_description
+                          : t.select_wallet_with_options_bottom_sheet
+                              .select_utxo_auto_selected_utxo_description,
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                ],
+              ),
+            ),
           ),
-          const Spacer(),
+          CoconutLayout.spacing_300w,
           Align(
               alignment: Alignment.centerRight,
               child: CoconutSwitch(
@@ -274,12 +280,9 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
             ],
           ),
           FittedBox(
-            child: SizedBox(
-              height: 20,
-              child: Text(
-                amountText,
-                style: CoconutTypography.body2_14_Number,
-              ),
+            child: Text(
+              amountText,
+              style: CoconutTypography.body2_14_Number,
             ),
           ),
         ],

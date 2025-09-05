@@ -26,4 +26,18 @@ class Logger {
       }
     }
   }
+
+  static void logMapRecursive(Map<dynamic, dynamic> map, {int indent = 0}) {
+    if (_isReleaseMode) return;
+
+    final spaces = ' ' * indent;
+    map.forEach((key, value) {
+      if (value is Map) {
+        print('$spaces$key:');
+        logMapRecursive(value, indent: indent + 2);
+      } else {
+        print('$spaces$key: $value');
+      }
+    });
+  }
 }

@@ -11,6 +11,16 @@ enum DefaultElectrumServer {
     1,
     false, // isRegtest
   ),
+  fulrum(
+    ElectrumServer(
+      'fulcrum2.not.fyi',
+      51002,
+      true,
+    ),
+    'FULRUM',
+    2,
+    false,
+  ),
   // blockstream(
   //   ElectrumServer(
   //     'blockstream.info',

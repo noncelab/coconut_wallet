@@ -120,10 +120,13 @@ class CustomTagSelectorItem extends StatelessWidget {
               ),
             ),
             child: Center(
-              child: Text(
-                '#',
-                style: CoconutTypography.body2_14.setColor(
-                  ColorUtil.getColor(colorIndex).color,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '#',
+                  style: CoconutTypography.body2_14.setColor(
+                    ColorUtil.getColor(colorIndex).color,
+                  ),
                 ),
               ),
             ),

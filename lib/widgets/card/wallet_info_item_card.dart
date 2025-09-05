@@ -125,26 +125,51 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (rightText.isNotEmpty)
-                  Text(
-                    rightText.replaceAllMapped(
-                        RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
-                    style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 120,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            rightText.replaceAllMapped(
+                                RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
+                            style: CoconutTypography.heading4_18_NumberBold
+                                .setColor(CoconutColors.white),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                TooltipButton(
-                  isSelected: false,
-                  text: tooltipText,
-                  isLeft: true,
-                  iconKey: widget.tooltipKey,
-                  containerMargin: EdgeInsets.zero,
-                  containerPadding: EdgeInsets.zero,
-                  iconMargin: const EdgeInsets.only(left: 4),
-                  onTap: () {
-                    widget.onTooltipClicked();
-                  },
-                  onTapDown: (details) {
-                    widget.onTooltipClicked();
-                  },
-                ),
+                LayoutBuilder(builder: (context, constraints) {
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 120,
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: TooltipButton(
+                        isSelected: false,
+                        text: tooltipText,
+                        isLeft: true,
+                        iconKey: widget.tooltipKey,
+                        containerMargin: EdgeInsets.zero,
+                        containerPadding: EdgeInsets.zero,
+                        iconMargin: const EdgeInsets.only(left: 4),
+                        onTap: () {
+                          widget.onTooltipClicked();
+                        },
+                        onTapDown: (details) {
+                          widget.onTooltipClicked();
+                        },
+                      ),
+                    ),
+                  );
+                }),
               ],
             )
           ],

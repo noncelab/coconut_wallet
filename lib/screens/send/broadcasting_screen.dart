@@ -340,6 +340,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             Text(
               t.broadcasting_screen.description,
               style: Styles.h3,
+              textAlign: TextAlign.center,
             ),
             CoconutLayout.spacing_400h,
             GestureDetector(
@@ -352,6 +353,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           text: confirmText,
                           children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)]),
                       style: Styles.balance1,
+                      textAlign: TextAlign.center,
+                      textScaler: const TextScaler.linear(1.0),
                     ),
                   ),
                   FiatPrice(

@@ -249,21 +249,25 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 const SizedBox(
                   width: 30,
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FittedBox(
-                      child: Text(
-                        packageInfo.appName,
-                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
-                      ),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          packageInfo.appName,
+                          style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.white),
+                        ),
+                        Text('ver.${packageInfo.version}',
+                            style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+                        CoconutLayout.spacing_100h,
+                        Text(t.app_info_screen.made_by_team_pow,
+                            style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400)),
+                      ],
                     ),
-                    Text('ver.${packageInfo.version}',
-                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
-                    CoconutLayout.spacing_100h,
-                    Text(t.app_info_screen.made_by_team_pow,
-                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400)),
-                  ],
+                  ),
                 )
               ],
             ),
@@ -293,9 +297,15 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 height: 28,
               ),
               CoconutLayout.spacing_300w,
-              Text(
-                t.app_info_screen.coconut_crew_genesis_member,
-                style: CoconutTypography.body2_14_Bold,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    t.app_info_screen.coconut_crew_genesis_member,
+                    style: CoconutTypography.body2_14_Bold,
+                  ),
+                ),
               ),
             ],
           ),

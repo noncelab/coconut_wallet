@@ -93,17 +93,27 @@ class UtxoListStickyHeader extends StatelessWidget {
                               textStyle: CoconutTypography.heading4_18_NumberBold,
                             ),
                             CoconutLayout.spacing_100w,
-                            Text(
-                              currentUnit.symbol,
-                              style: CoconutTypography.body2_14_Number,
-                            ),
-                            CoconutLayout.spacing_100w,
-                            Text(
-                              t.total_item_count(count: totalCount),
-                              style: CoconutTypography.body3_12.setColor(
-                                CoconutColors.gray400,
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      currentUnit.symbol,
+                                      style: CoconutTypography.body2_14_Number,
+                                    ),
+                                    CoconutLayout.spacing_100w,
+                                    Text(
+                                      t.total_item_count(count: totalCount),
+                                      style: CoconutTypography.body3_12.setColor(
+                                        CoconutColors.gray400,
+                                      ),
+                                    )
+                                  ],
+                                ),
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),

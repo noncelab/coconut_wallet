@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
@@ -12,7 +13,7 @@ class CoconutQrScanner extends StatefulWidget {
   static String qrInvalidErrorMessage = 'Invalid QR Code.';
   final Function(QRViewController) setQrViewController;
   final Function(dynamic) onComplete;
-  final Function(String) onFailed;
+  final Function(String, String?) onFailed;
   final Color borderColor;
   final IQrScanDataHandler qrDataHandler;
 
@@ -71,13 +72,14 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   void _onQrViewCreated(QRViewController controller) {
     widget.setQrViewController(controller);
     var handler = widget.qrDataHandler;
+    Logger.log('--> qrDataHandler: ${handler is BbQrScanDataHandler}');
     controller.scannedDataStream.distinct((previous, next) => previous.code == next.code).listen(
         (scanData) async {
       if (scanData.code == null) return;
       try {
         if (_isFirstScanData) {
           if (!handler.validateFormat(scanData.code!)) {
-            widget.onFailed(CoconutQrScanner.qrFormatErrorMessage);
+            widget.onFailed(CoconutQrScanner.qrFormatErrorMessage, scanData.code);
             setState(() {
               _showLoadingBar = false;
             });
@@ -92,7 +94,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
             Logger.log('--> progress: ${handler.progress}');
             _progressNotifier.value = handler.progress;
             if (!result && handler is! IFragmentedQrScanDataHandler) {
-              widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage);
+              widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage, scanData.code);
               resetScanState();
               return;
             }
@@ -123,12 +125,12 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         Logger.error(e.toString());
         _resetLoadingBarState();
         resetScanState();
-        widget.onFailed(e.toString());
+        widget.onFailed(e.toString(), scanData.code);
       }
     }, onError: (e) {
       _resetLoadingBarState();
       resetScanState();
-      widget.onFailed(e.toString());
+      widget.onFailed(e.toString(), null);
     });
   }
 
@@ -223,10 +225,14 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         builder: (context, value, _) {
           return SizedBox(
             width: 35,
-            child: Text(
-              textAlign: TextAlign.center,
-              "${(value * 100).toInt()}%",
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Text(
+                textAlign: TextAlign.center,
+                "${(value * 100).toInt()}%",
+                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+              ),
             ),
           );
         });
