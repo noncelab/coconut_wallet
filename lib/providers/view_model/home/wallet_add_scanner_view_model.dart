@@ -4,6 +4,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
@@ -93,6 +94,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     const methodName = 'addKeystoneWallet';
     FileLogger.log(className, methodName,
         'addKeystoneWallet called UR type: ${ur.type} cbor length: ${ur.cbor.length}');
+    Logger.log('--> ${ur.type} ${ur.cbor.length}');
+    Logger.logLongString(ur.cbor.toString());
 
     try {
       final name = getNextThirdPartyWalletName(
@@ -113,6 +116,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   Future<ResultOfSyncFromVault> addJadeWallet(UR ur) async {
     final name = getNextThirdPartyWalletName(
         WalletImportSource.jade, _walletProvider.walletItemList.map((e) => e.name).toList());
+
+    Logger.log('--> ${ur.type} ${ur.cbor.length}');
+    Logger.log('--> ${ur.cbor}');
+
     final wallet = _walletAddService.createJadeWallet(ur, name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
