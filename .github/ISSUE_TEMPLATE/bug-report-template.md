@@ -3,7 +3,7 @@ name: Bug Report Template
 about: 버그가 발생한 상황과 수정되어야 할 내용을 적습니다
 title: ''
 labels: "\U0001F41B bug"
-assignees: Ella-noncelab, pio-noncelab
+assignees: ''
 
 ---
 

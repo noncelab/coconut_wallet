@@ -2,8 +2,8 @@
 name: Sprint Template
 about: 스프린트의 유저스토리를 작성하고 구현해야할 사항을 적습니다
 title: ''
-labels: "Sprint"
-assignees: ella-noncelab, pio-noncelab, tiger-noncelab, luke-noncelab, doey-noncelab
+labels: ''
+assignees: ''
 
 ---
 

@@ -237,6 +237,7 @@ Map<String, dynamic> decodeAndVerifyUR(List<String> urParts) {
   expect(decodedCbor, isA<Map>(), reason: 'Decoded CBOR should be a Map');
 
   Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
+  printMapRecursive(cborMap);
   Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
 
   // MFP 값 검증
@@ -249,6 +250,18 @@ Map<String, dynamic> decodeAndVerifyUR(List<String> urParts) {
   expect(accountData["4"], isNotNull, reason: 'Chain code should exist');
 
   return jsonCompatibleMap;
+}
+
+void printMapRecursive(Map<dynamic, dynamic> map, {int indent = 0}) {
+  final spaces = ' ' * indent;
+  map.forEach((key, value) {
+    if (value is Map) {
+      print('$spaces$key:');
+      printMapRecursive(value, indent: indent + 2);
+    } else {
+      print('$spaces$key: $value');
+    }
+  });
 }
 
 void decodeAndVerifyURFailed(List<String> urParts) {

@@ -53,11 +53,18 @@ class WalletAddService {
 
     try {
       final cborBytes = ur.cbor;
+      for (int i = 0; i < cborBytes.length; i++) {
+        Logger.logLongString('cborBytes[$i]: ${cborBytes[i]}');
+      }
       final decodedCbor = cbor.decode(cborBytes); // TODO: cborBytes == decodedCbor (?)
       FileLogger.log(className, methodName, 'cbor.decode completed');
       Map<dynamic, dynamic> cborMap = decodedCbor as Map<dynamic, dynamic>;
       FileLogger.log(className, methodName, 'decodedCbor converted to cborMap');
+      Logger.log('------------- cborMap -------------');
+      Logger.logMapRecursive(cborMap);
+      Logger.log('------------- jsonCompatibleMap -------------');
       Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
+      Logger.logMapRecursive(jsonCompatibleMap);
       FileLogger.log(className, methodName, 'convertKeysToString completed');
       final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
       FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');

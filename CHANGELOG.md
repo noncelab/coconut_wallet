@@ -1,3 +1,7 @@
+## mainnet 0.4.3 - 2025-08-22
+### Fixed
+* 일부 화면 레이아웃 수정
+
 ## mainnet 0.4.2 - 2025-08-22
 ### Fixed
 * recipient address prefix 3 허용
