@@ -418,6 +418,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                       ),
                                     ),
                                     qrData: addressList[index].address,
+                                    isAddress: true,
                                     title: t.address_list_screen
                                         .address_index(index: addressList[index].index),
                                   ),
