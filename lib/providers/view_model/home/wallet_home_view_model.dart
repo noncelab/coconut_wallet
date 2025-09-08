@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -117,7 +118,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
-    print('DEBUG - _handleNodeSyncState called with: $syncState');
+    Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
@@ -129,7 +130,7 @@ class WalletHomeViewModel extends ChangeNotifier {
         vibrateLightDouble();
       }
       _nodeSyncState = syncState;
-      print('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
+      Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
       notifyListeners();
     } else if (_nodeSyncState == NodeSyncState.completed &&
         syncState == NodeSyncState.completed &&
