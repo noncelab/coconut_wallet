@@ -977,8 +977,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 WalletImportSource.coldCard,
                               ),
                             ),
-                            const Expanded(
-                              child: SizedBox(),
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.krux),
+                                WalletImportSource.krux,
+                              ),
                             ),
                           ],
                         ),
@@ -1284,6 +1287,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       case WalletImportSource.coldCard:
         svgPath = kColdCardIconPath;
         scanText = t.wallet_add_scanner_screen.cold_card;
+        break;
+      case WalletImportSource.krux:
+        svgPath = kKruxIconPath;
+        scanText = t.wallet_add_scanner_screen.krux;
         break;
       case WalletImportSource.extendedPublicKey:
         svgPath = kZpubIconPath;
