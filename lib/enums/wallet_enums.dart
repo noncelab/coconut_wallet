@@ -57,6 +57,8 @@ extension WalletImportSourceExtension on WalletImportSource {
         return kSeedSignerIconPath;
       case WalletImportSource.coldCard:
         return kColdCardIconPath;
+      case WalletImportSource.krux:
+        return kKruxIconPath;
       default:
         return kZpubIconPath;
     }

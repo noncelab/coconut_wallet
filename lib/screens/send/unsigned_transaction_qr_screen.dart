@@ -485,6 +485,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               _em(t.unsigned_tx_qr_screen.guide_krux.step2_em),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.select}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step3}'),
+              _em(t.unsigned_tx_qr_screen.guide_krux.step3_em),
             ];
           } else {
             return [
@@ -498,6 +499,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               TextSpan(text: '${t.unsigned_tx_qr_screen.guide_krux.select} '),
               _em('${t.unsigned_tx_qr_screen.guide_krux.step2_em}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step3}'),
+              _em(t.unsigned_tx_qr_screen.guide_krux.step3_em),
             ];
           }
         }
