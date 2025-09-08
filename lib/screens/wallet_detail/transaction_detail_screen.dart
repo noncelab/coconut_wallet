@@ -582,6 +582,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           Expanded(
             child: FittedBox(
               fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
               child: Text.rich(
                 TextSpan(
                   text: _viewModel.isSendType! ? t.status_sending : t.status_receiving,
