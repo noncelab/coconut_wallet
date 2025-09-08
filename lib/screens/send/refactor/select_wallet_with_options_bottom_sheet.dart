@@ -117,12 +117,14 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
     return Scaffold(
         resizeToAvoidBottomInset: false,
         backgroundColor: CoconutColors.gray900,
-        body: Column(children: [
-          _buildSelectedWalletWithOptions(context),
-          const Spacer(),
-          _buildCompleteButton(),
-          CoconutLayout.spacing_800h,
-        ]));
+        body: SafeArea(
+          child: Column(children: [
+            _buildSelectedWalletWithOptions(context),
+            const Spacer(),
+            _buildCompleteButton(),
+            CoconutLayout.spacing_800h,
+          ]),
+        ));
   }
 
   Widget _buildCompleteButton() {

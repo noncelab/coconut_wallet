@@ -57,49 +57,51 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
           onBackPressed: null,
           isBottom: true,
         ),
-        body: Column(
-          children: [
-            CoconutLayout.spacing_500h,
-            Expanded(
-              child: SingleChildScrollView(
-                controller: widget.scrollController,
-                child: Column(
-                    children: List.generate(_walletList.length, (index) {
-                  int walletId = _walletList[index].id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: Sizes.size24, left: 14, right: 22),
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: () {
-                        _selectedWalletId = walletId;
-                        setState(() {});
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
-                        child: _buildWalletItem(_walletList[index], _walletBalanceMap[walletId],
-                            _selectedWalletId == walletId),
+        body: SafeArea(
+          child: Column(
+            children: [
+              CoconutLayout.spacing_500h,
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: widget.scrollController,
+                  child: Column(
+                      children: List.generate(_walletList.length, (index) {
+                    int walletId = _walletList[index].id;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: Sizes.size24, left: 14, right: 22),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          _selectedWalletId = walletId;
+                          setState(() {});
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
+                          child: _buildWalletItem(_walletList[index], _walletBalanceMap[walletId],
+                              _selectedWalletId == walletId),
+                        ),
                       ),
-                    ),
-                  );
-                })),
+                    );
+                  })),
+                ),
               ),
-            ),
-            CoconutLayout.spacing_800h,
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16),
-              child: CoconutButton(
-                onPressed: () => widget.onWalletChanged(_selectedWalletId),
-                disabledBackgroundColor: CoconutColors.gray800,
-                disabledForegroundColor: CoconutColors.gray700,
-                isActive: _selectedWalletId != widget.walletId,
-                backgroundColor: CoconutColors.white,
-                foregroundColor: CoconutColors.black,
-                pressedTextColor: CoconutColors.black,
-                text: t.select,
+              CoconutLayout.spacing_800h,
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16),
+                child: CoconutButton(
+                  onPressed: () => widget.onWalletChanged(_selectedWalletId),
+                  disabledBackgroundColor: CoconutColors.gray800,
+                  disabledForegroundColor: CoconutColors.gray700,
+                  isActive: _selectedWalletId != widget.walletId,
+                  backgroundColor: CoconutColors.white,
+                  foregroundColor: CoconutColors.black,
+                  pressedTextColor: CoconutColors.black,
+                  text: t.select,
+                ),
               ),
-            ),
-            CoconutLayout.spacing_800h,
-          ],
+              CoconutLayout.spacing_800h,
+            ],
+          ),
         ));
   }
 
