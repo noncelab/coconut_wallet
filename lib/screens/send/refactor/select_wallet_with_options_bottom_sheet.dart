@@ -3,14 +3,18 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -233,14 +237,21 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
   }
 
   Widget _buildWalletIcon() {
+    List<MultisigSigner>? signers;
+    if (_selectedWalletItem?.walletType == WalletType.multiSignature) {
+      signers = (_selectedWalletItem as MultisigWalletListItem).signers;
+    }
+
     return SizedBox(
       width: 30,
       height: 30,
-      child: WalletItemIcon(
-          walletImportSource:
-              _selectedWalletItem?.walletImportSource ?? WalletImportSource.coconutVault,
-          iconIndex: _selectedWalletItem?.iconIndex ?? 0,
-          colorIndex: _selectedWalletItem?.colorIndex ?? 0),
+      child: WalletIconSmall(
+        walletImportSource:
+            _selectedWalletItem?.walletImportSource ?? WalletImportSource.coconutVault,
+        iconIndex: _selectedWalletItem?.iconIndex ?? 0,
+        colorIndex: _selectedWalletItem?.colorIndex ?? 0,
+        gradientColors: signers != null ? ColorUtil.getGradientColors(signers) : null,
+      ),
     );
   }
 

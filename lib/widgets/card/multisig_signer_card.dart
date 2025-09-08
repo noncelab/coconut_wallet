@@ -42,7 +42,7 @@ class MultisigSignerCard extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: CoconutColors.black,
-                borderRadius: BorderRadius.circular(Sizes.size24),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: CoconutColors.gray700),
               ),
               child: Row(
@@ -52,7 +52,7 @@ class MultisigSignerCard extends StatelessWidget {
                       padding: const EdgeInsets.all(Sizes.size10),
                       decoration: BoxDecoration(
                         color: ColorUtil.getColor(isInnerWallet ? colorIndex : 8).backgroundColor,
-                        borderRadius: BorderRadius.circular(14.0),
+                        borderRadius: BorderRadius.circular(12.0),
                       ),
                       child: SvgPicture.asset(
                         isInnerWallet
