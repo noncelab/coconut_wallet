@@ -75,8 +75,7 @@ void main() {
     String envFile = '$appFlavor.env';
     await dotenv.load(fileName: envFile);
 
-    // Electrum
-    CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
+    // Faucet - regtest-only
     CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
 
     // Donation

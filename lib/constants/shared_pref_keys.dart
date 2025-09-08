@@ -56,4 +56,8 @@ class SharedPrefKeys {
     SharedPrefKeys.kFakeBalanceTotal,
     SharedPrefKeys.kFakeBalanceMap,
   ];
+
+  // Block explorer
+  static const String kUseDefaultExplorer = 'USE_DEFAULT_EXPLORER';
+  static const String kCustomExplorerUrl = 'CUSTOM_EXPLORER_URL';
 }

@@ -54,7 +54,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: CoconutAppBar.build(
-        title: t.settings_screen.log_viewer_screen.title,
+        title: t.log_viewer,
         context: context,
         backgroundColor: CoconutColors.black.withOpacity(0.95),
         actionButtonList: [

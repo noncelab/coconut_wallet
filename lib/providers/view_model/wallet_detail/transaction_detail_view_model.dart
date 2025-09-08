@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
+import 'package:coconut_wallet/services/block_explorer_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -45,6 +46,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool _disposed = false;
   bool get isDisposed => _disposed;
 
+  String _mempoolHost = '';
+  String get mempoolHost => _mempoolHost;
+
   @override
   void dispose() {
     _disposed = true;
@@ -62,6 +66,11 @@ class TransactionDetailViewModel extends ChangeNotifier {
       this._sendInfoProvider) {
     _setCanBumpingTx();
     _initTransactionList();
+    _loadMempoolHost();
+  }
+
+  void _loadMempoolHost() async {
+    _mempoolHost = await BlockExplorerService.getExplorerUrl();
   }
 
   void _setCanBumpingTx() {

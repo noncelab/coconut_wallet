@@ -29,6 +29,7 @@ import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/send/send_amount_screen.dart';
+import 'package:coconut_wallet/screens/settings/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/settings/log_viewer_screen.dart';
@@ -382,6 +383,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         Provider.of<PreferenceProvider>(context, listen: false)),
                     child: const ElectrumServerScreen(),
                   ),
+              '/block-explorer': (context) => const BlockExplorerScreen(),
               '/log-viewer': (context) => const LogViewerScreen(),
             },
           ),
