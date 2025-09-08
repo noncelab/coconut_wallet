@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -102,13 +103,11 @@ class FileLogger {
         // 플러시 타이머를 일시 중지하고 큐를 비움
         await _flushQueue();
         final content = await _logFile!.readAsString();
-        // ignore: avoid_print
-        print('FileLogger.getLogContent: content length = ${content.length}');
+        Logger.log('FileLogger.getLogContent: content length = ${content.length}');
         return content;
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('FileLogger.getLogContent failed: $e');
+      Logger.error('FileLogger.getLogContent failed: $e');
     }
     return null;
   }
@@ -124,8 +123,7 @@ class FileLogger {
         );
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('Log sharing failed: $e');
+      Logger.error('Log sharing failed: $e');
     }
   }
 
@@ -139,8 +137,7 @@ class FileLogger {
         await _logFile!.writeAsString('=== Debug Log Cleared: ${_getSimpleTimestamp()} ===\n');
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('FileLogger.clearLog failed: $e');
+      Logger.error('FileLogger.clearLog failed: $e');
     }
   }
 
@@ -149,8 +146,7 @@ class FileLogger {
       _flushTimer?.cancel();
       await _flushQueue();
     } catch (e) {
-      // ignore: avoid_print
-      print('FileLogger.dispose failed: $e');
+      Logger.error('FileLogger.dispose failed: $e');
     }
   }
 }

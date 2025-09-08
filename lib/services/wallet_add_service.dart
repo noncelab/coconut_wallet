@@ -67,8 +67,7 @@ class WalletAddService {
       Logger.logMapRecursive(cborMap);
       Logger.log('------------- jsonCompatibleMap -------------');
       Map<String, dynamic> jsonCompatibleMap = convertKeysToString(cborMap);
-      Logger.logMapRecursive(jsonCompatibleMap);
-      FileLogger.log(className, methodName, 'convertKeysToString completed');
+      FileLogger.log(className, methodName, 'convertKeysToString completed $jsonCompatibleMap');
       final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
       FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');
       return WatchOnlyWallet(

@@ -249,150 +249,133 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         ),
                       ),
             routes: {
-              '/wallet-list': (context) => const WalletListScreen(),
-              '/wallet-add-scanner': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(
-                      child: WalletAddScannerScreen(
-                        importSource: args['walletImportSource'],
-                      ),
-                    ),
-                  ),
-              '/wallet-add-input': (context) => const CustomLoadingOverlay(
-                    child: WalletAddInputScreen(),
-                  ),
-              '/app-info': (context) => const AppInfoScreen(),
-              '/receive-address': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => ReceiveAddressScreen(
-                      id: args['id'],
-                    ),
-                  ),
-              '/wallet-detail': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => WalletDetailScreen(
-                      id: args['id'],
-                      entryPoint: args['entryPoint'],
-                    ),
-                  ),
-              '/wallet-info': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(
-                        child: WalletInfoScreen(
-                            id: args['id'],
-                            isMultisig: args['isMultisig'],
-                            entryPoint: args['entryPoint'])),
-                  ),
-              '/address-list': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => AddressListScreen(id: args['id']),
-                  ),
-              '/address-search': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => AddressSearchScreen(id: args['id']),
-                  ),
-              '/transaction-detail': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => TransactionDetailScreen(id: args['id'], txHash: args['txHash']),
-                  ),
-              '/transaction-fee-bumping': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => TransactionFeeBumpingScreen(
+              // 기본 화면들 (AppGuard만 적용)
+              '/wallet-list': (context) => buildAppGuardScreen(const WalletListScreen()),
+              '/app-info': (context) => buildAppGuardScreen(const AppInfoScreen()),
+              '/signed-psbt-scanner': (context) =>
+                  buildAppGuardScreen(const SignedPsbtScannerScreen()),
+              '/positive-feedback': (context) =>
+                  buildAppGuardScreen(const PositiveFeedbackScreen()),
+              '/negative-feedback': (context) =>
+                  buildAppGuardScreen(const NegativeFeedbackScreen()),
+              '/mnemonic-word-list': (context) => buildAppGuardScreen(const Bip39ListScreen()),
+              '/coconut-crew': (context) => buildAppGuardScreen(const CoconutCrewScreen()),
+              '/log-viewer': (context) => buildAppGuardScreen(const LogViewerScreen()),
+              '/electrum-server': (context) => buildAppGuardScreen(const ElectrumServerScreen()),
+              '/block-explorer': (context) => buildAppGuardScreen(const BlockExplorerScreen()),
+
+              // 로딩이 필요한 화면들 (AppGuard + CustomLoadingOverlay)
+              '/wallet-add-input': (context) =>
+                  buildAppGuardLoadingScreen(const WalletAddInputScreen()),
+              '/broadcasting': (context) => buildAppGuardLoadingScreen(const BroadcastingScreen()),
+
+              // 인자가 있는 기본 화면들
+              // 1. 앱 가드 없이 사용하는 화면 - 주소 보기
+              '/receive-address': (context) =>
+                  buildScreenWithArgs(context, (args) => ReceiveAddressScreen(id: args['id'])),
+              // 2. 앱 가드 사용하는 화면들
+              '/address-list': (context) =>
+                  buildAppGuardScreenWithArgs(context, (args) => AddressListScreen(id: args['id'])),
+              '/wallet-detail': (context) => buildAppGuardScreenWithArgs(context,
+                  (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint'])),
+              '/address-search': (context) => buildAppGuardScreenWithArgs(
+                  context, (args) => AddressSearchScreen(id: args['id'])),
+              '/transaction-detail': (context) => buildAppGuardScreenWithArgs(context,
+                  (args) => TransactionDetailScreen(id: args['id'], txHash: args['txHash'])),
+              '/transaction-fee-bumping': (context) => buildAppGuardScreenWithArgs(
+                  context,
+                  (args) => TransactionFeeBumpingScreen(
                       transaction: args['transaction'],
                       feeBumpingType: args['feeBumpingType'],
                       walletId: args['walletId'],
-                      walletName: args['walletName'],
-                    ),
-                  ),
-              '/unsigned-transaction-qr': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => UnsignedTransactionQrScreen(walletName: args['walletName']),
-                  ),
-              '/signed-psbt-scanner': (context) => const SignedPsbtScannerScreen(),
-              '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
-              '/broadcasting-complete': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(
-                        child: BroadcastingCompleteScreen(
-                            id: args['id'],
-                            txHash: args['txHash'],
-                            isDonation: args['isDonation'])),
-                  ),
-              '/send': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => SendScreen(
-                      walletId: args['walletId'],
-                      sendEntryPoint: args['sendEntryPoint'],
-                    ),
-                  ),
-              '/send-address': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(child: SendAddressScreen(id: args['id'])),
-                  ),
-              '/send-amount': (context) => const SendAmountScreen(),
-              '/fee-selection': (context) => const SendFeeSelectionScreen(),
-              '/refactor-utxo-selection': (context) => CustomLoadingOverlay(
-                    child: buildScreenWithArguments(
-                      context,
-                      (args) => UtxoSelectionScreen(
-                          selectedUtxoList: args['selectedUtxoList'],
-                          walletId: args['walletId'],
-                          currentUnit: args['currentUnit']),
-                    ),
-                  ),
-              '/send-confirm': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(
-                        child: SendConfirmScreen(currentUnit: args['currentUnit'])),
-                  ),
-              '/utxo-list': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(
-                      child: UtxoListScreen(id: args['id']),
-                    ),
-                  ),
-              '/positive-feedback': (context) => const PositiveFeedbackScreen(),
-              '/negative-feedback': (context) => const NegativeFeedbackScreen(),
-              '/mnemonic-word-list': (context) => const Bip39ListScreen(),
+                      walletName: args['walletName'])),
+              '/unsigned-transaction-qr': (context) => buildAppGuardScreenWithArgs(
+                  context, (args) => UnsignedTransactionQrScreen(walletName: args['walletName'])),
+              '/send': (context) => buildAppGuardScreenWithArgs(
+                  context,
+                  (args) => SendScreen(
+                      walletId: args['walletId'], sendEntryPoint: args['sendEntryPoint'])),
               '/utxo-tag': (context) =>
-                  buildScreenWithArguments(context, (args) => UtxoTagCrudScreen(id: args['id'])),
-              '/select-donation-amount': (context) => buildScreenWithArguments(
+                  buildAppGuardScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
+              '/select-donation-amount': (context) => buildAppGuardScreenWithArgs(
                   context,
                   (args) =>
                       SelectDonationAmountScreen(walletListLength: args['wallet-list-length'])),
-              '/onchain-donation-info': (context) => buildScreenWithArguments(
-                  context,
-                  (args) => OnchainDonationInfoScreen(
-                        donationAmount: args['donation-amount'],
-                      )),
-              '/lightning-donation-info': (context) => buildScreenWithArguments(context,
+              '/onchain-donation-info': (context) => buildAppGuardScreenWithArgs(context,
+                  (args) => OnchainDonationInfoScreen(donationAmount: args['donation-amount'])),
+              '/lightning-donation-info': (context) => buildAppGuardScreenWithArgs(context,
                   (args) => LightningDonationInfoScreen(donationAmount: args['donation-amount'])),
-              '/utxo-detail': (context) => buildScreenWithArguments(
-                    context,
-                    (args) => CustomLoadingOverlay(
-                      child: UtxoDetailScreen(
-                        utxo: args['utxo'],
-                        id: args['id'],
-                      ),
-                    ),
-                  ),
-              '/coconut-crew': (context) => const CoconutCrewScreen(),
-              '/electrum-server': (context) => ChangeNotifierProvider<ElectrumServerViewModel>(
-                    create: (context) => ElectrumServerViewModel(
-                        Provider.of<NodeProvider>(context, listen: false),
-                        Provider.of<PreferenceProvider>(context, listen: false)),
-                    child: const ElectrumServerScreen(),
-                  ),
-              '/block-explorer': (context) => const BlockExplorerScreen(),
-              '/log-viewer': (context) => const LogViewerScreen(),
+
+              // 인자가 있고 로딩이 필요한 화면들
+              '/wallet-add-scanner': (context) => buildLoadingScreenWithArgs(context,
+                  (args) => WalletAddScannerScreen(importSource: args['walletImportSource'])),
+
+              '/wallet-info': (context) => buildAppGuardLoadingScreenWithArgs(
+                  context,
+                  (args) => WalletInfoScreen(
+                      id: args['id'],
+                      isMultisig: args['isMultisig'],
+                      entryPoint: args['entryPoint'])),
+              '/broadcasting-complete': (context) => buildAppGuardLoadingScreenWithArgs(
+                  context,
+                  (args) => BroadcastingCompleteScreen(
+                      id: args['id'], txHash: args['txHash'], isDonation: args['isDonation'])),
+              '/utxo-selection': (context) => buildAppGuardLoadingScreenWithArgs(
+                  context,
+                  (args) => UtxoSelectionScreen(
+                      selectedUtxoList: args['selectedUtxoList'],
+                      walletId: args['walletId'],
+                      currentUnit: args['currentUnit'])),
+              '/send-confirm': (context) => buildAppGuardLoadingScreenWithArgs(
+                  context, (args) => SendConfirmScreen(currentUnit: args['currentUnit'])),
+              '/utxo-list': (context) => buildAppGuardLoadingScreenWithArgs(
+                  context, (args) => UtxoListScreen(id: args['id'])),
+              '/utxo-detail': (context) => buildAppGuardLoadingScreenWithArgs(
+                  context, (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),
             },
           ),
         ));
   }
 
-  T buildScreenWithArguments<T>(BuildContext context, T Function(Map<String, dynamic>) builder) {
+  /// 화면 생성 헬퍼 메서드
+  /// 1. AppGuard로 감싸진 화면
+  Widget buildAppGuardScreen(Widget screen) {
+    return AppGuard(child: screen);
+  }
+
+  /// 2. AppGuard + CustomLoadingOverlay
+  Widget buildAppGuardLoadingScreen(Widget screen) {
+    return CustomLoadingOverlay(child: AppGuard(child: screen));
+  }
+
+  /// 3. 인자가 있는 화면
+  Widget buildScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
     final Map<String, dynamic> args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
     return builder(args);
+  }
+
+  /// 4. AppGuard + 인자가 있는 화면
+  Widget buildAppGuardScreenWithArgs(
+      BuildContext context, Widget Function(Map<String, dynamic>) builder) {
+    final Map<String, dynamic> args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    return AppGuard(child: builder(args));
+  }
+
+  /// 5. CustomLoadingOverlay + 인자가 있는 화면
+  Widget buildLoadingScreenWithArgs(
+      BuildContext context, Widget Function(Map<String, dynamic>) builder) {
+    final Map<String, dynamic> args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    return CustomLoadingOverlay(child: builder(args));
+  }
+
+  /// 6. AppGuard + CustomLoadingOverlay + 인자가 있는 화면
+  Widget buildAppGuardLoadingScreenWithArgs(
+      BuildContext context, Widget Function(Map<String, dynamic>) builder) {
+    final Map<String, dynamic> args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    return CustomLoadingOverlay(child: AppGuard(child: builder(args)));
   }
 }
