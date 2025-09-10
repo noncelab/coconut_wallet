@@ -5,6 +5,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
@@ -73,6 +74,10 @@ class PreferenceProvider extends ChangeNotifier {
   late List<int> _excludedFromTotalBalanceWalletIds;
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
 
+  /// 마지막으로 선택한 UTXO 정렬 기준(default - 큰 금액순)
+  late UtxoOrder _lastUtxoSortOrder;
+  UtxoOrder get lastUtxoSortOrder => _lastUtxoSortOrder;
+
   PreferenceProvider(this._walletPreferencesRepository) {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
@@ -88,6 +93,11 @@ class PreferenceProvider extends ChangeNotifier {
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
+    _lastUtxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kLastUtxoSortOrder).isNotEmpty
+        ? UtxoOrder.values.firstWhere(
+            (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kLastUtxoSortOrder),
+            orElse: () => UtxoOrder.byAmountDesc)
+        : UtxoOrder.byAmountDesc;
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -462,6 +472,13 @@ class PreferenceProvider extends ChangeNotifier {
   /// 사용자 서버 삭제
   Future<void> removeUserServer(ElectrumServer server) async {
     await _sharedPrefs.removeUserServer(server);
+    notifyListeners();
+  }
+
+  // 마지막으로 선택한 UTXO 정렬 방식 저장
+  Future<void> setLastUtxoOrder(UtxoOrder utxoOrder) async {
+    _lastUtxoSortOrder = utxoOrder;
+    await _sharedPrefs.setString(SharedPrefKeys.kLastUtxoSortOrder, utxoOrder.name);
     notifyListeners();
   }
 }

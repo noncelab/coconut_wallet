@@ -21,6 +21,7 @@ class SharedPrefKeys {
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
+  static const String kLastUtxoSortOrder = 'LAST_UTXO_SORT_ORDER';
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';

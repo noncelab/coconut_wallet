@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -23,6 +24,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late final UtxoTagProvider _tagProvider;
   late final ConnectivityProvider _connectProvider;
   late final PriceProvider _priceProvider;
+  late final PreferenceProvider _preferenceProvider;
   late final WalletListItemBase _walletListBaseItem;
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
@@ -33,7 +35,7 @@ class UtxoListViewModel extends ChangeNotifier {
   late int _prevBalance;
 
   List<UtxoState> _utxoList = [];
-  UtxoOrder _selectedUtxoOrder = UtxoOrder.byAmountDesc;
+  late UtxoOrder _selectedUtxoOrder;
   bool _isUtxoListLoadComplete = false;
   String _selectedUtxoTagName = t.all;
   List<UtxoTag> _utxoTagList = [];
@@ -45,6 +47,7 @@ class UtxoListViewModel extends ChangeNotifier {
     this._tagProvider,
     this._connectProvider,
     this._priceProvider,
+    this._preferenceProvider,
     this._syncWalletStateStream,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
@@ -111,6 +114,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void updateUtxoFilter(UtxoOrder selectedUtxoFilter) async {
     _selectedUtxoOrder = selectedUtxoFilter;
+    await _preferenceProvider.setLastUtxoOrder(selectedUtxoFilter);
     UtxoState.sortUtxo(_utxoList, selectedUtxoFilter);
     notifyListeners();
   }
@@ -149,6 +153,7 @@ class UtxoListViewModel extends ChangeNotifier {
     _isUtxoListLoadComplete = false;
     _utxoList = _walletProvider.getUtxoList(_walletId);
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
+    _selectedUtxoOrder = _preferenceProvider.lastUtxoSortOrder;
 
     for (var utxo in _utxoList) {
       final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);

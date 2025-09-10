@@ -122,6 +122,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<PriceProvider>(context, listen: false),
+      Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
     );
   }
