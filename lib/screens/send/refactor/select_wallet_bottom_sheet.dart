@@ -4,6 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
@@ -102,7 +103,18 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   void initState() {
     super.initState();
     final walletProvider = context.read<WalletProvider>();
+    final preferenceProvider = context.read<PreferenceProvider>();
+
     _walletList = walletProvider.walletItemList;
+    if (preferenceProvider.walletOrder.isNotEmpty) {
+      final walletMap = {for (var wallet in _walletList) wallet.id: wallet};
+      var orderedList = preferenceProvider.walletOrder
+          .map((id) => walletMap[id])
+          .whereType<WalletListItemBase>()
+          .toList();
+      _walletList = orderedList;
+    }
+
     if (widget.showOnlyMfpWallets) {
       _walletList = _walletList.where((wallet) => !isWalletWithoutMfp(wallet)).toList();
     }
