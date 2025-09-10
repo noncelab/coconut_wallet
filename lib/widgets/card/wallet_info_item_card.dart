@@ -234,11 +234,11 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             child: Container(
               padding: const EdgeInsets.all(4.3),
               decoration: BoxDecoration(
-                  color: isItemTapped ? CoconutColors.gray400 : CoconutColors.gray300,
+                  color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
                   shape: BoxShape.circle,
                   boxShadow: const [
                     BoxShadow(
-                      color: CoconutColors.gray700,
+                      color: CoconutColors.gray900,
                       offset: Offset(2, 2),
                       blurRadius: 10,
                       spreadRadius: 0,
@@ -247,12 +247,12 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
               child: Container(
                 padding: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
-                  color: isItemTapped ? CoconutColors.gray400 : CoconutColors.gray300,
+                  color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset('assets/svg/edit-outlined.svg',
                     width: 10,
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn)),
+                    colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn)),
               ),
             ),
           ),
