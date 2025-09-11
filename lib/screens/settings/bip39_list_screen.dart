@@ -51,27 +51,53 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
 
   void _queryWord() {
     String query = _searchController.text.toLowerCase();
-    _filteredItems = List.generate(
-        wordList.length, (index) => {'index': index + 1, 'item': wordList[index]}).where((element) {
-      final item = element['item'] as String;
-      return item.toLowerCase().contains(query);
-    }).toList()
-      ..sort((a, b) {
+
+    final isBinary = RegExp(r'^[01]+$').hasMatch(query);
+    final isNumeric = RegExp(r'^\d+$').hasMatch(query);
+    final isAlphabetic = RegExp(r'^[a-zA-Z]+$').hasMatch(query);
+
+    List<Map<String, dynamic>> numericResults = [];
+    List<Map<String, dynamic>> binaryResults = [];
+    List<Map<String, dynamic>> alphabeticResults = [];
+
+    for (int i = 0; i < wordList.length; i++) {
+      final item = wordList[i];
+      final indexNum = i + 1;
+
+      if (isNumeric && query.length <= 4 && indexNum.toString().contains(query)) {
+        numericResults.add({'index': indexNum, 'item': item, 'type': 'numeric'});
+      }
+
+      if (isBinary) {
+        final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
+        if (binaryStr.contains(query)) {
+          binaryResults.add({'index': indexNum, 'item': item, 'type': 'binary'});
+        }
+      }
+
+      if (isAlphabetic && item.toLowerCase().contains(query)) {
+        alphabeticResults.add({'index': indexNum, 'item': item, 'type': 'alphabetic'});
+      }
+    }
+
+    if (isAlphabetic) {
+      alphabeticResults.sort((a, b) {
         final itemA = (a['item'] as String).toLowerCase();
         final itemB = (b['item'] as String).toLowerCase();
 
         final startsWithA = itemA.startsWith(query);
         final startsWithB = itemB.startsWith(query);
 
-        if (startsWithA && !startsWithB) {
-          return -1; // itemA가 우선
-        } else if (!startsWithA && startsWithB) {
-          return 1; // itemB가 우선
-        } else {
-          // 둘 다 query로 시작하거나 둘 다 포함하는 경우는 알파벳 순으로 결정
-          return itemA.compareTo(itemB);
-        }
+        if (startsWithA && !startsWithB) return -1;
+        if (!startsWithA && startsWithB) return 1;
+        return itemA.compareTo(itemB);
       });
+      _filteredItems = alphabeticResults;
+    } else {
+      numericResults.sort((a, b) => (a['index'] as int).compareTo(b['index'] as int));
+      binaryResults.sort((a, b) => (a['index'] as int).compareTo(b['index'] as int));
+      _filteredItems = [...numericResults, ...binaryResults];
+    }
   }
 
   @override
@@ -103,11 +129,11 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                     child: TextField(
                       keyboardType: TextInputType.text,
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]')),
+                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
                       ],
                       controller: _searchController,
                       maxLines: 1,
-                      maxLength: 10,
+                      maxLength: 11,
                       decoration: InputDecoration(
                         counterText: '',
                         hintText: _hintText,
@@ -193,25 +219,58 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   }
 
   Widget _buildListItem(BuildContext context, int index) {
-    String item = _filteredItems[index]['item'];
-    List<TextSpan> highlightOccurrences(String source, String query) {
+    final item = _filteredItems[index]['item'] as String;
+    final indexNum = _filteredItems[index]['index'] as int;
+    final type = _filteredItems[index]['type'] as String?;
+    final query = _searchController.text;
+
+    // 인덱스와 바이너리 문자열 준비
+    final indexStr = '${indexNum}. ';
+    final binaryStr = 'Binary: ${(indexNum - 1).toRadixString(2).padLeft(11, '0')}';
+    
+    List<TextSpan> highlightOccurrences(
+      String source,
+      String query, {
+      String? type,
+      bool isIndex = false,
+      }) {
       if (query.isEmpty) {
         return [TextSpan(text: source)];
       }
-      var matches = query.allMatches(source);
+
+      // 소스와 쿼리를 둘 다 소문자로 비교
+      final lowerSource = source.toLowerCase();
+      final lowerQuery = query.toLowerCase();
+
+      final matches = RegExp(RegExp.escape(lowerQuery))
+      .allMatches(lowerSource);
+
       if (matches.isEmpty) {
         return [TextSpan(text: source)];
       }
+
+      Color highlightColor;
+      switch (type) {
+        case 'numeric':
+          highlightColor = CoconutColors.cyanBlue;
+          break;
+        case 'binary':
+          highlightColor = CoconutColors.cyanBlue;
+          break;
+        default:
+          highlightColor = CoconutColors.cyanBlue;
+      }
+
       List<TextSpan> spans = [];
       int lastMatchEnd = 0;
-      for (var match in matches) {
+      for (final match in matches) {
         if (match.start != lastMatchEnd) {
           spans.add(TextSpan(text: source.substring(lastMatchEnd, match.start)));
         }
         spans.add(
           TextSpan(
-            text: source.substring(match.start, match.end),
-            style: const TextStyle(fontWeight: FontWeight.bold, color: MyColors.cyanblue),
+          text: source.substring(match.start, match.end),
+            style: TextStyle(fontWeight: FontWeight.bold, color: highlightColor),
           ),
         );
         lastMatchEnd = match.end;
@@ -236,14 +295,23 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                     alignment: Alignment.centerLeft,
                     child: Row(
                       children: [
-                        Text('${_filteredItems[index]['index']}. ',
-                            style: Styles.body1.merge(TextStyle(
-                                color: MyColors.transparentWhite_70,
-                                fontFamily: CustomFonts.number.getFontFamily))),
+                        RichText(
+                          text: TextSpan(
+                            children: highlightOccurrences(
+                              indexStr,
+                              query,
+                              type: 'numeric',
+                            ),
+                          style: Styles.body1.merge(TextStyle(
+                            color: MyColors.transparentWhite_70,
+                            fontFamily: CustomFonts.number.getFontFamily,
+                          )),
+                        ),
+                      ),
                         RichText(
                           text: TextSpan(
                             children:
-                                highlightOccurrences(item, _searchController.text.toLowerCase()),
+                                highlightOccurrences(item, _searchController.text, type: type,),
                             style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
                           ),
                         ),
@@ -253,16 +321,19 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                 ),
               ),
               Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    'Binary: ${(_filteredItems[index]['index'] - 1).toRadixString(2).padLeft(11, '0')}',
-                    style:
-                        Styles.subLabel.merge(const TextStyle(color: MyColors.transparentWhite_50)),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: RichText(
+                  text: TextSpan(
+                    children: highlightOccurrences(binaryStr, query, type: 'binary'),
+                    style: Styles.subLabel.merge(
+                      const TextStyle(color: MyColors.transparentWhite_50),
+                    ),
                   ),
                 ),
               ),
+            ),
             ],
           ),
         ),
