@@ -1,9 +1,13 @@
+import 'dart:io';
+import 'dart:ui';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
+import 'package:coconut_wallet/widgets/overlays/scanner_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -139,99 +143,50 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       builder: (BuildContext context, BoxConstraints constraints) {
         return Stack(
           children: [
-            MobileScanner(
-              controller: _controller!,
-              onDetect: _onDetect,
-            ),
-            _buildOverlay(context),
+            MobileScanner(controller: _controller!, onDetect: _onDetect),
+            const ScannerOverlay(),
+            _buildProgressOverlay(context),
           ],
         );
       },
     );
   }
 
-  Widget _buildOverlay(BuildContext context) {
+  Widget _buildProgressOverlay(BuildContext context) {
     final scanAreaSize =
         (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
             ? 320.0
             : MediaQuery.of(context).size.width * 0.85;
-    final overlayColor = Colors.black.withOpacity(0.4);
 
-    final statusBarHeight = MediaQuery.of(context).padding.top;
-    final totalTopHeight = statusBarHeight - kToolbarHeight - 26;
-    final availableHeight = MediaQuery.of(context).size.height - totalTopHeight;
-    final scanAreaTop = totalTopHeight + (availableHeight - scanAreaSize) / 2;
+    final scanAreaTop = (MediaQuery.of(context).size.height - scanAreaSize) / 2;
     final scanAreaBottom = scanAreaTop + scanAreaSize;
-    final scanAreaLeft = (MediaQuery.of(context).size.width - scanAreaSize) / 2;
-    final scanAreaRight = scanAreaLeft + scanAreaSize;
 
-    return Stack(children: [
-      // 상단 반투명 영역
-      Positioned(
-        top: statusBarHeight,
-        left: 0,
-        right: 0,
-        height: scanAreaTop + _borderWidth / 2,
-        child: Container(color: overlayColor),
-      ),
-      // 하단 반투명 영역
-      Positioned(
-        top: scanAreaBottom - _borderWidth / 2,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        child: Container(color: overlayColor),
-      ),
-      // 왼쪽 반투명 영역
-      Positioned(
-        top: scanAreaTop + _borderWidth / 2,
-        left: 0,
-        width: scanAreaLeft + _borderWidth,
-        height: scanAreaSize - _borderWidth,
-        child: Container(color: overlayColor),
-      ),
-      // 오른쪽 반투명 영역
-      Positioned(
-        top: scanAreaTop + _borderWidth / 2,
-        right: 0,
-        width: MediaQuery.of(context).size.width - scanAreaRight + _borderWidth,
-        height: scanAreaSize - _borderWidth,
-        child: Container(color: overlayColor),
-      ),
-      // 스캔 영역 테두리
-      Center(
-        child: Container(
-          width: scanAreaSize,
-          height: scanAreaSize,
-          decoration: BoxDecoration(
-            border: Border.all(color: widget.borderColor, width: _borderWidth),
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ),
-      // 프로그레스 바
-      Positioned(
-        top: scanAreaBottom + 24,
-        left: 0,
-        right: 0,
-        child: Visibility(
-          visible: _showLoadingBar,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CoconutLayout.spacing_1300w,
-              if (!_isScanningExtraData) ...[
-                _buildProgressBar(),
-                CoconutLayout.spacing_300w,
-                _buildProgressText(),
+    return Stack(
+      children: [
+        // 프로그레스 바
+        Positioned(
+          top: scanAreaBottom,
+          left: 0,
+          right: 0,
+          child: Visibility(
+            visible: _showLoadingBar,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CoconutLayout.spacing_1300w,
+                if (!_isScanningExtraData) ...[
+                  _buildProgressBar(),
+                  CoconutLayout.spacing_300w,
+                  _buildProgressText(),
+                ],
+                if (_isScanningExtraData) _buildReadingExtraText(),
+                CoconutLayout.spacing_1300w,
               ],
-              if (_isScanningExtraData) _buildReadingExtraText(),
-              CoconutLayout.spacing_1300w,
-            ],
+            ),
           ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 
   Rect? getQrViewRect() {
@@ -257,21 +212,22 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
   Widget _buildProgressText() {
     return ValueListenableBuilder<double>(
-        valueListenable: _progressNotifier,
-        builder: (context, value, _) {
-          return SizedBox(
-            width: 35,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.center,
-              child: Text(
-                textAlign: TextAlign.center,
-                "${(value * 100).toInt()}%",
-                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-              ),
+      valueListenable: _progressNotifier,
+      builder: (context, value, _) {
+        return SizedBox(
+          width: 35,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(
+              textAlign: TextAlign.center,
+              "${(value * 100).toInt()}%",
+              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildProgressBar() {
