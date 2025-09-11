@@ -3,38 +3,25 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
-class SendAddressBody extends StatelessWidget {
+class AddressQrScannerBody extends StatelessWidget {
   final Key qrKey;
-  final void Function(QRViewController) onQrViewCreated;
+  final void Function(BarcodeCapture) onDetect;
   final String? address;
   final void Function()? pasteAddress;
 
-  const SendAddressBody(
-      {super.key,
-      required this.qrKey,
-      required this.onQrViewCreated,
-      this.address,
-      this.pasteAddress});
+  const AddressQrScannerBody(
+      {super.key, required this.qrKey, required this.onDetect, this.address, this.pasteAddress});
 
   Widget _buildQrView(BuildContext context) {
-    return QRView(
-      key: qrKey,
-      onQRViewCreated: onQrViewCreated,
-      overlay: QrScannerOverlayShape(
-          borderColor: CoconutColors.white,
-          borderRadius: 8,
-          borderLength:
-              (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-                  ? 160
-                  : MediaQuery.of(context).size.width * 0.9 / 2,
-          borderWidth: 8,
-          cutOutSize:
-              (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-                  ? 320.0
-                  : MediaQuery.of(context).size.width * 0.9),
-    );
+    return Stack(children: [
+      MobileScanner(
+        key: qrKey,
+        onDetect: onDetect,
+      ),
+      _buildOverlay(context),
+    ]);
   }
 
   @override
@@ -50,7 +37,7 @@ class SendAddressBody extends StatelessWidget {
               MediaQuery.of(context).padding.bottom,
           child: _buildQrView(context)),
       Positioned(
-          top: kToolbarHeight - 75,
+          top: kToolbarHeight - 25,
           left: 0,
           right: 0,
           child: Container(
@@ -95,4 +82,66 @@ class SendAddressBody extends StatelessWidget {
                                 .merge(const TextStyle(color: MyColors.transparentWhite_20))))))
     ]);
   }
+}
+
+Widget _buildOverlay(BuildContext context) {
+  final scanAreaSize =
+      (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
+          ? 320.0
+          : MediaQuery.of(context).size.width * 0.85;
+  final overlayColor = Colors.black.withOpacity(0.4);
+
+  final statusBarHeight = MediaQuery.of(context).padding.top;
+  final totalTopHeight = statusBarHeight - kToolbarHeight + 56;
+  final availableHeight = MediaQuery.of(context).size.height - totalTopHeight;
+  final scanAreaTop = totalTopHeight + (availableHeight - scanAreaSize) / 2;
+  final scanAreaBottom = scanAreaTop + scanAreaSize;
+  final scanAreaLeft = (MediaQuery.of(context).size.width - scanAreaSize) / 2;
+  final scanAreaRight = scanAreaLeft + scanAreaSize;
+
+  return Stack(children: [
+    // 상단 반투명 영역
+    Positioned(
+      top: statusBarHeight,
+      left: 0,
+      right: 0,
+      height: scanAreaTop + 2,
+      child: Container(color: overlayColor),
+    ),
+    // 하단 반투명 영역
+    Positioned(
+      top: scanAreaBottom - 2,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Container(color: overlayColor),
+    ),
+    // 왼쪽 반투명 영역
+    Positioned(
+      top: scanAreaTop + 2,
+      left: 0,
+      width: scanAreaLeft + 4,
+      height: scanAreaSize - 4,
+      child: Container(color: overlayColor),
+    ),
+    // 오른쪽 반투명 영역
+    Positioned(
+      top: scanAreaTop + 2,
+      right: 0,
+      width: MediaQuery.of(context).size.width - scanAreaRight + 4,
+      height: scanAreaSize - 4,
+      child: Container(color: overlayColor),
+    ),
+    // 스캔 영역 테두리
+    Center(
+      child: Container(
+        width: scanAreaSize,
+        height: scanAreaSize,
+        decoration: BoxDecoration(
+          border: Border.all(color: CoconutColors.gray400, width: 4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    ),
+  ]);
 }

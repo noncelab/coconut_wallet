@@ -23,7 +23,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 const String className = 'WalletAddScannerScreen';
 
@@ -62,10 +61,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      // controller!.pauseCamera();
       controller!.pause();
     } else if (Platform.isIOS) {
-      // controller!.resumeCamera();
       controller!.start();
     }
   }
@@ -301,7 +298,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           IconButton(
             onPressed: () {
               if (controller != null) {
-                // controller!.flipCamera();
                 controller!.switchCamera();
               }
             },

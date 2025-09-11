@@ -19,7 +19,7 @@ import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -28,8 +28,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
 
@@ -79,7 +79,7 @@ class _SendScreenState extends State<SendScreen>
   late Animation<double> _offsetAnimation;
   late bool hasSeenAddRecipientCard;
 
-  QRViewController? _qrViewController;
+  MobileScannerController? _qrViewController;
   bool _isQrDataHandling = false;
   String _previousAmountText = "";
 
@@ -1322,27 +1322,32 @@ class _SendScreenState extends State<SendScreen>
         ));
   }
 
-  void _onQRViewCreated(QRViewController qrViewController) {
-    _qrViewController = qrViewController;
-    qrViewController.scannedDataStream.listen((scanData) async {
-      if (_isQrDataHandling || scanData.code == null) return;
-      if (scanData.code!.isEmpty) return;
+  void _onDetect(BarcodeCapture capture) {
+    final codes = capture.barcodes;
+    if (codes.isEmpty) return;
 
-      _isQrDataHandling = true;
-      final validationResult = _viewModel.validateScannedAddress(scanData.code!);
-      if (mounted) {
-        if (validationResult == null) {
-          Navigator.pop(context, scanData.code!);
-        } else {
-          CoconutToast.showToast(
-              isVisibleIcon: true, context: context, text: validationResult.message);
-        }
+    final barcode = codes.first;
+    if (barcode.rawValue == null) return;
+
+    final scanData = barcode.rawValue;
+
+    if (_isQrDataHandling || scanData == null || scanData.isEmpty) {
+      return;
+    }
+
+    _isQrDataHandling = true;
+
+    final validationResult = _viewModel.validateScannedAddress(scanData);
+    if (mounted) {
+      if (validationResult == null) {
+        Navigator.pop(context, scanData);
+      } else {
+        CoconutToast.showToast(
+            isVisibleIcon: true, context: context, text: validationResult.message);
       }
 
-      // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
-      await Future.delayed(const Duration(seconds: 1));
       _isQrDataHandling = false;
-    });
+    }
   }
 
   Future<void> _showAddressScanner(int index) async {
@@ -1365,7 +1370,7 @@ class _SendScreenState extends State<SendScreen>
                             BlendMode.srcIn,
                           )),
                       onPressed: () {
-                        _qrViewController?.flipCamera();
+                        _qrViewController?.switchCamera();
                       },
                     ),
                   ],
@@ -1373,7 +1378,7 @@ class _SendScreenState extends State<SendScreen>
                     _disposeQrViewController();
                     Navigator.of(sheetContext).pop<String>('');
                   }),
-              body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)),
+              body: AddressQrScannerBody(qrKey: qrKey, onDetect: _onDetect)),
         ));
 
     if (scannedData != null) {

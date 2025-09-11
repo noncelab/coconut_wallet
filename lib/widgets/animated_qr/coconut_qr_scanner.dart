@@ -22,7 +22,7 @@ class CoconutQrScanner extends StatefulWidget {
     required this.onComplete,
     required this.onFailed,
     required this.qrDataHandler,
-    this.borderColor = CoconutColors.white,
+    this.borderColor = CoconutColors.gray400,
   });
 
   @override
@@ -32,7 +32,7 @@ class CoconutQrScanner extends StatefulWidget {
 class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
-  final double _borderWidth = 8;
+  final double _borderWidth = 4;
   bool _isScanningExtraData = false;
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
@@ -171,12 +171,12 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         top: statusBarHeight,
         left: 0,
         right: 0,
-        height: scanAreaTop,
+        height: scanAreaTop + _borderWidth / 2,
         child: Container(color: overlayColor),
       ),
       // 하단 반투명 영역
       Positioned(
-        top: scanAreaBottom,
+        top: scanAreaBottom - _borderWidth / 2,
         left: 0,
         right: 0,
         bottom: 0,
@@ -184,18 +184,18 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       ),
       // 왼쪽 반투명 영역
       Positioned(
-        top: scanAreaTop,
+        top: scanAreaTop + _borderWidth / 2,
         left: 0,
-        width: scanAreaLeft + 8,
-        height: scanAreaSize,
+        width: scanAreaLeft + _borderWidth,
+        height: scanAreaSize - _borderWidth,
         child: Container(color: overlayColor),
       ),
       // 오른쪽 반투명 영역
       Positioned(
-        top: scanAreaTop,
+        top: scanAreaTop + _borderWidth / 2,
         right: 0,
-        width: MediaQuery.of(context).size.width - scanAreaRight + 8,
-        height: scanAreaSize,
+        width: MediaQuery.of(context).size.width - scanAreaRight + _borderWidth,
+        height: scanAreaSize - _borderWidth,
         child: Container(color: overlayColor),
       ),
       // 스캔 영역 테두리
