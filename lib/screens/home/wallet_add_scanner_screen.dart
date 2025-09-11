@@ -21,6 +21,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 
@@ -41,7 +42,7 @@ class WalletAddScannerScreen extends StatefulWidget {
 
 class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  MobileScannerController? controller;
   bool _isProcessing = false;
   late WalletAddScannerViewModel _viewModel;
 
@@ -61,9 +62,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      controller!.pauseCamera();
+      // controller!.pauseCamera();
+      controller!.pause();
     } else if (Platform.isIOS) {
-      controller!.resumeCamera();
+      // controller!.resumeCamera();
+      controller!.start();
     }
   }
 
@@ -298,7 +301,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           IconButton(
             onPressed: () {
               if (controller != null) {
-                controller!.flipCamera();
+                // controller!.flipCamera();
+                controller!.switchCamera();
               }
             },
             icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
@@ -309,7 +313,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       body: Stack(
         children: [
           CoconutQrScanner(
-            setQrViewController: (QRViewController qrViewcontroller) {
+            setMobileScannerController: (MobileScannerController qrViewcontroller) {
               controller = qrViewcontroller;
             },
             onComplete: _onCompletedScanning,

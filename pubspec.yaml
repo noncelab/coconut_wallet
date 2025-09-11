@@ -92,6 +92,7 @@ dependencies:
   coconut_lib: 1.0.1
   base32: ^2.1.3
   share_plus: ^10.0.0
+  mobile_scanner: ^6.0.10
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
