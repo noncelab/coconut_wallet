@@ -227,13 +227,13 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     // 인덱스와 바이너리 문자열 준비
     final indexStr = '${indexNum}. ';
     final binaryStr = 'Binary: ${(indexNum - 1).toRadixString(2).padLeft(11, '0')}';
-    
+
     List<TextSpan> highlightOccurrences(
       String source,
       String query, {
       String? type,
       bool isIndex = false,
-      }) {
+    }) {
       if (query.isEmpty) {
         return [TextSpan(text: source)];
       }
@@ -242,8 +242,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
       final lowerSource = source.toLowerCase();
       final lowerQuery = query.toLowerCase();
 
-      final matches = RegExp(RegExp.escape(lowerQuery))
-      .allMatches(lowerSource);
+      final matches = RegExp(RegExp.escape(lowerQuery)).allMatches(lowerSource);
 
       if (matches.isEmpty) {
         return [TextSpan(text: source)];
@@ -269,7 +268,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         }
         spans.add(
           TextSpan(
-          text: source.substring(match.start, match.end),
+            text: source.substring(match.start, match.end),
             style: TextStyle(fontWeight: FontWeight.bold, color: highlightColor),
           ),
         );
@@ -302,16 +301,19 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                               query,
                               type: 'numeric',
                             ),
-                          style: Styles.body1.merge(TextStyle(
-                            color: MyColors.transparentWhite_70,
-                            fontFamily: CustomFonts.number.getFontFamily,
-                          )),
+                            style: Styles.body1.merge(TextStyle(
+                              color: MyColors.transparentWhite_70,
+                              fontFamily: CustomFonts.number.getFontFamily,
+                            )),
+                          ),
                         ),
-                      ),
                         RichText(
                           text: TextSpan(
-                            children:
-                                highlightOccurrences(item, _searchController.text, type: type,),
+                            children: highlightOccurrences(
+                              item,
+                              _searchController.text,
+                              type: type,
+                            ),
                             style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
                           ),
                         ),
@@ -321,19 +323,19 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                 ),
               ),
               Expanded(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: RichText(
-                  text: TextSpan(
-                    children: highlightOccurrences(binaryStr, query, type: 'binary'),
-                    style: Styles.subLabel.merge(
-                      const TextStyle(color: MyColors.transparentWhite_50),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: RichText(
+                    text: TextSpan(
+                      children: highlightOccurrences(binaryStr, query, type: 'binary'),
+                      style: Styles.subLabel.merge(
+                        const TextStyle(color: MyColors.transparentWhite_50),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
             ],
           ),
         ),
