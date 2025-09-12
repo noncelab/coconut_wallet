@@ -153,7 +153,7 @@ class UtxoListViewModel extends ChangeNotifier {
     _isUtxoListLoadComplete = false;
     _utxoList = _walletProvider.getUtxoList(_walletId);
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    _selectedUtxoOrder = _preferenceProvider.lastUtxoSortOrder;
+    _selectedUtxoOrder = _preferenceProvider.utxoSortOrder;
 
     for (var utxo in _utxoList) {
       final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);

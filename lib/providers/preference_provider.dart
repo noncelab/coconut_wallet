@@ -76,8 +76,8 @@ class PreferenceProvider extends ChangeNotifier {
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
 
   /// 마지막으로 선택한 UTXO 정렬 기준(default - 큰 금액순)
-  late UtxoOrder _lastUtxoSortOrder;
-  UtxoOrder get lastUtxoSortOrder => _lastUtxoSortOrder;
+  late UtxoOrder _utxoSortOrder;
+  UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
   PreferenceProvider(this._walletPreferencesRepository) {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
@@ -94,7 +94,7 @@ class PreferenceProvider extends ChangeNotifier {
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
-    _lastUtxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
+    _utxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
         ? UtxoOrder.values.firstWhere(
             (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
             orElse: () => UtxoOrder.byAmountDesc)
@@ -478,7 +478,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   // 마지막으로 선택한 UTXO 정렬 방식 저장
   Future<void> setLastUtxoOrder(UtxoOrder utxoOrder) async {
-    _lastUtxoSortOrder = utxoOrder;
+    _utxoSortOrder = utxoOrder;
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
     notifyListeners();
