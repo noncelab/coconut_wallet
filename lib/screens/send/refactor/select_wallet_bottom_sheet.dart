@@ -1,12 +1,17 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -52,49 +57,51 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
           onBackPressed: null,
           isBottom: true,
         ),
-        body: Column(
-          children: [
-            CoconutLayout.spacing_500h,
-            Expanded(
-              child: SingleChildScrollView(
-                controller: widget.scrollController,
-                child: Column(
-                    children: List.generate(_walletList.length, (index) {
-                  int walletId = _walletList[index].id;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: Sizes.size24, left: 14, right: 22),
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: () {
-                        _selectedWalletId = walletId;
-                        setState(() {});
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
-                        child: _buildWalletItem(_walletList[index], _walletBalanceMap[walletId],
-                            _selectedWalletId == walletId),
+        body: SafeArea(
+          child: Column(
+            children: [
+              CoconutLayout.spacing_500h,
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: widget.scrollController,
+                  child: Column(
+                      children: List.generate(_walletList.length, (index) {
+                    int walletId = _walletList[index].id;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: Sizes.size24, left: 14, right: 22),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: () {
+                          _selectedWalletId = walletId;
+                          setState(() {});
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
+                          child: _buildWalletItem(_walletList[index], _walletBalanceMap[walletId],
+                              _selectedWalletId == walletId),
+                        ),
                       ),
-                    ),
-                  );
-                })),
+                    );
+                  })),
+                ),
               ),
-            ),
-            CoconutLayout.spacing_800h,
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16),
-              child: CoconutButton(
-                onPressed: () => widget.onWalletChanged(_selectedWalletId),
-                disabledBackgroundColor: CoconutColors.gray800,
-                disabledForegroundColor: CoconutColors.gray700,
-                isActive: _selectedWalletId != widget.walletId,
-                backgroundColor: CoconutColors.white,
-                foregroundColor: CoconutColors.black,
-                pressedTextColor: CoconutColors.black,
-                text: t.select,
+              CoconutLayout.spacing_800h,
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16),
+                child: CoconutButton(
+                  onPressed: () => widget.onWalletChanged(_selectedWalletId),
+                  disabledBackgroundColor: CoconutColors.gray800,
+                  disabledForegroundColor: CoconutColors.gray700,
+                  isActive: _selectedWalletId != widget.walletId,
+                  backgroundColor: CoconutColors.white,
+                  foregroundColor: CoconutColors.black,
+                  pressedTextColor: CoconutColors.black,
+                  text: t.select,
+                ),
               ),
-            ),
-            CoconutLayout.spacing_800h,
-          ],
+              CoconutLayout.spacing_800h,
+            ],
+          ),
         ));
   }
 
@@ -147,15 +154,21 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
 
   Widget _buildWalletItem(WalletListItemBase walletBase, int? balance, bool isChecked) {
     String amountText = widget.currentUnit.displayBitcoinAmount(balance ?? 0, withUnit: true);
+    List<MultisigSigner>? signer;
+    if (walletBase.walletType == WalletType.multiSignature) {
+      signer = (walletBase as MultisigWalletListItem).signers;
+    }
     return Row(
       children: [
         SizedBox(
           width: Sizes.size32,
           height: Sizes.size32,
-          child: WalletItemIcon(
-              walletImportSource: walletBase.walletImportSource,
-              iconIndex: walletBase.iconIndex,
-              colorIndex: walletBase.colorIndex),
+          child: WalletIconSmall(
+            walletImportSource: walletBase.walletImportSource,
+            iconIndex: walletBase.iconIndex,
+            colorIndex: walletBase.colorIndex,
+            gradientColors: signer != null ? ColorUtil.getGradientColors(signer) : null,
+          ),
         ),
         CoconutLayout.spacing_300w,
         Column(

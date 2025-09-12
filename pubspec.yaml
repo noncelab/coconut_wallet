@@ -278,6 +278,7 @@ flutter:
     - assets/svg/broom.svg
     - assets/svg/receipt.svg
     - assets/svg/clip.svg
+    - assets/svg/edit-outlined.svg
     - testnet.env
 
   fonts:
