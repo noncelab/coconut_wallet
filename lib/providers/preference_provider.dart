@@ -136,6 +136,9 @@ class PreferenceProvider extends ChangeNotifier {
       if (isKorean) {
         LocaleSettings.setLocaleSync(AppLocale.kr);
         Logger.log('Korean locale applied successfully');
+      } else if (isJapanese) {
+        LocaleSettings.setLocaleSync(AppLocale.jp);
+        Logger.log('Japanese locale applied successfully');
       } else if (isEnglish) {
         LocaleSettings.setLocaleSync(AppLocale.en);
         Logger.log('English locale applied successfully');
@@ -154,6 +157,8 @@ class PreferenceProvider extends ChangeNotifier {
     try {
       if (isKorean) {
         await LocaleSettings.setLocale(AppLocale.kr);
+      } else if (isJapanese) {
+        await LocaleSettings.setLocale(AppLocale.jp);
       } else if (isEnglish) {
         await LocaleSettings.setLocale(AppLocale.en);
       } else {

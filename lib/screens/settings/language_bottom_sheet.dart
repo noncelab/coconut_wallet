@@ -40,6 +40,17 @@ class LanguageBottomSheet extends StatelessWidget {
                 }
               },
             ),
+            SelectionItem<String>(
+              title: t.settings_screen.japanese,
+              value: 'en',
+              onTap: () async {
+                vibrateExtraLight();
+                await context.read<PreferenceProvider>().changeLanguage('jp');
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
           ],
         );
       },

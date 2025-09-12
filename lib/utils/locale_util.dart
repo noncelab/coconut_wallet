@@ -19,3 +19,8 @@ String getSystemLanguageCode() {
 bool isSystemLanguageKorean() {
   return getSystemLanguageCode() == 'kr';
 }
+
+/// 시스템 언어가 일본어인지 확인합니다.
+bool isSystemLanguageJapanese() {
+  return getSystemLanguageCode() == 'jp';
+}
