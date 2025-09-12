@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
@@ -12,6 +13,10 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/screens/home/analysis_period_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -22,6 +27,7 @@ import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_b
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -61,6 +67,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   Offset _dropdownButtonPosition = Offset.zero;
   bool _isDropdownMenuVisible = false;
   late ScrollController _scrollController;
+  late CarouselSliderController _carouselController;
 
   DateTime? _lastPressedAt;
   ResultOfSyncFromVault? _resultOfSyncFromVault;
@@ -76,6 +83,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   bool _isFirstLoad = true;
   bool _isWalletListLoading = false;
+
+  int _recentTransactionCurrentPage = 0;
+  late ScrollController _pageIndicatorController;
 
   @override
   Widget build(BuildContext context) {
@@ -179,8 +189,18 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               isBalanceHidden,
                               (id) => viewModel.getFakeBalance(id),
                             ),
-
-                          if (homeFeatures.isNotEmpty) ...[
+                          if (homeFeatures.isNotEmpty && viewModel.recentTransactions.isEmpty) ...[
+                            buildFeatureSectionIfEnabled(
+                              HomeFeatureType.recentTransaction,
+                              _buildRecentTransactionsSkeleton,
+                            ),
+                            buildFeatureSectionIfEnabled(
+                              HomeFeatureType.analysis,
+                              _buildAnalysisSkeleton,
+                            ),
+                          ],
+                          if (homeFeatures.isNotEmpty &&
+                              viewModel.recentTransactions.isNotEmpty) ...[
                             buildFeatureSectionIfEnabled(
                               HomeFeatureType.recentTransaction,
                               _buildRecentTransactions,
@@ -189,7 +209,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               HomeFeatureType.analysis,
                               _buildAnalysis,
                             ),
-                          ]
+                          ],
                         ],
                         if (walletItem.isNotEmpty) _buildHomeEditButton(),
                       ],
@@ -211,6 +231,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     super.initState();
 
     _scrollController = ScrollController();
+    _carouselController = CarouselSliderController();
+    _pageIndicatorController = ScrollController();
 
     _dropdownActions = [
       () => CommonBottomSheets.showBottomSheet_90(
@@ -273,6 +295,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   @override
   void dispose() {
     _scrollController.dispose();
+    _pageIndicatorController.dispose();
     super.dispose();
   }
 
@@ -944,31 +967,556 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildRecentTransactions() {
     return SliverToBoxAdapter(
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(
+              top: 12,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: CoconutColors.black,
+            ),
+            child: Center(
+              child: Selector<PreferenceProvider, bool>(
+                selector: (_, viewModel) => viewModel.isBtcUnit,
+                builder: (context, isBtcUnit, child) {
+                  // 정렬된 트랜잭션 플랫 리스트
+                  final ordered = _getOrderedRecentTransactions();
+
+                  if (ordered.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _buildEmptyRecentTransactions(),
+                    );
+                  }
+
+                  return ordered.length == 1
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _buildRecentTransactionCard(
+                              ordered.first.item1, ordered.first.item2, isBtcUnit),
+                        )
+                      : CarouselSlider(
+                          carouselController: _carouselController,
+                          options: CarouselOptions(
+                            autoPlay: false,
+                            height: 90,
+                            viewportFraction: 0.82,
+                            enlargeCenterPage: true,
+                            enlargeFactor: 0.25,
+                            enableInfiniteScroll: false,
+                            onPageChanged: (index, reason) {
+                              setState(() {
+                                _recentTransactionCurrentPage = index;
+                              });
+                              // 인디케이터 자동 스크롤
+                              _scrollToIndicator(index);
+                            },
+                          ),
+                          items: ordered.map((t) {
+                            return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
+                          }).toList(),
+                        );
+                },
+              ),
+            ),
+          ),
+          // 페이지 인디케이터 (트랜잭션 단위, 2개 이상일 때만 표시)
+          Builder(builder: (context) {
+            final totalCount = _getOrderedRecentTransactions().length;
+
+            if (totalCount <= 1) return Container();
+
+            return Container(
+              margin: const EdgeInsets.only(top: 16, left: 50, right: 50),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                controller: _pageIndicatorController,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(totalCount, (index) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      margin: EdgeInsets.symmetric(
+                          horizontal: _recentTransactionCurrentPage == index ? 2 : 4),
+                      width: _recentTransactionCurrentPage == index ? 12 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _recentTransactionCurrentPage == index
+                            ? CoconutColors.gray400
+                            : CoconutColors.gray800,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentTransactionCard(int walletId, TransactionRecord transaction, bool isBtcUnit) {
+    final walletName = _viewModel.getWalletById(walletId).name;
+
+    Widget buildTxRow(TransactionRecord transaction) {
+      final bool isReceived = transaction.transactionType == TransactionType.received;
+      final DateTime txDate = transaction.getDateTimeToDisplay()!.toLocal();
+      final List<String> transactionTimeStamp = DateTimeUtil.formatTimestamp(txDate);
+      final String amountString = isBtcUnit
+          ? BitcoinUnit.btc.displayBitcoinAmount(transaction.amount, withUnit: true)
+          : BitcoinUnit.sats.displayBitcoinAmount(transaction.amount, withUnit: true);
+      final String prefix = isReceived ? '+' : '';
+      final status = TransactionUtil.getStatus(transaction);
+      final String iconSource = switch (status) {
+        TransactionStatus.received => 'assets/svg/tx-received.svg',
+        TransactionStatus.receiving => 'assets/svg/tx-receiving.svg',
+        TransactionStatus.sent => 'assets/svg/tx-sent.svg',
+        TransactionStatus.sending => 'assets/svg/tx-sending.svg',
+        TransactionStatus.self => 'assets/svg/tx-self.svg',
+        TransactionStatus.selfsending => 'assets/svg/tx-self-sending.svg',
+        _ => 'assets/svg/tx-receiving.svg',
+      };
+
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SvgPicture.asset(
+                iconSource,
+                fit: BoxFit.fill,
+                width: 24,
+                height: 24,
+              ),
+              CoconutLayout.spacing_300w,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        transactionTimeStamp[0],
+                        style: CoconutTypography.body3_12.setColor(
+                          CoconutColors.gray400,
+                        ),
+                      ),
+                      CoconutLayout.spacing_50w,
+                      Text(
+                        '|',
+                        style: CoconutTypography.body3_12.setColor(
+                          CoconutColors.gray400,
+                        ),
+                      ),
+                      CoconutLayout.spacing_50w,
+                      Text(
+                        transactionTimeStamp[1],
+                        style: CoconutTypography.body3_12.setColor(
+                          CoconutColors.gray400,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    walletName,
+                    style: CoconutTypography.body3_12.setColor(
+                      CoconutColors.gray400,
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                (() {
+                  final now = DateTime.now();
+                  final diffDays = now.difference(txDate).inDays;
+                  return t.relative_time.days_ago(n: diffDays);
+                })(),
+                style: CoconutTypography.body3_12,
+              ),
+              Text(
+                '$prefix $amountString',
+                style: CoconutTypography.body2_14_Number,
+              ),
+            ],
+          )
+        ],
+      );
+    }
+
+    return ShrinkAnimationButton(
+      pressedColor: CoconutColors.gray750,
+      onPressed: () => Navigator.pushNamed(
+        context,
+        '/transaction-detail',
+        arguments: {
+          'id': walletId,
+          'txHash': transaction.transactionHash,
+        },
+      ),
       child: Container(
-        margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: CoconutColors.gray800,
+        padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.all(
+            Radius.circular(12),
+          ),
         ),
-        child: const Center(
-          child: Text('최근 거래 위젯'),
+        child: buildTxRow(transaction),
+      ),
+    );
+  }
+
+  Widget _buildRecentTransactionsSkeleton() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.only(
+          top: 12,
+          left: 20,
+          right: 20,
+        ),
+        child: Shimmer.fromColors(
+          baseColor: CoconutColors.gray800,
+          highlightColor: CoconutColors.gray750,
+          child: Container(
+            width: MediaQuery.sizeOf(context).width,
+            height: 90,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+              color: CoconutColors.gray800,
+            ),
+            child: const Text(
+              '',
+              style: CoconutTypography.body2_14,
+            ),
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildEmptyRecentTransactions() {
+    return Container(
+      padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
+      decoration: const BoxDecoration(
+        color: CoconutColors.gray800,
+        borderRadius: BorderRadius.all(
+          Radius.circular(12),
+        ),
+      ),
+      child: Center(
+        child: Text(
+          t.wallet_home_screen.empty_recent_transaction,
+          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+        ),
+      ),
+    );
+  }
+
+  // 최근 트랜잭션을 플랫하고 정렬(pending 최신순 → confirmed 최신순)하여 반환
+  List<Tuple2<int, TransactionRecord>> _getOrderedRecentTransactions() {
+    final flatTxs = _viewModel.recentTransactions.entries
+        .expand((entry) => entry.value.map((tx) => Tuple2(entry.key, tx)))
+        .toList();
+
+    final pendingStatuses = {
+      TransactionStatus.receiving,
+      TransactionStatus.sending,
+      TransactionStatus.selfsending,
+    };
+    final confirmedStatuses = {
+      TransactionStatus.received,
+      TransactionStatus.sent,
+      TransactionStatus.self,
+    };
+
+    final pending = flatTxs
+        .where((t) => pendingStatuses.contains(TransactionUtil.getStatus(t.item2)))
+        .toList()
+      ..sort((a, b) => b.item2.timestamp.compareTo(a.item2.timestamp));
+    final confirmed = flatTxs
+        .where((t) => confirmedStatuses.contains(TransactionUtil.getStatus(t.item2)))
+        .toList()
+      ..sort((a, b) => b.item2.timestamp.compareTo(a.item2.timestamp));
+
+    return [...pending, ...confirmed];
+  }
+
   Widget _buildAnalysis() {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
-        padding: const EdgeInsets.symmetric(vertical: 64),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: CoconutColors.gray800,
+        margin: const EdgeInsets.only(top: 36, left: 20, right: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShrinkAnimationButton(
+              defaultColor: CoconutColors.black,
+              onPressed: () {
+                CommonBottomSheets.showBottomSheet_50(
+                  context: context,
+                  child: AnalysisPeriodBottomSheet(
+                    onSelected: (days) {
+                      _viewModel.setAnalysisPeriod(days);
+                    },
+                    onTransactionTypeSelected: (analysisTransactionType) {
+                      _viewModel.setAnalysisTransactionType(analysisTransactionType);
+                      debugPrint('analysisTransactionType: $analysisTransactionType');
+                    },
+                    initialPeriodPreset: _viewModel.analysisPeriod,
+                    initialAnalysisTransactionType: _viewModel.selectedAnalysisTransactionType,
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      t.wallet_home_screen.analysis_period(
+                          days: _viewModel.analysisPeriod.toString(),
+                          transaction_type: _viewModel.selectedAnalysisTransactionTypeName),
+                      style: CoconutTypography.body3_12.setColor(
+                        CoconutColors.gray400,
+                      ),
+                    ),
+                    CoconutLayout.spacing_100w,
+                    SvgPicture.asset(
+                      'assets/svg/caret-down.svg',
+                      colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_viewModel.recentTransactionAnalysis?.isEmpty == true ||
+                _viewModel.recentTransactionAnalysis == null) ...[
+              // 분석에 필요한 거래가 없을 때
+              Container(
+                padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
+                decoration: const BoxDecoration(
+                  color: CoconutColors.gray800,
+                  borderRadius: BorderRadius.all(
+                    Radius.circular(12),
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    t.wallet_home_screen.empty_analysis_result,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                  ),
+                ),
+              )
+            ] else if (_viewModel.recentTransactionAnalysis?.isEmpty == false) ...[
+              Selector<PreferenceProvider, bool>(
+                  selector: (_, viewModel) => viewModel.isBtcUnit,
+                  builder: (context, isBtcUnit, child) {
+                    return Container(
+                      width: MediaQuery.sizeOf(context).width,
+                      padding: const EdgeInsets.only(top: 24, left: 16, right: 20, bottom: 20),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: CoconutColors.gray800,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                _viewModel.recentTransactionAnalysis!.titleString,
+                                style: CoconutTypography.body2_14_NumberBold,
+                              ),
+                              Text(
+                                _viewModel.recentTransactionAnalysis!.totalAmountResult,
+                                style: CoconutTypography.body2_14,
+                              ),
+                            ],
+                          ),
+                          CoconutLayout.spacing_300h,
+                          Text(
+                            _viewModel.recentTransactionAnalysis!.subtitleString,
+                            style: CoconutTypography.body3_12.setColor(
+                              CoconutColors.gray400,
+                            ),
+                          ),
+                          if (_viewModel.recentTransactionAnalysis!.receivedTxs.isNotEmpty &&
+                              _viewModel.selectedAnalysisTransactionType !=
+                                  TransactionType.sent) ...[
+                            _buildAnalysisTransactionRow(
+                              'assets/svg/tx-received.svg',
+                              _viewModel.recentTransactionAnalysis!.receivedTxs.length,
+                              _viewModel.recentTransactionAnalysis!.receivedAmount,
+                              TransactionType.received,
+                              isBtcUnit,
+                            ),
+                          ],
+                          if (_viewModel.recentTransactionAnalysis!.sentTxs.isNotEmpty &&
+                              _viewModel.selectedAnalysisTransactionType !=
+                                  TransactionType.received) ...[
+                            _buildAnalysisTransactionRow(
+                              'assets/svg/tx-sent.svg',
+                              _viewModel.recentTransactionAnalysis!.sentTxs.length,
+                              _viewModel.recentTransactionAnalysis!.sentAmount,
+                              TransactionType.sent,
+                              isBtcUnit,
+                            ),
+                          ],
+                          if (_viewModel.recentTransactionAnalysis!.selfTxs.isNotEmpty &&
+                              _viewModel.selectedAnalysisTransactionType !=
+                                  TransactionType.received) ...[
+                            _buildAnalysisTransactionRow(
+                              'assets/svg/tx-self.svg',
+                              _viewModel.recentTransactionAnalysis!.selfTxs.length,
+                              _viewModel.recentTransactionAnalysis!.selfAmount,
+                              TransactionType.self,
+                              isBtcUnit,
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }),
+            ],
+          ],
         ),
-        child: const Center(
-          child: Text('분석 위젯'),
+      ),
+    );
+  }
+
+  Widget _buildAnalysisTransactionRow(
+      String assetPath, int count, int amount, TransactionType type, bool isBtcUnit) {
+    String getIconPath() {
+      switch (type) {
+        case TransactionType.received:
+          return 'assets/svg/tx-received.svg';
+        case TransactionType.sent:
+          return 'assets/svg/tx-sent.svg';
+        case TransactionType.self:
+          return 'assets/svg/tx-self.svg';
+        default:
+          return 'assets/svg/tx-received.svg';
+      }
+    }
+
+    final String amountString = isBtcUnit
+        ? BitcoinUnit.btc.displayBitcoinAmount(amount, withUnit: true)
+        : BitcoinUnit.sats.displayBitcoinAmount(amount, withUnit: true);
+    final bool isReceived = type == TransactionType.received;
+    final String prefix = isReceived ? '+' : '';
+    return Column(
+      children: [
+        if (type != TransactionType.self) ...[
+          CoconutLayout.spacing_400h,
+        ] else ...[
+          CoconutLayout.spacing_200h,
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                SvgPicture.asset(getIconPath(), fit: BoxFit.fill, width: 24, height: 24),
+                CoconutLayout.spacing_100w,
+                Text(
+                  t.wallet_home_screen.count(count: count.toString()),
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                ),
+              ],
+            ),
+            if (type == TransactionType.self) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
+                  Text(
+                    t.fee,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                  ),
+                ],
+              ),
+            ] else ...[
+              Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalysisSkeleton() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.only(top: 36, left: 20, right: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Shimmer.fromColors(
+              baseColor: CoconutColors.gray800,
+              highlightColor: CoconutColors.gray750,
+              child: Container(
+                margin: const EdgeInsets.only(top: 8, left: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                  color: CoconutColors.gray800,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '최근 30일 • 보내기',
+                      style: CoconutTypography.body3_12.setColor(
+                        CoconutColors.gray400,
+                      ),
+                    ),
+                    CoconutLayout.spacing_100w,
+                    SvgPicture.asset(
+                      'assets/svg/caret-down.svg',
+                      colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Shimmer.fromColors(
+              baseColor: CoconutColors.gray800,
+              highlightColor: CoconutColors.gray750,
+              child: Container(
+                width: MediaQuery.sizeOf(context).width,
+                margin: const EdgeInsets.only(top: 8),
+                height: 90,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                  color: CoconutColors.gray800,
+                ),
+                child: const Text(
+                  '',
+                  style: CoconutTypography.body2_14,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1343,5 +1891,27 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     setState(() {
       _isDropdownMenuVisible = value;
     });
+  }
+
+  void _scrollToIndicator(int index) {
+    if (!_pageIndicatorController.hasClients) return;
+
+    // 실제 화면 너비를 기반으로 보이는 점 개수 계산
+    final screenWidth = MediaQuery.of(context).size.width;
+    const double dotWidth = 16.0; // 8px + 8px margin
+    final int visibleDots = (screenWidth / dotWidth).floor();
+
+    // 현재 페이지가 화면 중앙에 오도록 스크롤
+    final double targetOffset = (index - visibleDots ~/ 2) * dotWidth;
+    final double maxOffset = _pageIndicatorController.position.maxScrollExtent;
+    final double minOffset = _pageIndicatorController.position.minScrollExtent;
+
+    final double clampedOffset = targetOffset.clamp(minOffset, maxOffset);
+
+    _pageIndicatorController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 }

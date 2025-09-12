@@ -95,7 +95,7 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onLongPress: _onLongPress,
+        onLongPress: widget.onLongPressed != null ? _onLongPress : null,
         onTapDown: _onTapDown,
         onTapUp: _onTapUp,
         onTapCancel: _onTapCancel,

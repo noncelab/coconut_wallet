@@ -24,6 +24,9 @@ class SharedPrefKeys {
   static const String kExcludedFromTotalBalanceWalletIds =
       "EXCLUDED_FROM_TOTAL_BALANCE_WALLET_IDS"; // 홈화면 총 잔액에서 제외할 지갑 목록
   static const String kHomeFeatures = "HOME_FEATURES"; // 홈 화면에 표시할 기능(최근 거래, 분석, ...)
+  static const String kAnalysisPeriod = "ANALYSIS_PERIOD"; // 분석 위젯에 사용되는 조회 기간
+  static const String kSelectedTransactionTypeIndices =
+      "SELECTED_TRANSACTION_TYPE_INDICES"; // 분석 위젯에 사용되는 거래 유형
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';

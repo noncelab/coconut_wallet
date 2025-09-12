@@ -91,6 +91,12 @@ hardware_wallet: "Hardware Wallet"
 vault_app: "Vault App"
 view_balance: "Balance"
 
+relative_time:
+  days_ago(cardinal):
+    zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
+    one: "1 day ago"   # 1일
+    other: "${n} days ago"  # 2일 이상
+
 apply_item: "$count items"
 fee_sats: " ($value sats/vb)"
 utxo_count: "($count items)"
@@ -159,6 +165,24 @@ wallet_home_screen:
           empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
           set_to_0: "Set balance to 0 BTC"
           enter_again: "Try again"
+  empty_recent_transaction: "No recent transactions"
+  empty_analysis_result: "No transactions needed for analysis"
+  analysis_period: "Recent ${days} days • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "Analysis Period"
+    days_15: "15 days"
+    days_30: "30 days"
+    days_60: "60 days"
+    days_90: "90 days"
+    custom: "Custom"
+    transaction_type: "Transaction Type"
+
+  transaction_count: "Transaction $count times"
+  count: "$count times"
+  increase: "Increased"
+  decrease: "Decreased"
+  sent: "Sent"
+  received: "Received"
 
 wallet_add_scanner_screen:
   add_wallet: "Add Wallet"

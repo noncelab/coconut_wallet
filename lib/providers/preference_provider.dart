@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -56,7 +57,15 @@ class PreferenceProvider extends ChangeNotifier {
   late List<HomeFeature> _homeFeatures;
   List<HomeFeature> get homeFeatures => _homeFeatures;
 
+  // 분석 위젯의 기준이 되는 기간
+  late int _analysisPeriod;
+  int get analysisPeriod => _analysisPeriod;
+
+  late TransactionType _selectedAnalysisTransactionType;
+  TransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
+
   PreferenceProvider() {
+    _initializeFiat();
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
@@ -68,7 +77,8 @@ class PreferenceProvider extends ChangeNotifier {
     _favoriteWalletIds = _getFavoriteWalletIds();
     _excludedFromTotalBalanceWalletIds = _getExcludedFromTotalBalanceWalletIds();
     _homeFeatures = _getHomeFeatures();
-    _initializeFiat();
+    _analysisPeriod = _getAnalysisPeriod();
+    _selectedAnalysisTransactionType = _getAnalysisTransactionType();
     _initializeLanguageFromSystem();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyLanguageSettingSync();
@@ -380,6 +390,33 @@ class PreferenceProvider extends ChangeNotifier {
       await setHomeFeautres(homeFeatures);
     }
 
+    notifyListeners();
+  }
+
+  int _getAnalysisPeriod() {
+    final period = _sharedPrefs.getIntOrNull(SharedPrefKeys.kAnalysisPeriod);
+    return period ?? 30; // 기본 기간 30일
+  }
+
+  Future<void> setAnalysisPeriod(int days) async {
+    _analysisPeriod = days;
+    await _sharedPrefs.setInt(SharedPrefKeys.kAnalysisPeriod, days);
+    notifyListeners();
+  }
+
+  TransactionType _getAnalysisTransactionType() {
+    final encoded = _sharedPrefs.getString(SharedPrefKeys.kSelectedTransactionTypeIndices);
+    if (encoded.isEmpty) return TransactionType.unknown; // [전체 = unknown]가 기본
+    return TransactionType.values.firstWhere(
+      (type) => type.name == encoded,
+      orElse: () => TransactionType.unknown,
+    );
+  }
+
+  Future<void> setAnalysisTransactionType(TransactionType transactionType) async {
+    _selectedAnalysisTransactionType = transactionType;
+    await _sharedPrefs.setString(
+        SharedPrefKeys.kSelectedTransactionTypeIndices, _selectedAnalysisTransactionType.name);
     notifyListeners();
   }
 }

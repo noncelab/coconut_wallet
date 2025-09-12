@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -13,6 +15,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -20,6 +23,8 @@ import 'package:collection/collection.dart';
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
 typedef FakeBalanceGetter = int? Function(int id);
+
+const kRecenctTransactionDays = 1;
 
 class WalletHomeViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
@@ -42,6 +47,20 @@ class WalletHomeViewModel extends ChangeNotifier {
   StreamSubscription<BlockTimestamp?>? _currentBlockSubscription;
   List<WalletListItemBase> _favoriteWallets = [];
   final List<HomeFeature> _homeFeatures = [];
+  late int _analysisPeriod;
+  int get analysisPeriod => _analysisPeriod;
+  late TransactionType _selectedAnalysisTransactionType;
+  TransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
+  String get selectedAnalysisTransactionTypeName {
+    switch (_selectedAnalysisTransactionType) {
+      case TransactionType.received:
+        return t.receive;
+      case TransactionType.sent:
+        return t.send;
+      default:
+        return t.all;
+    }
+  }
 
   late List<int> _excludedFromTotalBalanceWalletIds = [];
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
@@ -60,6 +79,12 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, List<TransactionRecord>> _recentTransactions = {};
   Map<int, List<TransactionRecord>> get recentTransactions => _recentTransactions;
 
+  RecentTransactionAnalysis? _recentTransactionAnalysis;
+  RecentTransactionAnalysis? get recentTransactionAnalysis => _recentTransactionAnalysis;
+
+  bool _isBtcUnit = false;
+  bool get isBtcUnit => _isBtcUnit;
+
   WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._visibilityProvider,
       this._connectivityProvider, this._syncNodeStateStream, this._currentBlockStream) {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
@@ -77,6 +102,8 @@ class WalletHomeViewModel extends ChangeNotifier {
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+    _analysisPeriod = _preferenceProvider.analysisPeriod;
+    _selectedAnalysisTransactionType = _preferenceProvider.selectedAnalysisTransactionType;
   }
 
   bool get isEmptyFavoriteWallet => _isEmptyFavoriteWallet;
@@ -139,7 +166,8 @@ class WalletHomeViewModel extends ChangeNotifier {
     _currentBlock = currentBlock;
     Logger.log('WalletHomeViewModel: 현재 블록 높이 업데이트 - ${currentBlock?.height}');
     // latest tx 조회 및 analysis 수행
-    getPendingAndRecent7DaysTransactions(currentBlock?.height);
+    getPendingAndRecentDaysTransactions(currentBlock?.height, kRecenctTransactionDays);
+    getRecentTransactionAnalysis(_analysisPeriod);
     notifyListeners();
   }
 
@@ -152,10 +180,18 @@ class WalletHomeViewModel extends ChangeNotifier {
   Future<void> updateWalletBalancesAndRecentTxs() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
-
-    /// 임의로 여기서 호출
-    getPendingAndRecent7DaysTransactions(currentBlock?.height);
-    getRecentTransactionAnalysis(30);
+    final bool shouldFetchRecentTx = homeFeatures.any(
+      (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name && f.isEnabled,
+    );
+    final bool shouldFetchAnalysis = homeFeatures.any(
+      (f) => f.homeFeatureTypeString == HomeFeatureType.analysis.name && f.isEnabled,
+    );
+    if (shouldFetchRecentTx && currentBlock?.height != null) {
+      getPendingAndRecentDaysTransactions(currentBlock!.height, kRecenctTransactionDays);
+    }
+    if (shouldFetchAnalysis && currentBlock?.height != null) {
+      getRecentTransactionAnalysis(_analysisPeriod);
+    }
     notifyListeners();
   }
 
@@ -206,6 +242,15 @@ class WalletHomeViewModel extends ChangeNotifier {
     if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
         _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
       _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+    }
+
+    if (_analysisPeriod != _preferenceProvider.analysisPeriod) {
+      _analysisPeriod = _preferenceProvider.analysisPeriod;
+    }
+
+    if (_preferenceProvider.isBtcUnit != _isBtcUnit) {
+      _isBtcUnit = _preferenceProvider.isBtcUnit;
+      getRecentTransactionAnalysis(_analysisPeriod);
     }
     notifyListeners();
   }
@@ -302,15 +347,18 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   // 필요한 경우 호출
-  void getPendingAndRecent7DaysTransactions(int? blockHeight) {
+  void getPendingAndRecentDaysTransactions(int? blockHeight, int days) {
     if (blockHeight == null || _isFetchingLatestTx) return;
 
     // 홈 화면에 표시한 지갑 목록 아이디
     _isFetchingLatestTx = true;
 
     final walletIds = walletItemList.map((w) => w.id).toList();
-    final transactions = _walletProvider.getPendingAnd7DaysAgoTransactions(walletIds, blockHeight);
+    final transactions =
+        _walletProvider.getPendingAndDaysAgoTransactions(walletIds, blockHeight, days);
     _recentTransactions = transactions;
+
+    debugPrint('_recentTransactions = (${days}days) $_recentTransactions');
 
     // recentTransactions 로그 출력
     for (var entry in _recentTransactions.entries) {
@@ -318,7 +366,7 @@ class WalletHomeViewModel extends ChangeNotifier {
       // 개별 트랜잭션의 해시와 value 출력
       for (var tx in entry.value) {
         Logger.log(
-            '\tTxHash: ${tx.transactionHash}, Type: ${tx.transactionType.name}, Amount: ${tx.amount}');
+            '\tTxHash: ${tx.transactionHash}, Type: ${tx.transactionType.name}, Amount: ${tx.amount}, Status: ${TransactionUtil.getStatus(tx)}');
       }
     }
 
@@ -327,7 +375,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   // 필요한 경우 호출
   void getRecentTransactionAnalysis(int days) {
-    if (_isLatestTxAnalysisRunning) return;
+    // if (_isLatestTxAnalysisRunning) return;
 
     _isLatestTxAnalysisRunning = true;
     // 최근 n days 동안의 트랜잭션을 분석한 결과
@@ -335,7 +383,6 @@ class WalletHomeViewModel extends ChangeNotifier {
     // 조회 기간 내 트랜잭션의 받은 총 금액
     // 조회 기간 내 트랜잭션의 보낸 총 금액
     final walletIds = walletItemList.map((w) => w.id).toList();
-
     if (currentBlock?.height == null) return;
     final currentBlockHeight = currentBlock!.height;
 
@@ -366,7 +413,35 @@ class WalletHomeViewModel extends ChangeNotifier {
     Logger.log('WalletHomeViewModel: ⬆️ Sent: ${sentTxs.length}회 $sentAmount ');
     Logger.log('WalletHomeViewModel: 🔄 Self: ${selfTxs.length}회 $selfAmount ');
 
+    _recentTransactionAnalysis = RecentTransactionAnalysis(
+        receivedTxs: receivedTxs,
+        sentTxs: sentTxs,
+        selfTxs: selfTxs,
+        totalAmount: totalAmount,
+        receivedAmount: receivedAmount,
+        sentAmount: sentAmount,
+        selfAmount: selfAmount,
+        days: days,
+        isBtcUnit: _isBtcUnit,
+        selectedAnalysisTransactionType: _selectedAnalysisTransactionType);
     _isLatestTxAnalysisRunning = false;
+    notifyListeners();
+  }
+
+  void setAnalysisPeriod(int value) {
+    _analysisPeriod = value;
+    _preferenceProvider.setAnalysisPeriod(value);
+
+    getRecentTransactionAnalysis(value);
+    notifyListeners();
+  }
+
+  void setAnalysisTransactionType(TransactionType value) {
+    _selectedAnalysisTransactionType = value;
+    _preferenceProvider.setAnalysisTransactionType(value);
+
+    getRecentTransactionAnalysis(_analysisPeriod);
+    notifyListeners();
   }
 
   @override
@@ -374,5 +449,79 @@ class WalletHomeViewModel extends ChangeNotifier {
     _currentBlockSubscription?.cancel();
     _syncNodeStateSubscription?.cancel();
     super.dispose();
+  }
+}
+
+class RecentTransactionAnalysis {
+  final int totalAmount;
+  final List<TransactionRecord> receivedTxs;
+  final List<TransactionRecord> sentTxs;
+  final List<TransactionRecord> selfTxs;
+  final int receivedAmount;
+  final int sentAmount;
+  final int selfAmount;
+  final int days;
+  final bool isBtcUnit;
+  final TransactionType selectedAnalysisTransactionType;
+
+  const RecentTransactionAnalysis({
+    required this.totalAmount,
+    required this.receivedTxs,
+    required this.sentTxs,
+    required this.selfTxs,
+    required this.receivedAmount,
+    required this.sentAmount,
+    required this.selfAmount,
+    required this.days,
+    required this.isBtcUnit,
+    required this.selectedAnalysisTransactionType,
+  });
+
+  bool get isEmpty =>
+      receivedTxs.isEmpty &&
+      sentTxs.isEmpty &&
+      selfTxs.isEmpty &&
+      receivedAmount == 0 &&
+      sentAmount == 0 &&
+      selfAmount == 0;
+
+  int get totalTransactionCount => receivedTxs.length + sentTxs.length + selfTxs.length;
+  String get totalTransactionResult => selectedAnalysisTransactionType == TransactionType.received
+      ? t.wallet_home_screen.received
+      : selectedAnalysisTransactionType == TransactionType.sent
+          ? t.wallet_home_screen.sent
+          : totalAmount > 0
+              ? t.wallet_home_screen.increase
+              : t.wallet_home_screen.decrease;
+  String get dateRange => '$_startDate ~ $_endDate';
+  String get _startDate => _formatYyMmDd(DateTime.now().subtract(Duration(days: days)));
+  String get _endDate => _formatYyMmDd(DateTime.now());
+
+  String get titleString => '${isBtcUnit ? BitcoinUnit.btc.displayBitcoinAmount(
+      selectedAnalysisTransactionType == TransactionType.received
+          ? receivedAmount
+          : selectedAnalysisTransactionType == TransactionType.sent
+              ? (sentAmount + selfAmount).abs()
+              : totalAmount,
+      withUnit: true,
+    ) : BitcoinUnit.sats.displayBitcoinAmount(
+      selectedAnalysisTransactionType == TransactionType.received
+          ? receivedAmount
+          : selectedAnalysisTransactionType == TransactionType.sent
+              ? sentAmount + selfAmount
+              : totalAmount,
+      withUnit: true,
+    )} ';
+  String get totalAmountResult => totalTransactionResult;
+  String get subtitleString =>
+      '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == TransactionType.received ? receivedTxs.length.toString() : selectedAnalysisTransactionType == TransactionType.sent ? (sentTxs.length + selfTxs.length).toString() : totalTransactionCount.toString())}';
+
+  String _formatYyMmDd(DateTime dt) {
+    final local = dt.toLocal();
+    final y = local.year % 100;
+    final m = local.month.toString().padLeft(2, '0');
+    final d = local.day.toString().padLeft(2, '0');
+    final yy = y.toString().padLeft(2, '0');
+    return '$yy.$m.$d';
   }
 }

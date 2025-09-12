@@ -92,6 +92,12 @@ vault_app: "볼트 앱"
 view_balance: "잔액 보기"
 view: "보기"
 
+relative_time:
+  days_ago(cardinal):
+    zero: "오늘"        # 0일이면 Today로 처리(원하면 생략 가능)
+    one: "1일 전"   # 1일
+    other: "${n}일 전"  # 2일 이상
+
 apply_item: "$count개에 적용"
 fee_sats: " ($value sats/vb)"
 utxo_count: "($count개)"
@@ -203,6 +209,24 @@ wallet_home_screen:
       empty_fake_balance_description: "금액이 설정되지 않았어요.\n다시 입력하시거나 0 BTC로 설정할까요?"
       set_to_0: "0 BTC로 설정"
       enter_again: "다시 입력"
+  empty_recent_transaction: "최근 거래가 없어요"
+  empty_analysis_result: "분석에 필요한 거래가 없어요"
+  analysis_period: "최근 ${days}일 • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "조회 기간"
+    days_15: "15일"
+    days_30: "30일"
+    days_60: "60일"
+    days_90: "90일"
+    custom: "직접 설정"
+    transaction_type: "거래 유형"
+
+  transaction_count: "트랜잭션 $count회"
+  count: "$count회"
+  increase: "증가했어요"
+  decrease: "감소했어요"
+  sent: "보냈어요"
+  received: "받았어요"
 
 wallet_add_scanner_screen:
   add_wallet: "지갑 추가"

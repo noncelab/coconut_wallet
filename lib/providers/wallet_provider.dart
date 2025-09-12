@@ -351,14 +351,17 @@ class WalletProvider extends ChangeNotifier {
     return _transactionRepository.getTransactionRecordList(walletId);
   }
 
-  Map<int, List<TransactionRecord>> getPendingAnd7DaysAgoTransactions(
-      List<int> walletIds, int currentBlockHeight) {
+  Map<int, List<TransactionRecord>> getPendingAndDaysAgoTransactions(
+      List<int> walletIds, int currentBlockHeight, int days) {
     Map<int, List<TransactionRecord>> result = {};
     // 7일 전 블록 높이 (1008 blocks = 6 block/h * 24h * 7d)
-    final blockHeight = currentBlockHeight - 1008 > 0 ? currentBlockHeight - 1008 : 0;
+    // N일 전 블록 높이 (144 * N blocks = 6 block/h * 24h * Nd)
+
+    final blockHeight =
+        currentBlockHeight - (144 * days) > 0 ? currentBlockHeight - (144 * days) : 0;
     for (int walletId in walletIds) {
       final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
-      // 현재 트랜잭션 기준 7일 내 트랜잭션 조회
+      // 현재 트랜잭션 기준 N일 내 트랜잭션 조회
       final recentTxs =
           _transactionRepository.getTransactionRecordListAfterBlockHeight(walletId, blockHeight);
 
