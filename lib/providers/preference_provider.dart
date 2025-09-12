@@ -14,6 +14,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 
 class PreferenceProvider extends ChangeNotifier {
@@ -93,9 +94,9 @@ class PreferenceProvider extends ChangeNotifier {
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
-    _lastUtxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kLastUtxoSortOrder).isNotEmpty
+    _lastUtxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
         ? UtxoOrder.values.firstWhere(
-            (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kLastUtxoSortOrder),
+            (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
             orElse: () => UtxoOrder.byAmountDesc)
         : UtxoOrder.byAmountDesc;
 
@@ -478,7 +479,8 @@ class PreferenceProvider extends ChangeNotifier {
   // 마지막으로 선택한 UTXO 정렬 방식 저장
   Future<void> setLastUtxoOrder(UtxoOrder utxoOrder) async {
     _lastUtxoSortOrder = utxoOrder;
-    await _sharedPrefs.setString(SharedPrefKeys.kLastUtxoSortOrder, utxoOrder.name);
+    await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
+    vibrateExtraLight();
     notifyListeners();
   }
 }
