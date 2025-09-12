@@ -56,6 +56,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   bool get isKorean => _language == "kr";
   bool get isEnglish => _language == "en";
+  bool get isJapanese => _language == "jp";
 
   /// 선택된 통화
   late FiatCode _selectedFiat;

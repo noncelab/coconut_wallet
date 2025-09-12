@@ -457,6 +457,7 @@ settings_screen:
   language: "Language"
   korean: "한국어"
   english: "English"
+  japanese: "日本語"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
