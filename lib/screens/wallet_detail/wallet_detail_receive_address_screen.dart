@@ -49,10 +49,17 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   void initState() {
     super.initState();
     if (widget.id == -1) return;
+    AppGuard.disablePrivacyScreen();
 
     final walletProvider = context.read<WalletProvider>();
     _selectedWalletItem = walletProvider.walletItemList.where((e) => e.id == widget.id).first;
     _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
+  }
+
+  @override
+  void dispose() {
+    AppGuard.enablePrivacyScreen();
+    super.dispose();
   }
 
   @override

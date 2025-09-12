@@ -17,6 +17,21 @@ import 'package:screen_capture_event/screen_capture_event.dart';
 
 // 앱 root 화면(WalletListScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
 class AppGuard extends StatefulWidget {
+  static bool _isPrivacyEnabled = true;
+
+  /// 화면보호기 활성화 여부를 반환합니다.
+  static bool get isPrivacyEnabled => _isPrivacyEnabled;
+
+  /// 화면보호기를 활성화합니다.
+  static void enablePrivacyScreen() {
+    _isPrivacyEnabled = true;
+  }
+
+  /// 화면보호기를 비활성화합니다.
+  static void disablePrivacyScreen() {
+    _isPrivacyEnabled = false;
+  }
+
   final Widget child;
   const AppGuard({super.key, required this.child});
 
@@ -70,6 +85,7 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
+    Logger.log('AppGuard: AppLifecycleState: $state');
     switch (state) {
       case AppLifecycleState.resumed:
         if (_isPaused) {
@@ -139,9 +155,9 @@ class _AppGuardState extends State<AppGuard> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
+    return Stack(alignment: Alignment.topLeft, children: [
       widget.child,
-      if (_isPaused)
+      if (_isPaused && AppGuard._isPrivacyEnabled)
         Container(
           color: CoconutColors.black,
           child: Center(
