@@ -7,13 +7,13 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_search_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 
 class AddressSearchScreen extends StatefulWidget {
   const AddressSearchScreen({super.key, required this.id});
@@ -27,7 +27,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   late final AddressSearchViewModel viewModel;
   final _addressController = TextEditingController();
   final _addressFocusNode = FocusNode();
-  QRViewController? _qrViewController;
+  MobileScannerController? _qrViewController;
   bool _isQrDataHandling = false;
   String _addressOldText = "";
   Timer? _debounce;
@@ -38,6 +38,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   @override
   void initState() {
     super.initState();
+    _qrViewController = MobileScannerController();
     _addressController.addListener(_onAddressChanged);
     viewModel =
         AddressSearchViewModel(Provider.of<WalletProvider>(context, listen: false), widget.id);
@@ -89,7 +90,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                           BlendMode.srcIn,
                         )),
                     onPressed: () {
-                      _qrViewController?.flipCamera();
+                      _qrViewController?.switchCamera();
                     },
                   ),
                 ],
@@ -97,9 +98,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   _disposeQrViewController();
                   Navigator.of(context).pop<String>('');
                 }),
-            body: SendAddressBody(
+            body: AddressQrScannerBody(
               qrKey: qrKey,
-              onQrViewCreated: _onQRViewCreated,
+              onDetect: _onQRViewCreated,
             )));
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
@@ -108,26 +109,32 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     _disposeQrViewController();
   }
 
-  void _onQRViewCreated(QRViewController qrViewController) {
-    _qrViewController = qrViewController;
-    qrViewController.scannedDataStream.listen((scanData) {
-      if (_isQrDataHandling || scanData.code == null) return;
-      if (scanData.code!.isEmpty) return;
+  void _onQRViewCreated(BarcodeCapture capture) {
+    final codes = capture.barcodes;
+    if (codes.isEmpty) return;
 
-      _isQrDataHandling = true;
-      viewModel.validateAddress(scanData.code!).then((_) {
-        if (mounted) {
-          Navigator.pop(context, scanData.code!);
-        }
-      }).catchError((e) {
-        if (mounted) {
-          CoconutToast.showToast(isVisibleIcon: true, context: context, text: e.toString());
-        }
-      }).whenComplete(() async {
-        // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
-        await Future.delayed(const Duration(seconds: 1));
-        _isQrDataHandling = false;
-      });
+    final barcode = codes.first;
+    if (barcode.rawValue == null) return;
+
+    final scanData = barcode.rawValue;
+
+    if (_isQrDataHandling || scanData == null || scanData.isEmpty) {
+      return;
+    }
+
+    _isQrDataHandling = true;
+    viewModel.validateAddress(scanData).then((_) {
+      if (mounted) {
+        Navigator.pop(context, scanData);
+      }
+    }).catchError((e) {
+      if (mounted) {
+        CoconutToast.showToast(isVisibleIcon: true, context: context, text: e.toString());
+      }
+    }).whenComplete(() async {
+      // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
+      await Future.delayed(const Duration(seconds: 1));
+      _isQrDataHandling = false;
     });
   }
 

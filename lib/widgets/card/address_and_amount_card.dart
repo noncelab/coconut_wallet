@@ -3,11 +3,11 @@ import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
-import 'package:coconut_wallet/widgets/body/send_address/send_address_body.dart';
+import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class AddressAndAmountCard extends StatefulWidget {
   final String title;
@@ -55,12 +55,13 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
   late final TextEditingController _amountController;
   final _addressFocusNode = FocusNode();
   final _quantityFocusNode = FocusNode();
-  QRViewController? _qrViewController;
+  MobileScannerController? _qrViewController;
   bool _isQrDataHandling = false;
 
   @override
   void initState() {
     super.initState();
+    _qrViewController = MobileScannerController();
     _addressController = TextEditingController(text: widget.address);
     _amountController = TextEditingController(text: widget.amount);
   }
@@ -234,27 +235,33 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
     widget.onDeleted(_addressController.text.isEmpty && _amountController.text.isEmpty);
   }
 
-  void _onQRViewCreated(QRViewController qrViewController) {
-    _qrViewController = qrViewController;
-    qrViewController.scannedDataStream.listen((scanData) {
-      if (_isQrDataHandling || scanData.code == null) return;
-      if (scanData.code!.isEmpty) return;
+  void _onQRViewCreated(BarcodeCapture capture) {
+    final codes = capture.barcodes;
+    if (codes.isEmpty) return;
 
-      _isQrDataHandling = true;
+    final barcode = codes.first;
+    if (barcode.rawValue == null) return;
 
-      widget.validateAddress(scanData.code!).then((normalizedAddress) {
-        if (mounted) {
-          Navigator.pop(context, normalizedAddress);
-        }
-      }).catchError((e) {
-        if (mounted) {
-          CoconutToast.showToast(isVisibleIcon: true, context: context, text: e.toString());
-        }
-      }).whenComplete(() async {
-        // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
-        await Future.delayed(const Duration(seconds: 1));
-        _isQrDataHandling = false;
-      });
+    final scanData = barcode.rawValue;
+
+    if (_isQrDataHandling || scanData == null || scanData.isEmpty) {
+      return;
+    }
+
+    _isQrDataHandling = true;
+
+    widget.validateAddress(scanData).then((normalizedAddress) {
+      if (mounted) {
+        Navigator.pop(context, normalizedAddress);
+      }
+    }).catchError((e) {
+      if (mounted) {
+        CoconutToast.showToast(isVisibleIcon: true, context: context, text: e.toString());
+      }
+    }).whenComplete(() async {
+      // 하나의 QR 스캔으로, 동시에 여러번 호출되는 것을 방지하기 위해
+      await Future.delayed(const Duration(seconds: 1));
+      _isQrDataHandling = false;
     });
   }
 
@@ -277,7 +284,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                           BlendMode.srcIn,
                         )),
                     onPressed: () {
-                      _qrViewController?.flipCamera();
+                      _qrViewController?.switchCamera();
                     },
                   ),
                 ],
@@ -285,7 +292,7 @@ class _AddressAndAmountCardState extends State<AddressAndAmountCard> {
                   _disposeQrViewController();
                   Navigator.of(context).pop<String>('');
                 }),
-            body: SendAddressBody(qrKey: qrKey, onQrViewCreated: _onQRViewCreated)));
+            body: AddressQrScannerBody(qrKey: qrKey, onDetect: _onQRViewCreated)));
 
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
