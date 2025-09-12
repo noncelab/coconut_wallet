@@ -5,6 +5,62 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
 
+/// 공통 스타일
+const _defaultTextStyle = TextStyle(color: CoconutColors.white);
+final _indexTextStyle =
+    CoconutTypography.body1_16_Number.setColor(CoconutColors.gray500);
+
+/// 하이라이트 처리 함수
+List<TextSpan> highlightOccurrences(
+  String source,
+  String query, {
+  String? type,
+  bool isIndex = false,
+  Color highlightColor = CoconutColors.cyanBlue,
+}) {
+  final normalStyle = isIndex ? _indexTextStyle : _defaultTextStyle;
+
+  if (query.isEmpty) {
+    return [TextSpan(text: source, style: normalStyle)];
+  }
+
+  final matches = query.allMatches(source);
+  if (matches.isEmpty) {
+    return [TextSpan(text: source, style: normalStyle)];
+  }
+
+  final spans = <TextSpan>[];
+  int lastMatchEnd = 0;
+
+  for (final match in matches) {
+    if (match.start > lastMatchEnd) {
+      spans.add(TextSpan(
+        text: source.substring(lastMatchEnd, match.start),
+        style: normalStyle,
+      ));
+    }
+
+    spans.add(TextSpan(
+      text: source.substring(match.start, match.end),
+      style: normalStyle.copyWith(
+        fontWeight: FontWeight.bold,
+        color: highlightColor,
+      ),
+    ));
+
+    lastMatchEnd = match.end;
+  }
+
+  if (lastMatchEnd < source.length) {
+    spans.add(TextSpan(
+      text: source.substring(lastMatchEnd),
+      style: normalStyle,
+    ));
+  }
+
+  return spans;
+}
+
 class Bip39ListScreen extends StatefulWidget {
   const Bip39ListScreen({super.key});
 
@@ -19,13 +75,17 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   List<Map<String, dynamic>> _filteredItems = [];
+  bool _isTop = true;
+  bool _isFabShown = false;
+
+  Color _searchbarBackgroundColor = CoconutColors.white;
+  Color _searchbarFillColor = CoconutColors.black.withOpacity(0.06);
 
   @override
   void initState() {
     super.initState();
-    _filteredItems =
-        List.generate(wordList.length, (index) => {'index': index + 1, 'item': wordList[index]});
-
+    _filteredItems = _generateFullList();
+    _scrollController.addListener(_scrollListener);
     _searchController.addListener(_filterItems);
   }
 
@@ -36,55 +96,84 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     super.dispose();
   }
 
-  void _filterItems() {
-    if (_searchController.text.isNotEmpty) {
+  /// 전체 워드리스트 생성
+  List<Map<String, dynamic>> _generateFullList() => List.generate(
+        wordList.length,
+        (index) => {'index': index + 1, 'item': wordList[index], 'type': null},
+      );
+
+  /// 스크롤 리스너
+  void _scrollListener() {
+    final scrollPosition = _scrollController.position;
+
+    if (_isTop && scrollPosition.pixels > 0) {
+      _isTop = false;
       setState(() {
-        _queryWord();
+        _searchbarBackgroundColor = CoconutColors.whiteLilac;
+        _searchbarFillColor = CoconutColors.white;
       });
-    } else {
+    } else if (!_isTop && scrollPosition.pixels <= 0) {
+      _isTop = true;
       setState(() {
-        _filteredItems = List.generate(
-            wordList.length, (index) => {'index': index + 1, 'item': wordList[index]});
+        _searchbarBackgroundColor = CoconutColors.white;
+        _searchbarFillColor = CoconutColors.borderLightGray;
       });
+    }
+
+    if (!_isFabShown && scrollPosition.pixels > 450) {
+      setState(() => _isFabShown = true);
+    } else if (_isTop) {
+      setState(() => _isFabShown = false);
     }
   }
 
-  void _queryWord() {
-    String query = _searchController.text.toLowerCase();
+  void _scrollToTop() => _scrollController.jumpTo(0.0);
 
+  /// 검색창 변경 시 실행
+  void _filterItems() {
+    final text = _searchController.text;
+    setState(() {
+      _filteredItems = text.isNotEmpty ? _queryWord(text) : _generateFullList();
+    });
+  }
+
+  /// 🔹 검색 로직 (원본 유지)
+  List<Map<String, dynamic>> _queryWord(String input) {
+    final query = input.toLowerCase();
     final isBinary = RegExp(r'^[01]+$').hasMatch(query);
     final isNumeric = RegExp(r'^\d+$').hasMatch(query);
     final isAlphabetic = RegExp(r'^[a-zA-Z]+$').hasMatch(query);
 
-    List<Map<String, dynamic>> numericResults = [];
-    List<Map<String, dynamic>> binaryResults = [];
-    List<Map<String, dynamic>> alphabeticResults = [];
+    final numericResults = <Map<String, dynamic>>[];
+    final binaryResults = <Map<String, dynamic>>[];
+    final alphabeticResults = <Map<String, dynamic>>[];
 
-    for (int i = 0; i < wordList.length; i++) {
-      final item = wordList[i];
+    for (var i = 0; i < wordList.length; i++) {
       final indexNum = i + 1;
+      final item = wordList[i];
+      final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
 
-      if (isNumeric && query.length <= 4 && indexNum.toString().contains(query)) {
+      // 숫자 검색 → index 동일 시 매칭
+      if (isNumeric && query.length <= 4 && i.toString() == query) {
         numericResults.add({'index': indexNum, 'item': item, 'type': 'numeric'});
       }
 
-      if (isBinary) {
-        final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
-        if (binaryStr.contains(query)) {
-          binaryResults.add({'index': indexNum, 'item': item, 'type': 'binary'});
-        }
+      // 이진 검색
+      if (isBinary && binaryStr.contains(query)) {
+        binaryResults.add({'index': indexNum, 'item': item, 'type': 'binary'});
       }
 
+      // 알파벳 검색
       if (isAlphabetic && item.toLowerCase().contains(query)) {
         alphabeticResults.add({'index': indexNum, 'item': item, 'type': 'alphabetic'});
       }
     }
 
+    // 알파벳 검색 → startsWith 우선 정렬
     if (isAlphabetic) {
       alphabeticResults.sort((a, b) {
         final itemA = (a['item'] as String).toLowerCase();
         final itemB = (b['item'] as String).toLowerCase();
-
         final startsWithA = itemA.startsWith(query);
         final startsWithB = itemB.startsWith(query);
 
@@ -92,11 +181,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         if (!startsWithA && startsWithB) return 1;
         return itemA.compareTo(itemB);
       });
-      _filteredItems = alphabeticResults;
+      return alphabeticResults;
     } else {
-      numericResults.sort((a, b) => (a['index'] as int).compareTo(b['index'] as int));
-      binaryResults.sort((a, b) => (a['index'] as int).compareTo(b['index'] as int));
-      _filteredItems = [...numericResults, ...binaryResults];
+      return [
+        ...numericResults..sort((a, b) => a['index'].compareTo(b['index'])),
+        ...binaryResults..sort((a, b) => a['index'].compareTo(b['index']))
+      ];
     }
   }
 
@@ -113,56 +203,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         ),
         body: Column(
           children: [
-            Container(
-              color: CoconutColors.black,
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeOut,
-                    decoration: BoxDecoration(
-                      color: MyColors.borderLightgrey,
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
-                    child: TextField(
-                      keyboardType: TextInputType.text,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
-                      ],
-                      controller: _searchController,
-                      maxLines: 1,
-                      maxLength: 11,
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: _hintText,
-                        hintStyle: Styles.body2.merge(
-                          const TextStyle(
-                            color: MyColors.transparentWhite_50,
-                          ),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.search_rounded,
-                          color: MyColors.transparentWhite_50,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.transparent,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
-                      ),
-                      style: const TextStyle(
-                        decorationThickness: 0,
-                        color: CoconutColors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            _searchBar(context),
             SizedBox(
               width: MediaQuery.of(context).size.width,
               child: _resultWidget(),
@@ -182,13 +223,68 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     );
   }
 
+  Widget _searchBar(BuildContext context) {
+    return Container(
+      color: CoconutColors.black,
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: MyColors.borderLightgrey,
+              borderRadius: BorderRadius.circular(12.0),
+            ),
+            child: TextField(
+              keyboardType: TextInputType.text,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+              ],
+              controller: _searchController,
+              maxLines: 1,
+              maxLength: 11,
+              decoration: InputDecoration(
+                counterText: '',
+                hintText: _hintText,
+                hintStyle: Styles.body2.merge(
+                  const TextStyle(
+                    color: MyColors.transparentWhite_50,
+                  ),
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: MyColors.transparentWhite_50,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.transparent,
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
+              ),
+              style: const TextStyle(
+                decorationThickness: 0,
+                color: CoconutColors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _resultWidget() {
     return _searchController.text.isEmpty
         ? Container()
         : Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -208,7 +304,8 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                         child: Text(
                           t.bip39_list_screen.no_result,
                           style: Styles.body1Bold.merge(
-                            const TextStyle(color: MyColors.transparentWhite_70),
+                            const TextStyle(
+                                color: MyColors.transparentWhite_70),
                           ),
                         ),
                       ),
@@ -219,127 +316,45 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   }
 
   Widget _buildListItem(BuildContext context, int index) {
-    final item = _filteredItems[index]['item'] as String;
-    final indexNum = _filteredItems[index]['index'] as int;
-    final type = _filteredItems[index]['type'] as String?;
-    final query = _searchController.text;
-
-    // 인덱스와 바이너리 문자열 준비
-    final indexStr = '${indexNum}. ';
-    final binaryStr = 'Binary: ${(indexNum - 1).toRadixString(2).padLeft(11, '0')}';
-
-    List<TextSpan> highlightOccurrences(
-      String source,
-      String query, {
-      String? type,
-      bool isIndex = false,
-    }) {
-      if (query.isEmpty) {
-        return [TextSpan(text: source)];
-      }
-
-      // 소스와 쿼리를 둘 다 소문자로 비교
-      final lowerSource = source.toLowerCase();
-      final lowerQuery = query.toLowerCase();
-
-      final matches = RegExp(RegExp.escape(lowerQuery)).allMatches(lowerSource);
-
-      if (matches.isEmpty) {
-        return [TextSpan(text: source)];
-      }
-
-      Color highlightColor;
-      switch (type) {
-        case 'numeric':
-          highlightColor = CoconutColors.cyanBlue;
-          break;
-        case 'binary':
-          highlightColor = CoconutColors.cyanBlue;
-          break;
-        default:
-          highlightColor = CoconutColors.cyanBlue;
-      }
-
-      List<TextSpan> spans = [];
-      int lastMatchEnd = 0;
-      for (final match in matches) {
-        if (match.start != lastMatchEnd) {
-          spans.add(TextSpan(text: source.substring(lastMatchEnd, match.start)));
-        }
-        spans.add(
-          TextSpan(
-            text: source.substring(match.start, match.end),
-            style: TextStyle(fontWeight: FontWeight.bold, color: highlightColor),
-          ),
-        );
-        lastMatchEnd = match.end;
-      }
-      if (lastMatchEnd != source.length) {
-        spans.add(TextSpan(text: source.substring(lastMatchEnd)));
-      }
-      return spans;
-    }
+    final data = _filteredItems[index];
+    final item = data['item'] as String;
+    final indexNum = data['index'] as int;
+    final type = data['type'] as String?;
+    final query = _searchController.text.toLowerCase();
+    final binaryStr =
+        (indexNum - 1).toRadixString(2).padLeft(11, '0');
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            children: highlightOccurrences(
-                              indexStr,
-                              query,
-                              type: 'numeric',
-                            ),
-                            style: Styles.body1.merge(TextStyle(
-                              color: MyColors.transparentWhite_70,
-                              fontFamily: CustomFonts.number.getFontFamily,
-                            )),
-                          ),
-                        ),
-                        RichText(
-                          text: TextSpan(
-                            children: highlightOccurrences(
-                              item,
-                              _searchController.text,
-                              type: type,
-                            ),
-                            style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+        ListTile(
+          title: RichText(
+            text: TextSpan(
+              children: highlightOccurrences(item, query, type: type),
+              style: Styles.h3.merge(
+                const TextStyle(fontWeight: FontWeight.w600),
               ),
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: RichText(
-                    text: TextSpan(
-                      children: highlightOccurrences(binaryStr, query, type: 'binary'),
-                      style: Styles.subLabel.merge(
-                        const TextStyle(color: MyColors.transparentWhite_50),
-                      ),
-                    ),
-                  ),
-                ),
+            ),
+          ),
+          trailing: RichText(
+            text: TextSpan(
+              style: Styles.subLabel.merge(
+                const TextStyle(color: MyColors.transparentWhite_50),
               ),
-            ],
+              children: [
+                const TextSpan(text: 'Binary: '),
+                ...highlightOccurrences(
+                  binaryStr,
+                  type == 'numeric'
+                      ? binaryStr
+                      : (type == 'binary' ? query : ''),
+                  type: 'binary',
+                ),
+              ],
+            ),
           ),
         ),
-        if (index != wordList.length - 1) const Divider(color: MyColors.borderLightgrey),
+        if (index != _filteredItems.length - 1)
+          const Divider(color: MyColors.borderLightgrey),
       ],
     );
   }
