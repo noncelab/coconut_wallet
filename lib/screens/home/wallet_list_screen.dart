@@ -128,13 +128,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   extendBodyBehindAppBar: true,
                   appBar: _buildAppBar(context),
                   body: SafeArea(
-                    top: true,
-                    bottom: false,
                     child: isEditMode
                         // 편집 모드
                         ? Stack(
                             children: [
-                              _buildEditableWalletList(walletBalanceMap),
+                              SizedBox(
+                                  height: MediaQuery.sizeOf(context).height,
+                                  child: _buildEditableWalletList(walletBalanceMap)),
                               FixedBottomButton(
                                 onButtonClicked: () async {
                                   await viewModel.applyTempDatasToWallets();

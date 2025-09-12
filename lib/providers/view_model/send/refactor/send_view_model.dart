@@ -13,6 +13,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
@@ -93,6 +94,7 @@ class SendViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final NodeProvider _nodeProvider;
+  final PreferenceProvider _preferenceProvider;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
   final Function(String) _onAmountTextUpdate;
@@ -133,7 +135,19 @@ class SendViewModel extends ChangeNotifier {
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
   int get selectedUtxoListLength => _selectedUtxoList.length;
 
-  List<WalletListItemBase> get walletItemList => _walletProvider.walletItemList;
+  List<WalletListItemBase> get walletItemList {
+    final walletList = _walletProvider.walletItemList;
+    final order = _preferenceProvider.walletOrder;
+
+    if (order.isEmpty) {
+      return walletList;
+    }
+
+    final walletMap = {for (var wallet in walletList) wallet.id: wallet};
+    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+    return orderedMap;
+  }
+
   WalletListItemBase? get selectedWalletItem => _selectedWalletItem;
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
@@ -272,8 +286,8 @@ class SendViewModel extends ChangeNotifier {
       this._walletProvider,
       this._sendInfoProvider,
       this._nodeProvider,
+      this._preferenceProvider,
       this._isNetworkOn,
-      this._currentUnit,
       this._onAmountTextUpdate,
       this._onFeeRateTextUpdate,
       this._onRecipientPageDeleted,
@@ -281,6 +295,7 @@ class SendViewModel extends ChangeNotifier {
       SendEntryPoint sendEntryPoint) {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
+    _currentUnit = _preferenceProvider.currentUnit;
 
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
