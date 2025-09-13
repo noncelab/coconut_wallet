@@ -685,7 +685,7 @@ errors:
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
   enter_fee_directly: "Enter Manually"
-  search_mnemonic_word: "Search in English"
+  search_mnemonic_word: "Search in English or numbers"
 
 tooltip:
   recommended_fee1: "Could not fetch recommended fee. Please enter fee manually."

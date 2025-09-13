@@ -688,7 +688,7 @@ errors:
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sat/vB)"
   enter_fee_directly: "직접 입력하기"
-  search_mnemonic_word: "영문으로 검색해 보세요"
+  search_mnemonic_word: "영문 또는 숫자로 검색해 보세요"
 
 tooltip:
   recommended_fee1: "추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요."
