@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/utxo_selection_view_model.dart';
@@ -49,7 +50,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     UtxoOrder.byTimestampDesc,
     UtxoOrder.byTimestampAsc,
   ];
-  late UtxoOrder _selectedUtxoOrder;
 
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
   bool _isOrderDropdownVisible = false; // 필터 드롭다운
@@ -155,15 +155,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   void initState() {
     try {
       super.initState();
-      _selectedUtxoOrder = _utxoOrderOptions[0];
+
       _viewModel = UtxoSelectionViewModel(
-          Provider.of<WalletProvider>(context, listen: false),
-          Provider.of<UtxoTagProvider>(context, listen: false),
-          Provider.of<PriceProvider>(context, listen: false),
-          Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
-          widget.walletId,
-          widget.selectedUtxoList,
-          _selectedUtxoOrder);
+        Provider.of<WalletProvider>(context, listen: false),
+        Provider.of<UtxoTagProvider>(context, listen: false),
+        Provider.of<PriceProvider>(context, listen: false),
+        Provider.of<PreferenceProvider>(context, listen: false),
+        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+        widget.walletId,
+        widget.selectedUtxoList,
+      );
 
       _scrollController.addListener(() {
         if (_isOrderDropdownVisible) {
@@ -367,11 +368,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
             _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
         dividerColor: CoconutColors.black,
         onSelected: (index, selectedText) async {
-          bool isChanged = _selectedUtxoOrder != _utxoOrderOptions[index];
+          bool isChanged = _viewModel.utxoOrder != _utxoOrderOptions[index];
           setState(() {
-            if (isChanged) {
-              _selectedUtxoOrder = _utxoOrderOptions[index];
-            }
             _isOrderDropdownVisible = false;
           });
 
@@ -387,7 +385,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   }
 
   int _getIndexBySelectedFilter() {
-    switch (_selectedUtxoOrder) {
+    switch (_viewModel.utxoOrder) {
       case UtxoOrder.byAmountDesc:
         return 0;
       case UtxoOrder.byAmountAsc:
@@ -489,7 +487,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       child: _buildTotalUtxoAmount(
         Text(
           key: _orderDropdownButtonKey,
-          _selectedUtxoOrder.text,
+          _viewModel.utxoOrder.text,
           style: Styles.caption2.merge(
             const TextStyle(
               color: CoconutColors.white,
