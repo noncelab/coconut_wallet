@@ -148,6 +148,39 @@ class SendViewModel extends ChangeNotifier {
     return orderedMap;
   }
 
+  List<WalletListItemBase> getWalletItemListWithOrder(int? walletId) {
+    final walletList = _walletProvider.walletItemList;
+    final order = _preferenceProvider.walletOrder;
+
+    if (order.isEmpty) {
+      // order가 비어있으면 walletId와 일치하는 지갑을 맨 앞으로
+      if (walletId != null) {
+        final targetWallet = walletList.firstWhere(
+          (wallet) => wallet.id == walletId,
+          orElse: () => walletList.first,
+        );
+        final otherWallets = walletList.where((wallet) => wallet.id != walletId).toList();
+        return [targetWallet, ...otherWallets];
+      }
+      return walletList;
+    }
+
+    // order가 있으면 기존 순서대로 정렬하되, walletId와 일치하는 지갑을 맨 앞으로
+    final walletMap = {for (var wallet in walletList) wallet.id: wallet};
+    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
+
+    if (walletId != null) {
+      final targetWallet = orderedMap.firstWhere(
+        (wallet) => wallet.id == walletId,
+        orElse: () => orderedMap.first,
+      );
+      final otherWallets = orderedMap.where((wallet) => wallet.id != walletId).toList();
+      return [targetWallet, ...otherWallets];
+    }
+
+    return orderedMap;
+  }
+
   WalletListItemBase? get selectedWalletItem => _selectedWalletItem;
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;

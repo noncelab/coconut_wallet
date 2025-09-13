@@ -1204,7 +1204,8 @@ class _SendScreenState extends State<SendScreen>
                       child: ListView.builder(
                           itemCount: _viewModel.walletItemList.length,
                           itemBuilder: (BuildContext context, int index) {
-                            final walletListItem = _viewModel.walletItemList[index];
+                            final walletListItem =
+                                _viewModel.getWalletItemListWithOrder(widget.walletId)[index];
                             final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
                             return _buildAddressRow(index, walletAddress.address,
                                 walletListItem.name, walletAddress.derivationPath);
@@ -1231,7 +1232,7 @@ class _SendScreenState extends State<SendScreen>
                                         showOnlyMfpWallets: false,
                                         scrollController: scrollController,
                                         currentUnit: _viewModel.currentUnit,
-                                        walletId: -1,
+                                        walletId: _viewModel.selectedWalletId,
                                         onWalletChanged: (id) {
                                           Navigator.pop(context);
                                           _showAddressListBottomSheet(id);
