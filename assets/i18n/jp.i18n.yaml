@@ -90,6 +90,7 @@ select: "選択"
 hardware_wallet: "ハードウェアウォレット"
 vault_app: "Vault App"
 view_balance: "残高"
+view: "表示"
 network: "ネットワーク"
 electrum_server: "Electrum Server"
 block_explorer: "ブロックエクスプローラー"
@@ -120,6 +121,7 @@ faucet_request: "テストビットコインをリクエストしました。し
 faucet_already_request: "すでにリクエスト済みです。入金まで最大5分かかる場合があります。"
 faucet_failed: "リクエストに失敗しました。後でもう一度お試しください。"
 bio_auth_required: "生体認証が必要です"
+can_use_after_add_wallet: "ウォレットを追加してから使用できます。"
 
 donation:
   coconut: "Coconut寄付"
@@ -184,7 +186,7 @@ pin_check_screen:
 # lib/screens/home
 wallet_add_scanner_screen:
   add_wallet: "ウォレット追加"
-  add_watch_only_wallet: "ウォッチオンリーウォレット追加"
+  add_watch_only_wallet: "ウォッチオンリー\nウォレット追加"
   vault: "Coconut Vault"
   keystone: "Keystone 3 Pro"
   jade: "Jade"
@@ -245,7 +247,8 @@ wallet_add_scanner_screen:
     step1_em: "XPUB Export"
     step2: "2. "
     step2_em: "XPUB - QR Code"
-    select: "選択"
+
+# lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
   view_all_wallets: "すべてのウォレットを表示"
@@ -504,7 +507,6 @@ settings_screen:
       toast:
         copy_success: "ログをコピーしました。"
 
-
 # lib/screens/wallet_detail
 wallet_detail_screen:
   toast:
@@ -581,7 +583,7 @@ transaction_fee_bumping_screen:
 
 # lib/widgets/card
 wallet_list_add_guide_card:
-  add_watch_only: "ウォッチオンリーウォレットを追加してみてください！"
+  add_watch_only: "ウォッチオンリーウォレットを\n追加してみてください！"
 wallet_list_glossary_shortcut_card:
   any_word_you_dont_know: "知らない用語はありませんか？"
   top_right: "右上の"
@@ -720,3 +722,97 @@ tooltip:
   rbf: "手数料を増やすことで既存の取引を新しい取引に置き換える機能。（RBF、Replace-By-Fee）"
   cpfp: "新しい取引（Child）に高い手数料を設定して既存の取引（Parent）をより早く処理するために優先度を上げる機能。（CPFP、Child-Pays-For-Parent）"
   dont_show_again: "今後表示しない"
+
+toast:
+  back_exit: "戻るボタンをもう一度押すと終了します。"
+  min_fee: "現在の最小推奨手数料は$minimum sat/vBです"
+  fetching_onchain_data: "最新データを取得中です。しばらくお待ちください。"
+  screen_capture: "スクリーンキャプチャが検出されました。"
+  no_balance: "残高がありません。"
+  memo_update_failed: "メモを更新できませんでした。"
+  tag_add_failed: "タグを追加できませんでした。"
+  tag_update_failed: "タグを更新できませんでした。"
+  tag_delete_failed: "タグを削除できませんでした。"
+  wallet_detail_refresh: "画面を下にスクロールして最新データを取得してください。"
+
+alert:
+  error_tx:
+    created_failed: "取引作成に失敗しました。"
+    not_parsed: "取引解析に失敗しました。$error"
+    not_created: "取引作成に失敗しました。$error"
+  error_send:
+    broadcasting_failed: "[送信失敗]\n$error"
+    insufficient_balance: "残高が不足しています。"
+    minimum_amount: "$bitcoin $unitから送信できます。"
+    insufficient_fee: "[送信失敗]\n手数料を増やして\n再度お試しください。"
+  signed_psbt:
+    wrong_send_info: "送信情報が異なります。\n最初からやり直してください。"
+    need_more_sign: "$count個の署名が必要です。"
+    invalid_signature: "署名情報が無効です。再度お試しください。"
+  scan_failed: "スキャンに失敗しました。"
+  scan_failed_description: "QRコードのスキャンに失敗しました。再度お試しください。\n$error"
+  invalid_qr: "無効なQRコードです。再度お試しください。"
+  tutorial:
+    title: "助けが必要ですか？"
+    description: "チュートリアルサイトに\nご案内します。"
+    btn_view: "チュートリアルを見る"
+  forgot_password:
+    title: "パスワードを忘れましたか？"
+    description: "[再設定]を押してパスワードを再設定できます。パスワードを変更すると同期されたウォレットリストがリセットされます。"
+    btn_reset: "再設定"
+  wallet_add:
+    update_failed: "更新に失敗しました。"
+    update_failed_description: "$nameに更新する情報がありません。"
+    duplicate_name: "名前が重複しています。"
+    duplicate_name_description: "同じ名前のウォレットが既に存在します。\n名前を変更してから同期してください。"
+    add_failed: "ウォッチオンリーウォレットの追加に失敗しました。"
+    add_failed_description: "不正なウォレット情報です。"
+    already_exist: "ウォレットが重複しています。"
+    already_exist_description: "既に追加されたウォレットです。($name)"
+  wallet_delete:
+    confirm_delete: "ウォレット削除"
+    confirm_delete_description: "ウォレットを本当に削除しますか？"
+  update:
+    title: "更新通知"
+    description: "安定したサービスを利用するために\n最新バージョンに更新してください。"
+    btn_update: "更新する"
+    btn_do_later: "後で更新"
+  error_occurs: "エラーが発生しました"
+  contact_admin: "管理者に問い合わせてください。$error"
+  tag_apply:
+    title: "タグ適用"
+    description: "既存 UTXOのタグを新しいUTXOにも適用しますか？"
+    btn_apply: "適用する"
+  tx_detail:
+    fetch_failed: "取引取得に失敗しました"
+    fetch_failed_description: "しばらく待ってからもう一度お試しください"
+  tag_delete:
+    title: "タグ削除"
+    description: "#$nameを本当に削除しますか？\n"
+    description_utxo_tag: "$nameを本当に削除しますか？\n$count個のUTXOに適用されています。"
+  recipient_delete:
+    description: "入力した情報が消えてしまいます。\n本当に削除しますか？"
+  faucet:
+    no_test_bitcoin: "テストビットコインが不足しています。しばらく待ってからもう一度お試しください。"
+    check_address: "アドレスが正しいか確認してください。"
+    try_again: "$count 後にもう一度お試しください。"
+  fee_bumping:
+    not_enough_amount: "$bumpingTypeを実行するための残高が不足しています。\n現在の残高を確認してください。"
+
+third_party:
+  keystone: "Keystone"
+  jade: "Jade"
+  seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
+  krux: "Krux"  
+  zpub: "zpub"
+
+trade_exchange:
+  upbit: "Upbit"
+  binance: "Binance"
+
+fiat:
+  fiat: "フィアット"
+  krw_price: "Upbit 基準"
+  usd_price: "Binance 基準"
+  jpy_price: "Bitflyer 基準"

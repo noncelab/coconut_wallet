@@ -9,6 +9,8 @@ String getSystemLanguageCode() {
   // 한국어 감지 (ko, ko-KR, ko-KP 등)
   if (languageCode == 'ko') {
     return 'kr';
+  } else if (languageCode == 'ja' || languageCode == 'jp') {
+    return 'jp';
   }
 
   // 기본값은 영어

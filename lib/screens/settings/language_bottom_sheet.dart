@@ -42,7 +42,7 @@ class LanguageBottomSheet extends StatelessWidget {
             ),
             SelectionItem<String>(
               title: t.settings_screen.japanese,
-              value: 'en',
+              value: 'jp',
               onTap: () async {
                 vibrateExtraLight();
                 await context.read<PreferenceProvider>().changeLanguage('jp');

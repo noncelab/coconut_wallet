@@ -313,6 +313,8 @@ class _SettingsScreen extends State<SettingsScreen> {
         return t.settings_screen.korean;
       case 'en':
         return t.settings_screen.english;
+      case 'jp':
+        return t.settings_screen.japanese;
       default:
         return t.settings_screen.korean;
     }
