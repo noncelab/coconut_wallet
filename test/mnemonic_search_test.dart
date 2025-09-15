@@ -2,56 +2,56 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 List<Map<String, dynamic>> _queryWord(String input) {
-    final query = input.toLowerCase();
-    final isBinary = RegExp(r'^[01]+$').hasMatch(query);
-    final isNumeric = RegExp(r'^\d+$').hasMatch(query);
-    final isAlphabetic = RegExp(r'^[a-zA-Z]+$').hasMatch(query);
+  final query = input.toLowerCase();
+  final isBinary = RegExp(r'^[01]+$').hasMatch(query);
+  final isNumeric = RegExp(r'^\d+$').hasMatch(query);
+  final isAlphabetic = RegExp(r'^[a-zA-Z]+$').hasMatch(query);
 
-    final numericResults = <Map<String, dynamic>>[];
-    final binaryResults = <Map<String, dynamic>>[];
-    final alphabeticResults = <Map<String, dynamic>>[];
+  final numericResults = <Map<String, dynamic>>[];
+  final binaryResults = <Map<String, dynamic>>[];
+  final alphabeticResults = <Map<String, dynamic>>[];
 
-    for (var i = 0; i < wordList.length; i++) {
-      final indexNum = i + 1;
-      final item = wordList[i];
-      final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
+  for (var i = 0; i < wordList.length; i++) {
+    final indexNum = i + 1;
+    final item = wordList[i];
+    final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
 
-      // 숫자 검색
-      if (isNumeric && query.length <= 4 && i.toString() == query) {
-        numericResults.add({'index': indexNum, 'item': item, 'type': 'numeric'});
-      }
-
-      // 이진 검색
-      if (isBinary && binaryStr.contains(query)) {
-        binaryResults.add({'index': indexNum, 'item': item, 'type': 'binary'});
-      }
-
-      // 알파벳 검색
-      if (isAlphabetic && item.toLowerCase().contains(query)) {
-        alphabeticResults.add({'index': indexNum, 'item': item, 'type': 'alphabetic'});
-      }
+    // 숫자 검색
+    if (isNumeric && query.length <= 4 && i.toString() == query) {
+      numericResults.add({'index': indexNum, 'item': item, 'type': 'numeric'});
     }
 
-    // 알파벳 검색 → startsWith 우선 정렬
-    if (isAlphabetic) {
-      alphabeticResults.sort((a, b) {
-        final itemA = (a['item'] as String).toLowerCase();
-        final itemB = (b['item'] as String).toLowerCase();
-        final startsWithA = itemA.startsWith(query);
-        final startsWithB = itemB.startsWith(query);
+    // 이진 검색
+    if (isBinary && binaryStr.contains(query)) {
+      binaryResults.add({'index': indexNum, 'item': item, 'type': 'binary'});
+    }
 
-        if (startsWithA && !startsWithB) return -1;
-        if (!startsWithA && startsWithB) return 1;
-        return itemA.compareTo(itemB);
-      });
-      return alphabeticResults;
-    } else {
-      return [
-        ...numericResults..sort((a, b) => a['index'].compareTo(b['index'])),
-        ...binaryResults..sort((a, b) => a['index'].compareTo(b['index']))
-      ];
+    // 알파벳 검색
+    if (isAlphabetic && item.toLowerCase().contains(query)) {
+      alphabeticResults.add({'index': indexNum, 'item': item, 'type': 'alphabetic'});
     }
   }
+
+  // 알파벳 검색 → startsWith 우선 정렬
+  if (isAlphabetic) {
+    alphabeticResults.sort((a, b) {
+      final itemA = (a['item'] as String).toLowerCase();
+      final itemB = (b['item'] as String).toLowerCase();
+      final startsWithA = itemA.startsWith(query);
+      final startsWithB = itemB.startsWith(query);
+
+      if (startsWithA && !startsWithB) return -1;
+      if (!startsWithA && startsWithB) return 1;
+      return itemA.compareTo(itemB);
+    });
+    return alphabeticResults;
+  } else {
+    return [
+      ...numericResults..sort((a, b) => a['index'].compareTo(b['index'])),
+      ...binaryResults..sort((a, b) => a['index'].compareTo(b['index']))
+    ];
+  }
+}
 
 void main() {
   group('mnemonic search', () {

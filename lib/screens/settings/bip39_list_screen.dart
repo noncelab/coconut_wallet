@@ -7,8 +7,7 @@ import 'package:coconut_wallet/styles.dart';
 
 /// 공통 스타일
 const _defaultTextStyle = TextStyle(color: CoconutColors.white);
-final _indexTextStyle =
-    CoconutTypography.body1_16_Number.setColor(CoconutColors.gray500);
+final _indexTextStyle = CoconutTypography.body1_16_Number.setColor(CoconutColors.gray500);
 
 /// 하이라이트 처리 함수
 List<TextSpan> highlightOccurrences(
@@ -263,8 +262,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                 ),
                 filled: true,
                 fillColor: Colors.transparent,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
               ),
               style: const TextStyle(
                 decorationThickness: 0,
@@ -283,8 +281,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
         : Column(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -304,8 +301,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                         child: Text(
                           t.bip39_list_screen.no_result,
                           style: Styles.body1Bold.merge(
-                            const TextStyle(
-                                color: MyColors.transparentWhite_70),
+                            const TextStyle(color: MyColors.transparentWhite_70),
                           ),
                         ),
                       ),
@@ -321,8 +317,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     final indexNum = data['index'] as int;
     final type = data['type'] as String?;
     final query = _searchController.text.toLowerCase();
-    final binaryStr =
-        (indexNum - 1).toRadixString(2).padLeft(11, '0');
+    final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
 
     return Column(
       children: [
@@ -344,17 +339,14 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                 const TextSpan(text: 'Binary: '),
                 ...highlightOccurrences(
                   binaryStr,
-                  type == 'numeric'
-                      ? binaryStr
-                      : (type == 'binary' ? query : ''),
+                  type == 'numeric' ? binaryStr : (type == 'binary' ? query : ''),
                   type: 'binary',
                 ),
               ],
             ),
           ),
         ),
-        if (index != _filteredItems.length - 1)
-          const Divider(color: MyColors.borderLightgrey),
+        if (index != _filteredItems.length - 1) const Divider(color: MyColors.borderLightgrey),
       ],
     );
   }

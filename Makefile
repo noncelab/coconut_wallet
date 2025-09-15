@@ -8,10 +8,10 @@ slang:
 	dart pub run slang
 
 ios-mainnet:
-	flutter build ios --flavor mainnet --release
+	flutter build ios --flavor mainnet --release --dart-define=USE_FIREBASE=true
 
 aos-mainnet:
-	flutter build appbundle --flavor mainnet --release
+	flutter build appbundle --flavor mainnet --release --dart-define=USE_FIREBASE=true
 
 ios-regtest:
 	flutter build ios --flavor regtest --release
