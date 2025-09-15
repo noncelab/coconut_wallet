@@ -1204,8 +1204,8 @@ class _SendScreenState extends State<SendScreen>
                       child: ListView.builder(
                           itemCount: _viewModel.walletItemList.length,
                           itemBuilder: (BuildContext context, int index) {
-                            final walletListItem =
-                                _viewModel.getWalletItemListWithOrder(widget.walletId)[index];
+                            final walletListItem = _viewModel.getWalletItemListWithOrder(
+                                _viewModel.selectedWalletItem?.id)[index];
                             final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
                             return _buildAddressRow(index, walletAddress.address,
                                 walletListItem.name, walletAddress.derivationPath);
