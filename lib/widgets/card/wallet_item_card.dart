@@ -4,8 +4,9 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter_svg/svg.dart';
@@ -133,15 +134,24 @@ class WalletItemCard extends StatelessWidget {
                 ),
               ),
             ),
-          WalletItemIcon(
-              walletImportSource: walletImportSource, iconIndex: iconIndex, colorIndex: colorIndex),
+          WalletIconSmall(
+            walletImportSource: walletImportSource,
+            iconIndex: iconIndex,
+            colorIndex: colorIndex,
+            gradientColors: signers != null ? ColorUtil.getGradientColors(signers!) : null,
+          ),
           CoconutLayout.spacing_200w,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 isBalanceHidden
-                    ? fakeBalance != null
+                    ? Text(
+                        t.view_balance,
+                        style:
+                            CoconutTypography.body2_14_Bold.copyWith(color: CoconutColors.gray600),
+                      )
+                    : fakeBalance != null
                         ? FittedBox(
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerLeft,
@@ -161,33 +171,28 @@ class WalletItemCard extends StatelessWidget {
                               ],
                             ),
                           )
-                        : Text(
-                            t.view_balance,
-                            style: CoconutTypography.body2_14_Bold
-                                .copyWith(color: CoconutColors.gray600),
-                          )
-                    : FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            AnimatedBalance(
-                                prevValue: animatedBalanceData.previous,
-                                value: animatedBalanceData.current,
-                                currentUnit: currentUnit == BitcoinUnit.btc
-                                    ? BitcoinUnit.btc
-                                    : BitcoinUnit.sats,
-                                textStyle: CoconutTypography.body2_14_NumberBold
-                                    .setColor(CoconutColors.white)),
-                            Text(
-                              " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
-                              style: CoconutTypography.body2_14_NumberBold
-                                  .setColor(CoconutColors.white),
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                AnimatedBalance(
+                                    prevValue: animatedBalanceData.previous,
+                                    value: animatedBalanceData.current,
+                                    currentUnit: currentUnit == BitcoinUnit.btc
+                                        ? BitcoinUnit.btc
+                                        : BitcoinUnit.sats,
+                                    textStyle: CoconutTypography.body2_14_NumberBold
+                                        .setColor(CoconutColors.white)),
+                                Text(
+                                  " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                                  style: CoconutTypography.body2_14_NumberBold
+                                      .setColor(CoconutColors.white),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
                 Row(
                   children: [
                     Flexible(

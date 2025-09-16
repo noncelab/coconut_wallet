@@ -52,25 +52,30 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Row(
-                        children: [
-                          AnimatedBalance(
-                            prevValue: widget.animatedBalanceData.previous,
-                            value: widget.animatedBalanceData.current,
-                            currentUnit: widget.currentUnit,
-                            textStyle: CoconutTypography.body1_16_NumberBold.merge(
-                              const TextStyle(
-                                fontSize: 18,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          children: [
+                            AnimatedBalance(
+                              prevValue: widget.animatedBalanceData.previous,
+                              value: widget.animatedBalanceData.current,
+                              currentUnit: widget.currentUnit,
+                              textStyle: CoconutTypography.body1_16_NumberBold.merge(
+                                const TextStyle(
+                                  fontSize: 18,
+                                ),
                               ),
                             ),
-                          ),
-                          Text(
-                            ' ${widget.currentUnit.symbol}',
-                            style: CoconutTypography.body2_14_Number,
-                          ),
-                        ],
+                            Text(
+                              ' ${widget.currentUnit.symbol}',
+                              style: CoconutTypography.body2_14_Number,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                    CoconutLayout.spacing_200w,
                     Align(
                         alignment: Alignment.centerRight,
                         child: SizedBox(
@@ -142,15 +147,18 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
       onPressed: onPressed,
       color: backgroundColor,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        label,
-        overflow: TextOverflow.fade,
-        softWrap: false,
-        maxLines: 1,
-        style: CoconutTypography.body3_12.merge(
-          const TextStyle(
-            color: CoconutColors.black,
-            fontWeight: FontWeight.w600,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          overflow: TextOverflow.fade,
+          softWrap: false,
+          maxLines: 1,
+          style: CoconutTypography.body3_12.merge(
+            const TextStyle(
+              color: CoconutColors.black,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),

@@ -59,6 +59,7 @@ class UtxoItemCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  CoconutLayout.spacing_200w,
                   // amount
                   Expanded(
                     child: Row(
@@ -69,10 +70,16 @@ class UtxoItemCard extends StatelessWidget {
                         ] else if (utxo.status == UtxoStatus.locked) ...[
                           SvgPicture.asset('assets/svg/lock.svg'),
                         ],
-                        Text(
-                          currentUnit.displayBitcoinAmount(utxo.amount),
-                          style: CoconutTypography.heading4_18_NumberBold
-                              .setColor(CoconutColors.white),
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              currentUnit.displayBitcoinAmount(utxo.amount),
+                              style: CoconutTypography.heading4_18_NumberBold
+                                  .setColor(CoconutColors.white),
+                            ),
+                          ),
                         ),
                       ],
                     ),

@@ -5,12 +5,13 @@ import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-class WalletItemIcon extends StatelessWidget {
+/// 멀티시그 지갑 Border gradient 효과는 wallet_icon_small에만 적용
+class WalletIcon extends StatelessWidget {
   final WalletImportSource walletImportSource;
   final int colorIndex;
   final int iconIndex;
 
-  const WalletItemIcon({
+  const WalletIcon({
     super.key,
     required this.walletImportSource,
     this.colorIndex = 0,
@@ -21,14 +22,12 @@ class WalletItemIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     var isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     return Container(
-      padding: const EdgeInsets.all(6),
-      width: 30,
-      height: 30,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isExternalWallet
             ? CoconutColors.gray700
             : ColorUtil.getColor(colorIndex).backgroundColor,
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: isExternalWallet
           ? SvgPicture.asset(

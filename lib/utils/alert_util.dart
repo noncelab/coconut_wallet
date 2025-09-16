@@ -17,7 +17,6 @@ void showAlertDialog(
         description: content ?? '',
         backgroundColor: CoconutColors.gray800,
         rightButtonText: t.confirm,
-        rightButtonTextStyle: CoconutTypography.body1_16,
         rightButtonColor: CoconutColors.white,
         onTapRight: () {
           if (onClosed != null) onClosed();

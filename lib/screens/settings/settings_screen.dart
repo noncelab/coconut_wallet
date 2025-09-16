@@ -1,4 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -16,7 +18,6 @@ import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/multi_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -49,6 +50,7 @@ class _SettingsScreen extends State<SettingsScreen> {
               body: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // 보안
                   _category(t.security),
                   ButtonGroup(buttons: [
                     SingleButton(
@@ -101,45 +103,59 @@ class _SettingsScreen extends State<SettingsScreen> {
                           }),
                   ]),
 
+                  // 홈 잔액 숨기기 + 가짜 잔액 설정
+                  // TODO: ButtonGroup과 MultiButton 통합 혹은 usage 구별이 필요함
                   if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
                     CoconutLayout.spacing_200h,
-                    MultiButton(
-                      children: [
-                        SingleButton(
-                            title: t.settings_screen.hide_balance,
-                            rightElement: _buildSwitch(
-                                isOn: viewModel.isBalanceHidden,
-                                onChanged: (value) {
-                                  viewModel.changeIsBalanceHidden(value);
-                                })),
-                        if (viewModel.isBalanceHidden)
-                          SingleButton(
-                            enableShrinkAnim: true,
-                            title: t.settings_screen.fake_balance.fake_balance_setting,
-                            onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
-                                  context: context, child: const FakeBalanceBottomSheet());
-                            },
-                          ),
-                      ],
-                    ),
+                    MultiButton(children: [
+                      SingleButton(
+                          title: t.settings_screen.hide_balance,
+                          rightElement: _buildSwitch(
+                              isOn: viewModel.isBalanceHidden,
+                              onChanged: (value) {
+                                viewModel.changeIsBalanceHidden(value);
+                              })),
+                      SingleButton(
+                        enableShrinkAnim: true,
+                        title: t.settings_screen.fake_balance.fake_balance_setting,
+                        onPressed: () async {
+                          CommonBottomSheets.showBottomSheet_50(
+                              context: context, child: const FakeBalanceBottomSheet());
+                        },
+                      ),
+                    ]),
+                    // ButtonGroup(buttons: [
+                    //   SingleButton(
+                    //       title: t.settings_screen.hide_balance,
+                    //       rightElement: _buildSwitch(
+                    //           isOn: viewModel.isBalanceHidden,
+                    //           onChanged: (value) {
+                    //             viewModel.changeIsBalanceHidden(value);
+                    //           })),
+                    //   _buildAnimatedButton(
+                    //     title: t.settings_screen.fake_balance.fake_balance_setting,
+                    //     onPressed: () async {
+                    //       CommonBottomSheets.showBottomSheet_50(
+                    //           context: context, child: const FakeBalanceBottomSheet());
+                    //     },
+                    //   ),
+                    // ]),
                   ],
                   CoconutLayout.spacing_400h,
+
+                  // 단위
                   _category(t.unit),
                   ButtonGroup(buttons: [
                     Selector<PreferenceProvider, bool>(
                         selector: (_, viewModel) => viewModel.isBtcUnit,
                         builder: (context, isBtcUnit, child) {
-                          return SingleButton(
-                            enableShrinkAnim: true,
-                            animationEndValue: 0.97,
-                            title: t.bitcoin_kr,
-                            subtitle: isBtcUnit ? t.btc : t.sats,
-                            onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
-                                  context: context, child: const UnitBottomSheet());
-                            },
-                          );
+                          return _buildAnimatedButton(
+                              title: t.bitcoin_kr,
+                              subtitle: isBtcUnit ? t.btc : t.sats,
+                              onPressed: () async {
+                                CommonBottomSheets.showBottomSheet_50(
+                                    context: context, child: const UnitBottomSheet());
+                              });
                         }),
                     Selector<PreferenceProvider, String>(
                         selector: (_, provider) => provider.selectedFiat.code,
@@ -147,18 +163,17 @@ class _SettingsScreen extends State<SettingsScreen> {
                           String fiatDisplayName;
                           switch (fiatCode) {
                             case 'KRW':
-                              fiatDisplayName = t.fiat.krw_code;
+                              fiatDisplayName = FiatCode.KRW.code;
+                              break;
+                            case 'JPY':
+                              fiatDisplayName = FiatCode.JPY.code;
                               break;
                             case 'USD':
-                              fiatDisplayName = t.fiat.usd_code;
-                              break;
                             default:
-                              fiatDisplayName = t.fiat.usd_code;
+                              fiatDisplayName = FiatCode.USD.code;
+                              break;
                           }
-
-                          return SingleButton(
-                            enableShrinkAnim: true,
-                            animationEndValue: 0.97,
+                          return _buildAnimatedButton(
                             title: t.fiat.fiat,
                             subtitle: fiatDisplayName,
                             onPressed: () async {
@@ -168,18 +183,16 @@ class _SettingsScreen extends State<SettingsScreen> {
                           );
                         }),
                   ]),
-
                   CoconutLayout.spacing_400h,
+
+                  // 일반
                   _category(t.general),
                   Selector<PreferenceProvider, String>(
                     selector: (_, provider) => provider.language,
                     builder: (context, language, child) {
-                      return SingleButton(
-                        enableShrinkAnim: true,
-                        animationEndValue: 0.97,
+                      return _buildAnimatedButton(
                         title: t.settings_screen.language,
                         subtitle: _getCurrentLanguageDisplayName(language),
-                        subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
                         onPressed: () async {
                           CommonBottomSheets.showBottomSheet_50(
                             context: context,
@@ -189,29 +202,49 @@ class _SettingsScreen extends State<SettingsScreen> {
                       );
                     },
                   ),
+                  CoconutLayout.spacing_400h,
+
+                  // 네트워크
+                  _category(t.network),
+                  // mainnet인 경우만 블록 익스플로러 표시
+                  NetworkType.currentNetworkType == NetworkType.mainnet
+                      ? ButtonGroup(buttons: [
+                          _buildAnimatedButton(
+                            title: t.electrum_server,
+                            onPressed: () async {
+                              Navigator.pushNamed(context, '/electrum-server');
+                            },
+                          ),
+                          _buildAnimatedButton(
+                            title: t.block_explorer,
+                            onPressed: () async {
+                              Navigator.pushNamed(context, '/block-explorer');
+                            },
+                          ),
+                        ])
+                      : _buildAnimatedButton(
+                          title: t.electrum_server,
+                          onPressed: () async {
+                            Navigator.pushNamed(context, '/electrum-server');
+                          },
+                        ),
 
                   CoconutLayout.spacing_400h,
-                  _category(t.network),
-                  ButtonGroup(
-                    buttons: [
-                      SingleButton(
-                        enableShrinkAnim: true,
-                        animationEndValue: 0.97,
-                        title: t.electrum_server,
-                        onPressed: () async {
-                          Navigator.pushNamed(context, '/electrum-server');
-                        },
-                      ),
-                    ],
+
+                  // 도구
+                  _category(t.tool),
+                  _buildAnimatedButton(
+                    title: t.log_viewer,
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/log-viewer');
+                    },
                   ),
 
                   // 개발자 모드에서만 표시되는 디버그 섹션
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
-                    SingleButton(
-                      enableShrinkAnim: true,
-                      animationEndValue: 0.97,
+                    _buildAnimatedButton(
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {
                         final realmManager = Provider.of<RealmManager>(context, listen: false);
@@ -225,6 +258,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                       },
                     ),
                   ],
+
                   const SizedBox(height: Sizes.size32)
                 ]),
               ));
@@ -246,6 +280,17 @@ class _SettingsScreen extends State<SettingsScreen> {
   Widget _category(String label) => Container(
       padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
       child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)));
+
+  Widget _buildAnimatedButton(
+      {required String title, required VoidCallback onPressed, String? subtitle}) {
+    return SingleButton(
+      enableShrinkAnim: true,
+      animationEndValue: 0.97,
+      title: title,
+      subtitle: subtitle,
+      onPressed: onPressed,
+    );
+  }
 
   void _showPinSettingScreen({required bool useBiometrics}) {
     CommonBottomSheets.showBottomSheet_90(

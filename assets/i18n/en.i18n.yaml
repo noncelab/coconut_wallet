@@ -92,9 +92,11 @@ vault_app: "Vault App"
 view_balance: "Balance"
 network: "Network"
 electrum_server: "Electrum Server"
+block_explorer: "Block Explorer"
+log_viewer: "Log Viewer"
 
 apply_item: "$count items"
-fee_sats: " ($value sats/vB)"
+fee_sats: " ($value sat/vB)"
 utxo_count: "($count items)"
 total_item_count: "(Total $count items)"
 
@@ -184,10 +186,11 @@ wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"
   vault: "Coconut Vault"
-  keystone: "Keystone"
+  keystone: "Keystone 3 Pro"
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
+  krux: "Krux"
   self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
@@ -209,6 +212,7 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
+    step0: "Devices other than the Keystone 3 Pro are not supported."
     step1: "1. On the home screen, "
     step1_em: " More(•••)"
     step2: "2. "
@@ -235,7 +239,13 @@ wallet_add_scanner_screen:
     step4_preposition: "Press the "
     step4_em: "QR "
     step4_end: "Button"
-
+  guide_krux:
+    step0: "Guide based on wonderMV"
+    step1: "1. "
+    step1_em: "XPUB Export"
+    step2: "2. "
+    step2_em: "XPUB - QR Code"
+    select: "Select"
 wallet_list:
   wallet_count: "$count Items"
   view_all_wallets: "View All My Wallets"
@@ -332,6 +342,7 @@ send_screen:
   tooltip_max_mode_text: "Send All Mode Enabled"
   max_mode_insufficient_balance: "Insufficient Balance"
   unintended_dust_fee: "The change of ${unintendedDustFee} sat will be used as a fee."
+  fee_rate_too_low: "Minimum allowed value is 0.1"
 
 
 utxo_selection_screen:
@@ -386,6 +397,13 @@ unsigned_tx_qr_screen:
     step1_preposition: "Press the "
     step1_em: "QR "
     step1_end: "button on the Coldcard."
+  guide_krux:
+    step1: "1. "
+    step1_em: "Sign"
+    select: "Select"
+    step2: "2. "
+    step2_em: "PSBT"
+    step3: "3. Scan the QR code below with camera"
   fast_scan_mode: "Fast scan mode"
   low_density_qr: "Simple QR"
   high_density_qr: "Complex QR"
@@ -458,6 +476,32 @@ settings_screen:
     popup:
       delete_server_info: "Delete Server Info"
       delete_server_info_description: "Are you sure you want to delete the saved server information?"
+  block_explorer:
+    default_explorer: "Default Explorer"
+    custom_explorer: "Custom Explorer"
+    custom_explorer_description: "Coconut uses the address you entered. However, since the transaction/address link format varies depending on the explorer, some links may not work properly."
+    save: "Save"
+    custom_explorer_input_placeholder: "Enter the address"
+    connection_status:
+      connecting: "Checking address..."
+      connected: "Address verified"
+      failed: "Address not found!"
+  log_viewer_screen:
+    log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord or POW community."
+    log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
+    log_target: "[Logging Target]"
+    log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
+    clear_log: "Clear Log"
+    clear_log_description: "Are you sure to clear log?"
+    email_subject: "[Coconut Wallet] Debug Log"
+    email_body: "Situation: (Please briefly describe the situation where the problem occurred)"
+    email_error_msg: "Unable to open email app. Please copy the log and post it on the Discord channel or POW community."
+    buttons:
+      discord: "Go to Discord"
+      pow: "Go to POW"
+      copy: "Copy Log"
+      toast:
+        copy_success: "Log copied successfully."
 
 
 # lib/screens/wallet_detail
@@ -512,11 +556,11 @@ transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
   existing_fee: "Existing Fee"
-  existing_fee_value: "${value} sats/vB"
+  existing_fee_value: "${value} sat/vB"
   total_fee: "Total $fee sats / ${vB} vB"
   new_fee: "New Fee"
-  sats_vb: "sats/vB"
-  recommend_fee: "Minimum fee: ${fee} sats/vB or higher"
+  sats_vb: "sat/vB"
+  recommend_fee: "Minimum fee: ${fee} sat/vB or higher"
   recommend_fee_info_rbf: "Must be at least 1 sat/vB higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vB."
   recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, Recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "Recommended Fee"
@@ -639,9 +683,9 @@ errors:
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
 
 text_field:
-  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sats/vB)"
+  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
   enter_fee_directly: "Enter Manually"
-  search_mnemonic_word: "Search in English"
+  search_mnemonic_word: "Search in English or numbers"
 
 tooltip:
   recommended_fee1: "Could not fetch recommended fee. Please enter fee manually."
@@ -658,6 +702,7 @@ tooltip:
     by_jade: "Jade"
     by_keystone: "Keystone"
     by_coldcard: "Coldcard"
+    by_krux: "Krux"
     by_hardware_wallet: "hardware wallet"
     by_vault_app: "Vault app"
   unsigned_tx_qr:
@@ -677,7 +722,7 @@ tooltip:
 
 toast:
   back_exit: "Press the back button once more to exit."
-  min_fee: "Current minimum fee rate is $minimum sats/vB."
+  min_fee: "Current minimum recommended fee rate is $minimum sat/vB."
   fetching_onchain_data: "Fetching latest data. Please wait a moment."
   screen_capture: "Screen capture detected."
   no_balance: "No balance."
@@ -756,6 +801,7 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
+  krux: "Krux"  
   zpub: "zpub"
 
 trade_exchange:
@@ -764,9 +810,6 @@ trade_exchange:
 
 fiat:
   fiat: "Fiat"
-  krw_symbol: "₩"
-  usd_symbol: "$"
-  krw_code: "KRW"
-  usd_code: "USD"
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
+  jpy_price: "Bitflyer Price"

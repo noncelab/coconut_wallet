@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
@@ -58,7 +59,10 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                   AnalyticsParameterNames.walletAddImportSource:
                       WalletImportSource.extendedPublicKey.name
                 });
-            Navigator.pop(context, addResult);
+
+            if (mounted) {
+              Navigator.pop(context, addResult);
+            }
             break;
           }
         case WalletSyncResult.existingWalletUpdateImpossible:
@@ -128,6 +132,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
     return ChangeNotifierProvider(
         create: (_) => WalletAddInputViewModel(
               context.read<WalletProvider>(),
+              context.read<PreferenceProvider>(),
             ),
         child: Consumer<WalletAddInputViewModel>(builder: (context, viewModel, child) {
           if (!_hasAddedListener) {
@@ -225,9 +230,12 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                                     CoconutColors.white, BlendMode.srcIn),
                                               ),
                                               CoconutLayout.spacing_100w,
-                                              Text(
-                                                  t.wallet_add_input_screen.wallet_description_text,
-                                                  style: CoconutTypography.body2_14)
+                                              Expanded(
+                                                child: Text(
+                                                    t.wallet_add_input_screen
+                                                        .wallet_description_text,
+                                                    style: CoconutTypography.body2_14),
+                                              ),
                                             ],
                                           ),
                                         ),

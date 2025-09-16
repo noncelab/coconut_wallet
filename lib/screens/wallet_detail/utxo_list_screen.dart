@@ -122,6 +122,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       Provider.of<UtxoTagProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<PriceProvider>(context, listen: false),
+      Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
     );
   }
@@ -632,9 +633,7 @@ class _UtxoListState extends State<UtxoList> {
                   key: Key(utxo.utxoId),
                   currentUnit: widget.currentUnit,
                   onPressed: () async {
-                    if (widget.onRemoveDropdown != null) {
-                      widget.onRemoveDropdown!();
-                    }
+                    widget.onRemoveDropdown();
 
                     await Navigator.pushNamed(
                       context,

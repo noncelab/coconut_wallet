@@ -22,9 +22,11 @@ class PriceProvider extends ChangeNotifier {
   /// 통화별 가격 저장
   int? _bitcoinPriceKrw;
   int? _bitcoinPriceUsd;
+  int? _bitcoinPriceJpy;
 
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get bitcoinPriceUsd => _bitcoinPriceUsd;
+  int? get bitcoinPriceJpy => _bitcoinPriceJpy;
 
   /// 현재 선택된 통화의 가격
   int? get currentBitcoinPrice {
@@ -33,6 +35,8 @@ class PriceProvider extends ChangeNotifier {
         return _bitcoinPriceKrw;
       case FiatCode.USD:
         return _bitcoinPriceUsd;
+      case FiatCode.JPY:
+        return _bitcoinPriceJpy;
     }
   }
 
@@ -127,6 +131,9 @@ class PriceProvider extends ChangeNotifier {
       case FiatCode.USD:
         _bitcoinPriceUsd = ticker.tradePrice;
         break;
+      case FiatCode.JPY:
+        _bitcoinPriceJpy = ticker.tradePrice;
+        break;
     }
   }
 
@@ -203,6 +210,8 @@ class PriceProvider extends ChangeNotifier {
         return _bitcoinPriceKrw;
       case FiatCode.USD:
         return _bitcoinPriceUsd;
+      case FiatCode.JPY:
+        return _bitcoinPriceJpy;
     }
   }
 }

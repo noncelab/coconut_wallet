@@ -21,6 +21,7 @@ void vibrateExtraLightDouble() async {
   }
 }
 
+// 안드로이드에서는 경고 또는 알림용 진동이 필요하지 않는 경우 vibrateExtraLight 사용
 void vibrateLight() {
   if (Platform.isAndroid) {
     Vibration.vibrate(duration: 100);

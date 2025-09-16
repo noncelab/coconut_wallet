@@ -1,18 +1,37 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
 
 // 앱 root 화면(WalletListScreen)의 부모 위젯으로 설정하여 항상 활성화 된 위젯으로 유지
 class AppGuard extends StatefulWidget {
+  static bool _isPrivacyEnabled = true;
+
+  /// 화면보호기 활성화 여부를 반환합니다.
+  static bool get isPrivacyEnabled => _isPrivacyEnabled;
+
+  /// 화면보호기를 활성화합니다.
+  static void enablePrivacyScreen() {
+    _isPrivacyEnabled = true;
+  }
+
+  /// 화면보호기를 비활성화합니다.
+  static void disablePrivacyScreen() {
+    _isPrivacyEnabled = false;
+  }
+
   final Widget child;
   const AppGuard({super.key, required this.child});
 
@@ -28,7 +47,7 @@ class _AppGuardState extends State<AppGuard> {
   late NodeProvider _nodeProvider;
   final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   late ConnectivityProvider _connectivityProvider;
-  bool _isPause = false;
+  bool _isPaused = false;
   late final AppLifecycleListener _lifecycleListener;
 
   @override
@@ -66,31 +85,95 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
+    Logger.log('AppGuard: AppLifecycleState: $state');
     switch (state) {
       case AppLifecycleState.resumed:
-        if (_isPause) {
-          _isPause = false;
+        if (_isPaused) {
+          setState(() {
+            _isPaused = false;
+          });
           _authProvider.checkDeviceBiometrics();
           _priceProvider.initWebSocketService();
-          _nodeProvider.reconnect();
+          _handleReconnect();
         }
         break;
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
+        FileLogger.dispose();
       case AppLifecycleState.paused:
-        if (_isPause) break;
-        _isPause = true;
+        if (_isPaused) break;
+        setState(() {
+          _isPaused = true;
+        });
         _priceProvider.disposeWebSocketService();
-        unawaited(_nodeProvider.closeConnection());
+        _handleDisconnect();
         break;
       case AppLifecycleState.inactive:
+        setState(() {
+          _isPaused = true;
+        });
         break;
     }
   }
 
+  void _handleReconnect() {
+    // 1. 이미 초기화되어 있고 연결이 정상인 경우 재연결하지 않음
+    if (_nodeProvider.isInitialized &&
+        !_nodeProvider.hasConnectionError &&
+        _nodeProvider.state.nodeSyncState != NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection is healthy, skipping reconnect');
+      return;
+    }
+
+    // 2. 연결 에러가 있거나 ping이 실패한 경우 재연결
+    if (_nodeProvider.hasConnectionError ||
+        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection issues detected, attempting reconnect');
+      _nodeProvider.reconnect();
+    }
+  }
+
+  void _handleDisconnect() {
+    // 1. 네트워크가 끊어진 경우 연결 해제
+    if (!_connectivityProvider.isNetworkOn) {
+      Logger.log('AppGuard: Network disconnected, closing connection');
+      unawaited(_nodeProvider.closeConnection());
+      return;
+    }
+
+    // 2. 연결 에러가 있거나 ping이 실패한 경우 연결 해제
+    if (_nodeProvider.hasConnectionError ||
+        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+      Logger.log('AppGuard: Connection issues detected, closing connection');
+      unawaited(_nodeProvider.closeConnection());
+      return;
+    }
+
+    // 3. 그 외 연결 유지 (ping이 정상적으로 작동 중)
+    Logger.log('AppGuard: Connection is healthy, keeping connection alive');
+  }
+
   @override
   Widget build(BuildContext context) {
-    return widget.child;
+    return Stack(alignment: Alignment.topLeft, children: [
+      widget.child,
+      if (_isPaused && AppGuard._isPrivacyEnabled)
+        Container(
+          color: CoconutColors.black,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/splash_logo_$appFlavor.png',
+                  width: 48,
+                  height: 48,
+                ),
+              ],
+            ),
+          ),
+        ),
+    ]);
   }
 
   @override

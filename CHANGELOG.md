@@ -1,3 +1,37 @@
+## mainnet 0.4.4 - 2025-09-13
+* 니모닉 문구 바이너리 검색
+* utxo 정렬 기준 선택값 유지
+* 보내기 - 내 주소 - 지갑 순서대로 보임 (단, 내 주소가 제일 첫번째)
+* appLifecycle - PrivacyScreen
+* 이름 편집 아이콘 - 서드파티 하드웨어에만 보임
+* 지갑 아이콘, 지갑 상세화면 UI 변경
+* 크럭스 지원
+* block explorer 설정 가능 (only mainnet)
+
+## mainnet 0.4.3 - 2025-08-22
+### Fixed
+* 일부 화면 레이아웃 수정
+
+## mainnet 0.4.2 - 2025-08-22
+### Fixed
+* recipient address prefix 3 허용
+* utxo 선택 화면 스크롤 멈춤 현상
+* 트랜잭션 생성시 추천 수수료율 미만, 0.1 이상의 수수료율 허용
+* 보내기 화면 utxo auto-select 모드일 때 잔액 보여주지 말기 (confirmed utxo의 전체 합이 노출됨)
+* 큰 글자 모드에서 잔액 가려지는 현상 수정
+* 콜드카드 에어갭 트랜잭션 호환성 해결
+### Added
+* wallet_list 법정화폐 가격 보여주기
+
+## mainnet 0.4.1, regtest 3.2.1 - 2025-08-13
+### Fixed
+* 보내기 화면 - 에러 처리 누락 버그 수정
+* 보내기 화면 - masterFingerprint 없는 지갑 보내기 다음 화면 이동 불가
+* 안드로이드 백버튼 클릭 시 키보드 위 요소가 남아있는 버그 수정
+* 가짜 잔액 버그 수정
+### Added
+* JPY 시세 보기 추가
+  
 ## mainnet 0.4.0, regtest 3.2.0 - 2025-08-08
 ### Fixed
 * coconut_lib 1.0.0 적용

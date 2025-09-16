@@ -5,6 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -14,6 +15,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final UtxoTagProvider _tagProvider;
   final PriceProvider _priceProvider;
+  final PreferenceProvider _preferenceProvider;
   late int? _bitcoinPriceKrw;
   late bool? _isNetworkOn;
   late final int _walletId;
@@ -36,14 +38,17 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   final List<UtxoState> _initialSelectedUtxoList = []; // 초기 선택 상태 저장
 
+  UtxoOrder get utxoOrder => _preferenceProvider.utxoSortOrder;
+
   UtxoSelectionViewModel(
-      this._walletProvider,
-      this._tagProvider,
-      this._priceProvider,
-      this._isNetworkOn,
-      this._walletId,
-      List<UtxoState> selectedUtxoList,
-      UtxoOrder initialUtxoOrder) {
+    this._walletProvider,
+    this._tagProvider,
+    this._priceProvider,
+    this._preferenceProvider,
+    this._isNetworkOn,
+    this._walletId,
+    List<UtxoState> selectedUtxoList,
+  ) {
     try {
       // 모든 UTXO (locked 포함)를 리스트에 추가
       _walletProvider.getUtxoList(_walletId).fold<int>(0, (sum, utxo) {
@@ -53,7 +58,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
         }
         return utxo.status == UtxoStatus.unspent ? sum + utxo.amount : sum;
       });
-      _sortConfirmedUtxoList(initialUtxoOrder);
+      _sortConfirmedUtxoList(utxoOrder);
       _initUtxoTagMap();
 
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -92,6 +97,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void changeUtxoOrder(UtxoOrder orderEnum) async {
     _sortConfirmedUtxoList(orderEnum);
+    _preferenceProvider.setLastUtxoOrder(orderEnum);
     notifyListeners();
   }
 

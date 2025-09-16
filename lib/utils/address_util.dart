@@ -6,6 +6,14 @@ String shortenAddress(String address, {int head = 8, int tail = 8}) {
   return '${address.substring(0, head)}...${address.substring(address.length - tail)}';
 }
 
+class Bip21Data {
+  final String address;
+  final int? amount;
+  final Map<String, String>? parameters;
+
+  Bip21Data({required this.address, this.amount, this.parameters});
+}
+
 /// Bip21 주소를 정규화
 /// Bech32 (P2WPKH, P2WSH) 주소인 경우 소문자 변환
 String normalizeAddress(String input) {
@@ -26,6 +34,54 @@ String extractAddressFromBip21(String input) {
   }
 
   return withoutScheme.substring(0, queryIndex);
+}
+
+Bip21Data parseBip21Uri(String input) {
+  if (!input.toLowerCase().startsWith('bitcoin:')) {
+    return Bip21Data(
+      address: input,
+      parameters: {},
+    );
+  }
+
+  final withoutScheme = input.substring(8);
+  final queryIndex = withoutScheme.indexOf('?');
+
+  String address;
+  Map<String, String> parameters = {};
+  int? amount;
+
+  if (queryIndex == -1) {
+    address = withoutScheme;
+  } else {
+    address = withoutScheme.substring(0, queryIndex);
+    final queryString = withoutScheme.substring(queryIndex + 1);
+
+    final queryParams = queryString.split('&');
+    for (final param in queryParams) {
+      final equalIndex = param.indexOf('=');
+      if (equalIndex != -1) {
+        final key = param.substring(0, equalIndex);
+        final value = param.substring(equalIndex + 1);
+        parameters[key] = value;
+
+        if (key == 'amount') {
+          try {
+            final satoshiAmount = double.parse(value);
+            amount = (satoshiAmount * 100000000).toInt();
+          } catch (e) {
+            // amount 파싱 실패 시 무시
+          }
+        }
+      }
+    }
+  }
+
+  return Bip21Data(
+    address: address.toLowerCase(),
+    amount: amount,
+    parameters: parameters,
+  );
 }
 
 bool isBech32(String address) {

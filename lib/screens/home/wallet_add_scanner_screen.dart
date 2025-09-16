@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,6 +23,8 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
+
+const String className = 'WalletAddScannerScreen';
 
 class WalletAddScannerScreen extends StatefulWidget {
   final WalletImportSource importSource;
@@ -139,6 +142,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         {
           if (isKorean) {
             return [
+              // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
+              const TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
               _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
               TextSpan(text: t.wallet_add_scanner_screen.select),
@@ -151,6 +157,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ];
           } else {
             return [
+              TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
+              const TextSpan(text: '\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step1),
               TextSpan(text: t.wallet_add_scanner_screen.select),
               _em(t.wallet_add_scanner_screen.guide_keystone.step1_em),
@@ -243,6 +251,31 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             ];
           }
         }
+      case WalletImportSource.krux:
+        {
+          const prefix = 't.wallet_add_scanner_screen.guide_krux';
+          if (isKorean) {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
+              _em(t.wallet_add_scanner_screen.guide_krux.step1_em),
+              TextSpan(text: '${t.wallet_add_scanner_screen.select}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step2),
+              _em(t.wallet_add_scanner_screen.guide_krux.step2_em),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+            ];
+          } else {
+            return [
+              TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_krux.step1_em}\n'),
+              TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step2),
+              TextSpan(text: t.wallet_add_scanner_screen.select),
+              _em(' ${t.wallet_add_scanner_screen.guide_krux.step2_em}'),
+            ];
+          }
+        }
       default:
         return [];
     }
@@ -311,12 +344,19 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   }
 
   Future<void> _onCompletedScanning(dynamic additionInfo) async {
+    const methodName = '_onCompletedScanning';
+
+    FileLogger.log(className, methodName, 'additionInfo type: ${additionInfo.runtimeType}');
+
     if (_isProcessing) return;
+
     _isProcessing = true;
     try {
       ResultOfSyncFromVault addResult = await _viewModel.addWallet(additionInfo);
+      FileLogger.log(className, methodName, 'addWallet completed: ${addResult.result.name}');
 
       if (!mounted) return;
+
       switch (addResult.result) {
         case WalletSyncResult.newWalletAdded:
           {
@@ -325,20 +365,20 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                 parameters: {
                   AnalyticsParameterNames.walletAddImportSource: widget.importSource.name
                 });
-            await _viewModel.setFakeBalanceIfEnabled(addResult.walletId!);
 
             if (widget.onNewWalletAdded != null) {
               widget.onNewWalletAdded!(addResult);
             }
-            Navigator.pushReplacementNamed(
-              context,
-              '/wallet-detail',
-              arguments: {
-                'id': addResult.walletId,
-                'entryPoint': kEntryPointWalletHome,
-              },
-            );
-
+            if (mounted) {
+              Navigator.pushReplacementNamed(
+                context,
+                '/wallet-detail',
+                arguments: {
+                  'id': addResult.walletId,
+                  'entryPoint': kEntryPointWalletHome,
+                },
+              );
+            }
             break;
           }
         case WalletSyncResult.existingWalletUpdated:
@@ -378,7 +418,8 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             );
           }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      FileLogger.error(className, methodName, '_onCompletedScanning failed: $e', stackTrace);
       vibrateLightDouble();
       if (mounted) {
         String errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
@@ -393,6 +434,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         );
       }
     } finally {
+      FileLogger.log(className, methodName, '_onCompletedScanning finally block');
       vibrateMedium();
       if (mounted) {
         context.loaderOverlay.hide();
@@ -400,25 +442,38 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     }
   }
 
-  void _onFailedScanning(String message) async {
-    if (_isProcessing) return;
+  void _onFailedScanning(String message, String? scannedData) async {
+    const methodName = '_onFailedScanning';
+    FileLogger.error(className, methodName,
+        '_onFailedScanning called with message: $message${scannedData != null ? " data: $scannedData" : null}');
+
+    if (_isProcessing) {
+      return;
+    }
     _isProcessing = true;
 
     String errorMessage;
     if (message == CoconutQrScanner.qrFormatErrorMessage) {
-      errorMessage = t.alert.invalid_qr;
+      errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
+      FileLogger.error(className, methodName, 'QR format error detected');
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
+      FileLogger.error(className, methodName, 'Non-QR format error detected');
     }
 
     await CustomDialogs.showCustomAlertDialog(context,
         title: t.alert.scan_failed, message: errorMessage, onConfirm: () {
+      FileLogger.log(className, methodName, 'Error dialog confirmed');
       _isProcessing = false;
       Navigator.pop(context);
     });
   }
 
   void _showErrorDialog(String title, String description) {
+    const methodName = '_showErrorDialog';
+    FileLogger.log(className, methodName, 'Error title: $title');
+    FileLogger.log(className, methodName, 'Error description: $description');
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -430,8 +485,10 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 50,
           ),
+          leftButtonText: t.cancel,
+          leftButtonColor: CoconutColors.black.withOpacity(0.7),
+          rightButtonText: t.confirm,
           rightButtonColor: CoconutColors.white,
-          rightButtonTextStyle: CoconutTypography.body2_14,
           onTapRight: () {
             _isProcessing = false;
             Navigator.pop(context);
@@ -447,6 +504,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         WalletImportSource.jade => t.wallet_add_scanner_screen.jade,
         WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
         WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
+        WalletImportSource.krux => t.wallet_add_scanner_screen.krux,
         _ => '',
       };
 

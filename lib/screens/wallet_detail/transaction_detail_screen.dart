@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -129,19 +128,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           onTap: _toggleUnit,
                           child: Column(
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  _amountText(tx),
-                                  CoconutLayout.spacing_100w,
-                                  Text(
-                                    _currentUnit.symbol,
-                                    style: CoconutTypography.body2_14_Number
-                                        .setColor(CoconutColors.gray350),
-                                  ),
-                                ],
+                              FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    _amountText(tx),
+                                    CoconutLayout.spacing_100w,
+                                    Text(
+                                      _currentUnit.symbol,
+                                      style: CoconutTypography.body2_14_Number
+                                          .setColor(CoconutColors.gray350),
+                                    ),
+                                  ],
+                                ),
                               ),
                               CoconutLayout.spacing_100h,
                               FiatPrice(
@@ -220,8 +222,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           underlineButtonLabel: tx.blockHeight != 0 ? t.view_mempool : '',
                           onTapUnderlineButton: () {
                             tx.blockHeight != 0
-                                ? launchUrl(Uri.parse(
-                                    '${CoconutWalletApp.kMempoolHost}/block/${tx.blockHeight}'))
+                                ? launchUrl(
+                                    Uri.parse('${_viewModel.mempoolHost}/block/${tx.blockHeight}'))
                                 : ();
                           },
                           child: Text(
@@ -248,8 +250,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           label: t.tx_id,
                           underlineButtonLabel: t.view_mempool,
                           onTapUnderlineButton: () {
-                            launchUrl(Uri.parse(
-                                "${CoconutWalletApp.kMempoolHost}/tx/${tx.transactionHash}"));
+                            launchUrl(
+                                Uri.parse("${_viewModel.mempoolHost}/tx/${tx.transactionHash}"));
                           },
                           child: CopyTextContainer(
                             text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
@@ -413,6 +415,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                           t.transaction_fee_bumping_screen
                               .existing_fee_value(value: feeHistory.feeRate),
                           style: CoconutTypography.body2_14_Number,
+                          textScaler: const TextScaler.linear(1.0),
                         ),
                       ],
                     ),
@@ -503,6 +506,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             t.transaction_fee_bumping_screen
                                 .existing_fee_value(value: feeHistory.feeRate),
                             style: CoconutTypography.body2_14_Number,
+                            textScaler: const TextScaler.linear(1.0),
                           ),
                         ],
                       ),
@@ -574,54 +578,64 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                   : Lottie.asset('assets/lottie/arrow-down.json', fit: BoxFit.fill, repeat: true),
             ),
           ),
-          Text.rich(
-            TextSpan(
-              text: _viewModel.isSendType! ? t.status_sending : t.status_receiving,
-              style: CoconutTypography.body2_14.copyWith(fontWeight: FontWeight.w500),
-              children: [
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text.rich(
                 TextSpan(
-                  text: ' (${_getTimeGapString()})',
-                  style: CoconutTypography.body3_12.copyWith(fontWeight: FontWeight.w300),
+                  text: _viewModel.isSendType! ? t.status_sending : t.status_receiving,
+                  style: CoconutTypography.body2_14.copyWith(fontWeight: FontWeight.w500),
+                  children: [
+                    TextSpan(
+                      text: ' (${_getTimeGapString()})',
+                      style: CoconutTypography.body3_12.copyWith(fontWeight: FontWeight.w300),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           CoconutLayout.spacing_50w,
           Expanded(
-            child: Align(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
               alignment: Alignment.centerRight,
-              child: Visibility(
-                visible:
-                    _viewModel.isSendType! || (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: GestureDetector(
-                  onTap: () async {
-                    if (!_viewModel.isNetworkOn) {
-                      CoconutToast.showWarningToast(
-                          context: context, text: ErrorCodes.networkError.message);
-                      return;
-                    }
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Visibility(
+                  visible:
+                      _viewModel.isSendType! || (_viewModel.feeBumpingHistoryList?.length ?? 0) < 2,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: GestureDetector(
+                    onTap: () async {
+                      if (!_viewModel.isNetworkOn) {
+                        CoconutToast.showWarningToast(
+                            context: context, text: ErrorCodes.networkError.message);
+                        return;
+                      }
 
-                    if (!canBumpingTx) return;
+                      if (!canBumpingTx) return;
 
-                    _viewModel.clearSendInfo();
-                    Navigator.pushNamed(context, '/transaction-fee-bumping', arguments: {
-                      'transaction': tx,
-                      'feeBumpingType':
-                          _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                      'walletId': widget.id,
-                      'walletName': _viewModel.getWalletName(),
-                    });
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      _viewModel.isSendType! ? t.quick_send : t.quick_receive,
-                      style: CoconutTypography.body2_14.setColor(_viewModel.isSendType!
-                          ? CoconutColors.primary.withOpacity(canBumpingTx ? 1.0 : 0.5)
-                          : CoconutColors.cyan.withOpacity(canBumpingTx ? 1.0 : 0.5)),
+                      _viewModel.clearSendInfo();
+                      Navigator.pushNamed(context, '/transaction-fee-bumping', arguments: {
+                        'transaction': tx,
+                        'feeBumpingType':
+                            _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
+                        'walletId': widget.id,
+                        'walletName': _viewModel.getWalletName(),
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        _viewModel.isSendType! ? t.quick_send : t.quick_receive,
+                        style: CoconutTypography.body2_14.setColor(_viewModel.isSendType!
+                            ? CoconutColors.primary.withOpacity(canBumpingTx ? 1.0 : 0.5)
+                            : CoconutColors.cyan.withOpacity(canBumpingTx ? 1.0 : 0.5)),
+                      ),
                     ),
                   ),
                 ),

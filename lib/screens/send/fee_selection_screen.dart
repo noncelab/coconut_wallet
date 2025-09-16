@@ -18,6 +18,7 @@ import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// @deprecated
 /// [INFO] send_utxo_selection_screen에서 필요한 정보를 전달 받고, 선택된 결과만 반환하는 화면
 /// ConnectivityProvider를 사용하지만, 별도 view_model을 추가하지 않음.
 class FeeSelectionScreen extends StatefulWidget {

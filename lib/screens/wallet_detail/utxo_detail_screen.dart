@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -14,7 +13,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -54,6 +52,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   final GlobalKey _balanceWidthKey = GlobalKey();
   bool _isUtxoTooltipVisible = false;
+  late UtxoDetailViewModel _viewModel;
   late UtxoState _utxoState;
   late WalletProvider _walletProvider;
   late BitcoinUnit _currentUnit;
@@ -123,14 +122,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoDetailViewModel>(
-      create: (_) => UtxoDetailViewModel(
-        widget.id,
-        _utxoState,
-        Provider.of<UtxoTagProvider>(_, listen: false),
-        Provider.of<TransactionProvider>(_, listen: false),
-        Provider.of<WalletProvider>(_, listen: false),
-        Provider.of<NodeProvider>(_, listen: false).getWalletStateStream(widget.id),
-      ),
+      create: (_) {
+        _viewModel = UtxoDetailViewModel(
+          widget.id,
+          _utxoState,
+          Provider.of<UtxoTagProvider>(_, listen: false),
+          Provider.of<TransactionProvider>(_, listen: false),
+          Provider.of<WalletProvider>(_, listen: false),
+          Provider.of<NodeProvider>(_, listen: false).getWalletStateStream(widget.id),
+        );
+        return _viewModel;
+      },
       child: Builder(builder: (context) {
         return GestureDetector(
           onTap: _removeUtxoTooltip,
@@ -210,11 +212,9 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         UtxoLockToggleButton(
                           isLocked: utxoStatus == UtxoStatus.locked,
                           onPressed: () async {
-                            Logger.log('>> toggleUtxoLockStatus');
                             final viewModel = context.read<UtxoDetailViewModel>();
                             final result = await viewModel.toggleUtxoLockStatus();
                             if (mounted && !result) {
-                              debugPrint('utxoStatue : $utxoStatus');
                               CoconutToast.showWarningToast(
                                 context: context,
                                 text: utxoStatus == UtxoStatus.locked
@@ -337,17 +337,19 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Padding(
         padding: const EdgeInsets.only(bottom: 2.0),
         child: Center(
-            child: RichText(
-                text: TextSpan(
-                    text: _currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                    style: CoconutTypography.heading2_28_NumberBold,
-                    children: <InlineSpan>[
-              WidgetSpan(
-                  alignment: PlaceholderAlignment.baseline,
-                  baseline: TextBaseline.alphabetic,
-                  child:
-                      Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number))
-            ]))),
+          child: FittedBox(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _currentUnit.displayBitcoinAmount(widget.utxo.amount),
+                  style: CoconutTypography.heading2_28_NumberBold,
+                ),
+                Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number)
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -406,7 +408,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             label: t.utxo_detail_screen.address,
             underlineButtonLabel: t.view_mempool,
             onTapUnderlineButton: () =>
-                launchUrl(Uri.parse("${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
+                launchUrl(Uri.parse("${_viewModel.mempoolHost}/address/${widget.utxo.to}")),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -490,8 +492,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
         onTapUnderlineButton: () {
           widget.utxo.status == UtxoStatus.unspent
-              ? launchUrl(
-                  Uri.parse("${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"))
+              ? launchUrl(Uri.parse("${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}"))
               : ();
         },
         child: Text(

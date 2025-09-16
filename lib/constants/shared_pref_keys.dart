@@ -21,6 +21,7 @@ class SharedPrefKeys {
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
+  static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';
@@ -56,4 +57,8 @@ class SharedPrefKeys {
     SharedPrefKeys.kFakeBalanceTotal,
     SharedPrefKeys.kFakeBalanceMap,
   ];
+
+  // Block explorer
+  static const String kUseDefaultExplorer = 'USE_DEFAULT_EXPLORER';
+  static const String kCustomExplorerUrl = 'CUSTOM_EXPLORER_URL';
 }
