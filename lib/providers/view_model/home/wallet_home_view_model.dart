@@ -19,6 +19,7 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:tuple/tuple.dart';
 
 typedef AnimatedBalanceDataGetter = AnimatedBalanceData Function(int id);
 typedef BalanceGetter = int Function(int id);
@@ -49,15 +50,15 @@ class WalletHomeViewModel extends ChangeNotifier {
   final List<HomeFeature> _homeFeatures = [];
   late int _analysisPeriod;
   int get analysisPeriod => _analysisPeriod;
-  late TransactionType _selectedAnalysisTransactionType;
-  TransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
+  late AnalysisTransactionType _selectedAnalysisTransactionType;
+  AnalysisTransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
   String get selectedAnalysisTransactionTypeName {
     switch (_selectedAnalysisTransactionType) {
-      case TransactionType.received:
+      case AnalysisTransactionType.onlyReceived:
         return t.receive;
-      case TransactionType.sent:
+      case AnalysisTransactionType.onlySent:
         return t.send;
-      default:
+      case AnalysisTransactionType.all:
         return t.all;
     }
   }
@@ -74,7 +75,10 @@ class WalletHomeViewModel extends ChangeNotifier {
   int? get currentBlockHeight => _currentBlock?.height;
 
   bool _isFetchingLatestTx = false;
+  bool get isFetchingLatestTx => _isFetchingLatestTx;
+
   bool _isLatestTxAnalysisRunning = false;
+  bool get isLatestTxAnalysisRunning => _isLatestTxAnalysisRunning;
 
   Map<int, List<TransactionRecord>> _recentTransactions = {};
   Map<int, List<TransactionRecord>> get recentTransactions => _recentTransactions;
@@ -385,9 +389,23 @@ class WalletHomeViewModel extends ChangeNotifier {
     final walletIds = walletItemList.map((w) => w.id).toList();
     if (currentBlock?.height == null) return;
     final currentBlockHeight = currentBlock!.height;
-
-    final transactions = _walletProvider.getConfirmedTransactionRecordListWithin(
-        walletIds, currentBlockHeight, days);
+    debugPrint('analysisPeriod: $_analysisPeriod');
+    debugPrint('analysisPeriodRange.item1: ${_preferenceProvider.analysisPeriodRange.item1}');
+    debugPrint('analysisPeriodRange.item2: ${_preferenceProvider.analysisPeriodRange.item2}');
+    debugPrint('days: $days');
+    final transactions = _analysisPeriod == 0 &&
+            _preferenceProvider.analysisPeriodRange.item1 != null &&
+            _preferenceProvider.analysisPeriodRange.item2 != null
+        ? _walletProvider.getConfirmedTransactionRecordListWithinDateRange(
+            walletIds,
+            currentBlockHeight,
+            Tuple2<DateTime, DateTime>(
+              _preferenceProvider.analysisPeriodRange.item1!,
+              _preferenceProvider.analysisPeriodRange.item2!,
+            ),
+          )
+        : _walletProvider.getConfirmedTransactionRecordListWithin(
+            walletIds, currentBlockHeight, days);
 
     final receivedTxs =
         transactions.where((t) => t.transactionType == TransactionType.received).toList();
@@ -404,8 +422,16 @@ class WalletHomeViewModel extends ChangeNotifier {
     Logger.log('WalletHomeViewModel: 최근 $days일 동안의 트랜잭션 분석 결과');
     Logger.log('WalletHomeViewModel: ${totalAmount.abs()}${totalAmount > 0 ? ' 증가했어요' : ' 감소했어요'}');
     // UTC 기간 출력 : 30일 전 - 오늘 yy.mm.dd 형식으로 출력
-    final startDate = DateTime.now().subtract(Duration(days: days)).toUtc();
-    final endDate = DateTime.now().toUtc();
+    final startDate = _analysisPeriod == 0 &&
+            _preferenceProvider.analysisPeriodRange.item1 != null &&
+            _preferenceProvider.analysisPeriodRange.item2 != null
+        ? _preferenceProvider.analysisPeriodRange.item1!
+        : DateTime.now().subtract(Duration(days: days)).toUtc();
+    final endDate = _analysisPeriod == 0 &&
+            _preferenceProvider.analysisPeriodRange.item1 != null &&
+            _preferenceProvider.analysisPeriodRange.item2 != null
+        ? _preferenceProvider.analysisPeriodRange.item2!
+        : DateTime.now().toUtc();
 
     Logger.log(
         'WalletHomeViewModel: 기간: ${startDate.toLocal().toString().split(' ')[0]} ~ ${endDate.toLocal().toString().split(' ')[0]} | 트랜잭션 $totalTransactionCount 회');
@@ -414,6 +440,8 @@ class WalletHomeViewModel extends ChangeNotifier {
     Logger.log('WalletHomeViewModel: 🔄 Self: ${selfTxs.length}회 $selfAmount ');
 
     _recentTransactionAnalysis = RecentTransactionAnalysis(
+        startDate: startDate,
+        endDate: endDate,
         receivedTxs: receivedTxs,
         sentTxs: sentTxs,
         selfTxs: selfTxs,
@@ -431,12 +459,11 @@ class WalletHomeViewModel extends ChangeNotifier {
   void setAnalysisPeriod(int value) {
     _analysisPeriod = value;
     _preferenceProvider.setAnalysisPeriod(value);
-
     getRecentTransactionAnalysis(value);
     notifyListeners();
   }
 
-  void setAnalysisTransactionType(TransactionType value) {
+  void setAnalysisTransactionType(AnalysisTransactionType value) {
     _selectedAnalysisTransactionType = value;
     _preferenceProvider.setAnalysisTransactionType(value);
 
@@ -454,6 +481,8 @@ class WalletHomeViewModel extends ChangeNotifier {
 
 class RecentTransactionAnalysis {
   final int totalAmount;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final List<TransactionRecord> receivedTxs;
   final List<TransactionRecord> sentTxs;
   final List<TransactionRecord> selfTxs;
@@ -462,10 +491,12 @@ class RecentTransactionAnalysis {
   final int selfAmount;
   final int days;
   final bool isBtcUnit;
-  final TransactionType selectedAnalysisTransactionType;
+  final AnalysisTransactionType selectedAnalysisTransactionType;
 
   const RecentTransactionAnalysis({
     required this.totalAmount,
+    required this.startDate,
+    required this.endDate,
     required this.receivedTxs,
     required this.sentTxs,
     required this.selfTxs,
@@ -486,28 +517,32 @@ class RecentTransactionAnalysis {
       selfAmount == 0;
 
   int get totalTransactionCount => receivedTxs.length + sentTxs.length + selfTxs.length;
-  String get totalTransactionResult => selectedAnalysisTransactionType == TransactionType.received
-      ? t.wallet_home_screen.received
-      : selectedAnalysisTransactionType == TransactionType.sent
-          ? t.wallet_home_screen.sent
-          : totalAmount > 0
-              ? t.wallet_home_screen.increase
-              : t.wallet_home_screen.decrease;
+  String get totalTransactionResult =>
+      selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
+          ? t.wallet_home_screen.received
+          : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
+              ? t.wallet_home_screen.sent
+              : totalAmount > 0
+                  ? t.wallet_home_screen.increase
+                  : t.wallet_home_screen.decrease;
   String get dateRange => '$_startDate ~ $_endDate';
-  String get _startDate => _formatYyMmDd(DateTime.now().subtract(Duration(days: days)));
-  String get _endDate => _formatYyMmDd(DateTime.now());
+  String get _startDate => days == 0
+      ? _formatYyMmDd(startDate ?? DateTime.now().subtract(Duration(days: days)))
+      : _formatYyMmDd(DateTime.now().subtract(Duration(days: days)));
+  String get _endDate =>
+      days == 0 ? _formatYyMmDd(endDate ?? DateTime.now()) : _formatYyMmDd(DateTime.now());
 
   String get titleString => '${isBtcUnit ? BitcoinUnit.btc.displayBitcoinAmount(
-      selectedAnalysisTransactionType == TransactionType.received
+      selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
           ? receivedAmount
-          : selectedAnalysisTransactionType == TransactionType.sent
+          : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
               ? (sentAmount + selfAmount).abs()
               : totalAmount,
       withUnit: true,
     ) : BitcoinUnit.sats.displayBitcoinAmount(
-      selectedAnalysisTransactionType == TransactionType.received
+      selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
           ? receivedAmount
-          : selectedAnalysisTransactionType == TransactionType.sent
+          : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
               ? sentAmount + selfAmount
               : totalAmount,
       withUnit: true,
@@ -524,4 +559,10 @@ class RecentTransactionAnalysis {
     final yy = y.toString().padLeft(2, '0');
     return '$yy.$m.$d';
   }
+}
+
+enum AnalysisTransactionType {
+  onlySent,
+  onlyReceived,
+  all,
 }

@@ -212,6 +212,7 @@ wallet_home_screen:
   empty_recent_transaction: "최근 거래가 없어요"
   empty_analysis_result: "분석에 필요한 거래가 없어요"
   analysis_period: "최근 ${days}일 • ${transaction_type}"
+  analysis_period_cutsom: "직접 설정 • ${transaction_type}"
   analysis_period_bottom_sheet:
     period_for_analysis: "조회 기간"
     days_15: "15일"

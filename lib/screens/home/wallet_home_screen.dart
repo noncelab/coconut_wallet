@@ -189,25 +189,20 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               isBalanceHidden,
                               (id) => viewModel.getFakeBalance(id),
                             ),
-                          if (homeFeatures.isNotEmpty && viewModel.recentTransactions.isEmpty) ...[
+                          if (homeFeatures.isNotEmpty) ...[
+                            // 최근 트랜잭션 섹션: 로딩 중이면 스켈레톤, 아니면 컨텐츠
                             buildFeatureSectionIfEnabled(
                               HomeFeatureType.recentTransaction,
-                              _buildRecentTransactionsSkeleton,
+                              () => viewModel.isFetchingLatestTx
+                                  ? _buildRecentTransactionsSkeleton()
+                                  : _buildRecentTransactions(),
                             ),
+                            // 분석 섹션: 로딩 중이면 스켈레톤, 아니면 컨텐츠
                             buildFeatureSectionIfEnabled(
                               HomeFeatureType.analysis,
-                              _buildAnalysisSkeleton,
-                            ),
-                          ],
-                          if (homeFeatures.isNotEmpty &&
-                              viewModel.recentTransactions.isNotEmpty) ...[
-                            buildFeatureSectionIfEnabled(
-                              HomeFeatureType.recentTransaction,
-                              _buildRecentTransactions,
-                            ),
-                            buildFeatureSectionIfEnabled(
-                              HomeFeatureType.analysis,
-                              _buildAnalysis,
+                              () => viewModel.isLatestTxAnalysisRunning
+                                  ? _buildAnalysisSkeleton()
+                                  : _buildAnalysis(),
                             ),
                           ],
                         ],
@@ -1275,7 +1270,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     },
                     onTransactionTypeSelected: (analysisTransactionType) {
                       _viewModel.setAnalysisTransactionType(analysisTransactionType);
-                      debugPrint('analysisTransactionType: $analysisTransactionType');
                     },
                     initialPeriodPreset: _viewModel.analysisPeriod,
                     initialAnalysisTransactionType: _viewModel.selectedAnalysisTransactionType,
@@ -1289,9 +1283,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      t.wallet_home_screen.analysis_period(
-                          days: _viewModel.analysisPeriod.toString(),
-                          transaction_type: _viewModel.selectedAnalysisTransactionTypeName),
+                      _viewModel.analysisPeriod != 0
+                          ? t.wallet_home_screen.analysis_period(
+                              days: _viewModel.analysisPeriod.toString(),
+                              transaction_type: _viewModel.selectedAnalysisTransactionTypeName)
+                          : t.wallet_home_screen.analysis_period_cutsom(
+                              transaction_type: _viewModel.selectedAnalysisTransactionTypeName),
                       style: CoconutTypography.body3_12.setColor(
                         CoconutColors.gray400,
                       ),
@@ -1358,7 +1355,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           ),
                           if (_viewModel.recentTransactionAnalysis!.receivedTxs.isNotEmpty &&
                               _viewModel.selectedAnalysisTransactionType !=
-                                  TransactionType.sent) ...[
+                                  AnalysisTransactionType.onlySent) ...[
                             _buildAnalysisTransactionRow(
                               'assets/svg/tx-received.svg',
                               _viewModel.recentTransactionAnalysis!.receivedTxs.length,
@@ -1369,7 +1366,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           ],
                           if (_viewModel.recentTransactionAnalysis!.sentTxs.isNotEmpty &&
                               _viewModel.selectedAnalysisTransactionType !=
-                                  TransactionType.received) ...[
+                                  AnalysisTransactionType.onlyReceived) ...[
                             _buildAnalysisTransactionRow(
                               'assets/svg/tx-sent.svg',
                               _viewModel.recentTransactionAnalysis!.sentTxs.length,
@@ -1380,7 +1377,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           ],
                           if (_viewModel.recentTransactionAnalysis!.selfTxs.isNotEmpty &&
                               _viewModel.selectedAnalysisTransactionType !=
-                                  TransactionType.received) ...[
+                                  AnalysisTransactionType.onlyReceived) ...[
                             _buildAnalysisTransactionRow(
                               'assets/svg/tx-self.svg',
                               _viewModel.recentTransactionAnalysis!.selfTxs.length,

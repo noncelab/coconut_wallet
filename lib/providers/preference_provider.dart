@@ -2,14 +2,15 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:tuple/tuple.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
@@ -61,8 +62,11 @@ class PreferenceProvider extends ChangeNotifier {
   late int _analysisPeriod;
   int get analysisPeriod => _analysisPeriod;
 
-  late TransactionType _selectedAnalysisTransactionType;
-  TransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
+  late Tuple2<DateTime?, DateTime?> _analysisPeriodRange;
+  Tuple2<DateTime?, DateTime?> get analysisPeriodRange => _analysisPeriodRange;
+
+  late AnalysisTransactionType _selectedAnalysisTransactionType;
+  AnalysisTransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
 
   PreferenceProvider() {
     _initializeFiat();
@@ -78,6 +82,7 @@ class PreferenceProvider extends ChangeNotifier {
     _excludedFromTotalBalanceWalletIds = _getExcludedFromTotalBalanceWalletIds();
     _homeFeatures = _getHomeFeatures();
     _analysisPeriod = _getAnalysisPeriod();
+    _analysisPeriodRange = _getAnalysisPeriodRange();
     _selectedAnalysisTransactionType = _getAnalysisTransactionType();
     _initializeLanguageFromSystem();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -393,8 +398,24 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Tuple2<DateTime?, DateTime?> _getAnalysisPeriodRange() {
+    final start = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodStart);
+    final end = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodEnd);
+    debugPrint('Analysis period range: $start ~ $end');
+    return Tuple2(
+        start.isEmpty ? null : DateTime.parse(start), end.isEmpty ? null : DateTime.parse(end));
+  }
+
+  Future<void> setAnalysisPeriodRange(DateTime start, DateTime end) async {
+    _analysisPeriodRange = Tuple2(start, end);
+    await _sharedPrefs.setString(SharedPrefKeys.kAnalysisPeriodStart, start.toIso8601String());
+    await _sharedPrefs.setString(SharedPrefKeys.kAnalysisPeriodEnd, end.toIso8601String());
+    notifyListeners();
+  }
+
   int _getAnalysisPeriod() {
     final period = _sharedPrefs.getIntOrNull(SharedPrefKeys.kAnalysisPeriod);
+    debugPrint('Analysis period: $period');
     return period ?? 30; // 기본 기간 30일
   }
 
@@ -404,16 +425,16 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  TransactionType _getAnalysisTransactionType() {
+  AnalysisTransactionType _getAnalysisTransactionType() {
     final encoded = _sharedPrefs.getString(SharedPrefKeys.kSelectedTransactionTypeIndices);
-    if (encoded.isEmpty) return TransactionType.unknown; // [전체 = unknown]가 기본
-    return TransactionType.values.firstWhere(
+    if (encoded.isEmpty) return AnalysisTransactionType.all; // [전체 = all]이 기본
+    return AnalysisTransactionType.values.firstWhere(
       (type) => type.name == encoded,
-      orElse: () => TransactionType.unknown,
+      orElse: () => AnalysisTransactionType.all,
     );
   }
 
-  Future<void> setAnalysisTransactionType(TransactionType transactionType) async {
+  Future<void> setAnalysisTransactionType(AnalysisTransactionType transactionType) async {
     _selectedAnalysisTransactionType = transactionType;
     await _sharedPrefs.setString(
         SharedPrefKeys.kSelectedTransactionTypeIndices, _selectedAnalysisTransactionType.name);

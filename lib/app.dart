@@ -53,6 +53,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
@@ -174,10 +175,18 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         child: TranslationProvider(
           child: CupertinoApp(
             navigatorObservers: [routeObserver],
+            supportedLocales: const [
+              Locale('en', 'US'),
+              Locale('ko', 'KR'),
+              Locale('ja', 'JP'),
+            ],
             localizationsDelegates: const [
               DefaultMaterialLocalizations.delegate,
               DefaultWidgetsLocalizations.delegate,
               DefaultCupertinoLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
             ],
             debugShowCheckedModeBanner: false,
             theme: const CupertinoThemeData(

@@ -20,6 +20,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:tuple/tuple.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
@@ -384,6 +385,18 @@ class WalletProvider extends ChangeNotifier {
     for (int walletId in walletIds) {
       final transactions = _transactionRepository.getTransactionRecordListAfterBlockHeight(
           walletId, startBlockHeight);
+      result.addAll(transactions);
+    }
+
+    return result;
+  }
+
+  List<TransactionRecord> getConfirmedTransactionRecordListWithinDateRange(
+      List<int> walletIds, int currentBlockHeight, Tuple2<DateTime, DateTime> dateRange) {
+    List<TransactionRecord> result = [];
+    for (int walletId in walletIds) {
+      final transactions =
+          _transactionRepository.getTransactionRecordListWithDateRange(walletId, dateRange);
       result.addAll(transactions);
     }
 

@@ -13,6 +13,7 @@ import 'package:coconut_wallet/services/model/response/fetch_transaction_respons
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:tuple/tuple.dart';
 
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
@@ -69,6 +70,29 @@ class TransactionRepository extends BaseRepository {
   List<TransactionRecord> getTransactionRecordListAfterBlockHeight(int walletId, int blockHeight) {
     final realmTxs = realm.query<RealmTransaction>(
         'walletId == $walletId AND blockHeight >= $blockHeight SORT(createdAt DESC)');
+    if (realmTxs.isEmpty) return [];
+    List<TransactionRecord> result = [];
+
+    for (var t in realmTxs) {
+      result.add(mapRealmTransactionToTransaction(t));
+    }
+
+    return result;
+  }
+
+  List<TransactionRecord> getTransactionRecordListWithDateRange(
+      int walletId, Tuple2<DateTime, DateTime> dateRange) {
+    final rawStart = dateRange.item1.isBefore(dateRange.item2) ? dateRange.item1 : dateRange.item2;
+    final rawEnd = dateRange.item2.isAfter(dateRange.item1) ? dateRange.item2 : dateRange.item1;
+    // 날짜만 비교하도록 00:00:00 ~ 다음날 00:00:00(미포함) 범위로 정규화
+    final startOnly = DateTime(rawStart.year, rawStart.month, rawStart.day);
+    final endExclusive =
+        DateTime(rawEnd.year, rawEnd.month, rawEnd.day).add(const Duration(days: 1));
+
+    final realmTxs = realm.query<RealmTransaction>(
+      r'walletId == $0 AND timestamp >= $1 AND timestamp < $2 SORT(createdAt DESC)',
+      [walletId, startOnly, endExclusive],
+    );
     if (realmTxs.isEmpty) return [];
     List<TransactionRecord> result = [];
 

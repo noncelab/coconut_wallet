@@ -168,6 +168,7 @@ wallet_home_screen:
   empty_recent_transaction: "No recent transactions"
   empty_analysis_result: "No transactions needed for analysis"
   analysis_period: "Recent ${days} days • ${transaction_type}"
+  analysis_period_custom: "Custom • ${transaction_type}"
   analysis_period_bottom_sheet:
     period_for_analysis: "Analysis Period"
     days_15: "15 days"
