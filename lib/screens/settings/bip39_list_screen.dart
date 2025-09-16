@@ -65,10 +65,10 @@ class Bip39ListScreen extends StatefulWidget {
   const Bip39ListScreen({super.key});
 
   @override
-  State<Bip39ListScreen> createState() => _Bip39ListScreenState();
+  State<Bip39ListScreen> createState() => Bip39ListScreenState();
 }
 
-class _Bip39ListScreenState extends State<Bip39ListScreen> {
+class Bip39ListScreenState extends State<Bip39ListScreen> {
   final String _titleText = t.mnemonic_wordlist;
   final String _hintText = t.text_field.search_mnemonic_word;
   final ScrollController _scrollController = ScrollController();
@@ -133,12 +133,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   void _filterItems() {
     final text = _searchController.text;
     setState(() {
-      _filteredItems = text.isNotEmpty ? _queryWord(text) : _generateFullList();
+      _filteredItems = text.isNotEmpty ? queryWord(text) : _generateFullList();
     });
   }
 
   /// 🔹 검색 로직 (원본 유지)
-  List<Map<String, dynamic>> _queryWord(String input) {
+  static List<Map<String, dynamic>> queryWord(String input) {
     final query = input.toLowerCase();
     final isBinary = RegExp(r'^[01]+$').hasMatch(query);
     final isNumeric = RegExp(r'^\d+$').hasMatch(query);

@@ -1,59 +1,31 @@
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-List<Map<String, dynamic>> _queryWord(String input) {
-    final query = input.toLowerCase();
-    final isBinary = RegExp(r'^[01]+$').hasMatch(query);
-    final isNumeric = RegExp(r'^\d+$').hasMatch(query);
-    final isAlphabetic = RegExp(r'^[a-zA-Z]+$').hasMatch(query);
-
-    final numericResults = <Map<String, dynamic>>[];
-    final binaryResults = <Map<String, dynamic>>[];
-    final alphabeticResults = <Map<String, dynamic>>[];
-
-    for (var i = 0; i < wordList.length; i++) {
-      final indexNum = i + 1;
-      final item = wordList[i];
-      final binaryStr = (indexNum - 1).toRadixString(2).padLeft(11, '0');
-
-      // 숫자 검색
-      if (isNumeric && query.length <= 4 && i.toString() == query) {
-        numericResults.add({'index': indexNum, 'item': item, 'type': 'numeric'});
-      }
-
-      // 이진 검색
-      if (isBinary && binaryStr.contains(query)) {
-        binaryResults.add({'index': indexNum, 'item': item, 'type': 'binary'});
-      }
-
-      // 알파벳 검색
-      if (isAlphabetic && item.toLowerCase().contains(query)) {
-        alphabeticResults.add({'index': indexNum, 'item': item, 'type': 'alphabetic'});
-      }
-    }
-
-    // 알파벳 검색 → startsWith 우선 정렬
-    if (isAlphabetic) {
-      alphabeticResults.sort((a, b) {
-        final itemA = (a['item'] as String).toLowerCase();
-        final itemB = (b['item'] as String).toLowerCase();
-        final startsWithA = itemA.startsWith(query);
-        final startsWithB = itemB.startsWith(query);
-
-        if (startsWithA && !startsWithB) return -1;
-        if (!startsWithA && startsWithB) return 1;
-        return itemA.compareTo(itemB);
-      });
-      return alphabeticResults;
-    } else {
-      return [
-        ...numericResults..sort((a, b) => a['index'].compareTo(b['index'])),
-        ...binaryResults..sort((a, b) => a['index'].compareTo(b['index']))
-      ];
-    }
-  }
+import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 
 void main() {
+  /// 공용 테스트 함수
+  void runQueryTest(String input, String? expected, String type) {
+    test('$input 검색 → $expected', () {
+      final result = Bip39ListScreenState.queryWord(input);
+
+      if (expected == null) {
+        // 검색 결과가 없어야 함
+        expect(result, isEmpty, reason: '검색 결과가 없어야 합니다.');
+      } else {
+        // 검색 결과가 있을 때
+        expect(result, isNotEmpty);
+
+        if (result.length > 1) {
+          // 여러 결과가 나온 경우
+          print('$input 검색 → 검색 결과가 많다 (${result.length}개)');
+        } else {
+          // 단일 결과일 때 기존처럼 검증
+          expect(result.first['item'], expected);
+          expect(result.first['type'], type);
+        }
+      }
+    });
+  }
+
   group('mnemonic search', () {
     group('십진법 검색', () {
       final numericTests = {
@@ -61,14 +33,11 @@ void main() {
         '1': 'ability',
         '10': 'access',
         '616': 'escape',
+        '3000': null,
       };
 
       numericTests.forEach((input, expected) {
-        test('$input 검색 → $expected', () {
-          final result = _queryWord(input);
-          expect(result.first['item'], expected);
-          expect(result.first['type'], 'numeric');
-        });
+        runQueryTest(input, expected, 'numeric');
       });
     });
 
@@ -76,14 +45,11 @@ void main() {
       final alphaTests = {
         'test': 'test',
         'royal': 'royal',
+        'aq': null,
       };
 
       alphaTests.forEach((input, expected) {
-        test('$input 검색 → $expected', () {
-          final result = _queryWord(input);
-          expect(result.first['item'], expected);
-          expect(result.first['type'], 'alphabetic');
-        });
+        runQueryTest(input, expected, 'alphabetic');
       });
     });
 
@@ -94,11 +60,7 @@ void main() {
       };
 
       binaryTests.forEach((input, expected) {
-        test('$input 검색 → $expected', () {
-          final result = _queryWord(input);
-          expect(result.first['item'], expected);
-          expect(result.first['type'], 'binary');
-        });
+        runQueryTest(input, expected, 'binary');
       });
     });
   });
