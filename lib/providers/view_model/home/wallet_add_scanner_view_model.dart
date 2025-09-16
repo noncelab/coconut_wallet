@@ -36,7 +36,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         break;
       case WalletImportSource.keystone:
       case WalletImportSource.jade:
-        _qrDataHandler = BcUrQrScanDataHandler();
+        _qrDataHandler =
+            BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
         break;
       case WalletImportSource.seedSigner:
       case WalletImportSource.krux:
