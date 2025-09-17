@@ -77,7 +77,8 @@ void main() {
     expect(
       () => electrumClient.getBlockHeader(-1),
       throwsA(
-        isA<Exception>().having((e) => e.toString(), 'message', 'Exception: Only numbers greater than 0 are available'),
+        isA<Exception>().having(
+            (e) => e.toString(), 'message', 'Exception: Only numbers greater than 0 are available'),
       ),
     );
   });
@@ -345,7 +346,8 @@ void main() {
     expect(
       () => electrumClient.estimateFee(-1),
       throwsA(
-        isA<Exception>().having((e) => e.toString(), 'message', 'Exception: Only numbers greater than 0 are available'),
+        isA<Exception>().having(
+            (e) => e.toString(), 'message', 'Exception: Only numbers greater than 0 are available'),
       ),
     );
   });
@@ -435,7 +437,8 @@ void main() {
     test('should throw error when not connected to server', () async {
       when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.terminated);
 
-      expect(() => electrumClient.ping(), throwsA('Can not connect to the server. Please connect and try again.'));
+      expect(() => electrumClient.ping(),
+          throwsA('Can not connect to the server. Please connect and try again.'));
     });
   });
 }

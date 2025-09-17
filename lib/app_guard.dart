@@ -85,7 +85,8 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
-    Logger.log('AppGuard: AppLifecycleState: $state');
+    Logger.log(
+        'AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
     switch (state) {
       case AppLifecycleState.resumed:
         if (_isPaused) {

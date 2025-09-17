@@ -262,7 +262,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
       onTap: () {
         // MFP를 가진 월렛이 존재하지 않는다면 바텀시트를 출력하지 않는다
         if (!hasMfpWallet(_walletProvider.walletItemList)) return;
-        CommonBottomSheets.showDraggableBottomSheetWithAppGuard(
+        CommonBottomSheets.showDraggableBottomSheet(
             context: context,
             childBuilder: (scrollController) => SelectWalletBottomSheet(
                   showOnlyMfpWallets: true,

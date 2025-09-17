@@ -15,10 +15,7 @@ import 'package:provider/provider.dart';
 class ReceiveAddressScreen extends StatefulWidget {
   final int id;
 
-  const ReceiveAddressScreen({
-    super.key,
-    required this.id,
-  });
+  const ReceiveAddressScreen({super.key, required this.id});
 
   @override
   State<ReceiveAddressScreen> createState() => _ReceiveAddressScreenState();
@@ -67,37 +64,33 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: CoconutAppBar.build(
-          title: t.receive,
-          customTitle: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(_selectedWalletItem?.name ?? t.send_screen.select_wallet,
-                      style: CoconutTypography.body1_16),
-                  CoconutLayout.spacing_50w,
-                  const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
-                ],
-              ),
-            ],
-          ),
-          onTitlePressed: _onAppBarTitlePressed,
-          context: context,
-          isBottom: true,
-          actionButtonList: [
-            const SizedBox(width: 24, height: 24),
+        title: t.receive,
+        customTitle: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(_selectedWalletItem?.name ?? t.send_screen.select_wallet,
+                    style: CoconutTypography.body1_16),
+                CoconutLayout.spacing_50w,
+                const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
+              ],
+            ),
           ],
-          onBackPressed: () {
-            Navigator.of(context).pop();
-          }),
+        ),
+        onTitlePressed: _onAppBarTitlePressed,
+        context: context,
+        isBottom: true,
+        actionButtonList: [const SizedBox(width: 24, height: 24)],
+        onBackPressed: () {
+          Navigator.of(context).pop();
+        },
+      ),
       body: _selectedWalletItem != null
           ? SafeArea(
               child: SingleChildScrollView(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 20,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                   child: Column(
                     children: [
                       QrCodeInfo(
@@ -137,10 +130,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     color: CoconutColors.white.withOpacity(0.15),
                                   ),
-                                  child: Text(
-                                    t.view_all_addresses,
-                                    style: CoconutTypography.body3_12,
-                                  ),
+                                  child:
+                                      Text(t.view_all_addresses, style: CoconutTypography.body3_12),
                                 ),
                               ),
                             ],
@@ -148,7 +139,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                         ),
                         qrData: receiveAddress,
                         isAddress: true,
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -160,31 +151,28 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
 
   void _onAddressListButtonPressed() {
     CommonBottomSheets.showBottomSheet_90(
-        context: context,
-        child: AppGuard(
-          child: AddressListScreen(
-            id: _selectedWalletItem!.id,
-            isFullScreen: false,
-          ),
-        ));
+      context: context,
+      child: AddressListScreen(id: _selectedWalletItem!.id, isFullScreen: false),
+    );
   }
 
   void _onAppBarTitlePressed() {
-    CommonBottomSheets.showDraggableBottomSheetWithAppGuard(
-        context: context,
-        childBuilder: (scrollController) => AppGuard(
-                child: SelectWalletBottomSheet(
-              showOnlyMfpWallets: false,
-              scrollController: scrollController,
-              currentUnit: context.read<PreferenceProvider>().currentUnit,
-              walletId: selectedWalletId,
-              onWalletChanged: (id) {
-                final walletProvider = context.read<WalletProvider>();
-                _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
-                _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
-                setState(() {});
-                Navigator.pop(context);
-              },
-            )));
+    AppGuard.enablePrivacyScreen();
+    CommonBottomSheets.showDraggableBottomSheet(
+      context: context,
+      childBuilder: (scrollController) => SelectWalletBottomSheet(
+        showOnlyMfpWallets: false,
+        scrollController: scrollController,
+        currentUnit: context.read<PreferenceProvider>().currentUnit,
+        walletId: selectedWalletId,
+        onWalletChanged: (id) {
+          final walletProvider = context.read<WalletProvider>();
+          _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
+          _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
+          setState(() {});
+          Navigator.pop(context);
+        },
+      ),
+    ).whenComplete(() => AppGuard.disablePrivacyScreen());
   }
 }

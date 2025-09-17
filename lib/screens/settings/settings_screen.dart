@@ -34,11 +34,10 @@ class _SettingsScreen extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
-      create:
-          (_) => SettingsViewModel(
-            Provider.of<AuthProvider>(context, listen: false),
-            Provider.of<PreferenceProvider>(context, listen: false),
-          ),
+      create: (_) => SettingsViewModel(
+        Provider.of<AuthProvider>(context, listen: false),
+        Provider.of<PreferenceProvider>(context, listen: false),
+      ),
       update: (_, authProvider, preferenceProvider, settingsViewModel) {
         return SettingsViewModel(authProvider, preferenceProvider);
       },
@@ -231,27 +230,27 @@ class _SettingsScreen extends State<SettingsScreen> {
                   // mainnet인 경우만 블록 익스플로러 표시
                   NetworkType.currentNetworkType == NetworkType.mainnet
                       ? ButtonGroup(
-                        buttons: [
-                          _buildAnimatedButton(
-                            title: t.electrum_server,
-                            onPressed: () async {
-                              Navigator.pushNamed(context, '/electrum-server');
-                            },
-                          ),
-                          _buildAnimatedButton(
-                            title: t.block_explorer,
-                            onPressed: () async {
-                              Navigator.pushNamed(context, '/block-explorer');
-                            },
-                          ),
-                        ],
-                      )
+                          buttons: [
+                            _buildAnimatedButton(
+                              title: t.electrum_server,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, '/electrum-server');
+                              },
+                            ),
+                            _buildAnimatedButton(
+                              title: t.block_explorer,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, '/block-explorer');
+                              },
+                            ),
+                          ],
+                        )
                       : _buildAnimatedButton(
-                        title: t.electrum_server,
-                        onPressed: () async {
-                          Navigator.pushNamed(context, '/electrum-server');
-                        },
-                      ),
+                          title: t.electrum_server,
+                          onPressed: () async {
+                            Navigator.pushNamed(context, '/electrum-server');
+                          },
+                        ),
 
                   CoconutLayout.spacing_400h,
 
@@ -305,9 +304,9 @@ class _SettingsScreen extends State<SettingsScreen> {
   }
 
   Widget _category(String label) => Container(
-    padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-    child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
-  );
+        padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
+        child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+      );
 
   Widget _buildAnimatedButton({
     required String title,

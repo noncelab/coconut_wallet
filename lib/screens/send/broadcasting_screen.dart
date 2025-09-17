@@ -45,8 +45,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   String get estimatedFeeText =>
       _currentUnit.displayBitcoinAmount(_viewModel.fee, defaultWhenNull: t.calculation_failed);
 
-  String get totalCostText =>
-      _currentUnit.displayBitcoinAmount(_viewModel.totalAmount, defaultWhenNull: t.calculation_failed);
+  String get totalCostText => _currentUnit.displayBitcoinAmount(_viewModel.totalAmount,
+      defaultWhenNull: t.calculation_failed);
 
   String get unitText => _currentUnit.symbol;
   int? userMessageIndex; // 후원하기에서만 사용
@@ -76,7 +76,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
     Transaction signedTx;
     if (_viewModel.isPsbt()) {
-      signedTx = Psbt.parse(_viewModel.signedTransaction).getSignedTransaction(_viewModel.walletAddressType);
+      signedTx = Psbt.parse(_viewModel.signedTransaction)
+          .getSignedTransaction(_viewModel.walletAddressType);
     } else {
       String hexTransaction = _viewModel.decodeTransactionToHex();
       signedTx = Transaction.parse(hexTransaction);
@@ -133,7 +134,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
+    return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
+        BroadcastingViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, walletProvider, viewModel) {
         if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
@@ -143,51 +145,52 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         return viewModel;
       },
       child: Consumer<BroadcastingViewModel>(
-        builder:
-            (context, viewModel, child) => Scaffold(
-              floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-              backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(
-                title: viewModel.isSendingDonation ? t.donation.donate : t.broadcasting_screen.title,
-                context: context,
-              ),
-              body: SafeArea(
-                child: Stack(
-                  children: [
-                    viewModel.isSendingDonation
-                        ? _buildDonationBroadcastInfo(viewModel.amount, viewModel.isInitDone, viewModel.isNetworkOn)
-                        : _buildNormalBroadcastInfo(
-                          viewModel.amount,
-                          viewModel.fee,
-                          viewModel.totalAmount,
-                          viewModel.sendingAmountWhenAddressIsMyChange,
-                          viewModel.isSendingToMyAddress,
-                          viewModel.recipientAddresses,
-                          viewModel.isNetworkOn,
-                        ),
-                    if (!viewModel.isSendingDonation)
-                      FixedBottomButton(
-                        showGradient: false,
-                        isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                        onButtonClicked: () async {
-                          if (viewModel.isNetworkOn == false) {
-                            CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
-                            return;
-                          }
-                          if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
-                            await TransactionUtil.showTransactionConfirmedDialog(context);
-                            return;
-                          }
-                          if (viewModel.isInitDone) {
-                            broadcast();
-                          }
-                        },
-                        text: t.broadcasting_screen.btn_submit,
+        builder: (context, viewModel, child) => Scaffold(
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          backgroundColor: CoconutColors.black,
+          appBar: CoconutAppBar.build(
+            title: viewModel.isSendingDonation ? t.donation.donate : t.broadcasting_screen.title,
+            context: context,
+          ),
+          body: SafeArea(
+            child: Stack(
+              children: [
+                viewModel.isSendingDonation
+                    ? _buildDonationBroadcastInfo(
+                        viewModel.amount, viewModel.isInitDone, viewModel.isNetworkOn)
+                    : _buildNormalBroadcastInfo(
+                        viewModel.amount,
+                        viewModel.fee,
+                        viewModel.totalAmount,
+                        viewModel.sendingAmountWhenAddressIsMyChange,
+                        viewModel.isSendingToMyAddress,
+                        viewModel.recipientAddresses,
+                        viewModel.isNetworkOn,
                       ),
-                  ],
-                ),
-              ),
+                if (!viewModel.isSendingDonation)
+                  FixedBottomButton(
+                    showGradient: false,
+                    isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                    onButtonClicked: () async {
+                      if (viewModel.isNetworkOn == false) {
+                        CoconutToast.showWarningToast(
+                            context: context, text: ErrorCodes.networkError.message);
+                        return;
+                      }
+                      if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
+                        await TransactionUtil.showTransactionConfirmedDialog(context);
+                        return;
+                      }
+                      if (viewModel.isInitDone) {
+                        broadcast();
+                      }
+                    },
+                    text: t.broadcasting_screen.btn_submit,
+                  ),
+              ],
             ),
+          ),
+        ),
       ),
     );
   }
@@ -242,19 +245,23 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                       },
                       child: Row(
                         children: [
-                          Text(t.donation.user_messages[userMessageIndex!], style: CoconutTypography.heading3_21_Bold),
+                          Text(t.donation.user_messages[userMessageIndex!],
+                              style: CoconutTypography.heading3_21_Bold),
                           Padding(
                             padding: const EdgeInsets.only(left: 4.0),
-                            child: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 18, height: 18),
+                            child: SvgPicture.asset('assets/svg/arrow-reload.svg',
+                                width: 18, height: 18),
                           ),
                         ],
                       ),
                     ),
                     CoconutLayout.spacing_100h,
-                    Text(t.donation.user_messages_description_1, style: CoconutTypography.heading4_18_Bold),
+                    Text(t.donation.user_messages_description_1,
+                        style: CoconutTypography.heading4_18_Bold),
                     CoconutLayout.spacing_100h,
                     Text(
-                      t.donation.user_messages_description_2(amount: (amount ?? 0).toThousandsSeparatedString()),
+                      t.donation.user_messages_description_2(
+                          amount: (amount ?? 0).toThousandsSeparatedString()),
                       style: CoconutTypography.heading4_18_Bold,
                     ),
                   ],
@@ -267,7 +274,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 width: MediaQuery.sizeOf(context).width,
                 onPressed: () {
                   if (isNetworkOn == false) {
-                    CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+                    CoconutToast.showWarningToast(
+                        context: context, text: ErrorCodes.networkError.message);
                     return;
                   }
                   if (isInitDone) {
@@ -366,7 +374,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                         isNumber: true,
                       ),
                       const Divider(color: MyColors.transparentWhite_12, height: 1),
-                      InformationItemCard(label: t.total_cost, value: ["$totalCostText $unitText"], isNumber: true),
+                      InformationItemCard(
+                          label: t.total_cost, value: ["$totalCostText $unitText"], isNumber: true),
                     ],
                   ),
                 ),
@@ -374,7 +383,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             ),
             if (isSendingToMyAddress) ...[
               const SizedBox(height: 20),
-              Text(t.broadcasting_screen.self_sending, textAlign: TextAlign.center, style: Styles.caption),
+              Text(t.broadcasting_screen.self_sending,
+                  textAlign: TextAlign.center, style: Styles.caption),
             ],
             // FixedBottomButton 크기에 맞게 스크롤이 가능하도록 설정
             CoconutLayout.spacing_600h,
@@ -433,16 +443,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         child: Stack(
           children: [
             ShaderMask(
-              shaderCallback:
-                  (bounds) => LinearGradient(
-                    colors: [
-                      CoconutColors.white.withValues(alpha: 0.1),
-                      Colors.transparent,
-                      CoconutColors.black.withValues(alpha: 0.1),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ).createShader(bounds),
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [
+                  CoconutColors.white.withValues(alpha: 0.1),
+                  Colors.transparent,
+                  CoconutColors.black.withValues(alpha: 0.1),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ).createShader(bounds),
               blendMode: BlendMode.srcATop,
               child: Lottie.asset(
                 'assets/lottie/spinning-heart.json',
@@ -453,17 +462,18 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 repeat: true,
               ),
             ),
-            Lottie.asset(assetPath, key: lottieKey, width: 200, height: 200, fit: BoxFit.fill, repeat: repeat),
+            Lottie.asset(assetPath,
+                key: lottieKey, width: 200, height: 200, fit: BoxFit.fill, repeat: repeat),
           ],
         ),
       );
     }
     return FloatingWidget(
       delayMilliseconds: delayMilliseconds,
-      child:
-          userMessageIndex == 1
-              ? Image.asset(assetPath, width: 200, height: 200, fit: BoxFit.fill)
-              : Lottie.asset(assetPath, key: lottieKey, width: 200, height: 200, fit: BoxFit.fill, repeat: repeat),
+      child: userMessageIndex == 1
+          ? Image.asset(assetPath, width: 200, height: 200, fit: BoxFit.fill)
+          : Lottie.asset(assetPath,
+              key: lottieKey, width: 200, height: 200, fit: BoxFit.fill, repeat: repeat),
     );
   }
 

@@ -44,11 +44,10 @@ class _ScannerOverlayPainter extends CustomPainter {
 
     canvas.restore();
 
-    final borderPaint =
-        Paint()
-          ..color = CoconutColors.gray350
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 4;
+    final borderPaint = Paint()
+      ..color = CoconutColors.gray350
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
     canvas.drawRRect(rrect, borderPaint);
   }
 
