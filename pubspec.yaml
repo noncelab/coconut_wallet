@@ -222,6 +222,7 @@ flutter:
     - assets/lottie/spinning-heart.json
     - assets/lottie/upside-down-hands.json
     - assets/lottie/thankyou-hearts.json
+    - assets/lottie/swipe-left.json
     - assets/images/hand-with-laid-heart.png
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg

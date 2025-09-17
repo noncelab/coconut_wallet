@@ -362,8 +362,10 @@ class SendViewModel extends ChangeNotifier {
 
     // UTXO 자동 선택 모드이므로 전체 UTXO 리스트 설정
     _selectedUtxoList = _walletProvider.getUtxoList(_selectedWalletItem!.id);
-    selectedUtxoAmountSum =
-        _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(
+      0,
+      (totalAmount, utxo) => totalAmount + utxo.amount,
+    );
   }
 
   void onWalletInfoUpdated(
@@ -434,7 +436,8 @@ class SendViewModel extends ChangeNotifier {
     _txBuildResult = _txBuilder!.build();
     _setEstimatedFee(_txBuildResult!.estimatedFee - (_txBuildResult!.unintendedDustFee ?? 0));
     _setUnintendedDustFee(
-        (_txBuildResult!.unintendedDustFee ?? 0) == 0 ? null : _txBuildResult!.unintendedDustFee);
+      (_txBuildResult!.unintendedDustFee ?? 0) == 0 ? null : _txBuildResult!.unintendedDustFee,
+    );
     _updateFinalErrorMessage();
     Logger.log(_txBuilder.toString());
   }
@@ -532,8 +535,9 @@ class SendViewModel extends ChangeNotifier {
         estimatedFeeInSats;
     _recipientList[lastIndex].amount = maxBalanceInSats > dustLimit
         ? (isBtcUnit
-                ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxBalanceInSats)
-                    .replaceAll(' ', '')
+                ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(
+                    maxBalanceInSats,
+                  ).replaceAll(' ', '')
                 : maxBalanceInSats)
             .toString()
         : "0";
@@ -895,8 +899,10 @@ class SendViewModel extends ChangeNotifier {
   }
 
   bool validateAddress(String address, int recipientIndex) {
-    AddressValidationError? error =
-        AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
+    AddressValidationError? error = AddressValidator.validateAddress(
+      address,
+      NetworkType.currentNetworkType,
+    );
 
     switch (error) {
       case AddressValidationError.notTestnetAddress:
@@ -932,8 +938,9 @@ class SendViewModel extends ChangeNotifier {
   void saveSendInfo() {
     assert(_txBuildResult!.isSuccess);
 
-    final recipientMapInBtc =
-        recipientMap.map((key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)));
+    final recipientMapInBtc = recipientMap.map(
+      (key, value) => MapEntry(key, UnitUtil.convertSatoshiToBitcoin(value)),
+    );
 
     // 모두 보내기 모드가 아니고 수수료 수신자 부담 옵션을 활성화한 경우, 마지막 수신자의 amount에서 수수료를 뺀다. (보기용)
     if (!_isMaxMode && _isFeeSubtractedFromSendAmount) {

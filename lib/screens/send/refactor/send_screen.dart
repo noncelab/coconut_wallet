@@ -29,6 +29,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -56,7 +57,7 @@ class _SendScreenState extends State<SendScreen>
   final double kTooltipPadding = 5;
   final double kAmountHeight = 34;
   final double kFeeBoardBottomPadding = 12;
-  double get addressBoardHeight => walletAddressListHeight + 84;
+  double get addressBoardHeight => walletAddressListHeight + 100;
   double get walletAddressListHeight => _viewModel.orderedRegisteredWallets.length >= 2 ? 100 : 48;
   double get keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
   double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
@@ -64,6 +65,8 @@ class _SendScreenState extends State<SendScreen>
   late final SendViewModel _viewModel;
   final _recipientPageController = PageController();
   int _focusedPageIndex = 0;
+
+  final ScrollController _addressListScrollController = ScrollController();
 
   final List<TextEditingController> _addressControllerList = [];
   final List<FocusNode> _addressFocusNodeList = [];
@@ -75,10 +78,9 @@ class _SendScreenState extends State<SendScreen>
   final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
 
-  // Bounce animation
-  late AnimationController _animationController;
-  late Animation<double> _offsetAnimation;
+  // 배치 트랜잭션 드래그 가이드
   late bool hasSeenAddRecipientCard;
+  bool _isLeftDragGuideViewVisible = false;
 
   MobileScannerController? _qrViewController;
   bool _isQrDataHandling = false;
@@ -127,15 +129,17 @@ class _SendScreenState extends State<SendScreen>
     );
     _amountController.addListener(_amountTextListener);
     _recipientPageController.addListener(_recipientPageListener);
-    _animationController =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 1000));
 
     // 수신자 카드를 보기 전까지 Bounce 애니메이션을 처리한다.
     hasSeenAddRecipientCard = context.read<PreferenceProvider>().hasSeenAddRecipientCard;
     if (!hasSeenAddRecipientCard) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 300));
-        _startBounce();
+        // _startBounce();
+        if (!mounted) return;
+        setState(() {
+          _isLeftDragGuideViewVisible = true;
+        });
       });
     }
 
@@ -150,8 +154,10 @@ class _SendScreenState extends State<SendScreen>
       });
     } else if (_viewModel.incomingBalance > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        String amountText = _viewModel.currentUnit
-            .displayBitcoinAmount(_viewModel.incomingBalance, withUnit: false);
+        String amountText = _viewModel.currentUnit.displayBitcoinAmount(
+          _viewModel.incomingBalance,
+          withUnit: false,
+        );
         CoconutToast.showToast(
           isVisibleIcon: true,
           context: context,
@@ -172,7 +178,6 @@ class _SendScreenState extends State<SendScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
 
-    _animationController.dispose();
     _recipientPageController.dispose();
     _feeRateController.dispose();
     _feeRateFocusNode.dispose();
@@ -794,8 +799,11 @@ class _SendScreenState extends State<SendScreen>
                   padding: const EdgeInsets.only(left: 12, right: 2),
                   onChanged: (text) {
                     if (text == "-") return;
-                    String formattedText =
-                        filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
+                    String formattedText = filterNumericInput(
+                      text,
+                      integerPlaces: 8,
+                      decimalPlaces: 2,
+                    );
                     double? parsedFeeRate = double.tryParse(formattedText);
 
                     if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
@@ -838,35 +846,81 @@ class _SendScreenState extends State<SendScreen>
   }
 
   Widget _buildPageView(BuildContext context) {
-    return SizedBox(
-      height: kPageViewHeight,
-      width: MediaQuery.of(context).size.width,
-      child: Selector<SendViewModel, Tuple2<int, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
-        builder: (context, data, child) {
-          final recipientListLength = data.item1;
-          final isMaxMode = data.item2;
-          return PageView.builder(
-            controller: _recipientPageController,
-            onPageChanged: (index) {
-              // 수신자 추가 카드 확인 여부 업데이트
-              if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
-                hasSeenAddRecipientCard = true;
-                context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
-              }
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) {
+        if (_isLeftDragGuideViewVisible) {
+          setState(() {
+            _isLeftDragGuideViewVisible = false;
+          });
+        }
+      },
+      onPointerMove: (_) {
+        if (_isLeftDragGuideViewVisible) {
+          setState(() {
+            _isLeftDragGuideViewVisible = false;
+          });
+        }
+      },
+      child: Stack(
+        children: [
+          SizedBox(
+            height: kPageViewHeight,
+            width: MediaQuery.of(context).size.width,
+            child: Selector<SendViewModel, Tuple2<int, bool>>(
+              selector: (_, viewModel) =>
+                  Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
+              builder: (context, data, child) {
+                final recipientListLength = data.item1;
+                final isMaxMode = data.item2;
+                return PageView.builder(
+                  controller: _recipientPageController,
+                  onPageChanged: (index) {
+                    // 수신자 추가 카드 확인 여부 업데이트
+                    if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
+                      hasSeenAddRecipientCard = true;
+                      context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
+                    }
 
-              _viewModel.setCurrentPage(index);
-            },
-            // isMaxMode: 수신자 추가 버튼 안보임
-            itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == recipientListLength) {
-                return _buildAddRecipientCard();
-              }
-              return _buildRecipientPage(context, index);
-            },
-          );
-        },
+                    _viewModel.setCurrentPage(index);
+                  },
+                  // isMaxMode: 수신자 추가 버튼 안보임
+                  itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == recipientListLength) {
+                      return _buildAddRecipientCard();
+                    }
+                    return _buildRecipientPage(context, index);
+                  },
+                );
+              },
+            ),
+          ),
+          AnimatedOpacity(
+            opacity: _isLeftDragGuideViewVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 500),
+            child: IgnorePointer(
+              ignoring: true,
+              child: Container(
+                height: kPageViewHeight,
+                width: MediaQuery.of(context).size.width,
+                color: CoconutColors.gray900.withValues(alpha: 0.5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Lottie.asset('assets/lottie/swipe-left.json', width: 60, height: 60),
+                    CoconutLayout.spacing_200h,
+                    Text(
+                      t.send_screen.drag_to_add_address,
+                      style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -882,8 +936,11 @@ class _SendScreenState extends State<SendScreen>
           _addAddressField();
         },
         child: CustomPaint(
-          painter:
-              DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: CoconutColors.gray600),
+          painter: DashedBorderPainter(
+            dashSpace: 4.0,
+            dashWidth: 4.0,
+            color: CoconutColors.gray600,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -971,14 +1028,16 @@ class _SendScreenState extends State<SendScreen>
                               text: _viewModel.isAmountInsufficient(index)
                                   ? TextSpan(
                                       text: t.send_screen.max_mode_insufficient_balance,
-                                      style: CoconutTypography.heading3_21_Bold
-                                          .setColor(CoconutColors.hotPink),
+                                      style: CoconutTypography.heading3_21_Bold.setColor(
+                                        CoconutColors.hotPink,
+                                      ),
                                     )
                                   : TextSpan(
                                       text:
                                           '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
-                                      style: CoconutTypography.heading2_28_NumberBold
-                                          .setColor(amountTextColor),
+                                      style: CoconutTypography.heading2_28_NumberBold.setColor(
+                                        amountTextColor,
+                                      ),
                                       children: [
                                         TextSpan(
                                           text: _viewModel.currentUnit.symbol,
@@ -1127,14 +1186,20 @@ class _SendScreenState extends State<SendScreen>
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20), color: CoconutColors.gray800),
+              borderRadius: BorderRadius.circular(20),
+              color: CoconutColors.gray800,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("${currentIndex + 1} ",
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
-                Text("/ $recipientListLength",
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray600)),
+                Text(
+                  "${currentIndex + 1} ",
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+                Text(
+                  "/ $recipientListLength",
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray600),
+                ),
               ],
             ),
           ),
@@ -1205,8 +1270,9 @@ class _SendScreenState extends State<SendScreen>
                               alignment: Alignment.centerLeft,
                               child: Text(
                                 t.send_screen.my_address,
-                                style:
-                                    CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
+                                style: CoconutTypography.body3_12_Bold.setColor(
+                                  CoconutColors.white,
+                                ),
                               ),
                             ),
                             const Spacer(),
@@ -1224,23 +1290,7 @@ class _SendScreenState extends State<SendScreen>
                         ),
                       ),
                     ),
-                    CoconutLayout.spacing_200h,
-                    SizedBox(
-                      height: walletAddressListHeight,
-                      child: ListView.builder(
-                        itemCount: _viewModel.orderedRegisteredWallets.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final walletAddressInfo =
-                              _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
-                          return _buildAddressRow(
-                            index,
-                            walletAddressInfo.walletAddress.address,
-                            walletAddressInfo.name,
-                            walletAddressInfo.walletAddress.derivationPath,
-                          );
-                        },
-                      ),
-                    ),
+                    _buildWalletAddressList(),
                     CoconutLayout.spacing_200h,
                     Expanded(
                       child: FittedBox(
@@ -1284,6 +1334,115 @@ class _SendScreenState extends State<SendScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWalletAddressList() {
+    if (_viewModel.orderedRegisteredWallets.length == 1) {
+      return Column(
+        children: [
+          CoconutLayout.spacing_200h,
+          SizedBox(
+            height: walletAddressListHeight,
+            child: ListView.builder(
+              controller: _addressListScrollController,
+              itemCount: _viewModel.orderedRegisteredWallets.length,
+              itemBuilder: (BuildContext context, int index) {
+                
+final walletAddressInfo =
+                              _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                return Column(
+                  children: [
+                    _buildAddressRow(
+                      index,
+                            walletAddressInfo.walletAddress.address,
+                            walletAddressInfo.name,
+                            walletAddressInfo.walletAddress.derivationPath,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          CoconutLayout.spacing_200h,
+        ],
+      );
+    }
+    return Stack(
+      children: [
+        Column(
+          children: [
+            CoconutLayout.spacing_200h,
+            SizedBox(
+              height: walletAddressListHeight,
+              child: Scrollbar(
+                controller: _addressListScrollController,
+                thumbVisibility: true,
+                child: ListView.builder(
+                  controller: _addressListScrollController,
+                  itemCount: _viewModel.orderedRegisteredWallets.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final walletAddressInfo =
+                              _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                    return Column(
+                      children: [
+                        if (index == 0) CoconutLayout.spacing_200h,
+                        _buildAddressRow(
+                           index,
+                            walletAddressInfo.walletAddress.address,
+                            walletAddressInfo.name,
+                            walletAddressInfo.walletAddress.derivationPath,
+                        ),
+                        if (index == _viewModel.orderedRegisteredWallets.length - 1)
+                          CoconutLayout.spacing_200h,
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+            CoconutLayout.spacing_200h,
+          ],
+        ),
+        Positioned(
+          left: 0,
+          right: 4,
+          top: 0,
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              height: 30,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [CoconutColors.black, Colors.transparent],
+                  stops: [0.0, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 4,
+          bottom: 0,
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              height: 30,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, CoconutColors.black],
+                  stops: [0.0, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1377,7 +1536,10 @@ class _SendScreenState extends State<SendScreen>
         Navigator.pop(context, scanData);
       } else {
         CoconutToast.showToast(
-            isVisibleIcon: true, context: context, text: validationResult.message);
+          isVisibleIcon: true,
+          context: context,
+          text: validationResult.message,
+        );
       }
 
       _isQrDataHandling = false;
@@ -1550,25 +1712,11 @@ class _SendScreenState extends State<SendScreen>
     _feeRateController.text = _removeTrailingDot(_feeRateController.text);
     _amountController.text = _removeTrailingDot(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
-  }
-
-  Future<void> _startBounce() async {
-    final pageWidth = _recipientPageController.position.viewportDimension;
-    _offsetAnimation = Tween<double>(
-      begin: 0.0,
-      end: pageWidth * 0.20,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.elasticOut));
-
-    _animationController.addListener(() {
-      if (_recipientPageController.hasClients) {
-        final offset = _offsetAnimation.value.clamp(
-          _recipientPageController.position.minScrollExtent,
-          _recipientPageController.position.maxScrollExtent,
-        );
-        _recipientPageController.jumpTo(offset);
-      }
-    });
-    _animationController.forward();
+    if (_isLeftDragGuideViewVisible) {
+      setState(() {
+        _isLeftDragGuideViewVisible = false;
+      });
+    }
   }
 
   /// 텍스트 끝의 소수점을 제거하는 함수
