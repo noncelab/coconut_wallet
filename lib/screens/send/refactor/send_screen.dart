@@ -91,9 +91,9 @@ class _SendScreenState extends State<SendScreen>
   bool get _isAddressFocused => _addressFocusNodeList.any((e) => e.hasFocus);
 
   String get incomingBalanceTooltipText => t.tooltip.amount_to_be_sent(
-    bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
-    unit: _viewModel.currentUnit.symbol,
-  );
+        bitcoin: _viewModel.currentUnit.displayBitcoinAmount(_viewModel.incomingBalance),
+        unit: _viewModel.currentUnit.symbol,
+      );
 
   double _previousKeyboardHeight = 0;
 
@@ -225,8 +225,7 @@ class _SendScreenState extends State<SendScreen>
   @override
   Widget build(BuildContext context) {
     // usableHeight: height - safeArea - toolbar
-    final usableHeight =
-        MediaQuery.of(context).size.height -
+    final usableHeight = MediaQuery.of(context).size.height -
         MediaQuery.of(context).padding.top -
         MediaQuery.of(context).padding.bottom -
         kCoconutAppbarHeight;
@@ -281,18 +280,15 @@ class _SendScreenState extends State<SendScreen>
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       height: kCoconutAppbarHeight,
-      customTitle: Selector<
-        SendViewModel,
-        Tuple5<WalletListItemBase?, bool, int, int, BitcoinUnit>
-      >(
-        selector:
-            (_, viewModel) => Tuple5(
-              viewModel.selectedWalletItem,
-              viewModel.isUtxoSelectionAuto,
-              viewModel.selectedUtxoAmountSum,
-              viewModel.selectedUtxoListLength,
-              viewModel.currentUnit,
-            ),
+      customTitle:
+          Selector<SendViewModel, Tuple5<WalletListItemBase?, bool, int, int, BitcoinUnit>>(
+        selector: (_, viewModel) => Tuple5(
+          viewModel.selectedWalletItem,
+          viewModel.isUtxoSelectionAuto,
+          viewModel.selectedUtxoAmountSum,
+          viewModel.selectedUtxoListLength,
+          viewModel.currentUnit,
+        ),
         builder: (context, data, child) {
           final selectedWalletItem = data.item1;
           final isUtxoSelectionAuto = data.item2;
@@ -382,13 +378,12 @@ class _SendScreenState extends State<SendScreen>
 
   Widget _buildFinalButton(BuildContext context) {
     return Selector<SendViewModel, Tuple4<String, bool, bool, int?>>(
-      selector:
-          (_, viewModel) => Tuple4(
-            viewModel.finalErrorMessage,
-            viewModel.isReadyToSend,
-            viewModel.isFeeRateLowerThanMin,
-            viewModel.unintendedDustFee,
-          ),
+      selector: (_, viewModel) => Tuple4(
+        viewModel.finalErrorMessage,
+        viewModel.isReadyToSend,
+        viewModel.isFeeRateLowerThanMin,
+        viewModel.unintendedDustFee,
+      ),
       builder: (context, data, child) {
         final finalErrorMessage = data.item1; // error
         final isReadyToSend = data.item2;
@@ -431,18 +426,17 @@ class _SendScreenState extends State<SendScreen>
           alignment: Alignment.center,
           children: [
             ...finalButtonMessages.asMap().entries.map(
-              (entry) => Positioned(
-                bottom:
-                    FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-                    FixedBottomButton.fixedBottomButtonDefaultHeight +
-                    12 +
-                    ((finalButtonMessages.length - 1 - entry.key) * 20),
-                child: Text(
-                  entry.value.message,
-                  style: CoconutTypography.body3_12.setColor(entry.value.textColor),
+                  (entry) => Positioned(
+                    bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+                        FixedBottomButton.fixedBottomButtonDefaultHeight +
+                        12 +
+                        ((finalButtonMessages.length - 1 - entry.key) * 20),
+                    child: Text(
+                      entry.value.message,
+                      style: CoconutTypography.body3_12.setColor(entry.value.textColor),
+                    ),
+                  ),
                 ),
-              ),
-            ),
             FixedBottomButton(
               showGradient: false,
               isVisibleAboveKeyboard: false,
@@ -458,8 +452,7 @@ class _SendScreenState extends State<SendScreen>
                   );
                 }
               },
-              isActive:
-                  !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+              isActive: !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
                   isReadyToSend &&
                   finalErrorMessage.isEmpty,
               text: t.complete,
@@ -510,14 +503,13 @@ class _SendScreenState extends State<SendScreen>
           _feeRateController.text = sats.toString();
           _clearFocus();
         },
-        child:
-            !isFetching
-                ? child
-                : Shimmer.fromColors(
-                  baseColor: CoconutColors.white.withOpacity(0.2),
-                  highlightColor: CoconutColors.white.withOpacity(0.6),
-                  child: child,
-                ),
+        child: !isFetching
+            ? child
+            : Shimmer.fromColors(
+                baseColor: CoconutColors.white.withOpacity(0.2),
+                highlightColor: CoconutColors.white.withOpacity(0.6),
+                child: child,
+              ),
       ),
     );
   }
@@ -531,10 +523,9 @@ class _SendScreenState extends State<SendScreen>
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
           color: keyboardToolbarGray,
-          child:
-              _amountFocusNode.hasFocus
-                  ? _buildAmountKeyboardToolbar(context)
-                  : _buildFeeRateKeyboardToolbar(context),
+          child: _amountFocusNode.hasFocus
+              ? _buildAmountKeyboardToolbar(context)
+              : _buildFeeRateKeyboardToolbar(context),
         ),
       ),
     );
@@ -580,8 +571,8 @@ class _SendScreenState extends State<SendScreen>
 
   Widget _buildFeeRateKeyboardToolbar(BuildContext context) {
     return Selector<SendViewModel, Tuple2<RecommendedFeeFetchStatus, bool>>(
-      selector:
-          (_, viewModel) => Tuple2(viewModel.recommendedFeeFetchStatus, viewModel.isNetworkOn),
+      selector: (_, viewModel) =>
+          Tuple2(viewModel.recommendedFeeFetchStatus, viewModel.isNetworkOn),
       builder: (context, data, child) {
         final recommendedFeeFetchStatus = data.item1;
         final isNetworkOn = data.item2;
@@ -637,9 +628,8 @@ class _SendScreenState extends State<SendScreen>
 
   Widget _buildBottomTooltips(BuildContext context) {
     return Selector<SendViewModel, Tuple3<bool, int, String>>(
-      selector:
-          (_, viewModel) =>
-              Tuple3(viewModel.isMaxMode, _viewModel.recipientList.length, viewModel.amountSumText),
+      selector: (_, viewModel) =>
+          Tuple3(viewModel.isMaxMode, _viewModel.recipientList.length, viewModel.amountSumText),
       builder: (context, data, child) {
         return Column(
           children: [
@@ -649,34 +639,32 @@ class _SendScreenState extends State<SendScreen>
               transitionBuilder: (child, animation) {
                 return FadeTransition(opacity: animation, child: child);
               },
-              child:
-                  _viewModel.isBatchMode
-                      ? Padding(
-                        key: const ValueKey('batch_tooltip'),
-                        padding: EdgeInsets.only(bottom: kTooltipPadding),
-                        child: _buildTooltip(
-                          iconPath: 'assets/svg/receipt.svg',
-                          text: t.send_screen.tooltip_text(
-                            count: _viewModel.recipientList.length,
-                            amount: _viewModel.amountSumText,
-                          ),
+              child: _viewModel.isBatchMode
+                  ? Padding(
+                      key: const ValueKey('batch_tooltip'),
+                      padding: EdgeInsets.only(bottom: kTooltipPadding),
+                      child: _buildTooltip(
+                        iconPath: 'assets/svg/receipt.svg',
+                        text: t.send_screen.tooltip_text(
+                          count: _viewModel.recipientList.length,
+                          amount: _viewModel.amountSumText,
                         ),
-                      )
-                      : const SizedBox.shrink(key: ValueKey('batch_empty')),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('batch_empty')),
             ),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               transitionBuilder: (child, animation) {
                 return FadeTransition(opacity: animation, child: child);
               },
-              child:
-                  _viewModel.isMaxMode
-                      ? _buildTooltip(
-                        key: const ValueKey('max_tooltip'),
-                        iconPath: 'assets/svg/broom.svg',
-                        text: t.send_screen.tooltip_max_mode_text,
-                      )
-                      : const SizedBox.shrink(key: ValueKey('max_empty')),
+              child: _viewModel.isMaxMode
+                  ? _buildTooltip(
+                      key: const ValueKey('max_tooltip'),
+                      iconPath: 'assets/svg/broom.svg',
+                      text: t.send_screen.tooltip_max_mode_text,
+                    )
+                  : const SizedBox.shrink(key: ValueKey('max_empty')),
             ),
           ],
         );
@@ -711,14 +699,13 @@ class _SendScreenState extends State<SendScreen>
     return Column(
       children: [
         Selector<SendViewModel, Tuple5<bool, int?, int, bool, bool>>(
-          selector:
-              (_, viewModel) => Tuple5(
-                viewModel.showFeeBoard,
-                viewModel.estimatedFeeInSats,
-                viewModel.balance,
-                viewModel.isMaxMode,
-                viewModel.isFeeSubtractedFromSendAmount,
-              ),
+          selector: (_, viewModel) => Tuple5(
+            viewModel.showFeeBoard,
+            viewModel.estimatedFeeInSats,
+            viewModel.balance,
+            viewModel.isMaxMode,
+            viewModel.isFeeSubtractedFromSendAmount,
+          ),
           builder: (context, data, child) {
             if (!_viewModel.showFeeBoard) return const SizedBox();
             return Container(
@@ -903,8 +890,8 @@ class _SendScreenState extends State<SendScreen>
             height: kPageViewHeight,
             width: MediaQuery.of(context).size.width,
             child: Selector<SendViewModel, Tuple2<int, bool>>(
-              selector:
-                  (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
+              selector: (_, viewModel) =>
+                  Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
               builder: (context, data, child) {
                 final recipientListLength = data.item1;
                 final isMaxMode = data.item2;
@@ -1017,16 +1004,15 @@ class _SendScreenState extends State<SendScreen>
           child: Column(
             children: [
               Selector<SendViewModel, Tuple7<BitcoinUnit, String, bool, bool, bool, bool, int?>>(
-                selector:
-                    (_, viewModel) => Tuple7(
-                      viewModel.currentUnit,
-                      viewModel.recipientList[index].amount,
-                      viewModel.isMaxMode,
-                      viewModel.isTotalSendAmountExceedsBalance,
-                      viewModel.isLastAmountInsufficient,
-                      viewModel.recipientList[index].minimumAmountError.isError,
-                      viewModel.estimatedFeeInSats,
-                    ),
+                selector: (_, viewModel) => Tuple7(
+                  viewModel.currentUnit,
+                  viewModel.recipientList[index].amount,
+                  viewModel.isMaxMode,
+                  viewModel.isTotalSendAmountExceedsBalance,
+                  viewModel.isLastAmountInsufficient,
+                  viewModel.recipientList[index].minimumAmountError.isError,
+                  viewModel.estimatedFeeInSats,
+                ),
                 builder: (context, data, child) {
                   String amountText = data.item2;
                   final isMinimumAmount = data.item6;
@@ -1048,12 +1034,11 @@ class _SendScreenState extends State<SendScreen>
 
                   final isKorean = context.read<PreferenceProvider>().isKorean;
                   final maxButtonBaseText = t.send_screen.input_maximum_amount;
-                  final maxButtonText =
-                      _viewModel.isMaxMode
-                          ? (isKorean
-                              ? '$maxButtonBaseText ${t.cancel}'
-                              : '${t.cancel} $maxButtonBaseText')
-                          : maxButtonBaseText;
+                  final maxButtonText = _viewModel.isMaxMode
+                      ? (isKorean
+                          ? '$maxButtonBaseText ${t.cancel}'
+                          : '${t.cancel} $maxButtonBaseText')
+                      : maxButtonBaseText;
 
                   return Column(
                     children: [
@@ -1064,27 +1049,26 @@ class _SendScreenState extends State<SendScreen>
                             child: RichText(
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
-                              text:
-                                  _viewModel.isAmountInsufficient(index)
-                                      ? TextSpan(
-                                        text: t.send_screen.max_mode_insufficient_balance,
-                                        style: CoconutTypography.heading3_21_Bold.setColor(
-                                          CoconutColors.hotPink,
-                                        ),
-                                      )
-                                      : TextSpan(
-                                        text:
-                                            '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
-                                        style: CoconutTypography.heading2_28_NumberBold.setColor(
-                                          amountTextColor,
-                                        ),
-                                        children: [
-                                          TextSpan(
-                                            text: _viewModel.currentUnit.symbol,
-                                            style: CoconutTypography.heading4_18_Number,
-                                          ),
-                                        ],
+                              text: _viewModel.isAmountInsufficient(index)
+                                  ? TextSpan(
+                                      text: t.send_screen.max_mode_insufficient_balance,
+                                      style: CoconutTypography.heading3_21_Bold.setColor(
+                                        CoconutColors.hotPink,
                                       ),
+                                    )
+                                  : TextSpan(
+                                      text:
+                                          '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
+                                      style: CoconutTypography.heading2_28_NumberBold.setColor(
+                                        amountTextColor,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: _viewModel.currentUnit.symbol,
+                                          style: CoconutTypography.heading4_18_Number,
+                                        ),
+                                      ],
+                                    ),
                             ),
                           ),
                         ),
@@ -1139,11 +1123,10 @@ class _SendScreenState extends State<SendScreen>
               ),
               CoconutLayout.spacing_500h,
               Selector<SendViewModel, Tuple2<String, AddressError>>(
-                selector:
-                    (_, viewModel) => Tuple2(
-                      viewModel.recipientList[index].address,
-                      viewModel.recipientList[index].addressError,
-                    ),
+                selector: (_, viewModel) => Tuple2(
+                  viewModel.recipientList[index].address,
+                  viewModel.recipientList[index].addressError,
+                ),
                 builder: (context, data, child) {
                   final isAddressError = data.item2.isError;
                   final controller = _addressControllerList[index];
@@ -1166,16 +1149,15 @@ class _SendScreenState extends State<SendScreen>
                         }
                         _viewModel.validateAllFieldsOnFocusLost();
                       },
-                      icon:
-                          controller.text.isEmpty
-                              ? SvgPicture.asset('assets/svg/scan.svg')
-                              : SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(
-                                  isAddressError ? CoconutColors.hotPink : CoconutColors.white,
-                                  BlendMode.srcIn,
-                                ),
+                      icon: controller.text.isEmpty
+                          ? SvgPicture.asset('assets/svg/scan.svg')
+                          : SvgPicture.asset(
+                              'assets/svg/text-field-clear.svg',
+                              colorFilter: ColorFilter.mode(
+                                isAddressError ? CoconutColors.hotPink : CoconutColors.white,
+                                BlendMode.srcIn,
                               ),
+                            ),
                     ),
                     placeholderText: t.send_screen.address_placeholder,
                     isError: isAddressError,
@@ -1356,17 +1338,16 @@ class _SendScreenState extends State<SendScreen>
                               }
                               CommonBottomSheets.showDraggableBottomSheet(
                                 context: context,
-                                childBuilder:
-                                    (scrollController) => SelectWalletBottomSheet(
-                                      showOnlyMfpWallets: false,
-                                      scrollController: scrollController,
-                                      currentUnit: _viewModel.currentUnit,
-                                      walletId: _viewModel.selectedWalletId,
-                                      onWalletChanged: (id) {
-                                        Navigator.pop(context);
-                                        _showAddressListBottomSheet(id);
-                                      },
-                                    ),
+                                childBuilder: (scrollController) => SelectWalletBottomSheet(
+                                  showOnlyMfpWallets: false,
+                                  scrollController: scrollController,
+                                  currentUnit: _viewModel.currentUnit,
+                                  walletId: _viewModel.selectedWalletId,
+                                  onWalletChanged: (id) {
+                                    Navigator.pop(context);
+                                    _showAddressListBottomSheet(id);
+                                  },
+                                ),
                               );
                             },
                             textStyle: CoconutTypography.body3_12,
@@ -1430,10 +1411,9 @@ class _SendScreenState extends State<SendScreen>
                   controller: _addressListScrollController,
                   itemCount: _viewModel.walletItemList.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final walletListItem =
-                        _viewModel.getWalletItemListWithOrder(
-                          _viewModel.selectedWalletItem?.id,
-                        )[index];
+                    final walletListItem = _viewModel.getWalletItemListWithOrder(
+                      _viewModel.selectedWalletItem?.id,
+                    )[index];
                     final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
                     return Column(
                       children: [
@@ -1602,32 +1582,31 @@ class _SendScreenState extends State<SendScreen>
     final String? scannedData = await CommonBottomSheets.showBottomSheet_100(
       context: context,
       child: Builder(
-        builder:
-            (sheetContext) => Scaffold(
-              backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(
-                title: t.send,
-                context: sheetContext,
-                actionButtonList: [
-                  IconButton(
-                    icon: SvgPicture.asset(
-                      'assets/svg/arrow-reload.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                    ),
-                    onPressed: () {
-                      _qrViewController?.switchCamera();
-                    },
-                  ),
-                ],
-                onBackPressed: () {
-                  _disposeQrViewController();
-                  Navigator.of(sheetContext).pop<String>('');
+        builder: (sheetContext) => Scaffold(
+          backgroundColor: CoconutColors.black,
+          appBar: CoconutAppBar.build(
+            title: t.send,
+            context: sheetContext,
+            actionButtonList: [
+              IconButton(
+                icon: SvgPicture.asset(
+                  'assets/svg/arrow-reload.svg',
+                  width: 20,
+                  height: 20,
+                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                ),
+                onPressed: () {
+                  _qrViewController?.switchCamera();
                 },
               ),
-              body: AddressQrScannerBody(qrKey: qrKey, onDetect: _onDetect),
-            ),
+            ],
+            onBackPressed: () {
+              _disposeQrViewController();
+              Navigator.of(sheetContext).pop<String>('');
+            },
+          ),
+          body: AddressQrScannerBody(qrKey: qrKey, onDetect: _onDetect),
+        ),
       ),
     );
 
@@ -1638,10 +1617,9 @@ class _SendScreenState extends State<SendScreen>
         _viewModel.setAddressText(bip21Data.address, index);
 
         if (bip21Data.amount != null) {
-          final amountText =
-              _viewModel.isBtcUnit
-                  ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!)
-                  : bip21Data.amount!.toString();
+          final amountText = _viewModel.isBtcUnit
+              ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!)
+              : bip21Data.amount!.toString();
           _amountController.text = amountText;
           _viewModel.setAmountText(bip21Data.amount!, index);
         }
