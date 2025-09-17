@@ -56,7 +56,7 @@ class _SendScreenState extends State<SendScreen>
   final double kTooltipPadding = 5;
   final double kAmountHeight = 34;
   final double kFeeBoardBottomPadding = 12;
-  double get addressBoardHeight => walletAddressListHeight + 84;
+  double get addressBoardHeight => walletAddressListHeight + 100;
   double get walletAddressListHeight => _viewModel.walletItemList.length >= 2 ? 100 : 48;
   double get keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
   double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
@@ -1338,86 +1338,7 @@ class _SendScreenState extends State<SendScreen>
                         ),
                       ),
                     ),
-                    Stack(
-                      children: [
-                        Column(
-                          children: [
-                            CoconutLayout.spacing_200h,
-                            SizedBox(
-                              height: walletAddressListHeight,
-                              child: Scrollbar(
-                                controller: _addressListScrollController,
-                                thumbVisibility: true,
-                                child: ListView.builder(
-                                  controller: _addressListScrollController,
-                                  itemCount: _viewModel.walletItemList.length,
-                                  itemBuilder: (BuildContext context, int index) {
-                                    final walletListItem =
-                                        _viewModel.getWalletItemListWithOrder(
-                                          _viewModel.selectedWalletItem?.id,
-                                        )[index];
-                                    final walletAddress =
-                                        _viewModel.walletAddressMap[walletListItem.id]!;
-                                    return Column(
-                                      children: [
-                                        if (index == 0) CoconutLayout.spacing_200h,
-                                        _buildAddressRow(
-                                          index,
-                                          walletAddress.address,
-                                          walletListItem.name,
-                                          walletAddress.derivationPath,
-                                        ),
-                                        if (index == _viewModel.walletItemList.length - 1)
-                                          CoconutLayout.spacing_200h,
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            CoconutLayout.spacing_200h,
-                          ],
-                        ),
-                        Positioned(
-                          left: 0,
-                          right: 4,
-                          top: 0,
-                          child: IgnorePointer(
-                            ignoring: true,
-                            child: Container(
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [CoconutColors.black, Colors.transparent],
-                                  stops: [0.0, 1.0],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 0,
-                          right: 4,
-                          bottom: 0,
-                          child: IgnorePointer(
-                            ignoring: true,
-                            child: Container(
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [Colors.transparent, CoconutColors.black],
-                                  stops: [0.0, 1.0],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    _buildWalletAddressList(),
                     CoconutLayout.spacing_200h,
                     Expanded(
                       child: FittedBox(
@@ -1461,6 +1382,118 @@ class _SendScreenState extends State<SendScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildWalletAddressList() {
+    if (_viewModel.walletItemList.length == 1) {
+      return Column(
+        children: [
+          CoconutLayout.spacing_200h,
+          SizedBox(
+            height: walletAddressListHeight,
+            child: ListView.builder(
+              controller: _addressListScrollController,
+              itemCount: _viewModel.walletItemList.length,
+              itemBuilder: (BuildContext context, int index) {
+                final walletListItem =
+                    _viewModel.getWalletItemListWithOrder(_viewModel.selectedWalletItem?.id)[index];
+                final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                return Column(
+                  children: [
+                    _buildAddressRow(
+                      index,
+                      walletAddress.address,
+                      walletListItem.name,
+                      walletAddress.derivationPath,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          CoconutLayout.spacing_200h,
+        ],
+      );
+    }
+    return Stack(
+      children: [
+        Column(
+          children: [
+            CoconutLayout.spacing_200h,
+            SizedBox(
+              height: walletAddressListHeight,
+              child: Scrollbar(
+                controller: _addressListScrollController,
+                thumbVisibility: true,
+                child: ListView.builder(
+                  controller: _addressListScrollController,
+                  itemCount: _viewModel.walletItemList.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final walletListItem =
+                        _viewModel.getWalletItemListWithOrder(
+                          _viewModel.selectedWalletItem?.id,
+                        )[index];
+                    final walletAddress = _viewModel.walletAddressMap[walletListItem.id]!;
+                    return Column(
+                      children: [
+                        if (index == 0) CoconutLayout.spacing_200h,
+                        _buildAddressRow(
+                          index,
+                          walletAddress.address,
+                          walletListItem.name,
+                          walletAddress.derivationPath,
+                        ),
+                        if (index == _viewModel.walletItemList.length - 1)
+                          CoconutLayout.spacing_200h,
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+            CoconutLayout.spacing_200h,
+          ],
+        ),
+        Positioned(
+          left: 0,
+          right: 4,
+          top: 0,
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              height: 30,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [CoconutColors.black, Colors.transparent],
+                  stops: [0.0, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 4,
+          bottom: 0,
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              height: 30,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, CoconutColors.black],
+                  stops: [0.0, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
