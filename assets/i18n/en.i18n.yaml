@@ -343,6 +343,7 @@ send_screen:
   max_mode_insufficient_balance: "Insufficient Balance"
   unintended_dust_fee: "The change of ${unintendedDustFee} sat will be used as a fee."
   fee_rate_too_low: "Minimum allowed value is 0.1"
+  drag_to_add_address: "Drag to add an address"
 
 
 utxo_selection_screen:

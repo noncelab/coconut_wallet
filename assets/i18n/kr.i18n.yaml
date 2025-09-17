@@ -347,6 +347,7 @@ send_screen:
   max_mode_insufficient_balance: "잔액 부족"
   unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
   fee_rate_too_low: "0.1 미만으로는 설정할 수 없어요"
+  drag_to_add_address: "보낼 주소를 추가하려면 왼쪽으로 드래그 해주세요"
 
 utxo_selection_screen:
   title: "UTXO 고르기"

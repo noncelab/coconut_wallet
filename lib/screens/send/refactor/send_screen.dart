@@ -28,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lottie/lottie.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -76,10 +77,9 @@ class _SendScreenState extends State<SendScreen>
   final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
 
-  // Bounce animation
-  late AnimationController _animationController;
-  late Animation<double> _offsetAnimation;
+  // 배치 트랜잭션 드래그 가이드
   late bool hasSeenAddRecipientCard;
+  bool _isLeftDragGuideViewVisible = false;
 
   MobileScannerController? _qrViewController;
   bool _isQrDataHandling = false;
@@ -128,17 +128,17 @@ class _SendScreenState extends State<SendScreen>
     );
     _amountController.addListener(_amountTextListener);
     _recipientPageController.addListener(_recipientPageListener);
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
 
     // 수신자 카드를 보기 전까지 Bounce 애니메이션을 처리한다.
     hasSeenAddRecipientCard = context.read<PreferenceProvider>().hasSeenAddRecipientCard;
     if (!hasSeenAddRecipientCard) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 300));
-        _startBounce();
+        // _startBounce();
+        if (!mounted) return;
+        setState(() {
+          _isLeftDragGuideViewVisible = true;
+        });
       });
     }
 
@@ -179,7 +179,6 @@ class _SendScreenState extends State<SendScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
 
-    _animationController.dispose();
     _recipientPageController.dispose();
     _feeRateController.dispose();
     _feeRateFocusNode.dispose();
@@ -882,35 +881,81 @@ class _SendScreenState extends State<SendScreen>
   }
 
   Widget _buildPageView(BuildContext context) {
-    return SizedBox(
-      height: kPageViewHeight,
-      width: MediaQuery.of(context).size.width,
-      child: Selector<SendViewModel, Tuple2<int, bool>>(
-        selector: (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
-        builder: (context, data, child) {
-          final recipientListLength = data.item1;
-          final isMaxMode = data.item2;
-          return PageView.builder(
-            controller: _recipientPageController,
-            onPageChanged: (index) {
-              // 수신자 추가 카드 확인 여부 업데이트
-              if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
-                hasSeenAddRecipientCard = true;
-                context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
-              }
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) {
+        if (_isLeftDragGuideViewVisible) {
+          setState(() {
+            _isLeftDragGuideViewVisible = false;
+          });
+        }
+      },
+      onPointerMove: (_) {
+        if (_isLeftDragGuideViewVisible) {
+          setState(() {
+            _isLeftDragGuideViewVisible = false;
+          });
+        }
+      },
+      child: Stack(
+        children: [
+          SizedBox(
+            height: kPageViewHeight,
+            width: MediaQuery.of(context).size.width,
+            child: Selector<SendViewModel, Tuple2<int, bool>>(
+              selector:
+                  (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
+              builder: (context, data, child) {
+                final recipientListLength = data.item1;
+                final isMaxMode = data.item2;
+                return PageView.builder(
+                  controller: _recipientPageController,
+                  onPageChanged: (index) {
+                    // 수신자 추가 카드 확인 여부 업데이트
+                    if (index == _viewModel.addRecipientCardIndex && !hasSeenAddRecipientCard) {
+                      hasSeenAddRecipientCard = true;
+                      context.read<PreferenceProvider>().setHasSeenAddRecipientCard();
+                    }
 
-              _viewModel.setCurrentPage(index);
-            },
-            // isMaxMode: 수신자 추가 버튼 안보임
-            itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == recipientListLength) {
-                return _buildAddRecipientCard();
-              }
-              return _buildRecipientPage(context, index);
-            },
-          );
-        },
+                    _viewModel.setCurrentPage(index);
+                  },
+                  // isMaxMode: 수신자 추가 버튼 안보임
+                  itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == recipientListLength) {
+                      return _buildAddRecipientCard();
+                    }
+                    return _buildRecipientPage(context, index);
+                  },
+                );
+              },
+            ),
+          ),
+          AnimatedOpacity(
+            opacity: _isLeftDragGuideViewVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 500),
+            child: IgnorePointer(
+              ignoring: true,
+              child: Container(
+                height: kPageViewHeight,
+                width: MediaQuery.of(context).size.width,
+                color: CoconutColors.gray900.withValues(alpha: 0.5),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Lottie.asset('assets/lottie/swipe-left.json', width: 60, height: 60),
+                    CoconutLayout.spacing_200h,
+                    Text(
+                      t.send_screen.drag_to_add_address,
+                      style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1690,25 +1735,11 @@ class _SendScreenState extends State<SendScreen>
     _feeRateController.text = _removeTrailingDot(_feeRateController.text);
     _amountController.text = _removeTrailingDot(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
-  }
-
-  Future<void> _startBounce() async {
-    final pageWidth = _recipientPageController.position.viewportDimension;
-    _offsetAnimation = Tween<double>(
-      begin: 0.0,
-      end: pageWidth * 0.20,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.elasticOut));
-
-    _animationController.addListener(() {
-      if (_recipientPageController.hasClients) {
-        final offset = _offsetAnimation.value.clamp(
-          _recipientPageController.position.minScrollExtent,
-          _recipientPageController.position.maxScrollExtent,
-        );
-        _recipientPageController.jumpTo(offset);
-      }
-    });
-    _animationController.forward();
+    if (_isLeftDragGuideViewVisible) {
+      setState(() {
+        _isLeftDragGuideViewVisible = false;
+      });
+    }
   }
 
   /// 텍스트 끝의 소수점을 제거하는 함수
