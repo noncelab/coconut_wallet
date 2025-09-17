@@ -26,10 +26,7 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
 typedef WalletInfoUpdateCallback = void Function(
-  WalletListItemBase walletItem,
-  List<UtxoState> selectedUtxoList,
-  bool isUtxoSelectionAuto,
-);
+    WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto);
 
 enum AddressError {
   none,
@@ -79,10 +76,11 @@ enum AmountError {
         return t.errors.insufficient_balance;
       case AmountError.minimumAmount:
         return t.alert.error_send.minimum_amount(
-            bitcoin: currentUnit == BitcoinUnit.btc
-                ? UnitUtil.convertSatoshiToBitcoin(dustLimit + 1)
-                : (dustLimit + 1).toThousandsSeparatedString(),
-            unit: currentUnit.symbol);
+          bitcoin: currentUnit == BitcoinUnit.btc
+              ? UnitUtil.convertSatoshiToBitcoin(dustLimit + 1)
+              : (dustLimit + 1).toThousandsSeparatedString(),
+          unit: currentUnit.symbol,
+        );
       case AmountError.none:
       default:
         return "";
@@ -120,10 +118,6 @@ class SendViewModel extends ChangeNotifier {
   int _amountSum = 0;
   String get amountSumText => _currentUnit.displayBitcoinAmount(_amountSum, withUnit: true);
 
-  List<bool> _walletAddressNeedsUpdate = [];
-  Map<int, WalletAddress> _walletAddressMap = {};
-  Map<int, WalletAddress> get walletAddressMap => _walletAddressMap;
-
   WalletListItemBase? _selectedWalletItem;
   bool _isUtxoSelectionAuto = true;
 
@@ -135,51 +129,13 @@ class SendViewModel extends ChangeNotifier {
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
   int get selectedUtxoListLength => _selectedUtxoList.length;
 
-  List<WalletListItemBase> get walletItemList {
-    final walletList = _walletProvider.walletItemList;
-    final order = _preferenceProvider.walletOrder;
+  /// 사용자가 설정한 순서대로 정렬한 지갑 목록
+  late List<WalletListItemBase> _orderedRegisteredWallets;
+  List<WalletListItemBase> get orderedRegisteredWallets => _orderedRegisteredWallets;
 
-    if (order.isEmpty) {
-      return walletList;
-    }
-
-    final walletMap = {for (var wallet in walletList) wallet.id: wallet};
-    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
-    return orderedMap;
-  }
-
-  List<WalletListItemBase> getWalletItemListWithOrder(int? walletId) {
-    final walletList = _walletProvider.walletItemList;
-    final order = _preferenceProvider.walletOrder;
-
-    if (order.isEmpty) {
-      // order가 비어있으면 walletId와 일치하는 지갑을 맨 앞으로
-      if (walletId != null) {
-        final targetWallet = walletList.firstWhere(
-          (wallet) => wallet.id == walletId,
-          orElse: () => walletList.first,
-        );
-        final otherWallets = walletList.where((wallet) => wallet.id != walletId).toList();
-        return [targetWallet, ...otherWallets];
-      }
-      return walletList;
-    }
-
-    // order가 있으면 기존 순서대로 정렬하되, walletId와 일치하는 지갑을 맨 앞으로
-    final walletMap = {for (var wallet in walletList) wallet.id: wallet};
-    var orderedMap = order.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
-
-    if (walletId != null) {
-      final targetWallet = orderedMap.firstWhere(
-        (wallet) => wallet.id == walletId,
-        orElse: () => orderedMap.first,
-      );
-      final otherWallets = orderedMap.where((wallet) => wallet.id != walletId).toList();
-      return [targetWallet, ...otherWallets];
-    }
-
-    return orderedMap;
-  }
+  List<bool> _walletAddressNeedsUpdate = [];
+  Map<int, WalletAddressInfo> _registeredWalletAddressMap = {};
+  Map<int, WalletAddressInfo> get registeredWalletAddressMap => _registeredWalletAddressMap;
 
   WalletListItemBase? get selectedWalletItem => _selectedWalletItem;
 
@@ -254,11 +210,13 @@ class SendViewModel extends ChangeNotifier {
 
   List<RecipientInfo> get validRecipientList {
     return _recipientList
-        .where((e) =>
-            e.address.isNotEmpty &&
-            e.amount.isNotEmpty &&
-            e.addressError.isNotError &&
-            e.minimumAmountError.isNotError)
+        .where(
+          (e) =>
+              e.address.isNotEmpty &&
+              e.amount.isNotEmpty &&
+              e.addressError.isNotError &&
+              e.minimumAmountError.isNotError,
+        )
         .toList();
   }
 
@@ -316,16 +274,17 @@ class SendViewModel extends ChangeNotifier {
   }
 
   SendViewModel(
-      this._walletProvider,
-      this._sendInfoProvider,
-      this._nodeProvider,
-      this._preferenceProvider,
-      this._isNetworkOn,
-      this._onAmountTextUpdate,
-      this._onFeeRateTextUpdate,
-      this._onRecipientPageDeleted,
-      int? walletId,
-      SendEntryPoint sendEntryPoint) {
+    this._walletProvider,
+    this._sendInfoProvider,
+    this._nodeProvider,
+    this._preferenceProvider,
+    this._isNetworkOn,
+    this._onAmountTextUpdate,
+    this._onFeeRateTextUpdate,
+    this._onRecipientPageDeleted,
+    int? walletId,
+    SendEntryPoint sendEntryPoint,
+  ) {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
     _currentUnit = _preferenceProvider.currentUnit;
@@ -336,10 +295,57 @@ class SendViewModel extends ChangeNotifier {
     }
 
     _recipientList = [RecipientInfo()];
-    _walletAddressMap = {};
-    _initWalletAddressList();
     _initBalances();
     _setRecommendedFees();
+  }
+
+  List<WalletListItemBase> _getOrderedRegisteredWallets() {
+    final walletList = _walletProvider.walletItemList;
+    final order = _preferenceProvider.walletOrder;
+
+    if (order.isEmpty) {
+      return walletList;
+    }
+
+    return order.map((id) => walletList.firstWhere((e) => e.id == id)).toList();
+  }
+
+  void _initRegisteredWalletsAddress() {
+    if (_selectedWalletItem == null) {
+      return;
+    }
+
+    final selectedWalletId = _selectedWalletItem!.id;
+    final walletAddressMap = _walletProvider.getReceiveAddressMap();
+    final order = _preferenceProvider.walletOrder;
+    assert(order.isNotEmpty);
+
+    _registeredWalletAddressMap = {
+      selectedWalletId: WalletAddressInfo(
+        walletAddress: walletAddressMap[selectedWalletId]!,
+        name: _selectedWalletItem!.name,
+      ),
+    };
+    for (int i = 0; i < order.length; i++) {
+      if (order[i] == selectedWalletId) continue;
+      _registeredWalletAddressMap[order[i]] = WalletAddressInfo(
+        walletAddress: walletAddressMap[order[i]]!,
+        name: _orderedRegisteredWallets.firstWhere((e) => e.id == order[i]).name,
+      );
+    }
+
+    _walletAddressNeedsUpdate = List.filled(_registeredWalletAddressMap.length, false);
+  }
+
+  void _updateRegisteredWalletAsOrder(int selectedWalletId) {
+    _updateWalletAddressList();
+    final newMap = {selectedWalletId: _registeredWalletAddressMap[selectedWalletId]!};
+    for (int i = 0; i < _orderedRegisteredWallets.length; i++) {
+      if (_orderedRegisteredWallets[i].id == selectedWalletId) continue;
+      newMap[_orderedRegisteredWallets[i].id] =
+          _registeredWalletAddressMap[_orderedRegisteredWallets[i].id]!;
+    }
+    _registeredWalletAddressMap = newMap;
   }
 
   void _initializeWithSelectedWallet(int index) {
@@ -347,7 +353,9 @@ class SendViewModel extends ChangeNotifier {
     if (_selectedWalletItem != null &&
         _selectedWalletItem!.id == _walletProvider.walletItemList[index].id) return;
 
+    _orderedRegisteredWallets = _getOrderedRegisteredWallets();
     _selectedWalletItem = _walletProvider.walletItemList[index];
+    _initRegisteredWalletsAddress();
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _changeAddressDerivationPath =
         _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
@@ -356,6 +364,38 @@ class SendViewModel extends ChangeNotifier {
     _selectedUtxoList = _walletProvider.getUtxoList(_selectedWalletItem!.id);
     selectedUtxoAmountSum =
         _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+  }
+
+  void onWalletInfoUpdated(
+      WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto) {
+    // 모두 보내기 모드 활성화 상태에서 지갑 변경시 모두 보내기 모드를 끄고 마지막 수신자 정보를 초기화
+    if (_selectedWalletItem != null && _selectedWalletItem!.id != walletItem.id && _isMaxMode) {
+      _recipientList[lastIndex].amount = "";
+      setMaxMode(false);
+      if (_currentIndex == lastIndex) {
+        _onAmountTextUpdate(recipientList[lastIndex].amount);
+      }
+    }
+
+    _selectedWalletItem = walletItem;
+    _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
+    _updateRegisteredWalletAsOrder(walletItem.id);
+    _isUtxoSelectionAuto = isUtxoSelectionAuto;
+    _selectedUtxoList = selectedUtxoList;
+    selectedUtxoAmountSum =
+        _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+    _changeAddressDerivationPath =
+        _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
+
+    _initBalances();
+    if (_isMaxMode) {
+      _adjustLastReceiverAmount(recipientIndex: lastIndex);
+    }
+
+    _updateAmountValidationState();
+    _updateFeeBoardVisibility();
+    _buildTransaction();
+    notifyListeners();
   }
 
   void _setEstimatedFee(int? estimatedFee) {
@@ -405,20 +445,20 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _initWalletAddressList() {
-    _walletAddressMap = _walletProvider.getReceiveAddressMap();
-    _walletAddressNeedsUpdate = List.filled(_walletAddressMap.length, false);
-  }
-
   void _updateWalletAddressList() {
     for (int i = 0; i < _walletAddressNeedsUpdate.length; ++i) {
       if (!_walletAddressNeedsUpdate[i]) continue;
-
-      final walletListItem = _walletProvider.walletItemList[i];
-      final nextAddressIndex = _walletAddressMap[walletListItem.id]!.index + 1;
+      final walletId = _registeredWalletAddressMap.keys.toList()[i];
+      final nextAddressIndex =
+          _registeredWalletAddressMap.entries.toList()[i].value.walletAddress.index + 1;
+      final walletListItem = _walletProvider.getWalletById(walletId);
       final walletAddress =
           _walletProvider.generateAddress(walletListItem.walletBase, nextAddressIndex, false);
-      _walletAddressMap[walletListItem.id] = walletAddress;
+      _registeredWalletAddressMap[walletListItem.id] = WalletAddressInfo(
+        walletAddress: walletAddress,
+        name: _registeredWalletAddressMap[walletListItem.id]!.name,
+      );
+
       _walletAddressNeedsUpdate[i] = false;
     }
 
@@ -437,12 +477,13 @@ class SendViewModel extends ChangeNotifier {
 
   Future<bool> _setRecommendedFees() async {
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
-    final recommendedFeesResult = await _nodeProvider
-        .getRecommendedFees()
-        .timeout(const Duration(seconds: 10), onTimeout: () {
-      return Result.failure(
-          const AppError('NodeProvider', "TimeoutException: Isolate response timeout"));
-    });
+    final recommendedFeesResult = await _nodeProvider.getRecommendedFees().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        return Result.failure(
+            const AppError('NodeProvider', "TimeoutException: Isolate response timeout"));
+      },
+    );
 
     if (recommendedFeesResult.isFailure) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
@@ -525,36 +566,6 @@ class SendViewModel extends ChangeNotifier {
     _buildTransaction();
     _updateAmountValidationState();
     vibrateLight();
-    notifyListeners();
-  }
-
-  void onWalletInfoUpdated(
-      WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto) {
-    // 모두 보내기 모드 활성화 상태에서 지갑 변경시 모두 보내기 모드를 끄고 마지막 수신자 정보를 초기화
-    if (_selectedWalletItem != null && _selectedWalletItem!.id != walletItem.id && _isMaxMode) {
-      _recipientList[lastIndex].amount = "";
-      setMaxMode(false);
-      if (_currentIndex == lastIndex) {
-        _onAmountTextUpdate(recipientList[lastIndex].amount);
-      }
-    }
-
-    _selectedWalletItem = walletItem;
-    _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
-    _isUtxoSelectionAuto = isUtxoSelectionAuto;
-    _selectedUtxoList = selectedUtxoList;
-    selectedUtxoAmountSum =
-        _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
-    _changeAddressDerivationPath =
-        _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
-
-    _initBalances();
-    if (_isMaxMode) {
-      _adjustLastReceiverAmount(recipientIndex: lastIndex);
-    }
-    _updateAmountValidationState();
-    _updateFeeBoardVisibility();
-    _buildTransaction();
     notifyListeners();
   }
 
@@ -957,11 +968,12 @@ class RecipientInfo {
   AddressError addressError;
   AmountError minimumAmountError; // 전송량이 적은 경우
 
-  RecipientInfo(
-      {this.address = '',
-      this.amount = '',
-      this.addressError = AddressError.none,
-      this.minimumAmountError = AmountError.none});
+  RecipientInfo({
+    this.address = '',
+    this.amount = '',
+    this.addressError = AddressError.none,
+    this.minimumAmountError = AmountError.none,
+  });
 
   bool get isInputValid {
     final amountDecimal = Decimal.tryParse(amount);
@@ -972,4 +984,11 @@ class RecipientInfo {
         addressError.isNotError &&
         minimumAmountError.isNotError;
   }
+}
+
+class WalletAddressInfo {
+  WalletAddress walletAddress;
+  String name;
+
+  WalletAddressInfo({required this.walletAddress, required this.name});
 }
