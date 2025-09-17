@@ -408,8 +408,9 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             AddressItemCard(
                               onPressed: () {
                                 AppGuard.disablePrivacyScreen();
-                                CommonBottomSheets.showBottomSheet_90(
+                                CommonBottomSheets.showCustomHeightBottomSheet(
                                   context: context,
+                                  heightRatio: 0.9,
                                   child: QrcodeBottomSheet(
                                     qrcodeTopWidget: Text(
                                       addressList[index].derivationPath,

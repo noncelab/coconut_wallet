@@ -1303,8 +1303,9 @@ class _SendScreenState extends State<SendScreen>
 
   void _onAppBarTitlePressed() {
     _clearFocus();
-    CommonBottomSheets.showBottomSheet_40(
+    CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
+        heightRatio: 0.4,
         child: SelectWalletWithOptionsBottomSheet(
           currentUnit: _viewModel.currentUnit,
           selectedWalletId: _viewModel.selectedWalletId,
@@ -1315,8 +1316,9 @@ class _SendScreenState extends State<SendScreen>
   }
 
   void _showAddressListBottomSheet(int walletId) {
-    CommonBottomSheets.showBottomSheet_90(
+    CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
+        heightRatio: 0.9,
         child: AddressListScreen(
           id: walletId,
           isFullScreen: false,

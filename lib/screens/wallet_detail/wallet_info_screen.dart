@@ -366,15 +366,17 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     }
 
     if (!mounted) return;
-    await CommonBottomSheets.showBottomSheet_90(
+    await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      heightRatio: 0.9,
       child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: onComplete)),
     );
   }
 
   void _showExtendedBottomSheet(String extendedPublicKey) {
-    CommonBottomSheets.showBottomSheet_90(
+    CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      heightRatio: 0.9,
       child: QrcodeBottomSheet(qrData: extendedPublicKey, title: t.extended_public_key),
     );
   }

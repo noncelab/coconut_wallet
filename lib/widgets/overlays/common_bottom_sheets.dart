@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -73,8 +72,9 @@ class CommonBottomSheets {
     );
   }
 
-  static Future<T?> showBottomSheet_40<T>(
-      {required BuildContext context, required Widget child}) async {
+  static Future<T?> showCustomHeightBottomSheet<T>(
+      {required BuildContext context, required Widget child, required double heightRatio}) async {
+    assert(heightRatio >= 0.4 && heightRatio <= 1.0);
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
@@ -84,7 +84,7 @@ class CommonBottomSheets {
           child: Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
             child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.4,
+              height: MediaQuery.of(context).size.height * heightRatio,
               width: MediaQuery.of(context).size.width,
               child: child,
             ),
@@ -96,67 +96,6 @@ class CommonBottomSheets {
       enableDrag: true,
       useSafeArea: true,
     );
-  }
-
-  static Future<T?> showBottomSheet_50<T>(
-      {required BuildContext context, required Widget child}) async {
-    return showModalBottomSheet<T>(
-      context: context,
-      builder: (context) {
-        return ClipRRect(
-          borderRadius:
-              const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.5,
-              width: MediaQuery.of(context).size.width,
-              child: child,
-            ),
-          ),
-        );
-      },
-      backgroundColor: CoconutColors.black,
-      isScrollControlled: true,
-      enableDrag: true,
-      useSafeArea: true,
-    );
-  }
-
-  static Future<T?> showBottomSheet_90<T>(
-      {required BuildContext context, required Widget child}) async {
-    return showModalBottomSheet<T>(
-        context: context,
-        builder: (context) {
-          return ClipRRect(
-              borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-              child: child);
-        },
-        backgroundColor: CoconutColors.black,
-        //isDismissible: false,
-        isScrollControlled: true,
-        enableDrag: true,
-        useSafeArea: true,
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9));
-  }
-
-  static Future<T?> showBottomSheet_95<T>(
-      {required BuildContext context, required Widget child}) async {
-    return showModalBottomSheet<T>(
-        context: context,
-        builder: (context) {
-          return ClipRRect(
-              borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24), topRight: Radius.circular(24)),
-              child: child); // child screen에서 type <T>를 반환하면 반환됩니다.
-        },
-        backgroundColor: CoconutColors.black,
-        //isDismissible: false,
-        isScrollControlled: true,
-        enableDrag: true,
-        useSafeArea: true,
-        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.95));
   }
 
   static Future<T?> showBottomSheet_100<T>(

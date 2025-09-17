@@ -128,8 +128,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                           enableShrinkAnim: true,
                           title: t.settings_screen.fake_balance.fake_balance_setting,
                           onPressed: () async {
-                            CommonBottomSheets.showBottomSheet_50(
+                            CommonBottomSheets.showCustomHeightBottomSheet(
                               context: context,
+                              heightRatio: 0.5,
                               child: const FakeBalanceBottomSheet(),
                             );
                           },
@@ -166,8 +167,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                             title: t.bitcoin_kr,
                             subtitle: isBtcUnit ? t.btc : t.sats,
                             onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
+                              CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
+                                heightRatio: 0.5,
                                 child: const UnitBottomSheet(),
                               );
                             },
@@ -194,8 +196,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                             title: t.fiat.fiat,
                             subtitle: fiatDisplayName,
                             onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
+                              CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
+                                heightRatio: 0.5,
                                 child: const FiatBottomSheet(),
                               );
                             },
@@ -215,8 +218,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                         title: t.settings_screen.language,
                         subtitle: _getCurrentLanguageDisplayName(language),
                         onPressed: () async {
-                          CommonBottomSheets.showBottomSheet_50(
+                          CommonBottomSheets.showCustomHeightBottomSheet(
                             context: context,
+                            heightRatio: 0.5,
                             child: const LanguageBottomSheet(),
                           );
                         },
@@ -323,15 +327,17 @@ class _SettingsScreen extends State<SettingsScreen> {
   }
 
   void _showPinSettingScreen({required bool useBiometrics}) {
-    CommonBottomSheets.showBottomSheet_90(
+    CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      heightRatio: 0.9,
       child: CustomLoadingOverlay(child: PinSettingScreen(useBiometrics: useBiometrics)),
     );
   }
 
   Future<bool> _isPinCheckValid() async {
-    return (await CommonBottomSheets.showBottomSheet_90(
+    return (await CommonBottomSheets.showCustomHeightBottomSheet(
           context: context,
+          heightRatio: 0.9,
           child: const CustomLoadingOverlay(child: PinCheckScreen()),
         ) ==
         true);

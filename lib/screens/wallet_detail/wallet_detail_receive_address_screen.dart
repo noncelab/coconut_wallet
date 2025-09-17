@@ -150,8 +150,9 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   }
 
   void _onAddressListButtonPressed() {
-    CommonBottomSheets.showBottomSheet_90(
+    CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
+      heightRatio: 0.9,
       child: AddressListScreen(id: _selectedWalletItem!.id, isFullScreen: false),
     );
   }

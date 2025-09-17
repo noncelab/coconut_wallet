@@ -500,8 +500,8 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               buttonPosition: SingleButtonPosition.bottom,
               title: t.app_info_screen.license,
               onPressed: () {
-                CommonBottomSheets.showBottomSheet_95(
-                    context: context, child: const LicenseBottomSheet());
+                CommonBottomSheets.showCustomHeightBottomSheet(
+                    context: context, heightRatio: 0.95, child: const LicenseBottomSheet());
               },
             ),
             if (appFlavor == "mainnet")

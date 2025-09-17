@@ -94,13 +94,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           if (viewModel.pinCheckNotifier.value == true) {
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               viewModel.pinCheckNotifier.value = false;
-              await CommonBottomSheets.showBottomSheet_90(
+              await CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
                 child: CustomLoadingOverlay(
                   child: PinCheckScreen(
                     onComplete: () => viewModel.handleAuthCompletion(),
                   ),
                 ),
+                heightRatio: 0.9,
               );
             });
           }

@@ -317,8 +317,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       itemCount: addressList.length,
       itemBuilder: (context, index) => AddressItemCard(
         onPressed: () {
-          CommonBottomSheets.showBottomSheet_90(
+          CommonBottomSheets.showCustomHeightBottomSheet(
               context: context,
+              heightRatio: 0.9,
               child: QrcodeBottomSheet(
                   qrcodeTopWidget: Text(
                     addressList[index].derivationPath,
