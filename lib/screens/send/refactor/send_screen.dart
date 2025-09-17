@@ -1348,16 +1348,15 @@ class _SendScreenState extends State<SendScreen>
               controller: _addressListScrollController,
               itemCount: _viewModel.orderedRegisteredWallets.length,
               itemBuilder: (BuildContext context, int index) {
-                
-final walletAddressInfo =
-                              _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                final walletAddressInfo =
+                    _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
                 return Column(
                   children: [
                     _buildAddressRow(
                       index,
-                            walletAddressInfo.walletAddress.address,
-                            walletAddressInfo.name,
-                            walletAddressInfo.walletAddress.derivationPath,
+                      walletAddressInfo.walletAddress.address,
+                      walletAddressInfo.name,
+                      walletAddressInfo.walletAddress.derivationPath,
                     ),
                   ],
                 );
@@ -1383,15 +1382,15 @@ final walletAddressInfo =
                   itemCount: _viewModel.orderedRegisteredWallets.length,
                   itemBuilder: (BuildContext context, int index) {
                     final walletAddressInfo =
-                              _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                        _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
                     return Column(
                       children: [
                         if (index == 0) CoconutLayout.spacing_200h,
                         _buildAddressRow(
-                           index,
-                            walletAddressInfo.walletAddress.address,
-                            walletAddressInfo.name,
-                            walletAddressInfo.walletAddress.derivationPath,
+                          index,
+                          walletAddressInfo.walletAddress.address,
+                          walletAddressInfo.name,
+                          walletAddressInfo.walletAddress.derivationPath,
                         ),
                         if (index == _viewModel.orderedRegisteredWallets.length - 1)
                           CoconutLayout.spacing_200h,
