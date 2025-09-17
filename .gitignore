@@ -76,6 +76,8 @@ devtools_options.yaml
 **/android/key.properties
 **/android/key_*.properties
 *.jks
+# Android NDK build cache
+android/app/.cxx/
 
 # iOS/XCode related
 **/ios/**/*.mode1v3

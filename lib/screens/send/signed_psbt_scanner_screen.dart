@@ -14,8 +14,8 @@ import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:ur/ur.dart';
 import 'package:cbor/cbor.dart';
 
@@ -29,7 +29,7 @@ class SignedPsbtScannerScreen extends StatefulWidget {
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   bool _isProcessing = false;
-  QRViewController? controller;
+  MobileScannerController? controller;
 
   late SignedPsbtScannerViewModel _viewModel;
   late IQrScanDataHandler _qrScanDataHandler;
@@ -56,7 +56,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
           CoconutQrScanner(
             key: ValueKey(_qrScannerKey),
-            setQrViewController: _setQRViewController,
+            setMobileScannerController: _setQRViewController,
             onComplete: _qrScanDataHandler is BcUrQrScanDataHandler
                 ? _onCompletedScanningForBcUr
                 : _onCompletedScanningForBbQr,
@@ -145,7 +145,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         int missingCount = _viewModel.getMissingSignaturesCount(psbt);
         if (missingCount > 0) {
           await _showErrorDialog(t.alert.signed_psbt.need_more_sign(count: missingCount));
-          controller?.pauseCamera();
+          controller?.pause();
           await _stopCamera();
           return;
         }
@@ -153,7 +153,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
       _viewModel.setSignedPsbt(psbt.serialize());
 
-      controller?.pauseCamera();
+      controller?.pause();
       await _stopCamera();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/broadcasting');
@@ -172,7 +172,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       // raw transaction 데이터 저장
       _viewModel.setSignedPsbt(signedPsbt);
 
-      controller?.pauseCamera();
+      controller?.pause();
       await _stopCamera();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/broadcasting');
@@ -212,11 +212,11 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
   Future<void> _stopCamera() async {
     if (controller != null) {
-      await controller?.pauseCamera();
+      await controller?.stop();
     }
   }
 
-  void _setQRViewController(QRViewController qrViewcontroller) {
+  void _setQRViewController(MobileScannerController qrViewcontroller) {
     controller = qrViewcontroller;
   }
 

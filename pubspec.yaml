@@ -26,7 +26,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 0.4.4+33
 
 environment:
-  sdk: ">=3.3.1 <4.0.0"
+  sdk: ">=3.7.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -49,7 +49,7 @@ dependencies:
   shared_preferences: ^2.2.2
   qr_flutter: ^4.1.0
   flutter_svg: ^2.0.10+1
-  fluttertoast: ^8.2.4
+  fluttertoast: ^8.2.12
   loader_overlay: ^4.0.0
   carousel_slider: ^4.2.1
   modal_bottom_sheet: ^3.0.0
@@ -57,18 +57,18 @@ dependencies:
   url_launcher: ^6.2.6
   path_provider: ^2.1.3
   convert: ^3.1.1
-  screen_capture_event: 1.2.0
+  screen_capture_event: ^1.2.0
   crypto: ^3.0.3
   local_auth: ^2.2.0
   path: ^1.9.0
-  web_socket_channel: ^2.4.5
+  web_socket_channel: ^3.0.3
   uuid: ^4.4.0
-  vibration: ^1.7.7
+  vibration: ^3.1.3
   lottie: ^3.1.2
   retrofit: '>=4.0.0 <5.0.0'
   dio: ^5.5.0+1
   http: ^1.2.1
-  in_app_review: ^2.0.9
+  in_app_review: ^2.0.11
   equatable: ^2.0.5
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
@@ -83,8 +83,6 @@ dependencies:
   cbor: ^6.3.5
   ur:
     path: lib/packages/bc-ur-dart
-  qr_code_scanner:
-    path: lib/packages/qr-code-scanner
   shimmer: ^3.0.0
   firebase_core: ^3.4.0
   firebase_analytics: ^11.3.0
@@ -95,6 +93,7 @@ dependencies:
   coconut_lib: 1.0.1
   base32: ^2.1.3
   share_plus: ^10.0.0
+  mobile_scanner: 7.0.1
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
