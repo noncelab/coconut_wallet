@@ -7,6 +7,7 @@ import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/composed_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
@@ -36,9 +37,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         break;
       case WalletImportSource.keystone:
       case WalletImportSource.jade:
-        _qrDataHandler = BcUrQrScanDataHandler();
+        _qrDataHandler =
+            BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
         break;
       case WalletImportSource.seedSigner:
+        _qrDataHandler = ComposedScanDataHandler(
+            expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
+        break;
       case WalletImportSource.krux:
         _qrDataHandler = DescriptorQrScanDataHandler();
         break;
@@ -57,61 +62,33 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
+    assert(_walletImportSource != WalletImportSource.extendedPublicKey,
+        '확장공개키 지갑 추가는 wallet_add_scanner에서 지원 안함');
+
     const methodName = 'addWallet';
 
     FileLogger.log(className, methodName,
         'addWallet called with ${_walletImportSource.name} additionInfo type: ${additionInfo.runtimeType}');
 
     try {
-      switch (_walletImportSource) {
-        case WalletImportSource.coconutVault:
-          return addCoconutVaultWallet(additionInfo as WatchOnlyWallet);
-        case WalletImportSource.keystone:
-        case WalletImportSource.jade:
-          return _addBcUrWallet(_walletImportSource, additionInfo as UR);
-        case WalletImportSource.seedSigner:
-        case WalletImportSource.krux:
-          return _addDescriptorWallet(_walletImportSource, additionInfo as String);
-        case WalletImportSource.coldCard:
-          return _addBbQrWallet(_walletImportSource, additionInfo as Map<String, dynamic>);
-        case WalletImportSource.extendedPublicKey:
-          throw 'No Support extendedPublicKey';
-        default:
-          FileLogger.error(
-              className, methodName, 'wrong wallet import source: $_walletImportSource');
-          throw 'wrong wallet import source: $_walletImportSource';
+      if (additionInfo is WatchOnlyWallet) {
+        return _addCoconutVaultWallet(additionInfo);
+      } else if (additionInfo is UR) {
+        return _addBcUrWallet(_walletImportSource, additionInfo);
+      } else if (additionInfo is String) {
+        return _addDescriptorWallet(_walletImportSource, additionInfo);
+      } else if (additionInfo is Map<String, dynamic>) {
+        return _addBbQrWallet(_walletImportSource, additionInfo);
       }
+      throw 'Unknown additionInfo type: ${additionInfo.runtimeType}';
     } catch (e, stackTrace) {
       FileLogger.error(className, methodName, 'addWallet failed: $e', stackTrace);
       rethrow;
     }
   }
 
-  Future<ResultOfSyncFromVault> addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {
+  Future<ResultOfSyncFromVault> _addCoconutVaultWallet(WatchOnlyWallet watchOnlyWallet) async {
     return await _walletProvider.syncFromCoconutVault(watchOnlyWallet);
-  }
-
-  Future<ResultOfSyncFromVault> addKeystoneWallet(UR ur) async {
-    const methodName = 'addKeystoneWallet';
-    FileLogger.log(className, methodName,
-        'addKeystoneWallet called UR type: ${ur.type} cbor length: ${ur.cbor.length}');
-    Logger.log('--> ${ur.type} ${ur.cbor.length}');
-    Logger.logLongString(ur.cbor.toString());
-
-    try {
-      final name = getNextThirdPartyWalletName(
-          WalletImportSource.keystone, _walletProvider.walletItemList.map((e) => e.name).toList());
-      final wallet = _walletAddService.createKeystoneWallet(ur, name);
-      FileLogger.log(className, methodName, 'createKeystoneWallet completed: $name');
-
-      final result = await _walletProvider.syncFromThirdParty(wallet);
-      FileLogger.log(className, methodName,
-          'syncFromThirdParty completed: ${result.result.name} named: $name');
-      return result;
-    } catch (e, stackTrace) {
-      FileLogger.error(className, methodName, 'addKeystoneWallet failed: $e', stackTrace);
-      rethrow;
-    }
   }
 
   Future<ResultOfSyncFromVault> _addBcUrWallet(WalletImportSource walletImportSource, UR ur) async {

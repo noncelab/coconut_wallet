@@ -113,7 +113,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       _isHandlerInitialized = true;
     } else {
       // 다른 하드웨어 지갑은 BcUr 핸들러 사용
-      _qrScanDataHandler = BcUrQrScanDataHandler();
+      _qrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoPsbt, UrType.psbt]);
       _isHandlerInitialized = true;
     }
   }
