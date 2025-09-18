@@ -197,8 +197,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _scrollController = ScrollController();
 
     _dropdownActions = [
-      () => CommonBottomSheets.showBottomSheet_90(
-          context: context, child: const GlossaryBottomSheet()),
+      () => CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context, child: const GlossaryBottomSheet(), heightRatio: 0.9),
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
       () => showDialog(
             context: context,
@@ -222,7 +222,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               );
             },
           ),
-      () => CommonBottomSheets.showBottomSheet_90(context: context, child: const SettingsScreen()),
+      () => CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context, child: const SettingsScreen(), heightRatio: 0.9),
       () => Navigator.pushNamed(context, '/app-info'),
     ];
 

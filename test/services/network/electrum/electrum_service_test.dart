@@ -35,14 +35,14 @@ void main() {
     await electrumClient.connect('localhost', 50001, ssl: false);
 
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({'id': id, 'result': null});
     });
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'server.ping');
     });
 
@@ -55,13 +55,13 @@ void main() {
   test('getBlockHeader should return block header', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.block.header');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({'id': id, 'result': 'block header data'});
     });
@@ -75,25 +75,28 @@ void main() {
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
 
     expect(
-        () => electrumClient.getBlockHeader(-1),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message',
-            'Exception: Only numbers greater than 0 are available')));
+      () => electrumClient.getBlockHeader(-1),
+      throwsA(
+        isA<Exception>().having(
+            (e) => e.toString(), 'message', 'Exception: Only numbers greater than 0 are available'),
+      ),
+    );
   });
 
   test('getBalance should return GetBalanceRes Object', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.get_balance');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
-        'result': {'confirmed': 0, 'unconfirmed': 0}
+        'result': {'confirmed': 0, 'unconfirmed': 0},
       });
     });
     final response = await electrumClient.getBalance(AddressType.p2wpkh, '0123456789abcdef');
@@ -105,20 +108,20 @@ void main() {
   test('getHistory should return GetTxHistoryRes List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.get_history');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
         'result': [
           {'height': 1, 'tx_hash': 'txHash1'},
-          {'height': 2, 'tx_hash': 'txHash2'}
-        ]
+          {'height': 2, 'tx_hash': 'txHash2'},
+        ],
       });
     });
     final response = await electrumClient.getHistory(AddressType.p2wpkh, '0123456789abcdef');
@@ -132,20 +135,20 @@ void main() {
   test('getUnspentList should return ListUnspentRes List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.listunspent');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
         'result': [
           {'height': 1, 'tx_hash': 'txHash1', 'tx_pos': 1, 'value': 1000},
-          {'height': 2, 'tx_hash': 'txHash2', 'tx_pos': 0, 'value': 2000}
-        ]
+          {'height': 2, 'tx_hash': 'txHash2', 'tx_pos': 0, 'value': 2000},
+        ],
       });
     });
     final response = await electrumClient.getUnspentList(AddressType.p2wpkh, '0123456789abcdef');
@@ -163,13 +166,13 @@ void main() {
   test('broadcast should return TransactionId String', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.transaction.broadcast');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({'id': id, 'result': 'txIdString'});
     });
@@ -181,13 +184,13 @@ void main() {
   test('getTransaction should return RawTransaction String', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.transaction.get');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({'id': id, 'result': 'txIdString'});
     });
@@ -199,20 +202,20 @@ void main() {
   test('getMempoolFeeHistogram should return Num List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'mempool.get_fee_histogram');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
         'result': [
           [1, 1000],
-          [2, 2000]
-        ]
+          [2, 2000],
+        ],
       });
     });
     final response = await electrumClient.getMempoolFeeHistogram();
@@ -224,17 +227,17 @@ void main() {
   test('getCurrentBlock should return BlockHeaderSubscribe Object', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.headers.subscribe');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
-        'result': {'height': 100, 'hex': '0123456789abcdef'}
+        'result': {'height': 100, 'hex': '0123456789abcdef'},
       });
     });
     final response = await electrumClient.getCurrentBlock();
@@ -246,13 +249,13 @@ void main() {
   test('getMempoolFeeHistogram should return empty List when json is empty', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'mempool.get_fee_histogram');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({'id': id, 'result': []});
     });
@@ -264,13 +267,13 @@ void main() {
   test('serverFeatures should return ServerFeaturesRes Object', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'server.features');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
@@ -281,9 +284,9 @@ void main() {
           'protocol_max': '1.4.2',
           'hash_function': 'sha256',
           'hosts': {
-            'test.host': {'ssl_port': 50002, 'tcp_port': 50001}
-          }
-        }
+            'test.host': {'ssl_port': 50002, 'tcp_port': 50001},
+          },
+        },
       });
     });
     final response = await electrumClient.serverFeatures();
@@ -300,17 +303,17 @@ void main() {
   test('serverVersion should return version List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'server.version');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
-        'result': ['ElectrumX 1.4.2', '1.4']
+        'result': ['ElectrumX 1.4.2', '1.4'],
       });
     });
     final response = await electrumClient.serverVersion();
@@ -321,13 +324,13 @@ void main() {
   test('estimateFee should return fee value', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.estimatefee');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({'id': id, 'result': 0.00001234});
     });
@@ -341,28 +344,31 @@ void main() {
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
 
     expect(
-        () => electrumClient.estimateFee(-1),
-        throwsA(isA<Exception>().having((e) => e.toString(), 'message',
-            'Exception: Only numbers greater than 0 are available')));
+      () => electrumClient.estimateFee(-1),
+      throwsA(
+        isA<Exception>().having(
+            (e) => e.toString(), 'message', 'Exception: Only numbers greater than 0 are available'),
+      ),
+    );
   });
 
   test('getMempool should return GetMempoolRes List', () async {
     await electrumClient.connect('localhost', 50001, ssl: false);
     when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-    when(mockSocketManager.send(any)).thenAnswer((_) async {
-      Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+    when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+      Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
       expect(jsonReq['method'], 'blockchain.scripthash.get_mempool');
     });
-    when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-      var id = _.positionalArguments[0];
-      var completer = _.positionalArguments[1];
+    when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+      var id = invocation.positionalArguments[0];
+      var completer = invocation.positionalArguments[1];
 
       completer.complete({
         'id': id,
         'result': [
           {'height': 0, 'tx_hash': 'txHash1', 'fee': 1000},
-          {'height': 0, 'tx_hash': 'txHash2', 'fee': 2000}
-        ]
+          {'height': 0, 'tx_hash': 'txHash2', 'fee': 2000},
+        ],
       });
     });
     final response = await electrumClient.getMempool(AddressType.p2wpkh, '0123456789abcdef');
@@ -414,13 +420,13 @@ void main() {
     test('should throw error when server returns error response', () async {
       await electrumClient.connect('localhost', 50001, ssl: false);
       when(mockSocketManager.connectionStatus).thenReturn(SocketConnectionStatus.connected);
-      when(mockSocketManager.send(any)).thenAnswer((_) async {
-        Map<String, dynamic> jsonReq = jsonDecode(_.positionalArguments[0]);
+      when(mockSocketManager.send(any)).thenAnswer((invocation) async {
+        Map<String, dynamic> jsonReq = jsonDecode(invocation.positionalArguments[0]);
         expect(jsonReq['method'], 'server.ping');
       });
-      when(mockSocketManager.setCompleter(any, any)).thenAnswer((_) {
-        var id = _.positionalArguments[0];
-        var completer = _.positionalArguments[1];
+      when(mockSocketManager.setCompleter(any, any)).thenAnswer((invocation) {
+        var id = invocation.positionalArguments[0];
+        var completer = invocation.positionalArguments[1];
 
         completer.complete({'id': id, 'error': 'Server error occurred'});
       });

@@ -447,8 +447,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     if (!_checkStateAndShowToast()) {
       return;
     }
-    await CommonBottomSheets.showBottomSheet_50(
+    await CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
+        heightRatio: 0.5,
         child: FaucetRequestBottomSheet(
           walletData: {
             'wallet_id': _viewModel.walletId,

@@ -34,28 +34,30 @@ class _SettingsScreen extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
-        create: (_) => SettingsViewModel(Provider.of<AuthProvider>(_, listen: false),
-            Provider.of<PreferenceProvider>(_, listen: false)),
-        update: (_, authProvider, preferenceProvider, settingsViewModel) {
-          return SettingsViewModel(authProvider, preferenceProvider);
-        },
-        child: Consumer<SettingsViewModel>(builder: (context, viewModel, child) {
+      create: (_) => SettingsViewModel(
+        Provider.of<AuthProvider>(context, listen: false),
+        Provider.of<PreferenceProvider>(context, listen: false),
+      ),
+      update: (_, authProvider, preferenceProvider, settingsViewModel) {
+        return SettingsViewModel(authProvider, preferenceProvider);
+      },
+      child: Consumer<SettingsViewModel>(
+        builder: (context, viewModel, child) {
           return Scaffold(
-              backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(
-                title: t.settings,
-                context: context,
-                isBottom: true,
-              ),
-              body: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            backgroundColor: CoconutColors.black,
+            appBar: CoconutAppBar.build(title: t.settings, context: context, isBottom: true),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   // 보안
                   _category(t.security),
-                  ButtonGroup(buttons: [
-                    SingleButton(
-                      title: t.settings_screen.set_password,
-                      rightElement: _buildSwitch(
+                  ButtonGroup(
+                    buttons: [
+                      SingleButton(
+                        title: t.settings_screen.set_password,
+                        rightElement: _buildSwitch(
                           isOn: viewModel.isSetPin,
                           onChanged: (isOn) async {
                             if (isOn) {
@@ -72,12 +74,13 @@ class _SettingsScreen extends State<SettingsScreen> {
                             if (await _isPinCheckValid()) {
                               viewModel.deletePin();
                             }
-                          }),
-                    ),
-                    if (viewModel.canCheckBiometrics && viewModel.isSetPin)
-                      SingleButton(
-                        title: t.settings_screen.use_biometric,
-                        rightElement: _buildSwitch(
+                          },
+                        ),
+                      ),
+                      if (viewModel.canCheckBiometrics && viewModel.isSetPin)
+                        SingleButton(
+                          title: t.settings_screen.use_biometric,
+                          rightElement: _buildSwitch(
                             isOn: viewModel.isSetBiometrics,
                             onChanged: (isOn) async {
                               if (isOn) {
@@ -85,10 +88,11 @@ class _SettingsScreen extends State<SettingsScreen> {
                               } else {
                                 viewModel.saveIsSetBiometrics(false);
                               }
-                            }),
-                      ),
-                    if (viewModel.isSetPin)
-                      SingleButton(
+                            },
+                          ),
+                        ),
+                      if (viewModel.isSetPin)
+                        SingleButton(
                           title: t.settings_screen.change_password,
                           onPressed: () async {
                             final authProvider = viewModel.authProvider;
@@ -100,30 +104,39 @@ class _SettingsScreen extends State<SettingsScreen> {
                             if (await _isPinCheckValid()) {
                               _showPinSettingScreen(useBiometrics: false);
                             }
-                          }),
-                  ]),
+                          },
+                        ),
+                    ],
+                  ),
 
                   // 홈 잔액 숨기기 + 가짜 잔액 설정
                   // TODO: ButtonGroup과 MultiButton 통합 혹은 usage 구별이 필요함
                   if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
                     CoconutLayout.spacing_200h,
-                    MultiButton(children: [
-                      SingleButton(
+                    MultiButton(
+                      children: [
+                        SingleButton(
                           title: t.settings_screen.hide_balance,
                           rightElement: _buildSwitch(
-                              isOn: viewModel.isBalanceHidden,
-                              onChanged: (value) {
-                                viewModel.changeIsBalanceHidden(value);
-                              })),
-                      SingleButton(
-                        enableShrinkAnim: true,
-                        title: t.settings_screen.fake_balance.fake_balance_setting,
-                        onPressed: () async {
-                          CommonBottomSheets.showBottomSheet_50(
-                              context: context, child: const FakeBalanceBottomSheet());
-                        },
-                      ),
-                    ]),
+                            isOn: viewModel.isBalanceHidden,
+                            onChanged: (value) {
+                              viewModel.changeIsBalanceHidden(value);
+                            },
+                          ),
+                        ),
+                        SingleButton(
+                          enableShrinkAnim: true,
+                          title: t.settings_screen.fake_balance.fake_balance_setting,
+                          onPressed: () async {
+                            CommonBottomSheets.showCustomHeightBottomSheet(
+                              context: context,
+                              heightRatio: 0.5,
+                              child: const FakeBalanceBottomSheet(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                     // ButtonGroup(buttons: [
                     //   SingleButton(
                     //       title: t.settings_screen.hide_balance,
@@ -145,19 +158,25 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 단위
                   _category(t.unit),
-                  ButtonGroup(buttons: [
-                    Selector<PreferenceProvider, bool>(
+                  ButtonGroup(
+                    buttons: [
+                      Selector<PreferenceProvider, bool>(
                         selector: (_, viewModel) => viewModel.isBtcUnit,
                         builder: (context, isBtcUnit, child) {
                           return _buildAnimatedButton(
-                              title: t.bitcoin_kr,
-                              subtitle: isBtcUnit ? t.btc : t.sats,
-                              onPressed: () async {
-                                CommonBottomSheets.showBottomSheet_50(
-                                    context: context, child: const UnitBottomSheet());
-                              });
-                        }),
-                    Selector<PreferenceProvider, String>(
+                            title: t.bitcoin_kr,
+                            subtitle: isBtcUnit ? t.btc : t.sats,
+                            onPressed: () async {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.5,
+                                child: const UnitBottomSheet(),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      Selector<PreferenceProvider, String>(
                         selector: (_, provider) => provider.selectedFiat.code,
                         builder: (context, fiatCode, child) {
                           String fiatDisplayName;
@@ -177,12 +196,17 @@ class _SettingsScreen extends State<SettingsScreen> {
                             title: t.fiat.fiat,
                             subtitle: fiatDisplayName,
                             onPressed: () async {
-                              CommonBottomSheets.showBottomSheet_50(
-                                  context: context, child: const FiatBottomSheet());
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.5,
+                                child: const FiatBottomSheet(),
+                              );
                             },
                           );
-                        }),
-                  ]),
+                        },
+                      ),
+                    ],
+                  ),
                   CoconutLayout.spacing_400h,
 
                   // 일반
@@ -194,8 +218,9 @@ class _SettingsScreen extends State<SettingsScreen> {
                         title: t.settings_screen.language,
                         subtitle: _getCurrentLanguageDisplayName(language),
                         onPressed: () async {
-                          CommonBottomSheets.showBottomSheet_50(
+                          CommonBottomSheets.showCustomHeightBottomSheet(
                             context: context,
+                            heightRatio: 0.5,
                             child: const LanguageBottomSheet(),
                           );
                         },
@@ -208,20 +233,22 @@ class _SettingsScreen extends State<SettingsScreen> {
                   _category(t.network),
                   // mainnet인 경우만 블록 익스플로러 표시
                   NetworkType.currentNetworkType == NetworkType.mainnet
-                      ? ButtonGroup(buttons: [
-                          _buildAnimatedButton(
-                            title: t.electrum_server,
-                            onPressed: () async {
-                              Navigator.pushNamed(context, '/electrum-server');
-                            },
-                          ),
-                          _buildAnimatedButton(
-                            title: t.block_explorer,
-                            onPressed: () async {
-                              Navigator.pushNamed(context, '/block-explorer');
-                            },
-                          ),
-                        ])
+                      ? ButtonGroup(
+                          buttons: [
+                            _buildAnimatedButton(
+                              title: t.electrum_server,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, '/electrum-server');
+                              },
+                            ),
+                            _buildAnimatedButton(
+                              title: t.block_explorer,
+                              onPressed: () async {
+                                Navigator.pushNamed(context, '/block-explorer');
+                              },
+                            ),
+                          ],
+                        )
                       : _buildAnimatedButton(
                           title: t.electrum_server,
                           onPressed: () async {
@@ -250,39 +277,46 @@ class _SettingsScreen extends State<SettingsScreen> {
                         final realmManager = Provider.of<RealmManager>(context, listen: false);
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => RealmDebugScreen(
-                              realmManager: realmManager,
-                            ),
+                            builder: (context) => RealmDebugScreen(realmManager: realmManager),
                           ),
                         );
                       },
                     ),
                   ],
 
-                  const SizedBox(height: Sizes.size32)
-                ]),
-              ));
-        }));
+                  const SizedBox(height: Sizes.size32),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildSwitch({required bool isOn, required Function(bool) onChanged}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: CoconutSwitch(
-          isOn: isOn,
-          activeColor: CoconutColors.gray100,
-          trackColor: CoconutColors.gray600,
-          thumbColor: CoconutColors.gray800,
-          onChanged: onChanged),
+        isOn: isOn,
+        activeColor: CoconutColors.gray100,
+        trackColor: CoconutColors.gray600,
+        thumbColor: CoconutColors.gray800,
+        onChanged: onChanged,
+      ),
     );
   }
 
   Widget _category(String label) => Container(
-      padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-      child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)));
+        padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
+        child: Text(label, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+      );
 
-  Widget _buildAnimatedButton(
-      {required String title, required VoidCallback onPressed, String? subtitle}) {
+  Widget _buildAnimatedButton({
+    required String title,
+    required VoidCallback onPressed,
+    String? subtitle,
+  }) {
     return SingleButton(
       enableShrinkAnim: true,
       animationEndValue: 0.97,
@@ -293,17 +327,19 @@ class _SettingsScreen extends State<SettingsScreen> {
   }
 
   void _showPinSettingScreen({required bool useBiometrics}) {
-    CommonBottomSheets.showBottomSheet_90(
+    CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
-      child: CustomLoadingOverlay(
-        child: PinSettingScreen(useBiometrics: useBiometrics),
-      ),
+      heightRatio: 0.9,
+      child: CustomLoadingOverlay(child: PinSettingScreen(useBiometrics: useBiometrics)),
     );
   }
 
   Future<bool> _isPinCheckValid() async {
-    return (await CommonBottomSheets.showBottomSheet_90(
-            context: context, child: const CustomLoadingOverlay(child: PinCheckScreen())) ==
+    return (await CommonBottomSheets.showCustomHeightBottomSheet(
+          context: context,
+          heightRatio: 0.9,
+          child: const CustomLoadingOverlay(child: PinCheckScreen()),
+        ) ==
         true);
   }
 

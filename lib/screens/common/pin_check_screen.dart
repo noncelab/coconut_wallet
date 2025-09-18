@@ -41,7 +41,6 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
 
-    /// appEntrance인 경우 AppGuard가 위젯트리에 없으므로 추가
     if (widget.appEntrance) {
       WidgetsBinding.instance.addObserver(this);
     }

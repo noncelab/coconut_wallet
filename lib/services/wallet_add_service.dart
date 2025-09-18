@@ -10,18 +10,6 @@ import 'package:ur/ur.dart';
 
 class WalletAddService {
   static const String masterFingerprintPlaceholder = '00000000';
-  WatchOnlyWallet createSeedSignerWallet(String descriptor, String name) {
-    return createWalletFromDescriptor(
-        descriptor: descriptor, name: name, walletImportSource: WalletImportSource.seedSigner);
-  }
-
-  WatchOnlyWallet createKeystoneWallet(UR ur, String name) {
-    return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.keystone);
-  }
-
-  WatchOnlyWallet createJadeWallet(UR ur, String name) {
-    return createWalletFromUR(ur: ur, name: name, walletImportSource: WalletImportSource.jade);
-  }
 
   WatchOnlyWallet createBbQrWallet({
     required Map<String, dynamic> json,

@@ -36,11 +36,7 @@ class TransactionDetailScreen extends StatefulWidget {
 
   final String txHash;
 
-  const TransactionDetailScreen({
-    super.key,
-    required this.id,
-    required this.txHash,
-  });
+  const TransactionDetailScreen({super.key, required this.id, required this.txHash});
 
   @override
   State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
@@ -70,17 +66,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
         _viewModel = TransactionDetailViewModel(
           widget.id,
           widget.txHash,
-          Provider.of<WalletProvider>(_, listen: false),
-          Provider.of<TransactionProvider>(_, listen: false),
-          Provider.of<NodeProvider>(_, listen: false),
-          Provider.of<AddressRepository>(_, listen: false),
-          Provider.of<ConnectivityProvider>(_, listen: false),
-          Provider.of<SendInfoProvider>(_, listen: false),
+          Provider.of<WalletProvider>(context, listen: false),
+          Provider.of<TransactionProvider>(context, listen: false),
+          Provider.of<NodeProvider>(context, listen: false),
+          Provider.of<AddressRepository>(context, listen: false),
+          Provider.of<ConnectivityProvider>(context, listen: false),
+          Provider.of<SendInfoProvider>(context, listen: false),
         );
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
-        _viewModel.setTransactionStatus(TransactionUtil.getStatus(
-            _viewModel.transactionList![_viewModel.selectedTransactionIndex]));
+        _viewModel.setTransactionStatus(
+          TransactionUtil.getStatus(
+              _viewModel.transactionList![_viewModel.selectedTransactionIndex]),
+        );
 
         _updateAnimation();
         return _viewModel;
@@ -99,30 +97,23 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
           final txMemo = viewModel.fetchTransactionMemo();
 
           return Scaffold(
-              backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(
-                title: t.view_tx_details,
-                context: context,
-              ),
-              body: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  CupertinoSliverRefreshControl(
-                    onRefresh: () async => viewModel.onRefresh(),
-                    refreshTriggerPullDistance: 100,
-                  ),
-                  SliverToBoxAdapter(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 20,
-                      ),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            backgroundColor: CoconutColors.black,
+            appBar: CoconutAppBar.build(title: t.view_tx_details, context: context),
+            body: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                CupertinoSliverRefreshControl(
+                  onRefresh: () async => viewModel.onRefresh(),
+                  refreshTriggerPullDistance: 100,
+                ),
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                         HighlightedInfoArea(
-                          textList: DateTimeUtil.formatTimestamp(
-                            tx.timestamp.toLocal(),
-                          ),
-                        ),
+                            textList: DateTimeUtil.formatTimestamp(tx.timestamp.toLocal())),
                         CoconutLayout.spacing_500h,
                         GestureDetector(
                           onTap: _toggleUnit,
@@ -147,9 +138,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                               ),
                               CoconutLayout.spacing_100h,
                               FiatPrice(
-                                  satoshiAmount: tx.amount.abs(),
-                                  textStyle: CoconutTypography.body2_14_Number
-                                      .setColor(CoconutColors.gray500))
+                                satoshiAmount: tx.amount.abs(),
+                                textStyle: CoconutTypography.body2_14_Number
+                                    .setColor(CoconutColors.gray500),
+                              ),
                             ],
                           ),
                         ),
@@ -170,50 +162,47 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                                     : Container(),
                               CoconutLayout.spacing_300h,
                             ],
-                          )
+                          ),
                         },
                         Stack(
                           children: [
                             if (_viewModel.previousTransactionIndex !=
                                 _viewModel.selectedTransactionIndex)
                               AnimatedBuilder(
-                                  animation: _animationController,
-                                  builder: (context, child) {
-                                    return SlideTransition(
-                                      position: _slideOutAnimation,
-                                      child: Opacity(
-                                        opacity: 1.0 - _animationController.value,
-                                        child: child,
-                                      ),
-                                    );
-                                  },
-                                  child: TransactionInputOutputCard(
-                                    key: ValueKey(_viewModel
-                                        .getTransactionKey(_viewModel.previousTransactionIndex)),
-                                    transaction: _viewModel
-                                        .transactionList![_viewModel.previousTransactionIndex],
-                                    isSameAddress: _viewModel.isSameAddress,
-                                    currentUnit: _currentUnit,
-                                  )),
-                            AnimatedBuilder(
                                 animation: _animationController,
                                 builder: (context, child) {
                                   return SlideTransition(
-                                    position: _slideInAnimation,
+                                    position: _slideOutAnimation,
                                     child: Opacity(
-                                      opacity: _animationController.value,
-                                      child: child,
-                                    ),
+                                        opacity: 1.0 - _animationController.value, child: child),
                                   );
                                 },
                                 child: TransactionInputOutputCard(
                                   key: ValueKey(_viewModel
-                                      .getTransactionKey(_viewModel.selectedTransactionIndex)),
+                                      .getTransactionKey(_viewModel.previousTransactionIndex)),
                                   transaction: _viewModel
-                                      .transactionList![_viewModel.selectedTransactionIndex],
+                                      .transactionList![_viewModel.previousTransactionIndex],
                                   isSameAddress: _viewModel.isSameAddress,
                                   currentUnit: _currentUnit,
-                                )),
+                                ),
+                              ),
+                            AnimatedBuilder(
+                              animation: _animationController,
+                              builder: (context, child) {
+                                return SlideTransition(
+                                  position: _slideInAnimation,
+                                  child: Opacity(opacity: _animationController.value, child: child),
+                                );
+                              },
+                              child: TransactionInputOutputCard(
+                                key: ValueKey(_viewModel
+                                    .getTransactionKey(_viewModel.selectedTransactionIndex)),
+                                transaction: _viewModel
+                                    .transactionList![_viewModel.selectedTransactionIndex],
+                                isSameAddress: _viewModel.isSameAddress,
+                                currentUnit: _currentUnit,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -230,7 +219,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                             tx.blockHeight != 0
                                 ? t.transaction_detail_screen.confirmation(
                                     height: tx.blockHeight.toString(),
-                                    count: _confirmedCountText(tx, viewModel.currentBlock?.height))
+                                    count: _confirmedCountText(tx, viewModel.currentBlock?.height),
+                                  )
                                 : '-',
                             style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                           ),
@@ -261,38 +251,38 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                         ),
                         TransactionDetailScreen._divider,
                         UnderlineButtonItemCard(
-                            label: t.tx_memo,
-                            underlineButtonLabel: t.edit,
-                            onTapUnderlineButton: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                builder: (context) => MemoBottomSheet(
-                                  originalMemo: txMemo ?? '',
-                                  onComplete: (memo) {
-                                    if (!viewModel.updateTransactionMemo(memo)) {
-                                      CoconutToast.showWarningToast(
-                                        context: context,
-                                        text: t.toast.memo_update_failed,
-                                      );
-                                    }
-                                  },
-                                ),
-                              );
-                            },
-                            child: Text(
-                              txMemo?.isNotEmpty == true ? txMemo! : '-',
-                              style:
-                                  CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                            )),
-                        const SizedBox(
-                          height: 40,
+                          label: t.tx_memo,
+                          underlineButtonLabel: t.edit,
+                          onTapUnderlineButton: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (context) => MemoBottomSheet(
+                                originalMemo: txMemo ?? '',
+                                onComplete: (memo) {
+                                  if (!viewModel.updateTransactionMemo(memo)) {
+                                    CoconutToast.showWarningToast(
+                                      context: context,
+                                      text: t.toast.memo_update_failed,
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                          child: Text(
+                            txMemo?.isNotEmpty == true ? txMemo! : '-',
+                            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+                          ),
                         ),
-                      ]),
+                        const SizedBox(height: 40),
+                      ],
                     ),
                   ),
-                ],
-              ));
+                ),
+              ],
+            ),
+          );
         },
       ),
     );
@@ -314,10 +304,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
+    _animationController =
+        AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animationController.value = 1.0;
@@ -331,100 +319,84 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     _slideInAnimation = Tween<Offset>(
       begin: slideRight ? const Offset(1.0, 0.0) : const Offset(-1.0, 0.0),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
 
     _slideOutAnimation = Tween<Offset>(
       begin: Offset.zero,
       end: slideRight ? const Offset(-1.0, 0.0) : const Offset(1.0, 0.0),
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
   }
 
   Widget _rbfHistoryWidget() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
-        children: List.generate(
-          _viewModel.feeBumpingHistoryList!.length,
-          (index) {
-            final feeHistory = _viewModel.feeBumpingHistoryList![index];
-            bool isLast = index == _viewModel.feeBumpingHistoryList!.length - 1;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (index == 0)
-                  SizedBox(
-                      width: 7,
-                      child: Center(
-                          child: Container(width: 1, height: 4, color: CoconutColors.gray700))),
-                // 타임라인 선
-                Row(
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Column(
-                          children: [
-                            Container(
-                                width: 1, height: isLast ? 16 : 33, color: CoconutColors.gray700),
-                            if (isLast)
-                              Container(
-                                width: 1,
-                                height: 16,
-                                color: Colors.transparent,
-                              ),
-                          ],
-                        ),
-                        Container(
-                          width: 7,
-                          height: 7,
-                          decoration: const BoxDecoration(
-                            color: CoconutColors.gray700,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        // )
-                      ],
-                    ),
-                    CoconutLayout.spacing_100w,
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        CoconutChip(
-                          color: _viewModel.selectedTransactionIndex == index
-                              ? CoconutColors.primary
-                              : CoconutColors.gray800,
-                          label: !isLast
-                              ? t.transaction_fee_bumping_screen.new_fee
-                              : t.transaction_fee_bumping_screen.existing_fee,
-                          labelColor: _viewModel.selectedTransactionIndex == index
-                              ? CoconutColors.black
-                              : CoconutColors.white,
-                          isSelected: _viewModel.selectedTransactionIndex == index,
-                          onTap: () {
-                            _changeTransaction(index);
-                          },
-                        ),
-                        CoconutLayout.spacing_200w,
-                        Text(
-                          t.transaction_fee_bumping_screen
-                              .existing_fee_value(value: feeHistory.feeRate),
-                          style: CoconutTypography.body2_14_Number,
-                          textScaler: const TextScaler.linear(1.0),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
+        children: List.generate(_viewModel.feeBumpingHistoryList!.length, (index) {
+          final feeHistory = _viewModel.feeBumpingHistoryList![index];
+          bool isLast = index == _viewModel.feeBumpingHistoryList!.length - 1;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (index == 0)
+                SizedBox(
+                    width: 7,
+                    child: Center(
+                        child: Container(width: 1, height: 4, color: CoconutColors.gray700))),
+              // 타임라인 선
+              Row(
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Column(
+                        children: [
+                          Container(
+                              width: 1, height: isLast ? 16 : 33, color: CoconutColors.gray700),
+                          if (isLast) Container(width: 1, height: 16, color: Colors.transparent),
+                        ],
+                      ),
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                            color: CoconutColors.gray700, shape: BoxShape.circle),
+                      ),
+                      // )
+                    ],
+                  ),
+                  CoconutLayout.spacing_100w,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CoconutChip(
+                        color: _viewModel.selectedTransactionIndex == index
+                            ? CoconutColors.primary
+                            : CoconutColors.gray800,
+                        label: !isLast
+                            ? t.transaction_fee_bumping_screen.new_fee
+                            : t.transaction_fee_bumping_screen.existing_fee,
+                        labelColor: _viewModel.selectedTransactionIndex == index
+                            ? CoconutColors.black
+                            : CoconutColors.white,
+                        isSelected: _viewModel.selectedTransactionIndex == index,
+                        onTap: () {
+                          _changeTransaction(index);
+                        },
+                      ),
+                      CoconutLayout.spacing_200w,
+                      Text(
+                        t.transaction_fee_bumping_screen
+                            .existing_fee_value(value: feeHistory.feeRate),
+                        style: CoconutTypography.body2_14_Number,
+                        textScaler: const TextScaler.linear(1.0),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -446,77 +418,67 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 28),
       child: Column(
-        children: List.generate(
-          _viewModel.feeBumpingHistoryList!.length,
-          (index) {
-            final feeHistory = _viewModel.feeBumpingHistoryList![index];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 타임라인 선
-                Padding(
-                  padding: EdgeInsets.only(left: (20 * index).toDouble()),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Stack(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 2.5),
-                            child: Column(
-                              children: [
-                                Container(
-                                  width: 1,
-                                  height: 22,
-                                  color: const Color.fromRGBO(81, 81, 96, 1),
-                                ),
-                                Container(
-                                  width: 1,
-                                  height: 11,
-                                  color: Colors.transparent,
-                                ),
-                              ],
+        children: List.generate(_viewModel.feeBumpingHistoryList!.length, (index) {
+          final feeHistory = _viewModel.feeBumpingHistoryList![index];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 타임라인 선
+              Padding(
+                padding: EdgeInsets.only(left: (20 * index).toDouble()),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 2.5),
+                          child: Column(
+                            children: [
+                              Container(
+                                  width: 1, height: 22, color: const Color.fromRGBO(81, 81, 96, 1)),
+                              Container(width: 1, height: 11, color: Colors.transparent),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16.5),
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color.fromRGBO(81, 81, 96, 1),
+                              shape: BoxShape.circle,
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16.5),
-                            child: Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: Color.fromRGBO(81, 81, 96, 1),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      CoconutLayout.spacing_100w,
-                      Row(
-                        children: [
-                          CoconutChip(
-                            color: CoconutColors.gray800,
-                            label: index == 0
-                                ? t.transaction_fee_bumping_screen.existing_fee
-                                : t.transaction_fee_bumping_screen.new_fee,
-                            labelColor: CoconutColors.white,
-                          ),
-                          CoconutLayout.spacing_200w,
-                          Text(
-                            t.transaction_fee_bumping_screen
-                                .existing_fee_value(value: feeHistory.feeRate),
-                            style: CoconutTypography.body2_14_Number,
-                            textScaler: const TextScaler.linear(1.0),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                    CoconutLayout.spacing_100w,
+                    Row(
+                      children: [
+                        CoconutChip(
+                          color: CoconutColors.gray800,
+                          label: index == 0
+                              ? t.transaction_fee_bumping_screen.existing_fee
+                              : t.transaction_fee_bumping_screen.new_fee,
+                          labelColor: CoconutColors.white,
+                        ),
+                        CoconutLayout.spacing_200w,
+                        Text(
+                          t.transaction_fee_bumping_screen
+                              .existing_fee_value(value: feeHistory.feeRate),
+                          style: CoconutTypography.body2_14_Number,
+                          textScaler: const TextScaler.linear(1.0),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -550,13 +512,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     return Container(
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
-        border: Border.all(
-          width: 1,
-          color: CoconutColors.gray700,
-        ),
-        borderRadius: BorderRadius.circular(
-          CoconutStyles.radius_200,
-        ),
+        border: Border.all(width: 1, color: CoconutColors.gray700),
+        borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
       ),
       padding: const EdgeInsets.all(10),
       child: Row(
@@ -569,8 +526,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _viewModel.isSendType!
-                  ? CoconutColors.primary.withOpacity(0.2)
-                  : CoconutColors.cyan.withOpacity(0.2),
+                  ? CoconutColors.primary.withValues(alpha: 0.2)
+                  : CoconutColors.cyan.withValues(alpha: 0.2),
             ),
             child: Center(
               child: _viewModel.isSendType!
@@ -620,28 +577,34 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
                       if (!canBumpingTx) return;
 
                       _viewModel.clearSendInfo();
-                      Navigator.pushNamed(context, '/transaction-fee-bumping', arguments: {
-                        'transaction': tx,
-                        'feeBumpingType':
-                            _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
-                        'walletId': widget.id,
-                        'walletName': _viewModel.getWalletName(),
-                      });
+                      Navigator.pushNamed(
+                        context,
+                        '/transaction-fee-bumping',
+                        arguments: {
+                          'transaction': tx,
+                          'feeBumpingType':
+                              _viewModel.isSendType! ? FeeBumpingType.rbf : FeeBumpingType.cpfp,
+                          'walletId': widget.id,
+                          'walletName': _viewModel.getWalletName(),
+                        },
+                      );
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         _viewModel.isSendType! ? t.quick_send : t.quick_receive,
-                        style: CoconutTypography.body2_14.setColor(_viewModel.isSendType!
-                            ? CoconutColors.primary.withOpacity(canBumpingTx ? 1.0 : 0.5)
-                            : CoconutColors.cyan.withOpacity(canBumpingTx ? 1.0 : 0.5)),
+                        style: CoconutTypography.body2_14.setColor(
+                          _viewModel.isSendType!
+                              ? CoconutColors.primary.withValues(alpha: canBumpingTx ? 1.0 : 0.5)
+                              : CoconutColors.cyan.withValues(alpha: canBumpingTx ? 1.0 : 0.5),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -689,8 +652,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen>
     Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
     String amountText = _currentUnit.displayBitcoinAmount(tx.amount);
 
-    return Text('$prefix$amountText',
-        style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color));
+    return Text(
+      '$prefix$amountText',
+      style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color),
+    );
   }
 
   String _confirmedCountText(TransactionRecord? tx, int? blockHeight) {
@@ -724,8 +689,5 @@ class FeeHistory {
   final double feeRate;
   final bool isSelected;
 
-  FeeHistory({
-    required this.feeRate,
-    this.isSelected = false,
-  });
+  FeeHistory({required this.feeRate, this.isSelected = false});
 }

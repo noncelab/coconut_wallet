@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -406,9 +407,10 @@ class _AddressListScreenState extends State<AddressListScreen> {
                           children: [
                             AddressItemCard(
                               onPressed: () {
-                                CommonBottomSheets.showBottomSheet_90(
+                                AppGuard.disablePrivacyScreen();
+                                CommonBottomSheets.showCustomHeightBottomSheet(
                                   context: context,
-                                  isAppGuard: false,
+                                  heightRatio: 0.9,
                                   child: QrcodeBottomSheet(
                                     qrcodeTopWidget: Text(
                                       addressList[index].derivationPath,
@@ -423,7 +425,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                     title: t.address_list_screen
                                         .address_index(index: addressList[index].index),
                                   ),
-                                );
+                                ).whenComplete(() => AppGuard.enablePrivacyScreen());
                               },
                               address: addressList[index].address,
                               derivationPath: addressList[index].derivationPath,
