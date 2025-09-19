@@ -41,7 +41,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
-  intl: ^0.20.2
+  intl: ^0.19.0
   provider: ^6.1.2
   scoped_model: ^2.0.0
   flutter_secure_storage: ^9.0.0
@@ -75,8 +75,8 @@ dependencies:
   package_info_plus: ^8.0.1
   realm: ^20.0.0
   cryptography: ^2.7.0
-  slang: ^4.4.1
-  slang_flutter: ^4.4.0
+  slang: ^4.7.0
+  slang_flutter: ^4.7.0
   async: ^2.11.0
   decimal: ^3.0.2
   tuple: ^2.0.2
@@ -84,13 +84,13 @@ dependencies:
   ur:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
-  firebase_core: ^3.4.0
-  firebase_analytics: ^11.3.0
   coconut_design_system: ^0.9.5
   coconut_lib: 1.0.1
   base32: ^2.1.3
   share_plus: ^10.0.0
   mobile_scanner: 7.0.1
+  firebase_core: ^3.15.2
+  firebase_analytics: ^11.6.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
