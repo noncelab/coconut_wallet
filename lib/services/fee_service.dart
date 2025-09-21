@@ -6,6 +6,7 @@ class FeeService {
   final Dio _dio = Dio();
 
   /// mempool.space API 사용
+  /// 네트워크 상관없이 메인넷 FeeRate를 가져옴
   Future<RecommendedFee> getRecommendedFees() async {
     try {
       final response = await _dio.get('https://mempool.space/api/v1/fees/recommended');
@@ -26,10 +27,7 @@ class FeeService {
 
   /// 멤풀 및 블록스트림 API에서 수수료 정보 수집
   Future<RecommendedFee> getRecommendedFeesWithFallback() async {
-    final sources = [
-      () => _getMempoolSpaceFees(),
-      () => _getBlockstreamFees(),
-    ];
+    final sources = [() => _getMempoolSpaceFees(), () => _getBlockstreamFees()];
 
     for (final source in sources) {
       try {
