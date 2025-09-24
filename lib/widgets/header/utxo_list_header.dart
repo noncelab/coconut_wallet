@@ -18,6 +18,7 @@ class UtxoListHeader extends StatefulWidget {
   final void Function() onPressedUnitToggle;
   final BitcoinUnit currentUnit;
   final Widget tagListWidget;
+  final bool hideBalance;
 
   const UtxoListHeader({
     super.key,
@@ -30,6 +31,7 @@ class UtxoListHeader extends StatefulWidget {
     required this.currentUnit,
     required this.onPressedUnitToggle,
     required this.tagListWidget,
+    this.hideBalance = false,
   });
 
   @override
@@ -46,70 +48,62 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
         Column(
           children: [
             Container(
-              padding: const EdgeInsets.only(
-                left: 20,
-                top: 28,
-                right: 20,
-              ),
+              padding: const EdgeInsets.only(left: 20, top: 28, right: 20),
               width: MediaQuery.sizeOf(context).width,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    t.utxo_list_screen.total_balance,
-                    style: CoconutTypography.body1_16_Bold,
-                  ),
-                  CoconutLayout.spacing_100h,
-                  GestureDetector(
-                    onTap: widget.onPressedUnitToggle,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        IntrinsicWidth(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: FittedBox(
-                                  alignment: Alignment.centerLeft,
-                                  fit: BoxFit.scaleDown,
-                                  child: Row(
-                                    children: [
-                                      AnimatedBalance(
+                  if (!widget.hideBalance) ...[
+                    Text(t.utxo_list_screen.total_balance, style: CoconutTypography.body1_16_Bold),
+                    CoconutLayout.spacing_100h,
+                    GestureDetector(
+                      onTap: widget.onPressedUnitToggle,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          IntrinsicWidth(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: FittedBox(
+                                    alignment: Alignment.centerLeft,
+                                    fit: BoxFit.scaleDown,
+                                    child: Row(
+                                      children: [
+                                        AnimatedBalance(
                                           prevValue: widget.animatedBalanceData.previous,
                                           value: widget.animatedBalanceData.current,
                                           currentUnit: widget.currentUnit,
-                                          textStyle: CoconutTypography.heading1_32_NumberBold),
-                                    ],
+                                          textStyle: CoconutTypography.heading1_32_NumberBold,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              CoconutLayout.spacing_200w,
-                              Text(
-                                widget.currentUnit.symbol,
-                                style: CoconutTypography.heading3_21_Number,
-                              ),
-                            ],
+                                CoconutLayout.spacing_200w,
+                                Text(
+                                  widget.currentUnit.symbol,
+                                  style: CoconutTypography.heading3_21_Number,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                        CoconutLayout.spacing_50h,
-                        FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
-                      ],
+                          CoconutLayout.spacing_50h,
+                          FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
+                        ],
+                      ),
                     ),
-                  ),
-                  CoconutLayout.spacing_400h,
+                    CoconutLayout.spacing_400h,
+                  ],
                   Row(
                     children: [
-                      Expanded(
-                        child: Container(),
-                      ),
+                      Expanded(child: Container()),
                       Visibility(
                         visible: !widget.isLoadComplete,
                         child: Align(
                           child: Container(
-                            margin: const EdgeInsets.only(
-                              right: 4,
-                            ),
+                            margin: const EdgeInsets.only(right: 4),
                             width: 12,
                             height: 12,
                             child: const CircularProgressIndicator(
@@ -129,16 +123,22 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         },
                         child: Row(
                           children: [
-                            Text(widget.selectedOption,
-                                style: CoconutTypography.body3_12.setColor(widget.isLoadComplete
-                                    ? CoconutColors.white
-                                    : CoconutColors.gray700)),
+                            Text(
+                              widget.selectedOption,
+                              style: CoconutTypography.body3_12.setColor(
+                                widget.isLoadComplete ? CoconutColors.white : CoconutColors.gray700,
+                              ),
+                            ),
                             CoconutLayout.spacing_200w,
                             SvgPicture.asset(
                               'assets/svg/arrow-down.svg',
-                              colorFilter: widget.isLoadComplete
-                                  ? null
-                                  : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
+                              colorFilter:
+                                  widget.isLoadComplete
+                                      ? null
+                                      : const ColorFilter.mode(
+                                        CoconutColors.gray700,
+                                        BlendMode.srcIn,
+                                      ),
                             ),
                           ],
                         ),
@@ -151,7 +151,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
             widget.tagListWidget,
             CoconutLayout.spacing_300h,
           ],
-        )
+        ),
       ],
     );
   }

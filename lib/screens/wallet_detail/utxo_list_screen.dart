@@ -26,6 +26,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/utxo_list_bottom_sheet.dart';
 
 class UtxoListScreen extends StatefulWidget {
   final int id; // wallet id
@@ -37,82 +39,74 @@ class UtxoListScreen extends StatefulWidget {
 }
 
 class _UtxoListScreenState extends State<UtxoListScreen> {
+  // Scroll & Layout
   final ScrollController _scrollController = ScrollController();
-
   double _topPadding = 0;
+  Size _appBarSize = Size.zero;
+
+  // Global Keys
   final GlobalKey _appBarKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
   final GlobalKey _stickyHeaderKey = GlobalKey();
-
   final GlobalKey _headerDropdownKey = GlobalKey();
   final GlobalKey _stickyHeaderDropdownKey = GlobalKey();
 
-  final ValueNotifier<bool> _stickyHeaderVisibleNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _firstLoadedNotifier = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _dropdownVisibleNotifier = ValueNotifier<bool>(false);
+  // Dropdown & Header 상태
+  final ValueNotifier<bool> _stickyHeaderVisibleNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _firstLoadedNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _dropdownVisibleNotifier = ValueNotifier(false);
 
-  Size _appBarSize = const Size(0, 0);
-
+  // Dropdown 위치 & 크기
   Offset _headerDropdownPosition = Offset.zero;
   Offset _stickyHeaderDropdownPosition = Offset.zero;
-
   Size _headerDropdownSize = Size.zero;
   Size _stickyHeaderDropdownSize = Size.zero;
 
-  OverlayEntry? _statusBarTapOverlayEntry; // iOS 노치 터치 시 scrol to top
+  // 기타
+  OverlayEntry? _statusBarTapOverlayEntry; // iOS status bar tap scroll
   late BitcoinUnit _currentUnit;
+  bool _settingLock = false;
 
   @override
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Size topHeaderWidgetSize = const Size(0, 0);
-      Size positionedTopWidgetSize = const Size(0, 0);
-
-      if (_appBarKey.currentContext != null) {
-        final appBarWidgetRenderBox = _appBarKey.currentContext?.findRenderObject() as RenderBox;
-        _appBarSize = appBarWidgetRenderBox.size;
-      }
-
-      if (_headerKey.currentContext != null) {
-        final topHeaderWidgetRenderBox = _headerKey.currentContext?.findRenderObject() as RenderBox;
-        topHeaderWidgetSize = topHeaderWidgetRenderBox.size;
-      }
-
-      if (_stickyHeaderKey.currentContext != null) {
-        final stickyHeaderWidgetRenderBox =
-            _stickyHeaderKey.currentContext?.findRenderObject() as RenderBox;
-        positionedTopWidgetSize = stickyHeaderWidgetRenderBox.size;
-      }
-
-      setState(() {
-        _topPadding = topHeaderWidgetSize.height - positionedTopWidgetSize.height;
-      });
-
-      _scrollController.addListener(() {
-        _hideDropdown();
-
-        if (_scrollController.offset > _topPadding) {
-          _showStickyHeaderAndUpdateDropdownPosition();
-        } else {
-          _hideStickyHeaderAndUpdateDropdownPosition();
-        }
-      });
+      _calculateTopPadding();
+      _scrollController.addListener(_onScroll);
     });
 
-    if (Platform.isIOS) {
-      _enableStatusBarTapScroll();
+    if (Platform.isIOS) _enableStatusBarTapScroll();
+  }
+
+  void _calculateTopPadding() {
+    final appBarBox = _appBarKey.currentContext?.findRenderObject() as RenderBox?;
+    final headerBox = _headerKey.currentContext?.findRenderObject() as RenderBox?;
+    final stickyBox = _stickyHeaderKey.currentContext?.findRenderObject() as RenderBox?;
+
+    _appBarSize = appBarBox?.size ?? Size.zero;
+    final topHeaderHeight = headerBox?.size.height ?? 0;
+    final stickyHeight = stickyBox?.size.height ?? 0;
+
+    setState(() => _topPadding = topHeaderHeight - stickyHeight);
+  }
+
+  void _onScroll() {
+    _hideDropdown();
+    if (_scrollController.offset > _topPadding) {
+      _showStickyHeaderAndUpdateDropdownPosition();
+    } else {
+      _hideStickyHeaderAndUpdateDropdownPosition();
     }
   }
 
   @override
-  void dispose() {
-    _statusBarTapOverlayEntry?.remove();
-    _statusBarTapOverlayEntry = null;
-    _scrollController.dispose();
-    super.dispose();
-  }
+void dispose() {
+  _statusBarTapOverlayEntry?.remove();
+  _scrollController.dispose();
+  super.dispose();
+}
 
   UtxoListViewModel _createViewModel() {
     return UtxoListViewModel(
@@ -161,6 +155,16 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                       title: t.utxo_list,
                       context: context,
                       backgroundColor: CoconutColors.black,
+                      actionButtonList: [
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _settingLock = !_settingLock;
+                            });
+                          },
+                          icon: SvgPicture.asset('assets/svg/lock.svg', width: 18, height: 18)
+                        )
+                      ],
                     ),
                     body: Selector<UtxoListViewModel, Tuple3<bool, bool, List<UtxoState>>>(
                         selector: (_, viewModel) => Tuple3(
@@ -186,13 +190,19 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                               UtxoList(
                                 walletId: widget.id,
                                 currentUnit: _currentUnit,
+                                settingLock: _settingLock,
                                 onRemoveDropdown: _hideDropdown,
                                 onFirstBuildCompleted: () {
                                   if (!mounted) return;
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     _firstLoadedNotifier.value = true;
-                                  });
-                                },
+                  });
+                },
+                onSettingLockChanged: (bool value) {
+                  setState(() {
+                    _settingLock = value;
+                  });
+                },
                               ),
                             ],
                           );
@@ -207,44 +217,33 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         }));
   }
 
+  void _hideDropdown() => _dropdownVisibleNotifier.value = false;
+
   void _hideStickyHeaderAndUpdateDropdownPosition() {
     _stickyHeaderVisibleNotifier.value = false;
-
-    if (_headerDropdownKey.currentContext != null) {
-      final renderBox = _headerDropdownKey.currentContext!.findRenderObject() as RenderBox;
-      final position = renderBox.localToGlobal(Offset.zero);
-      final size = renderBox.size;
-
-      if (_headerDropdownPosition != position || _headerDropdownSize != size) {
-        setState(() {
-          _headerDropdownPosition = position;
-          _headerDropdownSize = size;
-        });
-      }
-    }
+    _updateDropdownPosition(_headerDropdownKey, isSticky: false);
   }
 
   void _showStickyHeaderAndUpdateDropdownPosition() {
     _stickyHeaderVisibleNotifier.value = true;
-
-    if (_stickyHeaderDropdownKey.currentContext != null) {
-      final renderBox = _stickyHeaderDropdownKey.currentContext!.findRenderObject() as RenderBox;
-      final position = renderBox.localToGlobal(Offset.zero);
-      final size = renderBox.size;
-
-      if (_stickyHeaderDropdownPosition != position || _stickyHeaderDropdownSize != size) {
-        setState(() {
-          _stickyHeaderDropdownPosition = position;
-          _stickyHeaderDropdownSize = size;
-        });
-      }
-    }
+    _updateDropdownPosition(_stickyHeaderDropdownKey, isSticky: true);
   }
 
-  void _hideDropdown() {
-    if (_dropdownVisibleNotifier.value) {
-      _dropdownVisibleNotifier.value = false;
-    }
+  void _updateDropdownPosition(GlobalKey key, {required bool isSticky}) {
+    if (key.currentContext == null) return;
+    final renderBox = key.currentContext!.findRenderObject() as RenderBox;
+    final position = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+
+    setState(() {
+      if (isSticky) {
+        _stickyHeaderDropdownPosition = position;
+        _stickyHeaderDropdownSize = size;
+      } else {
+        _headerDropdownPosition = position;
+        _headerDropdownSize = size;
+      }
+    });
   }
 
   Widget _buildHeader(BuildContext context) {
@@ -271,6 +270,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   headerGlobalKey: _headerKey,
                   dropdownGlobalKey: _headerDropdownKey,
                   isLoadComplete: canShowDropdown,
+                  hideBalance: _settingLock,
                   animatedBalanceData: AnimatedBalanceData(
                       context.read<UtxoListViewModel>().balance,
                       context.read<UtxoListViewModel>().prevBalance),
@@ -380,6 +380,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         _hideDropdown();
                       },
                       currentUnit: _currentUnit,
+                      hideBalance: _settingLock,
                     );
                   },
                 );
@@ -389,6 +390,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   void _enableStatusBarTapScroll() {
     if (_statusBarTapOverlayEntry != null) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _statusBarTapOverlayEntry = OverlayEntry(
         builder: (context) => Positioned(
@@ -398,19 +400,15 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
           height: MediaQuery.of(context).padding.top,
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: () {
-              _scrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
+            onTap: () => _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            ),
           ),
         ),
       );
-
-      final overlayState = Overlay.of(context);
-      overlayState.insert(_statusBarTapOverlayEntry!);
+      Overlay.of(context).insert(_statusBarTapOverlayEntry!);
     });
   }
 }
@@ -422,12 +420,16 @@ class UtxoList extends StatefulWidget {
     required this.currentUnit,
     required this.onRemoveDropdown,
     required this.onFirstBuildCompleted,
+    required this.settingLock,
+    this.onSettingLockChanged,
   });
 
   final int walletId;
   final BitcoinUnit currentUnit;
   final Function onRemoveDropdown;
   final VoidCallback onFirstBuildCompleted;
+  final bool settingLock;
+  final ValueChanged<bool>? onSettingLockChanged;
 
   @override
   State<UtxoList> createState() => _UtxoListState();
@@ -444,6 +446,8 @@ class _UtxoListState extends State<UtxoList> {
   final Duration _duration = const Duration(milliseconds: 1200);
   final Duration _animationDuration = const Duration(milliseconds: 100);
   bool _isListLoading = false;
+  final Set<String> _selectedUtxoIds = {};
+  PersistentBottomSheetController? _bottomSheetController;
 
   @override
   Widget build(BuildContext context) {
@@ -621,37 +625,67 @@ class _UtxoListState extends State<UtxoList> {
   }
 
   Widget _buildUtxoItem(UtxoState utxo, Animation<double> animation, bool isLastItem) {
-    var offsetAnimation = _buildSlideAnimation(animation);
-    final viewModel = context.read<UtxoListViewModel>();
-    return Column(
-      children: [
-        SlideTransition(
-          position: offsetAnimation,
-          child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: UtxoItemCard(
-                  key: Key(utxo.utxoId),
-                  currentUnit: widget.currentUnit,
-                  onPressed: () async {
-                    widget.onRemoveDropdown();
+  var offsetAnimation = _buildSlideAnimation(animation);
+  final viewModel = context.read<UtxoListViewModel>();
 
-                    await Navigator.pushNamed(
-                      context,
-                      '/utxo-detail',
-                      arguments: {
-                        'utxo': utxo,
-                        'id': widget.walletId,
-                      },
-                    );
-                    // UTXO 상세 화면에서 돌아왔을 때 데이터 갱신
-                    viewModel.refetchFromDB();
-                  },
-                  utxo: utxo)),
+  final bool canMultiSelect = widget.settingLock;
+  final bool isSelected = _selectedUtxoIds.contains(utxo.utxoId);
+
+  return Column(
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: SlideTransition(
+          position: offsetAnimation,
+          child: Container(
+            decoration: BoxDecoration(
+              border: isSelected && canMultiSelect
+                  ? Border.all(color: CoconutColors.primary, width: 2)
+                  : null,
+              borderRadius: BorderRadius.circular(12),
+              color: CoconutColors.gray900, // 배경색을 Container로 통일
+            ),
+            clipBehavior: Clip.hardEdge, // 테두리 안쪽으로 자르기
+            child: UtxoItemCard(
+              key: Key(utxo.utxoId),
+              currentUnit: widget.currentUnit,
+              utxo: utxo,
+              onPressed: () {
+                if (widget.settingLock) {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedUtxoIds.remove(utxo.utxoId);
+                    } else {
+                      _selectedUtxoIds.add(utxo.utxoId);
+                    }
+                  });
+                } else {
+                _openDetailPage(utxo, viewModel);
+                }
+              },
+            ),
+          ),
         ),
-        isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
-      ],
-    );
-  }
+      ),
+      isLastItem ? CoconutLayout.spacing_1000h : CoconutLayout.spacing_200h,
+    ],
+  );
+}
+
+  void _openDetailPage(UtxoState utxo, UtxoListViewModel viewModel) async {
+  widget.onRemoveDropdown();
+
+  await Navigator.pushNamed(
+    context,
+    '/utxo-detail',
+    arguments: {
+      'utxo': utxo,
+      'id': widget.walletId,
+    },
+  );
+  // 돌아오면 DB 리프레시
+  viewModel.refetchFromDB();
+}
 
   bool _isListChanged(List<UtxoState> oldList, List<UtxoState> newList) {
     // 길이 비교
@@ -710,4 +744,82 @@ class _UtxoListState extends State<UtxoList> {
   void dispose() {
     super.dispose();
   }
+
+void _showBottomSheet() {
+  if (!mounted) return;
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+
+    widget.settingLock ? _openBottomSheetIfNeeded() : _closeBottomSheetIfNeeded();
+  });
 }
+
+void _openBottomSheetIfNeeded() {
+  if (_bottomSheetController != null) return;
+
+  _bottomSheetController = Scaffold.of(context).showBottomSheet(
+    (context) => SelectedUtxosBottomSheet(
+      onLock: () => _updateSelectedUtxos(lock: true),
+      onUnlock: () => _updateSelectedUtxos(lock: false),
+      onSend: () {
+        // TODO: Send 버튼 처리
+      },
+    ),
+    backgroundColor: Colors.transparent,
+  );
+
+  _bottomSheetController?.closed.then((_) {
+    if (mounted) setState(() => _bottomSheetController = null);
+  });
+}
+
+void _closeBottomSheetIfNeeded() {
+  if (_bottomSheetController == null) return;
+
+  final controller = _bottomSheetController;
+  _bottomSheetController = null;
+
+  controller?.closed.then((_) {
+    if (mounted) setState(() => _selectedUtxoIds.clear());
+  });
+
+  try {
+    controller?.close();
+  } catch (e) {
+    debugPrint('BottomSheet close 실패: $e');
+  }
+}
+
+/// lock=true -> 잠금, lock=false -> 잠금 해제
+Future<void> _updateSelectedUtxos({required bool lock}) async {
+  if (_selectedUtxoIds.isEmpty) return;
+  final viewModel = context.read<UtxoListViewModel>();
+
+  try {
+    final newStatus = lock ? UtxoStatus.locked : UtxoStatus.unspent;
+
+    // 선택된 모든 UTXO를 한 번에 업데이트
+    await viewModel.updateSelectedUtxosStatus(_selectedUtxoIds.toList(), newStatus);
+
+    setState(() {
+      _selectedUtxoIds.clear();
+      widget.onSettingLockChanged?.call(false);
+    });
+
+    _bottomSheetController?.close();
+  } catch (e) {
+    debugPrint('UTXO 상태 업데이트 실패: $e');
+  }
+}
+
+@override
+  void didUpdateWidget(covariant UtxoList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.settingLock != widget.settingLock) {
+      _showBottomSheet();
+    }
+  }
+}
+

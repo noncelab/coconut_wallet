@@ -178,4 +178,32 @@ class UtxoListViewModel extends ChangeNotifier {
     _syncWalletStateSubscription?.cancel();
     super.dispose();
   }
+
+  Future<void> updateSelectedUtxosStatus(List<String> utxoIds, UtxoStatus status) async {
+    try {
+      for (var utxoId in utxoIds) {
+        final utxo = _utxoList.firstWhere((u) => u.utxoId == utxoId);
+
+        if (status == UtxoStatus.locked && utxo.status != UtxoStatus.locked) {
+          // 잠금
+          await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
+        } else if (status == UtxoStatus.unspent && utxo.status != UtxoStatus.unspent) {
+          // 잠금 해제
+          await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
+        }
+        // 이미 원하는 상태이면 아무 작업 안 함
+      }
+
+      for (var utxo in _utxoList) {
+        if (utxoIds.contains(utxo.utxoId)) {
+          utxo.status = status;
+        }
+      }
+      
+      notifyListeners();
+      } catch (e) {
+        debugPrint('UTXO 상태 업데이트 실패: $e');
+      rethrow;
+    }
+  }
 }
