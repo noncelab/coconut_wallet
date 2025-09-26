@@ -182,6 +182,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                             onSelectedTag: (tagName) {
                               viewModel.setSelectedUtxoTagName(tagName);
                             },
+                            hideBalance: hideBalance,
                             scrollPhysics: const AlwaysScrollableScrollPhysics(),
                           ),
                           CoconutLayout.spacing_300h,

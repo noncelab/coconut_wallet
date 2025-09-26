@@ -162,7 +162,7 @@ void dispose() {
                               _settingLock = !_settingLock;
                             });
                           },
-                          icon: SvgPicture.asset('assets/svg/lock.svg', width: 18, height: 18)
+                          icon: SvgPicture.asset('assets/svg/check.svg', width: 18, height: 18)
                         )
                       ],
                     ),
@@ -196,13 +196,14 @@ void dispose() {
                                   if (!mounted) return;
                                   WidgetsBinding.instance.addPostFrameCallback((_) {
                                     _firstLoadedNotifier.value = true;
-                  });
-                },
-                onSettingLockChanged: (bool value) {
-                  setState(() {
-                    _settingLock = value;
-                  });
-                },
+                                  });
+                                  },
+
+                                onSettingLockChanged: (bool value) {
+                                  setState(() {
+                                    _settingLock = value;
+                                  });
+                                },
                               ),
                             ],
                           );
@@ -451,6 +452,8 @@ class _UtxoListState extends State<UtxoList> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomSheetHeight = MediaQuery.of(context).size.height * 0.175;
+
     return Selector<UtxoListViewModel, Tuple3<List<UtxoState>, String, UtxoOrder>>(
         selector: (_, viewModel) =>
             Tuple3(viewModel.utxoList, viewModel.selectedUtxoTagName, viewModel.selectedUtxoOrder),
@@ -483,13 +486,17 @@ class _UtxoListState extends State<UtxoList> {
             return _buildEmptyState();
           }
 
-          return _buildSliverAnimatedList(
+          return SliverPadding(
+            padding: EdgeInsets.only(bottom: bottomSheetHeight),
+            sliver: _buildSliverAnimatedList(
               isChangeTagSelected
                   ? changeUtxos
                   : isLockedUtxoTagSelected
                       ? lockedUtxos
                       : _displayedUtxoList,
-              selectedUtxoTagName);
+              selectedUtxoTagName,
+            ),
+          );
         });
   }
 
@@ -628,7 +635,7 @@ class _UtxoListState extends State<UtxoList> {
   var offsetAnimation = _buildSlideAnimation(animation);
   final viewModel = context.read<UtxoListViewModel>();
 
-  final bool canMultiSelect = widget.settingLock;
+  final bool settingLock = widget.settingLock;
   final bool isSelected = _selectedUtxoIds.contains(utxo.utxoId);
 
   return Column(
@@ -639,9 +646,9 @@ class _UtxoListState extends State<UtxoList> {
           position: offsetAnimation,
           child: Container(
             decoration: BoxDecoration(
-              border: isSelected && canMultiSelect
+              border: isSelected && settingLock
                   ? Border.all(color: CoconutColors.primary, width: 2)
-                  : null,
+                  : Border.all(color: CoconutColors.gray900, width: 2),
               borderRadius: BorderRadius.circular(12),
               color: CoconutColors.gray900, // 배경색을 Container로 통일
             ),
@@ -663,6 +670,8 @@ class _UtxoListState extends State<UtxoList> {
                 _openDetailPage(utxo, viewModel);
                 }
               },
+              isSelected: isSelected,
+              settingLock: settingLock,
             ),
           ),
         ),
@@ -761,10 +770,7 @@ void _openBottomSheetIfNeeded() {
   _bottomSheetController = Scaffold.of(context).showBottomSheet(
     (context) => SelectedUtxosBottomSheet(
       onLock: () => _updateSelectedUtxos(lock: true),
-      onUnlock: () => _updateSelectedUtxos(lock: false),
-      onSend: () {
-        // TODO: Send 버튼 처리
-      },
+      onUnlock: () => _updateSelectedUtxos(lock: false)
     ),
     backgroundColor: Colors.transparent,
   );

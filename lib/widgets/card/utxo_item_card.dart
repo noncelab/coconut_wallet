@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -13,17 +14,24 @@ class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
   final Function onPressed;
   final BitcoinUnit currentUnit;
+  final bool isSelected;
+  final bool settingLock;
 
   const UtxoItemCard({
     super.key,
     required this.utxo,
     required this.onPressed,
     required this.currentUnit,
+    this.isSelected = false,
+    this.settingLock = false
   });
 
   @override
   Widget build(BuildContext context) {
     final dateString = DateTimeUtil.formatTimestamp(utxo.timestamp);
+    final int splitIndex = (utxo.to.length / 2).floor();
+    final String firstLine = utxo.to.substring(0, splitIndex);
+    final String secondLine = utxo.to.substring(splitIndex);
 
     return ShrinkAnimationButton(
       defaultColor: CoconutColors.gray900,
@@ -62,34 +70,67 @@ class UtxoItemCard extends StatelessWidget {
                   CoconutLayout.spacing_200w,
                   // amount
                   Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (utxo.isPending) ...[
-                          _buildPendingStatus(utxo.status),
-                        ] else if (utxo.status == UtxoStatus.locked) ...[
-                          SvgPicture.asset('assets/svg/lock.svg'),
-                        ],
-                        Expanded(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              currentUnit.displayBitcoinAmount(utxo.amount),
-                              style: CoconutTypography.heading4_18_NumberBold
-                                  .setColor(CoconutColors.white),
-                            ),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (utxo.isPending) ...[
+                            _buildPendingStatus(utxo.status),
+                            SizedBox(width: 4),
+                          ] else if (utxo.status == UtxoStatus.locked) ...[
+                            SvgPicture.asset('assets/svg/lock.svg'),
+                            SizedBox(width: 4),
+                          ],
+                          Text(
+                            currentUnit.displayBitcoinAmount(utxo.amount),
+                            style: CoconutTypography.heading4_18_NumberBold
+                                .setColor(CoconutColors.white),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
               CoconutLayout.spacing_100h,
-              // address
-              Text(utxo.to,
-                  style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray350)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // address
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          firstLine,
+                          style: CoconutTypography.body2_14_Number
+                              .setColor(CoconutColors.gray350)
+                              .copyWith(height: 1.3),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          secondLine,
+                          style: CoconutTypography.body2_14_Number
+                              .setColor(CoconutColors.gray350)
+                              .copyWith(height: 1.3),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 체크 아이콘
+                  if (settingLock) ...[
+                    const SizedBox(width: 8),
+                    SvgPicture.asset(
+                      'assets/svg/circle-check.svg',
+                      colorFilter: ColorFilter.mode(
+                          isSelected ? CoconutColors.primary : MyColors.transparentWhite_40,
+                          BlendMode.srcIn),
+                    ),
+                  ],
+                ],
+              ),
               Column(
                 children: [
                   if ((utxo.tags?.isNotEmpty ?? false) || utxo.isChange)

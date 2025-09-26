@@ -6,19 +6,18 @@ import 'package:flutter_svg/svg.dart';
 class SelectedUtxosBottomSheet extends StatelessWidget {
   final VoidCallback onLock;
   final VoidCallback onUnlock;
-  final VoidCallback onSend;
 
   const SelectedUtxosBottomSheet({
     super.key,
     required this.onLock,
     required this.onUnlock,
-    required this.onSend,
   });
 
   @override
   Widget build(BuildContext context) {
     return FractionallySizedBox(
       widthFactor: 1,
+      heightFactor: 0.175,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Container(
@@ -26,19 +25,19 @@ class SelectedUtxosBottomSheet extends StatelessWidget {
             color: CoconutColors.gray900,
             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             border: Border(
-              top: BorderSide(color: CoconutColors.primary, width: 2),
-              left: BorderSide(color: CoconutColors.primary, width: 2),
-              right: BorderSide(color: CoconutColors.primary, width: 2),
+              top: BorderSide(color: CoconutColors.gray750, width: 2),
+              left: BorderSide(color: CoconutColors.gray750, width: 2),
+              right: BorderSide(color: CoconutColors.gray750, width: 2),
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 12),
               Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildButton('assets/svg/lock.svg', CoconutColors.primary, onLock),
-                  _buildButton(null, null, onSend, child: Text('보내기')),
                   _buildButton('assets/svg/unlock.svg', CoconutColors.red, onUnlock),
                 ],
               ),
@@ -59,10 +58,10 @@ class SelectedUtxosBottomSheet extends StatelessWidget {
             backgroundColor: CoconutColors.gray900,
             elevation: 0,
             shape: const CircleBorder(),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(8),
           ),
           child: child ??
-              SvgPicture.asset(iconPath!, width: 75, height: 75, color: iconColor),
+              SvgPicture.asset(iconPath!, width: 70, height: 70, color: iconColor),
         ),
       ),
     );

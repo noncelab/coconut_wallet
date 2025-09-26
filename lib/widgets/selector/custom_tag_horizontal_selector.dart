@@ -9,6 +9,7 @@ class CustomTagHorizontalSelector extends StatefulWidget {
   final List<String> tags;
   final String selectedName;
   final bool showDefaultTags;
+  final bool hideBalance;
   final Function(String) onSelectedTag;
   final ScrollPhysics? scrollPhysics;
   const CustomTagHorizontalSelector({
@@ -17,6 +18,7 @@ class CustomTagHorizontalSelector extends StatefulWidget {
     required this.selectedName,
     required this.onSelectedTag,
     this.showDefaultTags = true,
+    this.hideBalance = false,
     this.scrollPhysics = const AlwaysScrollableScrollPhysics(),
   });
 
@@ -59,6 +61,7 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
                   index <= 2 ? _tags[index] : '#$name',
                   widget.selectedName == name,
                   index <= 2,
+                  widget.hideBalance,
                 ),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
@@ -69,20 +72,43 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
     );
   }
 
-  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
+  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag, bool hideBalance) {
+    Color bgColor;
+    Color textColor;
+    
+    if (hideBalance) {
+      // hideBalance가 true일 때
+      if (isSelected) {
+        bgColor = CoconutColors.primary;
+        textColor = CoconutColors.black;
+      } else {
+        bgColor = CoconutColors.gray800;
+        textColor = CoconutColors.white;
+      }
+    } else {
+      // hideBalance가 false일 때
+      if (isSelected) {
+        bgColor = CoconutColors.white;
+        textColor = CoconutColors.gray800;
+      } else {
+        bgColor = CoconutColors.gray800;
+        textColor = CoconutColors.white;
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       margin: const EdgeInsets.only(right: 4),
       height: 32,
       decoration: BoxDecoration(
-        color: isSelected ? CoconutColors.white : CoconutColors.gray800,
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: FittedBox(
         child: Text(
           name,
           style: CoconutTypography.body3_12_Number.copyWith(
-            color: isSelected ? CoconutColors.gray800 : CoconutColors.white,
+            color: textColor,
             height: 1.3,
             fontWeight: isFixedTag
                 ? FontWeight.w400
