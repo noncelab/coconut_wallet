@@ -9,7 +9,7 @@ class CustomTagHorizontalSelector extends StatefulWidget {
   final List<String> tags;
   final String selectedName;
   final bool showDefaultTags;
-  final bool hideBalance;
+  final bool settingLock;
   final Function(String) onSelectedTag;
   final ScrollPhysics? scrollPhysics;
   const CustomTagHorizontalSelector({
@@ -18,7 +18,7 @@ class CustomTagHorizontalSelector extends StatefulWidget {
     required this.selectedName,
     required this.onSelectedTag,
     this.showDefaultTags = true,
-    this.hideBalance = false,
+    required this.settingLock,
     this.scrollPhysics = const AlwaysScrollableScrollPhysics(),
   });
 
@@ -61,7 +61,7 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
                   index <= 2 ? _tags[index] : '#$name',
                   widget.selectedName == name,
                   index <= 2,
-                  widget.hideBalance,
+                  widget.settingLock,
                 ),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
@@ -72,28 +72,16 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
     );
   }
 
-  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag, bool hideBalance) {
+  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag, bool settingLock) {
     Color bgColor;
     Color textColor;
     
-    if (hideBalance) {
-      // hideBalance가 true일 때
-      if (isSelected) {
-        bgColor = CoconutColors.primary;
-        textColor = CoconutColors.black;
-      } else {
-        bgColor = CoconutColors.gray800;
-        textColor = CoconutColors.white;
-      }
+    if (settingLock) {
+      bgColor = isSelected ? CoconutColors.primary : CoconutColors.gray800;
+      textColor = isSelected ? CoconutColors.black : CoconutColors.white;
     } else {
-      // hideBalance가 false일 때
-      if (isSelected) {
-        bgColor = CoconutColors.white;
-        textColor = CoconutColors.gray800;
-      } else {
-        bgColor = CoconutColors.gray800;
-        textColor = CoconutColors.white;
-      }
+      bgColor = isSelected ? CoconutColors.white : CoconutColors.gray800;
+      textColor = isSelected ? CoconutColors.gray800 : CoconutColors.white;
     }
 
     return Container(

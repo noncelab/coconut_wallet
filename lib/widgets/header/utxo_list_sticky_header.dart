@@ -23,7 +23,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final Function onTapDropdown;
   final Function removePopup;
   final BitcoinUnit currentUnit;
-  final bool hideBalance;
+  final bool settingLock;
 
   const UtxoListStickyHeader({
     super.key,
@@ -39,7 +39,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.onTapDropdown,
     required this.removePopup,
     required this.currentUnit,
-    this.hideBalance = false,
+    this.settingLock = false,
   });
 
   @override
@@ -86,7 +86,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                if (!hideBalance) ...[
+                                if (!settingLock) ...[
                                   AnimatedBalance(
                                     prevValue: animatedBalanceData.previous,
                                     value: animatedBalanceData.current,
@@ -182,7 +182,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                             onSelectedTag: (tagName) {
                               viewModel.setSelectedUtxoTagName(tagName);
                             },
-                            hideBalance: hideBalance,
+                            settingLock: settingLock,
                             scrollPhysics: const AlwaysScrollableScrollPhysics(),
                           ),
                           CoconutLayout.spacing_300h,
