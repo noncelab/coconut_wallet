@@ -550,11 +550,16 @@ class _UtxoListState extends State<UtxoList> {
 
       final initialSelected = widget.settingLock && belongsToTag;
 
-      return _buildUtxoItem(
-        utxo,
-        animation,
-        index == utxoList.length - 1,
-        initialSelected,
+      return Padding(
+        padding: const EdgeInsets.only(
+          bottom: 8.0, // 아이템 아래 간격
+        ),
+        child: _buildUtxoItem(
+          utxo,
+          animation,
+          index == utxoList.length - 1,
+          initialSelected,
+        ),
       );
     },
   );
