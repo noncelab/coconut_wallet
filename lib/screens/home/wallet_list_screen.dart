@@ -582,8 +582,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 return CoconutPopup(
                   title: t.wallet_list.edit.finish,
                   description: t.wallet_list.edit.unsaved_changes_confirm_exit,
-                  leftButtonText: t.cancel,
-                  rightButtonText: t.confirm,
+                  leftButtonText: t.no,
+                  rightButtonText: t.yes,
                   onTapRight: () {
                     _viewModel.setEditMode(false);
                     Navigator.pop(context);
