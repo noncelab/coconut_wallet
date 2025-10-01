@@ -26,7 +26,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/utxo_list_bottom_sheet.dart';
 
 class UtxoListScreen extends StatefulWidget {
@@ -156,18 +155,23 @@ void dispose() {
                       context: context,
                       backgroundColor: CoconutColors.black,
                       actionButtonList: [
-                        IconButton(
+                        TextButton(
                           onPressed: () {
                             setState(() {
                               _settingLock = !_settingLock;
-
-                              // settingLock이 true가 되면 태그를 "사용잠금"으로 기본 설정
-                              if (_settingLock) {
-                                  context.read<UtxoListViewModel>().setSelectedUtxoTagName('');
-                                }
+                              context
+                                .read<UtxoListViewModel>()
+                                .setSelectedUtxoTagName(_settingLock ? '' : t.all);
                             });
                           },
-                          icon: SvgPicture.asset('assets/svg/check.svg', width: 18, height: 18)
+                          child: Text(
+                            _settingLock ? t.cancel : t.select,
+                            style: const TextStyle(
+                              color: CoconutColors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         )
                       ],
                     ),
@@ -477,14 +481,14 @@ class _UtxoListState extends State<UtxoList> {
           final utxoList = data.item1;
           final selectedUtxoTagName = data.item2;
 
+          if (utxoList.isEmpty) {
+            return _buildEmptyState();
+          }
+
           if (_isListChanged(_displayedUtxoList, utxoList)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _handleUtxoListChange(utxoList);
             });
-          }
-
-          if (_displayedUtxoList.isEmpty) {
-            return _buildEmptyState();
           }
 
           return SliverPadding(
@@ -501,85 +505,77 @@ class _UtxoListState extends State<UtxoList> {
     List<UtxoState> utxoList,
     String selectedUtxoTagName,
   ) {
-  final defaultTagNameList = [
-    t.all,
-    t.utxo_detail_screen.utxo_locked,
-    t.change
-  ];
+    // settingLock이 true이고, 선택 태그가 변경된 경우 초기화
+    if (widget.settingLock && _previousSelectedTag != selectedUtxoTagName) {
+      _selectedUtxoIds.clear();
 
-  defaultTagNameList.contains(selectedUtxoTagName);
-
-  // settingLock이 true이고, 선택 태그가 변경된 경우 초기화
-  if (widget.settingLock && _previousSelectedTag != selectedUtxoTagName) {
-    _selectedUtxoIds.clear();
-
-    // all 이나 null/빈 문자열일 때는 자동선택 안 함
-    final isAllOrNone = selectedUtxoTagName == t.all || selectedUtxoTagName.isEmpty;
-    if (!isAllOrNone) {
-      for (var utxo in utxoList) {
-        final belongsToTag = _belongsToTag(utxo, selectedUtxoTagName);
-        if (belongsToTag) {
-          _selectedUtxoIds.add(utxo.utxoId);
+      // all 이나 null/빈 문자열일 때는 자동선택 안 함
+      final isAllOrNone = selectedUtxoTagName == t.all || selectedUtxoTagName.isEmpty;
+      if (!isAllOrNone) {
+        for (var utxo in utxoList) {
+          final belongsToTag = _belongsToTag(utxo, selectedUtxoTagName);
+          if (belongsToTag) {
+            _selectedUtxoIds.add(utxo.utxoId);
+          }
         }
       }
+
+      _previousSelectedTag = selectedUtxoTagName; // 업데이트
     }
 
-    _previousSelectedTag = selectedUtxoTagName; // 업데이트
+    Key listKey;
+    if (selectedUtxoTagName == t.utxo_detail_screen.utxo_locked) {
+      listKey = _lockedUtxoListKey;
+    } else if (selectedUtxoTagName == t.change) {
+      listKey = _changeUtxoListKey;
+    } else {
+      listKey = _utxoListKey;
+    }
+
+    return SliverAnimatedList(
+      key: listKey,
+      initialItemCount: _displayedUtxoList.length,
+      itemBuilder: (context, index, animation) {
+        if (index >= utxoList.length) return const SizedBox();
+        final utxo = utxoList[index];
+        final belongsToTag = _belongsToTag(utxo, selectedUtxoTagName);
+
+        if (!widget.settingLock && !belongsToTag) {
+          return const SizedBox();
+        }
+
+        final initialSelected = widget.settingLock && belongsToTag;
+
+        return Padding(
+          padding: const EdgeInsets.only(
+            bottom: 8.0, // 아이템 아래 간격
+          ),
+          child: _buildUtxoItem(
+            utxo,
+            animation,
+            index == utxoList.length - 1,
+            initialSelected,
+          ),
+        );
+      },
+    );
   }
 
-  Key listKey;
-  if (selectedUtxoTagName == t.utxo_detail_screen.utxo_locked) {
-    listKey = _lockedUtxoListKey;
-  } else if (selectedUtxoTagName == t.change) {
-    listKey = _changeUtxoListKey;
-  } else {
-    listKey = _utxoListKey;
+  bool _belongsToTag(UtxoState utxo, String? tagName) {
+    if (tagName == null || tagName.isEmpty) return false;
+
+    final matchers = {
+      t.all: true,
+      t.utxo_detail_screen.utxo_locked: utxo.status == UtxoStatus.locked,
+      t.change: utxo.isChange == true,
+    };
+
+    if (matchers.containsKey(tagName)) {
+      return matchers[tagName] == true;
+    }
+
+    return utxo.tags?.any((e) => e.name == tagName) ?? false;
   }
-
-  return SliverAnimatedList(
-    key: listKey,
-    initialItemCount: utxoList.length,
-    itemBuilder: (context, index, animation) {
-      if (index >= utxoList.length) return const SizedBox();
-      final utxo = utxoList[index];
-      final belongsToTag = _belongsToTag(utxo, selectedUtxoTagName);
-
-      if (!widget.settingLock && !belongsToTag) {
-        return const SizedBox();
-      }
-
-      final initialSelected = widget.settingLock && belongsToTag;
-
-      return Padding(
-        padding: const EdgeInsets.only(
-          bottom: 8.0, // 아이템 아래 간격
-        ),
-        child: _buildUtxoItem(
-          utxo,
-          animation,
-          index == utxoList.length - 1,
-          initialSelected,
-        ),
-      );
-    },
-  );
-}
-
-bool _belongsToTag(UtxoState utxo, String? tagName) {
-  if (tagName == null || tagName.isEmpty) return false;
-
-  final matchers = {
-    t.all: true,
-    t.utxo_detail_screen.utxo_locked: utxo.status == UtxoStatus.locked,
-    t.change: utxo.isChange == true,
-  };
-
-  if (matchers.containsKey(tagName)) {
-    return matchers[tagName] == true;
-  }
-
-  return utxo.tags?.any((e) => e.name == tagName) ?? false;
-}
 
   Widget _buildEmptyState() {
     widget.onFirstBuildCompleted();
@@ -633,43 +629,32 @@ bool _belongsToTag(UtxoState utxo, String? tagName) {
 
     setState(() {
       _displayedUtxoList = List.from(utxoList);
+    });
 
-      // settingLock = true일 때 belongsToTag만 _selectedUtxoIds 초기 세팅
-    if (widget.settingLock) {
-      final selectedTagName = context.read<UtxoListViewModel>().selectedUtxoTagName;
-      for (var utxo in _displayedUtxoList) {
-        final belongsToTag = utxo.tags?.any((e) => e.name == selectedTagName) ?? false;
-        if (belongsToTag && !_selectedUtxoIds.contains(utxo.utxoId)) {
-          _selectedUtxoIds.add(utxo.utxoId);
-        }
-      }
+    // 삭제된 인덱스 역순으로 삭제
+    for (var index in removedIndexes.reversed) {
+      if (index >= _displayedUtxoList.length) continue;
+      final removedItem = _displayedUtxoList[index];
+      await Future.delayed(_animationDuration);
+
+      _utxoListKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildRemoveUtxoItem(removedItem, animation),
+        duration: _duration,
+      );
     }
-  });
 
-  // 삭제된 인덱스 역순으로 삭제
-  for (var index in removedIndexes.reversed) {
-    if (index >= _displayedUtxoList.length) continue;
-    final removedItem = _displayedUtxoList[index];
-    await Future.delayed(_animationDuration);
+    // 삽입된 인덱스 순서대로 추가
+    for (var index in insertedIndexes) {
+      await Future.delayed(_animationDuration);
+      _utxoListKey.currentState?.insertItem(index, duration: _duration);
+    }
 
-    _utxoListKey.currentState?.removeItem(
-      index,
-      (context, animation) => _buildRemoveUtxoItem(removedItem, animation),
-      duration: _duration,
-    );
+    _isListLoading = false;
+    if (isFirstLoad) {
+      widget.onFirstBuildCompleted();
+    }
   }
-
-  // 삽입된 인덱스 순서대로 추가
-  for (var index in insertedIndexes) {
-    await Future.delayed(_animationDuration);
-    _utxoListKey.currentState?.insertItem(index, duration: _duration);
-  }
-
-  _isListLoading = false;
-  if (isFirstLoad) {
-    widget.onFirstBuildCompleted();
-  }
-}
 
   Widget _buildRemoveUtxoItem(UtxoState utxo, Animation<double> animation) {
     var offsetAnimation = AnimationUtil.buildSlideOutAnimation(animation);
@@ -724,7 +709,7 @@ bool _belongsToTag(UtxoState utxo, String? tagName) {
               decoration: BoxDecoration(
                 border: isSelected && settingLock
                     ? Border.all(color: CoconutColors.primary, width: 2)
-                    : Border.all(color: CoconutColors.gray900, width: 2),
+                    : Border.all(color: CoconutColors.gray750, width: 2),
                 borderRadius: BorderRadius.circular(12),
                 color: CoconutColors.gray900,
               ),
@@ -835,11 +820,11 @@ bool _belongsToTag(UtxoState utxo, String? tagName) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      widget.settingLock ? _openBottomSheetIfNeeded() : _closeBottomSheetIfNeeded();
+      widget.settingLock ? _openBottomSheet() : _closeBottomSheet();
     });
   }
 
-  void _openBottomSheetIfNeeded() {
+  void _openBottomSheet() {
     if (_bottomSheetController != null) return;
 
     _bottomSheetController = Scaffold.of(context).showBottomSheet(
@@ -855,7 +840,7 @@ bool _belongsToTag(UtxoState utxo, String? tagName) {
     });
   }
 
-  void _closeBottomSheetIfNeeded() {
+  void _closeBottomSheet() {
     if (_bottomSheetController == null) return;
 
     final controller = _bottomSheetController;
