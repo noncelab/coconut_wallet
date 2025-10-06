@@ -20,38 +20,28 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
     final double qrSize = MediaQuery.of(context).size.width * 275 / 375;
 
     return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 36),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (widget.qrcodeTopWidget != null) ...[
-              widget.qrcodeTopWidget!,
-              CoconutLayout.spacing_400h,
+      padding: const EdgeInsets.symmetric(horizontal: 36),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_400h],
+          Stack(
+            children: [
+              Container(
+                width: qrSize,
+                height: qrSize,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+                  color: CoconutColors.white,
+                ),
+              ),
+              QrImageView(data: widget.qrData, version: QrVersions.auto, size: qrSize),
             ],
-            Stack(
-              children: [
-                Container(
-                  width: qrSize,
-                  height: qrSize,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-                    color: CoconutColors.white,
-                  ),
-                ),
-                QrImageView(
-                  data: widget.qrData,
-                  version: QrVersions.auto,
-                  size: qrSize,
-                ),
-              ],
-            ),
-            CoconutLayout.spacing_600h,
-            CopyTextContainer(
-              text: widget.qrData,
-              textStyle: CoconutTypography.body2_14,
-              isAddress: widget.isAddress,
-            ),
-          ],
-        ));
+          ),
+          CoconutLayout.spacing_600h,
+          CopyTextContainer(text: widget.qrData, textStyle: CoconutTypography.body2_14, isAddress: widget.isAddress),
+        ],
+      ),
+    );
   }
 }

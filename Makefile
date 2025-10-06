@@ -1,5 +1,5 @@
 format:
-	fvm dart format . --line-length 100
+	fvm dart format . --line-length 120
 
 ready:
 	fvm dart run build_runner clean && fvm dart run build_runner build --delete-conflicting-outputs && fvm dart run realm generate && fvm flutter pub run slang

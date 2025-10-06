@@ -37,8 +37,7 @@ class RealmDebugViewModel extends ChangeNotifier {
 
   List<String> get availableTables => RealmDebugService.availableTables;
 
-  RealmDebugViewModel(RealmManager realmManager)
-      : _realmDebugService = RealmDebugService(realmManager: realmManager);
+  RealmDebugViewModel(RealmManager realmManager) : _realmDebugService = RealmDebugService(realmManager: realmManager);
 
   /// 선택된 테이블 변경
   Future<void> changeSelectedTable(String tableName) async {
@@ -154,9 +153,7 @@ class RealmDebugViewModel extends ChangeNotifier {
       throw Exception('내보낼 데이터가 없습니다');
     }
 
-    final query = _enableSort && _selectedSortField.isNotEmpty
-        ? buildFinalQuery('TRUEPREDICATE')
-        : 'TRUEPREDICATE';
+    final query = _enableSort && _selectedSortField.isNotEmpty ? buildFinalQuery('TRUEPREDICATE') : 'TRUEPREDICATE';
 
     final jsonString = _realmDebugService.exportToJson(_selectedTable, query, _queryResults);
 

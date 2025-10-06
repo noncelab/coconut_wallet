@@ -67,10 +67,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
           position: CurvedAnimation(
             parent: animation,
             curve: Curves.easeInOut,
-          ).drive(Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: const Offset(0, 0),
-          )),
+          ).drive(Tween<Offset>(begin: const Offset(0, 1), end: const Offset(0, 0))),
           child: child,
         );
       },
@@ -148,8 +145,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
 
       if (pinConfirm.length == pin.length) {
         if (pinConfirm != pin) {
-          returnToBackSequence(t.errors.pin_setting_error.incorrect,
-              isError: true, firstSequence: true);
+          returnToBackSequence(t.errors.pin_setting_error.incorrect, isError: true, firstSequence: true);
           return;
         }
 
@@ -171,8 +167,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
             Navigator.pop(context); // Close PIN setting screen
           }
         } catch (e) {
-          returnToBackSequence(t.errors.pin_setting_error.save_failed,
-              isError: true, firstSequence: true);
+          returnToBackSequence(t.errors.pin_setting_error.save_failed, isError: true, firstSequence: true);
         }
       }
     }
