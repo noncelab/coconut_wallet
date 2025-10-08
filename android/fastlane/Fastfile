@@ -25,13 +25,12 @@ def version_tuple_for(platform:, flavor:)
   return marketing, build
 end
 
-# pubspec.yaml의 특정 키(aos_regtest 등)만 빌드넘버 +1 (주석/포맷 보존)
+# pubspec.yaml의 특정 키(aos_regtest 등)만 빌드넘버 +1
 def update_pubspec_build_number(platform:, flavor:, marketing:, old_build:, new_build:)
   yml_path = File.join(ROOT_DIR, "pubspec.yaml")
   text = File.read(yml_path)
 
   key = "#{platform}_#{flavor}:"
-  # 예: "  aos_regtest: 3.3.1+49"
   pattern = /^(\s*#{Regexp.escape(key)}\s*)(\d+\.\d+\.\d+)\+(\d+)/
 
   replaced = text.gsub(pattern) do
@@ -49,33 +48,49 @@ def update_pubspec_build_number(platform:, flavor:, marketing:, old_build:, new_
   end
 end
 
-# AAB 경로 찾기 (flavor Release 산출물)
 def find_latest_aab(flavor:)
   Dir[File.join(ROOT_DIR, "build/app/outputs/bundle/#{flavor}Release/*.aab")].max_by { |f| File.mtime(f) }
+end
+
+# 문자열/불리언을 안전하게 true/false로 판별
+def truthy?(v)
+  case v
+  when true, "true", "1", 1, "yes", "y", :true then true
+  else false
+  end
 end
 
 # ---------- Lanes ----------
 platform :android do
   desc "Release Android REGTEST to Play (pubspec에서 읽고, 성공 시 build +1)"
-  lane :release_android_regtest do
+  lane :release_android_regtest do |opts|
+    opts ||= {}
     platform_ = "aos"
     flavor    = "regtest"
-    package   = "onl.coconut.wallet.regtest"  # ← regtest 패키지명
+    package   = "onl.coconut.wallet.regtest"
 
-    # 1) 버전 읽기
+    # 명령어 옵션 또는 환경변수 기반으로 스킵 여부 제어
+    skip_prep   = truthy?(opts[:skip_prep]   || ENV["SKIP_PREP"])
+    skip_clean  = truthy?(opts[:skip_clean]  || ENV["SKIP_CLEAN"])
+    skip_pubget = truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
+
+    UI.message("skip_prep=#{skip_prep}, skip_clean=#{skip_clean}, skip_pubget=#{skip_pubget}")
+
     marketing, old_build = version_tuple_for(platform: platform_, flavor: flavor)
     new_build = old_build + 1
     UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
 
     begin
-      # (선택) Fastlane 기본 package_name(Appfile)을 override
       ENV["SUPPLY_PACKAGE_NAME"] = package
 
-      # 2) Flutter 빌드 (AAB)
+      # 준비 명령어 조건부 실행
+      prep_cmds = []
+      prep_cmds << "fvm flutter clean" unless skip_prep || skip_clean
+      prep_cmds << "fvm flutter pub get" unless skip_prep || skip_pubget
+
       sh %Q{
         cd #{ROOT_DIR} &&
-        fvm flutter clean &&
-        fvm flutter pub get &&
+        #{prep_cmds.empty? ? "true" : prep_cmds.join(" &&\n      ")} &&
         fvm flutter build appbundle \
           --flavor #{flavor} \
           --release \
@@ -83,61 +98,9 @@ platform :android do
           --build-number=#{new_build}
       }
 
-      # 3) 산출물 찾기
       aab_path = find_latest_aab(flavor: flavor)
       UI.user_error!("AAB not found for flavor #{flavor}") unless aab_path
       UI.message("✅ AAB: #{aab_path}")
-
-      # 4) 업로드 (Google Play API: Appfile의 json_key_file 사용)
-      upload_to_play_store(
-        aab: aab_path,
-        track: "internal",
-        skip_upload_images: true,
-        skip_upload_screenshots: true
-      )
-
-      # 5) 빌드 성공 시 pubspec.yaml 업데이트
-      update_pubspec_build_number(
-        platform: platform_,
-        flavor: flavor,
-        marketing: marketing,
-        old_build: old_build,
-        new_build: new_build
-      )
-    rescue => e
-      UI.error("❌ Android build/upload failed: #{e.message}")
-      UI.important("pubspec.yaml was not updated because build failed.")
-      raise
-    end
-  end
-
-  # (옵션) mainnet용도 미리 틀만 제공
-  desc "Release Android MAINNET to Play (internal)"
-  lane :release_android_mainnet do
-    platform_ = "aos"
-    flavor    = "mainnet"
-    package   = "onl.coconut.wallet"  # ← mainnet 패키지명
-
-    marketing, old_build = version_tuple_for(platform: platform_, flavor: flavor)
-    new_build = old_build + 1
-    UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
-
-    begin
-      ENV["SUPPLY_PACKAGE_NAME"] = package
-
-      sh %Q{
-        cd #{ROOT_DIR} &&
-        fvm flutter clean &&
-        fvm flutter pub get &&
-        fvm flutter build appbundle \
-          --flavor #{flavor} \
-          --release \
-          --build-name="#{marketing}" \
-          --build-number=#{new_build}
-      }
-
-      aab_path = find_latest_aab(flavor: flavor)
-      UI.user_error!("AAB not found for flavor #{flavor}") unless aab_path
 
       upload_to_play_store(
         aab: aab_path,
