@@ -17,10 +17,7 @@ class _ShimmerTextState extends State<ShimmerText> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: false);
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat(reverse: false);
 
     _animation = Tween<double>(begin: -5.0, end: 5.0).animate(_controller);
   }
@@ -45,10 +42,7 @@ class _ShimmerTextState extends State<ShimmerText> with SingleTickerProviderStat
               end: Alignment(1.0 + _animation.value, 0),
             ).createShader(bounds);
           },
-          child: Text(
-            widget.text,
-            style: widget.textStyle,
-          ),
+          child: Text(widget.text, style: widget.textStyle),
         );
       },
     );

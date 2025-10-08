@@ -22,8 +22,7 @@ class ErrorCodes {
   static AppError fetchWalletError = AppError('1005', t.errors.fetch_wallet_error);
   static AppError walletSyncFailedError = AppError('1006', t.errors.wallet_sync_failed_error);
   static AppError fetchBalanceError = AppError('1007', t.errors.fetch_balance_error);
-  static AppError fetchTransactionListError =
-      AppError('1008', t.errors.fetch_transaction_list_error);
+  static AppError fetchTransactionListError = AppError('1008', t.errors.fetch_transaction_list_error);
   static AppError fetchTransactionsError = AppError('1009', t.errors.fetch_transactions_error);
   static AppError databasePathError = AppError('1010', t.errors.database_path_error);
   static AppError feeEstimationError = AppError('1100', t.errors.fee_estimation_error);
@@ -33,6 +32,5 @@ class ErrorCodes {
   static AppError nodeUnknown = AppError('1300', t.errors.node_unknown);
   static AppError nodeIsolateError = AppError('1301', t.errors.node_unknown);
   static AppError broadcastError = AppError('1302', t.errors.broadcast_error);
-  static AppError broadcastErrorWithMessage(String message) =>
-      ErrorCodes.withMessage(broadcastError, message);
+  static AppError broadcastErrorWithMessage(String message) => ErrorCodes.withMessage(broadcastError, message);
 }

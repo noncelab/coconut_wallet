@@ -29,15 +29,19 @@ class WalletUpdateInfo {
   @override
   int get hashCode => Object.hash(walletId, subscription, balance, utxo, transaction);
 
-  factory WalletUpdateInfo.fromExisting(WalletUpdateInfo existingInfo,
-      {WalletSyncState? subscription,
-      WalletSyncState? balance,
-      WalletSyncState? transaction,
-      WalletSyncState? utxo}) {
-    return WalletUpdateInfo(existingInfo.walletId,
-        subscription: subscription ?? existingInfo.subscription,
-        balance: balance ?? existingInfo.balance,
-        transaction: transaction ?? existingInfo.transaction,
-        utxo: utxo ?? existingInfo.utxo);
+  factory WalletUpdateInfo.fromExisting(
+    WalletUpdateInfo existingInfo, {
+    WalletSyncState? subscription,
+    WalletSyncState? balance,
+    WalletSyncState? transaction,
+    WalletSyncState? utxo,
+  }) {
+    return WalletUpdateInfo(
+      existingInfo.walletId,
+      subscription: subscription ?? existingInfo.subscription,
+      balance: balance ?? existingInfo.balance,
+      transaction: transaction ?? existingInfo.transaction,
+      utxo: utxo ?? existingInfo.utxo,
+    );
   }
 }

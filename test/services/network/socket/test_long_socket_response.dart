@@ -130,7 +130,7 @@ List<String> longSocketResponseValue = [
   '"02d2352cc91bd7f4b9935323bd8e586c6fe6b3f9a91c59d5a82d3499cd343d73c1"],"vout":1}],"vout":[{"n":0,"scriptPubKey":',
   '{"address":"bcrt1qgqwe306nngrq3az463sax2arry5qlcme6aeqra","asm":"0 401d98bf539a0608f455d461d32ba319280fe379",',
   '"desc":"addr(bcrt1qgqwe306nngrq3az463sax2arry5qlcme6aeqra)#gvnsds70","hex":"0014401d98bf539a0608f455d461d32ba319280fe379",',
-  '"type":"witness_v0_keyhash"},"value":1.0}],"vsize":1803,"weight":7212}}'
+  '"type":"witness_v0_keyhash"},"value":1.0}],"vsize":1803,"weight":7212}}',
 ];
 
 String unconfirmedTransactionVerboseResponse = '''{

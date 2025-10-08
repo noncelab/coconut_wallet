@@ -28,7 +28,7 @@ def getFlavor() {
         return "regtest"
     } else if (taskNames.any { it.toLowerCase().contains("mainnet")}) {
         return "mainnet"
-    }
+    } 
     throw GradleException("❌ build flavor를 추론할 수 없습니다. taskNames: ${taskNames}")
 }
 def flavor = getFlavor()
@@ -48,7 +48,7 @@ if (flavor == "mainnet") {
 
 android {
     namespace "onl.coconut.wallet"
-    compileSdk 35
+    compileSdk 36
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -67,7 +67,7 @@ android {
     defaultConfig {
         applicationId "onl.coconut.wallet"
         minSdkVersion 23
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

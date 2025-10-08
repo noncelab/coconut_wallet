@@ -19,42 +19,30 @@ class StatisticsSection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '테이블 통계',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('테이블 통계', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               viewModel.isLoading
                   ? Row(
-                      children: [
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '통계 정보 로딩 중...',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    )
+                    children: [
+                      const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      const SizedBox(width: 8),
+                      Text(
+                        '통계 정보 로딩 중...',
+                        style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  )
                   : Wrap(
-                      spacing: 16,
-                      runSpacing: 4,
-                      children: viewModel.getTableStatistics().entries.map((entry) {
-                        return Text(
-                          '${entry.key}: ${entry.value}개',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        );
-                      }).toList(),
-                    ),
+                    spacing: 16,
+                    runSpacing: 4,
+                    children:
+                        viewModel.getTableStatistics().entries.map((entry) {
+                          return Text(
+                            '${entry.key}: ${entry.value}개',
+                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          );
+                        }).toList(),
+                  ),
             ],
           ),
         );

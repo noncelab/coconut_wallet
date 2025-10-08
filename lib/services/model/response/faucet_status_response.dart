@@ -18,8 +18,7 @@ class FaucetStatusResponse {
     this.minLimit = 0,
   });
 
-  factory FaucetStatusResponse.fromJson(Map<String, dynamic> json) =>
-      _$FaucetStatusResponseFromJson(json);
+  factory FaucetStatusResponse.fromJson(Map<String, dynamic> json) => _$FaucetStatusResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$FaucetStatusResponseToJson(this);
 

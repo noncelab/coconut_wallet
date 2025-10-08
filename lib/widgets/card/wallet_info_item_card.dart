@@ -77,24 +77,28 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-          border: isMultisig ? null : Border.all(color: CoconutColors.gray700, width: 1),
-          gradient: isMultisig
-              ? LinearGradient(
+        borderRadius: BorderRadius.circular(14), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+        border: isMultisig ? null : Border.all(color: CoconutColors.gray700, width: 1),
+        gradient:
+            isMultisig
+                ? LinearGradient(
                   colors: ColorUtil.getGradientColors(signers!),
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  transform: const GradientRotation(math.pi / 10))
-              : null),
+                  transform: const GradientRotation(math.pi / 10),
+                )
+                : null,
+      ),
       child: Container(
         margin: isMultisig ? const EdgeInsets.all(2) : null, // 멀티시그의 경우 border 대신
         padding: const EdgeInsets.all(20),
-        decoration: isMultisig
-            ? BoxDecoration(
-                color: CoconutColors.black,
-                borderRadius: BorderRadius.circular(12), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-              )
-            : null,
+        decoration:
+            isMultisig
+                ? BoxDecoration(
+                  color: CoconutColors.black,
+                  borderRadius: BorderRadius.circular(12), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+                )
+                : null,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -146,50 +150,46 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       return ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 120,
-                        ),
+                        constraints: const BoxConstraints(maxWidth: 120),
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerRight,
                           child: Text(
-                            rightText.replaceAllMapped(
-                                RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
-                            style: CoconutTypography.heading4_18_NumberBold
-                                .setColor(CoconutColors.white),
+                            rightText.replaceAllMapped(RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
+                            style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
                           ),
                         ),
                       );
                     },
                   ),
-                LayoutBuilder(builder: (context, constraints) {
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 120,
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: TooltipButton(
-                        isSelected: false,
-                        text: tooltipText,
-                        isLeft: true,
-                        iconKey: widget.tooltipKey,
-                        containerMargin: EdgeInsets.zero,
-                        containerPadding: EdgeInsets.zero,
-                        iconMargin: const EdgeInsets.only(left: 4),
-                        onTap: () {
-                          widget.onTooltipClicked();
-                        },
-                        onTapDown: (details) {
-                          widget.onTooltipClicked();
-                        },
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: TooltipButton(
+                          isSelected: false,
+                          text: tooltipText,
+                          isLeft: true,
+                          iconKey: widget.tooltipKey,
+                          containerMargin: EdgeInsets.zero,
+                          containerPadding: EdgeInsets.zero,
+                          iconMargin: const EdgeInsets.only(left: 4),
+                          onTap: () {
+                            widget.onTooltipClicked();
+                          },
+                          onTapDown: (details) {
+                            widget.onTooltipClicked();
+                          },
+                        ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  },
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -203,10 +203,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => WalletInfoEditBottomSheet(
-        id: widget.id,
-        walletImportSource: walletImportSource,
-      ),
+      builder: (context) => WalletInfoEditBottomSheet(id: widget.id, walletImportSource: walletImportSource),
     ).then((result) {
       if (result != null) {
         var ellipsisName = result.length > 10 ? '${result.substring(0, 7)}...' : result;
@@ -234,25 +231,23 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             child: Container(
               padding: const EdgeInsets.all(4.3),
               decoration: BoxDecoration(
-                  color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
-                  shape: BoxShape.circle,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: CoconutColors.gray900,
-                      offset: Offset(2, 2),
-                      blurRadius: 10,
-                      spreadRadius: 0,
-                    ),
-                  ]),
+                color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(color: CoconutColors.gray900, offset: Offset(2, 2), blurRadius: 10, spreadRadius: 0),
+                ],
+              ),
               child: Container(
                 padding: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
                   color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
                   shape: BoxShape.circle,
                 ),
-                child: SvgPicture.asset('assets/svg/edit-outlined.svg',
-                    width: 10,
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn)),
+                child: SvgPicture.asset(
+                  'assets/svg/edit-outlined.svg',
+                  width: 10,
+                  colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                ),
               ),
             ),
           ),

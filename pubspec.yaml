@@ -16,14 +16,12 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-# iOS
-# version: 3.3.1+1
-# AOS
-version: 3.3.1+49
-# iOS Mainnet
-#version: 0.4.5+1
-# AOS Mainnet
-# version: 0.4.5+34
+version: 0.4.6+1
+app_versions:
+  ios_regtest: 3.3.1+2
+  ios_mainnet: 0.4.6+1
+  aos_regtest: 3.3.1+49
+  aos_mainnet: 0.4.6+36
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -75,8 +73,8 @@ dependencies:
   package_info_plus: ^8.0.1
   realm: ^20.0.0
   cryptography: ^2.7.0
-  slang: ^4.4.1
-  slang_flutter: ^4.4.0
+  slang: ^4.7.0
+  slang_flutter: ^4.7.0
   async: ^2.11.0
   decimal: ^3.0.2
   tuple: ^2.0.2
@@ -84,16 +82,13 @@ dependencies:
   ur:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
-  #firebase_core: ^3.4.0
-  #firebase_analytics: ^11.3.0
-  coconut_design_system:
-    git:
-      url: https://github.com/noncelab/coconut_design_system.git
-      ref: main
+  coconut_design_system: ^0.9.5
   coconut_lib: 1.0.1
   base32: ^2.1.3
   share_plus: ^10.0.0
   mobile_scanner: 7.0.1
+  #firebase_core: ^3.15.2
+  #firebase_analytics: ^11.6.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2

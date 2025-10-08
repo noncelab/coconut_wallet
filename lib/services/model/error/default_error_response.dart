@@ -7,13 +7,9 @@ class DefaultErrorResponse {
   final String error;
   final String message;
 
-  DefaultErrorResponse({
-    this.error = '',
-    this.message = '',
-  });
+  DefaultErrorResponse({this.error = '', this.message = ''});
 
-  factory DefaultErrorResponse.fromJson(Map<String, dynamic> json) =>
-      _$DefaultErrorResponseFromJson(json);
+  factory DefaultErrorResponse.fromJson(Map<String, dynamic> json) => _$DefaultErrorResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$DefaultErrorResponseToJson(this);
 }

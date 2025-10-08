@@ -16,26 +16,13 @@ void main() {
   late RealmWalletBase realmWalletBase;
   const int testWalletId = 1;
 
-  List<WalletAddress> createTestAddresses({
-    required bool isChange,
-    required int startIndex,
-  }) {
+  List<WalletAddress> createTestAddresses({required bool isChange, required int startIndex}) {
     return List.generate(20, (index) {
       final addressIndex = startIndex + index;
       final address = testWalletItem.walletBase.getAddress(addressIndex, isChange: isChange);
-      final derivationPath =
-          '${testWalletItem.walletBase.derivationPath}${isChange ? '/1' : '/0'}/$addressIndex';
+      final derivationPath = '${testWalletItem.walletBase.derivationPath}${isChange ? '/1' : '/0'}/$addressIndex';
 
-      return WalletAddress(
-        address,
-        derivationPath,
-        addressIndex,
-        isChange,
-        false,
-        0,
-        0,
-        0,
-      );
+      return WalletAddress(address, derivationPath, addressIndex, isChange, false, 0, 0, 0);
     });
   }
 
@@ -44,42 +31,37 @@ void main() {
   setUp(() async {
     realmManager = await setupTestRealmManager();
     realmWalletBase = RealmWalletBase(
-        testWalletItem.id,
-        testWalletItem.colorIndex,
-        testWalletItem.iconIndex,
-        testWalletItem.descriptor,
-        testWalletItem.name,
-        WalletType.singleSignature.name);
+      testWalletItem.id,
+      testWalletItem.colorIndex,
+      testWalletItem.iconIndex,
+      testWalletItem.descriptor,
+      testWalletItem.name,
+      WalletType.singleSignature.name,
+    );
     addressRepository = AddressRepository(realmManager);
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
       realmManager.realm.add(realmWalletBase);
     });
 
-    final initialAddresses = createTestAddresses(
-      isChange: false,
-      startIndex: 0,
-    );
-    initialAddresses.addAll(
-      createTestAddresses(
-        isChange: true,
-        startIndex: 0,
-      ),
-    );
+    final initialAddresses = createTestAddresses(isChange: false, startIndex: 0);
+    initialAddresses.addAll(createTestAddresses(isChange: true, startIndex: 0));
     realmManager.realm.write(() {
       realmManager.realm.addAll<RealmWalletAddress>([
-        ...initialAddresses.map((address) => RealmWalletAddress(
-              getWalletAddressId(testWalletId, address.index, address.address),
-              testWalletId,
-              address.address,
-              address.index,
-              address.isChange,
-              address.derivationPath,
-              false,
-              0,
-              0,
-              0,
-            )),
+        ...initialAddresses.map(
+          (address) => RealmWalletAddress(
+            getWalletAddressId(testWalletId, address.index, address.address),
+            testWalletId,
+            address.address,
+            address.index,
+            address.isChange,
+            address.derivationPath,
+            false,
+            0,
+            0,
+            0,
+          ),
+        ),
       ]);
     });
   });
@@ -111,9 +93,7 @@ void main() {
       );
 
       // Then
-      final savedAddresses = realmManager.realm.query<RealmWalletAddress>(
-        'walletId == $testWalletId',
-      );
+      final savedAddresses = realmManager.realm.query<RealmWalletAddress>('walletId == $testWalletId');
       expect(savedAddresses.length, equals(40));
     });
 
@@ -126,10 +106,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = 19;
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 200,
-      );
+      final testAddresses = createTestAddresses(isChange: false, startIndex: 200);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -139,9 +116,7 @@ void main() {
       );
 
       // Then
-      final savedAddresses = realmManager.realm.query<RealmWalletAddress>(
-        'walletId == $testWalletId',
-      );
+      final savedAddresses = realmManager.realm.query<RealmWalletAddress>('walletId == $testWalletId');
       expect(savedAddresses.length, equals(40));
     });
 
@@ -154,10 +129,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = 19;
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 21,
-      );
+      final testAddresses = createTestAddresses(isChange: false, startIndex: 21);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -167,9 +139,7 @@ void main() {
       );
 
       // Then
-      final savedAddresses = realmManager.realm.query<RealmWalletAddress>(
-        'walletId == $testWalletId',
-      );
+      final savedAddresses = realmManager.realm.query<RealmWalletAddress>('walletId == $testWalletId');
       expect(savedAddresses.length, equals(40));
     });
 
@@ -182,10 +152,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = 19;
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 18,
-      );
+      final testAddresses = createTestAddresses(isChange: false, startIndex: 18);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -209,10 +176,7 @@ void main() {
         realmWalletBase.generatedReceiveIndex = 19;
         realmWalletBase.generatedChangeIndex = 19;
       });
-      final testAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 20,
-      );
+      final testAddresses = createTestAddresses(isChange: false, startIndex: 20);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -222,10 +186,10 @@ void main() {
       );
 
       // Then
-      final savedAddresses = realmManager.realm.query<RealmWalletAddress>(
-        r'walletId == $0 AND isChange == $1',
-        [testWalletId, false],
-      );
+      final savedAddresses = realmManager.realm.query<RealmWalletAddress>(r'walletId == $0 AND isChange == $1', [
+        testWalletId,
+        false,
+      ]);
 
       expect(savedAddresses.length, equals(40));
 
@@ -248,14 +212,8 @@ void main() {
       });
 
       // receive와 change 주소를 섞어서 전달
-      final receiveAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 20,
-      );
-      final changeAddresses = createTestAddresses(
-        isChange: true,
-        startIndex: 20,
-      );
+      final receiveAddresses = createTestAddresses(isChange: false, startIndex: 20);
+      final changeAddresses = createTestAddresses(isChange: true, startIndex: 20);
       final mixedAddresses = [...receiveAddresses, ...changeAddresses];
 
       // When - receive 주소만 저장하도록 요청
@@ -288,14 +246,8 @@ void main() {
       });
 
       // receive와 change 주소를 섞어서 전달
-      final receiveAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 20,
-      );
-      final changeAddresses = createTestAddresses(
-        isChange: true,
-        startIndex: 20,
-      );
+      final receiveAddresses = createTestAddresses(isChange: false, startIndex: 20);
+      final changeAddresses = createTestAddresses(isChange: true, startIndex: 20);
       final mixedAddresses = [...receiveAddresses, ...changeAddresses];
 
       // When - change 주소만 저장하도록 요청
@@ -328,10 +280,7 @@ void main() {
       });
 
       // change 주소만 생성
-      final changeAddresses = createTestAddresses(
-        isChange: true,
-        startIndex: 20,
-      );
+      final changeAddresses = createTestAddresses(isChange: true, startIndex: 20);
 
       // When - receive 주소만 저장하도록 요청 (change 주소는 필터링됨)
       await addressRepository.addAddressesWithGapLimit(
@@ -356,10 +305,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = 19;
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 20,
-      );
+      final testAddresses = createTestAddresses(isChange: false, startIndex: 20);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -393,10 +339,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = 19;
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 199,
-      );
+      final testAddresses = createTestAddresses(isChange: false, startIndex: 199);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -410,8 +353,7 @@ void main() {
         'walletId == $testWalletId AND isChange == false',
       );
 
-      expect(savedAddresses.length, equals(21),
-          reason: '198 보다 크면서 인덱스가 200 미만인 주소 1개만 추가로 저장되어야 함');
+      expect(savedAddresses.length, equals(21), reason: '198 보다 크면서 인덱스가 200 미만인 주소 1개만 추가로 저장되어야 함');
     });
 
     test('change 주소에 대해서도 indexDifference 체크가 올바르게 동작한다', () async {
@@ -423,10 +365,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = 199; // usedChangeIndex(-1)과의 차이가 200
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: true,
-        startIndex: 200,
-      );
+      final testAddresses = createTestAddresses(isChange: true, startIndex: 200);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -452,10 +391,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = -1; // 초기 상태
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: false,
-        startIndex: 0,
-      );
+      final testAddresses = createTestAddresses(isChange: false, startIndex: 0);
 
       // When
       await addressRepository.addAddressesWithGapLimit(
@@ -489,10 +425,7 @@ void main() {
         realmWalletBase.generatedChangeIndex = 19;
       });
 
-      final testAddresses = createTestAddresses(
-        isChange: true,
-        startIndex: 20,
-      );
+      final testAddresses = createTestAddresses(isChange: true, startIndex: 20);
 
       // When
       await addressRepository.addAddressesWithGapLimit(

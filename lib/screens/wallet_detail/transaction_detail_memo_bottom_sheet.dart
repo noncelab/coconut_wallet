@@ -11,11 +11,7 @@ import 'package:flutter/material.dart';
 class MemoBottomSheet extends StatefulWidget {
   final String originalMemo;
   final Function(String) onComplete;
-  const MemoBottomSheet({
-    super.key,
-    required this.originalMemo,
-    required this.onComplete,
-  });
+  const MemoBottomSheet({super.key, required this.originalMemo, required this.onComplete});
 
   @override
   State<MemoBottomSheet> createState() => _MemoBottomSheetState();
@@ -29,8 +25,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
   String _updateMemo = '';
 
   bool get _isCompleteButtonEnabled {
-    return _updateMemo != widget.originalMemo ||
-        (widget.originalMemo.isNotEmpty && _updateMemo.isEmpty);
+    return _updateMemo != widget.originalMemo || (widget.originalMemo.isNotEmpty && _updateMemo.isEmpty);
   }
 
   @override
@@ -39,9 +34,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
     _updateMemo = widget.originalMemo;
 
     _controller.text = _updateMemo;
-    _controller.selection = TextSelection.fromPosition(
-      TextPosition(offset: _controller.text.length),
-    );
+    _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
     _focusNode.requestFocus();
   }
 
@@ -57,10 +50,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 184,
-          maxHeight: 278,
-        ),
+        constraints: const BoxConstraints(minHeight: 184, maxHeight: 278),
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: const BoxDecoration(
           color: MyColors.bottomSheetBackground,
@@ -79,18 +69,9 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: CoconutColors.white,
-                      size: 22,
-                    ),
+                    child: const Icon(Icons.close_rounded, color: CoconutColors.white, size: 22),
                   ),
-                  Text(
-                    t.tx_memo,
-                    style: Styles.body2Bold.copyWith(
-                      fontSize: 16,
-                    ),
-                  ),
+                  Text(t.tx_memo, style: Styles.body2Bold.copyWith(fontSize: 16)),
                   CustomAppbarButton(
                     isActive: _isCompleteButtonEnabled,
                     isActivePrimaryColor: false,

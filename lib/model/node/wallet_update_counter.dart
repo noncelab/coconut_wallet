@@ -11,10 +11,10 @@ class WalletUpdateCounter {
     int transactionCounter = 0,
     int utxoCounter = 0,
     int subscriptionCounter = 0,
-  })  : _subscriptionCounter = subscriptionCounter,
-        _utxoCounter = utxoCounter,
-        _transactionCounter = transactionCounter,
-        _balanceCounter = balanceCounter;
+  }) : _subscriptionCounter = subscriptionCounter,
+       _utxoCounter = utxoCounter,
+       _transactionCounter = transactionCounter,
+       _balanceCounter = balanceCounter;
 
   /// 초기화된 카운터 생성
   factory WalletUpdateCounter.initial() {

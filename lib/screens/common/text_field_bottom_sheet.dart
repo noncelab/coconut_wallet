@@ -18,17 +18,18 @@ class TextFieldBottomSheet extends StatefulWidget {
   final String Function(String)? formatInput;
   final int? maxLength;
 
-  const TextFieldBottomSheet(
-      {super.key,
-      this.originalText = '',
-      required this.onComplete,
-      this.title = '',
-      this.placeholder = '',
-      this.completeButtonText,
-      this.keyboardType = TextInputType.text,
-      this.visibleTextLimit = true,
-      this.formatInput,
-      this.maxLength});
+  const TextFieldBottomSheet({
+    super.key,
+    this.originalText = '',
+    required this.onComplete,
+    this.title = '',
+    this.placeholder = '',
+    this.completeButtonText,
+    this.keyboardType = TextInputType.text,
+    this.visibleTextLimit = true,
+    this.formatInput,
+    this.maxLength,
+  });
 
   @override
   State<TextFieldBottomSheet> createState() => _TextFieldBottomSheetState();
@@ -51,9 +52,7 @@ class _TextFieldBottomSheetState extends State<TextFieldBottomSheet> {
     _updateText = widget.originalText ?? '';
 
     _controller.text = _updateText;
-    _controller.selection = TextSelection.fromPosition(
-      TextPosition(offset: _controller.text.length),
-    );
+    _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
     _focusNode.requestFocus();
   }
 
@@ -69,10 +68,7 @@ class _TextFieldBottomSheetState extends State<TextFieldBottomSheet> {
     return Padding(
       padding: MediaQuery.of(context).viewInsets,
       child: Container(
-        constraints: const BoxConstraints(
-          minHeight: 184,
-          maxHeight: 278,
-        ),
+        constraints: const BoxConstraints(minHeight: 184, maxHeight: 278),
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
         decoration: const BoxDecoration(
           color: CoconutColors.gray900,
@@ -91,16 +87,9 @@ class _TextFieldBottomSheetState extends State<TextFieldBottomSheet> {
                     onTap: () {
                       Navigator.pop(context);
                     },
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: CoconutColors.white,
-                      size: 22,
-                    ),
+                    child: const Icon(Icons.close_rounded, color: CoconutColors.white, size: 22),
                   ),
-                  Text(
-                    widget.title,
-                    style: CoconutTypography.body1_16_Bold,
-                  ),
+                  Text(widget.title, style: CoconutTypography.body1_16_Bold),
                   CustomAppbarButton(
                     isActive: _isCompleteButtonEnabled,
                     isActivePrimaryColor: false,
