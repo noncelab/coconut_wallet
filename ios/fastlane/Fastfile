@@ -1,0 +1,135 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+# Fastfile (ios/fastlane/Fastfile)
+default_platform(:ios)
+
+require 'yaml'
+
+# ⬇️ 추가: Fastfile 파일 위치(__dir__) 기준으로 루트 계산
+ROOT_DIR = File.expand_path(File.join(__dir__, "..", ".."))
+IOS_DIR  = File.join(ROOT_DIR, "ios")
+# --- Helpers ----------------------------------------------------------
+def read_pubspec_versions
+  YAML.load_file(File.join(ROOT_DIR, "pubspec.yaml"))
+end
+# pubspec.yaml 예시:
+# version: 3.3.1+1        # (fallback)
+# app_versions:
+#   ios_regtest: 3.3.1+1
+#   ios_mainnet: 0.4.6+1
+def version_tuple_for(platform:, flavor:)
+  yml = read_pubspec_versions
+
+  # 평면 키 조합: "ios_regtest", "ios_mainnet", "aos_regtest", "aos_mainnet"
+  key = "#{platform}_#{flavor}"
+
+  # 1) 플랫폼/플레이버별 지정값 (예: app_versions.ios_regtest)
+  raw = yml.dig("app_versions", key)
+  # 2) 없으면 글로벌 기본값 (예: version: 3.3.1+1)
+  raw ||= yml["version"]
+  UI.user_error!("version string not found in pubspec.yaml for key: app_versions.#{key} (and no global 'version')") unless raw
+
+  # "x.y.z+N" 파싱
+  m = raw.to_s.match(/\A(\d+\.\d+\.\d+)\+(\d+)\z/)
+  UI.user_error!("version format must be x.y.z+build, got: #{raw}") unless m
+
+  marketing = m[1]          # "x.y.z"
+  build     = m[2].to_i     # N (정수)
+
+  return marketing, build
+end
+
+
+# ------------------------------------------
+# pubspec.yaml 업데이트 (성공 시 호출)
+def update_pubspec_build_number(platform:, flavor:, marketing:, old_build:, new_build:)
+  yml_path = File.join(ROOT_DIR, "pubspec.yaml")
+  text = File.read(yml_path)
+
+  # platform: "ios" or "aos"
+  # flavor: "regtest" or "mainnet"
+  key = "#{platform}_#{flavor}:"
+
+  # 정규식 예: ^\s*ios_regtest:\s*3\.3\.1\+1
+  pattern = /^(\s*#{Regexp.escape(key)}\s*)(\d+\.\d+\.\d+)\+(\d+)/
+
+  replaced = text.gsub(pattern) do
+    indent_key = Regexp.last_match(1)
+    version = Regexp.last_match(2)
+    build = Regexp.last_match(3).to_i
+    "#{indent_key}#{version}+#{build + 1}"
+  end
+
+  if replaced == text
+    UI.user_error!("❌ 해당 항목을 찾지 못했습니다: #{key}")
+  else
+    File.write(yml_path, replaced)
+    UI.message("✅ pubspec.yaml updated (#{key.strip}): #{marketing}+#{old_build} → #{marketing}+#{new_build}")
+  end
+end
+
+# --- Lanes ------------------------------------------------------------
+# iOS 빌드 및 TestFlight 업로드
+platform :ios do
+  desc "Release iOS REGTEST to TestFlight (pubspec.yaml에서 버전 읽기, 빌드 성공 후 빌드 번호만 +1)"
+  lane :release_ios_regtest do
+    flavor    = "regtest"
+    platform_ = "ios"
+
+    # 1) 버전 읽기
+    marketing, old_build = version_tuple_for(platform: platform_, flavor: flavor)
+    new_build = old_build + 1
+    UI.message("iOS/#{flavor} -> MARKETING_VERSION=#{marketing}, BUILD=#{new_build}")
+
+    # 2) IPA 빌드 (Flutter) - 루트에서 실행하도록 cd
+    begin
+      # 1️⃣ Flutter 빌드 실행
+      sh %Q{
+        cd #{ROOT_DIR} &&
+        fvm flutter clean &&
+        fvm flutter pub get &&
+        fvm flutter build ipa \
+          --flavor #{flavor} \
+          --release \
+          --export-method app-store \
+          --build-name="#{marketing}" \
+          --build-number="#{new_build}"
+      }
+
+      # 2️⃣ 가장 최근 IPA 업로드
+      ipa_path = Dir[File.join(ROOT_DIR, "build/ios/ipa/*.ipa")].max_by { |f| File.mtime(f) }
+      UI.user_error!("IPA not found!") unless ipa_path
+
+      pilot(
+        ipa: ipa_path,
+        skip_waiting_for_build_processing: false
+      )
+
+      # 3️⃣ 빌드 성공 시 pubspec.yaml 업데이트
+      update_pubspec_build_number(
+        platform: platform_,
+        flavor: flavor,
+        marketing: marketing,
+        old_build: old_build,
+        new_build: new_build
+      )
+    rescue => e
+      UI.error("❌ Build failed: #{e.message}")
+      UI.important("pubspec.yaml was not updated because build failed.")
+      raise
+    end
+  end
+end
