@@ -18,7 +18,7 @@ default_platform(:ios)
 
 require 'yaml'
 
-# ⬇️ 추가: Fastfile 파일 위치(__dir__) 기준으로 루트 계산
+# ⬇️ Fastfile 파일 위치(__dir__) 기준으로 루트 계산
 ROOT_DIR = File.expand_path(File.join(__dir__, "..", ".."))
 IOS_DIR  = File.join(ROOT_DIR, "ios")
 # --- Helpers ----------------------------------------------------------
@@ -81,13 +81,28 @@ def update_pubspec_build_number(platform:, flavor:, marketing:, old_build:, new_
   end
 end
 
+# 👉 문자열/불리언을 안전하게 true/false로 판별 (옵션 처리용)
+def truthy?(v)
+  case v
+  when true, "true", "1", 1, "yes", "y", :true then true
+  else false
+  end
+end
+
 # --- Lanes ------------------------------------------------------------
 # iOS 빌드 및 TestFlight 업로드
 platform :ios do
   desc "Release iOS REGTEST to TestFlight (pubspec.yaml에서 버전 읽기, 빌드 성공 후 빌드 번호만 +1)"
-  lane :release_ios_regtest do
+  lane :release_ios_regtest do |opts|
+    opts ||= {}
     flavor    = "regtest"
     platform_ = "ios"
+
+    # 옵션/ENV 기반 준비 단계 스킵 제어
+    skip_prep   = truthy?(opts[:skip_prep]   || ENV["SKIP_PREP"])
+    skip_clean  = truthy?(opts[:skip_clean]  || ENV["SKIP_CLEAN"])
+    skip_pubget = truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
+    UI.message("skip_prep=#{skip_prep}, skip_clean=#{skip_clean}, skip_pubget=#{skip_pubget}")
 
     # 1) 버전 읽기
     marketing, old_build = version_tuple_for(platform: platform_, flavor: flavor)
@@ -97,10 +112,13 @@ platform :ios do
     # 2) IPA 빌드 (Flutter) - 루트에서 실행하도록 cd
     begin
       # 1️⃣ Flutter 빌드 실행
+      prep_cmds = []
+      prep_cmds << "fvm flutter clean"   unless skip_prep || skip_clean
+      prep_cmds << "fvm flutter pub get" unless skip_prep || skip_pubget
+
       sh %Q{
         cd #{ROOT_DIR} &&
-        fvm flutter clean &&
-        fvm flutter pub get &&
+        #{prep_cmds.empty? ? "true" : prep_cmds.join(" &&\n        ")} &&
         fvm flutter build ipa \
           --flavor #{flavor} \
           --release \
@@ -119,6 +137,61 @@ platform :ios do
       )
 
       # 3️⃣ 빌드 성공 시 pubspec.yaml 업데이트
+      update_pubspec_build_number(
+        platform: platform_,
+        flavor: flavor,
+        marketing: marketing,
+        old_build: old_build,
+        new_build: new_build
+      )
+    rescue => e
+      UI.error("❌ Build failed: #{e.message}")
+      UI.important("pubspec.yaml was not updated because build failed.")
+      raise
+    end
+  end
+
+  # 👉 mainnet용 lane
+  desc "Release iOS MAINNET to TestFlight (pubspec.yaml에서 버전 읽기, 빌드 성공 후 빌드 번호만 +1)"
+  lane :release_ios_mainnet do |opts|
+    opts ||= {}
+    flavor    = "mainnet"
+    platform_ = "ios"
+
+    # 옵션/ENV 기반 준비 단계 스킵 제어
+    skip_prep   = truthy?(opts[:skip_prep]   || ENV["SKIP_PREP"])
+    skip_clean  = truthy?(opts[:skip_clean]  || ENV["SKIP_CLEAN"])
+    skip_pubget = truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
+    UI.message("skip_prep=#{skip_prep}, skip_clean=#{skip_clean}, skip_pubget=#{skip_pubget}")
+
+    marketing, old_build = version_tuple_for(platform: platform_, flavor: flavor)
+    new_build = old_build + 1
+    UI.message("iOS/#{flavor} -> MARKETING_VERSION=#{marketing}, BUILD=#{new_build}")
+
+    begin
+      prep_cmds = []
+      prep_cmds << "fvm flutter clean"   unless skip_prep || skip_clean
+      prep_cmds << "fvm flutter pub get" unless skip_prep || skip_pubget
+
+      sh %Q{
+        cd #{ROOT_DIR} &&
+        #{prep_cmds.empty? ? "true" : prep_cmds.join(" &&\n        ")} &&
+        fvm flutter build ipa \
+          --flavor #{flavor} \
+          --release \
+          --export-method app-store \
+          --build-name="#{marketing}" \
+          --build-number="#{new_build}"
+      }
+
+      ipa_path = Dir[File.join(ROOT_DIR, "build/ios/ipa/*.ipa")].max_by { |f| File.mtime(f) }
+      UI.user_error!("IPA not found!") unless ipa_path
+
+      pilot(
+        ipa: ipa_path,
+        skip_waiting_for_build_processing: false
+      )
+
       update_pubspec_build_number(
         platform: platform_,
         flavor: flavor,
