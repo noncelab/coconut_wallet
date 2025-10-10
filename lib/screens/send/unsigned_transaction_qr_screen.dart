@@ -164,6 +164,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                         ),
                       ),
                       if (!_isBbQrType()) ...[CoconutLayout.spacing_800h, _buildDensitySliderWidget(context)],
+                      Container(height: 150),
                     ],
                   ),
                 ),
