@@ -29,7 +29,7 @@ Release Android REGTEST to Play (pubspec에서 읽고, 성공 시 build +1)
 [bundle exec] fastlane android release_android_mainnet
 ```
 
-Release Android MAINNET to Play (internal)
+Release Android MAINNET to Play (pubspec에서 읽고, 성공 시 build +1)
 
 ----
 
