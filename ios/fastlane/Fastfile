@@ -51,7 +51,6 @@ platform :ios do
       sh %Q{
         cd #{ROOT_DIR} &&
         #{prep_cmds.empty? ? "true" : prep_cmds.join(" &&\n        ")} &&
-        pod install &&
         fvm flutter build ipa \
           --flavor #{flavor} \
           --release \
