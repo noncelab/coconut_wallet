@@ -1,63 +1,17 @@
+
+
 # android/fastlane/Fastfile
 default_platform(:android)
 
-require 'yaml'
+require_relative "../../fastlane/shared/pubspec_helper"
+require_relative "../../fastlane/shared/util_helper"
 
 # 루트/안드로이드 경로
 ROOT_DIR     = File.expand_path(File.join(__dir__, "..", ".."))
-ANDROID_DIR  = File.join(ROOT_DIR, "android")
 
 # ---------- Helpers ----------
-def read_pubspec_versions
-  YAML.load_file(File.join(ROOT_DIR, "pubspec.yaml"))
-end
-
-# 평면 키: aos_regtest / aos_mainnet
-def version_tuple_for(platform:, flavor:)
-  yml = read_pubspec_versions
-  key = "#{platform}_#{flavor}"
-  raw = yml.dig("app_versions", key) || yml["version"]
-  UI.user_error!("version string not found in pubspec.yaml for key: app_versions.#{key} (and no global 'version')") unless raw
-  m = raw.to_s.match(/\A(\d+\.\d+\.\d+)\+(\d+)\z/)
-  UI.user_error!("version format must be x.y.z+build, got: #{raw}") unless m
-  marketing = m[1]
-  build     = m[2].to_i
-  return marketing, build
-end
-
-# pubspec.yaml의 특정 키(aos_regtest 등)만 빌드넘버 +1
-def update_pubspec_build_number(platform:, flavor:, marketing:, old_build:, new_build:)
-  yml_path = File.join(ROOT_DIR, "pubspec.yaml")
-  text = File.read(yml_path)
-
-  key = "#{platform}_#{flavor}:"
-  pattern = /^(\s*#{Regexp.escape(key)}\s*)(\d+\.\d+\.\d+)\+(\d+)/
-
-  replaced = text.gsub(pattern) do
-    prefix = Regexp.last_match(1)
-    ver    = Regexp.last_match(2)
-    bld    = Regexp.last_match(3).to_i
-    "#{prefix}#{ver}+#{bld + 1}"
-  end
-
-  if replaced == text
-    UI.user_error!("❌ 해당 항목을 찾지 못했습니다: #{key}")
-  else
-    File.write(yml_path, replaced)
-    UI.message("✅ pubspec.yaml updated (#{key.strip}): #{marketing}+#{old_build} → #{marketing}+#{new_build}")
-  end
-end
-
 def find_latest_aab(flavor:)
   Dir[File.join(ROOT_DIR, "build/app/outputs/bundle/#{flavor}Release/*.aab")].max_by { |f| File.mtime(f) }
-end
-
-# 문자열/불리언을 안전하게 true/false로 판별
-def truthy?(v)
-  case v
-  when true, "true", "1", 1, "yes", "y", :true then true
-  else false
-  end
 end
 
 # ---------- Lanes ----------
@@ -69,23 +23,20 @@ platform :android do
     flavor    = "regtest"
     package   = "onl.coconut.wallet.regtest"
 
-    # 명령어 옵션 또는 환경변수 기반으로 스킵 여부 제어
-    skip_prep   = truthy?(opts[:skip_prep]   || ENV["SKIP_PREP"])
-    skip_clean  = truthy?(opts[:skip_clean]  || ENV["SKIP_CLEAN"])
-    skip_pubget = truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
-
+    skip_prep   = UtilHelper.truthy?(opts[:skip_prep]   || ENV["SKIP_PREP"])
+    skip_clean  = UtilHelper.truthy?(opts[:skip_clean]  || ENV["SKIP_CLEAN"])
+    skip_pubget = UtilHelper.truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
     UI.message("skip_prep=#{skip_prep}, skip_clean=#{skip_clean}, skip_pubget=#{skip_pubget}")
 
-    marketing, old_build = version_tuple_for(platform: platform_, flavor: flavor)
+    marketing, old_build = PubspecHelper.version_tuple_for(platform: platform_, flavor: flavor)
     new_build = old_build + 1
     UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
 
     begin
       ENV["SUPPLY_PACKAGE_NAME"] = package
 
-      # 준비 명령어 조건부 실행
       prep_cmds = []
-      prep_cmds << "fvm flutter clean" unless skip_prep || skip_clean
+      prep_cmds << "fvm flutter clean"   unless skip_prep || skip_clean
       prep_cmds << "fvm flutter pub get" unless skip_prep || skip_pubget
 
       sh %Q{
@@ -109,7 +60,7 @@ platform :android do
         skip_upload_screenshots: true
       )
 
-      update_pubspec_build_number(
+      PubspecHelper.update_pubspec_build_number(
         platform: platform_,
         flavor: flavor,
         marketing: marketing,
@@ -122,4 +73,63 @@ platform :android do
       raise
     end
   end
-end
+
+  # ✅ mainnet lane 추가 (같은 platform 블록 안)
+  desc "Release Android MAINNET to Play (pubspec에서 읽고, 성공 시 build +1)"
+  lane :release_android_mainnet do |opts|
+    opts ||= {}
+    platform_ = "aos"
+    flavor    = "mainnet"
+    package   = "onl.coconut.wallet"
+
+    skip_prep   = UtilHelper.truthy?(opts[:skip_prep]   || ENV["SKIP_PREP"])
+    skip_clean  = UtilHelper.truthy?(opts[:skip_clean]  || ENV["SKIP_CLEAN"])
+    skip_pubget = UtilHelper.truthy?(opts[:skip_pubget] || ENV["SKIP_PUBGET"])
+    UI.message("skip_prep=#{skip_prep}, skip_clean=#{skip_clean}, skip_pubget=#{skip_pubget}")
+
+    marketing, old_build = PubspecHelper.version_tuple_for(platform: platform_, flavor: flavor)
+    new_build = old_build + 1
+    UI.message("Android/#{flavor} -> versionName=#{marketing}, versionCode=#{new_build}")
+
+    begin
+      ENV["SUPPLY_PACKAGE_NAME"] = package
+
+      prep_cmds = []
+      prep_cmds << "fvm flutter clean"   unless skip_prep || skip_clean
+      prep_cmds << "fvm flutter pub get" unless skip_prep || skip_pubget
+
+      sh %Q{
+        cd #{ROOT_DIR} &&
+        #{prep_cmds.empty? ? "true" : prep_cmds.join(" &&\n      ")} &&
+        fvm flutter build appbundle \
+          --flavor #{flavor} \
+          --release \
+          --dart-define=USE_FIREBASE=true \
+          --build-name="#{marketing}" \
+          --build-number=#{new_build}
+      }
+
+      aab_path = find_latest_aab(flavor: flavor)
+      UI.user_error!("AAB not found for flavor #{flavor}") unless aab_path
+
+      upload_to_play_store(
+        aab: aab_path,
+        track: "internal",
+        skip_upload_images: true,
+        skip_upload_screenshots: true
+      )
+
+      PubspecHelper.update_pubspec_build_number(
+        platform: platform_,
+        flavor: flavor,
+        marketing: marketing,
+        old_build: old_build,
+        new_build: new_build
+      )
+    rescue => e
+      UI.error("❌ Android build/upload failed: #{e.message}")
+      UI.important("pubspec.yaml was not updated because build failed.")
+      raise
+    end
+  end
+end  # ← 여기서 단 한 번 platform 블록을 닫음
