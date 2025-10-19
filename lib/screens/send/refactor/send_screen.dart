@@ -451,18 +451,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         children: [
           SvgPicture.asset(
             imagePath,
-            width: 12,
+            height: 12,
             colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_150w,
-          Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerRight,
-              child: Text(
-                "${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
-                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-              ),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              "${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
+              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
             ),
           ),
         ],
@@ -580,11 +578,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ],
               ),
             ] else ...[
-              _buildFeeItem('assets/svg/rocket.svg', _viewModel.feeInfos[0].satsPerVb, isFetching),
+              _buildFeeItem('assets/svg/fee-rate/low.svg', _viewModel.feeInfos[2].satsPerVb, isFetching),
               CoconutLayout.spacing_150w,
-              _buildFeeItem('assets/svg/car.svg', _viewModel.feeInfos[1].satsPerVb, isFetching),
+              _buildFeeItem('assets/svg/fee-rate/medium.svg', _viewModel.feeInfos[1].satsPerVb, isFetching),
               CoconutLayout.spacing_150w,
-              _buildFeeItem('assets/svg/barefoot.svg', _viewModel.feeInfos[2].satsPerVb, isFetching),
+              _buildFeeItem('assets/svg/fee-rate/high.svg', _viewModel.feeInfos[0].satsPerVb, isFetching),
             ],
           ],
         );

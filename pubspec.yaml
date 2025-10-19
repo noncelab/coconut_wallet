@@ -266,14 +266,14 @@ flutter:
     - assets/svg/star-outlined.svg
     - assets/svg/star-filled.svg
     - assets/svg/hamburger.svg
-    - assets/svg/barefoot.svg
-    - assets/svg/car.svg
-    - assets/svg/rocket.svg
     - assets/svg/plus.svg
     - assets/svg/broom.svg
     - assets/svg/receipt.svg
     - assets/svg/clip.svg
     - assets/svg/edit-outlined.svg
+    - assets/svg/fee-rate/low.svg
+    - assets/svg/fee-rate/medium.svg
+    - assets/svg/fee-rate/high.svg
     - testnet.env
 
   fonts:
