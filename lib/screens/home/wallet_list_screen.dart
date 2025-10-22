@@ -147,24 +147,27 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                               ],
                             )
                             // 일반 모드
-                            : Stack(
-                              children: [
-                                CustomScrollView(
-                                  controller: _scrollController,
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  semanticChildCount: walletListItem.length,
-                                  slivers: <Widget>[
-                                    // pull to refresh시 로딩 인디케이터를 보이기 위함
-                                    CupertinoSliverRefreshControl(onRefresh: viewModel.updateWalletBalances),
-                                    _buildLoadingIndicator(viewModel),
-                                    // _buildPadding(isOffline),
-                                    _buildTotalAmount(walletBalanceMap),
-                                    // 지갑 목록
-                                    _buildWalletList(walletListItem, walletBalanceMap, walletOrder),
-                                  ],
-                                ),
-                                // _buildOfflineWarningBar(context, isOffline)
-                              ],
+                            : Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Stack(
+                                children: [
+                                  CustomScrollView(
+                                    controller: _scrollController,
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    semanticChildCount: walletListItem.length,
+                                    slivers: <Widget>[
+                                      // pull to refresh시 로딩 인디케이터를 보이기 위함
+                                      CupertinoSliverRefreshControl(onRefresh: viewModel.updateWalletBalances),
+                                      _buildLoadingIndicator(viewModel),
+                                      // _buildPadding(isOffline),
+                                      _buildTotalAmount(walletBalanceMap),
+                                      // 지갑 목록
+                                      _buildWalletList(walletListItem, walletBalanceMap, walletOrder),
+                                    ],
+                                  ),
+                                  // _buildOfflineWarningBar(context, isOffline)
+                                ],
+                              ),
                             ),
                   ),
                 ),
@@ -208,6 +211,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   }
 
   Widget _buildEditModeHeader() {
+    SvgPicture starIcon = SvgPicture.asset('assets/svg/star-small.svg', width: 16, height: 16);
+    SvgPicture hamburgerIcon = SvgPicture.asset('assets/svg/hamburger.svg', width: 16, height: 16);
     return Container(
       width: MediaQuery.sizeOf(context).width,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -219,19 +224,21 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       child: Column(
         children: [
           _buildEditModeHeaderLine([
-            WidgetSpan(
-              alignment: PlaceholderAlignment.top,
-              child: SvgPicture.asset('assets/svg/star-small.svg', width: 12, height: 12),
-            ),
-            TextSpan(text: t.wallet_list.edit.star_description),
+            if (_viewModel.isEnglish) ...[
+              TextSpan(text: '${t.select} '),
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
+              const TextSpan(text: ' '),
+            ]else...[ WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
+            TextSpan(text: t.wallet_list.edit.star_description),],
           ]),
           CoconutLayout.spacing_100h,
           _buildEditModeHeaderLine([
-            WidgetSpan(
-              alignment: PlaceholderAlignment.top,
-              child: SvgPicture.asset('assets/svg/hamburger.svg', width: 12, height: 12),
-            ),
-            TextSpan(text: t.wallet_list.edit.order_description),
+            if (_viewModel.isEnglish) ...[
+              TextSpan(text: '${t.tap} '),
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
+              const TextSpan(text: ' '),
+            ]else...[ WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
+            TextSpan(text: t.wallet_list.edit.order_description),],
           ]),
           CoconutLayout.spacing_100h,
           _buildEditModeHeaderLine([TextSpan(text: t.wallet_list.edit.delete_description)]),
@@ -245,14 +252,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 7.2, horizontal: 6),
-          height: 2.5,
-          width: 2.5,
+          margin: const EdgeInsets.symmetric(vertical: 8.5, horizontal: 6),
+          height: 3,
+          width: 3,
           decoration: const BoxDecoration(color: CoconutColors.gray400, shape: BoxShape.circle),
         ),
         Expanded(
           child: RichText(
-            text: TextSpan(style: CoconutTypography.body3_12.setColor(CoconutColors.gray400), children: inlineSpan),
+            text: TextSpan(style: CoconutTypography.body2_14.setColor(CoconutColors.gray400), children: inlineSpan),
             overflow: TextOverflow.visible,
             softWrap: true,
           ),
@@ -573,8 +580,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 return CoconutPopup(
                   title: t.wallet_list.edit.finish,
                   description: t.wallet_list.edit.unsaved_changes_confirm_exit,
-                  leftButtonText: t.cancel,
-                  rightButtonText: t.confirm,
+                  leftButtonText: t.no,
+                  rightButtonText: t.yes,
                   onTapRight: () {
                     _viewModel.setEditMode(false);
                     Navigator.pop(context);
@@ -593,7 +600,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         }
       },
       actionButtonList: [
-        if (!isEditMode)
+        if (!isEditMode) ...[
           CoconutUnderlinedButton(
             text: t.edit,
             textStyle: CoconutTypography.body2_14,
@@ -601,6 +608,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               _viewModel.setEditMode(true);
             },
           ),
+          CoconutLayout.spacing_200w,
+        ],
       ],
     );
   }

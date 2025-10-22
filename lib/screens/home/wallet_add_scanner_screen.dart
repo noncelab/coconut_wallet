@@ -273,7 +273,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     }
   }
 
-  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body3_12_Bold);
+  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
 
   @override
   Widget build(BuildContext context) {
@@ -316,10 +316,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               borderColor: CoconutColors.gray900,
               icon: SvgPicture.asset(
                 'assets/svg/circle-info.svg',
+                width: 20,
                 colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
               ),
               tooltipType: CoconutTooltipType.fixed,
-              richText: RichText(text: TextSpan(style: CoconutTypography.body3_12, children: _getGuideTextSpan())),
+              richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
             ),
           ),
         ],
