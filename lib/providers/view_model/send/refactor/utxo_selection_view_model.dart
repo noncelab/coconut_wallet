@@ -23,6 +23,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
   FeeInfo? _customFeeInfo;
+  final List<UtxoState> _filteredUtxoList = [];
 
   List<FeeInfoWithLevel> feeInfos = [
     FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
@@ -60,6 +61,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       });
       _sortConfirmedUtxoList(utxoOrder);
       _initUtxoTagMap();
+      _updateFilteredUtxoList();
 
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
@@ -79,6 +81,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
   bool get isNetworkOn => _isNetworkOn == true;
+  List<UtxoState> get filteredUtxoList => _filteredUtxoList;
 
   int get selectedUtxoAmountSum {
     _cachedSelectedUtxoAmountSum ??= _calculateTotalAmountOfUtxoList(_selectedUtxoList);
@@ -106,22 +109,32 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void deselectAllUtxo() {
-    _clearUtxoList();
-  }
-
   bool hasTaggedUtxo() {
     return _selectedUtxoList.any((utxo) => _utxoTagMap[utxo.utxoId]?.isNotEmpty == true);
   }
 
   void cacheSpentUtxoIdsWithTag({required bool isTagsMoveAllowed}) {
-    _tagProvider.cacheUsedUtxoIds(_selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
-        isTagsMoveAllowed: isTagsMoveAllowed);
+    _tagProvider.cacheUsedUtxoIds(
+      _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+      isTagsMoveAllowed: isTagsMoveAllowed,
+    );
   }
 
   void selectAllUtxo() {
     // locked 상태가 아닌 UTXO만 선택
     setSelectedUtxoList(confirmedUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
+  }
+
+  void deselectAllUtxo() {
+    _clearUtxoList();
+  }
+
+  void selectTaggedUtxo(String selectedTagName) {
+    setSelectedUtxoList(filteredUtxoList);
+  }
+
+  void deselectTaggedUtxo() {
+    _clearUtxoList();
   }
 
   void setSelectedUtxoList(List<UtxoState> utxoList) {
@@ -132,7 +145,26 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void setSelectedUtxoTagName(String value) {
     selectedUtxoTagName = value;
+    _updateFilteredUtxoList();
     notifyListeners();
+  }
+
+  void _updateFilteredUtxoList() {
+    filteredUtxoList.clear();
+
+    // '전체' 또는 공백이면 모든 UTXO 포함
+    if (selectedUtxoTagName == t.all) {
+      filteredUtxoList.addAll(confirmedUtxoList);
+      return;
+    }
+
+    // 선택된 태그 이름과 일치하는 UTXO만 필터링
+    for (final utxo in confirmedUtxoList) {
+      final tags = _utxoTagMap[utxo.utxoId];
+      if (tags != null && tags.any((tag) => tag.name == selectedUtxoTagName)) {
+        filteredUtxoList.add(utxo);
+      }
+    }
   }
 
   void toggleUtxoSelection(UtxoState utxo) {
@@ -184,10 +216,8 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     });
 
     // unlock된 UTXO들만 따로 정렬
-    final unlockedUtxos =
-        _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
-    final lockedUtxos =
-        _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
+    final unlockedUtxos = _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
+    final lockedUtxos = _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
 
     // 각각 별도로 정렬
     UtxoState.sortUtxo(unlockedUtxos, basis);

@@ -2,8 +2,10 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/header/selected_utxo_amount_header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -18,7 +20,15 @@ class UtxoListHeader extends StatefulWidget {
   final void Function() onPressedUnitToggle;
   final BitcoinUnit currentUnit;
   final Widget tagListWidget;
-  final bool hideBalance;
+  final bool isBalanceHidden;
+  final GlobalKey orderDropdownButtonKey;
+  final String orderText;
+  final int selectedUtxoCount;
+  final int selectedUtxoAmountSum;
+  final VoidCallback onSelectAll;
+  final VoidCallback onUnselectAll;
+  final bool isSelectionMode;
+  final ValueNotifier<bool> dropdownVisibleNotifier;
 
   const UtxoListHeader({
     super.key,
@@ -31,7 +41,15 @@ class UtxoListHeader extends StatefulWidget {
     required this.currentUnit,
     required this.onPressedUnitToggle,
     required this.tagListWidget,
-    this.hideBalance = false,
+    this.isBalanceHidden = false,
+    required this.orderDropdownButtonKey,
+    required this.orderText,
+    required this.selectedUtxoCount,
+    required this.selectedUtxoAmountSum,
+    required this.onSelectAll,
+    required this.onUnselectAll,
+    required this.isSelectionMode,
+    required this.dropdownVisibleNotifier,
   });
 
   @override
@@ -39,120 +57,131 @@ class UtxoListHeader extends StatefulWidget {
 }
 
 class _UtxoListHeaderState extends State<UtxoListHeader> {
+  late UtxoListViewModel viewModel;
+
   @override
   Widget build(BuildContext context) {
+    debugPrint('build22222222222222222222222');
     return Column(
       key: widget.headerGlobalKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.only(left: 20, top: 28, right: 20),
-              width: MediaQuery.sizeOf(context).width,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!widget.hideBalance) ...[
-                    Text(t.utxo_list_screen.total_balance, style: CoconutTypography.body1_16_Bold),
-                    CoconutLayout.spacing_100h,
-                    GestureDetector(
-                      onTap: widget.onPressedUnitToggle,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          IntrinsicWidth(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: FittedBox(
-                                    alignment: Alignment.centerLeft,
-                                    fit: BoxFit.scaleDown,
-                                    child: Row(
-                                      children: [
-                                        AnimatedBalance(
-                                          prevValue: widget.animatedBalanceData.previous,
-                                          value: widget.animatedBalanceData.current,
-                                          currentUnit: widget.currentUnit,
-                                          textStyle: CoconutTypography.heading1_32_NumberBold,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                CoconutLayout.spacing_200w,
-                                Text(
-                                  widget.currentUnit.symbol,
-                                  style: CoconutTypography.heading3_21_Number,
-                                ),
-                              ],
-                            ),
-                          ),
-                          CoconutLayout.spacing_50h,
-                          FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
-                        ],
-                      ),
-                    ),
-                    CoconutLayout.spacing_400h,
-                  ],
-                  Row(
+        if (!widget.isBalanceHidden) ...[
+          _buildHeader(),
+        ] else ...[
+          _buildSelectionModeHeader(),
+          CoconutLayout.spacing_50h,
+          widget.tagListWidget,
+          CoconutLayout.spacing_300h,
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.only(left: 20, top: 28, right: 20),
+      width: MediaQuery.sizeOf(context).width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(t.utxo_list_screen.total_balance, style: CoconutTypography.body1_16_Bold),
+          CoconutLayout.spacing_100h,
+          GestureDetector(
+            onTap: widget.onPressedUnitToggle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                IntrinsicWidth(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Expanded(child: Container()),
-                      Visibility(
-                        visible: !widget.isLoadComplete,
-                        child: Align(
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 4),
-                            width: 12,
-                            height: 12,
-                            child: const CircularProgressIndicator(
-                              color: CoconutColors.gray400,
-                              strokeWidth: 2,
-                            ),
+                      Expanded(
+                        child: FittedBox(
+                          alignment: Alignment.centerLeft,
+                          fit: BoxFit.scaleDown,
+                          child: Row(
+                            children: [
+                              AnimatedBalance(
+                                prevValue: widget.animatedBalanceData.previous,
+                                value: widget.animatedBalanceData.current,
+                                currentUnit: widget.currentUnit,
+                                textStyle: CoconutTypography.heading1_32_NumberBold,
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      CupertinoButton(
-                        key: widget.dropdownGlobalKey,
-                        padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 0),
-                        minSize: 0,
-                        onPressed: () {
-                          if (!widget.isLoadComplete) return;
-                          widget.onTapDropdown();
-                        },
-                        child: Row(
-                          children: [
-                            Text(
-                              widget.selectedOption,
-                              style: CoconutTypography.body3_12.setColor(
-                                widget.isLoadComplete ? CoconutColors.white : CoconutColors.gray700,
-                              ),
-                            ),
-                            CoconutLayout.spacing_200w,
-                            SvgPicture.asset(
-                              'assets/svg/arrow-down.svg',
-                              colorFilter:
-                                  widget.isLoadComplete
-                                      ? null
-                                      : const ColorFilter.mode(
-                                        CoconutColors.gray700,
-                                        BlendMode.srcIn,
-                                      ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      CoconutLayout.spacing_200w,
+                      Text(widget.currentUnit.symbol, style: CoconutTypography.heading3_21_Number),
                     ],
                   ),
-                ],
-              ),
+                ),
+                CoconutLayout.spacing_50h,
+                FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
+              ],
             ),
-            widget.tagListWidget,
-            CoconutLayout.spacing_300h,
-          ],
-        ),
-      ],
+          ),
+          CoconutLayout.spacing_400h,
+          Row(
+            children: [
+              Expanded(child: Container()),
+              Visibility(
+                visible: !widget.isLoadComplete,
+                child: Align(
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 4),
+                    width: 12,
+                    height: 12,
+                    child: const CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
+                  ),
+                ),
+              ),
+              CupertinoButton(
+                key: widget.dropdownGlobalKey,
+                padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 0),
+                minSize: 0,
+                onPressed: () {
+                  if (!widget.isLoadComplete) return;
+                  widget.onTapDropdown();
+                },
+                child: Row(
+                  children: [
+                    Text(
+                      widget.selectedOption,
+                      style: CoconutTypography.body3_12.setColor(
+                        widget.isLoadComplete ? CoconutColors.white : CoconutColors.gray700,
+                      ),
+                    ),
+                    CoconutLayout.spacing_200w,
+                    SvgPicture.asset(
+                      'assets/svg/arrow-down.svg',
+                      colorFilter:
+                          widget.isLoadComplete ? null : const ColorFilter.mode(CoconutColors.gray700, BlendMode.srcIn),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSelectionModeHeader() {
+    return SelectedUtxoAmountHeader(
+      orderDropdownButtonKey: widget.orderDropdownButtonKey,
+      orderText: widget.orderText,
+      selectedUtxoCount: widget.selectedUtxoCount,
+      selectedUtxoAmountSum: widget.selectedUtxoAmountSum,
+      currentUnit: widget.currentUnit,
+      onSelectAll: widget.onSelectAll,
+      onUnselectAll: widget.onUnselectAll,
+      onToggleOrderDropdown: () {
+        if (!widget.isLoadComplete) return;
+        widget.onTapDropdown();
+      },
     );
   }
 }

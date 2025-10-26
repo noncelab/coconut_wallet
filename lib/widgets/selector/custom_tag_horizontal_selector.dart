@@ -61,7 +61,6 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
                   index <= 2 ? _tags[index] : '#$name',
                   widget.selectedName == name,
                   index <= 2,
-                  widget.settingLock,
                 ),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
@@ -72,17 +71,12 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
     );
   }
 
-  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag, bool settingLock) {
+  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
     Color bgColor;
     Color textColor;
     
-    if (settingLock) {
-      bgColor = isSelected ? CoconutColors.primary : CoconutColors.gray800;
-      textColor = isSelected ? CoconutColors.black : CoconutColors.white;
-    } else {
-      bgColor = isSelected ? CoconutColors.white : CoconutColors.gray800;
-      textColor = isSelected ? CoconutColors.gray800 : CoconutColors.white;
-    }
+    bgColor = isSelected ? CoconutColors.white : CoconutColors.gray800;
+    textColor = isSelected ? CoconutColors.gray800 : CoconutColors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),

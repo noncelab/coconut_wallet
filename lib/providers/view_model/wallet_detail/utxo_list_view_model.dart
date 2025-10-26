@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -30,6 +31,10 @@ class UtxoListViewModel extends ChangeNotifier {
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   late final int _walletId;
   WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
+  List<UtxoState> _filteredUtxoList = [];
+  final List<UtxoState> _confirmedUtxoList = [];
+  final Map<String, List<UtxoTag>> _utxoTagMap = {};
+  List<UtxoState> _selectedUtxoList = [];
 
   // balance 애니메이션을 위한 이전 잔액을 담는 변수
   late int _prevBalance;
@@ -39,6 +44,11 @@ class UtxoListViewModel extends ChangeNotifier {
   bool _isUtxoListLoadComplete = false;
   String _selectedUtxoTagName = t.all;
   List<UtxoTag> _utxoTagList = [];
+  List<UtxoState> get filteredUtxoList => _filteredUtxoList;
+  List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
+  int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
+  UtxoOrder get utxoOrder => _preferenceProvider.utxoSortOrder;
+  final List<UtxoState> _initialSelectedUtxoList = []; // 초기 선택 상태 저장
 
   UtxoListViewModel(
     this._walletId,
@@ -49,11 +59,30 @@ class UtxoListViewModel extends ChangeNotifier {
     this._priceProvider,
     this._preferenceProvider,
     this._syncWalletStateStream,
+    List<UtxoState> selectedUtxoList,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _initUtxoAndTags();
     _addChangeListener();
     _prevBalance = balance;
+
+    // 모든 UTXO (locked 포함)를 리스트에 추가
+    _walletProvider.getUtxoList(_walletId).fold<int>(0, (sum, utxo) {
+      // unspent와 locked 모두 포함
+      if (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked) {
+        _confirmedUtxoList.add(utxo);
+      }
+      return utxo.status == UtxoStatus.unspent ? sum + utxo.amount : sum;
+    });
+    _sortConfirmedUtxoList(utxoOrder);
+    _initUtxoTagMap();
+    _updateFilteredUtxoList();
+
+    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
+
+    // 초기 선택 상태 저장
+    _selectedUtxoList = List.from(selectedUtxoList);
+    _initialSelectedUtxoList.addAll(selectedUtxoList);
   }
 
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
@@ -72,13 +101,23 @@ class UtxoListViewModel extends ChangeNotifier {
 
   List<UtxoTag> get utxoTagList => _utxoTagList;
 
+  int get selectedUtxoAmountSum {
+    _cachedSelectedUtxoAmountSum ??= _calculateTotalAmountOfUtxoList(_selectedUtxoList);
+    return _cachedSelectedUtxoAmountSum!;
+  }
+
+  List<UtxoState> get selectedUtxoList => _selectedUtxoList;
+
   // 태그 목록 변경을 감지하기 위한 key
   String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
 
   WalletType get walletType => _walletListBaseItem.walletType;
 
-  bool get isSyncing =>
-      _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
+  bool get isSyncing => _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
+
+  int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
+    return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+  }
 
   void _addChangeListener() {
     _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);
@@ -100,6 +139,52 @@ class UtxoListViewModel extends ChangeNotifier {
 
   void setSelectedUtxoTagName(String value) {
     _selectedUtxoTagName = value;
+    for (var utxo in _confirmedUtxoList) {
+      _utxoTagMap[utxo.utxoId] = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
+    }
+    _updateFilteredUtxoList();
+    notifyListeners();
+  }
+
+  void selectTaggedUtxo() {
+    _updateFilteredUtxoList();
+    setSelectedUtxoList(_filteredUtxoList);
+  }
+
+  void setSelectedUtxoList(List<UtxoState> utxoList) {
+    _selectedUtxoList = utxoList;
+    _cachedSelectedUtxoAmountSum = null;
+    notifyListeners();
+  }
+
+  void deselectTaggedUtxo() {
+    _clearUtxoList();
+  }
+
+  void _clearUtxoList() {
+    _selectedUtxoList = [];
+    _cachedSelectedUtxoAmountSum = 0;
+    notifyListeners();
+  }
+
+  void _updateFilteredUtxoList() {
+    if (_selectedUtxoTagName == t.all) {
+      // 모든 UTXO 표시
+      _filteredUtxoList = List<UtxoState>.from(_confirmedUtxoList);
+    } else if (_selectedUtxoTagName == t.utxo_detail_screen.utxo_locked) {
+      // 잠금된 UTXO만 표시
+      _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isLocked).toList();
+    } else if (_selectedUtxoTagName == t.change) {
+      // 체인지 UTXO만 표시
+      _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isChange).toList();
+    } else {
+      // 태그 기반 필터링
+      _filteredUtxoList =
+          _confirmedUtxoList.where((utxo) {
+            final tags = _utxoTagMap[utxo.utxoId];
+            return tags != null && tags.any((tag) => tag.name == _selectedUtxoTagName);
+          }).toList();
+    }
     notifyListeners();
   }
 
@@ -149,6 +234,64 @@ class UtxoListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _initUtxoTagMap() {
+    for (var (element) in _confirmedUtxoList) {
+      final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, element.utxoId);
+      _utxoTagMap[element.utxoId] = tags;
+    }
+  }
+
+  void _sortConfirmedUtxoList(UtxoOrder basis) {
+    // 먼저 status에 따라 분리 (unlock된 것 먼저, locked는 뒤에)
+    _confirmedUtxoList.sort((a, b) {
+      // locked 상태 우선순위: unspent가 먼저, locked가 나중에
+      if (a.status != b.status) {
+        if (a.status == UtxoStatus.unspent && b.status == UtxoStatus.locked) {
+          return -1; // a가 먼저
+        } else if (a.status == UtxoStatus.locked && b.status == UtxoStatus.unspent) {
+          return 1; // b가 먼저
+        }
+      }
+
+      // 같은 status 내에서는 기존 정렬 기준 적용
+      return 0;
+    });
+
+    // unlock된 UTXO들만 따로 정렬
+    final unlockedUtxos = _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
+    final lockedUtxos = _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
+
+    // 각각 별도로 정렬
+    UtxoState.sortUtxo(unlockedUtxos, basis);
+    UtxoState.sortUtxo(lockedUtxos, basis);
+
+    // 다시 합치기 (unlock 먼저, lock 나중에)
+    _confirmedUtxoList.clear();
+    _confirmedUtxoList.addAll(unlockedUtxos);
+    _confirmedUtxoList.addAll(lockedUtxos);
+  }
+
+  /// 선택 상태가 초기 상태와 다른지 확인
+  bool get hasSelectionChanged {
+    // 선택된 UTXO가 하나도 없으면 비활성화
+    if (_selectedUtxoList.isEmpty) {
+      return false;
+    }
+
+    if (_selectedUtxoList.length != _initialSelectedUtxoList.length) {
+      return true;
+    }
+
+    // 같은 UTXO들이 선택되어 있는지 확인 (순서는 상관없음)
+    for (final utxo in _selectedUtxoList) {
+      if (!_initialSelectedUtxoList.any((initial) => initial.utxoId == utxo.utxoId)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   void _initUtxoAndTags() {
     _isUtxoListLoadComplete = false;
     _utxoList = _walletProvider.getUtxoList(_walletId);
@@ -181,29 +324,59 @@ class UtxoListViewModel extends ChangeNotifier {
 
   Future<void> updateSelectedUtxosStatus(List<String> utxoIds, UtxoStatus status) async {
     try {
-      for (var utxoId in utxoIds) {
-        final utxo = _utxoList.firstWhere((u) => u.utxoId == utxoId);
+      // 각 UTXO 상태 업데이트
+      await Future.wait(
+        utxoIds.map((utxoId) async {
+          final utxo = _utxoList.firstWhere((u) => u.utxoId == utxoId);
 
-        if (status == UtxoStatus.locked && utxo.status != UtxoStatus.locked) {
-          // 잠금
-          await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
-        } else if (status == UtxoStatus.unspent && utxo.status != UtxoStatus.unspent) {
-          // 잠금 해제
-          await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
+          if (utxo.status != status) {
+            await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
+            utxo.status = status;
+          }
+        }),
+      );
+
+      // 선택된 UTXO 리스트 업데이트
+      final affectedUtxos = _utxoList.where((u) => utxoIds.contains(u.utxoId)).toList();
+
+      if (status == UtxoStatus.locked) {
+        if (_selectedUtxoTagName == t.utxo_detail_screen.utxo_locked) {
+          _selectedUtxoList = affectedUtxos;
+        } else {
+          _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
         }
-        // 이미 원하는 상태이면 아무 작업 안 함
+      } else if (status == UtxoStatus.unspent) {
+        if (_selectedUtxoTagName != t.utxo_detail_screen.utxo_locked) {
+          _selectedUtxoList
+            ..removeWhere((u) => utxoIds.contains(u.utxoId))
+            ..addAll(affectedUtxos);
+        } else {
+          _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
+        }
       }
 
-      for (var utxo in _utxoList) {
-        if (utxoIds.contains(utxo.utxoId)) {
-          utxo.status = status;
-        }
-      }
-      
+      // confirmed UTXO 리스트 갱신
+      _confirmedUtxoList
+        ..clear()
+        ..addAll(
+          _walletProvider
+              .getUtxoList(_walletId)
+              .where((u) => u.status == UtxoStatus.unspent || u.status == UtxoStatus.locked),
+        );
+
+      // 정렬 + 필터링
+      _sortConfirmedUtxoList(_selectedUtxoOrder);
+      _updateFilteredUtxoList();
+
+      // UI 갱신
       notifyListeners();
-      } catch (e) {
-        debugPrint('UTXO 상태 업데이트 실패: $e');
+    } catch (e) {
+      debugPrint('UTXO 상태 업데이트 실패: $e');
       rethrow;
     }
+  }
+
+  void setIsNetworkOn(bool? isNetworkOn) {
+    notifyListeners();
   }
 }

@@ -15,7 +15,7 @@ class UtxoItemCard extends StatelessWidget {
   final Function onPressed;
   final BitcoinUnit currentUnit;
   final bool isSelected;
-  final bool settingLock;
+  final bool isSelectionMode;
 
   const UtxoItemCard({
     super.key,
@@ -23,7 +23,7 @@ class UtxoItemCard extends StatelessWidget {
     required this.onPressed,
     required this.currentUnit,
     this.isSelected = false,
-    this.settingLock = false
+    this.isSelectionMode = false
   });
 
   @override
@@ -39,6 +39,17 @@ class UtxoItemCard extends StatelessWidget {
         onPressed();
       },
       child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelectionMode 
+              ? (isSelected 
+                  ? CoconutColors.primary 
+                  : CoconutColors.borderGray) 
+              : Colors.transparent,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,17 +164,6 @@ class UtxoItemCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // 체크 아이콘
-                    if (settingLock)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8),
-                        child: SvgPicture.asset(
-                          'assets/svg/circle-check.svg',
-                          colorFilter: ColorFilter.mode(
-                              isSelected ? CoconutColors.primary : MyColors.transparentWhite_40,
-                              BlendMode.srcIn),
-                        ),
-                      ),
                   ],
                 ),
               ],
