@@ -108,6 +108,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                 });
                               },
                             ),
+                            _buildUtxoTagList(viewModel),
                             Expanded(
                               child: Stack(
                                 children: [
@@ -115,7 +116,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                     controller: _scrollController,
                                     child: Column(
                                       children: [
-                                        _buildUtxoTagList(viewModel),
                                         _buildUtxoList(viewModel),
                                         CoconutLayout.spacing_400h,
                                         const SizedBox(height: 50),
@@ -207,12 +207,12 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   void _selectAll() {
     _removeUtxoOrderDropdown();
-    _viewModel.selectAllUtxo();
+    _viewModel.selectTaggedUtxo(_viewModel.selectedUtxoTagName);
   }
 
   void _deselectAll() {
     _removeUtxoOrderDropdown();
-    _viewModel.deselectAllUtxo();
+    _viewModel.deselectTaggedUtxo();
   }
 
   void _toggleSelection(UtxoState utxo) {

@@ -130,7 +130,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void selectTaggedUtxo(String selectedTagName) {
-    setSelectedUtxoList(filteredUtxoList);
+    setSelectedUtxoList(filteredUtxoList.where((e) => e.status != UtxoStatus.locked).toList());
   }
 
   void deselectTaggedUtxo() {
