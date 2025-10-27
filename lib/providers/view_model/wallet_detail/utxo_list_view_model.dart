@@ -103,6 +103,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   int get selectedUtxoAmountSum {
     _cachedSelectedUtxoAmountSum ??= _calculateTotalAmountOfUtxoList(_selectedUtxoList);
+
     return _cachedSelectedUtxoAmountSum!;
   }
 
@@ -377,6 +378,18 @@ class UtxoListViewModel extends ChangeNotifier {
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
+    notifyListeners();
+  }
+
+  void addSelectUtxo(UtxoState utxo) {
+    selectedUtxoList.add(utxo);
+    _cachedSelectedUtxoAmountSum = null;
+    notifyListeners();
+  }
+
+  void removeSelectUtxo(UtxoState utxo) {
+    selectedUtxoList.remove(utxo);
+    _cachedSelectedUtxoAmountSum = null;
     notifyListeners();
   }
 }

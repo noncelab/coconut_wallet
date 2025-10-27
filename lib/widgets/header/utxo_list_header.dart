@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/header/selected_utxo_amount_header.dart';
@@ -57,27 +56,23 @@ class UtxoListHeader extends StatefulWidget {
 }
 
 class _UtxoListHeaderState extends State<UtxoListHeader> {
-  late UtxoListViewModel viewModel;
-
   @override
   Widget build(BuildContext context) {
-    debugPrint('build22222222222222222222222');
     return Column(
       key: widget.headerGlobalKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!widget.isBalanceHidden) ...[
-          _buildHeader(),
-        ] else ...[
-          _buildSelectionModeHeader(),
-          CoconutLayout.spacing_50h,
-          widget.tagListWidget,
-          CoconutLayout.spacing_300h,
-        ],
+        widget.isBalanceHidden ? _buildSelectionModeHeader() : _buildHeader(),
+        CoconutLayout.spacing_50h,
+        widget.tagListWidget,
+        CoconutLayout.spacing_300h,
       ],
     );
   }
 
+  // --------------------
+  // 일반 모드 헤더
+  // --------------------
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.only(left: 20, top: 28, right: 20),
@@ -100,15 +95,11 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                         child: FittedBox(
                           alignment: Alignment.centerLeft,
                           fit: BoxFit.scaleDown,
-                          child: Row(
-                            children: [
-                              AnimatedBalance(
-                                prevValue: widget.animatedBalanceData.previous,
-                                value: widget.animatedBalanceData.current,
-                                currentUnit: widget.currentUnit,
-                                textStyle: CoconutTypography.heading1_32_NumberBold,
-                              ),
-                            ],
+                          child: AnimatedBalance(
+                            prevValue: widget.animatedBalanceData.previous,
+                            value: widget.animatedBalanceData.current,
+                            currentUnit: widget.currentUnit,
+                            textStyle: CoconutTypography.heading1_32_NumberBold,
                           ),
                         ),
                       ),
@@ -125,26 +116,19 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
           CoconutLayout.spacing_400h,
           Row(
             children: [
-              Expanded(child: Container()),
-              Visibility(
-                visible: !widget.isLoadComplete,
-                child: Align(
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 4),
-                    width: 12,
-                    height: 12,
-                    child: const CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
-                  ),
+              const Spacer(),
+              if (!widget.isLoadComplete)
+                Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  width: 12,
+                  height: 12,
+                  child: const CircularProgressIndicator(color: CoconutColors.gray400, strokeWidth: 2),
                 ),
-              ),
               CupertinoButton(
                 key: widget.dropdownGlobalKey,
                 padding: const EdgeInsets.only(top: 7, bottom: 7, left: 8, right: 0),
                 minSize: 0,
-                onPressed: () {
-                  if (!widget.isLoadComplete) return;
-                  widget.onTapDropdown();
-                },
+                onPressed: widget.isLoadComplete ? () => widget.onTapDropdown() : null,
                 child: Row(
                   children: [
                     Text(
@@ -169,6 +153,9 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
     );
   }
 
+  // --------------------
+  // 선택 모드 헤더
+  // --------------------
   Widget _buildSelectionModeHeader() {
     return SelectedUtxoAmountHeader(
       orderDropdownButtonKey: widget.orderDropdownButtonKey,
@@ -179,8 +166,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
       onSelectAll: widget.onSelectAll,
       onUnselectAll: widget.onUnselectAll,
       onToggleOrderDropdown: () {
-        if (!widget.isLoadComplete) return;
-        widget.onTapDropdown();
+        if (widget.isLoadComplete) widget.onTapDropdown();
       },
     );
   }

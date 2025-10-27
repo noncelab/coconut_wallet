@@ -62,7 +62,6 @@ class UtxoListStickyHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('build sticky!!!!!!!!!!!!!!!!!!!!');
     final totalCount = this.totalCount ?? 0;
 
     return Consumer<UtxoListViewModel>(
@@ -79,6 +78,7 @@ class UtxoListStickyHeader extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               child: Stack(
                 children: [
+                  // 그림자
                   Positioned(
                     bottom: 0,
                     child: Container(
@@ -98,11 +98,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                     color: CoconutColors.black,
                     child: Column(
                       children: [
-                        if (!isSelectionMode)
-                          _buildStickyHeader(context, totalCount)
-                        else
-                          _buildSelectionModeStickyHeader(),
-
+                        isSelectionMode ? _buildSelectionModeStickyHeader() : _buildStickyHeader(context, totalCount),
                         CoconutLayout.spacing_50h,
                         _buildTagSelector(viewModel),
                         CoconutLayout.spacing_300h,
@@ -118,7 +114,9 @@ class UtxoListStickyHeader extends StatelessWidget {
     );
   }
 
-  /// 일반 모드 헤더 (잔액 + 드롭다운)
+  // --------------------
+  // 일반 모드 헤더
+  // --------------------
   Widget _buildStickyHeader(BuildContext context, int totalCount) {
     return Column(
       children: [
@@ -194,9 +192,10 @@ class UtxoListStickyHeader extends StatelessWidget {
     );
   }
 
-  /// 선택 모드 헤더 (SelectedUtxoAmountHeader)
+  // --------------------
+  // 선택 모드 헤더
+  // --------------------
   Widget _buildSelectionModeStickyHeader() {
-    debugPrint('selectedUtxoCount: $selectedUtxoCount');
     return SelectedUtxoAmountHeader(
       orderDropdownButtonKey: orderDropdownButtonKey,
       orderText: orderText,
@@ -209,7 +208,9 @@ class UtxoListStickyHeader extends StatelessWidget {
     );
   }
 
-  /// 태그 선택 바
+  // --------------------
+  // 태그 선택 바
+  // --------------------
   Widget _buildTagSelector(UtxoListViewModel viewModel) {
     return CustomTagHorizontalSelector(
       tags: viewModel.utxoTagList.map((e) => e.name).toList(),

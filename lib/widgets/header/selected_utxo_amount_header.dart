@@ -30,7 +30,6 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('build3333333333333333333333333');
     String utxoSumText = currentUnit.displayBitcoinAmount(
       selectedUtxoAmountSum,
       defaultWhenZero: '0',
