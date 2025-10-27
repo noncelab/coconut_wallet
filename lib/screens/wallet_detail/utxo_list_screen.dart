@@ -283,14 +283,15 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: _firstLoaded,
       builder: (context, enableDropdown, _) {
-        return Selector<UtxoListViewModel, Tuple5<UtxoOrder, String, int, AnimatedBalanceData, String>>(
+        return Selector<UtxoListViewModel, Tuple6<UtxoOrder, String, int, AnimatedBalanceData, String, int>>(
           selector:
-              (_, vm) => Tuple5(
+              (_, vm) => Tuple6(
                 vm.selectedUtxoOrder,
                 vm.utxoTagListKey,
                 vm.utxoList.length,
                 AnimatedBalanceData(vm.balance, vm.prevBalance),
                 vm.selectedUtxoTagName,
+                vm.selectedUtxoList.length,
               ),
           shouldRebuild:
               (a, b) =>
@@ -298,7 +299,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   a.item2 != b.item2 ||
                   a.item3 != b.item3 ||
                   a.item4.current != b.item4.current ||
-                  a.item5 != b.item5,
+                  a.item5 != b.item5 ||
+                  a.item6 != b.item6,
           builder: (context, data, _) {
             final (order, tagKey, count, balanceData, tagName) = (
               data.item1,
