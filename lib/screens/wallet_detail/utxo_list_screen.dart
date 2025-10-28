@@ -406,6 +406,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   // ──────────────────────────────
   void _onScroll() {
     _hideDropdown();
+    if (!_scrollController.hasClients) return;
     final shouldShowSticky = _scrollController.offset > _topPadding;
     if (_stickyHeaderVisible.value != shouldShowSticky) {
       _stickyHeaderVisible.value = shouldShowSticky;
