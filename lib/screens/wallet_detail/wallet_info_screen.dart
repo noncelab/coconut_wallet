@@ -29,8 +29,7 @@ class WalletInfoScreen extends StatefulWidget {
   final int id;
   final bool isMultisig;
   final String entryPoint;
-  const WalletInfoScreen(
-      {super.key, required this.id, required this.isMultisig, required this.entryPoint});
+  const WalletInfoScreen({super.key, required this.id, required this.isMultisig, required this.entryPoint});
 
   @override
   State<WalletInfoScreen> createState() => _WalletInfoScreenState();
@@ -48,13 +47,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<WalletInfoViewModel>(
-      create: (_) => WalletInfoViewModel(
-        widget.id,
-        Provider.of<AuthProvider>(_, listen: false),
-        Provider.of<WalletProvider>(_, listen: false),
-        Provider.of<NodeProvider>(_, listen: false),
-        widget.isMultisig,
-      ),
+      create:
+          (_) => WalletInfoViewModel(
+            widget.id,
+            Provider.of<AuthProvider>(context, listen: false),
+            Provider.of<WalletProvider>(context, listen: false),
+            Provider.of<NodeProvider>(context, listen: false),
+            widget.isMultisig,
+          ),
       child: Consumer<WalletInfoViewModel>(
         builder: (_, viewModel, child) {
           return Stack(
@@ -64,8 +64,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 child: Scaffold(
                   backgroundColor: CoconutColors.black,
                   appBar: CoconutAppBar.build(
-                      title: t.wallet_info_screen.title(name: viewModel.walletName),
-                      context: context),
+                    title: t.wallet_info_screen.title(name: viewModel.walletName),
+                    context: context,
+                  ),
                   body: SafeArea(
                     child: SingleChildScrollView(
                       child: Column(
@@ -91,8 +92,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   });
 
                                   _tooltipTimer?.cancel();
-                                  _tooltipTimer =
-                                      Timer.periodic(const Duration(seconds: 1), (timer) {
+                                  _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
                                     setState(() {
                                       if (_tooltipRemainingTime > 0) {
                                         _tooltipRemainingTime--;
@@ -105,8 +105,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 });
                               },
                               tooltipKey: _walletTooltipKey,
-                              onNameChanged: (updatedName) =>
-                                  viewModel.updateWalletName(updatedName),
+                              onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
                             ),
                           ),
                           if (widget.isMultisig) ...{
@@ -120,15 +119,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 separatorBuilder: (context, index) => const SizedBox(height: 8),
                                 itemBuilder: (context, index) {
                                   return MultisigSignerCard(
-                                      index: index,
-                                      signer: viewModel.getSigner(index),
-                                      masterFingerprint:
-                                          viewModel.getSignerMasterFingerprint(index));
+                                    index: index,
+                                    signer: viewModel.getSigner(index),
+                                    masterFingerprint: viewModel.getSignerMasterFingerprint(index),
+                                  );
                                 },
                               ),
                             ),
                           } else ...{
-                            CoconutLayout.spacing_800h
+                            CoconutLayout.spacing_800h,
                           },
                           Container(
                             decoration: BoxDecoration(
@@ -144,8 +143,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   showIcon: true,
                                   onPressed: () {
                                     _removeTooltip();
-                                    Navigator.pushNamed(context, '/address-list',
-                                        arguments: {'id': widget.id});
+                                    Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
                                   },
                                 ),
                                 Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
@@ -155,9 +153,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     showIcon: true,
                                     onPressed: () async {
                                       _removeTooltip();
-                                      _handleAuthFlow(onComplete: () {
-                                        _showExtendedBottomSheet(viewModel.extendedPublicKey);
-                                      });
+                                      _handleAuthFlow(
+                                        onComplete: () {
+                                          _showExtendedBottomSheet(viewModel.extendedPublicKey);
+                                        },
+                                      );
                                     },
                                   ),
                                   Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
@@ -167,8 +167,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   showIcon: true,
                                   onPressed: () {
                                     _removeTooltip();
-                                    Navigator.pushNamed(context, '/utxo-tag',
-                                        arguments: {'id': widget.id});
+                                    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
                                   },
                                 ),
                               ],
@@ -197,15 +196,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                   rightIcon: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                        color: CoconutColors.white.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(10)),
+                                      color: CoconutColors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
                                     child: SvgPicture.asset(
                                       'assets/svg/trash.svg',
                                       width: 16,
-                                      colorFilter: const ColorFilter.mode(
-                                        CoconutColors.hotPink,
-                                        BlendMode.srcIn,
-                                      ),
+                                      colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
                                     ),
                                   ),
                                   onPressed: () {
@@ -215,9 +212,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                       title: t.alert.wallet_delete.confirm_delete,
                                       message: t.alert.wallet_delete.confirm_delete_description,
                                       onConfirm: () {
-                                        _handleAuthFlow(onComplete: () async {
-                                          await _deleteWalletAndGoToEntryPoint(context, viewModel);
-                                        });
+                                        _handleAuthFlow(
+                                          onComplete: () async {
+                                            await _deleteWalletAndGoToEntryPoint(context, viewModel);
+                                          },
+                                        );
                                       },
                                       onCancel: () {
                                         Navigator.of(context).pop();
@@ -238,11 +237,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               ),
               Positioned(
                 top: _tooltipTopPadding,
-                right: MediaQuery.of(context).size.width -
+                right:
+                    MediaQuery.of(context).size.width -
                     _walletTooltipIconPosition.dx -
-                    (_walletTooltipIconRenderBox == null
-                        ? 0
-                        : _walletTooltipIconRenderBox!.size.width) -
+                    (_walletTooltipIconRenderBox == null ? 0 : _walletTooltipIconRenderBox!.size.width) -
                     10,
                 child: CoconutToolTip(
                   width: MediaQuery.sizeOf(context).width,
@@ -250,19 +248,19 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                   tooltipType: CoconutTooltipType.placement,
                   richText: RichText(
                     text: TextSpan(
-                      text: widget.isMultisig
-                          ? t.tooltip.multisig_wallet(
-                              total: viewModel.multisigTotalSignerCount,
-                              count: viewModel.multisigRequiredSignerCount)
-                          : t.tooltip.mfp +
-                              (viewModel.isMfpPlaceholder
-                                  ? '\n${t.wallet_info_screen.tooltip.mfp_placeholder_description}'
-                                  : ''),
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.black).merge(
-                            const TextStyle(
-                              height: 1.3,
-                            ),
-                          ),
+                      text:
+                          widget.isMultisig
+                              ? t.tooltip.multisig_wallet(
+                                total: viewModel.multisigTotalSignerCount,
+                                count: viewModel.multisigRequiredSignerCount,
+                              )
+                              : t.tooltip.mfp +
+                                  (viewModel.isMfpPlaceholder
+                                      ? '\n${t.wallet_info_screen.tooltip.mfp_placeholder_description}'
+                                      : ''),
+                      style: CoconutTypography.body3_12
+                          .setColor(CoconutColors.black)
+                          .merge(const TextStyle(height: 1.3)),
                     ),
                   ),
                   onTapRemove: _removeTooltip,
@@ -293,17 +291,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _initializeTooltipPosition() {
     try {
-      _walletTooltipIconRenderBox =
-          _walletTooltipKey.currentContext?.findRenderObject() as RenderBox?;
+      _walletTooltipIconRenderBox = _walletTooltipKey.currentContext?.findRenderObject() as RenderBox?;
       if (_walletTooltipIconRenderBox != null) {
         _walletTooltipIconPosition = _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
-        _tooltipTopPadding =
-            _walletTooltipIconPosition.dy + _walletTooltipIconRenderBox!.size.height;
+        _tooltipTopPadding = _walletTooltipIconPosition.dy + _walletTooltipIconRenderBox!.size.height;
 
         debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
         debugPrint('kToolbarHeight = $kToolbarHeight');
-        debugPrint(
-            '_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
+        debugPrint('_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
         debugPrint('_tooltipTopPadding: $_tooltipTopPadding');
       }
     } catch (e) {
@@ -320,8 +315,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
-  Future<void> _deleteWalletAndGoToEntryPoint(
-      BuildContext context, WalletInfoViewModel viewModel) async {
+  Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
     _setOverlayLoading(true);
     await viewModel.deleteWallet();
@@ -329,12 +323,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     if (context.mounted) {
       widget.entryPoint == kEntryPointWalletHome
           ? Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                  builder: (BuildContext context) => const AppGuard(child: WalletHomeScreen())),
-              (route) => false)
+            context,
+            MaterialPageRoute(builder: (BuildContext context) => const WalletHomeScreen()),
+            (route) => false,
+          )
           : Navigator.pushNamedAndRemoveUntil(
-              context, kEntryPointWalletList, (Route<dynamic> route) => route.settings.name == '/');
+            context,
+            kEntryPointWalletList,
+            (Route<dynamic> route) => route.settings.name == '/',
+          );
     }
   }
 
@@ -359,24 +356,18 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     }
 
     if (!mounted) return;
-    await CommonBottomSheets.showBottomSheet_90(
+    await CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
-      child: CustomLoadingOverlay(
-        child: PinCheckScreen(
-          onComplete: onComplete,
-        ),
-      ),
+      heightRatio: 0.9,
+      child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: onComplete)),
     );
   }
 
   void _showExtendedBottomSheet(String extendedPublicKey) {
-    CommonBottomSheets.showBottomSheet_90(
-        context: context,
-        child: AppGuard(
-          child: QrcodeBottomSheet(
-            qrData: extendedPublicKey,
-            title: t.extended_public_key,
-          ),
-        ));
+    CommonBottomSheets.showCustomHeightBottomSheet(
+      context: context,
+      heightRatio: 0.9,
+      child: QrcodeBottomSheet(qrData: extendedPublicKey, title: t.extended_public_key),
+    );
   }
 }

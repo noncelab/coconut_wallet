@@ -6,12 +6,7 @@ import 'package:crypto/crypto.dart';
 /// 스크립트 및 주소 관련 유틸리티 클래스
 class ElectrumUtil {
   /// 지갑으로부터 주소 목록을 가져옵니다.
-  static Map<int, String> prepareAddressesMap(
-    WalletBase wallet,
-    int startIndex,
-    int endIndex,
-    bool isChange,
-  ) {
+  static Map<int, String> prepareAddressesMap(WalletBase wallet, int startIndex, int endIndex, bool isChange) {
     Map<int, String> scripts = {};
 
     try {

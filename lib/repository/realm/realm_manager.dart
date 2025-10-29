@@ -14,14 +14,11 @@ class RealmManager {
   Realm get realm => _realm;
 
   RealmManager({Realm? realm})
-      : _realm = realm ??
-            Realm(
-              Configuration.local(
-                realmAllSchemas,
-                schemaVersion: kRealmVersion,
-                migrationCallback: defaultMigration,
-              ),
-            );
+    : _realm =
+          realm ??
+          Realm(
+            Configuration.local(realmAllSchemas, schemaVersion: kRealmVersion, migrationCallback: defaultMigration),
+          );
 
   @visibleForTesting
   RealmManager.withRealm(this._realm);

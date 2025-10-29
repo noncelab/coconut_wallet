@@ -10,12 +10,7 @@ class MultisigSignerCard extends StatelessWidget {
   final int index;
   final MultisigSigner signer;
   final String masterFingerprint;
-  const MultisigSignerCard({
-    super.key,
-    required this.index,
-    required this.signer,
-    required this.masterFingerprint,
-  });
+  const MultisigSignerCard({super.key, required this.index, required this.signer, required this.masterFingerprint});
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +26,11 @@ class MultisigSignerCard extends StatelessWidget {
           // 왼쪽 인덱스 번호
           SizedBox(
             width: 24,
-            child: Text('${index + 1}',
-                textAlign: TextAlign.center,
-                style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.gray400)),
+            child: Text(
+              '${index + 1}',
+              textAlign: TextAlign.center,
+              style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.gray400),
+            ),
           ),
           CoconutLayout.spacing_200w,
           // 카드 영역
@@ -42,29 +39,27 @@ class MultisigSignerCard extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: CoconutColors.black,
-                borderRadius: BorderRadius.circular(Sizes.size24),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: CoconutColors.gray700),
               ),
               child: Row(
                 children: [
                   // 아이콘
                   Container(
-                      padding: const EdgeInsets.all(Sizes.size10),
-                      decoration: BoxDecoration(
-                        color: ColorUtil.getColor(isInnerWallet ? colorIndex : 8).backgroundColor,
-                        borderRadius: BorderRadius.circular(14.0),
+                    padding: const EdgeInsets.all(Sizes.size10),
+                    decoration: BoxDecoration(
+                      color: ColorUtil.getColor(isInnerWallet ? colorIndex : 8).backgroundColor,
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                    child: SvgPicture.asset(
+                      isInnerWallet ? CustomIcons.getPathByIndex(iconIndex) : 'assets/svg/download.svg',
+                      colorFilter: ColorFilter.mode(
+                        ColorUtil.getColor(isInnerWallet ? colorIndex : 8).color, // index 8 is gray
+                        BlendMode.srcIn,
                       ),
-                      child: SvgPicture.asset(
-                        isInnerWallet
-                            ? CustomIcons.getPathByIndex(iconIndex)
-                            : 'assets/svg/download.svg',
-                        colorFilter: ColorFilter.mode(
-                          ColorUtil.getColor(isInnerWallet ? colorIndex : 8)
-                              .color, // index 8 is gray
-                          BlendMode.srcIn,
-                        ),
-                        width: isInnerWallet ? 18 : 15,
-                      )),
+                      width: isInnerWallet ? 18 : 15,
+                    ),
+                  ),
                   CoconutLayout.spacing_300w,
 
                   // 이름, 메모
@@ -92,10 +87,7 @@ class MultisigSignerCard extends StatelessWidget {
                   ),
 
                   // MFP 텍스트
-                  Text(
-                    masterFingerprint,
-                    style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                  ),
+                  Text(masterFingerprint, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
                 ],
               ),
             ),

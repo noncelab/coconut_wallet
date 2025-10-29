@@ -50,11 +50,7 @@ void main() {
 
   void realmSetup({required int initialVersion}) {
     // 테스트용 Realm 설정
-    config = Configuration.local(
-      realmAllSchemas,
-      schemaVersion: initialVersion,
-      path: testPath,
-    );
+    config = Configuration.local(realmAllSchemas, schemaVersion: initialVersion, path: testPath);
 
     // 새로운 Realm 인스턴스 생성
     realm = Realm(config);
@@ -133,12 +129,15 @@ void migrationFrom1toLatest(Realm originalRealm, int newRealmVersion, String new
   int usedChangeIndex = 3;
 
   originalRealm.write(() {
-    originalRealm.add(RealmWalletBaseMock.getMock(
-        name: 'Test Wallet', usedReceiveIndex: usedReceiveIndex, usedChangeIndex: usedChangeIndex));
     originalRealm.add(
-        RealmWalletAddressMock.getUsedMock(id: 1, address: 'address1', index: 0, isChange: false));
-    originalRealm.add(
-        RealmWalletAddressMock.getUsedMock(id: 2, address: 'address2', index: 0, isChange: true));
+      RealmWalletBaseMock.getMock(
+        name: 'Test Wallet',
+        usedReceiveIndex: usedReceiveIndex,
+        usedChangeIndex: usedChangeIndex,
+      ),
+    );
+    originalRealm.add(RealmWalletAddressMock.getUsedMock(id: 1, address: 'address1', index: 0, isChange: false));
+    originalRealm.add(RealmWalletAddressMock.getUsedMock(id: 2, address: 'address2', index: 0, isChange: true));
     originalRealm.add(RealmTransactionMock.getMock());
     originalRealm.add(RealmUtxoMock.getMock());
   });
@@ -158,8 +157,12 @@ void migrationFrom1toLatest(Realm originalRealm, int newRealmVersion, String new
 
   // 직접 resetWithoutWallet 함수를 적용한 후 검증
   // 이전 버전으로 설정하여 마이그레이션이 실행되도록 함
-  final newRealmConfig = Configuration.local(realmAllSchemas,
-      schemaVersion: newRealmVersion, migrationCallback: defaultMigration, path: newRealmPath);
+  final newRealmConfig = Configuration.local(
+    realmAllSchemas,
+    schemaVersion: newRealmVersion,
+    migrationCallback: defaultMigration,
+    path: newRealmPath,
+  );
 
   // 마이그레이션이 동작하는 새 Realm 인스턴스 생성 (이 시점에 마이그레이션은 이미 실행됨)
   final newRealm = Realm(newRealmConfig);
@@ -227,27 +230,13 @@ void migrationFrom1toLatest(Realm originalRealm, int newRealmVersion, String new
 
 void migrationFrom2toLatest(Realm originalRealm, int newRealmVersion, String newRealmPath) {
   originalRealm.write(() {
-    originalRealm.add(RealmWalletBaseMock.getMock(
-      name: 'Test Wallet1',
-      id: 1,
-    ));
-    originalRealm.add(RealmWalletBaseMock.getMock(
-      name: 'Test Wallet2',
-      id: 2,
-    ));
+    originalRealm.add(RealmWalletBaseMock.getMock(name: 'Test Wallet1', id: 1));
+    originalRealm.add(RealmWalletBaseMock.getMock(name: 'Test Wallet2', id: 2));
   });
 
-  final testWallet1BeforeMigration = originalRealm
-      .query<RealmWalletBase>(
-        'id == 1',
-      )
-      .first;
+  final testWallet1BeforeMigration = originalRealm.query<RealmWalletBase>('id == 1').first;
 
-  final testWallet2BeforeMigration = originalRealm
-      .query<RealmWalletBase>(
-        'id == 2',
-      )
-      .first;
+  final testWallet2BeforeMigration = originalRealm.query<RealmWalletBase>('id == 2').first;
 
   expect(testWallet1BeforeMigration.name, 'Test Wallet1');
   expect(testWallet1BeforeMigration.id, 1);
@@ -259,21 +248,17 @@ void migrationFrom2toLatest(Realm originalRealm, int newRealmVersion, String new
   }
 
   // Change RealmConfig
-  final newRealmConfig = Configuration.local(realmAllSchemas,
-      schemaVersion: newRealmVersion, migrationCallback: defaultMigration, path: newRealmPath);
+  final newRealmConfig = Configuration.local(
+    realmAllSchemas,
+    schemaVersion: newRealmVersion,
+    migrationCallback: defaultMigration,
+    path: newRealmPath,
+  );
   final newRealm = Realm(newRealmConfig);
 
-  final testWallet1AfterMigration = newRealm
-      .query<RealmWalletBase>(
-        'id == 1',
-      )
-      .first;
+  final testWallet1AfterMigration = newRealm.query<RealmWalletBase>('id == 1').first;
 
-  final testWallet2AfterMigration = newRealm
-      .query<RealmWalletBase>(
-        'id == 2',
-      )
-      .first;
+  final testWallet2AfterMigration = newRealm.query<RealmWalletBase>('id == 2').first;
 
   expect(testWallet1AfterMigration.name, 'Test Wallet1');
   expect(testWallet1AfterMigration.id, 1);

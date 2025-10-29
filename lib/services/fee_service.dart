@@ -26,10 +26,7 @@ class FeeService {
 
   /// 멤풀 및 블록스트림 API에서 수수료 정보 수집
   Future<RecommendedFee> getRecommendedFeesWithFallback() async {
-    final sources = [
-      () => _getMempoolSpaceFees(),
-      () => _getBlockstreamFees(),
-    ];
+    final sources = [() => _getMempoolSpaceFees(), () => _getBlockstreamFees()];
 
     for (final source in sources) {
       try {

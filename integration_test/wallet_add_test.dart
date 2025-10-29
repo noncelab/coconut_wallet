@@ -72,7 +72,7 @@ void main() {
   });
 
   group('외부 지갑 추가된 상태에서 CoconutVault add test', () {
-// 외부 지갑이 이미 추가된 상태에서 같은 Extended PubKey를 가지는 코코넛 지갑 추가 실패
+    // 외부 지갑이 이미 추가된 상태에서 같은 Extended PubKey를 가지는 코코넛 지갑 추가 실패
     testWidgets('[Wallet O] 같은 Extended PubKey를 가지는 코코넛 지갑 추가 실패', (tester) async {
       await setOneExternalWallet();
       await validateDuplicatedCoconutVaultAddFailed(tester, walletRepository);
@@ -80,22 +80,17 @@ void main() {
   });
 }
 
-Future<void> validateExternalWalletCrudFlow(
-    WidgetTester tester, WalletRepository walletRepository) async {
+Future<void> validateExternalWalletCrudFlow(WidgetTester tester, WalletRepository walletRepository) async {
   int initialWalletCount = (await walletRepository.getWalletItemList()).length;
 
   app.main();
   await tester.pumpAndSettle();
 
   final Finder walletListScreen = find.byType(WalletListScreen);
-  await waitForWidget(tester, walletListScreen,
-      timeoutMessage: 'walletListScreen not found after 60 seconds');
+  await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
   await tester.pumpAndSettle();
 
-  final walletProvider = Provider.of<WalletProvider>(
-    tester.element(find.byType(WalletListScreen)),
-    listen: false,
-  );
+  final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(WalletListScreen)), listen: false);
 
   // fix: 첫 테스트에서만 Connectivity 리스너가 호출되는 문제가 있다. 두 번째 테스트부터 임의로 함수를 호출하여 isolate.subscribeWallets가 호출되도록 한다.
   await Future.delayed(const Duration(seconds: 2));
@@ -103,14 +98,13 @@ Future<void> validateExternalWalletCrudFlow(
   // Wallet Data(xpub)
   String testPubKey =
       "vpub5ZZ1q76vi2LR9PeQDoV13u8TZwsyqKa7yBfD3GnPPvBjVU9ZnBTMkwzCHCVBZaPHDKJNEdMKo8MTyrQ9234idzSG9nHFD6hsUB8HJ14NBg7";
-  Descriptor descriptor =
-      Descriptor.forSingleSignature(AddressType.p2wpkh, testPubKey, "84'/1'/0'", "98C7D774");
+  Descriptor descriptor = Descriptor.forSingleSignature(AddressType.p2wpkh, testPubKey, "84'/1'/0'", "98C7D774");
   var xpubWalletData = {
     "name": "xpub 1",
     "colorIndex": 3,
     "iconIndex": 3,
     "descriptor": descriptor.serialize(),
-    "walletImportSource": WalletImportSource.extendedPublicKey.name
+    "walletImportSource": WalletImportSource.extendedPublicKey.name,
   };
 
   // Wallet Data(Descriptor)
@@ -121,14 +115,14 @@ Future<void> validateExternalWalletCrudFlow(
     "colorIndex": 4,
     "iconIndex": 4,
     "descriptor": testDescriptor,
-    "walletImportSource": WalletImportSource.extendedPublicKey.name
+    "walletImportSource": WalletImportSource.extendedPublicKey.name,
   };
 
   // Add External Wallets
-  var xpubWalletResult =
-      await walletProvider.syncFromCoconutVault(WatchOnlyWallet.fromJson(xpubWalletData));
-  var descriptorWalletResult =
-      await walletProvider.syncFromCoconutVault(WatchOnlyWallet.fromJson(descriptorWalletData));
+  var xpubWalletResult = await walletProvider.syncFromCoconutVault(WatchOnlyWallet.fromJson(xpubWalletData));
+  var descriptorWalletResult = await walletProvider.syncFromCoconutVault(
+    WatchOnlyWallet.fromJson(descriptorWalletData),
+  );
 
   expect(xpubWalletResult.walletId != null, true);
   expect(descriptorWalletResult.walletId != null, true);
@@ -145,9 +139,8 @@ Future<void> validateExternalWalletCrudFlow(
   expect(walletBaseList.length, initialWalletCount + 2);
 
   // Verify Wallets
-  var extendedPublicKeyWallets = walletBaseList
-      .where((v) => v.walletImportSource == WalletImportSource.extendedPublicKey)
-      .toList();
+  var extendedPublicKeyWallets =
+      walletBaseList.where((v) => v.walletImportSource == WalletImportSource.extendedPublicKey).toList();
   verifyWalletListItem(extendedPublicKeyWallets[1], xpubWalletData);
   verifyWalletListItem(extendedPublicKeyWallets[0], descriptorWalletData);
 
@@ -157,26 +150,24 @@ Future<void> validateExternalWalletCrudFlow(
   expect(walletProvider.walletItemList.length, initialWalletCount);
 }
 
-Future<void> validateDuplicatedExternalWalletAddFailed(
-    WidgetTester tester, WalletRepository walletRepository) async {
+Future<void> validateDuplicatedExternalWalletAddFailed(WidgetTester tester, WalletRepository walletRepository) async {
   app.main();
   await tester.pumpAndSettle();
 
   final Finder walletListScreen = find.byType(WalletListScreen);
-  await waitForWidget(tester, walletListScreen,
-      timeoutMessage: 'walletListScreen not found after 60 seconds');
+  await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
   await tester.pumpAndSettle();
 
-  final walletProvider = Provider.of<WalletProvider>(
-    tester.element(find.byType(WalletListScreen)),
-    listen: false,
-  );
+  final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(WalletListScreen)), listen: false);
 
   // fix: 첫 테스트에서만 Connectivity 리스너가 호출되는 문제가 있다. 두 번째 테스트부터 임의로 함수를 호출하여 isolate.subscribeWallets가 호출되도록 한다.
   //walletProvider.setIsNetworkOn(true);
 
-  final walletFromExtendedPubKey = WalletAddService()
-      .createExtendedPublicKeyWallet(singleSigWallet1ExtendedPublicKey, 'zpub', null);
+  final walletFromExtendedPubKey = WalletAddService().createExtendedPublicKeyWallet(
+    singleSigWallet1ExtendedPublicKey,
+    'zpub',
+    null,
+  );
 
   var pubKeyWalletAddResult = await walletProvider.syncFromThirdParty(walletFromExtendedPubKey);
   expect(pubKeyWalletAddResult.result, WalletSyncResult.existingWalletUpdateImpossible);
@@ -184,9 +175,10 @@ Future<void> validateDuplicatedExternalWalletAddFailed(
   expect(pubKeyWalletAddResult.walletId, isNot(-1));
 
   final walletFromDescriptor1 = WalletAddService().createWalletFromDescriptor(
-      descriptor: singleSigWallet1['descriptor'] as String,
-      name: "zpub",
-      walletImportSource: WalletImportSource.extendedPublicKey);
+    descriptor: singleSigWallet1['descriptor'] as String,
+    name: "zpub",
+    walletImportSource: WalletImportSource.extendedPublicKey,
+  );
 
   var descriptorWalletAddResult = await walletProvider.syncFromThirdParty(walletFromDescriptor1);
   expect(descriptorWalletAddResult.result, WalletSyncResult.existingWalletUpdateImpossible);
@@ -194,9 +186,10 @@ Future<void> validateDuplicatedExternalWalletAddFailed(
   expect(descriptorWalletAddResult.walletId, isNot(-1));
 
   final walletFromDescriptor2 = WalletAddService().createWalletFromDescriptor(
-      descriptor: DescriptorUtil.normalizeDescriptor(singleSigWallet1SimpleDescriptor),
-      name: "zpub",
-      walletImportSource: WalletImportSource.extendedPublicKey);
+    descriptor: DescriptorUtil.normalizeDescriptor(singleSigWallet1SimpleDescriptor),
+    name: "zpub",
+    walletImportSource: WalletImportSource.extendedPublicKey,
+  );
 
   var descriptorWalletAddResult2 = await walletProvider.syncFromThirdParty(walletFromDescriptor2);
   expect(descriptorWalletAddResult2.result, WalletSyncResult.existingWalletUpdateImpossible);
@@ -204,20 +197,15 @@ Future<void> validateDuplicatedExternalWalletAddFailed(
   expect(descriptorWalletAddResult2.walletId, isNot(-1));
 }
 
-Future<void> validateDuplicatedCoconutVaultAddFailed(
-    WidgetTester tester, WalletRepository walletRepository) async {
+Future<void> validateDuplicatedCoconutVaultAddFailed(WidgetTester tester, WalletRepository walletRepository) async {
   app.main();
   await tester.pumpAndSettle();
 
   final Finder walletListScreen = find.byType(WalletListScreen);
-  await waitForWidget(tester, walletListScreen,
-      timeoutMessage: 'walletListScreen not found after 60 seconds');
+  await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
   await tester.pumpAndSettle();
 
-  final walletProvider = Provider.of<WalletProvider>(
-    tester.element(find.byType(WalletListScreen)),
-    listen: false,
-  );
+  final walletProvider = Provider.of<WalletProvider>(tester.element(find.byType(WalletListScreen)), listen: false);
 
   // fix: 첫 테스트에서만 Connectivity 리스너가 호출되는 문제가 있다. 두 번째 테스트부터 임의로 함수를 호출하여 isolate.subscribeWallets가 호출되도록 한다.
   //walletProvider.setIsNetworkOn(true);

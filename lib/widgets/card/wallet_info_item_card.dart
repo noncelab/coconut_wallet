@@ -8,8 +8,12 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
 import 'package:flutter/material.dart';
+
+import 'dart:math' as math;
+
+import 'package:flutter_svg/svg.dart';
 
 class WalletInfoItemCard extends StatefulWidget {
   final int id;
@@ -42,6 +46,8 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   late WalletListItemBase walletItem;
   WalletImportSource? walletImportSource;
 
+  bool isItemTapped = false; // ui (edit 아이콘)
+
   @override
   void initState() {
     super.initState();
@@ -70,25 +76,29 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: isMultisig
-          ? BoxDecoration(
-              color: CoconutColors.black,
-              borderRadius: BorderRadius.circular(26),
-              gradient: ColorUtil.getMultisigLinearGradient(ColorUtil.getGradientColors(signers!)),
-            )
-          : null,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+        border: isMultisig ? null : Border.all(color: CoconutColors.gray700, width: 1),
+        gradient:
+            isMultisig
+                ? LinearGradient(
+                  colors: ColorUtil.getGradientColors(signers!),
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  transform: const GradientRotation(math.pi / 10),
+                )
+                : null,
+      ),
       child: Container(
-        margin: isMultisig ? const EdgeInsets.all(2) : const EdgeInsets.all(0),
-        padding: isMultisig ? const EdgeInsets.all(20) : const EdgeInsets.all(24),
-        decoration: isMultisig
-            ? BoxDecoration(
-                color: CoconutColors.black,
-                borderRadius: BorderRadius.circular(26), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
-              )
-            : BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: CoconutColors.gray700, width: 1),
-              ),
+        margin: isMultisig ? const EdgeInsets.all(2) : null, // 멀티시그의 경우 border 대신
+        padding: const EdgeInsets.all(20),
+        decoration:
+            isMultisig
+                ? BoxDecoration(
+                  color: CoconutColors.black,
+                  borderRadius: BorderRadius.circular(12), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+                )
+                : null,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -96,14 +106,26 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             // TODO: 만약 멀티시그의 외부지갑도 지원하게 된다면 이 부분 수정해야합니다.
             Expanded(
               child: GestureDetector(
-                onTap: () => _onTap(context, walletImportSource),
+                onTapDown: (details) {
+                  setState(() {
+                    isItemTapped = true;
+                  });
+                },
+                onTapCancel: () {
+                  setState(() {
+                    isItemTapped = false;
+                  });
+                },
+                onTap: () {
+                  setState(() {
+                    isItemTapped = false;
+                  });
+                  _onTap(context, walletImportSource);
+                },
                 child: Row(
                   children: [
-                    WalletItemIcon(
-                      walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
-                      colorIndex: colorIndex,
-                      iconIndex: iconIndex,
-                    ),
+                    _buildIcon(),
+
                     CoconutLayout.spacing_200w,
                     // 이름
                     Expanded(
@@ -123,55 +145,52 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 if (rightText.isNotEmpty)
                   LayoutBuilder(
                     builder: (context, constraints) {
                       return ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: 120,
-                        ),
+                        constraints: const BoxConstraints(maxWidth: 120),
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerRight,
                           child: Text(
-                            rightText.replaceAllMapped(
-                                RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
-                            style: CoconutTypography.heading4_18_NumberBold
-                                .setColor(CoconutColors.white),
+                            rightText.replaceAllMapped(RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
+                            style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
                           ),
                         ),
                       );
                     },
                   ),
-                LayoutBuilder(builder: (context, constraints) {
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: 120,
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerRight,
-                      child: TooltipButton(
-                        isSelected: false,
-                        text: tooltipText,
-                        isLeft: true,
-                        iconKey: widget.tooltipKey,
-                        containerMargin: EdgeInsets.zero,
-                        containerPadding: EdgeInsets.zero,
-                        iconMargin: const EdgeInsets.only(left: 4),
-                        onTap: () {
-                          widget.onTooltipClicked();
-                        },
-                        onTapDown: (details) {
-                          widget.onTooltipClicked();
-                        },
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    return ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerRight,
+                        child: TooltipButton(
+                          isSelected: false,
+                          text: tooltipText,
+                          isLeft: true,
+                          iconKey: widget.tooltipKey,
+                          containerMargin: EdgeInsets.zero,
+                          containerPadding: EdgeInsets.zero,
+                          iconMargin: const EdgeInsets.only(left: 4),
+                          onTap: () {
+                            widget.onTooltipClicked();
+                          },
+                          onTapDown: (details) {
+                            widget.onTooltipClicked();
+                          },
+                        ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  },
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -185,10 +204,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => WalletInfoEditBottomSheet(
-        id: widget.id,
-        walletImportSource: walletImportSource,
-      ),
+      builder: (context) => WalletInfoEditBottomSheet(id: widget.id, walletImportSource: walletImportSource),
     ).then((result) {
       if (result != null) {
         var ellipsisName = result.length > 10 ? '${result.substring(0, 7)}...' : result;
@@ -198,5 +214,45 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
         widget.onNameChanged(ellipsisName);
       }
     });
+  }
+
+  Widget _buildIcon() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        WalletIcon(
+          walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+          colorIndex: colorIndex,
+          iconIndex: iconIndex,
+        ),
+        if (walletImportSource != null && walletImportSource != WalletImportSource.coconutVault)
+          Positioned(
+            right: -3,
+            bottom: -3,
+            child: Container(
+              padding: const EdgeInsets.all(4.3),
+              decoration: BoxDecoration(
+                color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(color: CoconutColors.gray900, offset: Offset(2, 2), blurRadius: 10, spreadRadius: 0),
+                ],
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(1),
+                decoration: BoxDecoration(
+                  color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
+                  shape: BoxShape.circle,
+                ),
+                child: SvgPicture.asset(
+                  'assets/svg/edit-outlined.svg',
+                  width: 10,
+                  colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }

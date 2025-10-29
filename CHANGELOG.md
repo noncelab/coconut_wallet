@@ -1,3 +1,26 @@
+## mainnet 0.4.6, regtest 3.3.1 - 2025-09-19
+* flutter 3.29.0 + 안드로이드 8.0: BackDropFilter 에러 발생. flutter 3.29.1로 업데이트
+* 안드로이드 앱 첫 실행 시 PrivacyScreen 깜빡임
+
+## mainnet 0.4.5 - 2025-09-13
+* 시드사이너 지갑 추가 버그 수정 (BC-UR)
+* QR Scanner 라이브러리 교체
+* 안드로이드 PrivacyScreen 버그 수정
+* 보내기 화면
+  - 등록된 지갑 주소 목록에서 보낼 주소 선택 시 주소 인덱스 증가
+  - 등록된 지갑 주소 목록 스크롤 추가
+  - 배치 트랜잭션 안내 UI 추가
+
+## mainnet 0.4.4, regtest 3.3.0 - 2025-09-13
+* 니모닉 문구 바이너리 검색
+* utxo 정렬 기준 선택값 유지
+* 보내기 - 내 주소 - 지갑 순서대로 보임 (단, 내 주소가 제일 첫번째)
+* appLifecycle - PrivacyScreen
+* 이름 편집 아이콘 - 서드파티 하드웨어에만 보임
+* 지갑 아이콘, 지갑 상세화면 UI 변경
+* 크럭스 지원
+* block explorer 설정 가능 (only mainnet)
+
 ## mainnet 0.4.3 - 2025-08-22
 ### Fixed
 * 일부 화면 레이아웃 수정

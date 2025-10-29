@@ -28,6 +28,7 @@ edit: "편집"
 max: "최대"
 all: "전체"
 no: "아니오"
+yes: "네"
 delete: "삭제"
 delete_label: "삭제하기"
 complete: "완료"
@@ -87,6 +88,7 @@ quick_send: "빨리 보내기"
 copied: "복사 완료"
 change_color: "색 변경"
 select: "선택"
+tap: "탭"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
 view_balance: "잔액 보기"
@@ -346,6 +348,7 @@ send_screen:
   max_mode_insufficient_balance: "잔액 부족"
   unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
   fee_rate_too_low: "0.1 미만으로는 설정할 수 없어요"
+  drag_to_add_address: "보낼 주소를 추가하려면 왼쪽으로 드래그 해주세요"
 
 utxo_selection_screen:
   title: "UTXO 고르기"
@@ -688,7 +691,7 @@ errors:
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sat/vB)"
   enter_fee_directly: "직접 입력하기"
-  search_mnemonic_word: "영문으로 검색해 보세요"
+  search_mnemonic_word: "영문 또는 숫자로 검색해 보세요"
 
 tooltip:
   recommended_fee1: "추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요."

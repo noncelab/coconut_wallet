@@ -60,23 +60,25 @@ class ElectrumServerViewModel extends ChangeNotifier {
   /// 모든 기본 일렉트럼 서버 상태 체크
   void _checkAllElectrumServerConnections() {
     final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
-    final serverList = isRegtestFlavor
-        ? DefaultElectrumServer.regtestServers
-        : DefaultElectrumServer.mainnetServers;
+    final serverList = isRegtestFlavor ? DefaultElectrumServer.regtestServers : DefaultElectrumServer.mainnetServers;
 
     for (final server in serverList) {
       _connectionStatusMap[server] = NodeConnectionStatus.connecting;
 
-      _nodeProvider.checkServerConnection(server).then((result) {
-        _connectionStatusMap[server] =
-            result.isSuccess ? NodeConnectionStatus.connected : NodeConnectionStatus.failed;
-        debugPrint(
-            '[서버 상태 체크] ${_connectionStatusMap[server]!.name} - ${result.isSuccess ? 'Connected' : 'Failed'}');
-        notifyListeners();
-      }).catchError((_) {
-        _connectionStatusMap[server] = NodeConnectionStatus.failed;
-        notifyListeners();
-      });
+      _nodeProvider
+          .checkServerConnection(server)
+          .then((result) {
+            _connectionStatusMap[server] =
+                result.isSuccess ? NodeConnectionStatus.connected : NodeConnectionStatus.failed;
+            debugPrint(
+              '[서버 상태 체크] ${_connectionStatusMap[server]!.name} - ${result.isSuccess ? 'Connected' : 'Failed'}',
+            );
+            notifyListeners();
+          })
+          .catchError((_) {
+            _connectionStatusMap[server] = NodeConnectionStatus.failed;
+            notifyListeners();
+          });
     }
   }
 
@@ -138,8 +140,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
     }
 
     // 일반 도메인 패턴
-    final domainRegExp =
-        RegExp(r'^(?!:\/\/)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$');
+    final domainRegExp = RegExp(r'^(?!:\/\/)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$');
     return domainRegExp.hasMatch(input);
   }
 
@@ -184,11 +185,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     // 서버 연결 상태 상관없이 서버 정보 업데이트
     _setCurrentServer(newServer);
-    _preferenceProvider.setCustomElectrumServer(
-      newServer.host,
-      newServer.port,
-      newServer.ssl,
-    );
+    _preferenceProvider.setCustomElectrumServer(newServer.host, newServer.port, newServer.ssl);
 
     // 연결된 서버가 default 서버에도 없고, 사용자 서버에도 없으면 사용자 서버 추가
     if (!_isDefaultServer(newServer) && !_isUserServer(newServer)) {
@@ -214,22 +211,20 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   bool _isDefaultServer(ElectrumServer server) {
     final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
-    final defaultServers = isRegtestFlavor
-        ? DefaultElectrumServer.regtestServers
-        : DefaultElectrumServer.mainnetServers;
+    final defaultServers =
+        isRegtestFlavor ? DefaultElectrumServer.regtestServers : DefaultElectrumServer.mainnetServers;
 
-    return defaultServers.any((defaultServer) =>
-        defaultServer.host == server.host &&
-        defaultServer.port == server.port &&
-        defaultServer.ssl == server.ssl);
+    return defaultServers.any(
+      (defaultServer) =>
+          defaultServer.host == server.host && defaultServer.port == server.port && defaultServer.ssl == server.ssl,
+    );
   }
 
   /// 사용자 서버 목록에 포함되어 있는지 확인
   bool _isUserServer(ElectrumServer server) {
-    return _userServers.any((userServer) =>
-        userServer.host == server.host &&
-        userServer.port == server.port &&
-        userServer.ssl == server.ssl);
+    return _userServers.any(
+      (userServer) => userServer.host == server.host && userServer.port == server.port && userServer.ssl == server.ssl,
+    );
   }
 
   /// 서버 연결 테스트 수행
@@ -238,17 +233,20 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     setNodeConnectionStatus(NodeConnectionStatus.connecting);
 
-    _nodeProvider.checkServerConnection(currentServer).then((result) {
-      if (result.isFailure) {
-        debugPrint('서버 상태 점검: [연결 실패] ${currentServer.host}:${currentServer.port}');
-        setNodeConnectionStatus(NodeConnectionStatus.failed);
-      } else {
-        debugPrint('서버 상태 점검: [연결 성공] ${currentServer.host}:${currentServer.port}');
-        setNodeConnectionStatus(NodeConnectionStatus.connected);
-      }
-    }).catchError((error) {
-      debugPrint('서버 상태 점검: [테스트 중 오류] ${currentServer.host}:${currentServer.port} - $error');
-      setNodeConnectionStatus(NodeConnectionStatus.failed);
-    });
+    _nodeProvider
+        .checkServerConnection(currentServer)
+        .then((result) {
+          if (result.isFailure) {
+            debugPrint('서버 상태 점검: [연결 실패] ${currentServer.host}:${currentServer.port}');
+            setNodeConnectionStatus(NodeConnectionStatus.failed);
+          } else {
+            debugPrint('서버 상태 점검: [연결 성공] ${currentServer.host}:${currentServer.port}');
+            setNodeConnectionStatus(NodeConnectionStatus.connected);
+          }
+        })
+        .catchError((error) {
+          debugPrint('서버 상태 점검: [테스트 중 오류] ${currentServer.host}:${currentServer.port} - $error');
+          setNodeConnectionStatus(NodeConnectionStatus.failed);
+        });
   }
 }

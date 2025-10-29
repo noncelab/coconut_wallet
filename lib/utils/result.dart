@@ -4,9 +4,7 @@ class Result<T> {
   final T? _value;
   final AppError? _error;
 
-  Result._({T? value, AppError? error})
-      : _value = value,
-        _error = error;
+  Result._({T? value, AppError? error}) : _value = value, _error = error;
 
   factory Result.success(T value) {
     return Result._(value: value);

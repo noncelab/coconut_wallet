@@ -13,23 +13,26 @@ class PinBox extends StatelessWidget {
   Widget build(BuildContext context) {
     final boxSize = size ?? 50.0;
     return SizedBox(
-        width: boxSize,
-        child: AspectRatio(
-            aspectRatio: 1.0,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                color: CoconutColors.white.withOpacity(0.2),
-              ),
-              child: isSet
+      width: boxSize,
+      child: AspectRatio(
+        aspectRatio: 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            color: CoconutColors.white.withOpacity(0.2),
+          ),
+          child:
+              isSet
                   ? Padding(
-                      padding: const EdgeInsets.all(Sizes.size12),
-                      child: SvgPicture.asset(
-                        'assets/svg/coconut-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg',
-                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                      ),
-                    )
+                    padding: const EdgeInsets.all(Sizes.size12),
+                    child: SvgPicture.asset(
+                      'assets/svg/coconut-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg',
+                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                    ),
+                  )
                   : null,
-            )));
+        ),
+      ),
+    );
   }
 }

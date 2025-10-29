@@ -130,8 +130,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     return Scaffold(
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       backgroundColor: CoconutColors.black,
-      appBar: CoconutAppBar.build(
-          title: (_isDonation ?? false) ? t.donation.donate : t.send, context: context),
+      appBar: CoconutAppBar.build(title: (_isDonation ?? false) ? t.donation.donate : t.send, context: context),
       body: SafeArea(
         child: Stack(
           children: [
@@ -144,40 +143,28 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: 8,
-                        ),
-                        child: _buildToolTip(),
-                      ),
+                      Padding(padding: const EdgeInsets.only(top: 8), child: _buildToolTip()),
                       Container(
                         margin: const EdgeInsets.only(top: 40),
                         // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
                         // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 16,
-                        ),
-                        decoration: BoxDecoration(
-                            color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
                         child: Center(
-                          child: _isBbQrType() && _bbqrParts.isNotEmpty
-                              ? QrImageView(
-                                  data: _bbqrParts[_currentBbqrIndex],
-                                  version: QrVersions.auto,
-                                )
-                              : AnimatedQrView(
-                                  key: ValueKey(_qrScanDensity),
-                                  qrScanDensity: _qrScanDensity,
-                                  qrViewDataHandler: BcUrQrViewHandler(
-                                      _psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
-                                ),
+                          child:
+                              _isBbQrType() && _bbqrParts.isNotEmpty
+                                  ? QrImageView(data: _bbqrParts[_currentBbqrIndex], version: QrVersions.auto)
+                                  : AnimatedQrView(
+                                    key: ValueKey(_qrScanDensity),
+                                    qrScanDensity: _qrScanDensity,
+                                    qrViewDataHandler: BcUrQrViewHandler(_psbtBase64, _qrScanDensity, {
+                                      'urType': 'crypto-psbt',
+                                    }),
+                                  ),
                         ),
                       ),
-                      if (!_isBbQrType()) ...[
-                        CoconutLayout.spacing_800h,
-                        _buildDensitySliderWidget(context),
-                      ]
+                      if (!_isBbQrType()) ...[CoconutLayout.spacing_800h, _buildDensitySliderWidget(context)],
+                      Container(height: 150),
                     ],
                   ),
                 ),
@@ -203,9 +190,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       child: Row(
         children: [
           Container(
-            constraints: const BoxConstraints(
-              maxWidth: 100,
-            ),
+            constraints: const BoxConstraints(maxWidth: 100),
             child: Text(
               t.unsigned_tx_qr_screen.low_density_qr,
               style: CoconutTypography.body3_12,
@@ -247,9 +232,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ),
           ),
           Container(
-            constraints: const BoxConstraints(
-              maxWidth: 100,
-            ),
+            constraints: const BoxConstraints(maxWidth: 100),
             child: Text(
               t.unsigned_tx_qr_screen.high_density_qr,
               style: CoconutTypography.body3_12,
@@ -287,15 +270,8 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   Widget _buildToolTip() {
     if (_sendInfoProvider.isDonation == true) {
       return Padding(
-        padding: const EdgeInsets.only(
-          top: 24,
-        ),
-        child: Center(
-          child: Text(
-            t.donation.unsigned_qr_tooltip,
-            style: CoconutTypography.body2_14_Bold,
-          ),
-        ),
+        padding: const EdgeInsets.only(top: 24),
+        child: Center(child: Text(t.donation.unsigned_qr_tooltip, style: CoconutTypography.body2_14_Bold)),
       );
     } else {
       return CoconutToolTip(
@@ -303,19 +279,12 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         borderColor: CoconutColors.gray900,
         icon: SvgPicture.asset(
           'assets/svg/circle-info.svg',
-          colorFilter: const ColorFilter.mode(
-            CoconutColors.white,
-            BlendMode.srcIn,
-          ),
+          width: 20,
+          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
         ),
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(
-          text: TextSpan(
-            style: CoconutTypography.body2_14.copyWith(
-              height: 1,
-            ),
-            children: _getGuideTextSpan(),
-          ),
+          text: TextSpan(style: CoconutTypography.body2_14.copyWith(height: 1.3), children: _getGuideTextSpan()),
         ),
       );
     }
@@ -329,22 +298,18 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (isKorean) {
             return [
-              TextSpan(
-                text: '[1] ',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
-              ),
+              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
-                style: CoconutTypography.body2_14.copyWith(height: 1),
+                style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(
-                text:
-                    ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+                text: ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.scan_qr_below,
@@ -353,38 +318,25 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(
-                text: '[1] ',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
-              ),
+              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
-                style: CoconutTypography.body2_14.copyWith(height: 1),
+                style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
-              TextSpan(
-                text: ', ',
-                style: CoconutTypography.body2_14.copyWith(height: 1),
-              ),
+              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
               TextSpan(
                 text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
+              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
               TextSpan(
-                text: ', ',
-                style: CoconutTypography.body2_14.copyWith(height: 1),
+                text: ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+                style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
-              TextSpan(
-                text:
-                    ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
-                style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
-              ),
-              TextSpan(
-                text: ', ',
-                style: CoconutTypography.body2_14.copyWith(height: 1),
-              ),
+              TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.scan_qr_below,
-                style: CoconutTypography.body2_14.copyWith(height: 1.4),
+                style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
             ];
           }
@@ -393,9 +345,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (isKorean) {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
               _em(t.unsigned_tx_qr_screen.guide_seedsigner.step1_em),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end}\n'),
@@ -403,9 +353,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1}'),
               TextSpan(text: '${t.unsigned_tx_qr_screen.guide_seedsigner.step1_end} '),
               _em('${t.unsigned_tx_qr_screen.guide_seedsigner.step1_em}\n'),
@@ -417,9 +365,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (isKorean) {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
               _em(t.unsigned_tx_qr_screen.guide_keystone.step1_em),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1_end}\n'),
@@ -427,9 +373,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1}'),
               TextSpan(text: '${t.unsigned_tx_qr_screen.guide_keystone.step1_end} '),
               _em('${t.unsigned_tx_qr_screen.guide_keystone.step1_em}\n'),
@@ -441,9 +385,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (isKorean) {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
               _em(t.unsigned_tx_qr_screen.guide_jade.step1_em),
@@ -452,9 +394,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1}'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step1_end} '),
@@ -466,9 +406,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       case WalletImportSource.coldCard:
         {
           return [
-            TextSpan(
-                text:
-                    '${t.third_party.cold_card} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+            TextSpan(text: '${t.third_party.cold_card} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
             TextSpan(text: t.unsigned_tx_qr_screen.guide_coldcard.step1_preposition),
             _em(t.unsigned_tx_qr_screen.guide_coldcard.step1_em),
             TextSpan(text: t.unsigned_tx_qr_screen.guide_coldcard.step1_end),
@@ -478,9 +416,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (isKorean) {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step1} '),
               _em(t.unsigned_tx_qr_screen.guide_krux.step1_em),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.select}\n'),
@@ -492,9 +428,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(
-                  text:
-                      '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
+              TextSpan(text: '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step1}'),
               TextSpan(text: '${t.unsigned_tx_qr_screen.guide_krux.select} '),
               _em('${t.unsigned_tx_qr_screen.guide_krux.step1_em}\n'),
@@ -512,8 +446,5 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     }
   }
 
-  TextSpan _em(String text) => TextSpan(
-        text: text,
-        style: CoconutTypography.body3_12_Bold,
-      );
+  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
 }

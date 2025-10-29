@@ -57,12 +57,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       onTap: () {
         widget.onPressedUnitToggle();
       },
-      child: Column(
-        children: [
-          FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
-          _buildBtcBalance(),
-        ],
-      ),
+      child: Column(children: [FiatPrice(satoshiAmount: widget.animatedBalanceData.current), _buildBtcBalance()]),
     );
   }
 
@@ -129,17 +124,11 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
         children: [
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10.0),
-              color: color,
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.0), color: color),
             child: Lottie.asset(animationPath, width: 12, height: 12),
           ),
           CoconutLayout.spacing_200w,
-          Text(
-            text,
-            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200),
-          ),
+          Text(text, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200)),
         ],
       ),
     );
@@ -148,16 +137,14 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   Widget _buildActionButtons() {
     return Row(
       children: [
-        _buildActionButton(
-            widget.onTapReceive, t.receive, CoconutColors.white, CoconutColors.black),
+        _buildActionButton(widget.onTapReceive, t.receive, CoconutColors.white, CoconutColors.black),
         const SizedBox(width: 12.0),
         _buildActionButton(widget.onTapSend, t.send, CoconutColors.primary, CoconutColors.black),
       ],
     );
   }
 
-  Widget _buildActionButton(
-      void Function() onTap, String label, Color backgroundColor, Color textColor) {
+  Widget _buildActionButton(void Function() onTap, String label, Color backgroundColor, Color textColor) {
     return Expanded(
       child: CoconutButton(
         onPressed: onTap,
