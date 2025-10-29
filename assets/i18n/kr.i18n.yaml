@@ -247,7 +247,7 @@ wallet_add_scanner_screen:
     step1_em: "XPUB 내보내기"
     step2: "2. "
     step2_em: "XPUB - QR 코드"
-
+    select: "Select"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
@@ -269,7 +269,6 @@ wallet_list:
     delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
-    
 
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
@@ -417,7 +416,7 @@ unsigned_tx_qr_screen:
     step1: "하드웨어 월렛으로 아래 QR 코드를 스캔하여 서명 과정을 시작해 주세요."
 
 coconut_qr_scanner:
-   reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
+  reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
 
 # lib/screens/settings
 app_info_screen:
