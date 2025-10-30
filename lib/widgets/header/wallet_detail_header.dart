@@ -157,7 +157,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   }
 
   Widget _buildActionButton(
-      void Function() onTap, String label, Color backgroundColor, Color textColor) {
+    void Function() onTap, String label, Color backgroundColor, Color textColor) {
     return Expanded(
       child: CoconutButton(
         onPressed: onTap,

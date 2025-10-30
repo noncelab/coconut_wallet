@@ -315,7 +315,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             '/send-confirm': (context) => buildLoadingScreenWithArgs(
                 context, (args) => SendConfirmScreen(currentUnit: args['currentUnit'])),
             '/utxo-list': (context) =>
-                buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
+                buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'], selectedUtxoList: args['selectedUtxoList'])),
             '/utxo-detail': (context) => buildLoadingScreenWithArgs(
                 context, (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id'])),
           },

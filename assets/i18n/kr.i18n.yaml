@@ -545,7 +545,7 @@ utxo_detail_screen:
   utxo_locked: "사용 잠금"
   utxo_unlocked: "사용 가능"
   utxo_locked_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
-  utxo_unlocked_toast_msg: "UTXO 잠금 해체 완료! 코인이 사용 가능한 상태로 전환됐어요."
+  utxo_unlocked_toast_msg: "UTXO 잠금 해제 완료! 코인이 사용 가능한 상태로 전환됐어요."
 
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"
