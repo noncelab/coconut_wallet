@@ -17,31 +17,14 @@ class ColorSet {
   final Color color;
   final Color backgroundColor;
 
-  const ColorSet({
-    required this.color,
-    required this.backgroundColor,
-  });
+  const ColorSet({required this.color, required this.backgroundColor});
 
   ColorSet withOpacity(double opacity) {
-    return ColorSet(
-      color: color,
-      backgroundColor: backgroundColor.withOpacity(opacity),
-    );
+    return ColorSet(color: color, backgroundColor: backgroundColor.withOpacity(opacity));
   }
 }
 
-enum CustomColor {
-  purple,
-  tangerine,
-  yellow,
-  green,
-  blue,
-  pink,
-  red,
-  orange,
-  lightgrey,
-  mint,
-}
+enum CustomColor { purple, tangerine, yellow, green, blue, pink, red, orange, lightgrey, mint }
 
 const List<Color> colorPalette = [
   CoconutColors.purple,
@@ -85,16 +68,10 @@ const List<Color> tagColorPalette = [
 class ColorUtil {
   static ColorSet getColor(int index) {
     if (index < 0 || index >= colorPalette.length) {
-      return const ColorSet(
-        color: defaultIconColor,
-        backgroundColor: defaultBackgroundColor,
-      );
+      return const ColorSet(color: defaultIconColor, backgroundColor: defaultBackgroundColor);
     }
 
-    return ColorSet(
-      color: colorPalette[index],
-      backgroundColor: backgroundColorPalette[index],
-    );
+    return ColorSet(color: colorPalette[index], backgroundColor: backgroundColorPalette[index]);
   }
 
   static int getIntFromColor(CustomColor color) {
@@ -146,31 +123,23 @@ class ColorUtil {
     }
 
     Color getColor(MultisigSigner item) {
-      return item.innerVaultId != null
-          ? ColorUtil.getColorByIndex(item.colorIndex ?? 0)
-          : CoconutColors.gray300;
+      return item.innerVaultId != null ? ColorUtil.getColorByIndex(item.colorIndex ?? 0) : CoconutColors.gray300;
     }
 
     // 2개인 경우
     if (list.length == 2) {
-      return [
-        getColor(list[0]),
-        getColor(list[1]),
-      ];
+      return [getColor(list[0]), getColor(list[1])];
     }
 
-    return [
-      getColor(list[0]),
-      getColor(list[1]),
-      getColor(list[2]),
-    ];
+    return [getColor(list[0]), getColor(list[1]), getColor(list[2])];
   }
 
   static LinearGradient getMultisigLinearGradient(List<Color> colors) {
     return LinearGradient(
-        colors: colors,
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        transform: const GradientRotation(math.pi / 10));
+      colors: colors,
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      transform: const GradientRotation(math.pi / 10),
+    );
   }
 }

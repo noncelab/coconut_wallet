@@ -57,9 +57,10 @@ class BcUrQrViewHandler implements IQrViewDataHandler {
 
     printLongString('--> source: ${UREncoder.encode(ur)}');
 
-    int maxFragmentLen = qrScanDensity == QrScanDensity.fast
-        ? 80
-        : qrScanDensity == QrScanDensity.normal
+    int maxFragmentLen =
+        qrScanDensity == QrScanDensity.fast
+            ? 80
+            : qrScanDensity == QrScanDensity.normal
             ? 40
             : 20;
 

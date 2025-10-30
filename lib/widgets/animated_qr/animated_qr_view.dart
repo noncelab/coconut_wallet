@@ -12,11 +12,12 @@ class AnimatedQrView extends StatefulWidget {
   final QrScanDensity qrScanDensity;
   final IQrViewDataHandler qrViewDataHandler;
 
-  const AnimatedQrView(
-      {super.key,
-      required this.qrViewDataHandler,
-      required this.qrScanDensity,
-      this.milliSeconds = 600});
+  const AnimatedQrView({
+    super.key,
+    required this.qrViewDataHandler,
+    required this.qrScanDensity,
+    this.milliSeconds = 600,
+  });
 
   @override
   State<AnimatedQrView> createState() => _AnimatedQrViewState();
@@ -36,15 +37,17 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
   @override
   void initState() {
     super.initState();
-    maxBits = widget.qrScanDensity == QrScanDensity.fast
-        ? maxBitsInFastMode
-        : widget.qrScanDensity == QrScanDensity.normal
+    maxBits =
+        widget.qrScanDensity == QrScanDensity.fast
+            ? maxBitsInFastMode
+            : widget.qrScanDensity == QrScanDensity.normal
             ? maxBitsInNormalMode
             : maxBitsInSlowMode;
     _qrData = widget.qrViewDataHandler.nextPart();
-    _qrVersion = widget.qrScanDensity == QrScanDensity.fast
-        ? 9
-        : widget.qrScanDensity == QrScanDensity.normal
+    _qrVersion =
+        widget.qrScanDensity == QrScanDensity.fast
+            ? 9
+            : widget.qrScanDensity == QrScanDensity.normal
             ? 7
             : 5;
     _timer = Timer.periodic(Duration(milliseconds: widget.milliSeconds), (timer) {
@@ -77,12 +80,8 @@ class _AnimatedQrViewState extends State<AnimatedQrView> {
               child: Container(
                 width: 100,
                 height: 100,
-                decoration: const BoxDecoration(
-                  color: CoconutColors.gray300,
-                ),
-                child: const CoconutLoadingOverlay(
-                  applyFullScreen: true,
-                ),
+                decoration: const BoxDecoration(color: CoconutColors.gray300),
+                child: const CoconutLoadingOverlay(applyFullScreen: true),
               ),
             ),
           ),

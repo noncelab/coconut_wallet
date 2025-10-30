@@ -136,9 +136,11 @@ class BbQrDecoder {
       _result = combinedBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
       // 첫 바이트가 303230 이면 ASCII 문자열로 변환
       if (_result.startsWith('303230')) {
-        _result = String.fromCharCodes(List.generate(_result.length ~/ 2, (i) {
-          return int.parse(_result.substring(i * 2, i * 2 + 2), radix: 16);
-        }));
+        _result = String.fromCharCodes(
+          List.generate(_result.length ~/ 2, (i) {
+            return int.parse(_result.substring(i * 2, i * 2 + 2), radix: 16);
+          }),
+        );
       }
       return _result;
     } catch (e) {

@@ -5,19 +5,17 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 class MultisigWalletListItem extends WalletListItemBase {
-  MultisigWalletListItem(
-      {required super.id,
-      required super.name,
-      required super.colorIndex,
-      required super.iconIndex,
-      required super.descriptor,
-      required this.signers,
-      required this.requiredSignatureCount,
-      super.receiveUsedIndex,
-      super.changeUsedIndex})
-      : super(
-            walletType: WalletType.multiSignature,
-            walletImportSource: WalletImportSource.coconutVault) {
+  MultisigWalletListItem({
+    required super.id,
+    required super.name,
+    required super.colorIndex,
+    required super.iconIndex,
+    required super.descriptor,
+    required this.signers,
+    required this.requiredSignatureCount,
+    super.receiveUsedIndex,
+    super.changeUsedIndex,
+  }) : super(walletType: WalletType.multiSignature, walletImportSource: WalletImportSource.coconutVault) {
     walletBase = MultisignatureWallet.fromDescriptor(descriptor);
     name = name.replaceAll('\n', ' ');
   }

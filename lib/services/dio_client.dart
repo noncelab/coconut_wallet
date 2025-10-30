@@ -13,17 +13,17 @@ import 'package:coconut_wallet/services/model/response/app_version_response.dart
 
 class DioClient {
   DioClient()
-      : _dio = Dio(
-          BaseOptions(
-            baseUrl: CoconutWalletApp.kFaucetHost,
-            connectTimeout: kHttpConnectionTimeout,
-            receiveTimeout: kHttpReceiveTimeout,
-            responseType: ResponseType.json,
-            validateStatus: (status) {
-              return status != null && (status < 400 || status == 429);
-            },
-          ),
-        )..interceptors.add(CustomLogInterceptor());
+    : _dio = Dio(
+        BaseOptions(
+          baseUrl: CoconutWalletApp.kFaucetHost,
+          connectTimeout: kHttpConnectionTimeout,
+          receiveTimeout: kHttpReceiveTimeout,
+          responseType: ResponseType.json,
+          validateStatus: (status) {
+            return status != null && (status < 400 || status == 429);
+          },
+        ),
+      )..interceptors.add(CustomLogInterceptor());
 
   final Dio _dio;
 

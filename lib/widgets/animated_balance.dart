@@ -52,10 +52,7 @@ class _AnimatedBalanceState extends State<AnimatedBalance> with SingleTickerProv
   @override
   void initState() {
     super.initState();
-    _balanceAnimController = AnimationController(
-      duration: Duration(milliseconds: widget.duration),
-      vsync: this,
-    );
+    _balanceAnimController = AnimationController(duration: Duration(milliseconds: widget.duration), vsync: this);
 
     _initializeAnimation();
   }
@@ -64,13 +61,14 @@ class _AnimatedBalanceState extends State<AnimatedBalance> with SingleTickerProv
     double startBalance = widget.prevValue.toDouble();
     double endBalance = widget.value.toDouble();
 
-    _balanceAnimation = Tween<double>(begin: startBalance, end: endBalance).animate(
-      CurvedAnimation(parent: _balanceAnimController, curve: Curves.easeOutCubic),
-    )..addListener(() {
-        setState(() {
-          _displayValue = _balanceAnimation.value;
-        });
+    _balanceAnimation = Tween<double>(
+      begin: startBalance,
+      end: endBalance,
+    ).animate(CurvedAnimation(parent: _balanceAnimController, curve: Curves.easeOutCubic))..addListener(() {
+      setState(() {
+        _displayValue = _balanceAnimation.value;
       });
+    });
 
     if (startBalance != endBalance) {
       _balanceAnimController.forward(from: 0.0); // 애니메이션의 진행도를 처음부터 다시 시작하기 위함(부드럽게)

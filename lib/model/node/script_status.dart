@@ -26,11 +26,7 @@ class ScriptStatus extends UnaddressedScriptStatus {
   }
 
   UnaddressedScriptStatus toUnaddressedScriptStatus() {
-    return UnaddressedScriptStatus(
-      scriptPubKey: scriptPubKey,
-      status: status,
-      timestamp: timestamp,
-    );
+    return UnaddressedScriptStatus(scriptPubKey: scriptPubKey, status: status, timestamp: timestamp);
   }
 }
 
@@ -41,9 +37,5 @@ class UnaddressedScriptStatus {
   String? status;
   DateTime timestamp;
 
-  UnaddressedScriptStatus({
-    required this.scriptPubKey,
-    required this.status,
-    required this.timestamp,
-  });
+  UnaddressedScriptStatus({required this.scriptPubKey, required this.status, required this.timestamp});
 }

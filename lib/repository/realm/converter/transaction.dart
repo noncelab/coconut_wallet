@@ -9,8 +9,7 @@ import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart'
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 
 // TransactionRecord -> _RealmTransaction 변환 함수
-RealmTransaction mapTransactionToRealmTransaction(
-    TransactionRecord transaction, int walletId, int id) {
+RealmTransaction mapTransactionToRealmTransaction(TransactionRecord transaction, int walletId, int id) {
   return RealmTransaction(
     id,
     transaction.transactionHash,
@@ -22,45 +21,45 @@ RealmTransaction mapTransactionToRealmTransaction(
     transaction.fee,
     transaction.vSize,
     transaction.createdAt,
-    inputAddressList:
-        transaction.inputAddressList.map((address) => jsonEncode(addressToJson(address))).toList(),
-    outputAddressList:
-        transaction.outputAddressList.map((address) => jsonEncode(addressToJson(address))).toList(),
+    inputAddressList: transaction.inputAddressList.map((address) => jsonEncode(addressToJson(address))).toList(),
+    outputAddressList: transaction.outputAddressList.map((address) => jsonEncode(addressToJson(address))).toList(),
   );
 }
 
 // note(트랜잭션 메모) 정보가 추가로 필요하여 TransactionDto를 반환
-TransactionRecord mapRealmTransactionToTransaction(RealmTransaction realmTransaction,
-    {List<RealmRbfHistory>? realmRbfHistoryList,
-    RealmCpfpHistory? realmCpfpHistory,
-    String? memo}) {
+TransactionRecord mapRealmTransactionToTransaction(
+  RealmTransaction realmTransaction, {
+  List<RealmRbfHistory>? realmRbfHistoryList,
+  RealmCpfpHistory? realmCpfpHistory,
+  String? memo,
+}) {
   return TransactionRecord(
-      realmTransaction.transactionHash,
-      realmTransaction.timestamp,
-      realmTransaction.blockHeight,
-      TransactionTypeExtension.fromString(realmTransaction.transactionType),
-      memo,
-      realmTransaction.amount,
-      realmTransaction.fee,
-      realmTransaction.inputAddressList
-          .map((element) => jsonToAddress(jsonDecode(element)))
-          .toList(),
-      realmTransaction.outputAddressList
-          .map((element) => jsonToAddress(jsonDecode(element)))
-          .toList(),
-      realmTransaction.vSize,
-      realmTransaction.createdAt,
-      rbfHistoryList: realmRbfHistoryList
-          ?.map((realmRbfHistory) => RbfHistory(
+    realmTransaction.transactionHash,
+    realmTransaction.timestamp,
+    realmTransaction.blockHeight,
+    TransactionTypeExtension.fromString(realmTransaction.transactionType),
+    memo,
+    realmTransaction.amount,
+    realmTransaction.fee,
+    realmTransaction.inputAddressList.map((element) => jsonToAddress(jsonDecode(element))).toList(),
+    realmTransaction.outputAddressList.map((element) => jsonToAddress(jsonDecode(element))).toList(),
+    realmTransaction.vSize,
+    realmTransaction.createdAt,
+    rbfHistoryList:
+        realmRbfHistoryList
+            ?.map(
+              (realmRbfHistory) => RbfHistory(
                 feeRate: realmRbfHistory.feeRate,
                 timestamp: realmRbfHistory.timestamp,
                 transactionHash: realmRbfHistory.transactionHash,
                 walletId: realmRbfHistory.walletId,
                 originalTransactionHash: realmRbfHistory.originalTransactionHash,
-              ))
-          .toList(),
-      cpfpHistory: realmCpfpHistory != null
-          ? CpfpHistory(
+              ),
+            )
+            .toList(),
+    cpfpHistory:
+        realmCpfpHistory != null
+            ? CpfpHistory(
               originalFee: realmCpfpHistory.originalFee,
               newFee: realmCpfpHistory.newFee,
               timestamp: realmCpfpHistory.timestamp,
@@ -68,7 +67,8 @@ TransactionRecord mapRealmTransactionToTransaction(RealmTransaction realmTransac
               childTransactionHash: realmCpfpHistory.childTransactionHash,
               walletId: realmCpfpHistory.walletId,
             )
-          : null);
+            : null,
+  );
 }
 
 Map<String, dynamic> addressToJson(TransactionAddress address) {
@@ -102,8 +102,7 @@ RealmRbfHistory mapRbfHistoryToRealmRbfHistory(RbfHistory rbfHistory) {
   );
 }
 
-RealmTransactionMemo generateRealmTransactionMemo(
-    String transactionHash, int walletId, String memo) {
+RealmTransactionMemo generateRealmTransactionMemo(String transactionHash, int walletId, String memo) {
   return RealmTransactionMemo(
     getTransactionMemoId(transactionHash, walletId),
     transactionHash,

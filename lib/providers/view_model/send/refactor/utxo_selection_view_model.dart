@@ -115,8 +115,10 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   }
 
   void cacheSpentUtxoIdsWithTag({required bool isTagsMoveAllowed}) {
-    _tagProvider.cacheUsedUtxoIds(_selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
-        isTagsMoveAllowed: isTagsMoveAllowed);
+    _tagProvider.cacheUsedUtxoIds(
+      _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+      isTagsMoveAllowed: isTagsMoveAllowed,
+    );
   }
 
   void selectAllUtxo() {
@@ -184,10 +186,8 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     });
 
     // unlock된 UTXO들만 따로 정렬
-    final unlockedUtxos =
-        _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
-    final lockedUtxos =
-        _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
+    final unlockedUtxos = _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
+    final lockedUtxos = _confirmedUtxoList.where((utxo) => utxo.status == UtxoStatus.locked).toList();
 
     // 각각 별도로 정렬
     UtxoState.sortUtxo(unlockedUtxos, basis);

@@ -12,8 +12,7 @@ class SpeedAppLnInvoiceService {
       }
 
       int millisats = sats * 1000;
-      final lnInvoiceResponse =
-          await _dio.get("${speedAppResponse.data['callback']}?amount=$millisats");
+      final lnInvoiceResponse = await _dio.get("${speedAppResponse.data['callback']}?amount=$millisats");
       if (lnInvoiceResponse.data['status'] == "ERROR") {
         throw Exception(lnInvoiceResponse.data['reason'] ?? "status is ERROR");
       } else if (lnInvoiceResponse.data['pr'] == null) {

@@ -45,9 +45,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
       _tagName = widget.updateUtxoTag!.name;
       _tagColorIndex = widget.updateUtxoTag!.colorIndex;
       _controller.text = _tagName;
-      _controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: _controller.text.length),
-      );
+      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
     }
 
     // 포커스 요청
@@ -79,12 +77,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
       ),
       bottomMargin: 20,
       body: Padding(
-        padding: EdgeInsets.only(
-          bottom: keyboardHeight > 0 ? keyboardHeight : 0,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
+        padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? keyboardHeight : 0, left: 16, right: 16, top: 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,10 +104,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
                     focusNode: _focusNode,
                     prefix: const Padding(
                       padding: EdgeInsets.only(left: 16),
-                      child: Text(
-                        "#",
-                        style: CoconutTypography.body3_12,
-                      ),
+                      child: Text("#", style: CoconutTypography.body3_12),
                     ),
                     onChanged: _onTextChanged,
                     onClear: () {
@@ -191,12 +181,14 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
     if (isUpdateMode) {
       // 수정 모드: 기존 값과 다르면 활성화
       final originalTag = widget.updateUtxoTag!;
-      isActive = _tagName.isNotEmpty &&
+      isActive =
+          _tagName.isNotEmpty &&
           (_tagName != originalTag.name || _tagColorIndex != originalTag.colorIndex) &&
           !widget.existingTags.any((tag) => tag.name == _tagName && tag.id != originalTag.id);
     } else {
       // 생성 모드: 유효한 이름이고 중복되지 않으면 활성화
-      isActive = _tagName.isNotEmpty &&
+      isActive =
+          _tagName.isNotEmpty &&
           !_controller.text.endsWith(' ') &&
           !widget.existingTags.any((tag) => tag.name == _tagName);
     }
@@ -209,17 +201,10 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
   void _createTag() {
     final isUpdateMode = widget.updateUtxoTag != null;
 
-    final tag = isUpdateMode
-        ? widget.updateUtxoTag!.copyWith(
-            name: _tagName,
-            colorIndex: _tagColorIndex,
-          )
-        : UtxoTag(
-            id: const Uuid().v4(),
-            walletId: widget.walletId,
-            name: _tagName,
-            colorIndex: _tagColorIndex,
-          );
+    final tag =
+        isUpdateMode
+            ? widget.updateUtxoTag!.copyWith(name: _tagName, colorIndex: _tagColorIndex)
+            : UtxoTag(id: const Uuid().v4(), walletId: widget.walletId, name: _tagName, colorIndex: _tagColorIndex);
 
     widget.onTagCreated(tag);
     Navigator.pop(context);

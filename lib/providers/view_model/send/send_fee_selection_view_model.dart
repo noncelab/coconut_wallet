@@ -29,14 +29,14 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   TransactionBuildResult? _buildResultWithCustomFee;
   final List<TransactionBuildResult> _recommendedFeeTxResult = [];
 
-  SendFeeSelectionViewModel(
-      this._sendInfoProvider, this._walletProvider, this._nodeProvider, this._isNetworkOn) {
+  SendFeeSelectionViewModel(this._sendInfoProvider, this._walletProvider, this._nodeProvider, this._isNetworkOn) {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     _walletId = _sendInfoProvider.walletId!;
-    _availableUtxos = _walletProvider
-        .getUtxoListByStatus(_walletId, UtxoStatus.unspent)
-        .where((element) => element.status != UtxoStatus.locked)
-        .toList();
+    _availableUtxos =
+        _walletProvider
+            .getUtxoListByStatus(_walletId, UtxoStatus.unspent)
+            .where((element) => element.status != UtxoStatus.locked)
+            .toList();
     _confirmedBalance = _availableUtxos.fold<int>(0, (sum, utxo) {
       return sum + utxo.amount;
     });
@@ -48,13 +48,14 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
     _isNetworkOn = isNetworkOn;
     _updateSendInfoProvider();
     _txBuilder = TransactionBuilder(
-        availableUtxos: _availableUtxos,
-        recipients: _sendInfoProvider.getRecipientMap()!,
-        feeRate: 1,
-        changeDerivationPath: _walletProvider.getChangeAddress(_walletId).derivationPath,
-        walletListItemBase: _walletListItemBase,
-        isFeeSubtractedFromAmount: _isMaxMode,
-        isUtxoFixed: false);
+      availableUtxos: _availableUtxos,
+      recipients: _sendInfoProvider.getRecipientMap()!,
+      feeRate: 1,
+      changeDerivationPath: _walletProvider.getChangeAddress(_walletId).derivationPath,
+      walletListItemBase: _walletListItemBase,
+      isFeeSubtractedFromAmount: _isMaxMode,
+      isUtxoFixed: false,
+    );
   }
 
   double get amount => _amount;
@@ -107,16 +108,14 @@ class SendFeeSelectionViewModel extends ChangeNotifier {
   bool isBalanceEnough(int? estimatedFee) {
     if (estimatedFee == null || estimatedFee == 0) return false;
     if (_isMaxMode) return (_confirmedBalance - estimatedFee) > dustLimit;
-    Logger.log(
-        '--> ${UnitUtil.convertBitcoinToSatoshi(amount)} + $estimatedFee <= $_confirmedBalance');
+    Logger.log('--> ${UnitUtil.convertBitcoinToSatoshi(amount)} + $estimatedFee <= $_confirmedBalance');
     return (UnitUtil.convertBitcoinToSatoshi(amount) + estimatedFee) <= _confirmedBalance;
   }
 
   void saveFinalSendInfo(TransactionFeeLevel? feeLevel) {
     final finalBuildResult = getFinalBuildResult(feeLevel);
-    double finalAmount = _isMaxMode
-        ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - finalBuildResult.estimatedFee)
-        : _amount;
+    double finalAmount =
+        _isMaxMode ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance - finalBuildResult.estimatedFee) : _amount;
     _sendInfoProvider.setAmount(finalAmount);
     _sendInfoProvider.setEstimatedFee(finalBuildResult.estimatedFee);
     _sendInfoProvider.setTransaction(finalBuildResult.transaction!);

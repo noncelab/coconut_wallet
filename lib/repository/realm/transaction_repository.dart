@@ -20,7 +20,8 @@ class TransactionRepository extends BaseRepository {
   /// walletId 로 트랜잭션 목록 조회, rbf/cpfp 내역 미포함
   List<TransactionRecord> getTransactionRecordList(int walletId) {
     final transactions = realm.query<RealmTransaction>(
-        'walletId == $walletId AND replaceByTransactionHash == null SORT(timestamp DESC)');
+      'walletId == $walletId AND replaceByTransactionHash == null SORT(timestamp DESC)',
+    );
 
     if (transactions.isEmpty) return [];
     List<TransactionRecord> result = [];
@@ -30,9 +31,7 @@ class TransactionRepository extends BaseRepository {
 
     // 트랜잭션 해시와 메모에 대한 매핑을 생성
     final transactionMemos = realm.query<RealmTransactionMemo>('walletId == $walletId');
-    final transactionMemoMap = {
-      for (var txMemo in transactionMemos) txMemo.transactionHash: txMemo.memo
-    };
+    final transactionMemoMap = {for (var txMemo in transactionMemos) txMemo.transactionHash: txMemo.memo};
 
     for (var t in unconfirmed) {
       result.add(mapRealmTransactionToTransaction(t, memo: transactionMemoMap[t.transactionHash]));
@@ -46,7 +45,8 @@ class TransactionRepository extends BaseRepository {
 
   List<TransactionRecord> getUnconfirmedTransactionRecordList(int walletId) {
     final realmTxs = realm.query<RealmTransaction>(
-        'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) SORT(createdAt DESC)');
+      'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) SORT(createdAt DESC)',
+    );
 
     if (realmTxs.isEmpty) return [];
     List<TransactionRecord> result = [];
@@ -58,12 +58,11 @@ class TransactionRepository extends BaseRepository {
     return result;
   }
 
-  List<RealmTransaction> getRealmTransactionListByHashes(
-      int walletId, Set<String> transactionHashes) {
-    return realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash IN $1',
-      [walletId, transactionHashes],
-    ).toList();
+  List<RealmTransaction> getRealmTransactionListByHashes(int walletId, Set<String> transactionHashes) {
+    return realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      transactionHashes,
+    ]).toList();
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경
@@ -108,13 +107,15 @@ class TransactionRepository extends BaseRepository {
     RealmResults<RealmTransaction>? txsToUpdateRealm;
 
     if (txsToDelete.isNotEmpty) {
-      txsToDeleteRealm = realm.query<RealmTransaction>(
-          'walletId == $walletId AND transactionHash IN \$0', [txsToDelete]);
+      txsToDeleteRealm = realm.query<RealmTransaction>('walletId == $walletId AND transactionHash IN \$0', [
+        txsToDelete,
+      ]);
     }
 
     if (txsToUpdate.isNotEmpty) {
-      txsToUpdateRealm = realm.query<RealmTransaction>(
-          'walletId == $walletId AND transactionHash IN \$0', [txsToUpdate]);
+      txsToUpdateRealm = realm.query<RealmTransaction>('walletId == $walletId AND transactionHash IN \$0', [
+        txsToUpdate,
+      ]);
     }
 
     await realm.writeAsync(() {
@@ -159,11 +160,9 @@ class TransactionRepository extends BaseRepository {
       final existingTx = existingTxMap[tx.transactionHash];
 
       if (existingTx == null) {
-        newTxsToAdd.add(mapTransactionToRealmTransaction(
-          tx,
-          walletId,
-          getRealmTransactionId(walletId, tx.transactionHash),
-        ));
+        newTxsToAdd.add(
+          mapTransactionToRealmTransaction(tx, walletId, getRealmTransactionId(walletId, tx.transactionHash)),
+        );
       } else if (existingTx.blockHeight == 0 && tx.blockHeight > 0) {
         // 미확인 -> 확인 상태로 변경된 트랜잭션 - 업데이트
         txsToUpdate.add(MapEntry(existingTx, tx));
@@ -198,36 +197,39 @@ class TransactionRepository extends BaseRepository {
 
   /// 특정 트랜잭션 조회
   TransactionRecord? getTransactionRecord(int walletId, String transactionHash) {
-    final realmTransaction = realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash == $1',
-      [walletId, transactionHash],
-    ).firstOrNull;
+    final realmTransaction =
+        realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+          walletId,
+          transactionHash,
+        ]).firstOrNull;
 
     if (realmTransaction == null) {
       return null;
     }
 
-    final realmTransactionMemo =
-        realm.find<RealmTransactionMemo>(getTransactionMemoId(transactionHash, walletId));
+    final realmTransactionMemo = realm.find<RealmTransactionMemo>(getTransactionMemoId(transactionHash, walletId));
 
     if (realmTransaction.blockHeight == 0) {
       final realmRbfHistoryList = getRbfHistoryList(walletId, transactionHash);
       final realmCpfpHistory = getCpfpHistory(walletId, transactionHash);
 
-      return mapRealmTransactionToTransaction(realmTransaction,
-          realmRbfHistoryList: realmRbfHistoryList,
-          realmCpfpHistory: realmCpfpHistory,
-          memo: realmTransactionMemo?.memo);
+      return mapRealmTransactionToTransaction(
+        realmTransaction,
+        realmRbfHistoryList: realmRbfHistoryList,
+        realmCpfpHistory: realmCpfpHistory,
+        memo: realmTransactionMemo?.memo,
+      );
     }
 
     return mapRealmTransactionToTransaction(realmTransaction, memo: realmTransactionMemo?.memo);
   }
 
   bool hasTransactionConfirmed(int walletId, String transactionHash) {
-    final realmTransaction = realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash == $1',
-      [walletId, transactionHash],
-    ).firstOrNull;
+    final realmTransaction =
+        realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+          walletId,
+          transactionHash,
+        ]).firstOrNull;
 
     if (realmTransaction == null) {
       return false;
@@ -253,10 +255,11 @@ class TransactionRepository extends BaseRepository {
       }
 
       // 새로 추가할 RBF 내역 생성
-      final newRbfHistories = rbfHistoryList
-          .where((dto) => !existingIds.contains(dto.id))
-          .map((dto) => mapRbfHistoryToRealmRbfHistory(dto))
-          .toList();
+      final newRbfHistories =
+          rbfHistoryList
+              .where((dto) => !existingIds.contains(dto.id))
+              .map((dto) => mapRbfHistoryToRealmRbfHistory(dto))
+              .toList();
 
       // 일괄 저장
       if (newRbfHistories.isNotEmpty) {
@@ -286,10 +289,11 @@ class TransactionRepository extends BaseRepository {
     }
 
     // 새로 추가할 CPFP 내역 생성
-    final newCpfpHistories = cpfpHistoryList
-        .where((dto) => !existingIds.contains(dto.id))
-        .map((dto) => mapCpfpHistoryToRealmCpfpHistory(dto))
-        .toList();
+    final newCpfpHistories =
+        cpfpHistoryList
+            .where((dto) => !existingIds.contains(dto.id))
+            .map((dto) => mapCpfpHistoryToRealmCpfpHistory(dto))
+            .toList();
 
     // 일괄 저장
     if (newCpfpHistories.isNotEmpty) {
@@ -300,19 +304,21 @@ class TransactionRepository extends BaseRepository {
   }
 
   List<RealmRbfHistory> getRbfHistoryList(int walletId, String transactionHash) {
-    final realmRbfHistory = realm.query<RealmRbfHistory>(
-      r'walletId == $0 AND transactionHash == $1',
-      [walletId, transactionHash],
-    ).firstOrNull;
+    final realmRbfHistory =
+        realm.query<RealmRbfHistory>(r'walletId == $0 AND transactionHash == $1', [
+          walletId,
+          transactionHash,
+        ]).firstOrNull;
 
     if (realmRbfHistory == null) {
       return [];
     }
 
-    final realmRbfHistoryList = realm.query<RealmRbfHistory>(
-      r'walletId == $0 AND originalTransactionHash == $1 SORT(feeRate DESC)',
-      [walletId, realmRbfHistory.originalTransactionHash],
-    ).toList();
+    final realmRbfHistoryList =
+        realm.query<RealmRbfHistory>(r'walletId == $0 AND originalTransactionHash == $1 SORT(feeRate DESC)', [
+          walletId,
+          realmRbfHistory.originalTransactionHash,
+        ]).toList();
 
     // transactionHash를 기준으로 중복 제거
     final uniqueTransactionHashes = <String>{};
@@ -329,26 +335,28 @@ class TransactionRepository extends BaseRepository {
   }
 
   RealmCpfpHistory? getCpfpHistory(int walletId, String transactionHash) {
-    final realmCpfpHistory = realm.query<RealmCpfpHistory>(
-      r'walletId == $0 AND (parentTransactionHash == $1 OR childTransactionHash == $1)',
-      [walletId, transactionHash],
-    ).firstOrNull;
+    final realmCpfpHistory =
+        realm.query<RealmCpfpHistory>(
+          r'walletId == $0 AND (parentTransactionHash == $1 OR childTransactionHash == $1)',
+          [walletId, transactionHash],
+        ).firstOrNull;
 
     return realmCpfpHistory;
   }
 
   /// RBF 내역 삭제, 트랜잭션이 컨펌되면 RBF내역은 불필요하므로 연관된 내역도 함께 삭제함
   Future<void> deleteRbfHistory(int walletId, lib.Transaction fetchedTx) async {
-    final realmRbfHistory = realm.query<RealmRbfHistory>(
-      r'walletId == $0 AND transactionHash == $1',
-      [walletId, fetchedTx.transactionHash],
-    ).firstOrNull;
+    final realmRbfHistory =
+        realm.query<RealmRbfHistory>(r'walletId == $0 AND transactionHash == $1', [
+          walletId,
+          fetchedTx.transactionHash,
+        ]).firstOrNull;
 
     if (realmRbfHistory != null) {
-      final relatedRbfHistoryList = realm.query<RealmRbfHistory>(
-        r'walletId == $0 AND originalTransactionHash == $1',
-        [walletId, realmRbfHistory.originalTransactionHash],
-      );
+      final relatedRbfHistoryList = realm.query<RealmRbfHistory>(r'walletId == $0 AND originalTransactionHash == $1', [
+        walletId,
+        realmRbfHistory.originalTransactionHash,
+      ]);
 
       if (relatedRbfHistoryList.isNotEmpty) {
         await realm.writeAsync(() {
@@ -360,10 +368,11 @@ class TransactionRepository extends BaseRepository {
 
   /// CPFP 내역 삭제, 트랜잭션이 컨펌되면 CPFP내역은 불필요하므로 연관된 내역도 함께 삭제하
   Future<void> deleteCpfpHistory(int walletId, lib.Transaction fetchedTx) async {
-    final realmCpfpHistory = realm.query<RealmCpfpHistory>(
-      r'walletId == $0 AND (parentTransactionHash == $1 OR childTransactionHash == $1)',
-      [walletId, fetchedTx.transactionHash],
-    ).firstOrNull;
+    final realmCpfpHistory =
+        realm.query<RealmCpfpHistory>(
+          r'walletId == $0 AND (parentTransactionHash == $1 OR childTransactionHash == $1)',
+          [walletId, fetchedTx.transactionHash],
+        ).firstOrNull;
 
     if (realmCpfpHistory != null) {
       await realm.writeAsync(() {
@@ -375,10 +384,10 @@ class TransactionRepository extends BaseRepository {
   /// rbfInfoMap - {key(fetchedTxHash): value(RbfInfo)}
   /// 기존 트랜잭션을 찾아서 rbf로 대체되었다는 표시를 하기 위한 메서드
   Future<void> markAsRbfReplaced(int walletId, Map<String, RbfInfo> rbfInfoMap) async {
-    final txListToReplce = realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash IN $1',
-      [walletId, rbfInfoMap.values.map((rbf) => rbf.previousTransactionHash).toList()],
-    );
+    final txListToReplce = realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      rbfInfoMap.values.map((rbf) => rbf.previousTransactionHash).toList(),
+    ]);
 
     final prevToCurrentTxMap = <String, String>{};
     for (var rbfInfo in rbfInfoMap.entries) {
@@ -393,13 +402,11 @@ class TransactionRepository extends BaseRepository {
   }
 
   Result<bool> deleteTransaction(int walletId, List<String> transactionHashes) {
-    final realmTransactions = realm
-        .query<RealmTransaction>(
-          r'walletId == $0 AND transactionHash IN $1',
-          [walletId, transactionHashes],
-        )
-        .where((tx) => tx.replaceByTransactionHash == null)
-        .toList();
+    final realmTransactions =
+        realm
+            .query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [walletId, transactionHashes])
+            .where((tx) => tx.replaceByTransactionHash == null)
+            .toList();
 
     if (realmTransactions.isNotEmpty) {
       realm.write(() {
@@ -411,29 +418,27 @@ class TransactionRepository extends BaseRepository {
     return Result.failure(ErrorCodes.realmNotFound);
   }
 
-  Future<void> deleteOrphanedCpfpTransaction(
-      int walletId, Set<String> receivingRbfTxHashSet) async {
-    final realmCpfpHistory = realm.query<RealmCpfpHistory>(
-      r'walletId == $0 AND parentTransactionHash IN $1',
-      [walletId, receivingRbfTxHashSet],
-    );
+  Future<void> deleteOrphanedCpfpTransaction(int walletId, Set<String> receivingRbfTxHashSet) async {
+    final realmCpfpHistory = realm.query<RealmCpfpHistory>(r'walletId == $0 AND parentTransactionHash IN $1', [
+      walletId,
+      receivingRbfTxHashSet,
+    ]);
 
     if (realmCpfpHistory.isEmpty) {
       return;
     }
 
-    Logger.log(
-        'deleteOrphanedCpfpTransaction: ${realmCpfpHistory.length} orphaned cpfp transaction');
+    Logger.log('deleteOrphanedCpfpTransaction: ${realmCpfpHistory.length} orphaned cpfp transaction');
 
-    final orphanedChildRealmTxs = realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash IN $1',
-      [walletId, realmCpfpHistory.map((cpfp) => cpfp.childTransactionHash).toList()],
-    );
+    final orphanedChildRealmTxs = realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      realmCpfpHistory.map((cpfp) => cpfp.childTransactionHash).toList(),
+    ]);
 
-    final orphanedUtxo = realm.query<RealmUtxo>(
-      r'walletId == $0 AND transactionHash IN $1',
-      [walletId, orphanedChildRealmTxs.map((tx) => tx.transactionHash).toList()],
-    );
+    final orphanedUtxo = realm.query<RealmUtxo>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      orphanedChildRealmTxs.map((tx) => tx.transactionHash).toList(),
+    ]);
 
     await realm.writeAsync(() {
       realm.deleteMany<RealmCpfpHistory>(realmCpfpHistory);
@@ -442,8 +447,7 @@ class TransactionRepository extends BaseRepository {
     });
   }
 
-  Future<void> updateTransactionRecord(
-      int walletId, String txHash, TransactionRecord updatedTx) async {
+  Future<void> updateTransactionRecord(int walletId, String txHash, TransactionRecord updatedTx) async {
     final realmTransaction = realm.find<RealmTransaction>(getRealmTransactionId(walletId, txHash));
 
     if (realmTransaction == null) {
@@ -452,8 +456,7 @@ class TransactionRepository extends BaseRepository {
 
     await realm.writeAsync(() {
       realm.delete(realmTransaction);
-      realm.add(mapTransactionToRealmTransaction(
-          updatedTx, walletId, getRealmTransactionId(walletId, txHash)));
+      realm.add(mapTransactionToRealmTransaction(updatedTx, walletId, getRealmTransactionId(walletId, txHash)));
       Logger.log('[TransactionRepository] updateTransactionRecord: $txHash');
     });
   }

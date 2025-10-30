@@ -20,9 +20,7 @@ import '../../../repository/realm/test_realm_manager.dart';
 import '../../../services/shared_prefs_service_test.mocks.dart';
 import 'rbf_service_test.mocks.dart';
 
-@GenerateMocks([
-  ElectrumService,
-])
+@GenerateMocks([ElectrumService])
 void main() {
   group('CpfpService', () {
     TestRealmManager? realmManager;
@@ -51,24 +49,25 @@ void main() {
         realmManager!.dispose();
         realmManager = await setupTestRealmManager();
       }
-      final sharedPrefsRepository = SharedPrefsRepository()
-        ..setSharedPreferencesForTest(MockSharedPreferences());
+      final sharedPrefsRepository = SharedPrefsRepository()..setSharedPreferencesForTest(MockSharedPreferences());
       when(sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField)).thenReturn(walletItem.id);
-      when(sharedPrefsRepository.setInt(SharedPrefKeys.kNextIdField, walletItem.id + 1))
-          .thenAnswer((_) async => true);
+      when(sharedPrefsRepository.setInt(SharedPrefKeys.kNextIdField, walletItem.id + 1)).thenAnswer((_) async => true);
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
       walletRepository = WalletRepository(realmManager!);
       electrumService = MockElectrumService();
       cpfpService = CpfpService(transactionRepository, utxoRepository, electrumService);
-      walletRepository.addSinglesigWallet(WatchOnlyWallet(
+      walletRepository.addSinglesigWallet(
+        WatchOnlyWallet(
           walletItem.name,
           walletItem.colorIndex,
           walletItem.iconIndex,
           walletItem.descriptor,
           null,
           null,
-          WalletImportSource.coconutVault.name));
+          WalletImportSource.coconutVault.name,
+        ),
+      );
     });
 
     tearDown(() {

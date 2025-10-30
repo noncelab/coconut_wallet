@@ -24,8 +24,7 @@ class BalanceFormatUtil {
 
     String bitcoinString;
     if (toBitcoin % 1 == 0) {
-      bitcoinString =
-          forceEightDecimals ? toBitcoin.toStringAsFixed(8) : toBitcoin.toInt().toString();
+      bitcoinString = forceEightDecimals ? toBitcoin.toStringAsFixed(8) : toBitcoin.toInt().toString();
     } else {
       bitcoinString = toBitcoin.toStringAsFixed(8);
       if (!forceEightDecimals) {
@@ -38,8 +37,7 @@ class BalanceFormatUtil {
     String integerPart = parts[0];
     String decimalPart = parts.length > 1 ? parts[1] : '';
 
-    final integerPartFormatted =
-        integerPart == '-0' ? '-0' : int.parse(integerPart).toThousandsSeparatedString();
+    final integerPartFormatted = integerPart == '-0' ? '-0' : int.parse(integerPart).toThousandsSeparatedString();
 
     String decimalPartGrouped = '';
     if (decimalPart.isNotEmpty) {
@@ -48,8 +46,7 @@ class BalanceFormatUtil {
       } else {
         decimalPart = decimalPart.padRight(8, '0');
         // Group the decimal part into blocks of 4 digits
-        decimalPartGrouped =
-            RegExp(r'.{1,4}').allMatches(decimalPart).map((match) => match.group(0)).join(' ');
+        decimalPartGrouped = RegExp(r'.{1,4}').allMatches(decimalPart).map((match) => match.group(0)).join(' ');
       }
     }
 
@@ -57,8 +54,6 @@ class BalanceFormatUtil {
       return '0';
     }
 
-    return decimalPartGrouped.isNotEmpty
-        ? '$integerPartFormatted.$decimalPartGrouped'
-        : integerPartFormatted;
+    return decimalPartGrouped.isNotEmpty ? '$integerPartFormatted.$decimalPartGrouped' : integerPartFormatted;
   }
 }

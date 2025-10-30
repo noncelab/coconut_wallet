@@ -14,12 +14,7 @@ class LockedUtxoItemCard extends StatefulWidget {
   final List<UtxoTag>? utxoTags;
   final BitcoinUnit currentUnit;
 
-  const LockedUtxoItemCard({
-    super.key,
-    required this.utxo,
-    this.utxoTags,
-    required this.currentUnit,
-  });
+  const LockedUtxoItemCard({super.key, required this.utxo, this.utxoTags, required this.currentUnit});
 
   @override
   State<LockedUtxoItemCard> createState() => _UtxoSelectableCardState();
@@ -39,20 +34,10 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
     return Container(
       decoration: BoxDecoration(
         color: CoconutColors.black,
-        borderRadius: BorderRadius.circular(
-          20,
-        ),
-        border: Border.all(
-          width: 1,
-          color: MyColors.borderGrey,
-        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(width: 1, color: MyColors.borderGrey),
       ),
-      padding: const EdgeInsets.only(
-        top: 23,
-        bottom: 22,
-        left: 18,
-        right: 20,
-      ),
+      padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -74,26 +59,20 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                         label: t.status_receiving,
                         labelColor: CoconutColors.black,
                         padding: const EdgeInsets.symmetric(vertical: 2),
-                      )
+                      ),
                   ],
                 ),
                 CoconutLayout.spacing_200h,
                 Row(
                   children: [
-                    Text(
-                      dateString[0],
-                      style: Styles.caption.setColor(CoconutColors.white.withOpacity(0.3)),
-                    ),
+                    Text(dateString[0], style: Styles.caption.setColor(CoconutColors.white.withOpacity(0.3))),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       color: CoconutColors.white.withOpacity(0.3),
                       width: 1,
                       height: 10,
                     ),
-                    Text(
-                      dateString[1],
-                      style: Styles.caption.setColor(CoconutColors.white.withOpacity(0.3)),
-                    ),
+                    Text(dateString[1], style: Styles.caption.setColor(CoconutColors.white.withOpacity(0.3))),
                   ],
                 ),
                 Visibility(
@@ -103,24 +82,19 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                     child: Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: List.generate(
-                        widget.utxoTags?.length ?? 0,
-                        (index) {
-                          Color foregroundColor =
-                              tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
-                          return IntrinsicWidth(
-                            child: CoconutChip(
-                              minWidth: 40,
-                              color: CoconutColors.backgroundColorPaletteDark[
-                                  widget.utxoTags?[index].colorIndex ?? 0],
-                              borderColor: foregroundColor,
-                              label: '#${widget.utxoTags?[index].name ?? ''}',
-                              labelSize: 12,
-                              labelColor: foregroundColor,
-                            ),
-                          );
-                        },
-                      ),
+                      children: List.generate(widget.utxoTags?.length ?? 0, (index) {
+                        Color foregroundColor = tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
+                        return IntrinsicWidth(
+                          child: CoconutChip(
+                            minWidth: 40,
+                            color: CoconutColors.backgroundColorPaletteDark[widget.utxoTags?[index].colorIndex ?? 0],
+                            borderColor: foregroundColor,
+                            label: '#${widget.utxoTags?[index].name ?? ''}',
+                            labelSize: 12,
+                            labelColor: foregroundColor,
+                          ),
+                        );
+                      }),
                     ),
                   ),
                 ),

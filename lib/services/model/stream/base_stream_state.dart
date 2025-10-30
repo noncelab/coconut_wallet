@@ -18,18 +18,10 @@ abstract class BaseStreamState<T> {
   });
 
   factory BaseStreamState.success(String methodName, T data) {
-    return SuccessState(
-      timestamp: DateTime.now(),
-      methodName: methodName,
-      data: data,
-    );
+    return SuccessState(timestamp: DateTime.now(), methodName: methodName, data: data);
   }
 
-  factory BaseStreamState.error(
-    String methodName,
-    String errorMessage, [
-    StackTrace? stackTrace,
-  ]) {
+  factory BaseStreamState.error(String methodName, String errorMessage, [StackTrace? stackTrace]) {
     return ErrorState(
       timestamp: DateTime.now(),
       methodName: methodName,

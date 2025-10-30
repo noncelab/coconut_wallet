@@ -19,7 +19,7 @@ import 'package:provider/provider.dart';
 
 enum BalanceMode {
   includingPending,
-  onlyUnspent // UtxoStatus.unspent (UtxoStatus.locked 제외)
+  onlyUnspent, // UtxoStatus.unspent (UtxoStatus.locked 제외)
 }
 
 class SelectWalletBottomSheet extends StatefulWidget {
@@ -30,14 +30,15 @@ class SelectWalletBottomSheet extends StatefulWidget {
   final bool showOnlyMfpWallets;
   final BalanceMode balanceMode;
 
-  const SelectWalletBottomSheet(
-      {super.key,
-      required this.walletId,
-      required this.onWalletChanged,
-      required this.currentUnit,
-      required this.showOnlyMfpWallets,
-      this.scrollController,
-      this.balanceMode = BalanceMode.includingPending});
+  const SelectWalletBottomSheet({
+    super.key,
+    required this.walletId,
+    required this.onWalletChanged,
+    required this.currentUnit,
+    required this.showOnlyMfpWallets,
+    this.scrollController,
+    this.balanceMode = BalanceMode.includingPending,
+  });
 
   @override
   State<SelectWalletBottomSheet> createState() => _SelectWalletBottomSheetState();
@@ -51,22 +52,22 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: CoconutColors.gray900,
-        appBar: CoconutAppBar.build(
-          title: t.send_screen.select_wallet,
-          context: context,
-          onBackPressed: null,
-          isBottom: true,
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              CoconutLayout.spacing_500h,
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: widget.scrollController,
-                  child: Column(
-                      children: List.generate(_walletList.length, (index) {
+      backgroundColor: CoconutColors.gray900,
+      appBar: CoconutAppBar.build(
+        title: t.send_screen.select_wallet,
+        context: context,
+        onBackPressed: null,
+        isBottom: true,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            CoconutLayout.spacing_500h,
+            Expanded(
+              child: SingleChildScrollView(
+                controller: widget.scrollController,
+                child: Column(
+                  children: List.generate(_walletList.length, (index) {
                     int walletId = _walletList[index].id;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: Sizes.size24, left: 14, right: 22),
@@ -78,32 +79,37 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
-                          child: _buildWalletItem(_walletList[index], _walletBalanceMap[walletId],
-                              _selectedWalletId == walletId),
+                          child: _buildWalletItem(
+                            _walletList[index],
+                            _walletBalanceMap[walletId],
+                            _selectedWalletId == walletId,
+                          ),
                         ),
                       ),
                     );
-                  })),
+                  }),
                 ),
               ),
-              CoconutLayout.spacing_800h,
-              Padding(
-                padding: const EdgeInsets.only(left: 16, right: 16),
-                child: CoconutButton(
-                  onPressed: () => widget.onWalletChanged(_selectedWalletId),
-                  disabledBackgroundColor: CoconutColors.gray800,
-                  disabledForegroundColor: CoconutColors.gray700,
-                  isActive: _selectedWalletId != widget.walletId,
-                  backgroundColor: CoconutColors.white,
-                  foregroundColor: CoconutColors.black,
-                  pressedTextColor: CoconutColors.black,
-                  text: t.select,
-                ),
+            ),
+            CoconutLayout.spacing_800h,
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16),
+              child: CoconutButton(
+                onPressed: () => widget.onWalletChanged(_selectedWalletId),
+                disabledBackgroundColor: CoconutColors.gray800,
+                disabledForegroundColor: CoconutColors.gray700,
+                isActive: _selectedWalletId != widget.walletId,
+                backgroundColor: CoconutColors.white,
+                foregroundColor: CoconutColors.black,
+                pressedTextColor: CoconutColors.black,
+                text: t.select,
               ),
-              CoconutLayout.spacing_800h,
-            ],
-          ),
-        ));
+            ),
+            CoconutLayout.spacing_800h,
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -115,10 +121,8 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     _walletList = walletProvider.walletItemList;
     if (preferenceProvider.walletOrder.isNotEmpty) {
       final walletMap = {for (var wallet in _walletList) wallet.id: wallet};
-      var orderedList = preferenceProvider.walletOrder
-          .map((id) => walletMap[id])
-          .whereType<WalletListItemBase>()
-          .toList();
+      var orderedList =
+          preferenceProvider.walletOrder.map((id) => walletMap[id]).whereType<WalletListItemBase>().toList();
       _walletList = orderedList;
     }
 
@@ -186,20 +190,11 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              amountText,
-              style: CoconutTypography.body2_14_Number,
-            ),
-            Text(
-              walletBase.name,
-              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-            ),
+            Text(amountText, style: CoconutTypography.body2_14_Number),
+            Text(walletBase.name, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
           ],
         ),
-        if (isChecked) ...{
-          const Spacer(),
-          SvgPicture.asset('assets/svg/check.svg'),
-        }
+        if (isChecked) ...{const Spacer(), SvgPicture.asset('assets/svg/check.svg')},
       ],
     );
   }

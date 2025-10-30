@@ -16,18 +16,18 @@ class GuideDialog extends StatelessWidget {
         children: [
           if (child != null) child!,
           ActionBottomButton(
-              onPressed: onPressed ??
-                  () {
-                    Navigator.pop(context);
-                  },
-              text: "확인")
+            onPressed:
+                onPressed ??
+                () {
+                  Navigator.pop(context);
+                },
+            text: "확인",
+          ),
         ],
       ),
       backgroundColor: MyColors.grey,
       contentPadding: const EdgeInsets.all(10.0),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(20.0)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20.0))),
     );
   }
 }

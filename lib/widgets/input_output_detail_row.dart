@@ -26,13 +26,11 @@ class InputOutputDetailRow extends StatelessWidget {
     this.transactionStatus,
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
-  String get balanceText =>
-      currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
+  String get balanceText => currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
 
   @override
   Widget build(BuildContext context) {
-    bool shouldTrimText = (balanceMaxWidth != 0.0 ? balanceMaxWidth : 100.0) >
-        MediaQuery.of(context).size.width * 0.3;
+    bool shouldTrimText = (balanceMaxWidth != 0.0 ? balanceMaxWidth : 100.0) > MediaQuery.of(context).size.width * 0.3;
     return Row(
       children: [
         Expanded(
@@ -41,9 +39,7 @@ class InputOutputDetailRow extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                shouldTrimText
-                    ? TextUtils.truncate(address, 14, 8, 6)
-                    : TextUtils.truncate(address, 19, 11, 8),
+                shouldTrimText ? TextUtils.truncate(address, 14, 8, 6) : TextUtils.truncate(address, 19, 11, 8),
                 style: CoconutTypography.body2_14_Number.copyWith(
                   color: rowProperty.leftItemColor,
                   fontSize: 14,
@@ -74,9 +70,7 @@ class InputOutputDetailRow extends StatelessWidget {
                         colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
                       ),
                     ),
-                    const SizedBox(
-                      width: 10,
-                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerRight,
@@ -126,9 +120,7 @@ class InputOutputDetailRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(
-                  width: 14,
-                ),
+                const SizedBox(width: 14),
                 SvgPicture.asset(
                   rowProperty.svgPath,
                   width: 16,
@@ -165,11 +157,9 @@ class InputOutputDetailRow extends StatelessWidget {
         );
       }
 
-      if (transactionStatus == TransactionStatus.sending ||
-          transactionStatus == TransactionStatus.sent) {
+      if (transactionStatus == TransactionStatus.sending || transactionStatus == TransactionStatus.sent) {
         leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
-      } else if (transactionStatus == TransactionStatus.self ||
-          transactionStatus == TransactionStatus.selfsending) {
+      } else if (transactionStatus == TransactionStatus.self || transactionStatus == TransactionStatus.selfsending) {
         leftItemColor = CoconutColors.white;
         rightItemColor = svgColor = CoconutColors.primary;
       }

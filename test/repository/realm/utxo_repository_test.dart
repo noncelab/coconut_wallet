@@ -31,10 +31,7 @@ void main() {
     group('updateUtxoStatusToOutgoingByTransaction 테스트', () {
       test('기본 UTXO 상태 업데이트가 정상적으로 이루어지는지 확인', () async {
         // Given
-        final mockTx = TransactionMock.createMockTransaction(
-          toAddress: testAddress,
-          amount: 1000000,
-        );
+        final mockTx = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 1000000);
 
         realmManager.realm.write(() {
           final utxo = UtxoMock.createUnspentRealmUtxo(
@@ -48,16 +45,10 @@ void main() {
         });
 
         // When
-        await utxoRepository.markUtxoAsOutgoing(
-          testWalletId,
-          mockTx,
-        );
+        await utxoRepository.markUtxoAsOutgoing(testWalletId, mockTx);
 
         // Then
-        final utxoId = getUtxoId(
-          mockTx.inputs[0].transactionHash,
-          mockTx.inputs[0].index,
-        );
+        final utxoId = getUtxoId(mockTx.inputs[0].transactionHash, mockTx.inputs[0].index);
         final updatedUtxo = utxoRepository.getUtxoState(testWalletId, utxoId);
 
         expect(updatedUtxo, isNotNull);
@@ -67,10 +58,7 @@ void main() {
 
       test('자기 참조 UTXO는 업데이트되지 않아야 함', () async {
         // Given
-        final mockTx = TransactionMock.createMockTransaction(
-          toAddress: testAddress,
-          amount: 1000000,
-        );
+        final mockTx = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 1000000);
 
         // 이미 자기 참조 상태인 UTXO 추가
         realmManager.realm.write(() {
@@ -86,16 +74,10 @@ void main() {
         });
 
         // When
-        await utxoRepository.markUtxoAsOutgoing(
-          testWalletId,
-          mockTx,
-        );
+        await utxoRepository.markUtxoAsOutgoing(testWalletId, mockTx);
 
         // Then
-        final utxoId = getUtxoId(
-          mockTx.inputs[0].transactionHash,
-          mockTx.inputs[0].index,
-        );
+        final utxoId = getUtxoId(mockTx.inputs[0].transactionHash, mockTx.inputs[0].index);
         final updatedUtxo = utxoRepository.getUtxoState(testWalletId, utxoId);
 
         expect(updatedUtxo, isNotNull);
@@ -105,10 +87,7 @@ void main() {
 
       test('이미 outgoing 상태인 UTXO의 기존 spentByTransactionHash가 유지되어야 함', () async {
         // Given
-        final mockTx = TransactionMock.createMockTransaction(
-          toAddress: toAddress,
-          amount: 1000000,
-        );
+        final mockTx = TransactionMock.createMockTransaction(toAddress: toAddress, amount: 1000000);
 
         const previousTxHash = 'previous_tx_hash';
 
@@ -126,16 +105,10 @@ void main() {
         });
 
         // When
-        await utxoRepository.markUtxoAsOutgoing(
-          testWalletId,
-          mockTx,
-        );
+        await utxoRepository.markUtxoAsOutgoing(testWalletId, mockTx);
 
         // Then
-        final utxoId = getUtxoId(
-          mockTx.inputs[0].transactionHash,
-          mockTx.inputs[0].index,
-        );
+        final utxoId = getUtxoId(mockTx.inputs[0].transactionHash, mockTx.inputs[0].index);
         final updatedUtxo = utxoRepository.getUtxoState(testWalletId, utxoId);
 
         expect(updatedUtxo, isNotNull);

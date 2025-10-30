@@ -27,11 +27,10 @@ class FeeSelectionItemCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? CoconutColors.white : CoconutColors.gray700,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          color: CoconutColors.gray900),
+        border: Border.all(color: isSelected ? CoconutColors.white : CoconutColors.gray700),
+        borderRadius: BorderRadius.circular(24),
+        color: CoconutColors.gray900,
+      ),
       child: CupertinoButton(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         onPressed: feeInfo.satsPerVb == null || feeInfo.estimatedFee == null ? null : onPressed,
@@ -43,9 +42,10 @@ class FeeSelectionItemCard extends StatelessWidget {
               children: [
                 Text(
                   feeInfo.level.text,
-                  style: feeInfo.estimatedFee == null
-                      ? CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray500)
-                      : CoconutTypography.body1_16.setColor(CoconutColors.white),
+                  style:
+                      feeInfo.estimatedFee == null
+                          ? CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray500)
+                          : CoconutTypography.body1_16.setColor(CoconutColors.white),
                 ),
                 CoconutLayout.spacing_50h,
                 Row(
@@ -56,19 +56,16 @@ class FeeSelectionItemCard extends StatelessWidget {
                       text: TextSpan(
                         style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
                         children: [
-                          TextSpan(
-                            text: feeInfo.level.expectedTime,
-                          ),
+                          TextSpan(text: feeInfo.level.expectedTime),
                           if (feeInfo.satsPerVb != null)
                             TextSpan(
-                              text:
-                                  " (${feeInfo.satsPerVb?.toInt()} ${feeInfo.satsPerVb == 1 ? 'sat' : 'sats'}/vb)",
+                              text: " (${feeInfo.satsPerVb?.toInt()} ${feeInfo.satsPerVb == 1 ? 'sat' : 'sats'}/vb)",
                             ),
                         ],
                       ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
             if (feeInfo.estimatedFee != null)
@@ -85,18 +82,17 @@ class FeeSelectionItemCard extends StatelessWidget {
                           currentUnit.displayBitcoinAmount(feeInfo.estimatedFee),
                           style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
-                        Text(" ${currentUnit.symbol}",
-                            style:
-                                CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
+                        Text(
+                          " ${currentUnit.symbol}",
+                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+                        ),
                       ],
                     ),
-                    const SizedBox(
-                      height: 5,
-                    ),
+                    const SizedBox(height: 5),
                     FiatPrice(
-                        satoshiAmount: feeInfo.estimatedFee ?? 0,
-                        textStyle:
-                            CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400)),
+                      satoshiAmount: feeInfo.estimatedFee ?? 0,
+                      textStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+                    ),
                   ],
                 ),
               ),
@@ -106,10 +102,7 @@ class FeeSelectionItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      t.fetch_fee_failed,
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
-                    ),
+                    Text(t.fetch_fee_failed, style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink)),
                   ],
                 ),
               ),

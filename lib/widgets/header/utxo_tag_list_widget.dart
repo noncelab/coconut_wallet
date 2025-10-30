@@ -7,11 +7,7 @@ class UtxoTagListWidget extends StatelessWidget {
   final String selectedUtxoTagName;
   final Function(String) onTagSelected;
 
-  const UtxoTagListWidget({
-    super.key,
-    required this.selectedUtxoTagName,
-    required this.onTagSelected,
-  });
+  const UtxoTagListWidget({super.key, required this.selectedUtxoTagName, required this.onTagSelected});
 
   @override
   Widget build(BuildContext context) {

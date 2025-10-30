@@ -14,18 +14,7 @@ void main() {
     });
 
     test('잘못된 amount 지정한 경우 exception', () async {
-      const amounts = [
-        -100000,
-        -50000,
-        -10000,
-        -5000,
-        -3000,
-        -1000,
-        0,
-        600000000000,
-        800000000000,
-        1000000000000
-      ];
+      const amounts = [-100000, -50000, -10000, -5000, -3000, -1000, 0, 600000000000, 800000000000, 1000000000000];
       for (var amount in amounts) {
         expect(() => invoiceService.getLnInvoiceOfPow(amount), throwsException);
       }

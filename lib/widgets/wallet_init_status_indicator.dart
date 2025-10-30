@@ -30,12 +30,13 @@ class WalletInitStatusIndicator extends StatelessWidget {
   final bool isLastUpdateTimeVisible;
   final int? lastUpdateTime;
 
-  const WalletInitStatusIndicator(
-      {super.key,
-      required this.state,
-      this.onTap,
-      this.isLastUpdateTimeVisible = false,
-      this.lastUpdateTime});
+  const WalletInitStatusIndicator({
+    super.key,
+    required this.state,
+    this.onTap,
+    this.isLastUpdateTimeVisible = false,
+    this.lastUpdateTime,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -94,14 +95,14 @@ class WalletInitStatusIndicator extends StatelessWidget {
 
             /// Isolate - repository fetch를 메인 스레드에서 실행시 멈춤
             if (state == WalletInitState.processing) ...{
-              LottieBuilder.asset(
-                'assets/files/status_loading.json',
-                width: 20,
-              ),
+              LottieBuilder.asset('assets/files/status_loading.json', width: 20),
             } else ...{
-              SvgPicture.asset('assets/svg/status-$iconName.svg',
-                  width: 18, colorFilter: ColorFilter.mode(color, BlendMode.srcIn)),
-            }
+              SvgPicture.asset(
+                'assets/svg/status-$iconName.svg',
+                width: 18,
+                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+              ),
+            },
           ],
         ),
       ),

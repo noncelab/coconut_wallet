@@ -10,15 +10,16 @@ class InformationItemCard extends StatelessWidget {
   final Widget? rightIcon;
   final CrossAxisAlignment crossAxisAlignment;
 
-  const InformationItemCard(
-      {super.key,
-      required this.label,
-      this.value,
-      this.onPressed,
-      this.showIcon = false,
-      this.isNumber = true,
-      this.rightIcon,
-      this.crossAxisAlignment = CrossAxisAlignment.center});
+  const InformationItemCard({
+    super.key,
+    required this.label,
+    this.value,
+    this.onPressed,
+    this.showIcon = false,
+    this.isNumber = true,
+    this.rightIcon,
+    this.crossAxisAlignment = CrossAxisAlignment.center,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,23 +38,26 @@ class InformationItemCard extends StatelessWidget {
             showIcon ? const Spacer() : const SizedBox(width: 32),
             if (value != null)
               Expanded(
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: value!.asMap().entries.map((entry) {
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children:
+                      value!.asMap().entries.map((entry) {
                         final index = entry.key;
                         final item = entry.value;
                         final isLast = index == value!.length - 1;
                         return Padding(
                           padding: EdgeInsets.only(bottom: isLast ? 0 : Sizes.size4),
-                          child: Text(item,
-                              textAlign: TextAlign.right,
-                              style: isNumber ? numberTextStyle : defaultTextStyle),
+                          child: Text(
+                            item,
+                            textAlign: TextAlign.right,
+                            style: isNumber ? numberTextStyle : defaultTextStyle,
+                          ),
                         );
-                      }).toList())),
+                      }).toList(),
+                ),
+              ),
             if (showIcon)
-              rightIcon ??
-                  Icon(Icons.keyboard_arrow_right_rounded,
-                      color: CoconutColors.white.withOpacity(0.4))
+              rightIcon ?? Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.white.withOpacity(0.4)),
           ],
         ),
       ),

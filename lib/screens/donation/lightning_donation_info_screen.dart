@@ -13,10 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class LightningDonationInfoScreen extends StatefulWidget {
   final int donationAmount;
-  const LightningDonationInfoScreen({
-    super.key,
-    required this.donationAmount,
-  });
+  const LightningDonationInfoScreen({super.key, required this.donationAmount});
 
   @override
   State<LightningDonationInfoScreen> createState() => _LightningDonationInfoScreenState();
@@ -76,60 +73,61 @@ class _LightningDonationInfoScreenState extends State<LightningDonationInfoScree
       ),
       resizeToAvoidBottomInset: false,
       backgroundColor: CoconutColors.black,
-      body: !_isInitialized
-          ? const CoconutLoadingOverlay()
-          : Padding(
-              padding: const EdgeInsets.only(
-                left: CoconutLayout.defaultPadding,
-                right: CoconutLayout.defaultPadding,
+      body:
+          !_isInitialized
+              ? const CoconutLoadingOverlay()
+              : Padding(
+                padding: const EdgeInsets.only(left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
+                child: Column(
+                  children: [
+                    CoconutLayout.spacing_800h,
+                    QrCode(qrData: _lnInvoice != null ? _lnInvoice! : t.donation.ln_address_pow),
+                    CoconutLayout.spacing_800h,
+                    _buildDonationAmountRow(),
+                    CoconutLayout.spacing_300h,
+                    IgnorePointer(
+                      ignoring: _lnInvoice == null,
+                      child: CopyTextContainer(
+                        text: t.donation.ln_invoice,
+                        middleText:
+                            _lnInvoice != null
+                                ? "${_lnInvoice!.substring(0, 7)}... ${_lnInvoice!.substring(_lnInvoice!.length - 7)}"
+                                : null,
+                        textStyle: CoconutTypography.body2_14_Bold,
+                        copyText: _lnInvoice,
+                        showButton: _lnInvoice != null,
+                      ),
+                    ),
+                    CoconutLayout.spacing_300h,
+                    CopyTextContainer(
+                      text: t.donation.ln_address,
+                      middleText: t.donation.ln_address_pow,
+                      textStyle: CoconutTypography.body2_14_Bold,
+                      copyText: t.donation.ln_address_pow,
+                    ),
+                    const Spacer(),
+                    if (canLaunchLnApp)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Sizes.size30),
+                        child: CoconutButton(
+                          isActive: _hasLnInvoice,
+                          backgroundColor: CoconutColors.white,
+                          foregroundColor: CoconutColors.black,
+                          pressedTextColor: CoconutColors.gray500,
+                          pressedBackgroundColor: CoconutColors.gray300,
+                          disabledBackgroundColor: CoconutColors.gray600,
+                          onPressed: () async {
+                            await launchUrl(
+                              Uri.parse("$_lnAppScheme:$_lnInvoice"),
+                              mode: LaunchMode.externalApplication,
+                            );
+                          },
+                          text: t.donation.donate,
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              child: Column(children: [
-                CoconutLayout.spacing_800h,
-                QrCode(qrData: _lnInvoice != null ? _lnInvoice! : t.donation.ln_address_pow),
-                CoconutLayout.spacing_800h,
-                _buildDonationAmountRow(),
-                CoconutLayout.spacing_300h,
-                IgnorePointer(
-                  ignoring: _lnInvoice == null,
-                  child: CopyTextContainer(
-                    text: t.donation.ln_invoice,
-                    middleText: _lnInvoice != null
-                        ? "${_lnInvoice!.substring(0, 7)}... ${_lnInvoice!.substring(_lnInvoice!.length - 7)}"
-                        : null,
-                    textStyle: CoconutTypography.body2_14_Bold,
-                    copyText: _lnInvoice,
-                    showButton: _lnInvoice != null,
-                  ),
-                ),
-                CoconutLayout.spacing_300h,
-                CopyTextContainer(
-                  text: t.donation.ln_address,
-                  middleText: t.donation.ln_address_pow,
-                  textStyle: CoconutTypography.body2_14_Bold,
-                  copyText: t.donation.ln_address_pow,
-                ),
-                const Spacer(),
-                if (canLaunchLnApp)
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: Sizes.size30,
-                    ),
-                    child: CoconutButton(
-                      isActive: _hasLnInvoice,
-                      backgroundColor: CoconutColors.white,
-                      foregroundColor: CoconutColors.black,
-                      pressedTextColor: CoconutColors.gray500,
-                      pressedBackgroundColor: CoconutColors.gray300,
-                      disabledBackgroundColor: CoconutColors.gray600,
-                      onPressed: () async {
-                        await launchUrl(Uri.parse("$_lnAppScheme:$_lnInvoice"),
-                            mode: LaunchMode.externalApplication);
-                      },
-                      text: t.donation.donate,
-                    ),
-                  ),
-              ]),
-            ),
     );
   }
 

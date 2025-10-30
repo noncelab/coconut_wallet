@@ -20,12 +20,13 @@ class TransactionInputOutputCard extends StatefulWidget {
   final bool isForTransaction;
   final BitcoinUnit currentUnit;
 
-  const TransactionInputOutputCard(
-      {super.key,
-      required this.transaction,
-      required this.isSameAddress,
-      required this.currentUnit,
-      this.isForTransaction = true});
+  const TransactionInputOutputCard({
+    super.key,
+    required this.transaction,
+    required this.isSameAddress,
+    required this.currentUnit,
+    this.isForTransaction = true,
+  });
 
   @override
   State<TransactionInputOutputCard> createState() => _TransactionInputOutputCard();
@@ -38,10 +39,8 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   static const int kOutgoingTxOutputCount = 2;
 
   static const int kViewMoreCount = 5;
-  static const int kInputMaxCount =
-      kIncomingTxInputCount; // txInputCount의 min값: kIncomingTxInputCount
-  static const int kOutputMaxCount =
-      kOutgoingTxOutputCount; // txOutputCount의 min값: kOutgoingTxOutputCount
+  static const int kInputMaxCount = kIncomingTxInputCount; // txInputCount의 min값: kIncomingTxInputCount
+  static const int kOutputMaxCount = kOutgoingTxOutputCount; // txOutputCount의 min값: kOutgoingTxOutputCount
 
   bool _canShowMoreInputs = false;
   bool _canShowMoreOutputs = false;
@@ -67,11 +66,12 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   double get widthPerLetter => _balanceWidthSize.width / _minimumLongestText.length;
   double get satoshiBalanceWidth => _longestSatoshiText.length * widthPerLetter;
   double get btcBalanceWidth => _longestBtcText.length * widthPerLetter;
-  double get balanceMaxWidth => _isBalanceWidthCalculated
-      ? widget.currentUnit == BitcoinUnit.btc
-          ? btcBalanceWidth
-          : satoshiBalanceWidth
-      : 100;
+  double get balanceMaxWidth =>
+      _isBalanceWidthCalculated
+          ? widget.currentUnit == BitcoinUnit.btc
+              ? btcBalanceWidth
+              : satoshiBalanceWidth
+          : 100;
 
   @override
   void initState() {
@@ -124,18 +124,13 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
 
   void updateBalanceMaxWidth() {
     /// 사토시 단위의 경우, 최대 텍스트 길이에 맞게 영역을 지정한다.
-    final inputList =
-        _canShowMoreInputs ? _inputAddressList.sublist(0, _inputCountToShow) : _inputAddressList;
-    final outputList = _canShowMoreOutputs
-        ? _outputAddressList.sublist(0, _outputCountToShow)
-        : _outputAddressList;
+    final inputList = _canShowMoreInputs ? _inputAddressList.sublist(0, _inputCountToShow) : _inputAddressList;
+    final outputList = _canShowMoreOutputs ? _outputAddressList.sublist(0, _outputCountToShow) : _outputAddressList;
 
-    int maxInputAmount = inputList.isNotEmpty
-        ? inputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b)
-        : 0;
-    int maxOutputAmount = outputList.isNotEmpty
-        ? outputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b)
-        : 0;
+    int maxInputAmount =
+        inputList.isNotEmpty ? inputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b) : 0;
+    int maxOutputAmount =
+        outputList.isNotEmpty ? outputList.map((item) => item.amount.abs()).reduce((a, b) => a > b ? a : b) : 0;
 
     int maxAmount = max(maxInputAmount, maxOutputAmount);
     _longestSatoshiText = maxAmount.toThousandsSeparatedString();
@@ -155,7 +150,8 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
     }
 
     Logger.log(
-        "_longestSatoshiText = $_longestSatoshiText / _longestBtcText = $_longestBtcText / widthPerLetter = $widthPerLetter");
+      "_longestSatoshiText = $_longestSatoshiText / _longestBtcText = $_longestBtcText / widthPerLetter = $widthPerLetter",
+    );
     Logger.log("satoshiBalanceWidth = $satoshiBalanceWidth / btcBalanceWidth = $btcBalanceWidth");
     setState(() {});
   }
@@ -164,16 +160,14 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      decoration:
-          BoxDecoration(borderRadius: BorderRadius.circular(20), color: CoconutColors.gray800),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: CoconutColors.gray800),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildAddressList(
-              list: _canShowMoreInputs
-                  ? _inputAddressList.sublist(0, _inputCountToShow)
-                  : _inputAddressList,
-              rowType: InputOutputRowType.input),
+            list: _canShowMoreInputs ? _inputAddressList.sublist(0, _inputCountToShow) : _inputAddressList,
+            rowType: InputOutputRowType.input,
+          ),
           Visibility(
             visible: _canShowMoreInputs,
             child: Center(
@@ -198,10 +192,9 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
           ),
           _buildFee(widget.transaction.fee),
           _buildAddressList(
-              list: _canShowMoreOutputs
-                  ? _outputAddressList.sublist(0, _outputCountToShow)
-                  : _outputAddressList,
-              rowType: InputOutputRowType.output),
+            list: _canShowMoreOutputs ? _outputAddressList.sublist(0, _outputCountToShow) : _outputAddressList,
+            rowType: InputOutputRowType.output,
+          ),
           Visibility(
             visible: _canShowMoreOutputs,
             child: Center(
@@ -226,23 +219,14 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
           ),
 
           /// balance 최대 너비 체크를 위함
-          Offstage(
-            child: Text(
-                key: _balanceWidthKey,
-                _minimumLongestText,
-                style: CoconutTypography.body2_14_Number),
-          ),
+          Offstage(child: Text(key: _balanceWidthKey, _minimumLongestText, style: CoconutTypography.body2_14_Number)),
         ],
       ),
     );
   }
 
-  Widget _buildAddressList({
-    required List<TransactionAddress> list,
-    required InputOutputRowType rowType,
-  }) {
-    final filteredEntries =
-        list.asMap().entries.where((entry) => entry.value.address.isNotEmpty).toList();
+  Widget _buildAddressList({required List<TransactionAddress> list, required InputOutputRowType rowType}) {
+    final filteredEntries = list.asMap().entries.where((entry) => entry.value.address.isNotEmpty).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,15 +254,16 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
 
   Widget _buildFee(int fee) {
     return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
-        child: InputOutputDetailRow(
-          address: t.fee,
-          balance: fee,
-          balanceMaxWidth: balanceMaxWidth,
-          rowType: InputOutputRowType.fee,
-          transactionStatus: widget.isForTransaction ? _status : null,
-          currentUnit: widget.currentUnit,
-        ));
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: InputOutputDetailRow(
+        address: t.fee,
+        balance: fee,
+        balanceMaxWidth: balanceMaxWidth,
+        rowType: InputOutputRowType.fee,
+        transactionStatus: widget.isForTransaction ? _status : null,
+        currentUnit: widget.currentUnit,
+      ),
+    );
   }
 
   void _setInitialInputCountToShow() {

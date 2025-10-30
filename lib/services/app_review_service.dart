@@ -59,8 +59,7 @@ class AppReviewService {
   static Future<void> increaseAppRunningCountIfRejected() async {
     final sharedPrefs = SharedPrefsRepository();
     if (_hasCompletedBitcoinTransaction() == true && _hasReviewed() != true) {
-      final count =
-          sharedPrefs.sharedPrefs.getInt(SharedPrefKeys.kAppRunCountAfterRejectReview) ?? 0;
+      final count = sharedPrefs.sharedPrefs.getInt(SharedPrefKeys.kAppRunCountAfterRejectReview) ?? 0;
       await sharedPrefs.sharedPrefs.setInt(SharedPrefKeys.kAppRunCountAfterRejectReview, count + 1);
     }
   }
@@ -76,23 +75,27 @@ class AppReviewService {
     return count != null && count % gapToRequestReview == 0;
   }
 
-  static Future<dynamic> _showReviewScreen(BuildContext context,
-      {bool isFirst = false, AnimationController? animationController}) {
+  static Future<dynamic> _showReviewScreen(
+    BuildContext context, {
+    bool isFirst = false,
+    AnimationController? animationController,
+  }) {
     return CommonBottomSheets.showBottomSheet_100(
-        context: context,
-        child: UserExperienceSurveyBottomSheet(
-          isFirst: isFirst,
-        ),
-        enableDrag: false,
-        backgroundColor: MyColors.nero,
-        isDismissible: false,
-        isScrollControlled: true,
-        useSafeArea: false,
-        animationController: animationController);
+      context: context,
+      child: UserExperienceSurveyBottomSheet(isFirst: isFirst),
+      enableDrag: false,
+      backgroundColor: MyColors.nero,
+      isDismissible: false,
+      isScrollControlled: true,
+      useSafeArea: false,
+      animationController: animationController,
+    );
   }
 
-  static Future<dynamic>? showReviewScreenIfFirstSending(BuildContext context,
-      {AnimationController? animationController}) {
+  static Future<dynamic>? showReviewScreenIfFirstSending(
+    BuildContext context, {
+    AnimationController? animationController,
+  }) {
     if (!NetworkType.currentNetworkType.isTestnet) return null;
     if (_hasCompletedBitcoinTransaction() == true) return null;
     _setCompletedBitcoinTransaction();

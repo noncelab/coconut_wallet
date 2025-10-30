@@ -47,27 +47,33 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       child: Scaffold(
         backgroundColor: CoconutColors.black,
         appBar: CoconutAppBar.build(
-          title:
-              _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
+          title: _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
           context: context,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
-        body: Stack(children: [
-          // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
-          CoconutQrScanner(
-            key: ValueKey(_qrScannerKey),
-            setMobileScannerController: _setQRViewController,
-            onComplete: _qrScanDataHandler is BcUrQrScanDataHandler
-                ? _onCompletedScanningForBcUr
-                : _onCompletedScanningForBbQr,
-            onFailed: _onFailedScanning,
-            qrDataHandler: _qrScanDataHandler,
-          ),
-          Padding(
+        body: Stack(
+          children: [
+            // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
+            CoconutQrScanner(
+              key: ValueKey(_qrScannerKey),
+              setMobileScannerController: _setQRViewController,
+              onComplete:
+                  _qrScanDataHandler is BcUrQrScanDataHandler
+                      ? _onCompletedScanningForBcUr
+                      : _onCompletedScanningForBbQr,
+              onFailed: _onFailedScanning,
+              qrDataHandler: _qrScanDataHandler,
+            ),
+            Padding(
               padding: const EdgeInsets.only(
-                  top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
-              child: _buildToolTip()),
-        ]),
+                top: 20,
+                left: CoconutLayout.defaultPadding,
+                right: CoconutLayout.defaultPadding,
+              ),
+              child: _buildToolTip(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -92,8 +98,10 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = SignedPsbtScannerViewModel(Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false));
+    _viewModel = SignedPsbtScannerViewModel(
+      Provider.of<SendInfoProvider>(context, listen: false),
+      Provider.of<WalletProvider>(context, listen: false),
+    );
     _initializeQrScanDataHandler();
   }
 
@@ -203,11 +211,15 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _showErrorDialog(String errorMessage) async {
-    await CustomDialogs.showCustomAlertDialog(context,
-        title: t.alert.scan_failed, message: errorMessage, onConfirm: () {
-      _isProcessing = false;
-      Navigator.pop(context);
-    });
+    await CustomDialogs.showCustomAlertDialog(
+      context,
+      title: t.alert.scan_failed,
+      message: errorMessage,
+      onConfirm: () {
+        _isProcessing = false;
+        Navigator.pop(context);
+      },
+    );
   }
 
   Future<void> _stopCamera() async {
@@ -224,15 +236,10 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     // TODO: 코코넛 지갑인 경우 UI는 볼트와 한꺼번에 수정합니다.
     if (_viewModel.isSendingDonation == true) {
       return Padding(
-        padding: const EdgeInsets.only(
-          top: 30,
-        ),
+        padding: const EdgeInsets.only(top: 30),
         child: Align(
           alignment: Alignment.topCenter,
-          child: Text(
-            t.donation.signed_qr_tooltip,
-            style: CoconutTypography.body2_14_Bold,
-          ),
+          child: Text(t.donation.signed_qr_tooltip, style: CoconutTypography.body2_14_Bold),
         ),
       );
     } else {
@@ -241,18 +248,11 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         borderColor: CoconutColors.gray900,
         icon: SvgPicture.asset(
           'assets/svg/circle-info.svg',
-          colorFilter: const ColorFilter.mode(
-            CoconutColors.white,
-            BlendMode.srcIn,
-          ),
+          width: 20,
+          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
         ),
         tooltipType: CoconutTooltipType.fixed,
-        richText: RichText(
-          text: TextSpan(
-            style: CoconutTypography.body2_14,
-            children: _getGuideTextSpan(),
-          ),
-        ),
+        richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
       );
     }
   }
@@ -267,8 +267,10 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       // ),
       TextSpan(
         text: t.tooltip.scan_signed_psbt.guide(
-            by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1]),
-        style: CoconutTypography.body2_14.copyWith(height: 1.2),
+          by_hardware_wallet: hardwareWalletWords[0],
+          hardware_wallet: hardwareWalletWords[1],
+        ),
+        style: CoconutTypography.body2_14.copyWith(height: 1.3),
       ),
     ];
   }

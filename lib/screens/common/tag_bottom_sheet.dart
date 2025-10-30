@@ -58,10 +58,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   void initState() {
     super.initState();
 
-    _viewModel = UtxoTagCrudViewModel(
-      context.read<UtxoTagProvider>(),
-      widget.walletId,
-    );
+    _viewModel = UtxoTagCrudViewModel(context.read<UtxoTagProvider>(), widget.walletId);
 
     _prevSelectedTagNames = [];
     _tagNamesToDelete = [];
@@ -83,38 +80,37 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoTagCrudViewModel>.value(
       value: _viewModel,
-      child: Consumer<UtxoTagCrudViewModel>(builder: (context, model, child) {
-        return CoconutBottomSheet(
-          useIntrinsicHeight: true,
-          appBar: CoconutAppBar.buildWithNext(
+      child: Consumer<UtxoTagCrudViewModel>(
+        builder: (context, model, child) {
+          return CoconutBottomSheet(
+            useIntrinsicHeight: true,
+            appBar: CoconutAppBar.buildWithNext(
               isBottom: true,
               context: context,
               onBackPressed: () {
                 Navigator.pop(context);
               },
               onNextPressed: () {
-                widget.onUpdate
-                    ?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.changAppliedTags);
+                widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.changAppliedTags);
                 Navigator.pop(context);
               },
               title: t.tag_bottom_sheet.title_edit_tag,
               isActive: !_isDeletionMode && _isButtonActive,
-              nextButtonTitle: t.complete),
-          body: Consumer<UtxoTagCrudViewModel>(builder: (context, viewModel, child) {
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: _buildUpdateView(),
-                ),
-              ),
-            );
-          }),
-        );
-      }),
+              nextButtonTitle: t.complete,
+            ),
+            body: Consumer<UtxoTagCrudViewModel>(
+              builder: (context, viewModel, child) {
+                return SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: SizedBox(width: double.infinity, child: _buildUpdateView()),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -122,11 +118,7 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildTagList(),
-        _buildTagAdditionMenu(),
-        _buildTagDeletionMenu(),
-      ],
+      children: [_buildTagList(), _buildTagAdditionMenu(), _buildTagDeletionMenu()],
     );
   }
 
@@ -222,50 +214,49 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagEditBottomSheet(
-        walletId: widget.walletId,
-        existingTags: _utxoTags,
-        updateUtxoTag: selectedUtxoTag,
-        onTagCreated: (updatedTag) {
-          setState(() {
-            final originalIndex =
-                _utxoTags.indexWhere((utxoTag) => utxoTag.id == selectedUtxoTag.id);
-            if (originalIndex != -1) {
-              _utxoTags.removeAt(originalIndex);
-              _utxoTags.insert(originalIndex, updatedTag);
-            }
+      builder:
+          (context) => TagEditBottomSheet(
+            walletId: widget.walletId,
+            existingTags: _utxoTags,
+            updateUtxoTag: selectedUtxoTag,
+            onTagCreated: (updatedTag) {
+              setState(() {
+                final originalIndex = _utxoTags.indexWhere((utxoTag) => utxoTag.id == selectedUtxoTag.id);
+                if (originalIndex != -1) {
+                  _utxoTags.removeAt(originalIndex);
+                  _utxoTags.insert(originalIndex, updatedTag);
+                }
 
-            if (selectedUtxoTag.name != updatedTag.name) {
-              final selectedTagIndex = _prevSelectedTagNames.indexOf(selectedUtxoTag.name);
-              if (selectedTagIndex != -1) {
-                _prevSelectedTagNames[selectedTagIndex] = updatedTag.name;
-              }
-            }
+                if (selectedUtxoTag.name != updatedTag.name) {
+                  final selectedTagIndex = _prevSelectedTagNames.indexOf(selectedUtxoTag.name);
+                  if (selectedTagIndex != -1) {
+                    _prevSelectedTagNames[selectedTagIndex] = updatedTag.name;
+                  }
+                }
 
-            widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.update);
+                widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.update);
 
-            if (selectedUtxoTag.name != updatedTag.name ||
-                selectedUtxoTag.colorIndex != updatedTag.colorIndex) {
-              widget.onUpdate
-                  ?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.changAppliedTags);
-            }
-          });
-        },
-      ),
+                if (selectedUtxoTag.name != updatedTag.name || selectedUtxoTag.colorIndex != updatedTag.colorIndex) {
+                  widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.changAppliedTags);
+                }
+              });
+            },
+          ),
     );
   }
 
   Widget _buildTagAdditionMenu() {
     return Visibility(
-        visible: !_isDeletionMode || _utxoTags.isEmpty,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMenuItem(t.tag_bottom_sheet.add_new_tag, () {
-              _showTagAdditionBottomSheet();
-            }),
-          ],
-        ));
+      visible: !_isDeletionMode || _utxoTags.isEmpty,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMenuItem(t.tag_bottom_sheet.add_new_tag, () {
+            _showTagAdditionBottomSheet();
+          }),
+        ],
+      ),
+    );
   }
 
   void _showTagAdditionBottomSheet() {
@@ -273,20 +264,21 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagEditBottomSheet(
-        walletId: widget.walletId,
-        existingTags: _utxoTags,
-        onTagCreated: (newTag) {
-          setState(() {
-            // 완료 버튼 클릭 시, 바로 db에 추가
-            _utxoTags.insert(0, newTag);
-            widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.add);
-            // 화면에 선택 상태로 보이기
-            _prevSelectedTagNames.add(newTag.name);
-          });
-          _checkButtonEnabled();
-        },
-      ),
+      builder:
+          (context) => TagEditBottomSheet(
+            walletId: widget.walletId,
+            existingTags: _utxoTags,
+            onTagCreated: (newTag) {
+              setState(() {
+                // 완료 버튼 클릭 시, 바로 db에 추가
+                _utxoTags.insert(0, newTag);
+                widget.onUpdate?.call(_prevSelectedTagNames, _utxoTags, UtxoTagEditMode.add);
+                // 화면에 선택 상태로 보이기
+                _prevSelectedTagNames.add(newTag.name);
+              });
+              _checkButtonEnabled();
+            },
+          ),
     );
   }
 
@@ -297,13 +289,8 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider(
-            color: CoconutColors.white.withOpacity(0.12),
-            height: 1,
-          ),
-          _buildMenuItem(
-              _isDeletionMode ? t.tag_bottom_sheet.exit_deletion : t.tag_bottom_sheet.delete_tag,
-              () {
+          Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
+          _buildMenuItem(_isDeletionMode ? t.tag_bottom_sheet.exit_deletion : t.tag_bottom_sheet.delete_tag, () {
             _toggleDeletionMode();
           }),
         ],
@@ -311,8 +298,11 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
     );
   }
 
-  Widget _buildMenuItem(String title, VoidCallback onPress,
-      {EdgeInsets padding = const EdgeInsets.symmetric(vertical: Sizes.size20)}) {
+  Widget _buildMenuItem(
+    String title,
+    VoidCallback onPress, {
+    EdgeInsets padding = const EdgeInsets.symmetric(vertical: Sizes.size20),
+  }) {
     return GestureDetector(
       onTap: onPress,
       behavior: HitTestBehavior.translucent,
@@ -341,12 +331,15 @@ class _TagBottomSheetState extends State<TagBottomSheet> {
 
   List<String> _convertTagNamesToIds(List<String> tagNames) {
     return tagNames
-        .map((name) => _utxoTags
-            .firstWhere(
-              (tag) => tag.name == name,
-              orElse: () => UtxoTag(id: '', walletId: 0, name: name, colorIndex: 0),
-            )
-            .id)
+        .map(
+          (name) =>
+              _utxoTags
+                  .firstWhere(
+                    (tag) => tag.name == name,
+                    orElse: () => UtxoTag(id: '', walletId: 0, name: name, colorIndex: 0),
+                  )
+                  .id,
+        )
         .where((id) => id.isNotEmpty)
         .toList();
   }
@@ -371,27 +364,31 @@ class TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor = tagColorPalette[tag.colorIndex];
-    final backgroundColor = isDeletionMode
-        ? CoconutColors.gray800
-        : isSelected
+    final backgroundColor =
+        isDeletionMode
+            ? CoconutColors.gray800
+            : isSelected
             ? CoconutColors.backgroundColorPaletteDark[tag.colorIndex]
             : CoconutColors.gray800;
 
-    final borderColor = isDeletionMode
-        ? CoconutColors.gray600
-        : isSelected
+    final borderColor =
+        isDeletionMode
+            ? CoconutColors.gray600
+            : isSelected
             ? foregroundColor
             : CoconutColors.gray600;
 
-    final borderWidth = isDeletionMode
-        ? 0.5
-        : isSelected
+    final borderWidth =
+        isDeletionMode
+            ? 0.5
+            : isSelected
             ? 1.0
             : 0.5;
 
-    final textColor = isDeletionMode
-        ? CoconutColors.gray300
-        : isSelected
+    final textColor =
+        isDeletionMode
+            ? CoconutColors.gray300
+            : isSelected
             ? foregroundColor
             : CoconutColors.gray600;
 
@@ -414,20 +411,19 @@ class TagChip extends StatelessWidget {
           children: [
             isDeletionMode
                 ? const Padding(
-                    padding: EdgeInsets.only(right: 4.0),
-                    child: Icon(Icons.close,
-                        key: ValueKey('delete'), size: 16, color: CoconutColors.white),
-                  )
+                  padding: EdgeInsets.only(right: 4.0),
+                  child: Icon(Icons.close, key: ValueKey('delete'), size: 16, color: CoconutColors.white),
+                )
                 : AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: isSelected
-                        ? Padding(
+                  duration: const Duration(milliseconds: 200),
+                  child:
+                      isSelected
+                          ? Padding(
                             padding: const EdgeInsets.only(right: 4.0),
-                            child: Icon(Icons.check,
-                                key: const ValueKey('check'), size: 16, color: foregroundColor),
+                            child: Icon(Icons.check, key: const ValueKey('check'), size: 16, color: foregroundColor),
                           )
-                        : const SizedBox.shrink(key: ValueKey('empty')),
-                  ),
+                          : const SizedBox.shrink(key: ValueKey('empty')),
+                ),
             // const SizedBox(width: 6),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),

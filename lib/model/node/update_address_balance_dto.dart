@@ -8,11 +8,7 @@ class UpdateAddressBalanceDto {
 
   int get total => confirmed + unconfirmed;
 
-  UpdateAddressBalanceDto({
-    required this.scriptStatus,
-    required this.confirmed,
-    required this.unconfirmed,
-  });
+  UpdateAddressBalanceDto({required this.scriptStatus, required this.confirmed, required this.unconfirmed});
 }
 
 class AddressBalanceCalculationResult {

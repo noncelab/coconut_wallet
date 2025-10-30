@@ -6,11 +6,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:uuid/uuid.dart';
 
-enum ExchangeType {
-  upbit,
-  binance,
-  bitflyer,
-}
+enum ExchangeType { upbit, binance, bitflyer }
 
 class WebSocketService {
   final ExchangeType _exchangeType;
@@ -54,11 +50,7 @@ class WebSocketService {
         _channel?.sink.add(jsonEncode(request));
       }
 
-      _channel?.stream.listen(
-        _onData,
-        onError: _onError,
-        onDone: _onDone,
-      );
+      _channel?.stream.listen(_onData, onError: _onError, onDone: _onDone);
 
       // Binance는 ping이 필요하지 않으므로 Upbit와 Coincheck만 ping 전송
       if (_exchangeType == ExchangeType.upbit || _exchangeType == ExchangeType.bitflyer) {
@@ -76,15 +68,15 @@ class WebSocketService {
       {"ticket": _uuid.v4()},
       {
         "type": "ticker",
-        "codes": ["KRW-BTC"]
-      }
+        "codes": ["KRW-BTC"],
+      },
     ];
   }
 
   Map<String, dynamic> _buildBitflyerRequest() {
     return {
       "method": "subscribe",
-      "params": {"channel": "lightning_ticker_BTC_JPY"}
+      "params": {"channel": "lightning_ticker_BTC_JPY"},
     };
   }
 
@@ -216,9 +208,7 @@ class UpbitResponse extends PriceResponse {
   UpbitResponse({required int tradePrice}) : _tradePrice = tradePrice;
 
   factory UpbitResponse.fromJson(Map<String, dynamic> json) {
-    return UpbitResponse(
-      tradePrice: (json['trade_price']).toInt(),
-    );
+    return UpbitResponse(tradePrice: (json['trade_price']).toInt());
   }
 
   @override
@@ -244,9 +234,7 @@ class BinanceResponse extends PriceResponse {
       throw FormatException('Invalid price format: $priceData');
     }
 
-    return BinanceResponse(
-      tradePrice: price.toInt(),
-    );
+    return BinanceResponse(tradePrice: price.toInt());
   }
 
   @override
@@ -272,9 +260,7 @@ class BitflyerResponse extends PriceResponse {
       throw FormatException('Invalid price format: $priceData');
     }
 
-    return BitflyerResponse(
-      tradePrice: price.toInt(),
-    );
+    return BitflyerResponse(tradePrice: price.toInt());
   }
 
   @override

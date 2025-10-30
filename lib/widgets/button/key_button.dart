@@ -11,11 +11,7 @@ class KeyButton extends StatefulWidget {
   final String keyValue;
   final ValueChanged<String> onKeyTap;
 
-  const KeyButton({
-    super.key,
-    required this.keyValue,
-    required this.onKeyTap,
-  });
+  const KeyButton({super.key, required this.keyValue, required this.onKeyTap});
 
   @override
   State<KeyButton> createState() => _KeyButtonState();
@@ -45,8 +41,7 @@ class _KeyButtonState extends State<KeyButton> {
         }
       } else {
         // aos fingerprint included case
-        if (availableBiometrics.contains(BiometricType.strong) &&
-            availableBiometrics.contains(BiometricType.weak)) {
+        if (availableBiometrics.contains(BiometricType.strong) && availableBiometrics.contains(BiometricType.weak)) {
           setState(() {
             _isFaceRecognition = false;
           });
@@ -65,52 +60,59 @@ class _KeyButtonState extends State<KeyButton> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: () {
-          widget.onKeyTap(widget.keyValue);
-        },
-        onTapDown: (_) {
-          setState(() {
-            _isPressed = true;
-          });
-        },
-        onTapCancel: () {
-          setState(() {
-            _isPressed = false;
-          });
-        },
-        onTapUp: (_) {
-          setState(() {
-            _isPressed = false;
-          });
-        },
-        child: Container(
-          width: 120,
-          height: 60,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color:
-                  _isPressed ? MyColors.defaultBackground : Colors.transparent // 버튼의 상태에 따라 색상 변경
-              ),
-          child: Center(
-              child: widget.keyValue == '<'
+      onTap: () {
+        widget.onKeyTap(widget.keyValue);
+      },
+      onTapDown: (_) {
+        setState(() {
+          _isPressed = true;
+        });
+      },
+      onTapCancel: () {
+        setState(() {
+          _isPressed = false;
+        });
+      },
+      onTapUp: (_) {
+        setState(() {
+          _isPressed = false;
+        });
+      },
+      child: Container(
+        width: 120,
+        height: 60,
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: _isPressed ? MyColors.defaultBackground : Colors.transparent, // 버튼의 상태에 따라 색상 변경
+        ),
+        child: Center(
+          child:
+              widget.keyValue == '<'
                   ? const Icon(Icons.backspace, color: CoconutColors.white, size: 20)
                   : widget.keyValue == 'bio'
-                      ? _isFaceRecognition
-                          ? SvgPicture.asset('assets/svg/face-id.svg',
-                              width: 20,
-                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn))
-                          : SvgPicture.asset('assets/svg/fingerprint.svg',
-                              width: 20,
-                              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn))
-                      : Text(
-                          widget.keyValue,
-                          style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                              color: CoconutColors.white,
-                              fontFamily: 'SpaceGrotesk'),
-                        )),
-        ));
+                  ? _isFaceRecognition
+                      ? SvgPicture.asset(
+                        'assets/svg/face-id.svg',
+                        width: 20,
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      )
+                      : SvgPicture.asset(
+                        'assets/svg/fingerprint.svg',
+                        width: 20,
+                        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      )
+                  : Text(
+                    widget.keyValue,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: CoconutColors.white,
+                      fontFamily: 'SpaceGrotesk',
+                    ),
+                  ),
+        ),
+      ),
+    );
   }
 }

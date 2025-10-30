@@ -16,17 +16,17 @@ module Fastlane
         'app_info.dart 파일의 RELEASE_DATE를 수정합니다.'
       end
 
-      def self.details
-      end
+      # def self.details
+      # end
 
-      def self.available_options
-      end
+      # def self.available_options
+      # end
 
-      def self.output
-      end
+      # def self.output
+      # end
 
-      def self.return_value
-      end
+      # def self.return_value
+      # end
 
       def self.authors
         ['Noncelab']

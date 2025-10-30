@@ -7,10 +7,7 @@ class FaucetRequest {
   final String address;
   final double amount;
 
-  FaucetRequest({
-    this.address = '',
-    this.amount = 0,
-  });
+  FaucetRequest({this.address = '', this.amount = 0});
 
   factory FaucetRequest.fromJson(Map<String, dynamic> json) => _$FaucetRequestFromJson(json);
 

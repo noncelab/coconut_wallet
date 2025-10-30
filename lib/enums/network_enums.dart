@@ -11,10 +11,7 @@ enum TransactionType {
 
 extension TransactionTypeExtension on TransactionType {
   static TransactionType fromString(String name) {
-    return TransactionType.values.firstWhere(
-      (type) => type.name == name,
-      orElse: () => TransactionType.unknown,
-    );
+    return TransactionType.values.firstWhere((type) => type.name == name, orElse: () => TransactionType.unknown);
   }
 }
 

@@ -23,21 +23,9 @@ enum WalletSyncResult {
   existingWalletUpdateImpossible, // 이미 추가된 descriptor를 서드파티 방법으로 또 추가한 경우
 }
 
-enum WalletLoadState {
-  never,
-  loadingFromDB,
-  loadCompleted,
-}
+enum WalletLoadState { never, loadingFromDB, loadCompleted }
 
-enum WalletImportSource {
-  coconutVault,
-  keystone,
-  jade,
-  seedSigner,
-  coldCard,
-  krux,
-  extendedPublicKey,
-}
+enum WalletImportSource { coconutVault, keystone, jade, seedSigner, coldCard, krux, extendedPublicKey }
 
 extension WalletImportSourceExtension on WalletImportSource {
   static WalletImportSource fromString(String name) {

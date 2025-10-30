@@ -61,9 +61,7 @@ class SendAddressViewModel extends ChangeNotifier {
     }
 
     if (NetworkType.currentNetworkType == NetworkType.testnet) {
-      if (normalized.startsWith('1') ||
-          normalized.startsWith('3') ||
-          normalized.startsWith('bc1')) {
+      if (normalized.startsWith('1') || normalized.startsWith('3') || normalized.startsWith('bc1')) {
         throw notTestnetAddressMessage;
       }
     } else if (NetworkType.currentNetworkType == NetworkType.mainnet) {

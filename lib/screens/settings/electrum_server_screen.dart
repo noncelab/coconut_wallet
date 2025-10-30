@@ -134,15 +134,17 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
   }
 
   bool isValidDomain(String input) {
-    final domainRegExp =
-        RegExp(r'^(?!:\/\/)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$');
+    final domainRegExp = RegExp(r'^(?!:\/\/)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$');
     return domainRegExp.hasMatch(input);
   }
 
   /// 초기화 버튼 활성화 조건: 현재 입력된 서버 정보가 초기 서버 정보와 다른지 확인
   bool _isDifferentFromInitialServer() {
     return _viewModel.isDifferentFromInitialServer(
-        _serverAddressController.text, _portController.text, _currentSslState);
+      _serverAddressController.text,
+      _portController.text,
+      _currentSslState,
+    );
   }
 
   /// 저장 버튼 활성화 조건: 현재 입력된 서버 정보가 현재 연결된 서버와 다른지 확인
@@ -150,10 +152,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     if (_serverAddressController.text.isEmpty ||
         _portController.text.isEmpty ||
         !_viewModel.isValidDomain(_serverAddressController.text) ||
-        !_viewModel.isValidPort(_portController.text)) return false;
+        !_viewModel.isValidPort(_portController.text))
+      return false;
 
-    return !_viewModel.isSameWithCurrentServer(
-        _serverAddressController.text, _portController.text, _currentSslState);
+    return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState);
   }
 
   @override
@@ -166,174 +168,151 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
         );
         return _viewModel;
       },
-      child: Consumer<ElectrumServerViewModel>(builder: (context, viewModel, child) {
-        final canPop = viewModel.nodeConnectionStatus != NodeConnectionStatus.connecting;
+      child: Consumer<ElectrumServerViewModel>(
+        builder: (context, viewModel, child) {
+          final canPop = viewModel.nodeConnectionStatus != NodeConnectionStatus.connecting;
 
-        return PopScope(
-          canPop: canPop,
-          child: GestureDetector(
-            onTap: _unFocus,
-            child: Scaffold(
-              resizeToAvoidBottomInset: false,
-              backgroundColor: CoconutColors.black,
-              appBar: PreferredSize(
-                preferredSize: const Size.fromHeight(kToolbarHeight),
-                child: Selector<ElectrumServerViewModel, NodeConnectionStatus>(
-                  selector: (_, viewModel) => viewModel.nodeConnectionStatus,
-                  builder: (context, nodeConnectionStatus, _) {
-                    return CoconutAppBar.build(
-                      title: t.electrum_server,
-                      context: context,
-                      isLeadingVisible: nodeConnectionStatus != NodeConnectionStatus.connecting,
-                    );
-                  },
+          return PopScope(
+            canPop: canPop,
+            child: GestureDetector(
+              onTap: _unFocus,
+              child: Scaffold(
+                resizeToAvoidBottomInset: false,
+                backgroundColor: CoconutColors.black,
+                appBar: PreferredSize(
+                  preferredSize: const Size.fromHeight(kToolbarHeight),
+                  child: Selector<ElectrumServerViewModel, NodeConnectionStatus>(
+                    selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+                    builder: (context, nodeConnectionStatus, _) {
+                      return CoconutAppBar.build(
+                        title: t.electrum_server,
+                        context: context,
+                        isLeadingVisible: nodeConnectionStatus != NodeConnectionStatus.connecting,
+                      );
+                    },
+                  ),
                 ),
-              ),
-              body: Stack(
-                children: [
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                    ),
-                    child: Column(
-                      children: [
-                        _buildServerAddressTextField(),
-                        _buildDefaultServerMenu(),
-                        Selector<ElectrumServerViewModel, Tuple2<bool, NodeConnectionStatus>>(
-                            selector: (_, viewModel) => Tuple2(
-                                  viewModel.isDefaultServerMenuVisible,
-                                  viewModel.nodeConnectionStatus,
-                                ),
+                body: Stack(
+                  children: [
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        children: [
+                          _buildServerAddressTextField(),
+                          _buildDefaultServerMenu(),
+                          Selector<ElectrumServerViewModel, Tuple2<bool, NodeConnectionStatus>>(
+                            selector:
+                                (_, viewModel) =>
+                                    Tuple2(viewModel.isDefaultServerMenuVisible, viewModel.nodeConnectionStatus),
                             builder: (context, data, child) {
                               final isDefaultServerMenuVisible = data.item1;
                               final nodeConnectionStatus = data.item2;
                               return isDefaultServerMenuVisible
                                   ? Container()
                                   : Column(
-                                      children: [
-                                        _buildPortTextField(),
-                                        _buildSslToggle(),
-                                        _buildAlertBox(nodeConnectionStatus),
-                                      ],
-                                    );
-                            }),
-                      ],
+                                    children: [
+                                      _buildPortTextField(),
+                                      _buildSslToggle(),
+                                      _buildAlertBox(nodeConnectionStatus),
+                                    ],
+                                  );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  _buildBottomButtons(),
-                ],
+                    _buildBottomButtons(),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildDefaultServerMenu() {
     return Selector<ElectrumServerViewModel, bool>(
       selector: (_, viewModel) => viewModel.isDefaultServerMenuVisible,
-      builder: (context, isDefaultServerMenuVisible, child) => isDefaultServerMenuVisible
-          ? Container(
-              width: MediaQuery.sizeOf(context).width,
-              padding: const EdgeInsets.only(
-                bottom: 14,
-                top: 6,
-                right: 6,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                  14,
-                ),
-                border: Border.all(
-                  width: 1,
-                  color: CoconutColors.gray600,
-                ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    // 기본 서버 선택 버튼 사이즈 계산
-                    if (_defaultServerButtonKey.currentContext != null) {
-                      final defaultServerButtonRenderBox =
-                          _defaultServerButtonKey.currentContext?.findRenderObject() as RenderBox;
-                      _onDefaultServerButtonSizeChanged(defaultServerButtonRenderBox.size);
-                    }
-                  });
+      builder:
+          (context, isDefaultServerMenuVisible, child) =>
+              isDefaultServerMenuVisible
+                  ? Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    padding: const EdgeInsets.only(bottom: 14, top: 6, right: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(width: 1, color: CoconutColors.gray600),
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          // 기본 서버 선택 버튼 사이즈 계산
+                          if (_defaultServerButtonKey.currentContext != null) {
+                            final defaultServerButtonRenderBox =
+                                _defaultServerButtonKey.currentContext?.findRenderObject() as RenderBox;
+                            _onDefaultServerButtonSizeChanged(defaultServerButtonRenderBox.size);
+                          }
+                        });
 
-                  return Column(
-                    children: [
-                      _buildServerSelectorHeader(),
-                      _buildServerList(),
-                    ],
-                  );
-                },
-              ),
-            )
-          : Container(),
+                        return Column(children: [_buildServerSelectorHeader(), _buildServerList()]);
+                      },
+                    ),
+                  )
+                  : Container(),
     );
   }
 
   Widget _buildServerSelectorHeader() {
     return Selector<ElectrumServerViewModel, bool>(
-        selector: (_, viewModel) => viewModel.hasUserServers,
-        builder: (context, hasUserServers, child) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: _buildHeaderTabButton(
-                  title: t.settings_screen.electrum_server.default_server,
-                  isSelected: _selectedTab == ServerTab.defaultServer,
-                  onTap: () => setState(() => _selectedTab = ServerTab.defaultServer),
-                ),
+      selector: (_, viewModel) => viewModel.hasUserServers,
+      builder: (context, hasUserServers, child) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: _buildHeaderTabButton(
+                title: t.settings_screen.electrum_server.default_server,
+                isSelected: _selectedTab == ServerTab.defaultServer,
+                onTap: () => setState(() => _selectedTab = ServerTab.defaultServer),
               ),
-              if (hasUserServers) ...[
-                _buildHeaderTabButton(
-                  title: t.settings_screen.electrum_server.user_servers,
-                  isSelected: _selectedTab == ServerTab.userServer,
-                  onTap: () => setState(() => _selectedTab = ServerTab.userServer),
-                ),
-              ],
-              const Spacer(),
-              CoconutUnderlinedButton(
-                padding: const EdgeInsets.only(
-                  left: 8,
-                  right: 8,
-                  top: 8,
-                  bottom: 8,
-                ),
-                text: t.close,
-                textStyle: CoconutTypography.body3_12,
-                onTap: () {
-                  _viewModel.setDefaultServerMenuVisible(false);
-                },
-              )
+            ),
+            if (hasUserServers) ...[
+              _buildHeaderTabButton(
+                title: t.settings_screen.electrum_server.user_servers,
+                isSelected: _selectedTab == ServerTab.userServer,
+                onTap: () => setState(() => _selectedTab = ServerTab.userServer),
+              ),
             ],
-          );
-        });
+            const Spacer(),
+            CoconutUnderlinedButton(
+              padding: const EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 8),
+              text: t.close,
+              textStyle: CoconutTypography.body3_12,
+              onTap: () {
+                _viewModel.setDefaultServerMenuVisible(false);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  Widget _buildHeaderTabButton({
-    required String title,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildHeaderTabButton({required String title, required bool isSelected, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         child: Text(
           title,
-          style: isSelected
-              ? CoconutTypography.body2_14_Bold.setColor(
-                  CoconutColors.white,
-                )
-              : CoconutTypography.body2_14.setColor(
-                  CoconutColors.gray600,
-                ),
+          style:
+              isSelected
+                  ? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)
+                  : CoconutTypography.body2_14.setColor(CoconutColors.gray600),
         ),
       ),
     );
@@ -341,8 +320,8 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   Widget _buildServerList() {
     return Selector<ElectrumServerViewModel, List<ElectrumServer>>(
-      selector: (_, viewModel) =>
-          _selectedTab == ServerTab.defaultServer ? _getDefaultServerList() : viewModel.userServers,
+      selector:
+          (_, viewModel) => _selectedTab == ServerTab.defaultServer ? _getDefaultServerList() : viewModel.userServers,
       builder: (context, serverList, child) {
         if (serverList.isEmpty && _selectedTab == ServerTab.userServer) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -372,39 +351,40 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                   _onServerInputChanged();
                   _unFocus();
                 },
-                onLongPress: _selectedTab == ServerTab.userServer
-                    ? () {
-                        final currentServer = _viewModel.currentServer;
-                        final serverToDelete = serverList[i];
+                onLongPress:
+                    _selectedTab == ServerTab.userServer
+                        ? () {
+                          final currentServer = _viewModel.currentServer;
+                          final serverToDelete = serverList[i];
 
-                        // 현재 구동 중인 서버인지 확인
-                        final isCurrentServer = currentServer != null &&
-                            currentServer.host == serverToDelete.host &&
-                            currentServer.port == serverToDelete.port &&
-                            currentServer.ssl == serverToDelete.ssl;
+                          // 현재 구동 중인 서버인지 확인
+                          final isCurrentServer =
+                              currentServer != null &&
+                              currentServer.host == serverToDelete.host &&
+                              currentServer.port == serverToDelete.port &&
+                              currentServer.ssl == serverToDelete.ssl;
 
-                        // 현재 구동 중인 서버인 경우 삭제 불가
-                        if (!isCurrentServer) {
-                          CustomDialogs.showCustomAlertDialog(
-                            context,
-                            title: t.settings_screen.electrum_server.popup.delete_server_info,
-                            message: t.settings_screen.electrum_server.popup
-                                .delete_server_info_description,
-                            onConfirm: () async {
-                              final navigator = Navigator.of(context);
-                              await _viewModel.removeUserServer(serverList[i]);
-                              if (!mounted) return;
-                              vibrateLight();
-                              navigator.pop();
-                            },
-                            onCancel: () {
-                              Navigator.of(context).pop();
-                            },
-                            confirmButtonText: t.delete,
-                          );
+                          // 현재 구동 중인 서버인 경우 삭제 불가
+                          if (!isCurrentServer) {
+                            CustomDialogs.showCustomAlertDialog(
+                              context,
+                              title: t.settings_screen.electrum_server.popup.delete_server_info,
+                              message: t.settings_screen.electrum_server.popup.delete_server_info_description,
+                              onConfirm: () async {
+                                final navigator = Navigator.of(context);
+                                await _viewModel.removeUserServer(serverList[i]);
+                                if (!mounted) return;
+                                vibrateLight();
+                                navigator.pop();
+                              },
+                              onCancel: () {
+                                Navigator.of(context).pop();
+                              },
+                              confirmButtonText: t.delete,
+                            );
+                          }
                         }
-                      }
-                    : null,
+                        : null,
                 child: Selector<ElectrumServerViewModel, NodeConnectionStatus?>(
                   selector: (_, viewModel) => viewModel.connectionStatusMap[serverList[i]],
                   builder: (context, serverConnectionStatus, child) {
@@ -414,25 +394,12 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  serverList[i].host,
-                                  style: CoconutTypography.body2_14,
-                                ),
-                              ),
-                            ],
-                          ),
+                          Row(children: [Expanded(child: Text(serverList[i].host, style: CoconutTypography.body2_14))]),
                           Row(
                             children: [
                               Text(
-                                t.settings_screen.electrum_server.ssl_port(
-                                  port: serverList[i].port,
-                                ),
-                                style: CoconutTypography.body3_12.setColor(
-                                  CoconutColors.gray400,
-                                ),
+                                t.settings_screen.electrum_server.ssl_port(port: serverList[i].port),
+                                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                               ),
                               if (serverConnectionStatus == NodeConnectionStatus.connecting) ...[
                                 CoconutLayout.spacing_100w,
@@ -446,9 +413,10 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                   height: CoconutTypography.body3_12.fontSize! / 2,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: serverConnectionStatus == NodeConnectionStatus.connected
-                                        ? CoconutColors.green
-                                        : CoconutColors.red,
+                                    color:
+                                        serverConnectionStatus == NodeConnectionStatus.connected
+                                            ? CoconutColors.green
+                                            : CoconutColors.red,
                                   ),
                                 ),
                               ],
@@ -466,16 +434,13 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
         return shouldScroll
             ? SizedBox(
-                height: _defaultServerButtonSize.height * 3,
-                child: Scrollbar(
-                  controller: _defaultServerScrollController,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    controller: _defaultServerScrollController,
-                    child: serverListWidget,
-                  ),
-                ),
-              )
+              height: _defaultServerButtonSize.height * 3,
+              child: Scrollbar(
+                controller: _defaultServerScrollController,
+                thumbVisibility: true,
+                child: SingleChildScrollView(controller: _defaultServerScrollController, child: serverListWidget),
+              ),
+            )
             : serverListWidget;
       },
     );
@@ -483,221 +448,191 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   List<ElectrumServer> _getDefaultServerList() {
     final isRegtestFlavor = NetworkType.currentNetworkType == NetworkType.regtest;
-    return isRegtestFlavor
-        ? DefaultElectrumServer.regtestServers
-        : DefaultElectrumServer.mainnetServers;
+    return isRegtestFlavor ? DefaultElectrumServer.regtestServers : DefaultElectrumServer.mainnetServers;
   }
 
   Widget _buildServerAddressTextField() {
     return Selector<ElectrumServerViewModel, NodeConnectionStatus>(
-        selector: (_, viewModel) => viewModel.nodeConnectionStatus,
-        builder: (context, nodeConnectionStatus, child) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 20),
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    t.settings_screen.electrum_server.server_address,
-                    style: CoconutTypography.body3_12.setColor(
-                      CoconutColors.gray400,
-                    ),
-                  ),
+      selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+      builder: (context, nodeConnectionStatus, child) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  t.settings_screen.electrum_server.server_address,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                 ),
-                CoconutLayout.spacing_100h,
-                nodeConnectionStatus == NodeConnectionStatus.connecting
-                    ? Container(
-                        width: MediaQuery.sizeOf(context).width,
-                        height: 54,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
+              ),
+              CoconutLayout.spacing_100h,
+              nodeConnectionStatus == NodeConnectionStatus.connecting
+                  ? Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    margin: const EdgeInsets.only(bottom: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: CoconutColors.gray600),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.transparent,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          _serverAddressController.text,
+                          style: CoconutTypography.body2_14.setColor(CoconutColors.gray600),
                         ),
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: CoconutColors.gray600,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.transparent,
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              _serverAddressController.text,
-                              style: CoconutTypography.body2_14.setColor(
-                                CoconutColors.gray600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : CoconutTextField(
-                        key: _serverAddressFieldKey,
-                        controller: _serverAddressController,
-                        focusNode: serverAddressFocusNode,
-                        textInputAction: TextInputAction.next,
-                        onEditingComplete: () {
-                          _viewModel.setDefaultServerMenuVisible(false);
-                          _validInputFormat();
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            FocusScope.of(context).requestFocus(portFocusNode);
-                          });
-                        },
-                        height: 54,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        isError: _serverAddressController.text.isNotEmpty &&
-                            _viewModel.isServerAddressFormatError,
-                        errorText:
-                            t.settings_screen.electrum_server.error_msg.invalid_domain_format,
-                        textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
-                        textInputType: TextInputType.text,
-                        maxLines: 1,
-                        suffix: IconButton(
-                          iconSize: 14,
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            setState(() {
-                              _serverAddressController.text = '';
-                            });
-                          },
-                          icon: _serverAddressController.text.isNotEmpty
+                      ],
+                    ),
+                  )
+                  : CoconutTextField(
+                    key: _serverAddressFieldKey,
+                    controller: _serverAddressController,
+                    focusNode: serverAddressFocusNode,
+                    textInputAction: TextInputAction.next,
+                    onEditingComplete: () {
+                      _viewModel.setDefaultServerMenuVisible(false);
+                      _validInputFormat();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        FocusScope.of(context).requestFocus(portFocusNode);
+                      });
+                    },
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    isError: _serverAddressController.text.isNotEmpty && _viewModel.isServerAddressFormatError,
+                    errorText: t.settings_screen.electrum_server.error_msg.invalid_domain_format,
+                    textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+                    textInputType: TextInputType.text,
+                    maxLines: 1,
+                    suffix: IconButton(
+                      iconSize: 14,
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        setState(() {
+                          _serverAddressController.text = '';
+                        });
+                      },
+                      icon:
+                          _serverAddressController.text.isNotEmpty
                               ? SvgPicture.asset(
-                                  'assets/svg/text-field-clear.svg',
-                                  colorFilter: ColorFilter.mode(
-                                    _serverAddressController.text.isNotEmpty
-                                        ? CoconutColors.white
-                                        : CoconutColors.gray700,
-                                    BlendMode.srcIn,
-                                  ),
-                                )
+                                'assets/svg/text-field-clear.svg',
+                                colorFilter: ColorFilter.mode(
+                                  _serverAddressController.text.isNotEmpty
+                                      ? CoconutColors.white
+                                      : CoconutColors.gray700,
+                                  BlendMode.srcIn,
+                                ),
+                              )
                               : Container(),
-                        ),
-                        onChanged: (text) {
-                          _onServerInputChanged(); // 입력 변경 감지
-                          setState(() {
-                            if (_viewModel.isServerAddressFormatError) {
-                              _viewModel.setServerAddressFormatError(false);
-                            }
-                          });
-                        },
-                      ),
-              ],
-            ),
-          );
-        });
+                    ),
+                    onChanged: (text) {
+                      _onServerInputChanged(); // 입력 변경 감지
+                      setState(() {
+                        if (_viewModel.isServerAddressFormatError) {
+                          _viewModel.setServerAddressFormatError(false);
+                        }
+                      });
+                    },
+                  ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildPortTextField() {
     return Selector<ElectrumServerViewModel, NodeConnectionStatus>(
-        selector: (_, viewModel) => viewModel.nodeConnectionStatus,
-        builder: (context, nodeConnectionStatus, child) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 20),
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    t.settings_screen.electrum_server.port,
-                    style: CoconutTypography.body3_12.setColor(
-                      CoconutColors.gray400,
-                    ),
-                  ),
+      selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+      builder: (context, nodeConnectionStatus, child) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  t.settings_screen.electrum_server.port,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                 ),
-                CoconutLayout.spacing_100h,
-                nodeConnectionStatus == NodeConnectionStatus.connecting
-                    ? Container(
-                        width: MediaQuery.sizeOf(context).width,
-                        height: 54,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: CoconutColors.gray600,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.transparent,
-                        ),
-                        child: Row(
-                          children: [
-                            Text(
-                              _portController.text,
-                              style: CoconutTypography.body2_14.setColor(
-                                CoconutColors.gray600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : CoconutTextField(
-                        controller: _portController,
-                        focusNode: portFocusNode,
-                        textInputAction: TextInputAction.done,
-                        onEditingComplete: () {
-                          _unFocus();
-                        },
-                        height: 54,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        isError:
-                            _portController.text.isNotEmpty && _viewModel.isPortOutOfRangeError,
-                        errorText: t.settings_screen.electrum_server.error_msg.port_out_of_range,
-                        textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
-                        textInputType: TextInputType.number,
-                        suffix: IconButton(
-                          iconSize: 14,
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            setState(() {
-                              _portController.text = '';
-                            });
-                          },
-                          icon: _portController.text.isNotEmpty
+              ),
+              CoconutLayout.spacing_100h,
+              nodeConnectionStatus == NodeConnectionStatus.connecting
+                  ? Container(
+                    width: MediaQuery.sizeOf(context).width,
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    margin: const EdgeInsets.only(bottom: 4),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: CoconutColors.gray600),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.transparent,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(_portController.text, style: CoconutTypography.body2_14.setColor(CoconutColors.gray600)),
+                      ],
+                    ),
+                  )
+                  : CoconutTextField(
+                    controller: _portController,
+                    focusNode: portFocusNode,
+                    textInputAction: TextInputAction.done,
+                    onEditingComplete: () {
+                      _unFocus();
+                    },
+                    height: 54,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    isError: _portController.text.isNotEmpty && _viewModel.isPortOutOfRangeError,
+                    errorText: t.settings_screen.electrum_server.error_msg.port_out_of_range,
+                    textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
+                    textInputType: TextInputType.number,
+                    suffix: IconButton(
+                      iconSize: 14,
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        setState(() {
+                          _portController.text = '';
+                        });
+                      },
+                      icon:
+                          _portController.text.isNotEmpty
                               ? SvgPicture.asset(
-                                  'assets/svg/text-field-clear.svg',
-                                  colorFilter: ColorFilter.mode(
-                                    _portController.text.isNotEmpty
-                                        ? CoconutColors.white
-                                        : CoconutColors.gray700,
-                                    BlendMode.srcIn,
-                                  ),
-                                )
+                                'assets/svg/text-field-clear.svg',
+                                colorFilter: ColorFilter.mode(
+                                  _portController.text.isNotEmpty ? CoconutColors.white : CoconutColors.gray700,
+                                  BlendMode.srcIn,
+                                ),
+                              )
                               : Container(),
-                        ),
-                        onChanged: (text) {
-                          _onServerInputChanged(); // 입력 변경 감지
-                          setState(() {
-                            if (_viewModel.isPortOutOfRangeError) {
-                              _viewModel.setPortOutOfRangeError(false);
-                            }
-                          });
-                        },
-                      ),
-              ],
-            ),
-          );
-        });
+                    ),
+                    onChanged: (text) {
+                      _onServerInputChanged(); // 입력 변경 감지
+                      setState(() {
+                        if (_viewModel.isPortOutOfRangeError) {
+                          _viewModel.setPortOutOfRangeError(false);
+                        }
+                      });
+                    },
+                  ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildSslToggle() {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 36,
-      ),
+      padding: const EdgeInsets.only(top: 36),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             t.settings_screen.electrum_server.use_ssl,
-            style: CoconutTypography.body3_12.setColor(
-              CoconutColors.gray400,
-            ),
+            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
           ),
           Selector<ElectrumServerViewModel, NodeConnectionStatus>(
             selector: (_, viewModel) => viewModel.nodeConnectionStatus,
@@ -732,27 +667,14 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     if (status == NodeConnectionStatus.waiting) return Container();
 
     return Container(
-      margin: const EdgeInsets.only(
-        top: 34,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 16,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: CoconutColors.gray800,
-      ),
+      margin: const EdgeInsets.only(top: 34),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
       child: Row(
         children: [
           _buildAlertIcon(status),
           CoconutLayout.spacing_300w,
-          Expanded(
-            child: Text(
-              _getAlertString(status),
-              style: CoconutTypography.body2_14_Bold,
-            ),
-          ),
+          Expanded(child: Text(_getAlertString(status), style: CoconutTypography.body2_14_Bold)),
         ],
       ),
     );
@@ -770,9 +692,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
         }
       case NodeConnectionStatus.connecting:
         {
-          return const CupertinoActivityIndicator(
-            radius: 10,
-          );
+          return const CupertinoActivityIndicator(radius: 10);
         }
       case NodeConnectionStatus.connected:
         {
@@ -812,90 +732,85 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
   Widget _buildBottomButtons() {
     return Selector<ElectrumServerViewModel, NodeConnectionStatus>(
-        selector: (_, viewModel) => viewModel.nodeConnectionStatus,
-        builder: (context, nodeConnectionStatus, child) {
-          // Save 버튼: 실제 변경 여부 확인
-          final hasActualChanges = _hasActualChanges();
-          debugPrint('hasActualChanges : $hasActualChanges');
+      selector: (_, viewModel) => viewModel.nodeConnectionStatus,
+      builder: (context, nodeConnectionStatus, child) {
+        // Save 버튼: 실제 변경 여부 확인
+        final hasActualChanges = _hasActualChanges();
+        debugPrint('hasActualChanges : $hasActualChanges');
 
-          // Reset 버튼: 초기 서버 정보와 다른지 확인
-          final isDifferentFromInitial = _isDifferentFromInitialServer();
+        // Reset 버튼: 초기 서버 정보와 다른지 확인
+        final isDifferentFromInitial = _isDifferentFromInitialServer();
 
-          return Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom <= 40
-                    ? 40
-                    : MediaQuery.of(context).viewInsets.bottom + 16,
-                left: 16,
-                right: 16,
-              ),
-              child: SizedBox(
-                width: MediaQuery.sizeOf(context).width,
-                child: Row(
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width,
-                        child: ShrinkAnimationButton(
-                          isActive: nodeConnectionStatus != NodeConnectionStatus.connecting &&
-                              isDifferentFromInitial,
-                          defaultColor: CoconutColors.white,
-                          pressedColor: CoconutColors.gray350,
-                          onPressed: _onReset,
-                          borderRadius: CoconutStyles.radius_200,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            child: Text(
-                              t.settings_screen.electrum_server.reset,
-                              textAlign: TextAlign.center,
-                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
-                            ),
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom:
+                  MediaQuery.of(context).viewInsets.bottom <= 40 ? 40 : MediaQuery.of(context).viewInsets.bottom + 16,
+              left: 16,
+              right: 16,
+            ),
+            child: SizedBox(
+              width: MediaQuery.sizeOf(context).width,
+              child: Row(
+                children: [
+                  Flexible(
+                    flex: 1,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width,
+                      child: ShrinkAnimationButton(
+                        isActive: nodeConnectionStatus != NodeConnectionStatus.connecting && isDifferentFromInitial,
+                        defaultColor: CoconutColors.white,
+                        pressedColor: CoconutColors.gray350,
+                        onPressed: _onReset,
+                        borderRadius: CoconutStyles.radius_200,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          child: Text(
+                            t.settings_screen.electrum_server.reset,
+                            textAlign: TextAlign.center,
+                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
                           ),
                         ),
                       ),
                     ),
-                    CoconutLayout.spacing_200w,
-                    Flexible(
-                      flex: 2,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width,
-                        child: ShrinkAnimationButton(
-                          isActive: hasActualChanges &&
-                              nodeConnectionStatus != NodeConnectionStatus.connecting,
-                          defaultColor: CoconutColors.white,
-                          pressedColor: CoconutColors.gray350,
-                          onPressed: () {
-                            _unFocus();
-                            _onSave();
-                          },
-                          borderRadius: CoconutStyles.radius_200,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            child: Text(
-                              t.settings_screen.electrum_server.save,
-                              textAlign: TextAlign.center,
-                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
-                            ),
+                  ),
+                  CoconutLayout.spacing_200w,
+                  Flexible(
+                    flex: 2,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width,
+                      child: ShrinkAnimationButton(
+                        isActive: hasActualChanges && nodeConnectionStatus != NodeConnectionStatus.connecting,
+                        defaultColor: CoconutColors.white,
+                        pressedColor: CoconutColors.gray350,
+                        onPressed: () {
+                          _unFocus();
+                          _onSave();
+                        },
+                        borderRadius: CoconutStyles.radius_200,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          child: Text(
+                            t.settings_screen.electrum_server.save,
+                            textAlign: TextAlign.center,
+                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.black),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          );
-        });
+          ),
+        );
+      },
+    );
   }
 }
 
-enum ServerTab {
-  defaultServer,
-  userServer,
-}
+enum ServerTab { defaultServer, userServer }
 
 enum NodeConnectionStatus {
   connecting, // 연결 중입니다

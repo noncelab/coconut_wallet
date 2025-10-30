@@ -94,8 +94,7 @@ class _AppGuardState extends State<AppGuard> {
       _isFirstInactiveSkipped = true;
       return;
     }
-    Logger.log(
-        'AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
+    Logger.log('AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
     switch (state) {
       case AppLifecycleState.resumed:
         if (_isPaused) {
@@ -136,8 +135,7 @@ class _AppGuardState extends State<AppGuard> {
     }
 
     // 2. 연결 에러가 있거나 ping이 실패한 경우 재연결
-    if (_nodeProvider.hasConnectionError ||
-        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+    if (_nodeProvider.hasConnectionError || _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
       Logger.log('AppGuard: Connection issues detected, attempting reconnect');
       _nodeProvider.reconnect();
     }
@@ -152,8 +150,7 @@ class _AppGuardState extends State<AppGuard> {
     }
 
     // 2. 연결 에러가 있거나 ping이 실패한 경우 연결 해제
-    if (_nodeProvider.hasConnectionError ||
-        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+    if (_nodeProvider.hasConnectionError || _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
       Logger.log('AppGuard: Connection issues detected, closing connection');
       unawaited(_nodeProvider.closeConnection());
       return;
@@ -175,9 +172,7 @@ class _AppGuardState extends State<AppGuard> {
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/splash_logo_$appFlavor.png', width: 48, height: 48)
-                ],
+                children: [Image.asset('assets/images/splash_logo_$appFlavor.png', width: 48, height: 48)],
               ),
             ),
           ),

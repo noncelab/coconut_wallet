@@ -25,30 +25,22 @@ void main() {
 
   group('validateAddress', () {
     test('빈 주소는 에러를 발생시켜야 함', () async {
-      expect(
-        () => viewModel.validateAddress(''),
-        throwsA(viewModel.invalidAddressMessage),
-      );
+      expect(() => viewModel.validateAddress(''), throwsA(viewModel.invalidAddressMessage));
     });
 
     test('잘못된 길이의 bech32 주소는 에러를 발생시켜야 함', () async {
-      expect(
-        () => viewModel.validateAddress('bc1q'),
-        throwsA(viewModel.invalidAddressMessage),
-      );
+      expect(() => viewModel.validateAddress('bc1q'), throwsA(viewModel.invalidAddressMessage));
     });
 
     test('잘못된 길이의 legacy 주소는 에러를 발생시켜야 함 - 26자 미만', () async {
-      expect(
-        () => viewModel.validateAddress('1A1zP1eP5Q'),
-        throwsA(viewModel.invalidAddressMessage),
-      );
+      expect(() => viewModel.validateAddress('1A1zP1eP5Q'), throwsA(viewModel.invalidAddressMessage));
     });
 
     test('잘못된 길이의 legacy 주소는 에러를 발생시켜야 함 - 62자 초과', () async {
       expect(
         () => viewModel.validateAddress(
-            '1ThisAddressIsWayTooLongToBeValidOnBitcoinNetworkIfT2RAddressIsInsertedItWillBeOver62Characters'),
+          '1ThisAddressIsWayTooLongToBeValidOnBitcoinNetworkIfT2RAddressIsInsertedItWillBeOver62Characters',
+        ),
         throwsA(viewModel.invalidAddressMessage),
       );
     });
@@ -73,38 +65,23 @@ void main() {
         );
       });
       test('유효한 testnet 주소는 검증을 통과해야 함 - m 주소', () async {
-        expect(
-          () => viewModel.validateAddress('mr3MGrB8CpqEkJAT8XaenEcQxXvG6FEGKa'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('mr3MGrB8CpqEkJAT8XaenEcQxXvG6FEGKa'), returnsNormally);
       });
 
       test('유효한 testnet 주소는 검증을 통과해야 함 - n 주소', () async {
-        expect(
-          () => viewModel.validateAddress('n4Jp6MDWWyz3naY7ydyFua76fNvH3KYCMu'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('n4Jp6MDWWyz3naY7ydyFua76fNvH3KYCMu'), returnsNormally);
       });
 
       test('유효한 testnet 주소는 검증을 통과해야 함 - 2 주소', () async {
-        expect(
-          () => viewModel.validateAddress('2N2i65CqwXpacR5HRDCnKyoK7VS1jf2Kj37'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('2N2i65CqwXpacR5HRDCnKyoK7VS1jf2Kj37'), returnsNormally);
       });
 
       test('유효한 testnet 주소는 검증을 통과해야 함 - tb1 ', () async {
-        expect(
-          () => viewModel.validateAddress('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx'), returnsNormally);
       });
 
       test('유효한 testnet 주소는 검증을 통과해야 함 - TB1', () async {
-        expect(
-          () => viewModel.validateAddress('TB1Q3SQEUFQWJ853G2TLPFN8QZ3YTUKE3K9T2YT67T'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('TB1Q3SQEUFQWJ853G2TLPFN8QZ3YTUKE3K9T2YT67T'), returnsNormally);
       });
     });
 
@@ -129,31 +106,19 @@ void main() {
       });
 
       test('유효한 mainnet 주소는 검증을 통과해야 함 - 1 주소', () async {
-        expect(
-          () => viewModel.validateAddress('1MFwsZ6Z7x9qDmDZcJeRY44mkr2kBJydv4'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('1MFwsZ6Z7x9qDmDZcJeRY44mkr2kBJydv4'), returnsNormally);
       });
 
       test('유효한 mainnet 주소는 검증을 통과해야 함 - 3 주소', () async {
-        expect(
-          () => viewModel.validateAddress('3GBTzpjL56T3wiCjtF6tdzoyyJ3FkarPjg'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('3GBTzpjL56T3wiCjtF6tdzoyyJ3FkarPjg'), returnsNormally);
       });
 
       test('유효한 mainnet 주소는 검증을 통과해야 함 - bc1', () async {
-        expect(
-          () => viewModel.validateAddress('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4'), returnsNormally);
       });
 
       test('유효한 mainnet 주소는 검증을 통과해야 함 - BC1', () async {
-        expect(
-          () => viewModel.validateAddress('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4'), returnsNormally);
       });
     });
 
@@ -174,17 +139,11 @@ void main() {
       });
 
       test('유효한 regtest 주소는 검증을 통과해야 함 - bcrt1 주소', () async {
-        expect(
-          () => viewModel.validateAddress('bcrt1qz9edcv2r9wh5rjfyj2nvvms6uxyqctnu70ecaq'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('bcrt1qz9edcv2r9wh5rjfyj2nvvms6uxyqctnu70ecaq'), returnsNormally);
       });
 
       test('유효한 regtest 주소는 검증을 통과해야 함 - BCRT1', () async {
-        expect(
-          () => viewModel.validateAddress('BCRT1QZ9EDCV2R9WH5RJFYJ2NVVMS6UXYQCTNU70ECAQ'),
-          returnsNormally,
-        );
+        expect(() => viewModel.validateAddress('BCRT1QZ9EDCV2R9WH5RJFYJ2NVVMS6UXYQCTNU70ECAQ'), returnsNormally);
       });
     });
   });

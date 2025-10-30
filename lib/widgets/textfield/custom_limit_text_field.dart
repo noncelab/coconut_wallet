@@ -20,19 +20,20 @@ class CustomLimitTextField extends StatelessWidget {
   final bool visibleTextLimit;
   final String Function(String)? formatInput;
 
-  const CustomLimitTextField(
-      {super.key,
-      required this.controller,
-      required this.focusNode,
-      required this.onChanged,
-      required this.onClear,
-      this.maxLength = 30,
-      this.cursorColor = Colors.white,
-      this.prefix,
-      this.keyboardType = TextInputType.text,
-      this.placeholder = '',
-      this.visibleTextLimit = true,
-      this.formatInput});
+  const CustomLimitTextField({
+    super.key,
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    required this.onClear,
+    this.maxLength = 30,
+    this.cursorColor = Colors.white,
+    this.prefix,
+    this.keyboardType = TextInputType.text,
+    this.placeholder = '',
+    this.visibleTextLimit = true,
+    this.formatInput,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,30 +56,26 @@ class CustomLimitTextField extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(prefix != null ? 0 : 16, 20, 16, 20),
             style: Styles.body2,
             cursorColor: cursorColor,
-            decoration: const BoxDecoration(
-              color: Colors.transparent,
-            ),
+            decoration: const BoxDecoration(color: Colors.transparent),
             maxLength: maxLength,
             prefix: prefix,
-            suffix: controller.text.isNotEmpty
-                ? GestureDetector(
-                    onTap: () {
-                      onClear();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
-                      child: SvgPicture.asset(
-                        'assets/svg/text-field-clear.svg',
-                        colorFilter: const ColorFilter.mode(
-                          CoconutColors.white,
-                          BlendMode.srcIn,
+            suffix:
+                controller.text.isNotEmpty
+                    ? GestureDetector(
+                      onTap: () {
+                        onClear();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+                        child: SvgPicture.asset(
+                          'assets/svg/text-field-clear.svg',
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          width: 15,
+                          height: 15,
                         ),
-                        width: 15,
-                        height: 15,
                       ),
-                    ),
-                  )
-                : null,
+                    )
+                    : null,
             onChanged: (text) {
               String formattedText = formatInput?.call(text) ?? text;
               if (formattedText.runes.length > maxLength) {
@@ -99,9 +96,7 @@ class CustomLimitTextField extends StatelessWidget {
               child: Text(
                 '${controller.text.runes.length}/$maxLength',
                 style: TextStyle(
-                  color: controller.text.runes.length == maxLength
-                      ? CoconutColors.white
-                      : MyColors.transparentWhite_50,
+                  color: controller.text.runes.length == maxLength ? CoconutColors.white : MyColors.transparentWhite_50,
                   fontSize: 12,
                   fontFamily: CustomFonts.number.getFontFamily,
                 ),

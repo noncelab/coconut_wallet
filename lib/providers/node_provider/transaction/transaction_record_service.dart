@@ -25,18 +25,20 @@ class TransactionRecordService {
     List<Transaction> previousTxs = const [],
     DateTime? now,
   }) async {
-    return Future.wait(fetchedTransactionDetails.fetchedTransactions.map((tx) async {
-      final blockHeight = fetchedTransactionDetails.txBlockHeightMap[tx.transactionHash];
-      final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[blockHeight];
+    return Future.wait(
+      fetchedTransactionDetails.fetchedTransactions.map((tx) async {
+        final blockHeight = fetchedTransactionDetails.txBlockHeightMap[tx.transactionHash];
+        final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[blockHeight];
 
-      return createTransactionRecord(
-        walletId,
-        tx,
-        blockTimestamp: blockTimestamp,
-        previousTxs: previousTxs,
-        now: now,
-      );
-    }));
+        return createTransactionRecord(
+          walletId,
+          tx,
+          blockTimestamp: blockTimestamp,
+          previousTxs: previousTxs,
+          now: now,
+        );
+      }),
+    );
   }
 
   /// 단일 트랜잭션 레코드를 생성합니다.
@@ -49,8 +51,7 @@ class TransactionRecordService {
   }) async {
     now ??= DateTime.now();
 
-    List<Transaction> prevTxs =
-        await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
+    List<Transaction> prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
 
     final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
@@ -68,11 +69,7 @@ class TransactionRecordService {
   }
 
   /// 트랜잭션의 입출력 상세 정보를 처리합니다.
-  TransactionDetails processTransactionDetails(
-    Transaction tx,
-    List<Transaction> previousTxs,
-    int walletId,
-  ) {
+  TransactionDetails processTransactionDetails(Transaction tx, List<Transaction> previousTxs, int walletId) {
     List<TransactionAddress> inputAddressList = [];
     int selfInputCount = 0;
     int selfOutputCount = 0;
@@ -86,8 +83,7 @@ class TransactionRecordService {
       // 이전 트랜잭션에서 해당 입력에 대응하는 출력 찾기
       Transaction? previousTx;
       try {
-        previousTx =
-            previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
+        previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
       } catch (_) {
         continue;
       }
@@ -97,8 +93,7 @@ class TransactionRecordService {
       }
 
       final previousOutput = previousTx.outputs[input.index];
-      final inputAddress =
-          TransactionAddress(previousOutput.scriptPubKey.getAddress(), previousOutput.amount);
+      final inputAddress = TransactionAddress(previousOutput.scriptPubKey.getAddress(), previousOutput.amount);
       inputAddressList.add(inputAddress);
 
       fee += inputAddress.amount;
@@ -148,12 +143,7 @@ class TransactionRecordService {
     );
   }
 
-  TransactionType determineTransactionType(
-    int selfInputCount,
-    int selfOutputCount,
-    int inputCount,
-    int outputCount,
-  ) {
+  TransactionType determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
     if (selfInputCount == 0) {
       return TransactionType.received;
     }
@@ -170,27 +160,33 @@ class TransactionRecordService {
   }
 
   /// 트랜잭션 레코드를 조회합니다.
-  Future<Result<TransactionRecord>> getTransactionRecord(
-      WalletListItemBase walletItem, String txHash) async {
+  Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) async {
     try {
       final txRaw = await _electrumService.getTransaction(txHash);
       final tx = Transaction.parse(txRaw);
       final previousTxs = await _electrumService.getPreviousTransactions(tx);
       final txDetails = processTransactionDetails(tx, previousTxs, walletItem.id);
       final blockTimestamp = await getTxHeight(
-          walletItem.id, walletItem.walletBase.addressType, tx, previousTxs, txDetails);
+        walletItem.id,
+        walletItem.walletBase.addressType,
+        tx,
+        previousTxs,
+        txDetails,
+      );
 
-      return Result.success(TransactionRecord.fromTransactions(
-        transactionHash: tx.transactionHash,
-        timestamp: blockTimestamp.timestamp,
-        blockHeight: blockTimestamp.height,
-        inputAddressList: txDetails.inputAddressList,
-        outputAddressList: txDetails.outputAddressList,
-        transactionType: txDetails.txType,
-        amount: txDetails.amount,
-        fee: txDetails.fee,
-        vSize: tx.getVirtualByte(),
-      ));
+      return Result.success(
+        TransactionRecord.fromTransactions(
+          transactionHash: tx.transactionHash,
+          timestamp: blockTimestamp.timestamp,
+          blockHeight: blockTimestamp.height,
+          inputAddressList: txDetails.inputAddressList,
+          outputAddressList: txDetails.outputAddressList,
+          transactionType: txDetails.txType,
+          amount: txDetails.amount,
+          fee: txDetails.fee,
+          vSize: tx.getVirtualByte(),
+        ),
+      );
     } catch (e) {
       Logger.error('TransactionRecordService: Error in getTransactionRecord: $e');
       return Result.failure(ErrorCodes.fetchTransactionsError);
@@ -198,8 +194,13 @@ class TransactionRecordService {
   }
 
   /// 트랜잭션의 블록 높이를 조회합니다.
-  Future<BlockTimestamp> getTxHeight(int walletId, AddressType addressType, Transaction tx,
-      List<Transaction> previousTxs, TransactionDetails txDetails) async {
+  Future<BlockTimestamp> getTxHeight(
+    int walletId,
+    AddressType addressType,
+    Transaction tx,
+    List<Transaction> previousTxs,
+    TransactionDetails txDetails,
+  ) async {
     final address = _findWalletRelatedAddress(walletId, txDetails);
     final history = await _electrumService.getHistory(addressType, address);
 

@@ -5,8 +5,7 @@ class RecommendedFee {
   final int _economyFee;
   final int _minimumFee;
 
-  RecommendedFee(
-      this._fastestFee, this._halfHourFee, this._hourFee, this._economyFee, this._minimumFee);
+  RecommendedFee(this._fastestFee, this._halfHourFee, this._hourFee, this._economyFee, this._minimumFee);
 
   int get fastestFee => _fastestFee;
 

@@ -44,26 +44,24 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions are not supported for this platform.',
-        );
+        throw UnsupportedError('DefaultFirebaseOptions are not supported for this platform.');
     }
   }
 
   static FirebaseOptions get android => FirebaseOptions(
-        apiKey: dotenv.env[DotenvKeys.firebaseApiKeyAndroid] ?? '',
-        appId: dotenv.env[DotenvKeys.firebaseAppIdAndroid] ?? '',
-        messagingSenderId: dotenv.env[DotenvKeys.firebaseMessagingSenderId] ?? '',
-        projectId: dotenv.env[DotenvKeys.firebaseProjectId] ?? '',
-        storageBucket: dotenv.env[DotenvKeys.firebaseStorageBucket] ?? '',
-      );
+    apiKey: dotenv.env[DotenvKeys.firebaseApiKeyAndroid] ?? '',
+    appId: dotenv.env[DotenvKeys.firebaseAppIdAndroid] ?? '',
+    messagingSenderId: dotenv.env[DotenvKeys.firebaseMessagingSenderId] ?? '',
+    projectId: dotenv.env[DotenvKeys.firebaseProjectId] ?? '',
+    storageBucket: dotenv.env[DotenvKeys.firebaseStorageBucket] ?? '',
+  );
 
   static FirebaseOptions get ios => FirebaseOptions(
-        apiKey: dotenv.env[DotenvKeys.firebaseApiKeyIos] ?? '',
-        appId: dotenv.env[DotenvKeys.firebaseAppIdIos] ?? '',
-        messagingSenderId: dotenv.env[DotenvKeys.firebaseMessagingSenderId] ?? '',
-        projectId: dotenv.env[DotenvKeys.firebaseProjectId] ?? '',
-        storageBucket: dotenv.env[DotenvKeys.firebaseStorageBucket] ?? '',
-        iosBundleId: dotenv.env[DotenvKeys.firebaseIosBundleId] ?? '',
-      );
+    apiKey: dotenv.env[DotenvKeys.firebaseApiKeyIos] ?? '',
+    appId: dotenv.env[DotenvKeys.firebaseAppIdIos] ?? '',
+    messagingSenderId: dotenv.env[DotenvKeys.firebaseMessagingSenderId] ?? '',
+    projectId: dotenv.env[DotenvKeys.firebaseProjectId] ?? '',
+    storageBucket: dotenv.env[DotenvKeys.firebaseStorageBucket] ?? '',
+    iosBundleId: dotenv.env[DotenvKeys.firebaseIosBundleId] ?? '',
+  );
 }

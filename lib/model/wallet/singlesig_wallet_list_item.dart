@@ -17,6 +17,5 @@ class SinglesigWalletListItem extends WalletListItemBase {
     name = name.replaceAll('\n', ' ');
   }
 
-  String get extendedPublicKey =>
-      (walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
+  String get extendedPublicKey => (walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
 }

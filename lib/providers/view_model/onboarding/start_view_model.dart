@@ -45,7 +45,8 @@ class StartViewModel extends ChangeNotifier {
     }
 
     debugPrint(
-        'walletCount = ${_visibilityProvider.walletCount} isAuthEnabled = ${_authProvider.isAuthEnabled} isBiometricsAuthEnabled = ${_authProvider.isBiometricsAuthEnabled}');
+      'walletCount = ${_visibilityProvider.walletCount} isAuthEnabled = ${_authProvider.isAuthEnabled} isBiometricsAuthEnabled = ${_authProvider.isBiometricsAuthEnabled}',
+    );
     if (_visibilityProvider.walletCount == 0 || !_authProvider.isAuthEnabled) {
       return AppEntryFlow.main;
     }
@@ -58,9 +59,10 @@ class StartViewModel extends ChangeNotifier {
 
   /// 업데이트 실행
   Future<void> launchUpdate() async {
-    Uri storeUrl = Platform.isAndroid
-        ? Uri.parse('https://play.google.com/store/apps/details?id=${_packageInfo.packageName}')
-        : Uri.parse('https://apps.apple.com/kr/app/$APPSTORE_ID');
+    Uri storeUrl =
+        Platform.isAndroid
+            ? Uri.parse('https://play.google.com/store/apps/details?id=${_packageInfo.packageName}')
+            : Uri.parse('https://apps.apple.com/kr/app/$APPSTORE_ID');
 
     if (await canLaunchUrl(storeUrl)) {
       await launchUrl(storeUrl);
@@ -69,8 +71,7 @@ class StartViewModel extends ChangeNotifier {
 
   Future<void> setNextUpdateDialogDate() async {
     final nextShowDate = DateTime.now().add(const Duration(days: 7));
-    _sharedPrefs.setString(
-        SharedPrefKeys.kNextVersionUpdateDialogDate, nextShowDate.toIso8601String());
+    _sharedPrefs.setString(SharedPrefKeys.kNextVersionUpdateDialogDate, nextShowDate.toIso8601String());
   }
 
   /// 앱 최신 버전 확인
@@ -83,8 +84,7 @@ class StartViewModel extends ChangeNotifier {
         Logger.log('currentVersion : $currentVersion\nnewVersion : $newVersion');
         if (currentVersion.isNotEmpty && newVersion.isNotEmpty) {
           // 메이저 버전이 다를 경우만 판별
-          if (int.tryParse(currentVersion.split('.')[0])! <
-              int.tryParse(newVersion.split('.')[0])!) {
+          if (int.tryParse(currentVersion.split('.')[0])! < int.tryParse(newVersion.split('.')[0])!) {
             _canUpdate = await _shouldShowUpdateDialog();
           }
         }

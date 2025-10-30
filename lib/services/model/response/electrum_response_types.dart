@@ -37,8 +37,7 @@ class ServerFeaturesRes {
     this.pruning,
   });
 
-  factory ServerFeaturesRes.fromJson(Map<String, dynamic> json) =>
-      _$ServerFeaturesResFromJson(json);
+  factory ServerFeaturesRes.fromJson(Map<String, dynamic> json) => _$ServerFeaturesResFromJson(json);
 }
 
 @JsonSerializable()
@@ -93,12 +92,7 @@ class ListUnspentRes {
   int txPos;
   int value;
 
-  ListUnspentRes({
-    required this.height,
-    required this.txHash,
-    required this.txPos,
-    required this.value,
-  });
+  ListUnspentRes({required this.height, required this.txHash, required this.txPos, required this.value});
 
   factory ListUnspentRes.fromJson(Map<String, dynamic> json) => _$ListUnspentResFromJson(json);
 }
@@ -108,10 +102,7 @@ class GetBalanceRes {
   int confirmed;
   int unconfirmed;
 
-  GetBalanceRes({
-    required this.confirmed,
-    required this.unconfirmed,
-  });
+  GetBalanceRes({required this.confirmed, required this.unconfirmed});
 
   factory GetBalanceRes.fromJson(Map<String, dynamic> json) {
     return _$GetBalanceResFromJson(json);

@@ -107,14 +107,17 @@ class PriceProvider extends ChangeNotifier {
       _isPendingConnection = false;
 
       _currentWebSocketService = WebSocketServiceFactory.create(selectedFiat);
-      _currentWebSocketService?.tickerStream.listen((ticker) {
-        _updatePrice(ticker);
-        notifyListeners();
-      }, onError: (error) {
-        Logger.error('PriceProvider: WebSocket 스트림 오류: $error');
-        // 오류 발생 시 WebSocket 서비스 정리
-        disposeWebSocketService();
-      });
+      _currentWebSocketService?.tickerStream.listen(
+        (ticker) {
+          _updatePrice(ticker);
+          notifyListeners();
+        },
+        onError: (error) {
+          Logger.error('PriceProvider: WebSocket 스트림 오류: $error');
+          // 오류 발생 시 WebSocket 서비스 정리
+          disposeWebSocketService();
+        },
+      );
     } catch (e) {
       Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
       _isPendingConnection = true;
@@ -172,8 +175,7 @@ class PriceProvider extends ChangeNotifier {
         return '';
       }
 
-      final amount =
-          FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
+      final amount = FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
 
       if (showCurrencySymbol) {
         return '${targetFiat.symbol} $amount';

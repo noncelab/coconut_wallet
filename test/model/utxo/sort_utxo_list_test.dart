@@ -6,7 +6,7 @@ void main() {
   final ascendingOrderTimestampForPending = [
     DateTime(2020, 10, 2, 14, 30, 45, 123, 456),
     DateTime(2020, 10, 2, 14, 30, 45, 123, 457),
-    DateTime(2020, 10, 12, 14, 30, 45, 123, 456)
+    DateTime(2020, 10, 12, 14, 30, 45, 123, 456),
   ];
 
   final ascendingOrderTimestampForConfirmed = [

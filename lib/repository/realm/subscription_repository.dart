@@ -11,10 +11,7 @@ class SubscriptionRepository extends BaseRepository {
   /// [walletId] 지갑 ID
   Result<List<RealmScriptStatus>> getAllScriptStatuses(int walletId) {
     return handleRealm(() {
-      final scriptStatuses = realm.query<RealmScriptStatus>(
-        r'walletId == $0 SORT(timestamp DESC)',
-        [walletId],
-      );
+      final scriptStatuses = realm.query<RealmScriptStatus>(r'walletId == $0 SORT(timestamp DESC)', [walletId]);
       return scriptStatuses.toList();
     });
   }
@@ -22,10 +19,7 @@ class SubscriptionRepository extends BaseRepository {
   /// 여러 스크립트 상태 일괄 업데이트
   /// [subscribeResponse] 구독 응답
   /// [walletId] 지갑 ID
-  Future<Result<void>> updateScriptStatusList(
-    int walletId,
-    List<ScriptStatus> fetchedStatuses,
-  ) async {
+  Future<Result<void>> updateScriptStatusList(int walletId, List<ScriptStatus> fetchedStatuses) async {
     return handleAsyncRealm(() async {
       await deleteScriptStatusIfWalletDeleted(walletId);
       final now = DateTime.now();
@@ -66,8 +60,7 @@ class SubscriptionRepository extends BaseRepository {
 
   /// 스크립트 상태 업데이트 준비
   /// 업데이트가 필요한 상태와 새로 생성할 상태를 분리하여 반환
-  ({List<RealmScriptStatus> toAddStatuses, List<ScriptStatus> toUpdateStatuses})
-      _prepareScriptStatusList({
+  ({List<RealmScriptStatus> toAddStatuses, List<ScriptStatus> toUpdateStatuses}) _prepareScriptStatusList({
     required List<ScriptStatus> fetchedStatuses,
     required Map<String, RealmScriptStatus> existingStatusMap,
     required int walletId,
@@ -81,31 +74,18 @@ class SubscriptionRepository extends BaseRepository {
 
       // 기존 상태가 없고 업데이트된 상태가 있는 경우 새로 생성
       if (existingStatus == null && fetchedStatus.status != null) {
-        toAddStatuses.add(RealmScriptStatus(
-          fetchedStatus.scriptPubKey,
-          fetchedStatus.status!,
-          walletId,
-          now,
-        ));
+        toAddStatuses.add(RealmScriptStatus(fetchedStatus.scriptPubKey, fetchedStatus.status!, walletId, now));
       }
 
-      if (existingStatus != null &&
-          fetchedStatus.status != null &&
-          existingStatus.status != fetchedStatus.status) {
+      if (existingStatus != null && fetchedStatus.status != null && existingStatus.status != fetchedStatus.status) {
         toUpdateStatuses.add(fetchedStatus);
       }
     }
 
-    return (
-      toAddStatuses: toAddStatuses,
-      toUpdateStatuses: toUpdateStatuses,
-    );
+    return (toAddStatuses: toAddStatuses, toUpdateStatuses: toUpdateStatuses);
   }
 
-  List<ScriptStatus> getUpdatedScriptStatuses(
-    List<ScriptStatus> fetchedScriptStatuses,
-    int walletId,
-  ) {
+  List<ScriptStatus> getUpdatedScriptStatuses(List<ScriptStatus> fetchedScriptStatuses, int walletId) {
     final updatedScriptStatuses = <ScriptStatus>[];
     final existingScriptStatusMap = getExistingScriptStatusMap(fetchedScriptStatuses);
 
@@ -123,32 +103,21 @@ class SubscriptionRepository extends BaseRepository {
   Map<String, RealmScriptStatus> getExistingScriptStatusMap(List<ScriptStatus> scriptStatuses) {
     final scriptPubKeyList = scriptStatuses.map((e) => e.scriptPubKey).toList();
     // scriptPubKey 목록에 해당하는 기존 스크립트 상태 조회
-    final existingScriptStatuses = realm.query<RealmScriptStatus>(
-      r'scriptPubKey IN $0',
-      [scriptPubKeyList],
-    ).toList();
+    final existingScriptStatuses = realm.query<RealmScriptStatus>(r'scriptPubKey IN $0', [scriptPubKeyList]).toList();
 
-    return {
-      for (final status in existingScriptStatuses) status.scriptPubKey: status,
-    };
+    return {for (final status in existingScriptStatuses) status.scriptPubKey: status};
   }
 
   /// 지갑이 삭제된 경우 해당 지갑의 scriptStatus를 삭제합니다.
   Future<void> deleteScriptStatusIfWalletDeleted(int walletId) async {
     try {
       // 지갑이 존재하는지 확인
-      final wallet = realm.query<RealmWalletBase>(
-        r'id == $0',
-        [walletId],
-      ).firstOrNull;
+      final wallet = realm.query<RealmWalletBase>(r'id == $0', [walletId]).firstOrNull;
 
       // 지갑이 삭제된 경우
       if (wallet == null) {
         // 해당 지갑의 모든 scriptStatus 삭제
-        final scriptStatuses = realm.query<RealmScriptStatus>(
-          r'walletId == $0',
-          [walletId],
-        );
+        final scriptStatuses = realm.query<RealmScriptStatus>(r'walletId == $0', [walletId]);
 
         await realm.writeAsync(() {
           realm.deleteMany<RealmScriptStatus>(scriptStatuses);

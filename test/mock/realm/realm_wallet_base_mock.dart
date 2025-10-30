@@ -11,7 +11,15 @@ class RealmWalletBaseMock {
     int usedReceiveIndex = 5,
     int usedChangeIndex = 3,
   }) {
-    return RealmWalletBase(id, colorIndex, iconIndex, descriptor, name, walletType,
-        usedReceiveIndex: usedReceiveIndex, usedChangeIndex: usedChangeIndex);
+    return RealmWalletBase(
+      id,
+      colorIndex,
+      iconIndex,
+      descriptor,
+      name,
+      walletType,
+      usedReceiveIndex: usedReceiveIndex,
+      usedChangeIndex: usedChangeIndex,
+    );
   }
 }

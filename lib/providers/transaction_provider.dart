@@ -56,12 +56,13 @@ class TransactionProvider extends ChangeNotifier {
     if (result.isSuccess) {
       _transaction = _transactionRepository.getTransactionRecord(walletId, txHash);
       if (_transaction != null) {
-        List<TransactionRecord> newTxList = _txList.map((tx) {
-          if (tx.transactionHash == _transaction!.transactionHash) {
-            return _transaction!;
-          }
-          return tx;
-        }).toList();
+        List<TransactionRecord> newTxList =
+            _txList.map((tx) {
+              if (tx.transactionHash == _transaction!.transactionHash) {
+                return _transaction!;
+              }
+              return tx;
+            }).toList();
         _txList = newTxList;
       }
       notifyListeners();

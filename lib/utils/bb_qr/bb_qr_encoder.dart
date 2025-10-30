@@ -21,8 +21,7 @@ class BbQrEncoder {
     final encodedChunks = <String>[];
     for (int i = 0; i < total; i++) {
       // Base32 패딩 제거
-      final base32Data =
-          base32.encode(Uint8List.fromList(chunks[i])).replaceAll(RegExp(r'=+$'), '');
+      final base32Data = base32.encode(Uint8List.fromList(chunks[i])).replaceAll(RegExp(r'=+$'), '');
       final totalStr = total.toRadixString(36).padLeft(2, '0').toUpperCase();
       final indexStr = i.toRadixString(36).padLeft(2, '0').toUpperCase();
       final header = 'B\$U$dataType$totalStr$indexStr'; // 'U' = uncompressed

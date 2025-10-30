@@ -35,8 +35,7 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
   final FocusNode _customExplorerFocusNode = FocusNode();
 
   bool get _hasUrlChanged =>
-      _customExplorerController.text.isNotEmpty &&
-      _customExplorerController.text != _initialExplorerUrl;
+      _customExplorerController.text.isNotEmpty && _customExplorerController.text != _initialExplorerUrl;
 
   @override
   void initState() {
@@ -217,10 +216,7 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CoconutAppBar.build(
-        title: t.block_explorer,
-        context: context,
-      ),
+      appBar: CoconutAppBar.build(title: t.block_explorer, context: context),
       body: Stack(
         children: [
           GestureDetector(
@@ -251,9 +247,7 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
 
   Widget _buildDefaultExplorerToggle() {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 32,
-      ),
+      padding: const EdgeInsets.only(top: 32),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -262,22 +256,12 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
             children: [
               Text(
                 t.settings_screen.block_explorer.default_explorer,
-                style: CoconutTypography.body2_14_Bold.setColor(
-                  CoconutColors.gray300,
-                ),
+                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300),
               ),
-              Text(
-                'Mempool.space',
-                style: CoconutTypography.body3_12.setColor(
-                  CoconutColors.gray400,
-                ),
-              ),
+              Text('Mempool.space', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
             ],
           ),
-          CoconutSwitch(
-            isOn: _isDefaultExplorerEnabled,
-            onChanged: _onDefaultExplorerToggle,
-          ),
+          CoconutSwitch(isOn: _isDefaultExplorerEnabled, onChanged: _onDefaultExplorerToggle),
         ],
       ),
     );
@@ -287,71 +271,66 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      child: _showCustomUrlTextField
-          ? AnimatedSlide(
-              duration: const Duration(milliseconds: 300),
-              offset: _showCustomUrlTextField ? Offset.zero : const Offset(0, -0.5),
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 36,
-                ),
-                child: Column(
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        t.settings_screen.block_explorer.custom_explorer,
-                        style: CoconutTypography.body3_12.setColor(
-                          CoconutColors.gray400,
+      child:
+          _showCustomUrlTextField
+              ? AnimatedSlide(
+                duration: const Duration(milliseconds: 300),
+                offset: _showCustomUrlTextField ? Offset.zero : const Offset(0, -0.5),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 36),
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          t.settings_screen.block_explorer.custom_explorer,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                         ),
                       ),
-                    ),
-                    CoconutLayout.spacing_100h,
-                    CoconutTextField(
-                      key: _explorerGlobalKey,
-                      height: 54,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-                      maxLines: 1,
-                      textInputType: TextInputType.text,
-                      controller: _customExplorerController,
-                      focusNode: _customExplorerFocusNode,
-                      onChanged: (value) {},
-                      placeholderText:
-                          t.settings_screen.block_explorer.custom_explorer_input_placeholder,
-                      suffix: IconButton(
-                        iconSize: 14,
-                        padding: EdgeInsets.zero,
-                        onPressed: () {
-                          setState(() {
-                            _customExplorerController.text = '';
-                            _showConnectionStatus = false;
+                      CoconutLayout.spacing_100h,
+                      CoconutTextField(
+                        key: _explorerGlobalKey,
+                        height: 54,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        maxLines: 1,
+                        textInputType: TextInputType.text,
+                        controller: _customExplorerController,
+                        focusNode: _customExplorerFocusNode,
+                        onChanged: (value) {},
+                        placeholderText: t.settings_screen.block_explorer.custom_explorer_input_placeholder,
+                        suffix: IconButton(
+                          iconSize: 14,
+                          padding: EdgeInsets.zero,
+                          onPressed: () {
+                            setState(() {
+                              _customExplorerController.text = '';
+                              _showConnectionStatus = false;
+                            });
+                          },
+                          icon:
+                              _customExplorerController.text.isNotEmpty
+                                  ? SvgPicture.asset(
+                                    'assets/svg/text-field-clear.svg',
+                                    colorFilter: ColorFilter.mode(
+                                      _customExplorerController.text.isNotEmpty
+                                          ? CoconutColors.white
+                                          : CoconutColors.gray700,
+                                      BlendMode.srcIn,
+                                    ),
+                                  )
+                                  : Container(),
+                        ),
+                        onEditingComplete: () {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _clearFocus();
                           });
                         },
-                        icon: _customExplorerController.text.isNotEmpty
-                            ? SvgPicture.asset(
-                                'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(
-                                  _customExplorerController.text.isNotEmpty
-                                      ? CoconutColors.white
-                                      : CoconutColors.gray700,
-                                  BlendMode.srcIn,
-                                ),
-                              )
-                            : Container(),
                       ),
-                      onEditingComplete: () {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _clearFocus();
-                        });
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            )
-          : const SizedBox.shrink(),
+              )
+              : const SizedBox.shrink(),
     );
   }
 
@@ -361,14 +340,9 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(
-        top: 34,
-      ),
+      margin: const EdgeInsets.only(top: 34),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: CoconutColors.gray800,
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
       child: Row(
         children: [
           if (_isConnecting)
@@ -398,8 +372,8 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
               _isConnecting
                   ? t.settings_screen.block_explorer.connection_status.connecting
                   : _isConnectionSuccessful
-                      ? t.settings_screen.block_explorer.connection_status.connected
-                      : t.settings_screen.block_explorer.connection_status.failed,
+                  ? t.settings_screen.block_explorer.connection_status.connected
+                  : t.settings_screen.block_explorer.connection_status.failed,
               style: CoconutTypography.body2_14_Bold,
             ),
           ),
@@ -414,14 +388,9 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(
-        top: 12,
-      ),
+      margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: CoconutColors.gray800,
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

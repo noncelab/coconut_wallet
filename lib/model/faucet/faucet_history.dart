@@ -7,11 +7,8 @@ class FaucetRecord extends Equatable {
   final bool isToday;
   final int count;
 
-  FaucetRecord({
-    required this.id,
-    required this.dateTime,
-    required this.count,
-  }) : isToday = DateTimeUtil.isToday(dateTime);
+  FaucetRecord({required this.id, required this.dateTime, required this.count})
+    : isToday = DateTimeUtil.isToday(dateTime);
 
   @override
   List<Object?> get props => [id, dateTime, isToday, count];
@@ -19,27 +16,13 @@ class FaucetRecord extends Equatable {
   @override
   bool? get stringify => true;
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'dateTime': dateTime,
-        'count': count,
-      };
+  Map<String, dynamic> toJson() => {'id': id, 'dateTime': dateTime, 'count': count};
 
-  static FaucetRecord fromJson(Map<String, dynamic> json) => FaucetRecord(
-        id: json['id'],
-        dateTime: json['dateTime'],
-        count: json['count'],
-      );
+  static FaucetRecord fromJson(Map<String, dynamic> json) =>
+      FaucetRecord(id: json['id'], dateTime: json['dateTime'], count: json['count']);
 
-  FaucetRecord copyWith({
-    int? dateTime,
-    int? count,
-  }) {
+  FaucetRecord copyWith({int? dateTime, int? count}) {
     int newDateTime = dateTime ?? this.dateTime;
-    return FaucetRecord(
-      id: id,
-      dateTime: newDateTime,
-      count: count ?? this.count,
-    );
+    return FaucetRecord(id: id, dateTime: newDateTime, count: count ?? this.count);
   }
 }

@@ -7,18 +7,19 @@ void main() {
   group('MemoBottomSheetScreen Tests', () {
     String mockMemo = 'updateMemo';
 
-    testWidgets('calls onComplete with correct data when changing memo',
-        (WidgetTester tester) async {
+    testWidgets('calls onComplete with correct data when changing memo', (WidgetTester tester) async {
       String? resultMemo;
 
-      await tester.pumpWidget(MaterialApp(
-        home: MemoBottomSheet(
-          originalMemo: mockMemo,
-          onComplete: (memo) {
-            resultMemo = memo;
-          },
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MemoBottomSheet(
+            originalMemo: mockMemo,
+            onComplete: (memo) {
+              resultMemo = memo;
+            },
+          ),
         ),
-      ));
+      );
 
       // CupertinoTextField 찾기
       final textFieldFinder = find.byType(CupertinoTextField);

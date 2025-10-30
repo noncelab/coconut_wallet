@@ -65,25 +65,29 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                  color: widget.isEnable
-                      ? _isPressing
-                          ? widget.pressingColor ?? CoconutColors.gray500
-                          : widget.defaultColor ?? CoconutColors.white
-                      : CoconutColors.white.withOpacity(0.2),
-                  width: 0.5),
+                color:
+                    widget.isEnable
+                        ? _isPressing
+                            ? widget.pressingColor ?? CoconutColors.gray500
+                            : widget.defaultColor ?? CoconutColors.white
+                        : CoconutColors.white.withOpacity(0.2),
+                width: 0.5,
+              ),
             ),
           ),
           child: Text(
             widget.text,
             style: CoconutTypography.body3_12.copyWith(
-                // decoration: TextDecoration.underline, // 밑줄 설정
-                fontSize: widget.fontSize,
-                height: (widget.lineHeight ?? widget.fontSize) / widget.fontSize,
-                color: widget.isEnable
-                    ? _isPressing
-                        ? widget.pressingColor ?? CoconutColors.gray500
-                        : widget.defaultColor ?? CoconutColors.white
-                    : CoconutColors.white.withOpacity(0.2)),
+              // decoration: TextDecoration.underline, // 밑줄 설정
+              fontSize: widget.fontSize,
+              height: (widget.lineHeight ?? widget.fontSize) / widget.fontSize,
+              color:
+                  widget.isEnable
+                      ? _isPressing
+                          ? widget.pressingColor ?? CoconutColors.gray500
+                          : widget.defaultColor ?? CoconutColors.white
+                      : CoconutColors.white.withOpacity(0.2),
+            ),
           ),
         ),
       ),

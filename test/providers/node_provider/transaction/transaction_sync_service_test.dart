@@ -26,11 +26,7 @@ import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
 // 모킹할 클래스 목록
-@GenerateMocks([
-  ElectrumService,
-  NodeStateManager,
-  WalletProvider,
-])
+@GenerateMocks([ElectrumService, NodeStateManager, WalletProvider])
 import 'transaction_sync_service_test.mocks.dart';
 
 void main() {
@@ -80,14 +76,16 @@ void main() {
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
-      realmManager.realm.add(RealmWalletBase(
-        testWalletId, // id
-        0, // colorIndex
-        0, // iconIndex
-        'test_descriptor', // descriptor
-        'Test Wallet', // name
-        'singleSignature', // walletType
-      ));
+      realmManager.realm.add(
+        RealmWalletBase(
+          testWalletId, // id
+          0, // colorIndex
+          0, // iconIndex
+          'test_descriptor', // descriptor
+          'Test Wallet', // name
+          'singleSignature', // walletType
+        ),
+      );
     });
   });
 
@@ -102,14 +100,10 @@ void main() {
       final scriptStatus = ScriptStatusMock.createMockScriptStatus(testWalletItem, 0);
 
       // 모의 historyList 설정
-      final historyList = [
-        GetTxHistoryRes(height: 100, txHash: 'tx1'),
-        GetTxHistoryRes(height: 0, txHash: 'tx2'),
-      ];
+      final historyList = [GetTxHistoryRes(height: 100, txHash: 'tx1'), GetTxHistoryRes(height: 0, txHash: 'tx2')];
 
       // mock 동작 설정
-      when(electrumService.getHistory(AddressType.p2wpkh, scriptStatus.address))
-          .thenAnswer((_) async => historyList);
+      when(electrumService.getHistory(AddressType.p2wpkh, scriptStatus.address)).thenAnswer((_) async => historyList);
 
       // 함수 실행
       final result = await transactionSyncService.getFetchTransactionResponses(
@@ -151,7 +145,7 @@ void main() {
           height: blockHeight,
           addressIndex: 0,
           isChange: false,
-        )
+        ),
       };
 
       final blockTimestampMap = {blockHeight: BlockTimestamp(blockHeight, blockTimestamp)};
@@ -166,15 +160,13 @@ void main() {
       );
 
       // 업데이트된 트랜잭션 조회
-      final updatedTx =
-          transactionRepository.getTransactionRecord(testWalletId, unconfirmedTx.transactionHash);
+      final updatedTx = transactionRepository.getTransactionRecord(testWalletId, unconfirmedTx.transactionHash);
 
       expect(updatedTx, isNotNull);
       expect(updatedTx!.blockHeight, blockHeight);
       expect(updatedTx.timestamp, isNotNull);
       final updatedTimestamp = updatedTx.timestamp;
-      expect(updatedTimestamp.millisecondsSinceEpoch ~/ 1000,
-          blockTimestamp.millisecondsSinceEpoch ~/ 1000);
+      expect(updatedTimestamp.millisecondsSinceEpoch ~/ 1000, blockTimestamp.millisecondsSinceEpoch ~/ 1000);
     });
   });
 
@@ -212,8 +204,7 @@ void main() {
 
       // 검증
       verify(stateManager.addWalletSyncState(testWalletId, UpdateElement.transaction)).called(1);
-      verify(stateManager.addWalletCompletedState(testWalletId, UpdateElement.transaction))
-          .called(1);
+      verify(stateManager.addWalletCompletedState(testWalletId, UpdateElement.transaction)).called(1);
       verify(electrumService.getHistory(any, testAddress)).called(1);
     });
 
@@ -232,20 +223,18 @@ void main() {
       await transactionRepository.addAllTransactions(testWalletId, []);
 
       // 모의 응답 설정
-      when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetTxHistoryRes(height: 0, txHash: mockTx.transactionHash), // 미확인 트랜잭션
-          ]);
-      when(electrumService.getTransaction(mockTx.transactionHash))
-          .thenAnswer((_) async => mockTx.serialize());
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')))
-          .thenAnswer((_) async => [prevTx]);
+      when(electrumService.getHistory(any, any)).thenAnswer(
+        (_) async => [
+          GetTxHistoryRes(height: 0, txHash: mockTx.transactionHash), // 미확인 트랜잭션
+        ],
+      );
+      when(electrumService.getTransaction(mockTx.transactionHash)).thenAnswer((_) async => mockTx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [prevTx]);
 
       // 함수 실행
-      await transactionSyncService.fetchScriptTransaction(
-        testWalletItem,
-        mockScriptStatus,
-        now: now,
-      );
+      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
 
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
@@ -267,25 +256,20 @@ void main() {
       final mockBlockTimestamp = BlockTimestamp(mockBlockHeight, DateTime.now());
 
       // 모의 응답 설정
-      when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetTxHistoryRes(height: mockBlockHeight, txHash: mockTx.transactionHash),
-          ]);
-      when(electrumService.getTransaction(mockTx.transactionHash))
-          .thenAnswer((_) async => mockTx.serialize());
-      when(electrumService.getTransaction(mockTx.inputs[0].transactionHash))
-          .thenAnswer((_) async => prevTx.serialize());
-      when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {
-            mockBlockHeight: mockBlockTimestamp,
-          });
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')))
-          .thenAnswer((_) async => [prevTx]);
+      when(
+        electrumService.getHistory(any, any),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: mockBlockHeight, txHash: mockTx.transactionHash)]);
+      when(electrumService.getTransaction(mockTx.transactionHash)).thenAnswer((_) async => mockTx.serialize());
+      when(
+        electrumService.getTransaction(mockTx.inputs[0].transactionHash),
+      ).thenAnswer((_) async => prevTx.serialize());
+      when(electrumService.fetchBlocksByHeight(any)).thenAnswer((_) async => {mockBlockHeight: mockBlockTimestamp});
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [prevTx]);
 
       // 함수 실행
-      await transactionSyncService.fetchScriptTransaction(
-        testWalletItem,
-        mockScriptStatus,
-        now: now,
-      );
+      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
 
       // 검증
       verify(electrumService.getHistory(any, testAddress)).called(1);
@@ -349,30 +333,29 @@ void main() {
       await transactionRepository.addAllTransactions(testWalletId, [
         TransactionMock.createUnconfirmedTransactionRecord(
           transactionHash: prevTx.transactionHash, // 명시적으로 해시값 지정
-        )
+        ),
       ]);
 
-      when(electrumService.getHistory(any, any)).thenAnswer((_) async => [
-            GetTxHistoryRes(height: 0, txHash: rbfTx.transactionHash), // 미확인 RBF 트랜잭션
-          ]);
-      when(electrumService.getTransaction(rbfTx.transactionHash))
-          .thenAnswer((_) async => rbfTx.serialize());
-      when(electrumService.getTransaction(rbfTx.inputs[0].transactionHash))
-          .thenAnswer((_) async => originalTx.serialize());
-      when(electrumService.getTransaction(prevTx.inputs[0].transactionHash))
-          .thenAnswer((_) async => originalTx.serialize());
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')))
-          .thenAnswer((_) async => [originalTx]);
-
-      await transactionSyncService.fetchScriptTransaction(
-        testWalletItem,
-        mockScriptStatus,
-        now: now,
+      when(electrumService.getHistory(any, any)).thenAnswer(
+        (_) async => [
+          GetTxHistoryRes(height: 0, txHash: rbfTx.transactionHash), // 미확인 RBF 트랜잭션
+        ],
       );
+      when(electrumService.getTransaction(rbfTx.transactionHash)).thenAnswer((_) async => rbfTx.serialize());
+      when(
+        electrumService.getTransaction(rbfTx.inputs[0].transactionHash),
+      ).thenAnswer((_) async => originalTx.serialize());
+      when(
+        electrumService.getTransaction(prevTx.inputs[0].transactionHash),
+      ).thenAnswer((_) async => originalTx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [originalTx]);
+
+      await transactionSyncService.fetchScriptTransaction(testWalletItem, mockScriptStatus, now: now);
 
       // RBF 내역이 저장되었는지 확인
-      final rbfHistories =
-          transactionRepository.getRbfHistoryList(testWalletId, rbfTx.transactionHash);
+      final rbfHistories = transactionRepository.getRbfHistoryList(testWalletId, rbfTx.transactionHash);
 
       expect(rbfHistories.length, 2);
       expect(rbfHistories.first.originalTransactionHash, prevTx.transactionHash);

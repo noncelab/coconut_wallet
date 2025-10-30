@@ -83,22 +83,22 @@ class PreferenceProvider extends ChangeNotifier {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
-    _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
-        ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
-        : true;
+    _isBtcUnit =
+        _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit) ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit) : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
-    _excludedFromTotalBalanceWalletIds =
-        _walletPreferencesRepository.getExcludedWalletIds().toList();
+    _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
-    _utxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
-        ? UtxoOrder.values.firstWhere(
-            (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
-            orElse: () => UtxoOrder.byAmountDesc)
-        : UtxoOrder.byAmountDesc;
+    _utxoSortOrder =
+        _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
+            ? UtxoOrder.values.firstWhere(
+              (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
+              orElse: () => UtxoOrder.byAmountDesc,
+            )
+            : UtxoOrder.byAmountDesc;
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -112,10 +112,7 @@ class PreferenceProvider extends ChangeNotifier {
   void _initializeFiat() {
     final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
     if (fiatCode.isNotEmpty) {
-      _selectedFiat = FiatCode.values.firstWhere(
-        (fiat) => fiat.code == fiatCode,
-        orElse: () => FiatCode.KRW,
-      );
+      _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
     } else {
       _selectedFiat = FiatCode.KRW;
       _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
@@ -241,10 +238,12 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 가짜 잔액 분배 작업
-  Future<void> initializeFakeBalance(List<WalletListItemBase> wallets,
-      {bool? isFakeBalanceActive, double? fakeBalanceTotalAmount}) async {
-    var fakeBalanceTotalBtc =
-        fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
+  Future<void> initializeFakeBalance(
+    List<WalletListItemBase> wallets, {
+    bool? isFakeBalanceActive,
+    double? fakeBalanceTotalAmount,
+  }) async {
+    var fakeBalanceTotalBtc = fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
 
     if (fakeBalanceTotalBtc == 0) {
       await setFakeBalanceTotalAmount(0);
@@ -355,8 +354,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 가짜 잔액 Map 설정
   Future<void> setFakeBalanceMap(Map<int, dynamic> map) async {
-    final Map<String, dynamic> stringKeyMap =
-        map.map((key, value) => MapEntry(key.toString(), value));
+    final Map<String, dynamic> stringKeyMap = map.map((key, value) => MapEntry(key.toString(), value));
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
@@ -420,8 +418,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 일렉트럼 서버 설정
   Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
-    await _sharedPrefs.setString(
-        SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
   }
 
   /// 커스텀 일렉트럼 서버 설정

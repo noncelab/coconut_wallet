@@ -11,16 +11,14 @@ abstract class SocketFactory {
 
 class DefaultSocketFactory implements SocketFactory {
   @override
-  Future<Socket> createSocket(String host, int port,
-      {Duration timeout = const Duration(seconds: 3)}) {
+  Future<Socket> createSocket(String host, int port, {Duration timeout = const Duration(seconds: 3)}) {
     Logger.log('SocketFactory: Creating socket to $host:$port, timeout: $timeout}');
     return Socket.connect(host, port, timeout: timeout);
   }
 
   @override
   Future<SecureSocket> createSecureSocket(String host, int port, {String? publicKey}) {
-    Logger.log(
-        'SocketFactory: Creating secure socket to $host:$port, hasPublicKey: ${publicKey != null}');
+    Logger.log('SocketFactory: Creating secure socket to $host:$port, hasPublicKey: ${publicKey != null}');
 
     return SecureSocket.connect(
       host,

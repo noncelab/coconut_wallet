@@ -11,9 +11,7 @@ class BaseRepository {
   BaseRepository(this._realmManager);
 
   /// 공통 에러 핸들링
-  Result<T> handleRealm<T>(
-    T Function() operation,
-  ) {
+  Result<T> handleRealm<T>(T Function() operation) {
     try {
       return Result.success(operation());
     } catch (e) {
@@ -22,9 +20,7 @@ class BaseRepository {
   }
 
   /// 비동기 공통 에러 핸들링
-  Future<Result<T>> handleAsyncRealm<T>(
-    Future<T> Function() operation,
-  ) async {
+  Future<Result<T>> handleAsyncRealm<T>(Future<T> Function() operation) async {
     try {
       return Result.success(await operation());
     } catch (e) {
@@ -39,13 +35,9 @@ class BaseRepository {
     }
 
     if (e is RealmException) {
-      return Result<T>.failure(
-        ErrorCodes.withMessage(ErrorCodes.realmException, e.message),
-      );
+      return Result<T>.failure(ErrorCodes.withMessage(ErrorCodes.realmException, e.message));
     }
 
-    return Result<T>.failure(
-      ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()),
-    );
+    return Result<T>.failure(ErrorCodes.withMessage(ErrorCodes.realmUnknown, e.toString()));
   }
 }

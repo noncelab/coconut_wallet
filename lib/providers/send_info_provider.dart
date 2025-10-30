@@ -5,10 +5,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 
-enum SendEntryPoint {
-  home,
-  walletDetail,
-}
+enum SendEntryPoint { home, walletDetail }
 
 class SendInfoProvider {
   int? _walletId;
@@ -101,9 +98,18 @@ class SendInfoProvider {
   }
 
   void clear() {
-    _walletId = _recipientAddress = _amount = _estimatedFee = _isMaxMode = _isMultisig =
-        _transaction = _txWaitingForSign = _signedPsbtBase64Encoded = _isDonation =
-            _sendEntryPoint = _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
+    _walletId =
+        _recipientAddress =
+            _amount =
+                _estimatedFee =
+                    _isMaxMode =
+                        _isMultisig =
+                            _transaction =
+                                _txWaitingForSign =
+                                    _signedPsbtBase64Encoded =
+                                        _isDonation =
+                                            _sendEntryPoint =
+                                                _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
   }
 
   Map<String, int>? getRecipientMap() {
@@ -112,8 +118,7 @@ class SendInfoProvider {
     }
 
     if (_recipientsForBatch != null) {
-      return _recipientsForBatch!
-          .map((key, value) => MapEntry(key, UnitUtil.convertBitcoinToSatoshi(value)));
+      return _recipientsForBatch!.map((key, value) => MapEntry(key, UnitUtil.convertBitcoinToSatoshi(value)));
     }
 
     return {_recipientAddress!: UnitUtil.convertBitcoinToSatoshi(_amount!)};

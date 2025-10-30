@@ -26,7 +26,10 @@ class WalletAddInputViewModel extends ChangeNotifier {
     try {
       _validateXpubPrefixSupport(xpub);
       SingleSignatureWallet.fromExtendedPublicKey(
-          AddressType.p2wpkh, xpub, WalletAddService.masterFingerprintPlaceholder);
+        AddressType.p2wpkh,
+        xpub,
+        WalletAddService.masterFingerprintPlaceholder,
+      );
       validExtendedPublicKey = xpub;
       validDescriptor = null;
       return true;
@@ -69,9 +72,10 @@ class WalletAddInputViewModel extends ChangeNotifier {
 
   void _setErrorMessageByError(e) {
     if (e.toString().contains("network type")) {
-      errorMessage = NetworkType.currentNetworkType == NetworkType.mainnet
-          ? t.wallet_add_input_screen.mainnet_wallet_error_text
-          : t.wallet_add_input_screen.testnet_wallet_error_text;
+      errorMessage =
+          NetworkType.currentNetworkType == NetworkType.mainnet
+              ? t.wallet_add_input_screen.mainnet_wallet_error_text
+              : t.wallet_add_input_screen.testnet_wallet_error_text;
     } else if (e.toString().contains("not supported")) {
       errorMessage = t.wallet_add_input_screen.unsupported_wallet_error_text;
     } else {
@@ -90,18 +94,18 @@ class WalletAddInputViewModel extends ChangeNotifier {
   }
 
   Future<ResultOfSyncFromVault> addWalletFromExtendedPublicKey(String extendedPublicKey) async {
-    final name = getNextThirdPartyWalletName(
-        importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet =
-        _walletAddService.createExtendedPublicKeyWallet(extendedPublicKey, name, masterFingerPrint);
+    final name = getNextThirdPartyWalletName(importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createExtendedPublicKeyWallet(extendedPublicKey, name, masterFingerPrint);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> addWalletFromDescriptor(String descriptor) async {
-    final name = getNextThirdPartyWalletName(
-        importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final name = getNextThirdPartyWalletName(importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createWalletFromDescriptor(
-        descriptor: descriptor, name: name, walletImportSource: importSource);
+      descriptor: descriptor,
+      name: name,
+      walletImportSource: importSource,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

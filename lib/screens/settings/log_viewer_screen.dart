@@ -36,17 +36,21 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
   }
 
   Future<void> _clearLog() async {
-    CustomDialogs.showCustomAlertDialog(context,
-        title: t.settings_screen.log_viewer_screen.clear_log,
-        message: t.settings_screen.log_viewer_screen.clear_log_description, onConfirm: () async {
-      await FileLogger.clearLog();
-      await _loadLogContent();
-      if (mounted) {
+    CustomDialogs.showCustomAlertDialog(
+      context,
+      title: t.settings_screen.log_viewer_screen.clear_log,
+      message: t.settings_screen.log_viewer_screen.clear_log_description,
+      onConfirm: () async {
+        await FileLogger.clearLog();
+        await _loadLogContent();
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      },
+      onCancel: () {
         Navigator.pop(context);
-      }
-    }, onCancel: () {
-      Navigator.pop(context);
-    });
+      },
+    );
   }
 
   @override
@@ -89,79 +93,74 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
             icon: SvgPicture.asset(
               'assets/svg/trash.svg',
               width: 20,
-              colorFilter: const ColorFilter.mode(
-                CoconutColors.white,
-                BlendMode.srcIn,
-              ),
+              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
             ),
             onPressed: _clearLog,
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CoconutCircularIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // 로그 설명 표시 영역
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: CoconutColors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RichText(
-                            text: TextSpan(
-                                text: t.settings_screen.log_viewer_screen.log_description_1,
-                                style: CoconutTypography.body2_14.setColor(CoconutColors.white),
-                                children: [
-                              TextSpan(
-                                text: ' ${t.settings_screen.log_viewer_screen.log_description_2}',
-                                style: CoconutTypography.body2_14_Bold,
-                              )
-                            ])),
-                        CoconutLayout.spacing_200h,
-                        Text(
-                          t.settings_screen.log_viewer_screen.log_target,
-                          style: CoconutTypography.body2_14.setColor(CoconutColors.white),
-                        ),
-                        CoconutLayout.spacing_100h,
-                        // 로깅 대상 추가 시 여기에 추가
-                        _buildLogDescription(
-                            '1', t.settings_screen.log_viewer_screen.log_target_description_1),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildButtons(),
-                  const SizedBox(height: 16),
-
-                  // 로그 내용 표시 영역
-                  SizedBox(
-                    width: MediaQuery.of(context).size.width,
-                    child: Container(
+      body:
+          _isLoading
+              ? const Center(child: CoconutCircularIndicator())
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // 로그 설명 표시 영역
+                    Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: CoconutColors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: SelectableText(
-                        _logContent,
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          fontSize: 12,
-                          color: CoconutColors.white,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: TextSpan(
+                              text: t.settings_screen.log_viewer_screen.log_description_1,
+                              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                              children: [
+                                TextSpan(
+                                  text: ' ${t.settings_screen.log_viewer_screen.log_description_2}',
+                                  style: CoconutTypography.body2_14_Bold,
+                                ),
+                              ],
+                            ),
+                          ),
+                          CoconutLayout.spacing_200h,
+                          Text(
+                            t.settings_screen.log_viewer_screen.log_target,
+                            style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                          ),
+                          CoconutLayout.spacing_100h,
+                          // 로깅 대상 추가 시 여기에 추가
+                          _buildLogDescription('1', t.settings_screen.log_viewer_screen.log_target_description_1),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildButtons(),
+                    const SizedBox(height: 16),
+
+                    // 로그 내용 표시 영역
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: CoconutColors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: SelectableText(
+                          _logContent,
+                          style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: CoconutColors.white),
                         ),
                       ),
                     ),
-                  )
-                ],
+                  ],
+                ),
               ),
-            ),
     );
   }
 
@@ -169,10 +168,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$index. ',
-          style: CoconutTypography.body2_14.setColor(CoconutColors.white),
-        ),
+        Text('$index. ', style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
         Flexible(
           child: Text(
             description,

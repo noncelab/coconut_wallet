@@ -81,10 +81,16 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get receivingAmount => _receivingAmount;
   int get sendingAmount => _sendingAmount;
 
-  WalletDetailViewModel(this._walletId, this._walletProvider, this._txProvider,
-      this._connectProvider, this._priceProvider, this._sendInfoProvider, NodeProvider nodeProvider)
-      : _syncWalletStateStream = nodeProvider.getWalletStateStream(_walletId),
-        _nodeSyncStateStream = nodeProvider.syncStateStream {
+  WalletDetailViewModel(
+    this._walletId,
+    this._walletProvider,
+    this._txProvider,
+    this._connectProvider,
+    this._priceProvider,
+    this._sendInfoProvider,
+    NodeProvider nodeProvider,
+  ) : _syncWalletStateStream = nodeProvider.getWalletStateStream(_walletId),
+      _nodeSyncStateStream = nodeProvider.syncStateStream {
     // 지갑 상세 초기화
     final walletBaseItem = _walletProvider.getWalletById(_walletId);
     _walletListBaseItem = walletBaseItem;
@@ -111,9 +117,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
     // Faucet
     _setReceiveAddress();
-    _walletName = walletBaseItem.name.length > 10
-        ? '${walletBaseItem.name.substring(0, 7)}...'
-        : walletBaseItem.name;
+    _walletName = walletBaseItem.name.length > 10 ? '${walletBaseItem.name.substring(0, 7)}...' : walletBaseItem.name;
     _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
     _checkFaucetRecord();
 
@@ -142,9 +146,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   WalletType get walletType => _walletType;
   bool get isNetworkOff => _connectProvider.isNetworkOff;
   bool get isMultisigWallet => _walletListBaseItem is MultisigWalletListItem;
-  String? get masterFingerprint => isMultisigWallet
-      ? null
-      : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+  String? get masterFingerprint =>
+      isMultisigWallet ? null : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
 
   String _bitcoinPriceKrwInString = '';
 
@@ -181,8 +184,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   // balance, transaction만 고려
   void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
     // balance
-    if (_prevWalletUpdateInfo.balance != WalletSyncState.completed &&
-        newInfo.balance == WalletSyncState.completed) {
+    if (_prevWalletUpdateInfo.balance != WalletSyncState.completed && newInfo.balance == WalletSyncState.completed) {
       _balance = _getBalance();
       _setReceiveAddress();
       notifyListeners();
@@ -214,8 +216,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   bool _allElementUpdateCompleted(WalletUpdateInfo updateInfo) {
-    return updateInfo.balance == WalletSyncState.completed &&
-        updateInfo.transaction == WalletSyncState.completed;
+    return updateInfo.balance == WalletSyncState.completed && updateInfo.transaction == WalletSyncState.completed;
   }
 
   void _setPendingAmount() {
@@ -258,13 +259,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> requestTestBitcoin(
-      String address, double requestAmount, Function(bool, String) onResult) async {
+  Future<void> requestTestBitcoin(String address, double requestAmount, Function(bool, String) onResult) async {
     _isRequesting = true;
     notifyListeners();
     try {
-      final response =
-          await _faucetService.getTestCoin(FaucetRequest(address: address, amount: requestAmount));
+      final response = await _faucetService.getTestCoin(FaucetRequest(address: address, amount: requestAmount));
       if (response is FaucetResponse) {
         onResult(true, t.faucet_request);
         _updateFaucetRecord();
@@ -304,8 +303,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _initFaucetRecord() {
-    _faucetRecord =
-        FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0);
+    _faucetRecord = FaucetRecord(id: _walletId, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0);
   }
 
   void _saveFaucetRecordToSharedPrefs() {

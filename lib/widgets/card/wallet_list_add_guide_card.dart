@@ -8,10 +8,7 @@ import 'package:flutter_svg/svg.dart';
 class WalletAdditionGuideCard extends StatefulWidget {
   final VoidCallback onPressed;
 
-  const WalletAdditionGuideCard({
-    super.key,
-    required this.onPressed,
-  });
+  const WalletAdditionGuideCard({super.key, required this.onPressed});
 
   @override
   State<WalletAdditionGuideCard> createState() => _WalletAdditionGuideCardState();
@@ -30,9 +27,7 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
           painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0),
           child: Container(
             width: MediaQuery.sizeOf(context).width,
-            padding: const EdgeInsets.symmetric(
-              vertical: 42,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 42),
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(
@@ -40,10 +35,7 @@ class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
                 children: [
                   SvgPicture.asset('assets/svg/wallet-eyes.svg'),
                   CoconutLayout.spacing_100w,
-                  Text(
-                    t.wallet_list_add_guide_card.add_watch_only,
-                    style: CoconutTypography.body2_14,
-                  ),
+                  Text(t.wallet_list_add_guide_card.add_watch_only, style: CoconutTypography.body2_14),
                 ],
               ),
             ),

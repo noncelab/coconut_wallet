@@ -95,11 +95,7 @@ class SharedPrefsRepository {
     if (faucetHistories.containsKey(id)) {
       return faucetHistories[id]!;
     } else {
-      return FaucetRecord(
-        id: id,
-        dateTime: DateTime.now().millisecondsSinceEpoch,
-        count: 0,
-      );
+      return FaucetRecord(id: id, dateTime: DateTime.now().millisecondsSinceEpoch, count: 0);
     }
   }
 
@@ -110,8 +106,7 @@ class SharedPrefsRepository {
   }
 
   Future<void> _saveFaucetHistories(Map<int, FaucetRecord> histories) async {
-    final String encodedData =
-        json.encode(histories.map((key, value) => MapEntry(key.toString(), value.toJson())));
+    final String encodedData = json.encode(histories.map((key, value) => MapEntry(key.toString(), value.toJson())));
     await _sharedPrefs.setString(SharedPrefKeys.kFaucetHistories, encodedData);
   }
 
@@ -136,11 +131,13 @@ class SharedPrefsRepository {
         final serverData = jsonDecode(serverJson) as Map<String, dynamic>;
         final servers = <ElectrumServer>[];
         for (final server in serverData.entries) {
-          servers.add(ElectrumServer.custom(
-            server.value['host'] as String,
-            server.value['port'] as int,
-            server.value['ssl'] as bool,
-          ));
+          servers.add(
+            ElectrumServer.custom(
+              server.value['host'] as String,
+              server.value['port'] as int,
+              server.value['ssl'] as bool,
+            ),
+          );
         }
         return servers;
       } catch (e) {
@@ -157,8 +154,7 @@ class SharedPrefsRepository {
     final serverKey = '${server.host}:${server.port}';
 
     // 중복 확인
-    final isDuplicate =
-        existingServers?.any((existing) => '${existing.host}:${existing.port}' == serverKey);
+    final isDuplicate = existingServers?.any((existing) => '${existing.host}:${existing.port}' == serverKey);
 
     if (isDuplicate ?? false) {
       Logger.log('User server already exists: $serverKey');
@@ -177,11 +173,7 @@ class SharedPrefsRepository {
 
     for (final server in servers) {
       final key = '${server.host}:${server.port}';
-      serversMap[key] = {
-        'host': server.host,
-        'port': server.port,
-        'ssl': server.ssl,
-      };
+      serversMap[key] = {'host': server.host, 'port': server.port, 'ssl': server.ssl};
     }
 
     await prefs.setString(SharedPrefKeys.kUserServers, jsonEncode(serversMap));

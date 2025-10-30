@@ -12,15 +12,16 @@ class CustomDropdown extends StatefulWidget {
   final EdgeInsets margin;
   final String? selectedButton;
 
-  const CustomDropdown(
-      {super.key,
-      required this.buttons,
-      required this.onTapButton,
-      this.dividerIndex = 0,
-      this.dividerColor = MyColors.borderGrey,
-      this.backgroundColor = MyColors.shadowGray,
-      this.margin = EdgeInsets.zero,
-      this.selectedButton});
+  const CustomDropdown({
+    super.key,
+    required this.buttons,
+    required this.onTapButton,
+    this.dividerIndex = 0,
+    this.dividerColor = MyColors.borderGrey,
+    this.backgroundColor = MyColors.shadowGray,
+    this.margin = EdgeInsets.zero,
+    this.selectedButton,
+  });
 
   @override
   State<CustomDropdown> createState() => _CustomDropdownState();
@@ -45,12 +46,7 @@ class _CustomDropdownState extends State<CustomDropdown> {
       width: 152,
       decoration: BoxDecoration(
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            spreadRadius: 1,
-            blurRadius: 16,
-            offset: const Offset(5, 5),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.5), spreadRadius: 1, blurRadius: 16, offset: const Offset(5, 5)),
         ],
       ),
       child: Column(
@@ -103,12 +99,11 @@ class _CustomDropdownState extends State<CustomDropdown> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
-              borderRadius: isFirst
-                  ? const BorderRadius.only(
-                      topLeft: Radius.circular(16), topRight: Radius.circular(16))
-                  : isLast
-                      ? const BorderRadius.only(
-                          bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16))
+              borderRadius:
+                  isFirst
+                      ? const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16))
+                      : isLast
+                      ? const BorderRadius.only(bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16))
                       : null,
               color: tapDownButtonIndex == index ? MyColors.borderGrey : backgroundColor,
             ),
@@ -125,14 +120,12 @@ class _CustomDropdownState extends State<CustomDropdown> {
                     fontStyle: FontStyle.normal,
                   ),
                 ),
-                if (_selectedIndex == index) SvgPicture.asset('assets/svg/check.svg')
+                if (_selectedIndex == index) SvgPicture.asset('assets/svg/check.svg'),
               ],
             ),
           ),
         ),
-        if (!isLast)
-          Container(
-              height: dividerHeight, color: dividerHeight == 1 ? dividerColor : MyColors.nero),
+        if (!isLast) Container(height: dividerHeight, color: dividerHeight == 1 ? dividerColor : MyColors.nero),
       ],
     );
   }

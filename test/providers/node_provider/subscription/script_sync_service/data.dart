@@ -52,12 +52,14 @@ class _ScriptSyncTestData {
     this.rbfTxDtoB,
   });
 
-  factory _ScriptSyncTestData.createPreviousTestData(_ScriptSyncTestData defaultData,
-      {required Transaction cpfpTx,
-      required Transaction rbfTx,
-      required List<SubscribeScriptStreamDto> cpfpTxDtos,
-      required SubscribeScriptStreamDto rbfTxDtoA,
-      required SubscribeScriptStreamDto rbfTxDtoB}) {
+  factory _ScriptSyncTestData.createPreviousTestData(
+    _ScriptSyncTestData defaultData, {
+    required Transaction cpfpTx,
+    required Transaction rbfTx,
+    required List<SubscribeScriptStreamDto> cpfpTxDtos,
+    required SubscribeScriptStreamDto rbfTxDtoA,
+    required SubscribeScriptStreamDto rbfTxDtoB,
+  }) {
     return _ScriptSyncTestData(
       walletA: defaultData.walletA,
       walletB: defaultData.walletB,
@@ -80,43 +82,21 @@ class _ScriptSyncTestData {
 class _ScriptSyncTestDataBuilder {
   static _ScriptSyncTestData createDefaultTestData() {
     final walletA = WalletMock.createSingleSigWalletItem(id: _TestConstants.walletId);
-    final walletB = WalletMock.createSingleSigWalletItem(
-      id: _TestConstants.walletId + 1,
-      randomDescriptor: true,
-    );
+    final walletB = WalletMock.createSingleSigWalletItem(id: _TestConstants.walletId + 1, randomDescriptor: true);
 
-    final sharedPrefsRepository = SharedPrefsRepository()
-      ..setSharedPreferencesForTest(MockSharedPreferences());
+    final sharedPrefsRepository = SharedPrefsRepository()..setSharedPreferencesForTest(MockSharedPreferences());
 
-    final previousScriptStatus = ScriptStatusMock.createMockScriptStatus(
-      walletA,
-      _TestConstants.addressIndex,
-    );
+    final previousScriptStatus = ScriptStatusMock.createMockScriptStatus(walletA, _TestConstants.addressIndex);
 
-    final previousDto = SubscribeScriptStreamDto(
-      walletItem: walletA,
-      scriptStatus: previousScriptStatus,
-    );
+    final previousDto = SubscribeScriptStreamDto(walletItem: walletA, scriptStatus: previousScriptStatus);
 
-    final scriptStatusA = ScriptStatusMock.createMockScriptStatus(
-      walletA,
-      _TestConstants.addressIndex,
-    );
+    final scriptStatusA = ScriptStatusMock.createMockScriptStatus(walletA, _TestConstants.addressIndex);
 
-    final dtoA = SubscribeScriptStreamDto(
-      walletItem: walletA,
-      scriptStatus: scriptStatusA,
-    );
+    final dtoA = SubscribeScriptStreamDto(walletItem: walletA, scriptStatus: scriptStatusA);
 
-    final scriptStatusB = ScriptStatusMock.createMockScriptStatus(
-      walletB,
-      _TestConstants.addressIndex,
-    );
+    final scriptStatusB = ScriptStatusMock.createMockScriptStatus(walletB, _TestConstants.addressIndex);
 
-    final dtoB = SubscribeScriptStreamDto(
-      walletItem: walletB,
-      scriptStatus: scriptStatusB,
-    );
+    final dtoB = SubscribeScriptStreamDto(walletItem: walletB, scriptStatus: scriptStatusB);
 
     final previousMockTx = TransactionMock.createMockTransaction(
       toAddress: walletA.walletBase.getAddress(_TestConstants.addressIndex),
@@ -129,7 +109,7 @@ class _ScriptSyncTestDataBuilder {
       amount: _TestConstants.transactionAmount,
       change: (
         amount: _TestConstants.changeAmount,
-        address: walletA.walletBase.getAddress(_TestConstants.addressIndex, isChange: true)
+        address: walletA.walletBase.getAddress(_TestConstants.addressIndex, isChange: true),
       ),
     );
 
@@ -161,8 +141,7 @@ class _ScriptSyncTestDataBuilder {
       amount: _TestConstants.transactionAmount,
       change: (
         amount: _TestConstants.changeAmount - _TestConstants.rbfFeeAmount,
-        address:
-            defaultData.walletA.walletBase.getAddress(_TestConstants.addressIndex, isChange: true)
+        address: defaultData.walletA.walletBase.getAddress(_TestConstants.addressIndex, isChange: true),
       ),
     );
 
@@ -176,10 +155,7 @@ class _ScriptSyncTestDataBuilder {
       _TestConstants.addressIndex,
       isChange: true,
     );
-    final cpfpTxDto = SubscribeScriptStreamDto(
-      walletItem: defaultData.walletB,
-      scriptStatus: cpfpTxScriptStatus,
-    );
+    final cpfpTxDto = SubscribeScriptStreamDto(walletItem: defaultData.walletB, scriptStatus: cpfpTxScriptStatus);
     final cpfpTxChangeDto = SubscribeScriptStreamDto(
       walletItem: defaultData.walletB,
       scriptStatus: cpfpTxChangeScriptStatus,
@@ -193,14 +169,8 @@ class _ScriptSyncTestDataBuilder {
       defaultData.walletB,
       _TestConstants.addressIndex,
     );
-    final rbfTxDtoA = SubscribeScriptStreamDto(
-      walletItem: defaultData.walletA,
-      scriptStatus: rbfTxScriptStatusA,
-    );
-    final rbfTxDtoB = SubscribeScriptStreamDto(
-      walletItem: defaultData.walletB,
-      scriptStatus: rbfTxScriptStatusB,
-    );
+    final rbfTxDtoA = SubscribeScriptStreamDto(walletItem: defaultData.walletA, scriptStatus: rbfTxScriptStatusA);
+    final rbfTxDtoB = SubscribeScriptStreamDto(walletItem: defaultData.walletB, scriptStatus: rbfTxScriptStatusB);
 
     return _ScriptSyncTestData.createPreviousTestData(
       defaultData,

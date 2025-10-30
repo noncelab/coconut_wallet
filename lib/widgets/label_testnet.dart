@@ -11,22 +11,12 @@ class TestnetLabelWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: Sizes.size10, left: Sizes.size4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        color: MyColors.cyanblue,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 3,
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: MyColors.cyanblue),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
       child: Text(
         t.testnet,
         style: Styles.label.merge(
-          const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: CoconutColors.white,
-          ),
+          const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: CoconutColors.white),
         ),
       ),
     );

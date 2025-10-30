@@ -28,9 +28,10 @@ class DescriptorUtil {
 
   static String extractPurpose(String descriptor) {
     // wpkh(...) 같은 wrapper 제거
-    final innerDescriptor = getDescriptorFunction(descriptor) != null
-        ? descriptor.substring(descriptor.indexOf('(') + 1, descriptor.lastIndexOf(')'))
-        : descriptor;
+    final innerDescriptor =
+        getDescriptorFunction(descriptor) != null
+            ? descriptor.substring(descriptor.indexOf('(') + 1, descriptor.lastIndexOf(')'))
+            : descriptor;
 
     // 대괄호 [fingerprint/derivationPath] 추출
     final startIndex = innerDescriptor.indexOf('[');
@@ -78,21 +79,14 @@ class DescriptorUtil {
   }
 
   static void validateNativeSegwitDescriptor(String descriptor) {
-    final regexWpkhFormatWithoutChecksum = RegExp(
-      r"^wpkh\(\[" + _basePath + r"\]" + _xpubPrefix + _base58 + r"\)$",
-    );
+    final regexWpkhFormatWithoutChecksum = RegExp(r"^wpkh\(\[" + _basePath + r"\]" + _xpubPrefix + _base58 + r"\)$");
 
     final regexWpkhFormatWithChecksumPath = RegExp(
       r"^wpkh\(\[" + _basePath + r"\]" + _xpubPrefix + _base58 + r"/<\d+;\d+>/\*\)$",
     );
 
     final regexWpkhFormatWithChecksum = RegExp(
-      r"^wpkh\(\[" +
-          _basePath +
-          r"\]" +
-          _xpubPrefix +
-          _base58 +
-          r"/<\d+;\d+>/\*\)#([A-Za-z0-9]{8})$",
+      r"^wpkh\(\[" + _basePath + r"\]" + _xpubPrefix + _base58 + r"/<\d+;\d+>/\*\)#([A-Za-z0-9]{8})$",
     );
 
     if (!(regexWpkhFormatWithoutChecksum.hasMatch(descriptor) ||
@@ -110,12 +104,10 @@ class DescriptorUtil {
       validateDescriptorFunction(descriptorFunction);
     }
 
-    final finalDescriptor =
-        descriptorFunction == null ? wrapWithDescriptorFunction(descriptor) : descriptor;
+    final finalDescriptor = descriptorFunction == null ? wrapWithDescriptorFunction(descriptor) : descriptor;
 
     validateNativeSegwitDescriptor(finalDescriptor);
-    SingleSignatureWallet.fromDescriptor(finalDescriptor,
-        ignoreChecksum: !finalDescriptor.contains("#"));
+    SingleSignatureWallet.fromDescriptor(finalDescriptor, ignoreChecksum: !finalDescriptor.contains("#"));
     return finalDescriptor;
   }
 }

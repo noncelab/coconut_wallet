@@ -107,16 +107,20 @@ class UtxoDetailViewModel extends ChangeNotifier {
   String getOutputAddress(int index) => TransactionUtil.getOutputAddress(_transaction, index);
   int getOutputAmount(int index) => TransactionUtil.getOutputAmount(_transaction, index);
 
-  void updateUtxoTags(String utxoId, List<String> selectedTagNames, List<UtxoTag> updatedTagList,
-      UtxoTagEditMode editMode) {
-    final addedTags = updatedTagList
-        .where(
-            (updatedTag) => !_utxoTagList.any((currentTag) => currentTag.name == updatedTag.name))
-        .toList();
-    final removedTags = _utxoTagList
-        .where(
-            (currentTag) => !updatedTagList.any((updatedTag) => updatedTag.name == currentTag.name))
-        .toList();
+  void updateUtxoTags(
+    String utxoId,
+    List<String> selectedTagNames,
+    List<UtxoTag> updatedTagList,
+    UtxoTagEditMode editMode,
+  ) {
+    final addedTags =
+        updatedTagList
+            .where((updatedTag) => !_utxoTagList.any((currentTag) => currentTag.name == updatedTag.name))
+            .toList();
+    final removedTags =
+        _utxoTagList
+            .where((currentTag) => !updatedTagList.any((updatedTag) => updatedTag.name == currentTag.name))
+            .toList();
 
     switch (editMode) {
       case UtxoTagEditMode.add:
@@ -134,8 +138,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
         }
         break;
       case UtxoTagEditMode.changAppliedTags:
-        _tagProvider.updateUtxoTagIdList(
-            walletId: _walletId, utxoId: utxoId, selectedTagNames: selectedTagNames);
+        _tagProvider.updateUtxoTagIdList(walletId: _walletId, utxoId: utxoId, selectedTagNames: selectedTagNames);
         break;
       case UtxoTagEditMode.update:
         final List<UtxoTag> modifiedTags = [];
@@ -147,8 +150,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
             final currentTag = currentTagsById[id]!;
             final updatedTag = updatedTagsById[id]!;
 
-            if (currentTag.name != updatedTag.name ||
-                currentTag.colorIndex != updatedTag.colorIndex) {
+            if (currentTag.name != updatedTag.name || currentTag.colorIndex != updatedTag.colorIndex) {
               modifiedTags.add(updatedTag);
             }
           }
@@ -168,12 +170,12 @@ class UtxoDetailViewModel extends ChangeNotifier {
   void _initUtxoInOutputList() {
     if (_transaction == null) return;
 
-    _utxoInputMaxCount = _transaction.inputAddressList.length <= kInputMaxCount
-        ? _transaction.inputAddressList.length
-        : kInputMaxCount;
-    _utxoOutputMaxCount = _transaction.outputAddressList.length <= kOutputMaxCount
-        ? _transaction.outputAddressList.length
-        : kOutputMaxCount;
+    _utxoInputMaxCount =
+        _transaction.inputAddressList.length <= kInputMaxCount ? _transaction.inputAddressList.length : kInputMaxCount;
+    _utxoOutputMaxCount =
+        _transaction.outputAddressList.length <= kOutputMaxCount
+            ? _transaction.outputAddressList.length
+            : kOutputMaxCount;
     if (_transaction.inputAddressList.length <= utxoInputMaxCount) {
       _utxoInputMaxCount = _transaction.inputAddressList.length;
     }

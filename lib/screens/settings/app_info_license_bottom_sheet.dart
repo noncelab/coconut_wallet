@@ -40,20 +40,15 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
     return null;
   }
 
-  TextSpan linkSpan({
-    required String text,
-    required String url,
-  }) {
+  TextSpan linkSpan({required String text, required String url}) {
     return TextSpan(
       text: text,
-      style: defaultTextStyle.copyWith(
-        color: CoconutColors.sky,
-        decoration: TextDecoration.underline,
-      ),
-      recognizer: TapGestureRecognizer()
-        ..onTap = () async {
-          launchURL(url);
-        },
+      style: defaultTextStyle.copyWith(color: CoconutColors.sky, decoration: TextDecoration.underline),
+      recognizer:
+          TapGestureRecognizer()
+            ..onTap = () async {
+              launchURL(url);
+            },
     );
   }
 
@@ -78,35 +73,24 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                   children: [
                     CoconutLayout.spacing_600h,
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: RichText(
                         text: TextSpan(
                           text: t.license_bottom_sheet.copyright_text1,
                           style: defaultTextStyle,
                           children: <TextSpan>[
-                            linkSpan(
-                              text: MIT_LICENSE_URL,
-                              url: MIT_LICENSE_URL,
-                            ),
+                            linkSpan(text: MIT_LICENSE_URL, url: MIT_LICENSE_URL),
                             TextSpan(text: t.license_bottom_sheet.copyright_text2),
                             linkSpan(
                               text: CONTACT_EMAIL_ADDRESS,
-                              url:
-                                  'mailto:$CONTACT_EMAIL_ADDRESS?subject=${t.license_bottom_sheet.email_subject}',
+                              url: 'mailto:$CONTACT_EMAIL_ADDRESS?subject=${t.license_bottom_sheet.email_subject}',
                             ),
-                            TextSpan(
-                              text: t.license_bottom_sheet.copyright_text3,
-                              style: defaultTextStyle,
-                            ),
+                            TextSpan(text: t.license_bottom_sheet.copyright_text3, style: defaultTextStyle),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 16,
-                    ),
+                    const SizedBox(height: 16),
                     const Divider(),
                   ],
                 );
@@ -141,8 +125,7 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                       onTap: () {
                         if (licenseClass != null && licenseClass.isNotEmpty) {
                           setState(() {
-                            licenseExplanationVisible[index - 1] =
-                                !licenseExplanationVisible[index - 1];
+                            licenseExplanationVisible[index - 1] = !licenseExplanationVisible[index - 1];
                           });
                         }
                       },
@@ -150,36 +133,20 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              licenseName,
-                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-                            ),
-                            if (copyRight.isNotEmpty)
-                              Text(copyRight, style: CoconutTypography.body3_12),
+                            Text(licenseName, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                            if (copyRight.isNotEmpty) Text(copyRight, style: CoconutTypography.body3_12),
                             SizedBox(
                               width: MediaQuery.of(context).size.width,
-                              child: Text(licenseClass ?? 'Unknown License',
-                                  style: CoconutTypography.body3_12),
+                              child: Text(licenseClass ?? 'Unknown License', style: CoconutTypography.body3_12),
                             ),
                             if (licenseExplanationVisible[index - 1])
                               Container(
-                                margin: const EdgeInsets.only(
-                                  top: 8,
-                                ),
+                                margin: const EdgeInsets.only(top: 8),
                                 height: 200,
-                                decoration: BoxDecoration(
-                                  border: Border.all(width: 1, color: CoconutColors.gray700),
-                                ),
+                                decoration: BoxDecoration(border: Border.all(width: 1, color: CoconutColors.gray700)),
                                 child: SingleChildScrollView(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                  ),
-                                  child: Text(
-                                    license.license!,
-                                    style: const TextStyle(
-                                      color: CoconutColors.gray700,
-                                    ),
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                                  child: Text(license.license!, style: const TextStyle(color: CoconutColors.gray700)),
                                 ),
                               ),
                           ],

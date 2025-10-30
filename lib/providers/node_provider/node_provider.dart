@@ -82,10 +82,15 @@ class NodeProvider extends ChangeNotifier {
   bool get isServerChanging => _isServerChanging;
   bool get hasConnectionError => _hasConnectionError;
 
-  NodeProvider(this._electrumServer, this._networkType, this._connectivityProvider,
-      this._walletLoadStateNotifier, this._walletItemListNotifier, this._analyticsService,
-      {IsolateManager? isolateManager})
-      : _isolateManager = isolateManager ?? IsolateManager() {
+  NodeProvider(
+    this._electrumServer,
+    this._networkType,
+    this._connectivityProvider,
+    this._walletLoadStateNotifier,
+    this._walletItemListNotifier,
+    this._analyticsService, {
+    IsolateManager? isolateManager,
+  }) : _isolateManager = isolateManager ?? IsolateManager() {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
 
     _connectivityProvider.addListener(_onConnectivityChanged);
@@ -179,9 +184,7 @@ class NodeProvider extends ChangeNotifier {
             Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
             _stateManager?.setNodeSyncStateToFailed();
           } else {
-            _analyticsService?.logEvent(
-              eventName: AnalyticsEventNames.walletAddSyncCompleted,
-            );
+            _analyticsService?.logEvent(eventName: AnalyticsEventNames.walletAddSyncCompleted);
           }
         });
       }
@@ -202,8 +205,7 @@ class NodeProvider extends ChangeNotifier {
   void _createNewCompleter() {
     if (_initCompleter != null && !_initCompleter!.isCompleted) {
       try {
-        _initCompleter!
-            .completeError(Exception('NodeProvider: Previous initialization was cancelled'));
+        _initCompleter!.completeError(Exception('NodeProvider: Previous initialization was cancelled'));
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -300,8 +302,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallets() async {
-    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted ||
-        _connectivityProvider.isNetworkOff) {
+    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isNetworkOff) {
       return Result.success(false);
     }
     final walletItems = _walletItemListNotifier.value;
@@ -346,8 +347,7 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getSocketConnectionStatus();
   }
 
-  Future<Result<TransactionRecord>> getTransactionRecord(
-      WalletListItemBase walletItem, String txHash) async {
+  Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) async {
     return _isolateManager.getTransactionRecord(walletItem, txHash);
   }
 
@@ -444,9 +444,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
-    await service
-        .connect(server.host, server.port, ssl: server.ssl)
-        .timeout(const Duration(seconds: 3));
+    await service.connect(server.host, server.port, ssl: server.ssl).timeout(const Duration(seconds: 3));
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');

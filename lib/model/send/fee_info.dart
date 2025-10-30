@@ -20,10 +20,11 @@ class FeeInfo {
   bool failedEstimation;
   bool isEstimating;
 
-  FeeInfo(
-      {this.estimatedFee,
-      this.fiatValue,
-      this.satsPerVb,
-      this.failedEstimation = false,
-      this.isEstimating = false});
+  FeeInfo({
+    this.estimatedFee,
+    this.fiatValue,
+    this.satsPerVb,
+    this.failedEstimation = false,
+    this.isEstimating = false,
+  });
 }

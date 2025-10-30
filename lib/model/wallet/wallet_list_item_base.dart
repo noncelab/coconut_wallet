@@ -35,15 +35,15 @@ abstract class WalletListItemBase {
   });
 
   @override
-  String toString() =>
-      'Wallet($id) / type=$walletType / source=${walletImportSource.name}/ name=$name';
+  String toString() => 'Wallet($id) / type=$walletType / source=${walletImportSource.name}/ name=$name';
 
   MultisigConfig? get multisigConfig {
     if (walletType == WalletType.multiSignature) {
       final multisigWalletBase = walletBase as MultisignatureWallet;
       return MultisigConfig(
-          requiredSignature: multisigWalletBase.requiredSignature,
-          totalSigner: multisigWalletBase.totalSigner);
+        requiredSignature: multisigWalletBase.requiredSignature,
+        totalSigner: multisigWalletBase.totalSigner,
+      );
     }
 
     return null;

@@ -29,11 +29,12 @@ class _StartScreenState extends State<StartScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Platform.isIOS
-          ? CoconutColors.black
-          : (NetworkType.currentNetworkType.isTestnet
-              ? splashBackgroundColorRegtest
-              : splashBackgroundColorMainnet),
+      color:
+          Platform.isIOS
+              ? CoconutColors.black
+              : (NetworkType.currentNetworkType.isTestnet
+                  ? splashBackgroundColorRegtest
+                  : splashBackgroundColorMainnet),
       padding: Platform.isIOS ? null : const EdgeInsets.only(top: Sizes.size48),
       child: Center(
         child: Image.asset(

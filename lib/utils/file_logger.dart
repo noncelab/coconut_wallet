@@ -45,16 +45,14 @@ class FileLogger {
 
   static Future<void> log(String className, String methodName, [String? message]) async {
     final timestamp = _getSimpleTimestamp();
-    final logEntry = message != null
-        ? '[$timestamp] $className.$methodName: $message'
-        : '[$timestamp] $className.$methodName';
+    final logEntry =
+        message != null ? '[$timestamp] $className.$methodName: $message' : '[$timestamp] $className.$methodName';
 
     _logQueue.add(logEntry);
     _flushQueue();
   }
 
-  static Future<void> error(String className, String methodName, String error,
-      [StackTrace? stackTrace]) async {
+  static Future<void> error(String className, String methodName, String error, [StackTrace? stackTrace]) async {
     final timestamp = _getSimpleTimestamp();
     final logEntry = '[$timestamp] ERROR $className.$methodName: $error';
 
@@ -117,10 +115,7 @@ class FileLogger {
       if (_logFile != null && await _logFile!.exists()) {
         final logContent = await _logFile!.readAsString();
 
-        await Share.share(
-          logContent,
-          subject: 'Coconut Wallet Debug Log - ${_getSimpleTimestamp()}',
-        );
+        await Share.share(logContent, subject: 'Coconut Wallet Debug Log - ${_getSimpleTimestamp()}');
       }
     } catch (e) {
       Logger.error('Log sharing failed: $e');

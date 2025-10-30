@@ -108,28 +108,31 @@ abstract class Styles {
 
   // 지갑 상세 화면의 잔액 표기
   static const TextStyle h1Number = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.white,
-      fontSize: 32,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w700);
+    fontFamily: _fontNumber,
+    color: MyColors.white,
+    fontSize: 32,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w700,
+  );
 
   static const TextStyle h2Number = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.white,
-      fontSize: 18,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w700,
-      height: 1);
+    fontFamily: _fontNumber,
+    color: MyColors.white,
+    fontSize: 18,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w700,
+    height: 1,
+  );
 
   static const TextStyle h1 = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 32,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w700);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 32,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w700,
+  );
 
-// wallet_list 화면의 잔액 표기
+  // wallet_list 화면의 잔액 표기
   static const TextStyle h2 = TextStyle(
     fontFamily: _fontNumber,
     color: MyColors.black,
@@ -138,195 +141,225 @@ abstract class Styles {
     fontWeight: FontWeight.w700,
   );
 
-// 거래내역, '수수료를 입력하세요',
+  // 거래내역, '수수료를 입력하세요',
   static const TextStyle h3 = TextStyle(
-      fontFamily: _fontText,
-      color: Colors.white,
-      fontSize: 18,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2);
+    fontFamily: _fontText,
+    color: Colors.white,
+    fontSize: 18,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.2,
+  );
 
   static const TextStyle appbarTitle = TextStyle(
-      fontFamily: _fontText, color: MyColors.white, fontSize: 18, fontStyle: FontStyle.normal);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 18,
+    fontStyle: FontStyle.normal,
+  );
 
   static const TextStyle h3Number = TextStyle(
-      fontFamily: _fontNumber,
-      color: Colors.white,
-      fontSize: 22,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.2);
+    fontFamily: _fontNumber,
+    color: Colors.white,
+    fontSize: 22,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.2,
+  );
 
   static const TextStyle label = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.transparentWhite_70,
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w500);
+    fontFamily: _fontText,
+    color: MyColors.transparentWhite_70,
+    fontSize: 14,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w500,
+  );
 
   static const TextStyle label2 = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.transparentWhite_70,
-      fontSize: 11,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w500);
+    fontFamily: _fontText,
+    color: MyColors.transparentWhite_70,
+    fontSize: 11,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w500,
+  );
 
   static const TextStyle subLabel = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.transparentBlack,
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.transparentBlack,
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle body1 = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle body1Number = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.white,
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontNumber,
+    color: MyColors.white,
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle body1Bold = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.bold);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.bold,
+  );
 
   static const TextStyle body2 = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 14,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle body2Number = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.white,
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontNumber,
+    color: MyColors.white,
+    fontSize: 14,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle body2Bold = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w600);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 14,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w600,
+  );
 
   static const TextStyle body2Grey = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.transparentWhite_40,
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.transparentWhite_40,
+    fontSize: 14,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle body3 = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 12,
-      height: 18 / 12,
-      letterSpacing: -0.02,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 12,
+    height: 18 / 12,
+    letterSpacing: -0.02,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle unit1 = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.transparentBlack,
-      fontSize: 24,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontNumber,
+    color: MyColors.transparentBlack,
+    fontSize: 24,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle unit2 = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.transparentBlack,
-      fontSize: 20,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontNumber,
+    color: MyColors.transparentBlack,
+    fontSize: 20,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle navHeader = TextStyle(
-      fontFamily: _fontText,
-      color: Color.fromRGBO(255, 255, 255, 1),
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w500);
+    fontFamily: _fontText,
+    color: Color.fromRGBO(255, 255, 255, 1),
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w500,
+  );
 
   static const TextStyle whiteButtonTitle = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.black,
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.black,
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle whiteButtonTitle_small = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.black,
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.black,
+    fontSize: 14,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle CTAButtonTitle = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.black,
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.bold);
+    fontFamily: _fontText,
+    color: MyColors.black,
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.bold,
+  );
 
   static const TextStyle caption = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.transparentWhite_70,
-      fontSize: 12,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontNumber,
+    color: MyColors.transparentWhite_70,
+    fontSize: 12,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle caption2 = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.transparentWhite_70,
-      fontSize: 10,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.transparentWhite_70,
+    fontSize: 10,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle warning = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.red,
-      fontSize: 12,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontText,
+    color: MyColors.red,
+    fontSize: 12,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle title5 = TextStyle(
-      fontFamily: _fontText,
-      color: MyColors.white,
-      fontSize: 20,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w600);
+    fontFamily: _fontText,
+    color: MyColors.white,
+    fontSize: 20,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w600,
+  );
 
   static const TextStyle balance1 = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.white,
-      fontSize: 36,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w600);
+    fontFamily: _fontNumber,
+    color: MyColors.white,
+    fontSize: 36,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w600,
+  );
 
   static const TextStyle balance2 = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.transparentWhite_60,
-      fontSize: 14,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontNumber,
+    color: MyColors.transparentWhite_60,
+    fontSize: 14,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 
   static const TextStyle fee = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.white,
-      fontSize: 22,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w600);
+    fontFamily: _fontNumber,
+    color: MyColors.white,
+    fontSize: 22,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w600,
+  );
 
   static const TextStyle unit = TextStyle(
     fontFamily: _fontNumber,
@@ -345,11 +378,12 @@ abstract class Styles {
   );
 
   static const TextStyle mfpH3 = TextStyle(
-      fontFamily: _fontNumber,
-      color: MyColors.white,
-      fontSize: 16,
-      fontStyle: FontStyle.normal,
-      fontWeight: FontWeight.w400);
+    fontFamily: _fontNumber,
+    color: MyColors.white,
+    fontSize: 16,
+    fontStyle: FontStyle.normal,
+    fontWeight: FontWeight.w400,
+  );
 }
 
 abstract class MyBorder {
@@ -373,9 +407,10 @@ class BoxDecorations {
 
   static LinearGradient getMultisigLinearGradient(List<Color> colors) {
     return LinearGradient(
-        colors: colors,
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        transform: const GradientRotation(math.pi / 10));
+      colors: colors,
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      transform: const GradientRotation(math.pi / 10),
+    );
   }
 }

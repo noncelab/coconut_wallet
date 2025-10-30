@@ -20,15 +20,16 @@ class CopyTextContainer extends StatefulWidget {
   final bool showButton;
   final bool isAddress;
 
-  const CopyTextContainer(
-      {super.key,
-      required this.text,
-      this.copyText,
-      this.middleText,
-      this.textAlign,
-      this.textStyle,
-      this.showButton = true,
-      this.isAddress = false});
+  const CopyTextContainer({
+    super.key,
+    required this.text,
+    this.copyText,
+    this.middleText,
+    this.textAlign,
+    this.textStyle,
+    this.showButton = true,
+    this.isAddress = false,
+  });
 
   static const MethodChannel _channel = MethodChannel(methodChannelOS);
 
@@ -59,8 +60,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
           _buttonColor = CoconutColors.gray800;
         });
 
-        Clipboard.setData(ClipboardData(text: widget.copyText ?? widget.text))
-            .then((value) => null);
+        Clipboard.setData(ClipboardData(text: widget.copyText ?? widget.text)).then((value) => null);
         if (Platform.isAndroid) {
           try {
             final int version = await CopyTextContainer._channel.invokeMethod('getSdkVersion');
@@ -80,8 +80,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
 
         fToast.init(context);
         final toast = MyToast.getToastWidget(t.copied);
-        fToast.showToast(
-            child: toast, gravity: ToastGravity.BOTTOM, toastDuration: const Duration(seconds: 2));
+        fToast.showToast(child: toast, gravity: ToastGravity.BOTTOM, toastDuration: const Duration(seconds: 2));
       },
       onTapDown: (details) {
         setState(() {
@@ -100,35 +99,41 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         child: Row(
           children: [
             Expanded(
-                child: widget.isAddress
-                    ? Text.rich(TextSpan(children: [
+              child:
+                  widget.isAddress
+                      ? Text.rich(
                         TextSpan(
-                            text: widget.text.substring(0, _prefixLength),
-                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400)),
-                        TextSpan(
-                            text: widget.text.substring(_prefixLength, _prefixLength + 4),
-                            style:
-                                CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue)),
-                        TextSpan(
-                            text: widget.text.substring(_prefixLength + 4, widget.text.length - 4),
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400)),
-                        TextSpan(
-                            text: widget.text.substring(widget.text.length - 4),
-                            style:
-                                CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue)),
-                      ]))
-                    : Text(
+                          children: [
+                            TextSpan(
+                              text: widget.text.substring(0, _prefixLength),
+                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400),
+                            ),
+                            TextSpan(
+                              text: widget.text.substring(_prefixLength, _prefixLength + 4),
+                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
+                            ),
+                            TextSpan(
+                              text: widget.text.substring(_prefixLength + 4, widget.text.length - 4),
+                              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
+                            ),
+                            TextSpan(
+                              text: widget.text.substring(widget.text.length - 4),
+                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
+                            ),
+                          ],
+                        ),
+                      )
+                      : Text(
                         widget.text,
                         textAlign: widget.textAlign ?? TextAlign.start,
-                        style: widget.textStyle?.setColor(_textColor) ??
+                        style:
+                            widget.textStyle?.setColor(_textColor) ??
                             CoconutTypography.body1_16_Number.setColor(_textColor),
-                      )),
+                      ),
+            ),
             CoconutLayout.spacing_400w,
             if (widget.middleText != null) ...[
-              Text(
-                widget.middleText!,
-                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
-              ),
+              Text(widget.middleText!, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
               CoconutLayout.spacing_200w,
             ],
             Opacity(
@@ -136,14 +141,12 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
               child: Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(
-                    CoconutStyles.radius_100,
-                  ),
+                  borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
                   color: _buttonColor,
                 ),
                 child: SvgPicture.asset('assets/svg/copy.svg'),
               ),
-            )
+            ),
           ],
         ),
       ),

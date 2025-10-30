@@ -174,11 +174,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CoconutLayout.spacing_1300w,
-                if (!_isScanningExtraData) ...[
-                  _buildProgressBar(),
-                  CoconutLayout.spacing_300w,
-                  _buildProgressText(),
-                ],
+                if (!_isScanningExtraData) ...[_buildProgressBar(), CoconutLayout.spacing_300w, _buildProgressText()],
                 if (_isScanningExtraData) _buildReadingExtraText(),
                 CoconutLayout.spacing_1300w,
               ],

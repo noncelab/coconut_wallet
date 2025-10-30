@@ -8,10 +8,11 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
-typedef RbfInfo = ({
-  String originalTransactionHash, // RBF 체인의 최초 트랜잭션
-  String previousTransactionHash, // 이 트랜잭션이 대체하는 직전 트랜잭션
-});
+typedef RbfInfo =
+    ({
+      String originalTransactionHash, // RBF 체인의 최초 트랜잭션
+      String previousTransactionHash, // 이 트랜잭션이 대체하는 직전 트랜잭션
+    });
 
 /// RBF(Replace-By-Fee) 트랜잭션 처리를 담당하는 클래스
 class RbfService {
@@ -33,13 +34,9 @@ class RbfService {
     if (rbfInputInfo != null && rbfInputInfo.spentByTransactionHash != null) {
       final prevTxHash = rbfInputInfo.spentByTransactionHash!;
       // 원본 트랜잭션 해시 찾기
-      final originalTxHash =
-          await findOriginalTransactionHash(walletId, rbfInputInfo.spentByTransactionHash!);
+      final originalTxHash = await findOriginalTransactionHash(walletId, rbfInputInfo.spentByTransactionHash!);
 
-      return (
-        originalTransactionHash: originalTxHash,
-        previousTransactionHash: prevTxHash,
-      );
+      return (originalTransactionHash: originalTxHash, previousTransactionHash: prevTxHash);
     }
 
     return null;
@@ -77,8 +74,7 @@ class RbfService {
     }
 
     // 해당 UTXO를 이미 소비한 트랜잭션 조회
-    final spentTransaction =
-        _transactionRepository.getTransactionRecord(walletId, utxo.spentByTransactionHash!);
+    final spentTransaction = _transactionRepository.getTransactionRecord(walletId, utxo.spentByTransactionHash!);
 
     // 미확인 상태인 트랜잭션만 RBF 대상
     return spentTransaction != null && spentTransaction.blockHeight < 1;
@@ -100,16 +96,12 @@ class RbfService {
 
   /// RBF를 받는 지갑 관점에서 Incoming 상태의 UTXO 트랜잭션이 유효한지 확인,
   /// RBF 발견 시 대체된 트랜잭션의 해시를 반환
-  Future<String?> detectIncomingRbfTransaction(
-    int walletId,
-    Transaction tx,
-  ) async {
+  Future<String?> detectIncomingRbfTransaction(int walletId, Transaction tx) async {
     List<UtxoState> unconfirmedUtxoList =
         _utxoRepository.getUtxoStateList(walletId).where((utxo) => utxo.isPending).toList();
 
     // 현재 페칭 중인 트랜잭션은 제외
-    unconfirmedUtxoList =
-        unconfirmedUtxoList.where((utxo) => utxo.transactionHash != tx.transactionHash).toList();
+    unconfirmedUtxoList = unconfirmedUtxoList.where((utxo) => utxo.transactionHash != tx.transactionHash).toList();
 
     // 펜딩 중인 UTXO가 없으면 RBF 대상이 아님
     if (unconfirmedUtxoList.isEmpty) {
@@ -125,28 +117,20 @@ class RbfService {
 
       try {
         // 기존 트랜잭션 조회
-        final oldTx =
-            Transaction.parse(await _electrumService.getTransaction(utxo.transactionHash));
+        final oldTx = Transaction.parse(await _electrumService.getTransaction(utxo.transactionHash));
 
         // 인풋이 겹치는지 확인
-        final oldTxInputs =
-            oldTx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
-        final newTxInputs =
-            tx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
+        final oldTxInputs = oldTx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
+        final newTxInputs = tx.inputs.map((input) => '${input.transactionHash}:${input.index}').toSet();
         final overlappingInputs = oldTxInputs.intersection(newTxInputs);
 
         // 겹치는 인풋이 있고 새 트랜잭션의 수수료율이 더 높다면 RBF로 간주
         if (overlappingInputs.isNotEmpty) {
-          final oldTxRecord =
-              _transactionRepository.getTransactionRecord(walletId, oldTx.transactionHash);
-          final newTxRecord =
-              _transactionRepository.getTransactionRecord(walletId, tx.transactionHash);
+          final oldTxRecord = _transactionRepository.getTransactionRecord(walletId, oldTx.transactionHash);
+          final newTxRecord = _transactionRepository.getTransactionRecord(walletId, tx.transactionHash);
 
-          if (oldTxRecord != null &&
-              newTxRecord != null &&
-              oldTxRecord.feeRate < newTxRecord.feeRate) {
-            Logger.log(
-                '[$walletId] 수신 RBF 감지: ${oldTx.transactionHash}이(가) ${tx.transactionHash}에 의해 대체됨');
+          if (oldTxRecord != null && newTxRecord != null && oldTxRecord.feeRate < newTxRecord.feeRate) {
+            Logger.log('[$walletId] 수신 RBF 감지: ${oldTx.transactionHash}이(가) ${tx.transactionHash}에 의해 대체됨');
             return oldTx.transactionHash;
           }
         }
@@ -183,35 +167,41 @@ class RbfService {
   }
 
   /// 개별 RBF 항목을 처리하는 함수
-  Future<void> _processRbfEntry(int walletId, RbfInfo rbfInfo, TransactionRecord txRecord,
-      List<RbfHistory> rbfHistoryDtos) async {
+  Future<void> _processRbfEntry(
+    int walletId,
+    RbfInfo rbfInfo,
+    TransactionRecord txRecord,
+    List<RbfHistory> rbfHistoryDtos,
+  ) async {
     // 원본 트랜잭션 조회
-    final originalTx =
-        _transactionRepository.getTransactionRecord(walletId, rbfInfo.originalTransactionHash);
+    final originalTx = _transactionRepository.getTransactionRecord(walletId, rbfInfo.originalTransactionHash);
 
     if (originalTx != null) {
-      final existingRbfHistory =
-          _transactionRepository.getRbfHistoryList(walletId, txRecord.transactionHash);
+      final existingRbfHistory = _transactionRepository.getRbfHistoryList(walletId, txRecord.transactionHash);
 
       // 최초로 RBF 내역을 등록하는 경우 원본 트랜잭션 내역도 등록
       if (existingRbfHistory.isEmpty) {
-        rbfHistoryDtos.add(RbfHistory(
-          walletId: walletId,
-          originalTransactionHash: rbfInfo.originalTransactionHash,
-          transactionHash: rbfInfo.originalTransactionHash,
-          feeRate: originalTx.feeRate,
-          timestamp: originalTx.timestamp,
-        ));
+        rbfHistoryDtos.add(
+          RbfHistory(
+            walletId: walletId,
+            originalTransactionHash: rbfInfo.originalTransactionHash,
+            transactionHash: rbfInfo.originalTransactionHash,
+            feeRate: originalTx.feeRate,
+            timestamp: originalTx.timestamp,
+          ),
+        );
       }
 
       // 새 RBF 트랜잭션 내역 등록
-      rbfHistoryDtos.add(RbfHistory(
-        walletId: walletId,
-        originalTransactionHash: rbfInfo.originalTransactionHash,
-        transactionHash: txRecord.transactionHash,
-        feeRate: txRecord.feeRate,
-        timestamp: DateTime.now(),
-      ));
+      rbfHistoryDtos.add(
+        RbfHistory(
+          walletId: walletId,
+          originalTransactionHash: rbfInfo.originalTransactionHash,
+          transactionHash: txRecord.transactionHash,
+          feeRate: txRecord.feeRate,
+          timestamp: DateTime.now(),
+        ),
+      );
     } else {
       Logger.error('원본 트랜잭션을 찾을 수 없음: ${rbfInfo.originalTransactionHash}');
     }

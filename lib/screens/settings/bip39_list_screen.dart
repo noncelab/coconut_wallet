@@ -33,28 +33,21 @@ List<TextSpan> highlightOccurrences(
 
   for (final match in matches) {
     if (match.start > lastMatchEnd) {
-      spans.add(TextSpan(
-        text: source.substring(lastMatchEnd, match.start),
-        style: normalStyle,
-      ));
+      spans.add(TextSpan(text: source.substring(lastMatchEnd, match.start), style: normalStyle));
     }
 
-    spans.add(TextSpan(
-      text: source.substring(match.start, match.end),
-      style: normalStyle.copyWith(
-        fontWeight: FontWeight.bold,
-        color: highlightColor,
+    spans.add(
+      TextSpan(
+        text: source.substring(match.start, match.end),
+        style: normalStyle.copyWith(fontWeight: FontWeight.bold, color: highlightColor),
       ),
-    ));
+    );
 
     lastMatchEnd = match.end;
   }
 
   if (lastMatchEnd < source.length) {
-    spans.add(TextSpan(
-      text: source.substring(lastMatchEnd),
-      style: normalStyle,
-    ));
+    spans.add(TextSpan(text: source.substring(lastMatchEnd), style: normalStyle));
   }
 
   return spans;
@@ -96,10 +89,8 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   }
 
   /// 전체 워드리스트 생성
-  List<Map<String, dynamic>> _generateFullList() => List.generate(
-        wordList.length,
-        (index) => {'index': index + 1, 'item': wordList[index], 'type': null},
-      );
+  List<Map<String, dynamic>> _generateFullList() =>
+      List.generate(wordList.length, (index) => {'index': index + 1, 'item': wordList[index], 'type': null});
 
   /// 스크롤 리스너
   void _scrollListener() {
@@ -184,7 +175,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     } else {
       return [
         ...numericResults..sort((a, b) => a['index'].compareTo(b['index'])),
-        ...binaryResults..sort((a, b) => a['index'].compareTo(b['index']))
+        ...binaryResults..sort((a, b) => a['index'].compareTo(b['index'])),
       ];
     }
   }
@@ -195,18 +186,11 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: CoconutColors.black,
-        appBar: CoconutAppBar.build(
-          title: _titleText,
-          context: context,
-          isBottom: true,
-        ),
+        appBar: CoconutAppBar.build(title: _titleText, context: context, isBottom: true),
         body: Column(
           children: [
             _searchBar(context),
-            SizedBox(
-              width: MediaQuery.of(context).size.width,
-              child: _resultWidget(),
-            ),
+            SizedBox(width: MediaQuery.of(context).size.width, child: _resultWidget()),
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
@@ -232,42 +216,24 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeOut,
-            decoration: BoxDecoration(
-              color: MyColors.borderLightgrey,
-              borderRadius: BorderRadius.circular(12.0),
-            ),
+            decoration: BoxDecoration(color: MyColors.borderLightgrey, borderRadius: BorderRadius.circular(12.0)),
             child: TextField(
               keyboardType: TextInputType.text,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
-              ],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
               controller: _searchController,
               maxLines: 1,
               maxLength: 11,
               decoration: InputDecoration(
                 counterText: '',
                 hintText: _hintText,
-                hintStyle: Styles.body2.merge(
-                  const TextStyle(
-                    color: MyColors.transparentWhite_50,
-                  ),
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: MyColors.transparentWhite_50,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide.none,
-                ),
+                hintStyle: Styles.body2.merge(const TextStyle(color: MyColors.transparentWhite_50)),
+                prefixIcon: const Icon(Icons.search_rounded, color: MyColors.transparentWhite_50),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
                 filled: true,
                 fillColor: Colors.transparent,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
               ),
-              style: const TextStyle(
-                decorationThickness: 0,
-                color: CoconutColors.white,
-              ),
+              style: const TextStyle(decorationThickness: 0, color: CoconutColors.white),
             ),
           ),
         ),
@@ -279,36 +245,30 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     return _searchController.text.isEmpty
         ? Container()
         : Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    t.bip39_list_screen.result(text: _searchController.text),
-                    style: Styles.body1.merge(
-                      const TextStyle(
-                        color: CoconutColors.white,
-                      ),
-                    ),
-                  ),
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  t.bip39_list_screen.result(text: _searchController.text),
+                  style: Styles.body1.merge(const TextStyle(color: CoconutColors.white)),
                 ),
               ),
-              _filteredItems.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 100),
-                      child: Center(
-                        child: Text(
-                          t.bip39_list_screen.no_result,
-                          style: Styles.body1Bold.merge(
-                            const TextStyle(color: MyColors.transparentWhite_70),
-                          ),
-                        ),
-                      ),
-                    )
-                  : Container(),
-            ],
-          );
+            ),
+            _filteredItems.isEmpty
+                ? Padding(
+                  padding: const EdgeInsets.only(top: 100),
+                  child: Center(
+                    child: Text(
+                      t.bip39_list_screen.no_result,
+                      style: Styles.body1Bold.merge(const TextStyle(color: MyColors.transparentWhite_70)),
+                    ),
+                  ),
+                )
+                : Container(),
+          ],
+        );
   }
 
   Widget _buildListItem(BuildContext context, int index) {
@@ -325,16 +285,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           title: RichText(
             text: TextSpan(
               children: highlightOccurrences(item, query, type: type),
-              style: Styles.h3.merge(
-                const TextStyle(fontWeight: FontWeight.w600),
-              ),
+              style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ),
           trailing: RichText(
             text: TextSpan(
-              style: Styles.subLabel.merge(
-                const TextStyle(color: MyColors.transparentWhite_50),
-              ),
+              style: Styles.subLabel.merge(const TextStyle(color: MyColors.transparentWhite_50)),
               children: [
                 const TextSpan(text: 'Binary: '),
                 ...highlightOccurrences(

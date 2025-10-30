@@ -92,11 +92,7 @@ void resetTxRecordAndAddress(Migration migration) {
 
   for (var oldAddr in oldAddresses) {
     // walletId, address, index를 조합하여 새로운 unique id 생성
-    final newId = getWalletAddressId(
-      oldAddr.walletId,
-      oldAddr.index,
-      oldAddr.address,
-    );
+    final newId = getWalletAddressId(oldAddr.walletId, oldAddr.index, oldAddr.address);
 
     final newAddr = RealmWalletAddress(
       newId,
@@ -139,13 +135,15 @@ void addRealmTransactionMemo(Migration migration) {
 
       Logger.log('memo: $memoString - $transactionHash - $walletId');
 
-      memos.add(RealmTransactionMemo(
-        generateHashInt([transactionHash, walletId]),
-        transactionHash,
-        walletId,
-        memoString,
-        DateTime.now(),
-      ));
+      memos.add(
+        RealmTransactionMemo(
+          generateHashInt([transactionHash, walletId]),
+          transactionHash,
+          walletId,
+          memoString,
+          DateTime.now(),
+        ),
+      );
     }
   }
 

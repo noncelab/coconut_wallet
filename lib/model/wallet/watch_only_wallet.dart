@@ -49,16 +49,15 @@ class WatchOnlyWallet {
 
   factory WatchOnlyWallet.fromJson(Map<String, dynamic> json) {
     return WatchOnlyWallet(
-        json['name'],
-        json['colorIndex'] ?? 0,
-        json['iconIndex'] ?? 0,
-        json['descriptor'],
-        json['requiredSignatureCount'] ?? 0,
-        json['signers'] != null
-            ? (json['signers'] as List<dynamic>)
-                .map((e) => MultisigSigner.fromJson(e as Map<String, dynamic>))
-                .toList()
-            : null,
-        json['walletImportSource'] ?? WalletImportSource.coconutVault.name);
+      json['name'],
+      json['colorIndex'] ?? 0,
+      json['iconIndex'] ?? 0,
+      json['descriptor'],
+      json['requiredSignatureCount'] ?? 0,
+      json['signers'] != null
+          ? (json['signers'] as List<dynamic>).map((e) => MultisigSigner.fromJson(e as Map<String, dynamic>)).toList()
+          : null,
+      json['walletImportSource'] ?? WalletImportSource.coconutVault.name,
+    );
   }
 }

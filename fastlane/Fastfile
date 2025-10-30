@@ -7,13 +7,13 @@ lane :pre_deploy do
     update_app_info()
 
     Dir.chdir("..") do
-        sh "flutter pub run flutter_oss_licenses:generate"
-        sh "flutter pub run build_runner clean"
-        sh "flutter pub run build_runner build --delete-conflicting-outputs"
+        sh "fvm flutter pub run flutter_oss_licenses:generate"
+        sh "fvm flutter pub run build_runner clean"
+        sh "fvm flutter pub run build_runner build --delete-conflicting-outputs"
         sh "echo '=== Before realm generate: Current Directory ==='"
         sh "pwd"
-        sh "dart run realm generate"
-        sh "flutter pub run slang"
-        sh "dart format . --line-length=100"
+        sh "fvm dart run realm generate"
+        sh "fvm flutter pub run slang"
+        sh "fvm dart format . --line-length=120"
     end
 end

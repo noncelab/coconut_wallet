@@ -63,12 +63,15 @@ Future<void> main() async {
     // not found message: {code: 2, message: No such mempool or blockchain transaction. Use gettransaction for wallet transactions.}
     var txHash = '12d89567d4fdfef1ddd04fe786c6b9df1c52c124b9bcf456117c472cf7718413';
     expectLater(
-        client.getTransaction(txHash, verbose: true),
-        throwsA(isA<Map>().having(
-            (e) => e['message'],
-            'message',
-            contains(
-                'No such mempool or blockchain transaction. Use gettransaction for wallet transactions.'))));
+      client.getTransaction(txHash, verbose: true),
+      throwsA(
+        isA<Map>().having(
+          (e) => e['message'],
+          'message',
+          contains('No such mempool or blockchain transaction. Use gettransaction for wallet transactions.'),
+        ),
+      ),
+    );
   });
 
   /// confirmed transaction:

@@ -1,7 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
@@ -73,7 +72,6 @@ class TransactionBuilder {
   List<UtxoState>? _selectedUtxos;
   Transaction? _transaction;
   int? _estimatedFeeByFeeEstimator; // 처음엔 추정된 값으로 초기화됨
-  int? _estimatedFeeByTransaction; // 트랜잭션 생성 후에 Transaction 객체에서 추정한 값 (더 정확)
   int? _subtractedFeeFromAmount; // 최종 생성된 tx.estimateFee()와 실제로 사용되는 fee가 다를 때 설정됨
 
   TransactionBuilder({
@@ -100,9 +98,13 @@ class TransactionBuilder {
         _estimatedFeeByFeeEstimator = (virtualByte * feeRate).ceil();
       } else {
         final utxoSelectionResult = UtxoSelector.selectOptimalUtxos(
-            availableUtxos, recipients, feeRate, walletListItemBase.walletType,
-            multisigConfig: walletListItemBase.multisigConfig,
-            isFeeSubtractedFromAmount: isFeeSubtractedFromAmount);
+          availableUtxos,
+          recipients,
+          feeRate,
+          walletListItemBase.walletType,
+          multisigConfig: walletListItemBase.multisigConfig,
+          isFeeSubtractedFromAmount: isFeeSubtractedFromAmount,
+        );
         _selectedUtxos = utxoSelectionResult.selectedUtxos;
         _estimatedFeeByFeeEstimator = utxoSelectionResult.estimatedFee;
       }
@@ -111,9 +113,11 @@ class TransactionBuilder {
 
       /// 아래 결과는 changeOutput의 amount가 dust여서 수수료로 포함되는 값을 포함하지 않음
       final estimatedFeeByTransaction = _transaction!.estimateFee(
-          feeRate, walletListItemBase.walletType.addressType,
-          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-          totalSigner: walletListItemBase.multisigConfig?.totalSigner);
+        feeRate,
+        walletListItemBase.walletType.addressType,
+        requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+        totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+      );
 
       /// 아래 결과는 changeOutput의 amount가 dust여서 수수료로 포함되는 값을 포함함
       final realFee = _calculateRealFee(_transaction!);
@@ -123,9 +127,10 @@ class TransactionBuilder {
         selectedUtxos: _selectedUtxos!,
         estimatedFee: realFee,
         exception: null,
-        unintendedDustFee: _subtractedFeeFromAmount != null
-            ? realFee - _subtractedFeeFromAmount!
-            : realFee - estimatedFeeByTransaction,
+        unintendedDustFee:
+            _subtractedFeeFromAmount != null
+                ? realFee - _subtractedFeeFromAmount!
+                : realFee - estimatedFeeByTransaction,
       );
     } on TransactionCreationException catch (e) {
       return TransactionBuildResult(
@@ -164,13 +169,10 @@ class TransactionBuilder {
     /// 1. 선택한 utxo를 이용해서 트랜잭션을 생성한다.
     while (true) {
       try {
-        _transaction = recipients.length > 1
-            ? (isFeeSubtractedFromAmount
-                ? _createBatchWhenFeeSubtractedFromAmount()
-                : _createBatchTransaction())
-            : (isFeeSubtractedFromAmount
-                ? _createSingleWhenFeeSubtractedFromAmount()
-                : _createSingleTransaction());
+        _transaction =
+            recipients.length > 1
+                ? (isFeeSubtractedFromAmount ? _createBatchWhenFeeSubtractedFromAmount() : _createBatchTransaction())
+                : (isFeeSubtractedFromAmount ? _createSingleWhenFeeSubtractedFromAmount() : _createSingleTransaction());
 
         return _transaction!;
       } on Exception catch (e) {
@@ -190,8 +192,7 @@ class TransactionBuilder {
           }
 
           /// 4. 더이상 추가로 사용할 수 있는 utxo가 없음
-          throw InsufficientBalanceException(
-              estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!);
+          throw InsufficientBalanceException(estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!);
         }
 
         if (e is TransactionCreationException) {
@@ -199,36 +200,51 @@ class TransactionBuilder {
         }
 
         throw TransactionCreationException(
-            message: e.toString(), estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!);
+          message: e.toString(),
+          estimatedFee: estimatedFee ?? _estimatedFeeByFeeEstimator!,
+        );
       }
     }
   }
 
   Transaction _createSingleTransaction() => Transaction.forSinglePayment(
-      _selectedUtxos!,
-      recipients.entries.first.key,
-      changeDerivationPath,
-      recipients.entries.first.value,
-      feeRate,
-      walletListItemBase.walletBase);
+    _selectedUtxos!,
+    recipients.entries.first.key,
+    changeDerivationPath,
+    recipients.entries.first.value,
+    feeRate,
+    walletListItemBase.walletBase,
+  );
 
   Transaction _createBatchTransaction() => Transaction.forBatchPayment(
-      _selectedUtxos!, recipients, changeDerivationPath, feeRate, walletListItemBase.walletBase);
+    _selectedUtxos!,
+    recipients,
+    changeDerivationPath,
+    feeRate,
+    walletListItemBase.walletBase,
+  );
 
   Transaction _createSingleWhenFeeSubtractedFromAmount() {
-    final totalInputAmount =
-        _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
+    final totalInputAmount = _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
     final maxUsedAmount = recipients.entries.first.value;
 
     if (totalInputAmount == maxUsedAmount) {
       try {
         final tx = Transaction.forSweep(
-            _selectedUtxos!, recipients.entries.first.key, feeRate, walletListItemBase.walletBase);
+          _selectedUtxos!,
+          recipients.entries.first.key,
+          feeRate,
+          walletListItemBase.walletBase,
+        );
         if (tx.outputs.first.amount <= dustLimit) {
           throw SendAmountTooLowException(
-              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
-                  requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-                  totalSigner: walletListItemBase.multisigConfig?.totalSigner));
+            estimatedFee: tx.estimateFee(
+              feeRate,
+              walletListItemBase.walletType.addressType,
+              requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+              totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+            ),
+          );
         }
         return tx;
       } on Exception catch (e) {
@@ -237,8 +253,7 @@ class TransactionBuilder {
         if (estimatedFee != null) {
           throw InsufficientBalanceException(estimatedFee: estimatedFee);
         } else {
-          throw TransactionCreationException(
-              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
+          throw TransactionCreationException(message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -259,11 +274,20 @@ class TransactionBuilder {
     for (int i = 0; i < _maxIterationCount; i++) {
       Logger.log('--> i: $i');
       try {
-        Transaction tx = Transaction.forSinglePayment(_selectedUtxos!, recipients.entries.first.key,
-            changeDerivationPath, sendAmount, feeRate, walletListItemBase.walletBase);
-        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
-            requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-            totalSigner: walletListItemBase.multisigConfig?.totalSigner);
+        Transaction tx = Transaction.forSinglePayment(
+          _selectedUtxos!,
+          recipients.entries.first.key,
+          changeDerivationPath,
+          sendAmount,
+          feeRate,
+          walletListItemBase.walletBase,
+        );
+        final realEstimatedFee = tx.estimateFee(
+          feeRate,
+          walletListItemBase.walletType.addressType,
+          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+          totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+        );
         if (initialFee != realEstimatedFee) {
           if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
             finalSubtractedFeeFromAmount = initialFee;
@@ -300,8 +324,7 @@ class TransactionBuilder {
           }
           continue;
         } else {
-          throw TransactionCreationException(
-              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
+          throw TransactionCreationException(message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -312,27 +335,34 @@ class TransactionBuilder {
     }
 
     throw TransactionCreationException(
-        message: exception?.toString() ??
-            'Failed to create single transaction when fee subtracted from amount.',
-        estimatedFee: initialFee);
+      message: exception?.toString() ?? 'Failed to create single transaction when fee subtracted from amount.',
+      estimatedFee: initialFee,
+    );
   }
 
   Transaction _createBatchWhenFeeSubtractedFromAmount() {
-    final totalInputAmount =
-        _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
-    final maxUsedAmount =
-        recipients.entries.fold(0, (previousValue, element) => previousValue + element.value);
+    final totalInputAmount = _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
+    final maxUsedAmount = recipients.entries.fold(0, (previousValue, element) => previousValue + element.value);
 
     if (totalInputAmount == maxUsedAmount) {
       try {
         final recipientsWithoutLast = Map.of(recipients)..remove(recipients.keys.last);
-        final tx = Transaction.forBatchSweep(_selectedUtxos!, recipientsWithoutLast,
-            recipients.keys.last, feeRate, walletListItemBase.walletBase);
+        final tx = Transaction.forBatchSweep(
+          _selectedUtxos!,
+          recipientsWithoutLast,
+          recipients.keys.last,
+          feeRate,
+          walletListItemBase.walletBase,
+        );
         if (tx.outputs.last.amount <= dustLimit) {
           throw SendAmountTooLowException(
-              estimatedFee: tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
-                  requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-                  totalSigner: walletListItemBase.multisigConfig?.totalSigner));
+            estimatedFee: tx.estimateFee(
+              feeRate,
+              walletListItemBase.walletType.addressType,
+              requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+              totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+            ),
+          );
         }
         return tx;
       } on Exception catch (e) {
@@ -341,8 +371,7 @@ class TransactionBuilder {
         if (estimatedFee != null) {
           throw InsufficientBalanceException(estimatedFee: estimatedFee);
         } else {
-          throw TransactionCreationException(
-              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
+          throw TransactionCreationException(message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -365,11 +394,19 @@ class TransactionBuilder {
     Set<int> initialFeeSet = <int>{initialFee};
     for (int i = 0; i < _maxIterationCount; i++) {
       try {
-        Transaction tx = Transaction.forBatchPayment(_selectedUtxos!, updatedRecipients,
-            changeDerivationPath, feeRate, walletListItemBase.walletBase);
-        final realEstimatedFee = tx.estimateFee(feeRate, walletListItemBase.walletType.addressType,
-            requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-            totalSigner: walletListItemBase.multisigConfig?.totalSigner);
+        Transaction tx = Transaction.forBatchPayment(
+          _selectedUtxos!,
+          updatedRecipients,
+          changeDerivationPath,
+          feeRate,
+          walletListItemBase.walletBase,
+        );
+        final realEstimatedFee = tx.estimateFee(
+          feeRate,
+          walletListItemBase.walletType.addressType,
+          requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
+          totalSigner: walletListItemBase.multisigConfig?.totalSigner,
+        );
         if (initialFee != realEstimatedFee) {
           if (!tx.outputs.any((output) => output.isChangeOutput == true)) {
             finalTxWhenInfiniteLoop = tx;
@@ -408,8 +445,7 @@ class TransactionBuilder {
           updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
           continue;
         } else {
-          throw TransactionCreationException(
-              message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
+          throw TransactionCreationException(message: e.toString(), estimatedFee: _estimatedFeeByFeeEstimator!);
         }
       }
     }
@@ -420,40 +456,15 @@ class TransactionBuilder {
     }
 
     throw TransactionCreationException(
-        message: exception?.toString() ??
-            'Failed to create batch transaction when fee subtracted from amount.',
-        estimatedFee: _estimatedFeeByFeeEstimator!);
+      message: exception?.toString() ?? 'Failed to create batch transaction when fee subtracted from amount.',
+      estimatedFee: _estimatedFeeByFeeEstimator!,
+    );
   }
 
   int _calculateRealFee(Transaction transaction) {
-    final inputSum =
-        _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
-    final outputSum =
-        _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+    final inputSum = _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
+    final outputSum = _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
     return inputSum - outputSum;
-  }
-
-  int _estimateFee() {
-    assert(_transaction != null);
-
-    /// change가 dust미만이어서 change output이 없는 경우는 그 금액이 수수료로 소진된다는 의미입니다.
-    /// 하지만 _transaction의 estimatedFee 결과에는 change값이 포함되지 않으므로 아래와 같이 조치합니다.
-    final hasChangeOutput = _transaction!.outputs.any((output) => output.isChangeOutput == true);
-    if (!hasChangeOutput) {
-      final inputSum =
-          _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
-      final outputSum =
-          _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
-
-      return inputSum - outputSum;
-    }
-
-    if (walletListItemBase.walletType == WalletType.multiSignature) {
-      return _transaction!.estimateFee(feeRate, walletListItemBase.walletType.addressType,
-          requiredSignature: walletListItemBase.multisigConfig!.requiredSignature,
-          totalSigner: walletListItemBase.multisigConfig!.totalSigner);
-    }
-    return _transaction!.estimateFee(feeRate, walletListItemBase.walletType.addressType);
   }
 
   /// availableUtxos중 selectedUtxos를 제외한 utxo들을 id로 비교해서 반환한다.

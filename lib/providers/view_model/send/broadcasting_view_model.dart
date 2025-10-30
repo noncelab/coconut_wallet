@@ -95,7 +95,8 @@ class BroadcastingViewModel extends ChangeNotifier {
         decoded = utf8.encode(signedTransaction);
       }
 
-      bool isPsbtResult = decoded.length >= 5 &&
+      bool isPsbtResult =
+          decoded.length >= 5 &&
           decoded[0] == 0x70 &&
           decoded[1] == 0x73 &&
           decoded[2] == 0x62 &&
@@ -183,8 +184,7 @@ class BroadcastingViewModel extends ChangeNotifier {
         }
       }
       _sendingAmount = psbt.sendingAmount;
-      _recipientAddresses
-          .addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
+      _recipientAddresses.addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
       if (outputsToOther.isNotEmpty) {
@@ -244,8 +244,11 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함
-  bool _isBatchTransaction(List<PsbtOutput> outputToMyReceivingAddress,
-      List<PsbtOutput> outputToMyChangeAddress, List<PsbtOutput> outputsToOther) {
+  bool _isBatchTransaction(
+    List<PsbtOutput> outputToMyReceivingAddress,
+    List<PsbtOutput> outputToMyChangeAddress,
+    List<PsbtOutput> outputsToOther,
+  ) {
     var countExceptToMyChangeAddress = outputToMyReceivingAddress.length + outputsToOther.length;
     if (countExceptToMyChangeAddress >= 2) {
       return true;
@@ -287,9 +290,11 @@ class BroadcastingViewModel extends ChangeNotifier {
 
         if (decodedString.startsWith('303230')) {
           // ASCII 문자열이 Hex로 인코딩된 경우, 실제 Hex로 변환
-          final hexResult = String.fromCharCodes(List.generate(decodedString.length ~/ 2, (i) {
-            return int.parse(decodedString.substring(i * 2, i * 2 + 2), radix: 16);
-          }));
+          final hexResult = String.fromCharCodes(
+            List.generate(decodedString.length ~/ 2, (i) {
+              return int.parse(decodedString.substring(i * 2, i * 2 + 2), radix: 16);
+            }),
+          );
           return hexResult;
         } else {
           final hexResult = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');

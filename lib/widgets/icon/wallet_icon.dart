@@ -11,12 +11,7 @@ class WalletIcon extends StatelessWidget {
   final int colorIndex;
   final int iconIndex;
 
-  const WalletIcon({
-    super.key,
-    required this.walletImportSource,
-    this.colorIndex = 0,
-    this.iconIndex = 0,
-  });
+  const WalletIcon({super.key, required this.walletImportSource, this.colorIndex = 0, this.iconIndex = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -24,27 +19,20 @@ class WalletIcon extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: isExternalWallet
-            ? CoconutColors.gray700
-            : ColorUtil.getColor(colorIndex).backgroundColor,
+        color: isExternalWallet ? CoconutColors.gray700 : ColorUtil.getColor(colorIndex).backgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: isExternalWallet
-          ? SvgPicture.asset(
-              WalletImportSourceExtension.getExternalWalletIconPath(walletImportSource),
-              colorFilter: const ColorFilter.mode(
-                Colors.black,
-                BlendMode.srcIn,
+      child:
+          isExternalWallet
+              ? SvgPicture.asset(
+                WalletImportSourceExtension.getExternalWalletIconPath(walletImportSource),
+                colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              )
+              : SvgPicture.asset(
+                CustomIcons.getPathByIndex(iconIndex),
+                colorFilter: ColorFilter.mode(ColorUtil.getColor(colorIndex).color, BlendMode.srcIn),
+                width: 18.0,
               ),
-            )
-          : SvgPicture.asset(
-              CustomIcons.getPathByIndex(iconIndex),
-              colorFilter: ColorFilter.mode(
-                ColorUtil.getColor(colorIndex).color,
-                BlendMode.srcIn,
-              ),
-              width: 18.0,
-            ),
     );
   }
 }

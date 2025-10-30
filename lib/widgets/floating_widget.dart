@@ -23,24 +23,16 @@ class _FloatingSvgAnimationState extends State<FloatingWidget> with TickerProvid
   }
 
   void _setupAnimation() {
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    );
-    _animation = Tween<double>(begin: -1.0, end: 10.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-    Future.delayed(
-      Duration(milliseconds: widget.delayMilliseconds ?? 0),
-      () {
-        if (mounted) {
-          _animationController.repeat(reverse: true);
-        }
-      },
-    );
+    _animationController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    _animation = Tween<double>(
+      begin: -1.0,
+      end: 10.0,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+    Future.delayed(Duration(milliseconds: widget.delayMilliseconds ?? 0), () {
+      if (mounted) {
+        _animationController.repeat(reverse: true);
+      }
+    });
   }
 
   @override
@@ -61,28 +53,31 @@ class _FloatingSvgAnimationState extends State<FloatingWidget> with TickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return Stack(children: [
-      AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, _animation.value),
-            child: ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: [
-                  CoconutColors.white.withOpacity(0.7),
-                  Colors.transparent,
-                  CoconutColors.black.withOpacity(0.3),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ).createShader(bounds),
-              blendMode: BlendMode.srcATop,
-              child: widget.child,
-            ),
-          );
-        },
-      ),
-    ]);
+    return Stack(
+      children: [
+        AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, _animation.value),
+              child: ShaderMask(
+                shaderCallback:
+                    (bounds) => LinearGradient(
+                      colors: [
+                        CoconutColors.white.withOpacity(0.7),
+                        Colors.transparent,
+                        CoconutColors.black.withOpacity(0.3),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                blendMode: BlendMode.srcATop,
+                child: widget.child,
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }

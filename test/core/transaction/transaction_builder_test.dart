@@ -34,23 +34,15 @@ void main() {
   ];
   int sumOfBalance = availableUtxos.map((utxo) => utxo.amount).reduce((a, b) => a + b);
   Map<String, int> singleRecipient = {'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 50000};
-  Map<String, int> singleRecipientEdgeBalance = {
-    'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 199999
-  };
+  Map<String, int> singleRecipientEdgeBalance = {'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 199999};
   // 다중서명지갑 주소
-  Map<String, int> mSingleRecipient = {
-    'bcrt1qjz3kf2lx94rt63tancphstvf9pdvv0j5jecp7nn9sx3rzgwzts0q8t5qsd': 50000
-  };
+  Map<String, int> mSingleRecipient = {'bcrt1qjz3kf2lx94rt63tancphstvf9pdvv0j5jecp7nn9sx3rzgwzts0q8t5qsd': 50000};
   Map<String, int> mSingleRecipientEdgeBalance = {
-    'bcrt1qjz3kf2lx94rt63tancphstvf9pdvv0j5jecp7nn9sx3rzgwzts0q8t5qsd': 199999
+    'bcrt1qjz3kf2lx94rt63tancphstvf9pdvv0j5jecp7nn9sx3rzgwzts0q8t5qsd': 199999,
   };
 
-  Map<String, int> singleRecipientSameBalance = {
-    'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': sumOfBalance,
-  };
-  Map<String, int> singleRecipientNearBalance = {
-    'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': sumOfBalance - 148,
-  };
+  Map<String, int> singleRecipientSameBalance = {'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': sumOfBalance};
+  Map<String, int> singleRecipientNearBalance = {'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': sumOfBalance - 148};
   const dustThreshold = 294;
   Map<String, int> singleRecipientEdgeBalance2 = {
     'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': sumOfBalance - dustThreshold,
@@ -78,15 +70,16 @@ void main() {
   NetworkType.setNetworkType(NetworkType.regtest);
   group('싱글시그지갑 - SingleTx - Auto UTXO Selection', () {
     test('Single / Auto Utxo / 수수료 발신자 부담 / availableUtxos가 비어있을 때', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: [],
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: [],
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.estimatedFee, isNotNull);
@@ -96,15 +89,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, 141);
@@ -115,15 +109,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 받는 주소가 다중서명지갑 주소', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: mSingleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: mSingleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, 153);
@@ -134,15 +129,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientEdgeBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientEdgeBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, 141 + 68);
@@ -153,15 +149,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성 / 받는 주소가 다중서명지갑 주소', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: mSingleRecipientEdgeBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: mSingleRecipientEdgeBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, 153 + 68);
@@ -172,15 +169,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -191,15 +189,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 + 예상 수수료 > 잔액', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientNearBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientNearBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -210,15 +209,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isNotNull);
@@ -227,28 +227,30 @@ void main() {
       expect(result.estimatedFee, equals(estimatedFeeOfTx));
 
       /// 사용하는 금액 = 예상 수수료 + 보내는 금액
-      expect(singleRecipient.values.first,
-          same(estimatedFeeOfTx + result.transaction!.outputs[0].amount));
+      expect(singleRecipient.values.first, same(estimatedFeeOfTx + result.transaction!.outputs[0].amount));
       expect(result.selectedUtxos, isNotNull);
       expect(result.transaction!.outputs.first.amount, lessThan(singleRecipient.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
-          lessThanOrEqualTo(singleRecipient.values.first));
+      expect(
+        result.estimatedFee + result.transaction!.outputs.first.amount,
+        lessThanOrEqualTo(singleRecipient.values.first),
+      );
 
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isNotNull);
@@ -257,22 +259,22 @@ void main() {
       expect(result.estimatedFee, equals(estimatedFeeOfTx));
 
       /// 사용하는 금액 = 예상 수수료 + 보내는 금액
-      expect(singleRecipientSameBalance.values.first,
-          same(estimatedFeeOfTx + result.transaction!.outputs[0].amount));
+      expect(singleRecipientSameBalance.values.first, same(estimatedFeeOfTx + result.transaction!.outputs[0].amount));
       expect(result.selectedUtxos, isNotNull);
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1800.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1800.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -287,26 +289,28 @@ void main() {
     /// 2) initialFee: 209 / sendAmount: 299706-209 = 299497 / realFee: 209 / dustThreshold: 294 >= 294
     /// 3) initialFee: 178 / sendAmount: 299706-178 = 299528 / realFee: 178 / dustThreshold: 294 > 263
     test('Single / Auto Utxo / 수수료 수신자 부담 / Sweep Edge Case', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientEdgeBalance2,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientEdgeBalance2,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isNotNull);
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
-      expect(
-          result.transaction!.outputs.first.getAddress(), singleRecipientEdgeBalance2.keys.first);
+      expect(result.transaction!.outputs.first.getAddress(), singleRecipientEdgeBalance2.keys.first);
 
       // tx의 outputs의 amount 합 + 수수료 = singleRecipientEdgeBalance2의 합
-      final totalOutputAmount = result.transaction!.outputs
-          .fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalOutputAmount = result.transaction!.outputs.fold(
+        0,
+        (previousValue, element) => previousValue + element.amount,
+      );
       // expect(totalOutputAmount + estimatedFeeOfTx, sumOfBalance);
 
       final estimatedFeeOfTx = result.transaction!.estimateFee(1.0, AddressType.p2wpkh);
@@ -321,15 +325,16 @@ void main() {
 
   group('싱글시그지갑 - SingleTx - Manual UTXO Selection', () {
     test('Single / Manual Utxo / 수수료 발신자 부담 / input 1개', () {
-      final result = TransactionBuilder(
-        availableUtxos: [availableUtxos[0]],
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: [availableUtxos[0]],
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction!.inputs.length, 1);
@@ -339,15 +344,16 @@ void main() {
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / input 2개', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction!.inputs.length, 2);
@@ -358,15 +364,16 @@ void main() {
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -377,15 +384,16 @@ void main() {
     });
 
     test('Single / Manual Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isNotNull);
@@ -395,45 +403,47 @@ void main() {
       expect(result.estimatedFee, equals(estimatedFeeOfTx));
 
       /// 예상 수수료 + amount = maxUsedAmount
-      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
-          equals(singleRecipient.values.first));
+      expect(result.estimatedFee + result.transaction!.outputs.first.amount, equals(singleRecipient.values.first));
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
-      expect(result.transaction!.outputs.first.amount,
-          lessThan(singleRecipientSameBalance.values.first));
+      expect(result.transaction!.outputs.first.amount, lessThan(singleRecipientSameBalance.values.first));
 
       /// 예상 수수료 + amount = maxUsedAmount
-      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
-          equals(singleRecipientSameBalance.values.first));
+      expect(
+        result.estimatedFee + result.transaction!.outputs.first.amount,
+        equals(singleRecipientSameBalance.values.first),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Manual Utxo / 수수료 수신자 부담 / 잔액 - 보내는 금액 <= dustLimit', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientNearBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientNearBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -446,15 +456,16 @@ void main() {
     /// 0 < 보내는 금액 - 예상 수수료 <= dustLimit 만드는 상세조건
     /// UTXO 2개 (합 0.2330 2576) / 수수료율 107880 (sat/vB) / 예상 총 수수료 23302080
     test('Single / Manual Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1800.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1800.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -465,27 +476,26 @@ void main() {
     });
 
     test('Single / Manual Utxo / 수수료 수신자 부담 / 잔돈 1sat (엣지케이스) ', () {
-      final result = TransactionBuilder(
-        availableUtxos: [
-          UtxoState(
-            transactionHash: 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
-            index: 0,
-            amount: 100000000, // 1 BTC
-            blockHeight: 100,
-            to: 'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66',
-            derivationPath: "m/84'/1'/0'/0/0",
-            timestamp: DateTime.now(),
-          ),
-        ], //100000000
-        recipients: {
-          'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 99999999,
-        },
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: [
+              UtxoState(
+                transactionHash: 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
+                index: 0,
+                amount: 100000000, // 1 BTC
+                blockHeight: 100,
+                to: 'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66',
+                derivationPath: "m/84'/1'/0'/0/0",
+                timestamp: DateTime.now(),
+              ),
+            ], //100000000
+            recipients: {'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66': 99999999},
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
@@ -497,15 +507,16 @@ void main() {
 
   group('싱글시그지갑 - BatchTx - Auto UTXO Selection', () {
     test('Batch / Auto Utxo / 수수료 발신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -515,15 +526,16 @@ void main() {
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 수수료율 높음', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1800.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1800.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isFalse);
       expect(result.exception, isA<InsufficientBalanceException>());
@@ -534,15 +546,16 @@ void main() {
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 합 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipientsSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipientsSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.exception, isA<InsufficientBalanceException>());
@@ -569,15 +582,16 @@ void main() {
         'bcrt1qve37yvsmqksx93j6gqsnz862qpzfa0xya0yvve': 800,
         'bcrt1qktkhznpjp6gg7waacvcgxrv3hd6aj8nj90rw8q': 800,
       };
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
@@ -587,15 +601,16 @@ void main() {
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -603,24 +618,26 @@ void main() {
       expect(result.transaction!.inputs.length, 1);
       expect(result.transaction!.outputs.length, 3);
       expect(result.selectedUtxos, isNotNull);
-      final totalOutputAmount = result.transaction!.outputs
-          .fold(0, (previousValue, element) => previousValue + element.amount);
-      final totalBalance =
-          availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalOutputAmount = result.transaction!.outputs.fold(
+        0,
+        (previousValue, element) => previousValue + element.amount,
+      );
+      final totalBalance = availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
       expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipientsSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipientsSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -629,29 +646,32 @@ void main() {
       expect(result.transaction!.outputs.length, 2);
 
       expect(result.selectedUtxos, isNotNull);
-      final totalOutputAmount = result.transaction!.outputs
-          .fold(0, (previousValue, element) => previousValue + element.amount);
-      final totalBalance =
-          availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalOutputAmount = result.transaction!.outputs.fold(
+        0,
+        (previousValue, element) => previousValue + element.amount,
+      );
+      final totalBalance = availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
       expect(totalOutputAmount + result.estimatedFee, equals(totalBalance));
 
-      expect(result.transaction!.outputs[1].amount,
-          lessThan(batchRecipientsSameBalance.entries.last.value));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
-          lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value));
+      expect(result.transaction!.outputs[1].amount, lessThan(batchRecipientsSameBalance.entries.last.value));
+      expect(
+        result.transaction!.outputs[1].amount + result.estimatedFee,
+        lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 > 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipientsOverBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipientsOverBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isFalse);
       expect(result.estimatedFee, isPositive);
@@ -664,15 +684,16 @@ void main() {
     /// 1) initialFee: 250 / lastSendAmount: 149706-250 = 149456 / realFee: 240 / dustThreshold: 294 < 304
     /// 2) initialFee: 240 / lastSendAmount: 149706-240 = 149466 / realFee: 240 / dustThreshold: 294 >= 294
     test('Batch / Auto Utxo / 수수료 수신자 부담 / Sweep Edge Case', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipientsEdgeBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipientsEdgeBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -680,14 +701,17 @@ void main() {
       expect(result.transaction!.inputs.length, 2);
       expect(result.transaction!.outputs.length, 2);
       expect(result.selectedUtxos, isNotNull);
-      final totalOutputAmount = result.transaction!.outputs
-          .fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalOutputAmount = result.transaction!.outputs.fold(
+        0,
+        (previousValue, element) => previousValue + element.amount,
+      );
       final estimatedFee = result.transaction!.estimateFee(1.0, AddressType.p2wpkh);
       expect(estimatedFee, lessThan(result.estimatedFee));
-      final totalBalance =
-          availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
-      final totalSendAmount = batchRecipientsEdgeBalance.values
-          .fold(0, (previousValue, element) => previousValue + element);
+      final totalBalance = availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalSendAmount = batchRecipientsEdgeBalance.values.fold(
+        0,
+        (previousValue, element) => previousValue + element,
+      );
       expect(totalSendAmount + (result.estimatedFee - estimatedFee), equals(totalBalance));
       expect(totalOutputAmount + result.estimatedFee, equals(totalBalance));
       expect(result.unintendedDustFee, 294);
@@ -696,15 +720,16 @@ void main() {
 
   group('싱글시그지갑 - BatchTx - Manual UTXO Selection', () {
     test('Batch / Manual Utxo / 수수료 발신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -712,21 +737,24 @@ void main() {
       expect(result.transaction!.inputs.length, 2);
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, equals(batchRecipients.values.last));
-      expect(result.transaction!.outputs.last.amount,
-          equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee));
+      expect(
+        result.transaction!.outputs.last.amount,
+        equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -734,22 +762,22 @@ void main() {
       expect(result.transaction!.inputs.length, 2);
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, lessThan(batchRecipients.values.last));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
-          equals(batchRecipients.values.last));
+      expect(result.transaction!.outputs[1].amount + result.estimatedFee, equals(batchRecipients.values.last));
       expect(result.transaction!.outputs.last.amount, equals(sumOfBalance - sumOfBatchRecipients));
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담 / 마지막 보내는 금액 dustLimit 이하', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 160.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 160.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isFalse);
       expect(result.estimatedFee, isPositive);
@@ -760,22 +788,25 @@ void main() {
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담 / 잔액 - 보내는 금액 <= dustLimit', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipientsEdgeBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: wallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipientsEdgeBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
-      final sumOfOutputs = result.transaction!.outputs
-          .fold(0, (previousValue, element) => previousValue + element.amount);
+      final sumOfOutputs = result.transaction!.outputs.fold(
+        0,
+        (previousValue, element) => previousValue + element.amount,
+      );
       expect(result.estimatedFee + sumOfOutputs, equals(sumOfBalance));
       expect(result.unintendedDustFee, dustThreshold);
     });
@@ -796,8 +827,7 @@ void main() {
       var result1 = builder.build();
       var result2 = builder.copyWith(isFeeSubtractedFromAmount: true).build();
 
-      expect(result1.transaction!.outputs.last.amount,
-          lessThan(result2.transaction!.outputs.last.amount));
+      expect(result1.transaction!.outputs.last.amount, lessThan(result2.transaction!.outputs.last.amount));
     });
   });
 
@@ -827,15 +857,16 @@ void main() {
 
   group('멀티시그지갑 - SingleTx - Auto UTXO Selection', () {
     test('Single / Auto Utxo / 수수료 발신자 부담 / availableUtxos가 비어있을 때', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: [],
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: [],
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.estimatedFee, isNotNull);
@@ -845,15 +876,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, 189);
@@ -864,15 +896,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 받는 주소가 다중서명지갑 주소', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: mSingleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: mSingleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, greaterThan(189));
@@ -883,15 +916,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientEdgeBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientEdgeBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, greaterThan(189));
@@ -902,15 +936,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 수수료를 고려하여 utxo 선택 후 트랜잭션 생성 / 받는 주소가 다중서명지갑 주소', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: mSingleRecipientEdgeBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: mSingleRecipientEdgeBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, greaterThan(189));
@@ -921,15 +956,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -940,15 +976,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 + 예상 수수료 > 잔액', () {
-      final TransactionBuildResult result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientNearBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final TransactionBuildResult result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientNearBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -959,15 +996,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isNotNull);
@@ -976,44 +1014,49 @@ void main() {
       expect(result.transaction!.outputs.first.amount, lessThan(singleRecipient.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
-          lessThanOrEqualTo(singleRecipient.values.first));
+      expect(
+        result.estimatedFee + result.transaction!.outputs.first.amount,
+        lessThanOrEqualTo(singleRecipient.values.first),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, greaterThan(189));
       expect(result.transaction, isNotNull);
-      expect(result.transaction!.outputs.first.amount,
-          lessThan(singleRecipientSameBalance.values.first));
+      expect(result.transaction!.outputs.first.amount, lessThan(singleRecipientSameBalance.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
-          lessThanOrEqualTo(singleRecipientSameBalance.values.first));
+      expect(
+        result.estimatedFee + result.transaction!.outputs.first.amount,
+        lessThanOrEqualTo(singleRecipientSameBalance.values.first),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1800.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1800.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -1026,15 +1069,16 @@ void main() {
 
   group('멀티시그지갑 - SingleTx - Manual UTXO Selection', () {
     test('Single / Manual Utxo / 수수료 발신자 부담 / input 1개', () {
-      final result = TransactionBuilder(
-        availableUtxos: [mAvailableUtxos[0]],
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: [mAvailableUtxos[0]],
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction!.inputs.length, 1);
@@ -1044,15 +1088,16 @@ void main() {
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / input 2개', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction!.inputs.length, 2);
@@ -1063,15 +1108,16 @@ void main() {
     });
 
     test('Single / Manual Utxo / 수수료 발신자 부담 / 보내는 금액 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -1082,15 +1128,16 @@ void main() {
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipient,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipient,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isNotNull);
@@ -1099,45 +1146,50 @@ void main() {
       expect(result.transaction!.outputs.first.amount, lessThan(singleRecipient.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
-          lessThanOrEqualTo(singleRecipient.values.first));
+      expect(
+        result.estimatedFee + result.transaction!.outputs.first.amount,
+        lessThanOrEqualTo(singleRecipient.values.first),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
       expect(result.transaction, isNotNull);
       expect(result.selectedUtxos, isNotNull);
-      expect(result.transaction!.outputs.first.amount,
-          lessThan(singleRecipientSameBalance.values.first));
+      expect(result.transaction!.outputs.first.amount, lessThan(singleRecipientSameBalance.values.first));
 
       /// 예상 수수료 + amount <= maxUsedAmount
-      expect(result.estimatedFee + result.transaction!.outputs.first.amount,
-          lessThanOrEqualTo(singleRecipientSameBalance.values.first));
+      expect(
+        result.estimatedFee + result.transaction!.outputs.first.amount,
+        lessThanOrEqualTo(singleRecipientSameBalance.values.first),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Single / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 - 예상 수수료 <= dustLimit', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: singleRecipientSameBalance,
-        feeRate: 1800.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: singleRecipientSameBalance,
+            feeRate: 1800.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.transaction, isNull);
@@ -1150,15 +1202,16 @@ void main() {
 
   group('멀티시그지갑 - BatchTx - Auto UTXO Selection', () {
     test('Batch / Auto Utxo / 수수료 발신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -1168,15 +1221,16 @@ void main() {
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 수수료율 높음', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1800.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1800.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isFalse);
       expect(result.exception, isA<InsufficientBalanceException>());
@@ -1187,15 +1241,16 @@ void main() {
     });
 
     test('Batch / Auto Utxo / 수수료 발신자 부담 / 보내는 금액 합 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: batchRecipientsSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: batchRecipientsSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isFailure, isTrue);
       expect(result.exception, isA<InsufficientBalanceException>());
@@ -1206,15 +1261,16 @@ void main() {
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: availableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: availableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -1222,24 +1278,26 @@ void main() {
       expect(result.transaction!.inputs.length, 1);
       expect(result.transaction!.outputs.length, 3);
       expect(result.selectedUtxos, isNotNull);
-      final totalOutputAmount = result.transaction!.outputs
-          .fold(0, (previousValue, element) => previousValue + element.amount);
-      final totalBalance =
-          availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalOutputAmount = result.transaction!.outputs.fold(
+        0,
+        (previousValue, element) => previousValue + element.amount,
+      );
+      final totalBalance = availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
       expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 = 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: batchRecipientsSameBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: batchRecipientsSameBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -1248,29 +1306,32 @@ void main() {
       expect(result.transaction!.outputs.length, 2);
 
       expect(result.selectedUtxos, isNotNull);
-      final totalOutputAmount = result.transaction!.outputs
-          .fold(0, (previousValue, element) => previousValue + element.amount);
-      final totalBalance =
-          availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
+      final totalOutputAmount = result.transaction!.outputs.fold(
+        0,
+        (previousValue, element) => previousValue + element.amount,
+      );
+      final totalBalance = availableUtxos.fold(0, (previousValue, element) => previousValue + element.amount);
       expect(totalOutputAmount + result.estimatedFee, lessThanOrEqualTo(totalBalance));
 
-      expect(result.transaction!.outputs[1].amount,
-          lessThan(batchRecipientsSameBalance.entries.last.value));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
-          lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value));
+      expect(result.transaction!.outputs[1].amount, lessThan(batchRecipientsSameBalance.entries.last.value));
+      expect(
+        result.transaction!.outputs[1].amount + result.estimatedFee,
+        lessThanOrEqualTo(batchRecipientsSameBalance.entries.last.value),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Auto Utxo / 수수료 수신자 부담 / 보내는 금액 합 > 잔액', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: batchRecipientsOverBalance,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: false,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: batchRecipientsOverBalance,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: false,
+          ).build();
 
       expect(result.isSuccess, isFalse);
       expect(result.estimatedFee, isPositive);
@@ -1283,15 +1344,16 @@ void main() {
 
   group('멀티시그지갑 - BatchTx - Manual UTXO Selection', () {
     test('Batch / Manual Utxo / 수수료 발신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: false,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: false,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -1299,21 +1361,24 @@ void main() {
       expect(result.transaction!.inputs.length, 2);
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, equals(batchRecipients.values.last));
-      expect(result.transaction!.outputs.last.amount,
-          equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee));
+      expect(
+        result.transaction!.outputs.last.amount,
+        equals(sumOfBalance - sumOfBatchRecipients - result.estimatedFee),
+      );
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: batchRecipients,
-        feeRate: 1.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: batchRecipients,
+            feeRate: 1.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isTrue);
       expect(result.estimatedFee, isPositive);
@@ -1321,23 +1386,25 @@ void main() {
       expect(result.transaction!.inputs.length, 2);
       expect(result.transaction!.outputs.length, 3);
       expect(result.transaction!.outputs[1].amount, lessThan(batchRecipients.values.last));
-      expect(result.transaction!.outputs[1].amount + result.estimatedFee,
-          lessThanOrEqualTo(batchRecipients.values.last));
-      expect(result.transaction!.outputs.last.amount,
-          greaterThanOrEqualTo(sumOfBalance - sumOfBatchRecipients));
+      expect(
+        result.transaction!.outputs[1].amount + result.estimatedFee,
+        lessThanOrEqualTo(batchRecipients.values.last),
+      );
+      expect(result.transaction!.outputs.last.amount, greaterThanOrEqualTo(sumOfBalance - sumOfBatchRecipients));
       expect(result.unintendedDustFee, 0);
     });
 
     test('Batch / Manual Utxo / 수수료 수신자 부담 / 마지막 보내는 금액 dustLimit 이하', () {
-      final result = TransactionBuilder(
-        availableUtxos: mAvailableUtxos,
-        recipients: batchRecipients,
-        feeRate: 160.0,
-        changeDerivationPath: "m/84'/1'/0'/0/0",
-        walletListItemBase: multisigWallet,
-        isFeeSubtractedFromAmount: true,
-        isUtxoFixed: true,
-      ).build();
+      final result =
+          TransactionBuilder(
+            availableUtxos: mAvailableUtxos,
+            recipients: batchRecipients,
+            feeRate: 160.0,
+            changeDerivationPath: "m/84'/1'/0'/0/0",
+            walletListItemBase: multisigWallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
 
       expect(result.isSuccess, isFalse);
       expect(result.estimatedFee, isPositive);
@@ -1363,8 +1430,7 @@ void main() {
       var result1 = builder.build();
       var result2 = builder.copyWith(isFeeSubtractedFromAmount: true).build();
 
-      expect(result1.transaction!.outputs.last.amount,
-          lessThan(result2.transaction!.outputs.last.amount));
+      expect(result1.transaction!.outputs.last.amount, lessThan(result2.transaction!.outputs.last.amount));
     });
   });
 }

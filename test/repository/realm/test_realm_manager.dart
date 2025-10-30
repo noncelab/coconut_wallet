@@ -9,10 +9,7 @@ import 'package:realm/realm.dart';
 class TestRealmManager implements RealmManager {
   final Realm _realm;
 
-  TestRealmManager()
-      : _realm = Realm(
-          Configuration.inMemory(realmAllSchemas),
-        );
+  TestRealmManager() : _realm = Realm(Configuration.inMemory(realmAllSchemas));
 
   @override
   Realm get realm => _realm;

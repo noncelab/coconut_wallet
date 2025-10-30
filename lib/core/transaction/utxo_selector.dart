@@ -14,8 +14,13 @@ class UtxoSelectionResult {
 
 class UtxoSelector {
   static UtxoSelectionResult selectOptimalUtxos(
-      List<UtxoState> utxoList, Map<String, int> paymentMap, double feeRate, WalletType walletType,
-      {MultisigConfig? multisigConfig, bool isFeeSubtractedFromAmount = false}) {
+    List<UtxoState> utxoList,
+    Map<String, int> paymentMap,
+    double feeRate,
+    WalletType walletType, {
+    MultisigConfig? multisigConfig,
+    bool isFeeSubtractedFromAmount = false,
+  }) {
     if (walletType == WalletType.multiSignature && multisigConfig == null) {
       throw Exception('MultisigConfig is required for multisignature wallet');
     }
@@ -88,7 +93,9 @@ class UtxoSelector {
     // 보내는 금액에서 제외하는 경우, amount 충분한지 확인
     if (isFeeSubtractedFromAmount && paymentMap.entries.last.value - estimatedFee <= dustLimit) {
       throw SendAmountTooLowException(
-          message: 'Last output amount is too small to cover fee.', estimatedFee: estimatedFee);
+        message: 'Last output amount is too small to cover fee.',
+        estimatedFee: estimatedFee,
+      );
     }
 
     return UtxoSelectionResult(selectedInputs, estimatedFee);
@@ -127,10 +134,7 @@ class UtxoSelector {
     }
 
     final addedVBytePerInput = virtualByteWith1Input - baseVirtualByte;
-    return VirtualByteInfo(
-      baseVirtualByte: baseVirtualByte,
-      addedVBytePerInput: addedVBytePerInput,
-    );
+    return VirtualByteInfo(baseVirtualByte: baseVirtualByte, addedVBytePerInput: addedVBytePerInput);
   }
 
   // static int getDustThreshold(AddressType addressType) {
@@ -150,8 +154,5 @@ class VirtualByteInfo {
   final double baseVirtualByte;
   final double addedVBytePerInput;
 
-  const VirtualByteInfo({
-    required this.baseVirtualByte,
-    required this.addedVBytePerInput,
-  });
+  const VirtualByteInfo({required this.baseVirtualByte, required this.addedVBytePerInput});
 }

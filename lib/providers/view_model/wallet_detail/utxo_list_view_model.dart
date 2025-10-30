@@ -77,8 +77,7 @@ class UtxoListViewModel extends ChangeNotifier {
 
   WalletType get walletType => _walletListBaseItem.walletType;
 
-  bool get isSyncing =>
-      _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
+  bool get isSyncing => _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
 
   void _addChangeListener() {
     _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdateInfoChanged);

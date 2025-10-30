@@ -8,12 +8,6 @@ class RealmWalletBalanceMock {
     int confirmed = 1000,
     int unconfirmed = 500,
   }) {
-    return RealmWalletBalance(
-      id,
-      walletId,
-      total,
-      confirmed,
-      unconfirmed,
-    );
+    return RealmWalletBalance(id, walletId, total, confirmed, unconfirmed);
   }
 }

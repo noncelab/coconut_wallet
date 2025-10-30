@@ -81,11 +81,11 @@ class TransactionMock {
     List<TransactionOutput> outputs = [];
 
     if (isCoinbase) {
-      inputs.add(TransactionInput.forPayment(
-          '0000000000000000000000000000000000000000000000000000000000000000', 4294967295));
-    } else {
       inputs.add(
-          TransactionInput.forPayment(inputTransactionHash ?? Hash.sha256('$toAddress$amount'), 0));
+        TransactionInput.forPayment('0000000000000000000000000000000000000000000000000000000000000000', 4294967295),
+      );
+    } else {
+      inputs.add(TransactionInput.forPayment(inputTransactionHash ?? Hash.sha256('$toAddress$amount'), 0));
     }
 
     outputs.add(TransactionOutput.forPayment(amount, toAddress));
@@ -98,14 +98,8 @@ class TransactionMock {
   }
 
   /// RBF 테스트를 위한 RbfInfo 생성 메서드
-  static RbfInfo createMockRbfInfo({
-    required String originalTransactionHash,
-    required String previousTransactionHash,
-  }) {
-    return (
-      originalTransactionHash: originalTransactionHash,
-      previousTransactionHash: previousTransactionHash,
-    );
+  static RbfInfo createMockRbfInfo({required String originalTransactionHash, required String previousTransactionHash}) {
+    return (originalTransactionHash: originalTransactionHash, previousTransactionHash: previousTransactionHash);
   }
 
   /// RBF 테스트를 위한 트랜잭션 생성 메서드
