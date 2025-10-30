@@ -159,10 +159,10 @@ class UtxoListViewModel extends ChangeNotifier {
   }
 
   void deselectTaggedUtxo() {
-    _clearUtxoList();
+    clearUtxoList();
   }
 
-  void _clearUtxoList() {
+  void clearUtxoList() {
     _selectedUtxoList = [];
     _cachedSelectedUtxoAmountSum = 0;
     notifyListeners();

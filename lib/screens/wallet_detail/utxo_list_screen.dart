@@ -652,6 +652,7 @@ class _UtxoListState extends State<UtxoList> {
 
       setState(() {
         _selectedUtxoIds.clear();
+        viewModel.clearUtxoList();
         widget.onSettingLockChanged?.call(false);
       });
 
