@@ -56,7 +56,6 @@ enum AddressError {
           }
         }
       case AddressError.none:
-      default:
         return "";
     }
   }
@@ -83,7 +82,6 @@ enum AmountError {
           unit: currentUnit.symbol,
         );
       case AmountError.none:
-      default:
         return "";
     }
   }
@@ -898,14 +896,28 @@ class SendViewModel extends ChangeNotifier {
   }
 
   Map<String, int> _getRecipientMapForTx(Map<String, int> map) {
-    if (!_isMaxMode) return map;
-    // 모두 보내기 상황에서 마지막 수신자의 amount에 수수료를 제하지 않은 상태로 반환한다. (트랜잭션 처리를 위해)
+    // normalize: bc1, tb1, bcrt1 주소는 소문자로 변환
+    final Map<String, int> normalizedMap = {
+      for (var entry in map.entries)
+        (entry.key.startsWith(RegExp(r'^(bc1|tb1|bcrt1)', caseSensitive: false)) ? entry.key.toLowerCase() : entry.key):
+            entry.value,
+    };
+
+    if (!_isMaxMode) return normalizedMap;
+
+    // 모두 보내기(max mode) 처리
     double amountSumExceptLast = _amountSumExceptLast;
     int maxBalanceInSats =
         balance - (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast).toInt();
     String lastRecipientAddress = _recipientList[lastIndex].address;
-    map[lastRecipientAddress] = maxBalanceInSats;
-    return map;
+
+    // 마지막 수신자 주소도 normalize
+    if (lastRecipientAddress.startsWith(RegExp(r'^(bc1|tb1|bcrt1)', caseSensitive: false))) {
+      lastRecipientAddress = lastRecipientAddress.toLowerCase();
+    }
+
+    normalizedMap[lastRecipientAddress] = maxBalanceInSats;
+    return normalizedMap;
   }
 
   void saveSendInfo() {
