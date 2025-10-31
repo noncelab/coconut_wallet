@@ -87,8 +87,7 @@ class ScriptSyncServiceMock {
 
     transactionRecordService = TransactionRecordService(electrumService, addressRepository);
 
-    balanceSyncService =
-        BalanceSyncService(electrumService, stateManager, addressRepository, walletRepository);
+    balanceSyncService = BalanceSyncService(electrumService, stateManager, addressRepository, walletRepository);
 
     transactionSyncService = TransactionSyncService(
       electrumService,

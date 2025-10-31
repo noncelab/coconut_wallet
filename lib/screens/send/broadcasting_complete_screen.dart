@@ -16,15 +16,13 @@ class BroadcastingCompleteScreen extends StatefulWidget {
   final String txHash;
   final bool isDonation;
 
-  const BroadcastingCompleteScreen(
-      {super.key, required this.id, required this.txHash, this.isDonation = false});
+  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash, this.isDonation = false});
 
   @override
   State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
 }
 
-class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
-    with TickerProviderStateMixin {
+class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   final TextEditingController _memoController = TextEditingController();
   final FocusNode _memoFocusNode = FocusNode();
@@ -41,9 +39,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
           resizeToAvoidBottomInset: false,
           backgroundColor: CoconutColors.black,
           body: SafeArea(
-            child: widget.isDonation
-                ? _buildDonationCompleteScreen()
-                : _buildBroadcastingCompleteScreen(),
+            child: widget.isDonation ? _buildDonationCompleteScreen() : _buildBroadcastingCompleteScreen(),
           ),
         ),
       ),
@@ -60,20 +56,11 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               CoconutLayout.spacing_2500h,
-              Lottie.asset(
-                'assets/lottie/thankyou-hearts.json',
-              ),
+              Lottie.asset('assets/lottie/thankyou-hearts.json'),
               CoconutLayout.spacing_800h,
-              Text(
-                t.donation.complete.thank_you,
-                style: CoconutTypography.heading3_21_Bold,
-              ),
+              Text(t.donation.complete.thank_you, style: CoconutTypography.heading3_21_Bold),
               CoconutLayout.spacing_500h,
-              Text(
-                t.donation.complete.description,
-                textAlign: TextAlign.center,
-                style: CoconutTypography.body2_14,
-              ),
+              Text(t.donation.complete.description, textAlign: TextAlign.center, style: CoconutTypography.body2_14),
             ],
           ),
         ),
@@ -103,9 +90,10 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: _memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0
-                      ? MediaQuery.of(context).size.height * 0.1
-                      : MediaQuery.of(context).size.height * 0.3,
+                  height:
+                      _memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0
+                          ? MediaQuery.of(context).size.height * 0.1
+                          : MediaQuery.of(context).size.height * 0.3,
                 ),
                 SvgPicture.asset('assets/svg/completion-check.svg'),
                 CoconutLayout.spacing_400h,
@@ -115,12 +103,11 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                 ),
                 CoconutLayout.spacing_400h,
                 _buildMemoInputField(),
-                if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty)
-                  _buildMemoReadOnlyText(),
+                if (!_memoFocusNode.hasFocus && _memoController.text.isNotEmpty) _buildMemoReadOnlyText(),
                 if (_memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0) ...[
                   CoconutLayout.spacing_1200h,
-                  _buildMemoTags()
-                ]
+                  _buildMemoTags(),
+                ],
               ],
             ),
           ),
@@ -128,10 +115,11 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
         // if (_memoFocusNode.hasFocus && MediaQuery.of(context).viewInsets.bottom > 0)
         //   Positioned(bottom: Sizes.size16, child: _buildMemoTags()),
         FixedBottomButton(
-            showGradient: false,
-            isVisibleAboveKeyboard: false,
-            onButtonClicked: () => onTapConfirmButton(context),
-            text: t.confirm),
+          showGradient: false,
+          isVisibleAboveKeyboard: false,
+          onButtonClicked: () => onTapConfirmButton(context),
+          text: t.confirm,
+        ),
       ],
     );
   }
@@ -172,20 +160,15 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   void onTapConfirmButton(BuildContext context) {
     // 메모가 있는 경우 업데이트 시도
     final memo = _memoController.text.trim();
-    if (memo.isNotEmpty &&
-        !context
-            .read<TransactionProvider>()
-            .updateTransactionMemo(widget.id, widget.txHash, memo)) {
-      CoconutToast.showWarningToast(
-        context: context,
-        text: t.toast.memo_update_failed,
-      );
+    if (memo.isNotEmpty && !context.read<TransactionProvider>().updateTransactionMemo(widget.id, widget.txHash, memo)) {
+      CoconutToast.showWarningToast(context: context, text: t.toast.memo_update_failed);
       return;
     }
 
     Future<dynamic>? showReviewScreenFuture = AppReviewService.showReviewScreenIfFirstSending(
-        context,
-        animationController: _animationController);
+      context,
+      animationController: _animationController,
+    );
     if (showReviewScreenFuture == null) {
       Navigator.pop(context);
     } else {
@@ -220,25 +203,22 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   Widget _buildMemoReadOnlyText() {
     return GestureDetector(
       onTap: () {
-        _memoController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _memoController.text.length),
-        );
+        _memoController.selection = TextSelection.fromPosition(TextPosition(offset: _memoController.text.length));
         _memoFocusNode.requestFocus();
       },
       child: IntrinsicWidth(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size4),
-          decoration: BoxDecoration(
-            color: CoconutColors.gray800,
-            borderRadius: BorderRadius.circular(Sizes.size24),
-          ),
+          decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(Sizes.size24)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SvgPicture.asset('assets/svg/pen.svg',
-                  colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
-                  width: Sizes.size12),
+              SvgPicture.asset(
+                'assets/svg/pen.svg',
+                colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                width: Sizes.size12,
+              ),
               CoconutLayout.spacing_100w,
               Flexible(
                 fit: FlexFit.loose,
@@ -265,17 +245,16 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
       child: IntrinsicWidth(
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size4),
-          decoration: BoxDecoration(
-            color: CoconutColors.gray800,
-            borderRadius: BorderRadius.circular(Sizes.size24),
-          ),
+          decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(Sizes.size24)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SvgPicture.asset('assets/svg/pen.svg',
-                  colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
-                  width: Sizes.size12),
+              SvgPicture.asset(
+                'assets/svg/pen.svg',
+                colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+                width: Sizes.size12,
+              ),
               CoconutLayout.spacing_100w,
               Flexible(
                 fit: FlexFit.loose,
@@ -309,24 +288,19 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     return Padding(
       padding: const EdgeInsets.all(Sizes.size4),
       child: RippleEffect(
-          borderRadius: Sizes.size14,
-          onTap: () {
-            _memoController.text = text;
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Sizes.size8,
-              vertical: Sizes.size4,
-            ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(Sizes.size14),
-              border: Border.all(width: 1, color: CoconutColors.gray600),
-            ),
-            child: Text(
-              text,
-              style: CoconutTypography.caption_10.setColor(CoconutColors.gray300),
-            ),
-          )),
+        borderRadius: Sizes.size14,
+        onTap: () {
+          _memoController.text = text;
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8, vertical: Sizes.size4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Sizes.size14),
+            border: Border.all(width: 1, color: CoconutColors.gray600),
+          ),
+          child: Text(text, style: CoconutTypography.caption_10.setColor(CoconutColors.gray300)),
+        ),
+      ),
     );
   }
 }

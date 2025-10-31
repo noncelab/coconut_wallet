@@ -67,20 +67,10 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
       child: Container(
         decoration: BoxDecoration(
           color: _isPressing ? MyColors.transparentWhite_10 : CoconutColors.black,
-          borderRadius: BorderRadius.circular(
-            20,
-          ),
-          border: Border.all(
-            width: 1,
-            color: widget.isSelected ? CoconutColors.primary : MyColors.borderGrey,
-          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(width: 1, color: widget.isSelected ? CoconutColors.primary : MyColors.borderGrey),
         ),
-        padding: const EdgeInsets.only(
-          top: 23,
-          bottom: 22,
-          left: 18,
-          right: 23,
-        ),
+        padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 23),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -91,10 +81,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                        style: Styles.h2Number,
-                      ),
+                      Text(widget.currentUnit.displayBitcoinAmount(widget.utxo.amount), style: Styles.h2Number),
                       CoconutLayout.spacing_100w,
                       if (widget.utxo.status == UtxoStatus.incoming)
                         CoconutChip(
@@ -102,26 +89,20 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                           label: t.status_receiving,
                           labelColor: CoconutColors.black,
                           padding: const EdgeInsets.symmetric(vertical: 2),
-                        )
+                        ),
                     ],
                   ),
                   CoconutLayout.spacing_200h,
                   Row(
                     children: [
-                      Text(
-                        dateString[0],
-                        style: Styles.caption,
-                      ),
+                      Text(dateString[0], style: Styles.caption),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         color: MyColors.transparentWhite_40,
                         width: 1,
                         height: 10,
                       ),
-                      Text(
-                        dateString[1],
-                        style: Styles.caption,
-                      ),
+                      Text(dateString[1], style: Styles.caption),
                     ],
                   ),
                   Visibility(
@@ -131,24 +112,19 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
                       child: Wrap(
                         spacing: 4,
                         runSpacing: 4,
-                        children: List.generate(
-                          widget.utxoTags?.length ?? 0,
-                          (index) {
-                            Color foregroundColor =
-                                tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
-                            return IntrinsicWidth(
-                              child: CoconutChip(
-                                minWidth: 40,
-                                color: CoconutColors.backgroundColorPaletteDark[
-                                    widget.utxoTags?[index].colorIndex ?? 0],
-                                borderColor: foregroundColor,
-                                label: '#${widget.utxoTags?[index].name ?? ''}',
-                                labelSize: 12,
-                                labelColor: foregroundColor,
-                              ),
-                            );
-                          },
-                        ),
+                        children: List.generate(widget.utxoTags?.length ?? 0, (index) {
+                          Color foregroundColor = tagColorPalette[widget.utxoTags?[index].colorIndex ?? 0];
+                          return IntrinsicWidth(
+                            child: CoconutChip(
+                              minWidth: 40,
+                              color: CoconutColors.backgroundColorPaletteDark[widget.utxoTags?[index].colorIndex ?? 0],
+                              borderColor: foregroundColor,
+                              label: '#${widget.utxoTags?[index].name ?? ''}',
+                              labelSize: 12,
+                              labelColor: foregroundColor,
+                            ),
+                          );
+                        }),
                       ),
                     ),
                   ),
@@ -158,8 +134,9 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
             SvgPicture.asset(
               'assets/svg/circle-check.svg',
               colorFilter: ColorFilter.mode(
-                  widget.isSelected ? CoconutColors.primary : MyColors.transparentWhite_40,
-                  BlendMode.srcIn),
+                widget.isSelected ? CoconutColors.primary : MyColors.transparentWhite_40,
+                BlendMode.srcIn,
+              ),
             ),
           ],
         ),

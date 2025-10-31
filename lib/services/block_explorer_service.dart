@@ -6,9 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class BlockExplorerService {
   static const String _useDefaultExplorerKey = SharedPrefKeys.kUseDefaultExplorer;
   static const String _customExplorerUrlKey = SharedPrefKeys.kCustomExplorerUrl;
-  final String _defaultMempoolUrl = NetworkType.currentNetworkType == NetworkType.mainnet
-      ? BLOCK_EXPLORER_URL
-      : BLOCK_EXPLORER_URL_REGTEST;
+  final String _defaultMempoolUrl =
+      NetworkType.currentNetworkType == NetworkType.mainnet ? BLOCK_EXPLORER_URL : BLOCK_EXPLORER_URL_REGTEST;
 
   // 기본 익스플로러 사용 여부 가져오기
   static Future<bool> getUseDefaultExplorer() async {

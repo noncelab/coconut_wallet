@@ -11,12 +11,7 @@ class AddressQrScannerBody extends StatelessWidget {
   final void Function(BarcodeCapture) onDetect;
   final String? address;
 
-  const AddressQrScannerBody({
-    super.key,
-    required this.qrKey,
-    required this.onDetect,
-    this.address,
-  });
+  const AddressQrScannerBody({super.key, required this.qrKey, required this.onDetect, this.address});
 
   Widget _buildQrView(BuildContext context) {
     // 스캔 영역을 상단으로 이동 (상단 여백 120px 추가)

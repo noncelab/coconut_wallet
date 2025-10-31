@@ -12,7 +12,7 @@ class UtxoTagListWidget extends StatelessWidget {
     super.key,
     required this.selectedUtxoTagName,
     required this.onTagSelected,
-    required this.isSelectionMode
+    required this.isSelectionMode,
   });
 
   @override

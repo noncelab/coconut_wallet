@@ -24,12 +24,8 @@ class CustomAppbarButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14.0),
-          border: Border.all(
-            color: isActive ? Colors.transparent : MyColors.transparentWhite_20,
-          ),
-          color: isActive
-              ? (isActivePrimaryColor ? CoconutColors.primary : CoconutColors.white)
-              : MyColors.grey,
+          border: Border.all(color: isActive ? Colors.transparent : MyColors.transparentWhite_20),
+          color: isActive ? (isActivePrimaryColor ? CoconutColors.primary : CoconutColors.white) : MyColors.grey,
         ),
         child: Center(
           child: Text(

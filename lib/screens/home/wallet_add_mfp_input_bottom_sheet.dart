@@ -66,10 +66,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       Navigator.pop(context);
                     },
                   ),
-                  Text(
-                    t.wallet_add_input_screen.mfp_title,
-                    style: CoconutTypography.body1_16,
-                  ),
+                  Text(t.wallet_add_input_screen.mfp_title, style: CoconutTypography.body1_16),
                   Visibility(
                     visible: false,
                     maintainSize: true,
@@ -88,100 +85,102 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Sizes.size16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                      padding: const EdgeInsets.all(CoconutStyles.radius_200),
-                      decoration: const BoxDecoration(
-                        color: CoconutColors.gray800,
-                        borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    padding: const EdgeInsets.all(CoconutStyles.radius_200),
+                    decoration: const BoxDecoration(
+                      color: CoconutColors.gray800,
+                      borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            SvgPicture.asset(
+                              'assets/svg/circle-warning.svg',
+                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            ),
+                            CoconutLayout.spacing_100w,
+                            Text(
+                              t.wallet_add_input_screen.mfp_description_title,
+                              style: CoconutTypography.body2_14_Bold,
+                            ),
+                          ],
+                        ),
+                        CoconutLayout.spacing_200h,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SvgPicture.asset(
-                                'assets/svg/circle-warning.svg',
-                                colorFilter:
-                                    const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                              RichText(
+                                text: TextSpan(
+                                  text: t.wallet_add_input_screen.mfp_description_texts[0],
+                                  style: CoconutTypography.body3_12,
+                                  children: [
+                                    TextSpan(
+                                      text: "\n${t.wallet_add_input_screen.mfp_description_texts[1]}",
+                                      style: CoconutTypography.body3_12,
+                                    ),
+                                    TextSpan(
+                                      text: " ${t.wallet_add_input_screen.mfp_description_texts[2]}",
+                                      style: CoconutTypography.body3_12_Bold,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              CoconutLayout.spacing_100w,
-                              Text(t.wallet_add_input_screen.mfp_description_title,
-                                  style: CoconutTypography.body2_14_Bold)
                             ],
                           ),
-                          CoconutLayout.spacing_200h,
-                          Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  RichText(
-                                    text: TextSpan(
-                                      text: t.wallet_add_input_screen.mfp_description_texts[0],
-                                      style: CoconutTypography.body3_12,
-                                      children: [
-                                        TextSpan(
-                                            text:
-                                                "\n${t.wallet_add_input_screen.mfp_description_texts[1]}",
-                                            style: CoconutTypography.body3_12),
-                                        TextSpan(
-                                            text:
-                                                " ${t.wallet_add_input_screen.mfp_description_texts[2]}",
-                                            style: CoconutTypography.body3_12_Bold)
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              )),
-                        ],
-                      )),
+                        ),
+                      ],
+                    ),
+                  ),
                   CoconutLayout.spacing_600h,
                   CoconutTextField(
-                      height: Sizes.size52,
-                      padding:
-                          const EdgeInsets.only(bottom: 0, left: Sizes.size14, right: Sizes.size14),
-                      textAlign: TextAlign.left,
-                      backgroundColor: CoconutColors.gray800,
-                      errorColor: CoconutColors.hotPink,
-                      cursorColor: CoconutColors.white,
-                      activeColor: CoconutColors.white,
-                      placeholderColor: CoconutColors.gray700,
-                      controller: _mfpController,
-                      focusNode: _mfpFocusNode,
-                      maxLines: 1,
-                      maxLength: 8,
-                      fontFamily: 'SpaceGrotesk',
-                      textInputAction: TextInputAction.done,
-                      onChanged: (text) {},
-                      isError: _isError,
-                      isLengthVisible: true,
-                      errorText: t.wallet_add_input_screen.format_error_text,
-                      placeholderText: t.wallet_add_input_screen.mfp_input_placeholder,
-                      suffix: IconButton(
-                        iconSize: 14,
-                        padding: EdgeInsets.zero,
-                        onPressed: () {
-                          setState(() {
-                            _mfpController.text = '';
-                          });
-                        },
-                        icon: SvgPicture.asset(
-                          'assets/svg/text-field-clear.svg',
-                          colorFilter: ColorFilter.mode(
-                              _isError
-                                  ? CoconutColors.hotPink
-                                  : _mfpController.text.isNotEmpty
-                                      ? CoconutColors.white
-                                      : CoconutColors.gray700,
-                              BlendMode.srcIn),
+                    height: Sizes.size52,
+                    padding: const EdgeInsets.only(bottom: 0, left: Sizes.size14, right: Sizes.size14),
+                    textAlign: TextAlign.left,
+                    backgroundColor: CoconutColors.gray800,
+                    errorColor: CoconutColors.hotPink,
+                    cursorColor: CoconutColors.white,
+                    activeColor: CoconutColors.white,
+                    placeholderColor: CoconutColors.gray700,
+                    controller: _mfpController,
+                    focusNode: _mfpFocusNode,
+                    maxLines: 1,
+                    maxLength: 8,
+                    fontFamily: 'SpaceGrotesk',
+                    textInputAction: TextInputAction.done,
+                    onChanged: (text) {},
+                    isError: _isError,
+                    isLengthVisible: true,
+                    errorText: t.wallet_add_input_screen.format_error_text,
+                    placeholderText: t.wallet_add_input_screen.mfp_input_placeholder,
+                    suffix: IconButton(
+                      iconSize: 14,
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        setState(() {
+                          _mfpController.text = '';
+                        });
+                      },
+                      icon: SvgPicture.asset(
+                        'assets/svg/text-field-clear.svg',
+                        colorFilter: ColorFilter.mode(
+                          _isError
+                              ? CoconutColors.hotPink
+                              : _mfpController.text.isNotEmpty
+                              ? CoconutColors.white
+                              : CoconutColors.gray700,
+                          BlendMode.srcIn,
                         ),
-                      )),
+                      ),
+                    ),
+                  ),
                   CoconutLayout.spacing_500h,
                   Row(
                     children: [

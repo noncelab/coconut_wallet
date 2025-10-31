@@ -85,8 +85,7 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
-    Logger.log(
-        'AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
+    Logger.log('AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
     switch (state) {
       case AppLifecycleState.resumed:
         if (_isPaused) {
@@ -127,8 +126,7 @@ class _AppGuardState extends State<AppGuard> {
     }
 
     // 2. 연결 에러가 있거나 ping이 실패한 경우 재연결
-    if (_nodeProvider.hasConnectionError ||
-        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+    if (_nodeProvider.hasConnectionError || _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
       Logger.log('AppGuard: Connection issues detected, attempting reconnect');
       _nodeProvider.reconnect();
     }
@@ -143,8 +141,7 @@ class _AppGuardState extends State<AppGuard> {
     }
 
     // 2. 연결 에러가 있거나 ping이 실패한 경우 연결 해제
-    if (_nodeProvider.hasConnectionError ||
-        _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+    if (_nodeProvider.hasConnectionError || _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
       Logger.log('AppGuard: Connection issues detected, closing connection');
       unawaited(_nodeProvider.closeConnection());
       return;
@@ -156,25 +153,22 @@ class _AppGuardState extends State<AppGuard> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(alignment: Alignment.topLeft, children: [
-      widget.child,
-      if (_isPaused && AppGuard._isPrivacyEnabled)
-        Container(
-          color: CoconutColors.black,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  'assets/images/splash_logo_$appFlavor.png',
-                  width: 48,
-                  height: 48,
-                ),
-              ],
+    return Stack(
+      alignment: Alignment.topLeft,
+      children: [
+        widget.child,
+        if (_isPaused && AppGuard._isPrivacyEnabled)
+          Container(
+            color: CoconutColors.black,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [Image.asset('assets/images/splash_logo_$appFlavor.png', width: 48, height: 48)],
+              ),
             ),
           ),
-        ),
-    ]);
+      ],
+    );
   }
 
   @override

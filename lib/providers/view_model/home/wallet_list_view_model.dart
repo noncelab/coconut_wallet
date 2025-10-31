@@ -68,9 +68,9 @@ class WalletListViewModel extends ChangeNotifier {
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     _syncNodeStateStream = _nodeProvider.syncStateStream;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
-    _walletBalance = _walletProvider
-        .fetchWalletBalanceMap()
-        .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
+    _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
+      (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
+    );
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
     _preferenceProvider.addListener(_onPreferenceChanged);
     _priceProvider.addListener(_updateBitcoinPrice);
@@ -134,8 +134,7 @@ class WalletListViewModel extends ChangeNotifier {
       // 최신 favoriteWalletIds를 PreferenceProvider에서 다시 읽어옴
       _favoriteWalletIds = List.from(_preferenceProvider.favoriteWalletIds);
 
-      tempFavoriteWalletIds =
-          walletItemList.where((w) => _favoriteWalletIds.contains(w.id)).map((w) => w.id).toList();
+      tempFavoriteWalletIds = walletItemList.where((w) => _favoriteWalletIds.contains(w.id)).map((w) => w.id).toList();
 
       tempWalletOrder = walletItemList.map((w) => w.id).toList();
     }
@@ -149,8 +148,10 @@ class WalletListViewModel extends ChangeNotifier {
     }
 
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
-    if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
-        _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
+    if (!const SetEquality().equals(
+      _excludedFromTotalBalanceWalletIds.toSet(),
+      _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet(),
+    )) {
       _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     }
 
@@ -166,10 +167,7 @@ class WalletListViewModel extends ChangeNotifier {
   Map<int, AnimatedBalanceData> _updateBalanceMap(Map<int, Balance> balanceMap) {
     return balanceMap.map((key, balance) {
       final prev = _walletBalance[key]?.current ?? 0;
-      return MapEntry(
-        key,
-        AnimatedBalanceData(balance.total, prev),
-      );
+      return MapEntry(key, AnimatedBalanceData(balance.total, prev));
     });
   }
 
@@ -187,8 +185,11 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isWalletListChanged(List<WalletListItemBase> oldList, List<WalletListItemBase> newList,
-      Map<int, AnimatedBalanceData> walletBalanceMap) {
+  bool isWalletListChanged(
+    List<WalletListItemBase> oldList,
+    List<WalletListItemBase> newList,
+    Map<int, AnimatedBalanceData> walletBalanceMap,
+  ) {
     if (oldList.length != newList.length) return true;
 
     bool walletListChanged = oldList.asMap().entries.any((entry) {
@@ -225,8 +226,7 @@ class WalletListViewModel extends ChangeNotifier {
   Future<void> applyTempDatasToWallets() async {
     if (!hasWalletOrderChanged && !hasFavoriteChanged) return;
 
-    final deletedWalletIds =
-        _preferenceProvider.walletOrder.where((id) => !tempWalletOrder.contains(id)).toList();
+    final deletedWalletIds = _preferenceProvider.walletOrder.where((id) => !tempWalletOrder.contains(id)).toList();
     await _handleAuthFlow(
       onComplete: () async {
         if (hasWalletOrderChanged) {
@@ -256,8 +256,7 @@ class WalletListViewModel extends ChangeNotifier {
 
   VoidCallback? _pendingAuthCompleteCallback;
 
-  Future<void> _handleAuthFlow(
-      {required VoidCallback onComplete, required bool hasWalletDeleted}) async {
+  Future<void> _handleAuthFlow({required VoidCallback onComplete, required bool hasWalletDeleted}) async {
     if (!hasWalletDeleted) {
       // 지갑이 삭제된 경우가 아니라면 pinCheck 생략
       onComplete();
@@ -295,15 +294,10 @@ class WalletListViewModel extends ChangeNotifier {
     _walletProvider.notifyListeners();
   }
 
-  bool get hasFavoriteChanged => !const SetEquality().equals(
-        tempFavoriteWalletIds.toSet(),
-        _preferenceProvider.favoriteWalletIds.toSet(),
-      );
+  bool get hasFavoriteChanged =>
+      !const SetEquality().equals(tempFavoriteWalletIds.toSet(), _preferenceProvider.favoriteWalletIds.toSet());
 
-  bool get hasWalletOrderChanged => !const ListEquality().equals(
-        tempWalletOrder,
-        _preferenceProvider.walletOrder,
-      );
+  bool get hasWalletOrderChanged => !const ListEquality().equals(tempWalletOrder, _preferenceProvider.walletOrder);
 
   void reorderTempWalletOrder(int oldIndex, int newIndex) {
     final item = tempWalletOrder.removeAt(oldIndex);

@@ -38,10 +38,7 @@ String extractAddressFromBip21(String input) {
 
 Bip21Data parseBip21Uri(String input) {
   if (!input.toLowerCase().startsWith('bitcoin:')) {
-    return Bip21Data(
-      address: input,
-      parameters: {},
-    );
+    return Bip21Data(address: input, parameters: {});
   }
 
   final withoutScheme = input.substring(8);
@@ -77,11 +74,7 @@ Bip21Data parseBip21Uri(String input) {
     }
   }
 
-  return Bip21Data(
-    address: address.toLowerCase(),
-    amount: amount,
-    parameters: parameters,
-  );
+  return Bip21Data(address: address.toLowerCase(), amount: amount, parameters: parameters);
 }
 
 bool isBech32(String address) {
@@ -97,7 +90,7 @@ enum AddressValidationError {
   notTestnetAddress,
   notMainnetAddress,
   notRegtestnetAddress,
-  unknown
+  unknown,
 }
 
 extension AddressValidationErrorMessage on AddressValidationError {
@@ -131,9 +124,7 @@ class AddressValidator {
     }
 
     if (networkType == NetworkType.testnet) {
-      if (normalized.startsWith('1') ||
-          normalized.startsWith('3') ||
-          normalized.startsWith('bc1')) {
+      if (normalized.startsWith('1') || normalized.startsWith('3') || normalized.startsWith('bc1')) {
         return AddressValidationError.notTestnetAddress;
       }
     } else if (networkType == NetworkType.mainnet) {
