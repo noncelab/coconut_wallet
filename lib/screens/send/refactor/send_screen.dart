@@ -1194,7 +1194,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildAddressBoard(BuildContext context) {
     return SizedBox(
-      height: addressBoardHeight,
+      height: addressBoardHeight + (_viewModel.orderedRegisteredWallets.length <= 2 ? 0 : 30),
       child: Column(
         children: [
           CoconutLayout.spacing_50h,
@@ -1287,7 +1287,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildWalletAddressList() {
-    if (_viewModel.orderedRegisteredWallets.length == 1) {
+    if (_viewModel.orderedRegisteredWallets.length <= 2) {
       return Column(
         children: [
           CoconutLayout.spacing_200h,
@@ -1311,7 +1311,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               },
             ),
           ),
-          CoconutLayout.spacing_200h,
         ],
       );
     }
@@ -1321,7 +1320,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           children: [
             CoconutLayout.spacing_200h,
             SizedBox(
-              height: walletAddressListHeight,
+              height: walletAddressListHeight + 30,
               child: Scrollbar(
                 controller: _addressListScrollController,
                 thumbVisibility: true,
