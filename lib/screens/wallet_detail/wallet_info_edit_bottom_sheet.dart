@@ -35,12 +35,17 @@ class _WalletInfoEditBottomSheetContent extends StatefulWidget {
 class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetContent> {
   final TextEditingController _textEditingController = TextEditingController();
   final FocusNode _textFieldFocusNode = FocusNode();
+  bool _isFirst = true;
+  String _initialValue = '';
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final viewModel = context.read<WalletInfoEditViewModel>();
+      _initialValue = viewModel.walletName;
+      _textEditingController.text = viewModel.walletName;
       _textFieldFocusNode.requestFocus();
     });
 
@@ -94,7 +99,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                 Positioned.fill(
                   top: kToolbarHeight,
                   child: Container(
-                    color: CoconutColors.black.withOpacity(0.6),
+                    color: CoconutColors.black.withValues(alpha: 0.6),
                     alignment: Alignment.center,
                     child: const CoconutCircularIndicator(size: 160),
                   ),
@@ -126,15 +131,24 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                   child: CoconutTextField(
                     controller: _textEditingController,
                     focusNode: _textFieldFocusNode,
-                    onChanged: (text) {},
-                    backgroundColor: CoconutColors.white.withOpacity(0.15),
+                    onChanged: (text) {
+                      if (_isFirst && _initialValue != text) {
+                        _isFirst = false;
+                      }
+                    },
+                    backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
                     errorColor: CoconutColors.hotPink,
                     placeholderColor: CoconutColors.gray700,
                     activeColor: CoconutColors.white,
                     cursorColor: CoconutColors.white,
                     maxLength: 15,
-                    errorText: isError ? t.wallet_info_screen.duplicated_name : '',
-                    isError: isError,
+                    errorText:
+                        _isFirst
+                            ? ''
+                            : isError
+                            ? t.wallet_info_screen.duplicated_name
+                            : '',
+                    isError: _isFirst ? false : isError,
                     maxLines: 1,
                   ),
                 ),
