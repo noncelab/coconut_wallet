@@ -19,10 +19,7 @@ import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 
 class IsolateInitializer {
-  static IsolateController entryInitialize(
-    SendPort sendPort,
-    ElectrumService electrumService,
-  ) {
+  static IsolateController entryInitialize(SendPort sendPort, ElectrumService electrumService) {
     // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
     final realmManager = RealmManager();
     final addressRepository = AddressRepository(realmManager);
@@ -34,25 +31,36 @@ class IsolateInitializer {
     final transactionRecordService = TransactionRecordService(electrumService, addressRepository);
     final isolateStateManager = IsolateStateManager(sendPort);
     final BalanceSyncService balanceSyncService = BalanceSyncService(
-        electrumService, isolateStateManager, addressRepository, walletRepository);
-    final UtxoSyncService utxoSyncService = UtxoSyncService(electrumService, isolateStateManager,
-        utxoRepository, transactionRepository, addressRepository);
+      electrumService,
+      isolateStateManager,
+      addressRepository,
+      walletRepository,
+    );
+    final UtxoSyncService utxoSyncService = UtxoSyncService(
+      electrumService,
+      isolateStateManager,
+      utxoRepository,
+      transactionRepository,
+      addressRepository,
+    );
     final ScriptCallbackService scriptCallbackService = ScriptCallbackService();
     final TransactionSyncService transactionSyncService = TransactionSyncService(
-        electrumService,
-        transactionRepository,
-        transactionRecordService,
-        isolateStateManager,
-        utxoRepository,
-        scriptCallbackService);
+      electrumService,
+      transactionRepository,
+      transactionRecordService,
+      isolateStateManager,
+      utxoRepository,
+      scriptCallbackService,
+    );
     final NetworkService networkManager = NetworkService(electrumService, transactionRepository);
     final ScriptSyncService scriptSyncService = ScriptSyncService(
-        isolateStateManager,
-        balanceSyncService,
-        transactionSyncService,
-        utxoSyncService,
-        addressRepository,
-        scriptCallbackService);
+      isolateStateManager,
+      balanceSyncService,
+      transactionSyncService,
+      utxoSyncService,
+      addressRepository,
+      scriptCallbackService,
+    );
 
     final SubscriptionService subscriptionService = SubscriptionService(
       electrumService,

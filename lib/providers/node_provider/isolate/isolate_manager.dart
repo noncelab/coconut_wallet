@@ -53,8 +53,7 @@ class IsolateManager {
   void _createIsolateCompleter() {
     if (_isolateReady != null && !_isolateReady!.isCompleted && _isInitializing) {
       try {
-        _isolateReady!
-            .completeError(Exception('IsolateManager: Previous initialization was cancelled'));
+        _isolateReady!.completeError(Exception('IsolateManager: Previous initialization was cancelled'));
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -270,8 +269,7 @@ class IsolateManager {
     try {
       final isConnected = await electrumService.connect(data.host, data.port, ssl: data.ssl);
 
-      final isolateController =
-          IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
+      final isolateController = IsolateInitializer.entryInitialize(data.isolateToMainSendPort, electrumService);
 
       if (!isConnected) {
         Logger.error("Isolate: Failed to connect to Electrum server");
@@ -280,20 +278,25 @@ class IsolateManager {
       }
 
       // 모든 초기화 완료 후 메시지 전송
-      data.isolateToMainSendPort.send(
-          [IsolateManagerCommand.initializationCompleted, isolateFromMainReceivePort.sendPort]);
+      data.isolateToMainSendPort.send([
+        IsolateManagerCommand.initializationCompleted,
+        isolateFromMainReceivePort.sendPort,
+      ]);
 
-      isolateFromMainReceivePort.listen((message) async {
-        if (message is List && message.length == 3) {
-          IsolateControllerCommand messageType = message[0];
-          SendPort isolateToMainSendPort = message[1];
-          List<dynamic> params = message[2];
+      isolateFromMainReceivePort.listen(
+        (message) async {
+          if (message is List && message.length == 3) {
+            IsolateControllerCommand messageType = message[0];
+            SendPort isolateToMainSendPort = message[1];
+            List<dynamic> params = message[2];
 
-          isolateController.executeNetworkCommand(messageType, isolateToMainSendPort, params);
-        }
-      }, onError: (error) {
-        Logger.error("Isolate: ReceivePort error: $error");
-      });
+            isolateController.executeNetworkCommand(messageType, isolateToMainSendPort, params);
+          }
+        },
+        onError: (error) {
+          Logger.error("Isolate: ReceivePort error: $error");
+        },
+      );
     } catch (e) {
       Logger.error("Isolate: ERROR during initialization: $e");
       try {
@@ -325,9 +328,8 @@ class IsolateManager {
       case IsolateControllerCommand.getLatestBlock:
       case IsolateControllerCommand.getTransaction:
       case IsolateControllerCommand.getRecommendedFees:
-        final timeout = _host.contains('.onion')
-            ? kIsolateSimpleResponseTimeoutForOnion
-            : kIsolateSimpleResponseTimeout;
+        final timeout =
+            _host.contains('.onion') ? kIsolateSimpleResponseTimeoutForOnion : kIsolateSimpleResponseTimeout;
         return timeout;
     }
   }
@@ -347,16 +349,14 @@ class IsolateManager {
   }
 
   /// 간단한 작업의 경우 소켓 상태를 먼저 확인하고 작업을 수행합니다.
-  Future<Result<T>> _sendWithSocketCheck<T>(
-      IsolateControllerCommand messageType, List<dynamic> params) async {
+  Future<Result<T>> _sendWithSocketCheck<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
     try {
       if (_isSimpleCommand(messageType)) {
         Logger.log('IsolateManager: Checking socket status before fast command: $messageType');
 
         final socketStatus = await getSocketConnectionStatus();
         if (socketStatus.isFailure || socketStatus.value == SocketConnectionStatus.terminated) {
-          Logger.error(
-              'IsolateManager: Socket connection terminated, aborting fast command: $messageType');
+          Logger.error('IsolateManager: Socket connection terminated, aborting fast command: $messageType');
           return Result.failure(ErrorCodes.nodeConnectionError);
         }
       }
@@ -398,14 +398,12 @@ class IsolateManager {
       Result<T> result;
       try {
         final timeLimit = _getTimeoutForCommand(messageType);
-        final isSocketConnectionStatusMessage =
-            messageType == IsolateControllerCommand.getSocketConnectionStatus;
+        final isSocketConnectionStatusMessage = messageType == IsolateControllerCommand.getSocketConnectionStatus;
 
         result = await mainFromIsolateReceivePort.first.timeout(
           timeLimit,
           onTimeout: () {
-            Logger.error(
-                'IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)');
+            Logger.error('IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)');
             if (isSocketConnectionStatusMessage) {
               return Result.success(SocketConnectionStatus.terminated);
             }
@@ -432,9 +430,7 @@ class IsolateManager {
     }
   }
 
-  Future<Result<bool>> subscribeWallets(
-    List<WalletListItemBase> walletItems,
-  ) async {
+  Future<Result<bool>> subscribeWallets(List<WalletListItemBase> walletItems) async {
     return _send(IsolateControllerCommand.subscribeWallets, [walletItems]);
   }
 
@@ -475,8 +471,7 @@ class IsolateManager {
     }
   }
 
-  Future<Result<TransactionRecord>> getTransactionRecord(
-      WalletListItemBase walletItem, String txHash) {
+  Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) {
     return _send(IsolateControllerCommand.getTransactionRecord, [walletItem, txHash]);
   }
 
@@ -517,8 +512,7 @@ class IsolateManager {
       // isolateReady가 완료되지 않았다면 에러로 완료 처리
       if (_isolateReady != null && !_isolateReady!.isCompleted) {
         try {
-          _isolateReady!
-              .completeError(Exception('Isolate was closed before initialization completed'));
+          _isolateReady!.completeError(Exception('Isolate was closed before initialization completed'));
         } catch (e) {
           // 이미 완료된 경우 무시
         }

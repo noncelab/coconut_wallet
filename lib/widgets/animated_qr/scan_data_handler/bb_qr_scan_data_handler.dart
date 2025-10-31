@@ -102,7 +102,8 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
 
       // B$2J: json+base32, export wallet 형식
       // B$HT: hex+base32, psbt 형식
-      bool isValidCombination = (encoding == '2' && dataType == 'Z') ||
+      bool isValidCombination =
+          (encoding == '2' && dataType == 'Z') ||
           (encoding == 'H' && dataType == 'T') ||
           (encoding == '2' && dataType == 'J');
 

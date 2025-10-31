@@ -25,11 +25,9 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   final PreferenceProvider _preferenceProvider;
   late final IQrScanDataHandler _qrDataHandler;
 
-  WalletAddScannerViewModel(
-      this._walletImportSource, this._walletProvider, this._preferenceProvider) {
+  WalletAddScannerViewModel(this._walletImportSource, this._walletProvider, this._preferenceProvider) {
     const methodName = 'constructor';
-    FileLogger.log(
-        className, methodName, 'WalletAddScannerViewModel created for ${_walletImportSource.name}');
+    FileLogger.log(className, methodName, 'WalletAddScannerViewModel created for ${_walletImportSource.name}');
 
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
@@ -37,12 +35,10 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         break;
       case WalletImportSource.keystone:
       case WalletImportSource.jade:
-        _qrDataHandler =
-            BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
+        _qrDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
         break;
       case WalletImportSource.seedSigner:
-        _qrDataHandler = ComposedScanDataHandler(
-            expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
+        _qrDataHandler = ComposedScanDataHandler(expectedUrType: [UrType.cryptoAccount, UrType.accountDescriptor]);
         break;
       case WalletImportSource.krux:
         _qrDataHandler = DescriptorQrScanDataHandler();
@@ -62,13 +58,15 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
-    assert(_walletImportSource != WalletImportSource.extendedPublicKey,
-        '확장공개키 지갑 추가는 wallet_add_scanner에서 지원 안함');
+    assert(_walletImportSource != WalletImportSource.extendedPublicKey, '확장공개키 지갑 추가는 wallet_add_scanner에서 지원 안함');
 
     const methodName = 'addWallet';
 
-    FileLogger.log(className, methodName,
-        'addWallet called with ${_walletImportSource.name} additionInfo type: ${additionInfo.runtimeType}');
+    FileLogger.log(
+      className,
+      methodName,
+      'addWallet called with ${_walletImportSource.name} additionInfo type: ${additionInfo.runtimeType}',
+    );
 
     try {
       if (additionInfo is WatchOnlyWallet) {
@@ -93,27 +91,32 @@ class WalletAddScannerViewModel extends ChangeNotifier {
 
   Future<ResultOfSyncFromVault> _addBcUrWallet(WalletImportSource walletImportSource, UR ur) async {
     final name = getNextThirdPartyWalletName(
-        walletImportSource, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet = _walletAddService.createWalletFromUR(
-        walletImportSource: walletImportSource, ur: ur, name: name);
+      walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+    final wallet = _walletAddService.createWalletFromUR(walletImportSource: walletImportSource, ur: ur, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
-  Future<ResultOfSyncFromVault> _addDescriptorWallet(
-      WalletImportSource walletImportSource, String descriptor) async {
+  Future<ResultOfSyncFromVault> _addDescriptorWallet(WalletImportSource walletImportSource, String descriptor) async {
     final name = getNextThirdPartyWalletName(
-        walletImportSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+      walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
     final wallet = _walletAddService.createWalletFromDescriptor(
-        walletImportSource: walletImportSource, descriptor: descriptor, name: name);
+      walletImportSource: walletImportSource,
+      descriptor: descriptor,
+      name: name,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
-  Future<ResultOfSyncFromVault> _addBbQrWallet(
-      WalletImportSource walletImportSource, Map<String, dynamic> json) async {
+  Future<ResultOfSyncFromVault> _addBbQrWallet(WalletImportSource walletImportSource, Map<String, dynamic> json) async {
     final name = getNextThirdPartyWalletName(
-        walletImportSource, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet = _walletAddService.createBbQrWallet(
-        walletImportSource: walletImportSource, json: json, name: name);
+      walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+    final wallet = _walletAddService.createBbQrWallet(walletImportSource: walletImportSource, json: json, name: name);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

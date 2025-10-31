@@ -74,73 +74,69 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         return viewModel;
       },
       child: Consumer<UtxoSelectionViewModel>(
-        builder: (context, viewModel, child) => Stack(
-          children: [
-            GestureDetector(
-              onTap: () => _removeUtxoOrderDropdown(),
-              child: Scaffold(
-                appBar: CoconutAppBar.build(
-                  backgroundColor: CoconutColors.black,
-                  title: t.utxo_selection_screen.title,
-                  context: context,
-                  onBackPressed: () => Navigator.pop(context),
-                ),
-                body: Stack(
-                  children: [
-                    Column(
+        builder:
+            (context, viewModel, child) => Stack(
+              children: [
+                GestureDetector(
+                  onTap: () => _removeUtxoOrderDropdown(),
+                  child: Scaffold(
+                    appBar: CoconutAppBar.build(
+                      backgroundColor: CoconutColors.black,
+                      title: t.utxo_selection_screen.title,
+                      context: context,
+                      onBackPressed: () => Navigator.pop(context),
+                    ),
+                    body: Stack(
                       children: [
-                        Visibility(
-                          visible: !viewModel.isNetworkOn,
-                          maintainSize: false,
-                          maintainAnimation: false,
-                          maintainState: false,
-                          child: NetworkErrorTooltip(
-                            isNetworkOn: viewModel.isNetworkOn,
-                          ),
-                        ),
-                        _buildSendInfoHeader(
-                          viewModel,
-                        ),
-                        Expanded(
-                          child: Stack(
-                            children: [
-                              SingleChildScrollView(
-                                controller: _scrollController,
-                                child: Column(
-                                  children: [
-                                    _buildUtxoTagList(viewModel),
-                                    _buildUtxoList(viewModel),
-                                    CoconutLayout.spacing_400h,
-                                    const SizedBox(height: 50)
-                                  ],
-                                ),
+                        Column(
+                          children: [
+                            Visibility(
+                              visible: !viewModel.isNetworkOn,
+                              maintainSize: false,
+                              maintainAnimation: false,
+                              maintainState: false,
+                              child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                            ),
+                            _buildSendInfoHeader(viewModel),
+                            Expanded(
+                              child: Stack(
+                                children: [
+                                  SingleChildScrollView(
+                                    controller: _scrollController,
+                                    child: Column(
+                                      children: [
+                                        _buildUtxoTagList(viewModel),
+                                        _buildUtxoList(viewModel),
+                                        CoconutLayout.spacing_400h,
+                                        const SizedBox(height: 50),
+                                      ],
+                                    ),
+                                  ),
+                                  FixedBottomButton(
+                                    buttonHeight: 50,
+                                    onButtonClicked: () {
+                                      vibrateLight();
+                                      Navigator.pop(context, _viewModel.selectedUtxoList);
+                                    },
+                                    text: t.complete,
+                                    isActive: _viewModel.hasSelectionChanged,
+                                    showGradient: true,
+                                    gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
+                                    horizontalPadding: 16,
+                                    backgroundColor: CoconutColors.white,
+                                  ),
+                                ],
                               ),
-                              FixedBottomButton(
-                                buttonHeight: 50,
-                                onButtonClicked: () {
-                                  vibrateLight();
-                                  Navigator.pop(context, _viewModel.selectedUtxoList);
-                                },
-                                text: t.complete,
-                                isActive: _viewModel.hasSelectionChanged,
-                                showGradient: true,
-                                gradientPadding: const EdgeInsets.only(
-                                    left: 16, right: 16, bottom: 40, top: 110),
-                                horizontalPadding: 16,
-                                backgroundColor: CoconutColors.white,
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
+                        _buildUtxoOrderDropdown(viewModel),
                       ],
                     ),
-                    _buildUtxoOrderDropdown(viewModel),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
       ),
     );
   }
@@ -214,30 +210,22 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     _viewModel.toggleUtxoSelection(utxo);
   }
 
-  Widget _buildTotalUtxoAmount(
-      Widget textKeyWidget, int selectedUtxoListLength, int totalSelectedUtxoAmount) {
-    String utxoSumText = widget.currentUnit
-        .displayBitcoinAmount(totalSelectedUtxoAmount, defaultWhenZero: '0', shouldCheckZero: true);
+  Widget _buildTotalUtxoAmount(Widget textKeyWidget, int selectedUtxoListLength, int totalSelectedUtxoAmount) {
+    String utxoSumText = widget.currentUnit.displayBitcoinAmount(
+      totalSelectedUtxoAmount,
+      defaultWhenZero: '0',
+      shouldCheckZero: true,
+    );
     String unitText = widget.currentUnit.symbol;
 
     return Column(
       children: [
         Container(
           width: MediaQuery.sizeOf(context).width,
-          decoration: BoxDecoration(
-            color: MyColors.transparentWhite_10,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          margin: const EdgeInsets.only(
-            top: 0,
-          ),
+          decoration: BoxDecoration(color: MyColors.transparentWhite_10, borderRadius: BorderRadius.circular(24)),
+          margin: const EdgeInsets.only(top: 0),
           child: Container(
-            padding: const EdgeInsets.only(
-              left: 24,
-              right: 24,
-              top: 24,
-              bottom: 20,
-            ),
+            padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 20),
             child: Row(
               children: [
                 Expanded(
@@ -246,22 +234,14 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     alignment: Alignment.centerLeft,
                     child: Row(
                       children: [
-                        Text(
-                          t.utxo_total,
-                          style: Styles.body2Bold.merge(
-                            const TextStyle(color: CoconutColors.white),
-                          ),
-                        ),
-                        const SizedBox(
-                          width: 4,
-                        ),
+                        Text(t.utxo_total, style: Styles.body2Bold.merge(const TextStyle(color: CoconutColors.white))),
+                        const SizedBox(width: 4),
                         Visibility(
                           visible: selectedUtxoListLength != 0,
                           child: Text(
                             t.utxo_count(count: selectedUtxoListLength),
                             style: Styles.caption.merge(
-                              const TextStyle(
-                                  fontFamily: 'Pretendard', color: MyColors.transparentWhite_70),
+                              const TextStyle(fontFamily: 'Pretendard', color: MyColors.transparentWhite_70),
                             ),
                           ),
                         ),
@@ -274,10 +254,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     alignment: Alignment.centerRight,
                     child: Text(
                       "$utxoSumText $unitText",
-                      style: Styles.body1Number.merge(const TextStyle(
-                          color: CoconutColors.white,
-                          fontWeight: FontWeight.w700,
-                          height: 16.8 / 14)),
+                      style: Styles.body1Number.merge(
+                        const TextStyle(color: CoconutColors.white, fontWeight: FontWeight.w700, height: 16.8 / 14),
+                      ),
                     ),
                   ),
                 ),
@@ -285,18 +264,15 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
             ),
           ),
         ),
-        const SizedBox(
-          height: 32,
-        ),
-        Row(children: [
-          CupertinoButton(
-            onPressed: () {
-              setState(
-                () {
+        const SizedBox(height: 32),
+        Row(
+          children: [
+            CupertinoButton(
+              onPressed: () {
+                setState(() {
                   if (_scrollController.offset < 0) {
                     _scrollController.jumpTo(0);
-                  } else if (_scrollController.offset >
-                      _scrollController.position.maxScrollExtent) {
+                  } else if (_scrollController.offset > _scrollController.position.maxScrollExtent) {
                     _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
                   }
 
@@ -307,55 +283,51 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
                     _isOrderDropdownVisible = true;
                   }
-                },
-              );
-            },
-            minSize: 0,
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                textKeyWidget,
-                const SizedBox(
-                  width: 4,
-                ),
-                SvgPicture.asset(
-                  'assets/svg/arrow-down.svg',
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                ),
-              ],
+                });
+              },
+              minSize: 0,
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  textKeyWidget,
+                  const SizedBox(width: 4),
+                  SvgPicture.asset(
+                    'assets/svg/arrow-down.svg',
+                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const SizedBox(
-                  width: 16,
-                ),
-                CustomUnderlinedButton(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  text: t.unselect_all,
-                  isEnable: true,
-                  onTap: () {
-                    _removeUtxoOrderDropdown();
-                    _deselectAll();
-                  },
-                ),
-                SvgPicture.asset('assets/svg/row-divider.svg'),
-                CustomUnderlinedButton(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  text: t.select_all,
-                  isEnable: true,
-                  onTap: () async {
-                    _removeUtxoOrderDropdown();
-                    _selectAll();
-                  },
-                )
-              ],
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const SizedBox(width: 16),
+                  CustomUnderlinedButton(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    text: t.unselect_all,
+                    isEnable: true,
+                    onTap: () {
+                      _removeUtxoOrderDropdown();
+                      _deselectAll();
+                    },
+                  ),
+                  SvgPicture.asset('assets/svg/row-divider.svg'),
+                  CustomUnderlinedButton(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    text: t.select_all,
+                    isEnable: true,
+                    onTap: () async {
+                      _removeUtxoOrderDropdown();
+                      _selectAll();
+                    },
+                  ),
+                ],
+              ),
             ),
-          )
-        ]),
+          ],
+        ),
       ],
     );
   }
@@ -364,8 +336,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return Material(
       borderRadius: BorderRadius.circular(16),
       child: CoconutPulldownMenu(
-        entries:
-            _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
+        entries: _utxoOrderOptions.map((order) => CoconutPulldownMenuItem(title: order.text)).toList(),
         dividerColor: CoconutColors.black,
         onSelected: (index, selectedText) async {
           bool isChanged = _viewModel.utxoOrder != _utxoOrderOptions[index];
@@ -428,72 +399,62 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   Widget _buildUtxoList(UtxoSelectionViewModel viewModel) {
     return ListView.separated(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        padding: const EdgeInsets.only(top: 0, bottom: 30, left: 16, right: 16),
-        itemCount: viewModel.confirmedUtxoList.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 0),
-        itemBuilder: (context, index) {
-          final utxo = viewModel.confirmedUtxoList[index];
-          final utxoHasSelectedTag = viewModel.selectedUtxoTagName == allLabelName ||
-              viewModel.utxoTagMap[utxo.utxoId]
-                      ?.any((e) => e.name == viewModel.selectedUtxoTagName) ==
-                  true;
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      padding: const EdgeInsets.only(top: 0, bottom: 30, left: 16, right: 16),
+      itemCount: viewModel.confirmedUtxoList.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 0),
+      itemBuilder: (context, index) {
+        final utxo = viewModel.confirmedUtxoList[index];
+        final utxoHasSelectedTag =
+            viewModel.selectedUtxoTagName == allLabelName ||
+            viewModel.utxoTagMap[utxo.utxoId]?.any((e) => e.name == viewModel.selectedUtxoTagName) == true;
 
-          if (utxoHasSelectedTag) {
-            if (viewModel.selectedUtxoTagName != allLabelName && !utxoHasSelectedTag) {
-              return const SizedBox();
-            }
-
-            if (utxo.isLocked) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: LockedUtxoItemCard(
-                  key: ValueKey(utxo.transactionHash),
-                  utxo: utxo,
-                  utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-                  currentUnit: widget.currentUnit,
-                ),
-              );
-            }
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: SelectableUtxoItemCard(
-                key: ValueKey(utxo.transactionHash),
-                currentUnit: widget.currentUnit,
-                utxo: utxo,
-                isSelectable: true,
-                isSelected: viewModel.selectedUtxoList.contains(utxo),
-                utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-                onSelected: _toggleSelection,
-              ),
-            );
-          } else {
+        if (utxoHasSelectedTag) {
+          if (viewModel.selectedUtxoTagName != allLabelName && !utxoHasSelectedTag) {
             return const SizedBox();
           }
-        });
+
+          if (utxo.isLocked) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: LockedUtxoItemCard(
+                key: ValueKey(utxo.transactionHash),
+                utxo: utxo,
+                utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                currentUnit: widget.currentUnit,
+              ),
+            );
+          }
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: SelectableUtxoItemCard(
+              key: ValueKey(utxo.transactionHash),
+              currentUnit: widget.currentUnit,
+              utxo: utxo,
+              isSelectable: true,
+              isSelected: viewModel.selectedUtxoList.contains(utxo),
+              utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+              onSelected: _toggleSelection,
+            ),
+          );
+        } else {
+          return const SizedBox();
+        }
+      },
+    );
   }
 
   Widget _buildSendInfoHeader(UtxoSelectionViewModel viewModel) {
     return Container(
-      padding: const EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 12,
-        bottom: 12,
-      ),
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
       alignment: Alignment.center,
       color: CoconutColors.black,
       child: _buildTotalUtxoAmount(
         Text(
           key: _orderDropdownButtonKey,
           _viewModel.utxoOrder.text,
-          style: Styles.caption2.merge(
-            const TextStyle(
-              color: CoconutColors.white,
-              fontSize: 12,
-            ),
-          ),
+          style: Styles.caption2.merge(const TextStyle(color: CoconutColors.white, fontSize: 12)),
         ),
         viewModel.selectedUtxoList.length,
         viewModel.selectedUtxoAmountSum,

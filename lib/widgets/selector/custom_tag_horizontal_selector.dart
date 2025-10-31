@@ -55,11 +55,7 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
                 onTap: () {
                   widget.onSelectedTag.call(name);
                 },
-                child: _tagSelectorChip(
-                  index <= 2 ? _tags[index] : '#$name',
-                  widget.selectedName == name,
-                  index <= 2,
-                ),
+                child: _tagSelectorChip(index <= 2 ? _tags[index] : '#$name', widget.selectedName == name, index <= 2),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
             ],
@@ -84,9 +80,10 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
           style: CoconutTypography.body3_12_Number.copyWith(
             color: isSelected ? CoconutColors.gray800 : CoconutColors.white,
             height: 1.3,
-            fontWeight: isFixedTag
-                ? FontWeight.w400
-                : isSelected
+            fontWeight:
+                isFixedTag
+                    ? FontWeight.w400
+                    : isSelected
                     ? FontWeight.w700
                     : FontWeight.w400,
           ),

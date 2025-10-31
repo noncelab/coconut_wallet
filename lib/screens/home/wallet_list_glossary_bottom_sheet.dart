@@ -63,7 +63,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       'ㅋ',
       'ㅌ',
       'ㅍ',
-      'ㅎ'
+      'ㅎ',
     ];
 
     // 첫 글자 추출
@@ -102,66 +102,75 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: CoconutColors.black,
-        appBar: CoconutAppBar.build(
-          title: t.glossary,
-          context: context,
-          onBackPressed: null,
-          isBottom: true,
-        ),
-        body: Padding(
-            padding: EdgeInsets.only(
-                left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
-            child: Column(children: [
-              Row(
-                children: [
-                  AskCard(
-                    imagePath: 'assets/images/pow_logo.png',
-                    title: t.glossary_bottom_sheet.ask_to_pow,
-                    backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
-                    gutter: GlossaryBottomSheet.gutter,
-                    url: POW_URL,
-                    externalBrowser: true,
-                  ),
-                  SizedBox(width: GlossaryBottomSheet.gutter / 2),
-                  AskCard(
-                      imagePath: 'assets/images/discord-logo.png',
-                      title: t.glossary_bottom_sheet.ask_to_discord,
-                      backgroundColor: const Color.fromARGB(255, 240, 224, 251),
-                      gutter: GlossaryBottomSheet.gutter,
-                      url: DISCORD_COCONUT),
-                ],
+      backgroundColor: CoconutColors.black,
+      appBar: CoconutAppBar.build(title: t.glossary, context: context, onBackPressed: null, isBottom: true),
+      body: Padding(
+        padding: EdgeInsets.only(left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                AskCard(
+                  imagePath: 'assets/images/pow_logo.png',
+                  title: t.glossary_bottom_sheet.ask_to_pow,
+                  backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
+                  gutter: GlossaryBottomSheet.gutter,
+                  url: POW_URL,
+                  externalBrowser: true,
+                ),
+                SizedBox(width: GlossaryBottomSheet.gutter / 2),
+                AskCard(
+                  imagePath: 'assets/images/discord-logo.png',
+                  title: t.glossary_bottom_sheet.ask_to_discord,
+                  backgroundColor: const Color.fromARGB(255, 240, 224, 251),
+                  gutter: GlossaryBottomSheet.gutter,
+                  url: DISCORD_COCONUT,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                children:
+                    groupedTermList.keys.map((initial) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(initial, style: Styles.body1Bold),
+                          Wrap(
+                            children:
+                                groupedTermList[initial]!.map((term) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: GestureDetector(
+                                      onTap: () => _showBottomSheet(term),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(32),
+                                          color: MyColors.borderLightgrey,
+                                        ),
+                                        child: Text(
+                                          term,
+                                          style: Styles.body2.merge(
+                                            const TextStyle(color: MyColors.transparentWhite_70),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      );
+                    }).toList(),
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                  child: ListView(
-                      children: groupedTermList.keys.map((initial) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(initial, style: Styles.body1Bold),
-                    Wrap(
-                      children: groupedTermList[initial]!.map((term) {
-                        return Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: GestureDetector(
-                              onTap: () => _showBottomSheet(term),
-                              child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(32),
-                                      color: MyColors.borderLightgrey),
-                                  child: Text(term,
-                                      style: Styles.body2.merge(
-                                          const TextStyle(color: MyColors.transparentWhite_70))))),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20)
-                  ],
-                );
-              }).toList()))
-            ])));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showBottomSheet(String term) {
@@ -173,92 +182,75 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       enableDrag: true,
       backgroundColor: MyColors.grey,
       context: context,
-      child: details != null
-          ? LayoutBuilder(builder: (context, constraints) {
-              return ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height * 0.8,
-                ),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 제목
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              term,
-                              style: Styles.h3,
-                            ),
-                            Text(
-                              '${details['en']}',
-                              style: Styles.label,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                          decoration: const BoxDecoration(
-                            color: CoconutColors.black,
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
+      child:
+          details != null
+              ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.8),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 제목
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [Text(term, style: Styles.h3), Text('${details['en']}', style: Styles.label)],
                             ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${details['content']}',
-                                style:
-                                    Styles.label.merge(const TextStyle(color: CoconutColors.white)),
-                              ),
-                              const SizedBox(height: 32),
-                              Text(
-                                t.glossary_bottom_sheet.synonym,
-                                style: Styles.body2Bold,
-                              ),
-                              const SizedBox(height: 8),
-                              if (details['synonym'] != null) ...[
-                                Wrap(
-                                    spacing: 8.0,
-                                    runSpacing: 8.0,
-                                    children: details['synonym']
-                                        .map<Widget>((text) => Keyword(keyword: text))
-                                        .toList()),
-                                const SizedBox(height: 32),
-                                Text(
-                                  t.glossary_bottom_sheet.related,
-                                  style: Styles.body2Bold,
+
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                              decoration: const BoxDecoration(
+                                color: CoconutColors.black,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(24),
+                                  topRight: Radius.circular(24),
                                 ),
-                                const SizedBox(height: 8),
-                                if (details['related'] != null) ...[
-                                  Wrap(
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${details['content']}',
+                                    style: Styles.label.merge(const TextStyle(color: CoconutColors.white)),
+                                  ),
+                                  const SizedBox(height: 32),
+                                  Text(t.glossary_bottom_sheet.synonym, style: Styles.body2Bold),
+                                  const SizedBox(height: 8),
+                                  if (details['synonym'] != null) ...[
+                                    Wrap(
                                       spacing: 8.0,
                                       runSpacing: 8.0,
-                                      children: details['related']
-                                          .map<Widget>((text) => Keyword(keyword: text))
-                                          .toList())
+                                      children:
+                                          details['synonym'].map<Widget>((text) => Keyword(keyword: text)).toList(),
+                                    ),
+                                    const SizedBox(height: 32),
+                                    Text(t.glossary_bottom_sheet.related, style: Styles.body2Bold),
+                                    const SizedBox(height: 8),
+                                    if (details['related'] != null) ...[
+                                      Wrap(
+                                        spacing: 8.0,
+                                        runSpacing: 8.0,
+                                        children:
+                                            details['related'].map<Widget>((text) => Keyword(keyword: text)).toList(),
+                                      ),
+                                    ],
+                                  ],
                                 ],
-                              ],
-                            ],
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            })
-          : Center(
-              child: Text('No details available for $term'),
-            ),
+                    ),
+                  );
+                },
+              )
+              : Center(child: Text('No details available for $term')),
     );
   }
 }
@@ -283,8 +275,7 @@ class AskCard extends StatelessWidget {
 
   Future<void> _launchURL() async {
     final Uri url = Uri.parse(this.url);
-    if (!await launchUrl(url,
-        mode: externalBrowser ? LaunchMode.externalApplication : LaunchMode.platformDefault)) {
+    if (!await launchUrl(url, mode: externalBrowser ? LaunchMode.externalApplication : LaunchMode.platformDefault)) {
       throw 'Could not launch $url';
     }
   }
@@ -292,64 +283,53 @@ class AskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: _launchURL,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          width: (MediaQuery.of(context).size.width - gutter * 2 - gutter / 2) / 2,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: backgroundColor,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                margin: const EdgeInsets.only(bottom: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: const Color.fromRGBO(255, 255, 255, 0.5),
-                ),
-                child: Image.asset(
-                  imagePath,
-                  width: 28,
-                  height: 28,
-                ),
+      onTap: _launchURL,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        width: (MediaQuery.of(context).size.width - gutter * 2 - gutter / 2) / 2,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: backgroundColor),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: const Color.fromRGBO(255, 255, 255, 0.5),
               ),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  title,
-                  style: Styles.body2.merge(
-                      const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
-                ),
+              child: Image.asset(imagePath, width: 28, height: 28),
+            ),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                title,
+                style: Styles.body2.merge(const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
               ),
-            ],
-          ),
-        ));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 class Keyword extends StatelessWidget {
   final String keyword;
 
-  const Keyword({
-    super.key,
-    required this.keyword,
-  });
+  const Keyword({super.key, required this.keyword});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration:
-            BoxDecoration(borderRadius: BorderRadius.circular(100), color: MyColors.lightblue),
-        child: Text(
-          keyword,
-          style: Styles.caption.merge(TextStyle(
-              fontFamily: CustomFonts.text.getFontFamily,
-              color: MyColors.darkgrey,
-              letterSpacing: 0.1)),
-        ));
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), color: MyColors.lightblue),
+      child: Text(
+        keyword,
+        style: Styles.caption.merge(
+          TextStyle(fontFamily: CustomFonts.text.getFontFamily, color: MyColors.darkgrey, letterSpacing: 0.1),
+        ),
+      ),
+    );
   }
 }

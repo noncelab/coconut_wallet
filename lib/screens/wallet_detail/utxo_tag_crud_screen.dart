@@ -16,29 +16,27 @@ class UtxoTagCrudScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoTagCrudViewModel>(
-      create: (context) => UtxoTagCrudViewModel(
-        Provider.of<UtxoTagProvider>(context, listen: false),
-        id,
-      ),
+      create: (context) => UtxoTagCrudViewModel(Provider.of<UtxoTagProvider>(context, listen: false), id),
       child: Consumer<UtxoTagCrudViewModel>(
         builder: (context, model, child) {
           return Scaffold(
             backgroundColor: CoconutColors.black,
             appBar: CoconutAppBar.build(
-                title: t.tag_manage,
-                context: context,
-                onBackPressed: () {
-                  Navigator.pop(context);
-                },
-                actionButtonList: [
-                  IconButton(
-                    onPressed: () {
-                      _handleAddTagPressed(context, model);
-                    },
-                    icon: const Icon(Icons.add_rounded),
-                    color: CoconutColors.white,
-                  ),
-                ]),
+              title: t.tag_manage,
+              context: context,
+              onBackPressed: () {
+                Navigator.pop(context);
+              },
+              actionButtonList: [
+                IconButton(
+                  onPressed: () {
+                    _handleAddTagPressed(context, model);
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  color: CoconutColors.white,
+                ),
+              ],
+            ),
             body: SafeArea(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -69,15 +67,9 @@ class UtxoTagCrudScreen extends StatelessWidget {
       children: [
         CoconutLayout.spacing_900h,
         const SizedBox(height: 56),
-        Text(
-          t.utxo_tag_screen.onboarding_title,
-          style: CoconutTypography.body1_16_Bold,
-        ),
+        Text(t.utxo_tag_screen.onboarding_title, style: CoconutTypography.body1_16_Bold),
         CoconutLayout.spacing_200h,
-        Text(
-          t.utxo_tag_screen.add_tag,
-          style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray350),
-        ),
+        Text(t.utxo_tag_screen.add_tag, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray350)),
       ],
     );
   }
@@ -88,29 +80,31 @@ class UtxoTagCrudScreen extends StatelessWidget {
       maintainSize: true,
       maintainAnimation: true,
       maintainState: true,
-      child: Column(children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            CustomUnderlinedButton(
-              text: t.edit,
-              onTap: () {
-                _handleEditTagPressed(context, model);
-              },
-              padding: const EdgeInsets.all(0),
-            ),
-            CoconutLayout.spacing_300w,
-            CustomUnderlinedButton(
-              text: t.delete,
-              onTap: () {
-                _handeDeleteTagPressed(context, model);
-              },
-              padding: const EdgeInsets.all(0),
-            ),
-          ],
-        ),
-        CoconutLayout.spacing_300h,
-      ]),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              CustomUnderlinedButton(
+                text: t.edit,
+                onTap: () {
+                  _handleEditTagPressed(context, model);
+                },
+                padding: const EdgeInsets.all(0),
+              ),
+              CoconutLayout.spacing_300w,
+              CustomUnderlinedButton(
+                text: t.delete,
+                onTap: () {
+                  _handeDeleteTagPressed(context, model);
+                },
+                padding: const EdgeInsets.all(0),
+              ),
+            ],
+          ),
+          CoconutLayout.spacing_300h,
+        ],
+      ),
     );
   }
 
@@ -118,19 +112,18 @@ class UtxoTagCrudScreen extends StatelessWidget {
     CustomDialogs.showCustomAlertDialog(
       context,
       title: t.alert.tag_delete.title,
-      message: model.selectedUtxoTag?.utxoIdList?.isNotEmpty == true
-          ? t.alert.tag_delete.description_utxo_tag(
-              name: model.selectedUtxoTag!.name,
-              count: model.selectedUtxoTag?.utxoIdList!.length ?? 0)
-          : t.alert.tag_delete.description(name: model.selectedUtxoTag!.name),
+      message:
+          model.selectedUtxoTag?.utxoIdList?.isNotEmpty == true
+              ? t.alert.tag_delete.description_utxo_tag(
+                name: model.selectedUtxoTag!.name,
+                count: model.selectedUtxoTag?.utxoIdList!.length ?? 0,
+              )
+              : t.alert.tag_delete.description(name: model.selectedUtxoTag!.name),
       onConfirm: () {
         if (model.deleteUtxoTag()) {
           Navigator.of(context).pop();
         } else {
-          CoconutToast.showWarningToast(
-            context: context,
-            text: t.toast.tag_delete_failed,
-          );
+          CoconutToast.showWarningToast(context: context, text: t.toast.tag_delete_failed);
         }
       },
       onCancel: () {
@@ -146,19 +139,17 @@ class UtxoTagCrudScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagEditBottomSheet(
-        walletId: id,
-        existingTags: model.utxoTagList,
-        updateUtxoTag: model.selectedUtxoTag,
-        onTagCreated: (tag) {
-          if (!model.updateUtxoTag(tag)) {
-            CoconutToast.showWarningToast(
-              context: context,
-              text: t.toast.tag_update_failed,
-            );
-          }
-        },
-      ),
+      builder:
+          (context) => TagEditBottomSheet(
+            walletId: id,
+            existingTags: model.utxoTagList,
+            updateUtxoTag: model.selectedUtxoTag,
+            onTagCreated: (tag) {
+              if (!model.updateUtxoTag(tag)) {
+                CoconutToast.showWarningToast(context: context, text: t.toast.tag_update_failed);
+              }
+            },
+          ),
     );
   }
 
@@ -168,22 +159,20 @@ class UtxoTagCrudScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TagEditBottomSheet(
-        walletId: id,
-        existingTags: model.utxoTagList,
-        onTagCreated: (tag) {
-          if (model.selectedUtxoTag == null) {
-            final newTag = tag;
-            if (!model.addUtxoTag(newTag)) {
-              CoconutToast.showWarningToast(
-                context: context,
-                text: t.toast.tag_add_failed,
-              );
-            }
-            return;
-          }
-        },
-      ),
+      builder:
+          (context) => TagEditBottomSheet(
+            walletId: id,
+            existingTags: model.utxoTagList,
+            onTagCreated: (tag) {
+              if (model.selectedUtxoTag == null) {
+                final newTag = tag;
+                if (!model.addUtxoTag(newTag)) {
+                  CoconutToast.showWarningToast(context: context, text: t.toast.tag_add_failed);
+                }
+                return;
+              }
+            },
+          ),
     );
   }
 }

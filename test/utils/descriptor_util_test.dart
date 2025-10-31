@@ -89,29 +89,25 @@ void main() {
         // 체크섬 경로가 있는 형식
         const descriptorWithPath =
             "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/<0;1>/*)";
-        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorWithPath),
-            returnsNormally);
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorWithPath), returnsNormally);
 
         // 체크섬이 있는 형식
         const descriptorWithChecksum =
             "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/<0;1>/*)#n9g32cn0";
-        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorWithChecksum),
-            returnsNormally);
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorWithChecksum), returnsNormally);
       });
 
       test('account가 1인 올바른 네이티브 세그윗 디스크립터 검증', () {
         const descriptorAccount1 =
             "wpkh([C49BB3CF/84'/0'/1']zpub6qdvhrsV9g78eZtKZxKu2faGwtVj3fpxeM7VM585upfiDK88Upf2KRiJ29VXWpFt7dMxiBkRhqVwB4RP1LwcnzBv1pRGwKVj36wgwF6U4Bw/<0;1>/*)#r293md9j";
-        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorAccount1),
-            returnsNormally);
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(descriptorAccount1), returnsNormally);
       });
 
       test('잘못된 네이티브 세그윗 디스크립터 검증', () {
         // 잘못된 함수 (sh 대신 wpkh)
         const invalidFunction =
             "sh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF)";
-        expect(
-            () => DescriptorUtil.validateNativeSegwitDescriptor(invalidFunction), throwsException);
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(invalidFunction), throwsException);
 
         // 잘못된 경로 형식
         const invalidPath =
@@ -121,8 +117,7 @@ void main() {
         // 8글자가 아닌 체크섬
         const invalidChecksum =
             "wpkh([76223a6f/84'/0'/0']tpubDE7NQymr4AFtewpAsWtnreyq9ghkzQBXpCZjWLFVRAvnbf7vya2eMTvT2fPapNqL8SuVvLQdbUbMfWLVDCZKnsEBqp6UK93QEzL8Ck23AwF/<0;1>/*)#not8words";
-        expect(
-            () => DescriptorUtil.validateNativeSegwitDescriptor(invalidChecksum), throwsException);
+        expect(() => DescriptorUtil.validateNativeSegwitDescriptor(invalidChecksum), throwsException);
       });
     });
 
@@ -227,39 +222,47 @@ void main() {
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor()())"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor((()))"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh(()()($descriptor)"), throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh())))((($descriptor)"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh())))((($descriptor)"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh()(($descriptor)"), throwsException);
-        expect(() => DescriptorUtil.normalizeDescriptor("wpkh(()()()$descriptor((()"),
-            throwsException);
-        expect(() => DescriptorUtil.normalizeDescriptor("wpkh(((()))$descriptor((()"),
-            throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh(()()()$descriptor((()"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh(((()))$descriptor((()"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh())))$descriptor((()"), throwsException);
         expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh())))$descriptor((()"), throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub()()()5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATG()()()asJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub()()()5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATG()()()asJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub((((5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub((((5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLY)))))gfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLY)))))gfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub((((5YSvHLY))))gfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub((((5YSvHLY))))gfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub(5)Y(Sv))HLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub(5)Y(Sv))HLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)"),
-            throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0'](()))))()(vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0'](()))))()(vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg)",
+          ),
+          throwsException,
+        );
       });
 
       test("Descriptor의 마지막 중괄호 이후에 문자가 있는 경우", () {
@@ -271,10 +274,8 @@ void main() {
         // 비정상 케이스
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)test"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)test2"), throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)Coconut"), throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)Wallet"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)Coconut"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)Wallet"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)POW"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)코코넛"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor)논스랩"), throwsException);
@@ -289,10 +290,8 @@ void main() {
         // 비정상 케이스
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh(test$descriptor)"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh(test2$descriptor)"), throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh(Coconut$descriptor)"), throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh(Wallet$descriptor)"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh(Coconut$descriptor)"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh(Wallet$descriptor)"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh(POW$descriptor)"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh(코코넛$descriptor)"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh(논스랩$descriptor)"), throwsException);
@@ -313,50 +312,61 @@ void main() {
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor[][])"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor[[]])"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor]]]])"), throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh($descriptor[][][]])"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh($descriptor[][][]])"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh([][]$descriptor)"), throwsException);
         expect(() => DescriptorUtil.normalizeDescriptor("wpkh([[[[[$descriptor)"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh([][][]$descriptor)"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh([[[[$descriptor]]]])"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh([[[[$descriptor[][][)"), throwsException);
+        expect(() => DescriptorUtil.normalizeDescriptor("wpkh([]]]]$descriptor[[[[)"), throwsException);
         expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh([][][]$descriptor)"), throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0'][]]]]]]][][][][]vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor("wpkh([[[[$descriptor]]]])"), throwsException);
-        expect(() => DescriptorUtil.normalizeDescriptor("wpkh([[[[$descriptor[][][)"),
-            throwsException);
-        expect(() => DescriptorUtil.normalizeDescriptor("wpkh([]]]]$descriptor[[[[)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/30'/1'/0']vpub5YSvHLYgfa[][][][]Dn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0'][]]]]]]][][][][]vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2i2[[[[[[3UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/30'/1'/0']vpub5YSvHLYgfa[][][][]Dn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2]]]]]i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2i2[[[[[[3UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub5Y[][[]][]SvHLYg[]][faDn1H][FBxmn[k2i23UF]pNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2]]]]]i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgf][][[][aDn1HFB[][][]][][][xmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub5Y[][[]][]SvHLYg[]][faDn1H][FBxmn[k2i23UF]pNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54[][][][]][vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
         expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgf][][[][aDn1HFB[][][]][][][xmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxmnk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8TPJfxysxdQxRZ8CQqtu54[][][][]][vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
-        expect(
-            () => DescriptorUtil.normalizeDescriptor(
-                "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxm]]]]]]]]nk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8[[[[[[[[TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)"),
-            throwsException);
+          () => DescriptorUtil.normalizeDescriptor(
+            "wpkh([F75F5AB5/84'/1'/0']vpub5YSvHLYgfaDn1HFBxm]]]]]]]]nk2i23UFpNBLNJNFGfkdbEtwijtwHHMv5UhH6QATGasJWmRp8[[[[[[[[TPJfxysxdQxRZ8CQqtu54vXBRz696bSraBPThxNg/<0;1>/*)",
+          ),
+          throwsException,
+        );
       });
 
       test("NetworkType에 따른 주소가 맞는지 검증(Descriptor)", () {
@@ -384,39 +394,65 @@ void main() {
         expect(DescriptorUtil.normalizeDescriptor(descriptor1), isNotEmpty);
         expect(DescriptorUtil.normalizeDescriptor(descriptor2), isNotEmpty);
         expect(DescriptorUtil.normalizeDescriptor(descriptor3), isNotEmpty);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor4),
-            t.wallet_add_input_screen.unsupported_wallet_error_text);
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor4),
+          t.wallet_add_input_screen.unsupported_wallet_error_text,
+        );
 
         // 실패: 5~8(메인넷 지갑)
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor5),
-            t.wallet_add_input_screen.testnet_wallet_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor6),
-            t.wallet_add_input_screen.testnet_wallet_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor7),
-            t.wallet_add_input_screen.testnet_wallet_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor8),
-            t.wallet_add_input_screen.testnet_wallet_error_text);
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor5),
+          t.wallet_add_input_screen.testnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor6),
+          t.wallet_add_input_screen.testnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor7),
+          t.wallet_add_input_screen.testnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor8),
+          t.wallet_add_input_screen.testnet_wallet_error_text,
+        );
 
         // 실패: 1~3(테스트넷 지갑), 4(purpose 49)
         NetworkType.setNetworkType(NetworkType.mainnet);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor1),
-            t.wallet_add_input_screen.mainnet_wallet_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor2),
-            t.wallet_add_input_screen.mainnet_wallet_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor3),
-            t.wallet_add_input_screen.mainnet_wallet_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor4),
-            t.wallet_add_input_screen.unsupported_wallet_error_text);
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor1),
+          t.wallet_add_input_screen.mainnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor2),
+          t.wallet_add_input_screen.mainnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor3),
+          t.wallet_add_input_screen.mainnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor4),
+          t.wallet_add_input_screen.unsupported_wallet_error_text,
+        );
 
         // 실패: 5~8
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor5),
-            t.wallet_add_input_screen.format_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor6),
-            t.wallet_add_input_screen.format_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor7),
-            t.wallet_add_input_screen.format_error_text);
-        expectErrorMessage(() => DescriptorUtil.normalizeDescriptor(descriptor8),
-            t.wallet_add_input_screen.format_error_text);
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor5),
+          t.wallet_add_input_screen.format_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor6),
+          t.wallet_add_input_screen.format_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor7),
+          t.wallet_add_input_screen.format_error_text,
+        );
+        expectErrorMessage(
+          () => DescriptorUtil.normalizeDescriptor(descriptor8),
+          t.wallet_add_input_screen.format_error_text,
+        );
       });
     });
 
@@ -431,8 +467,10 @@ void main() {
         }
 
         return SingleSignatureWallet.fromExtendedPublicKey(
-                AddressType.p2wpkh, xpub, WalletAddService.masterFingerprintPlaceholder)
-            .descriptor;
+          AddressType.p2wpkh,
+          xpub,
+          WalletAddService.masterFingerprintPlaceholder,
+        ).descriptor;
       }
 
       test("NetworkType에 따른 주소가 맞는지 검증", () {
@@ -458,15 +496,23 @@ void main() {
         expect(getDescriptorFromSingleSigWallet(tpub), isNotEmpty);
         expect(getDescriptorFromSingleSigWallet(vpub), isNotEmpty);
 
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(xpub),
-            t.wallet_add_input_screen.testnet_wallet_error_text);
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(zpub),
-            t.wallet_add_input_screen.testnet_wallet_error_text);
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(xpub),
+          t.wallet_add_input_screen.testnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(zpub),
+          t.wallet_add_input_screen.testnet_wallet_error_text,
+        );
 
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(upub),
-            t.wallet_add_input_screen.unsupported_wallet_error_text);
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(ypub),
-            t.wallet_add_input_screen.unsupported_wallet_error_text);
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(upub),
+          t.wallet_add_input_screen.unsupported_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(ypub),
+          t.wallet_add_input_screen.unsupported_wallet_error_text,
+        );
 
         // mainnet 설정시
         // 통과: x, z
@@ -475,15 +521,23 @@ void main() {
         expect(getDescriptorFromSingleSigWallet(xpub), isNotEmpty);
         expect(getDescriptorFromSingleSigWallet(zpub), isNotEmpty);
 
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(tpub),
-            t.wallet_add_input_screen.mainnet_wallet_error_text);
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(vpub),
-            t.wallet_add_input_screen.mainnet_wallet_error_text);
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(tpub),
+          t.wallet_add_input_screen.mainnet_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(vpub),
+          t.wallet_add_input_screen.mainnet_wallet_error_text,
+        );
 
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(upub),
-            t.wallet_add_input_screen.unsupported_wallet_error_text);
-        expectErrorMessage(() => getDescriptorFromSingleSigWallet(ypub),
-            t.wallet_add_input_screen.unsupported_wallet_error_text);
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(upub),
+          t.wallet_add_input_screen.unsupported_wallet_error_text,
+        );
+        expectErrorMessage(
+          () => getDescriptorFromSingleSigWallet(ypub),
+          t.wallet_add_input_screen.unsupported_wallet_error_text,
+        );
       });
 
       test("공개키 테스트 케이스", () {

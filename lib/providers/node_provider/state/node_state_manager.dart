@@ -14,17 +14,10 @@ class NodeStateManager implements StateManagerInterface {
   final StreamController<NodeSyncState> _syncStateController;
   final StreamController<Map<int, WalletUpdateInfo>> _walletStateController;
 
-  NodeProviderState _state = const NodeProviderState(
-    nodeSyncState: NodeSyncState.init,
-    registeredWallets: {},
-  );
+  NodeProviderState _state = const NodeProviderState(nodeSyncState: NodeSyncState.init, registeredWallets: {});
   NodeProviderState get state => _state;
 
-  NodeStateManager(
-    this._notifyListeners,
-    this._syncStateController,
-    this._walletStateController,
-  );
+  NodeStateManager(this._notifyListeners, this._syncStateController, this._walletStateController);
 
   /// 노드 상태 업데이트
   /// [newConnectionState] 노드 상태
@@ -38,10 +31,7 @@ class NodeStateManager implements StateManagerInterface {
     final prevState = _state;
 
     // 새 상태 생성
-    final newState = _state.copyWith(
-      newConnectionState: newConnectionState,
-      newUpdatedWallets: newUpdatedWallets,
-    );
+    final newState = _state.copyWith(newConnectionState: newConnectionState, newUpdatedWallets: newUpdatedWallets);
 
     // 상태 업데이트
     _state = newState;
@@ -100,13 +90,7 @@ class NodeStateManager implements StateManagerInterface {
 
   @override
   void initWalletUpdateStatus(int walletId) {
-    _setState(
-      newUpdatedWallets: {
-        ..._state.registeredWallets,
-        walletId: WalletUpdateInfo(walletId),
-      },
-      notify: false,
-    );
+    _setState(newUpdatedWallets: {..._state.registeredWallets, walletId: WalletUpdateInfo(walletId)}, notify: false);
   }
 
   /// 지갑의 동기화 상태 증가 및 상태 업데이트
@@ -140,10 +124,7 @@ class NodeStateManager implements StateManagerInterface {
     // 상태 업데이트
     _setState(
       newConnectionState: NodeSyncState.syncing,
-      newUpdatedWallets: {
-        ..._state.registeredWallets,
-        walletId: walletUpdateInfo,
-      },
+      newUpdatedWallets: {..._state.registeredWallets, walletId: walletUpdateInfo},
     );
   }
 
@@ -175,19 +156,13 @@ class NodeStateManager implements StateManagerInterface {
         break;
     }
 
-    final Map<int, WalletUpdateInfo> newUpdatedWallets = {
-      ..._state.registeredWallets,
-      walletId: walletUpdateInfo,
-    };
+    final Map<int, WalletUpdateInfo> newUpdatedWallets = {..._state.registeredWallets, walletId: walletUpdateInfo};
 
     if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
       newConnectionState = NodeSyncState.completed;
     }
 
-    _setState(
-      newConnectionState: newConnectionState,
-      newUpdatedWallets: newUpdatedWallets,
-    );
+    _setState(newConnectionState: newConnectionState, newUpdatedWallets: newUpdatedWallets);
   }
 
   @override
@@ -216,19 +191,13 @@ class NodeStateManager implements StateManagerInterface {
       );
     }
 
-    final Map<int, WalletUpdateInfo> newUpdatedWallets = {
-      ..._state.registeredWallets,
-      walletId: updateInfo,
-    };
+    final Map<int, WalletUpdateInfo> newUpdatedWallets = {..._state.registeredWallets, walletId: updateInfo};
 
     if (isAllWalletsCompleted(updatedWallets: newUpdatedWallets)) {
       newConnectionState = NodeSyncState.completed;
     }
 
-    _setState(
-      newConnectionState: newConnectionState,
-      newUpdatedWallets: newUpdatedWallets,
-    );
+    _setState(newConnectionState: newConnectionState, newUpdatedWallets: newUpdatedWallets);
   }
 
   void handleIsolateStateMessage(IsolateStateMessage message) {
@@ -268,19 +237,12 @@ class NodeStateManager implements StateManagerInterface {
     final updatedWallets = Map<int, WalletUpdateInfo>.from(_state.registeredWallets);
     updatedWallets.remove(walletId);
 
-    _setState(
-      newUpdatedWallets: updatedWallets,
-      notify: true,
-    );
+    _setState(newUpdatedWallets: updatedWallets, notify: true);
   }
 
   @override
   void setNodeSyncStateToSyncing() {
-    _setState(
-      newConnectionState: NodeSyncState.syncing,
-      newUpdatedWallets: null,
-      notify: true,
-    );
+    _setState(newConnectionState: NodeSyncState.syncing, newUpdatedWallets: null, notify: true);
   }
 
   @override
@@ -290,20 +252,12 @@ class NodeStateManager implements StateManagerInterface {
       return;
     }
 
-    _setState(
-      newConnectionState: NodeSyncState.completed,
-      newUpdatedWallets: null,
-      notify: true,
-    );
+    _setState(newConnectionState: NodeSyncState.completed, newUpdatedWallets: null, notify: true);
   }
 
   @override
   void setNodeSyncStateToFailed() {
-    _setState(
-      newConnectionState: NodeSyncState.failed,
-      newUpdatedWallets: null,
-      notify: true,
-    );
+    _setState(newConnectionState: NodeSyncState.failed, newUpdatedWallets: null, notify: true);
   }
 
   bool isAllWalletsCompleted({Map<int, WalletUpdateInfo>? updatedWallets}) {

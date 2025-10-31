@@ -7,10 +7,7 @@ import 'package:provider/provider.dart';
 class ResultsArea extends StatelessWidget {
   final Function(Map<String, dynamic>) onClearTransaction;
 
-  const ResultsArea({
-    super.key,
-    required this.onClearTransaction,
-  });
+  const ResultsArea({super.key, required this.onClearTransaction});
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +22,7 @@ class ResultsArea extends StatelessWidget {
         }
 
         if (viewModel.queryResults.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Center(
-              child: Text('조회 결과가 없습니다.'),
-            ),
-          );
+          return const Padding(padding: EdgeInsets.all(32.0), child: Center(child: Text('조회 결과가 없습니다.')));
         }
 
         return _buildResultsList(context, viewModel);
@@ -49,18 +41,12 @@ class ResultsArea extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               '데이터를 조회하고 있습니다...',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
             Text(
               '잠시만 기다려주세요',
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
-              ),
+              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7)),
             ),
           ],
         ),
@@ -82,11 +68,7 @@ class ResultsArea extends StatelessWidget {
         children: [
           const Icon(Icons.error, color: Colors.red),
           const SizedBox(height: 8),
-          Text(
-            errorMessage,
-            style: const TextStyle(color: Colors.red),
-            textAlign: TextAlign.center,
-          ),
+          Text(errorMessage, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
         ],
       ),
     );
@@ -104,8 +86,7 @@ class ResultsArea extends StatelessWidget {
         ...viewModel.queryResults.asMap().entries.map((entry) {
           final index = entry.key;
           final row = entry.value;
-          final isModified =
-              viewModel.selectedTable == 'RealmTransaction' && viewModel.isModifiedTransaction(row);
+          final isModified = viewModel.selectedTable == 'RealmTransaction' && viewModel.isModifiedTransaction(row);
 
           return _buildResultCard(context, viewModel, index, row, isModified);
         }),
@@ -123,17 +104,11 @@ class ResultsArea extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainer.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.table_chart,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          Icon(Icons.table_chart, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -141,18 +116,12 @@ class ResultsArea extends StatelessWidget {
               children: [
                 Text(
                   '$tableName 조회 결과',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '$resultCount개 항목${resultCount >= 1000 ? ' (최대 1000개 제한)' : ''}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -160,17 +129,10 @@ class ResultsArea extends StatelessWidget {
           if (resultCount >= 1000)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.orange[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
+              decoration: BoxDecoration(color: Colors.orange[100], borderRadius: BorderRadius.circular(12)),
               child: Text(
                 '제한됨',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.orange[700],
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 10, color: Colors.orange[700], fontWeight: FontWeight.bold),
               ),
             ),
         ],
@@ -178,16 +140,22 @@ class ResultsArea extends StatelessWidget {
     );
   }
 
-  Widget _buildResultCard(BuildContext context, RealmDebugViewModel viewModel, int index,
-      Map<String, dynamic> row, bool isModified) {
+  Widget _buildResultCard(
+    BuildContext context,
+    RealmDebugViewModel viewModel,
+    int index,
+    Map<String, dynamic> row,
+    bool isModified,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: isModified
-          ? BoxDecoration(
-              border: Border.all(color: Colors.amber, width: 2),
-              borderRadius: BorderRadius.circular(12),
-            )
-          : null,
+      decoration:
+          isModified
+              ? BoxDecoration(
+                border: Border.all(color: Colors.amber, width: 2),
+                borderRadius: BorderRadius.circular(12),
+              )
+              : null,
       child: Card(
         elevation: 2,
         child: ExpansionTile(
@@ -197,9 +165,10 @@ class ResultsArea extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               child: Column(
-                children: row.entries.map((entry) {
-                  return _buildFieldRow(context, viewModel, entry, isModified);
-                }).toList(),
+                children:
+                    row.entries.map((entry) {
+                      return _buildFieldRow(context, viewModel, entry, isModified);
+                    }).toList(),
               ),
             ),
           ],
@@ -208,29 +177,19 @@ class ResultsArea extends StatelessWidget {
     );
   }
 
-  Widget _buildCardTitle(BuildContext context, RealmDebugViewModel viewModel, int index,
-      bool isModified, Map<String, dynamic> row) {
+  Widget _buildCardTitle(
+    BuildContext context,
+    RealmDebugViewModel viewModel,
+    int index,
+    bool isModified,
+    Map<String, dynamic> row,
+  ) {
     return Row(
       children: [
-        Expanded(
-          child: Text(
-            'Row ${index + 1}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-        ),
-        if (isModified)
-          Icon(
-            Icons.edit,
-            color: Colors.amber[700],
-            size: 20,
-          ),
+        Expanded(child: Text('Row ${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+        if (isModified) Icon(Icons.edit, color: Colors.amber[700], size: 20),
         // RealmTransaction 테이블일 때만 비우기 버튼 표시
-        if (viewModel.selectedTable == 'RealmTransaction' &&
-            row['id'] != null &&
-            row['transactionHash'] != null)
+        if (viewModel.selectedTable == 'RealmTransaction' && row['id'] != null && row['transactionHash'] != null)
           IconButton(
             icon: const Icon(Icons.restart_alt_outlined),
             onPressed: () => onClearTransaction(row),
@@ -241,32 +200,31 @@ class ResultsArea extends StatelessWidget {
     );
   }
 
-  Widget _buildCardSubtitle(BuildContext context, RealmDebugViewModel viewModel,
-      Map<String, dynamic> row, bool isModified) {
+  Widget _buildCardSubtitle(
+    BuildContext context,
+    RealmDebugViewModel viewModel,
+    Map<String, dynamic> row,
+    bool isModified,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '${row.keys.first}: ${row.values.first}',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         if (isModified)
-          Text(
-            '수정됨 (테스트용)',
-            style: TextStyle(
-              color: Colors.amber[700],
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          Text('수정됨 (테스트용)', style: TextStyle(color: Colors.amber[700], fontSize: 12, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  Widget _buildFieldRow(BuildContext context, RealmDebugViewModel viewModel,
-      MapEntry<String, dynamic> entry, bool isModified) {
+  Widget _buildFieldRow(
+    BuildContext context,
+    RealmDebugViewModel viewModel,
+    MapEntry<String, dynamic> entry,
+    bool isModified,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -285,11 +243,7 @@ class ResultsArea extends StatelessWidget {
       children: [
         Text(
           key,
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).colorScheme.primary),
         ),
       ],
     );
@@ -299,12 +253,9 @@ class ResultsArea extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         Clipboard.setData(ClipboardData(text: value.toString()));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('클립보드에 복사되었습니다'),
-            duration: Duration(seconds: 1),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('클립보드에 복사되었습니다'), duration: Duration(seconds: 1)));
       },
       child: Container(
         width: double.infinity,
@@ -312,10 +263,7 @@ class ResultsArea extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color:
-                isModified ? Colors.amber : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
+          border: Border.all(color: isModified ? Colors.amber : Theme.of(context).colorScheme.outline.withOpacity(0.2)),
         ),
         child: Text(
           value.toString(),

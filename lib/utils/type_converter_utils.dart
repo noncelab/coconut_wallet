@@ -9,13 +9,14 @@ Map<String, dynamic> convertKeysToString(Map<dynamic, dynamic> map) {
     if (value is Map) {
       newValue = convertKeysToString(value);
     } else if (value is List) {
-      newValue = value.map((item) {
-        if (item is Map) {
-          return convertKeysToString(item);
-        } else {
-          return item;
-        }
-      }).toList();
+      newValue =
+          value.map((item) {
+            if (item is Map) {
+              return convertKeysToString(item);
+            } else {
+              return item;
+            }
+          }).toList();
     } else {
       newValue = value;
     }
