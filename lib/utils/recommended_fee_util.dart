@@ -8,8 +8,7 @@ Future<RecommendedFee> getRecommendedFees(NodeProvider nodeProvider) async {
   final nodeProviderResult = await nodeProvider.getRecommendedFees().timeout(
     const Duration(seconds: 10), // 타임아웃 초
     onTimeout: () {
-      return Result.failure(
-          const AppError('NodeProvider', 'TimeoutException: Isolate response timeout'));
+      return Result.failure(const AppError('NodeProvider', 'TimeoutException: Isolate response timeout'));
     },
   );
 

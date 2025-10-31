@@ -5,25 +5,24 @@ import 'package:lottie/lottie.dart';
 
 class DonationBannerCard extends StatefulWidget {
   final int walletListLength;
-  const DonationBannerCard({
-    super.key,
-    required this.walletListLength,
-  });
+  const DonationBannerCard({super.key, required this.walletListLength});
 
   @override
   State<DonationBannerCard> createState() => _DonationBannerCardState();
 }
 
-class _DonationBannerCardState extends State<DonationBannerCard>
-    with SingleTickerProviderStateMixin {
+class _DonationBannerCardState extends State<DonationBannerCard> with SingleTickerProviderStateMixin {
   bool _isTapped = false;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/select-donation-amount',
-            arguments: {'wallet-list-length': widget.walletListLength});
+        Navigator.pushNamed(
+          context,
+          '/select-donation-amount',
+          arguments: {'wallet-list-length': widget.walletListLength},
+        );
       },
       onTapDown: (_) {
         setState(() {
@@ -55,23 +54,13 @@ class _DonationBannerCardState extends State<DonationBannerCard>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    t.donation.donate,
-                    style: CoconutTypography.body3_12,
-                  ),
-                  Text(
-                    t.donation.supportImpactMessage,
-                    style: CoconutTypography.body2_14_Bold,
-                  ),
+                  Text(t.donation.donate, style: CoconutTypography.body3_12),
+                  Text(t.donation.supportImpactMessage, style: CoconutTypography.body2_14_Bold),
                 ],
               ),
             ),
             CoconutLayout.spacing_300w,
-            Lottie.asset(
-              'assets/lottie/hand-with-floating-heart-delayed.json',
-              width: 82,
-              height: 82,
-            ),
+            Lottie.asset('assets/lottie/hand-with-floating-heart-delayed.json', width: 82, height: 82),
           ],
         ),
       ),

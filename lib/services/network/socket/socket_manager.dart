@@ -30,8 +30,7 @@ class SocketManager {
 
   /// Response
   final Map<int, Completer<dynamic>> _completerMap = {};
-  final Map<String, Function(String, String?)> _scriptSubscribeCallbacks =
-      {}; // ScriptPubKey -> Callback
+  final Map<String, Function(String, String?)> _scriptSubscribeCallbacks = {}; // ScriptPubKey -> Callback
 
   /// On Reconnect callback
   void Function()? onReconnect;
@@ -46,8 +45,8 @@ class SocketManager {
   /// [maxConnectionAttempts]: 최대 연결 시도 횟수, default: 30 <br/>
   /// [reconnectDelaySeconds]: 재연결 주기, default: 10 (s) <br/>
   SocketManager({SocketFactory? factory, int maxConnectionAttempts = kSocketMaxConnectionAttempts})
-      : socketFactory = factory ?? DefaultSocketFactory(),
-        _maxConnectionAttempts = maxConnectionAttempts {
+    : socketFactory = factory ?? DefaultSocketFactory(),
+      _maxConnectionAttempts = maxConnectionAttempts {
     _streamController.stream.listen(_handleResponse);
   }
 

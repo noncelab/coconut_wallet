@@ -10,15 +10,11 @@ extension SingleButtonBorderRadiusExtension on SingleButtonPosition {
       case SingleButtonPosition.none:
         return BorderRadius.circular(Sizes.size24);
       case SingleButtonPosition.top:
-        return const BorderRadius.vertical(
-          top: Radius.circular(Sizes.size24),
-        );
+        return const BorderRadius.vertical(top: Radius.circular(Sizes.size24));
       case SingleButtonPosition.middle:
         return BorderRadius.zero;
       case SingleButtonPosition.bottom:
-        return const BorderRadius.vertical(
-          bottom: Radius.circular(Sizes.size24),
-        );
+        return const BorderRadius.vertical(bottom: Radius.circular(Sizes.size24));
     }
   }
 
@@ -27,13 +23,11 @@ extension SingleButtonBorderRadiusExtension on SingleButtonPosition {
       case SingleButtonPosition.none:
         return const EdgeInsets.symmetric(horizontal: Sizes.size20, vertical: Sizes.size24);
       case SingleButtonPosition.top:
-        return const EdgeInsets.only(
-            left: Sizes.size20, right: Sizes.size20, top: Sizes.size24, bottom: Sizes.size20);
+        return const EdgeInsets.only(left: Sizes.size20, right: Sizes.size20, top: Sizes.size24, bottom: Sizes.size20);
       case SingleButtonPosition.middle:
         return const EdgeInsets.all(Sizes.size20);
       case SingleButtonPosition.bottom:
-        return const EdgeInsets.only(
-            left: Sizes.size20, right: Sizes.size20, top: Sizes.size20, bottom: Sizes.size24);
+        return const EdgeInsets.only(left: Sizes.size20, right: Sizes.size20, top: Sizes.size20, bottom: Sizes.size24);
     }
   }
 }
@@ -50,18 +44,19 @@ class SingleButton extends StatelessWidget {
   final bool enableShrinkAnim;
   final double animationEndValue;
 
-  const SingleButton(
-      {super.key,
-      required this.title,
-      this.subtitle,
-      this.description,
-      this.onPressed,
-      this.rightElement,
-      this.leftElement,
-      this.buttonPosition = SingleButtonPosition.none,
-      this.enableShrinkAnim = false,
-      this.animationEndValue = 0.95,
-      this.subtitleStyle});
+  const SingleButton({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.description,
+    this.onPressed,
+    this.rightElement,
+    this.leftElement,
+    this.buttonPosition = SingleButtonPosition.none,
+    this.enableShrinkAnim = false,
+    this.animationEndValue = 0.95,
+    this.subtitleStyle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -69,60 +64,54 @@ class SingleButton extends StatelessWidget {
 
     return enableShrinkAnim
         ? ShrinkAnimationButton(
-            onPressed: onPressed ?? () {},
-            defaultColor: CoconutColors.gray800,
-            pressedColor: CoconutColors.gray750,
-            borderRadius: 24,
-            animationEndValue: animationEndValue,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: buttonPosition.radius,
-              ),
-              padding: buttonPosition.padding,
-              child: buttonContent,
-            ))
+          onPressed: onPressed ?? () {},
+          defaultColor: CoconutColors.gray800,
+          pressedColor: CoconutColors.gray750,
+          borderRadius: 24,
+          animationEndValue: animationEndValue,
+          child: Container(
+            decoration: BoxDecoration(borderRadius: buttonPosition.radius),
+            padding: buttonPosition.padding,
+            child: buttonContent,
+          ),
+        )
         : GestureDetector(
-            onTap: onPressed,
-            child: Container(
-              decoration: BoxDecoration(
-                color: CoconutColors.gray800,
-                borderRadius: buttonPosition.radius,
-              ),
-              padding: buttonPosition.padding,
-              child: buttonContent,
-            ));
+          onTap: onPressed,
+          child: Container(
+            decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: buttonPosition.radius),
+            padding: buttonPosition.padding,
+            child: buttonContent,
+          ),
+        );
   }
 
   Widget _buildButtonContent() {
     return Row(
       children: [
-        if (leftElement != null) ...{
-          Container(child: leftElement),
-          CoconutLayout.spacing_400w,
-        },
+        if (leftElement != null) ...{Container(child: leftElement), CoconutLayout.spacing_400w},
         Expanded(
-            child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child:
-                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-            ),
-          ],
-        )),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+              ),
+            ],
+          ),
+        ),
         if (subtitle != null)
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(subtitle!,
-                style: subtitleStyle ??
-                    CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400)),
+            child: Text(
+              subtitle!,
+              style: subtitleStyle ?? CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+            ),
           ),
         rightElement ?? _rightArrow(),
       ],
     );
   }
 
-  Widget _rightArrow() =>
-      const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray400);
+  Widget _rightArrow() => const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray400);
 }

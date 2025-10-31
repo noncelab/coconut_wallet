@@ -11,15 +11,16 @@ class ActionBottomButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-        width: MediaQuery.of(context).size.width * 0.95,
-        height: 64,
-        child: CupertinoButton(
-          color: CoconutColors.primary,
-          disabledColor: CoconutColors.gray800,
-          borderRadius: BorderRadius.circular(24),
-          padding: EdgeInsets.zero,
-          onPressed: onPressed,
-          child: Text(text, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.black)),
-        ));
+      width: MediaQuery.of(context).size.width * 0.95,
+      height: 64,
+      child: CupertinoButton(
+        color: CoconutColors.primary,
+        disabledColor: CoconutColors.gray800,
+        borderRadius: BorderRadius.circular(24),
+        padding: EdgeInsets.zero,
+        onPressed: onPressed,
+        child: Text(text, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.black)),
+      ),
+    );
   }
 }

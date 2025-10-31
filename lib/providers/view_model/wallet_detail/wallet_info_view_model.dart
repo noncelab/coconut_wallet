@@ -23,8 +23,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   late int _multisigRequiredSignerCount;
   late WalletListItemBase _walletItemBase;
 
-  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider,
-      bool _isMultisig) {
+  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider, bool _isMultisig) {
     final walletItemBase = _walletProvider.getWalletById(_walletId);
     _walletItemBase = walletItemBase;
     _walletName = walletItemBase.name;
@@ -35,10 +34,7 @@ class WalletInfoViewModel extends ChangeNotifier {
       _multisigRequiredSignerCount = multisigItem.requiredSignatureCount;
     } else {
       final singlesigItem = walletItemBase as SinglesigWalletListItem;
-      _extendedPublicKey = (singlesigItem.walletBase as SingleSignatureWallet)
-          .keyStore
-          .extendedPublicKey
-          .serialize();
+      _extendedPublicKey = (singlesigItem.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
     }
   }
 

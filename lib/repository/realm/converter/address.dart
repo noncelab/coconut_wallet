@@ -4,14 +4,15 @@ import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 
 WalletAddress mapRealmToWalletAddress(RealmWalletAddress realmAddress) {
   return WalletAddress(
-      realmAddress.address,
-      realmAddress.derivationPath,
-      realmAddress.index,
-      realmAddress.isChange,
-      realmAddress.isUsed,
-      realmAddress.confirmed,
-      realmAddress.unconfirmed,
-      realmAddress.total);
+    realmAddress.address,
+    realmAddress.derivationPath,
+    realmAddress.index,
+    realmAddress.isChange,
+    realmAddress.isUsed,
+    realmAddress.confirmed,
+    realmAddress.unconfirmed,
+    realmAddress.total,
+  );
 }
 
 RealmWalletAddress mapWalletAddressToRealm(int walletId, WalletAddress walletAddress) {

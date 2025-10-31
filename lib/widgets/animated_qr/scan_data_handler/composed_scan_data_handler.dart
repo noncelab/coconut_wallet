@@ -12,8 +12,8 @@ class ComposedScanDataHandler implements IFragmentedQrScanDataHandler {
   IQrScanDataHandler? _selected;
 
   ComposedScanDataHandler({List<UrType>? expectedUrType})
-      : _bcUrQrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: expectedUrType),
-        _descriptorQrScanDataHandler = DescriptorQrScanDataHandler();
+    : _bcUrQrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: expectedUrType),
+      _descriptorQrScanDataHandler = DescriptorQrScanDataHandler();
 
   @override
   dynamic get result => _selected?.result;

@@ -56,14 +56,15 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   TransactionDetailViewModel(
-      this._walletId,
-      this._txHash,
-      this._walletProvider,
-      this._txProvider,
-      this._nodeProvider,
-      this._addressRepository,
-      this._connectivityProvider,
-      this._sendInfoProvider) {
+    this._walletId,
+    this._txHash,
+    this._walletProvider,
+    this._txProvider,
+    this._nodeProvider,
+    this._addressRepository,
+    this._connectivityProvider,
+    this._sendInfoProvider,
+  ) {
     _setCanBumpingTx();
     _initTransactionList();
     _loadMempoolHost();
@@ -80,8 +81,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       return;
     }
 
-    final masterFingerprint =
-        (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
+    final masterFingerprint = (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
     _canBumpingTx = masterFingerprint != "00000000";
   }
 
@@ -135,8 +135,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   String getInputAddress(int index) =>
       TransactionUtil.getInputAddress(_transactionList![_selectedTransactionIndex], index);
 
-  int getInputAmount(int index) =>
-      TransactionUtil.getInputAmount(_transactionList![_selectedTransactionIndex], index);
+  int getInputAmount(int index) => TransactionUtil.getInputAmount(_transactionList![_selectedTransactionIndex], index);
 
   String getOutputAddress(int index) =>
       TransactionUtil.getOutputAddress(_transactionList![_selectedTransactionIndex], index);
@@ -187,8 +186,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
       if (updatedTx == null) return;
 
       TransactionRecord currentTx = transactionList!.first;
-      if (updatedTx.blockHeight != currentTx.blockHeight ||
-          updatedTx.transactionHash != currentTx.transactionHash) {
+      if (updatedTx.blockHeight != currentTx.blockHeight || updatedTx.transactionHash != currentTx.transactionHash) {
         _initTransactionList();
         _setPreviousTransactionIndex(0);
         _setSelectedTransactionIndex(0);
@@ -237,7 +235,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
     debugPrint('🔹 currentTransaction transactionType: ${currentTransaction.transactionType}');
     debugPrint('🔹 Current Transaction FeeRate: ${currentTransaction.feeRate}');
     debugPrint(
-        '🔹 Input Addresses: ${currentTransaction.inputAddressList.map((e) => e.address.toString()).join(", ")}');
+      '🔹 Input Addresses: ${currentTransaction.inputAddressList.map((e) => e.address.toString()).join(", ")}',
+    );
 
     // rbfHistory가 존재하면 높은 fee rate부터 _transactionList에 추가
     if ((currentTransaction.transactionType == TransactionType.sent ||
@@ -266,10 +265,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
       debugPrint('🔹 CPFP History: ${_transactionList?[_selectedTransactionIndex].cpfpHistory}');
       debugPrint('----------------------------------------');
       _transactionList = [
-        _txProvider.getTransactionRecord(
-            _walletId, currentTransaction.cpfpHistory!.parentTransactionHash)!,
-        _txProvider.getTransactionRecord(
-            _walletId, currentTransaction.cpfpHistory!.childTransactionHash)!,
+        _txProvider.getTransactionRecord(_walletId, currentTransaction.cpfpHistory!.parentTransactionHash)!,
+        _txProvider.getTransactionRecord(_walletId, currentTransaction.cpfpHistory!.childTransactionHash)!,
       ];
     }
 
@@ -310,12 +307,13 @@ class TransactionDetailViewModel extends ChangeNotifier {
     if (transactionList == null || transactionList!.isEmpty) {
       return;
     }
-    _feeBumpingHistoryList = transactionList!.map((transactionDetail) {
-      return FeeHistory(
-        feeRate: transactionDetail.feeRate,
-        isSelected: selectedTransactionIndex == transactionList!.indexOf(transactionDetail),
-      );
-    }).toList();
+    _feeBumpingHistoryList =
+        transactionList!.map((transactionDetail) {
+          return FeeHistory(
+            feeRate: transactionDetail.feeRate,
+            isSelected: selectedTransactionIndex == transactionList!.indexOf(transactionDetail),
+          );
+        }).toList();
   }
 
   void _setCurrentBlockHeight() async {
@@ -327,7 +325,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   void _setSendType(TransactionStatus? status) {
-    _isSendType = status == TransactionStatus.sending ||
+    _isSendType =
+        status == TransactionStatus.sending ||
         status == TransactionStatus.selfsending ||
         status == TransactionStatus.self ||
         status == TransactionStatus.sent;

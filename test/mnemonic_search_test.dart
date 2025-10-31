@@ -48,7 +48,7 @@ List<Map<String, dynamic>> _queryWord(String input) {
   } else {
     return [
       ...numericResults..sort((a, b) => a['index'].compareTo(b['index'])),
-      ...binaryResults..sort((a, b) => a['index'].compareTo(b['index']))
+      ...binaryResults..sort((a, b) => a['index'].compareTo(b['index'])),
     ];
   }
 }
@@ -56,12 +56,7 @@ List<Map<String, dynamic>> _queryWord(String input) {
 void main() {
   group('mnemonic search', () {
     group('십진법 검색', () {
-      final numericTests = {
-        '0': 'abandon',
-        '1': 'ability',
-        '10': 'access',
-        '616': 'escape',
-      };
+      final numericTests = {'0': 'abandon', '1': 'ability', '10': 'access', '616': 'escape'};
 
       numericTests.forEach((input, expected) {
         test('$input 검색 → $expected', () {
@@ -73,10 +68,7 @@ void main() {
     });
 
     group('영문 검색', () {
-      final alphaTests = {
-        'test': 'test',
-        'royal': 'royal',
-      };
+      final alphaTests = {'test': 'test', 'royal': 'royal'};
 
       alphaTests.forEach((input, expected) {
         test('$input 검색 → $expected', () {
@@ -88,10 +80,7 @@ void main() {
     });
 
     group('이진법 검색', () {
-      final binaryTests = {
-        '01010101010': 'fetch',
-        '01001101000': 'escape',
-      };
+      final binaryTests = {'01010101010': 'fetch', '01001101000': 'escape'};
 
       binaryTests.forEach((input, expected) {
         test('$input 검색 → $expected', () {

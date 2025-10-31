@@ -30,30 +30,27 @@ class WalletIconSmall extends StatelessWidget {
       height: 30,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        gradient: gradientColors != null
-            ? LinearGradient(
-                colors: gradientColors!,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                transform: const GradientRotation(math.pi / 10))
-            : null,
+        gradient:
+            gradientColors != null
+                ? LinearGradient(
+                  colors: gradientColors!,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  transform: const GradientRotation(math.pi / 10),
+                )
+                : null,
         border: gradientColors == null ? null : null,
       ),
       child: Container(
         margin: EdgeInsets.all(gradientColors != null ? 1.5 : 0),
-        decoration: BoxDecoration(
-          color: CoconutColors.gray800,
-          borderRadius: BorderRadius.circular(8),
-        ),
+        decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(8)),
         child: Stack(
           children: [
             Container(
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height,
               decoration: BoxDecoration(
-                color: isExternalWallet
-                    ? CoconutColors.gray700
-                    : CoconutColors.backgroundColorPaletteLight[colorIndex],
+                color: isExternalWallet ? CoconutColors.gray700 : CoconutColors.backgroundColorPaletteLight[colorIndex],
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
@@ -62,22 +59,17 @@ class WalletIconSmall extends StatelessWidget {
               left: 6,
               right: 6,
               bottom: 6,
-              child: isExternalWallet
-                  ? SvgPicture.asset(
-                      WalletImportSourceExtension.getExternalWalletIconPath(walletImportSource),
-                      colorFilter: const ColorFilter.mode(
-                        Colors.black,
-                        BlendMode.srcIn,
+              child:
+                  isExternalWallet
+                      ? SvgPicture.asset(
+                        WalletImportSourceExtension.getExternalWalletIconPath(walletImportSource),
+                        colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
+                      )
+                      : SvgPicture.asset(
+                        CustomIcons.getPathByIndex(iconIndex),
+                        colorFilter: ColorFilter.mode(ColorUtil.getColor(colorIndex).color, BlendMode.srcIn),
+                        width: 18.0,
                       ),
-                    )
-                  : SvgPicture.asset(
-                      CustomIcons.getPathByIndex(iconIndex),
-                      colorFilter: ColorFilter.mode(
-                        ColorUtil.getColor(colorIndex).color,
-                        BlendMode.srcIn,
-                      ),
-                      width: 18.0,
-                    ),
             ),
           ],
         ),

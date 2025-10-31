@@ -9,9 +9,10 @@ class WalletMock {
     String name = 'test_wallet',
     bool randomDescriptor = false,
   }) {
-    final descriptor = randomDescriptor
-        ? SingleSignatureVault.random().descriptor
-        : "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
+    final descriptor =
+        randomDescriptor
+            ? SingleSignatureVault.random().descriptor
+            : "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y";
 
     return SinglesigWalletListItem(
       id: id,

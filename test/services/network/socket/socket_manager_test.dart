@@ -29,11 +29,14 @@ void main() {
       streamController = StreamController<Uint8List>();
 
       // 일반 Socket mock 설정
-      when(mockSocket.listen(any,
-              onError: anyNamed('onError'),
-              onDone: anyNamed('onDone'),
-              cancelOnError: anyNamed('cancelOnError')))
-          .thenAnswer((invocation) {
+      when(
+        mockSocket.listen(
+          any,
+          onError: anyNamed('onError'),
+          onDone: anyNamed('onDone'),
+          cancelOnError: anyNamed('cancelOnError'),
+        ),
+      ).thenAnswer((invocation) {
         final onData = invocation.positionalArguments[0] as Function(Uint8List);
         final onError = invocation.namedArguments[#onError] as Function?;
         final onDone = invocation.namedArguments[#onDone] as Function?;
@@ -47,11 +50,14 @@ void main() {
       });
 
       // SecureSocket mock 설정도 같은 스트림 컨트롤러 사용
-      when(mockSecureSocket.listen(any,
-              onError: anyNamed('onError'),
-              onDone: anyNamed('onDone'),
-              cancelOnError: anyNamed('cancelOnError')))
-          .thenAnswer((invocation) {
+      when(
+        mockSecureSocket.listen(
+          any,
+          onError: anyNamed('onError'),
+          onDone: anyNamed('onDone'),
+          cancelOnError: anyNamed('cancelOnError'),
+        ),
+      ).thenAnswer((invocation) {
         final onData = invocation.positionalArguments[0] as Function(Uint8List);
         final onError = invocation.namedArguments[#onError] as Function?;
         final onDone = invocation.namedArguments[#onDone] as Function?;
@@ -72,10 +78,7 @@ void main() {
       when(mockSocket.writeln(any)).thenReturn(null);
       when(mockSecureSocket.writeln(any)).thenReturn(null);
 
-      socketManager = SocketManager(
-        factory: mockSocketFactory,
-        maxConnectionAttempts: 3,
-      );
+      socketManager = SocketManager(factory: mockSocketFactory, maxConnectionAttempts: 3);
     });
 
     tearDown(() {
@@ -88,8 +91,7 @@ void main() {
 
     group('연결 테스트', () {
       test('SSL 연결 성공 시 연결 상태가 연결됨이어야 함', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -107,8 +109,7 @@ void main() {
       });
 
       test('연결 실패 시 재연결 상태로 변경되어야 함', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenThrow(const SocketException('연결 실패'));
+        when(mockSocketFactory.createSecureSocket(any, any)).thenThrow(const SocketException('연결 실패'));
 
         await socketManager.connect('localhost', 8080);
 
@@ -116,8 +117,7 @@ void main() {
       });
 
       test('최대 연결 시도 횟수 초과 시 연결 상태가 종료됨이어야 함', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenThrow(const SocketException('연결 실패'));
+        when(mockSocketFactory.createSecureSocket(any, any)).thenThrow(const SocketException('연결 실패'));
 
         // 최대 시도 횟수는 3으로 설정되어 있음
         await socketManager.connect('localhost', 8080);
@@ -131,8 +131,7 @@ void main() {
 
     group('데이터 송신 테스트', () {
       test('SSL 연결된 상태에서 데이터 전송이 성공해야 함', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
         await socketManager.send('test data');
@@ -145,8 +144,7 @@ void main() {
       });
 
       test('데이터 전송 중 오류 발생 시 재연결 상태로 변경되어야 함', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
         when(mockSecureSocket.writeln(any)).thenThrow(Exception('전송 오류'));
 
         await socketManager.connect('localhost', 8080, ssl: true);
@@ -158,8 +156,7 @@ void main() {
 
     group('데이터 수신 테스트', () {
       test('JSON 데이터 수신 및 처리 테스트', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -176,8 +173,7 @@ void main() {
       });
 
       test('스크립트 구독 콜백 테스트', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -187,8 +183,7 @@ void main() {
         });
 
         // 구독 이벤트 데이터 전송 시뮬레이션
-        const jsonData =
-            '{"method":"blockchain.scripthash.subscribe","params":["script123","status123"]}';
+        const jsonData = '{"method":"blockchain.scripthash.subscribe","params":["script123","status123"]}';
         streamController.add(utf8.encode(jsonData));
 
         final status = await completer.future;
@@ -198,8 +193,7 @@ void main() {
 
     group('복잡한 JSON 데이터 처리 테스트', () {
       test('중첩된 JSON 객체 처리 테스트', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -213,13 +207,14 @@ void main() {
 
         final result = await completer.future;
         expect(result['id'], equals(6));
-        expect(result['result']['blockhash'],
-            equals('5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'));
+        expect(
+          result['result']['blockhash'],
+          equals('5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'),
+        );
       });
 
       test('여러 줄의 JSON 데이터 처리 테스트', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -242,8 +237,7 @@ void main() {
 
       // 부분적으로 수신되는 JSON 데이터 테스트 추가
       test('부분적으로 수신되는 JSON 데이터 처리 테스트', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -266,8 +260,7 @@ void main() {
 
       // 문자열 내 중괄호가 있는 경우 테스트
       test('문자열 내 중괄호가 있는 JSON 데이터 처리 테스트', () async {
-        when(mockSocketFactory.createSecureSocket(any, any))
-            .thenAnswer((_) async => mockSecureSocket);
+        when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
         await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -285,8 +278,7 @@ void main() {
     });
 
     test('긴 데이터 수신 테스트', () async {
-      when(mockSocketFactory.createSecureSocket(any, any))
-          .thenAnswer((_) async => mockSecureSocket);
+      when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
       await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -307,12 +299,10 @@ void main() {
 
       // 결과의 특정 필드 검증
       final resultData = result['result'];
-      expect(resultData['blockhash'],
-          equals('5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'));
+      expect(resultData['blockhash'], equals('5ac1d7097ad416628d0843393c56dec9db8fcd60aa5fc67c7ea0bc6ea038d3c7'));
       expect(resultData['blocktime'], equals(1730360700));
       expect(resultData['confirmations'], isNotNull);
-      expect(resultData['hash'],
-          equals('2dca645bb4e4434b3e7a1502fa8c1ca942385aba99b5fff065f6183a898597d0'));
+      expect(resultData['hash'], equals('2dca645bb4e4434b3e7a1502fa8c1ca942385aba99b5fff065f6183a898597d0'));
 
       // 추가 복잡한 데이터 필드 검증
       expect(resultData['hex'], isNotNull);
@@ -320,8 +310,7 @@ void main() {
       expect(resultData['in_active_chain'], isTrue);
       expect(resultData['size'], equals(3891));
       expect(resultData['time'], equals(1730360700));
-      expect(resultData['txid'],
-          equals('b3c3bd06ff9d2cda768a4946a4ed1d87a62700f618cfb4965b1e28c4fef3aa12'));
+      expect(resultData['txid'], equals('b3c3bd06ff9d2cda768a4946a4ed1d87a62700f618cfb4965b1e28c4fef3aa12'));
       expect(resultData['version'], equals(2));
 
       // vin 배열 검증
@@ -335,8 +324,7 @@ void main() {
     });
 
     test('연결 종료 테스트', () async {
-      when(mockSocketFactory.createSecureSocket(any, any))
-          .thenAnswer((_) async => mockSecureSocket);
+      when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
       await socketManager.connect('localhost', 8080, ssl: true);
       await socketManager.disconnect();
@@ -346,8 +334,7 @@ void main() {
     });
 
     test('재연결 콜백 테스트', () async {
-      when(mockSocketFactory.createSecureSocket(any, any))
-          .thenAnswer((_) async => mockSecureSocket);
+      when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
       bool callbackCalled = false;
       socketManager.onReconnect = () {
@@ -367,8 +354,7 @@ void main() {
     });
 
     test('구독 콜백 제거 테스트', () async {
-      when(mockSocketFactory.createSecureSocket(any, any))
-          .thenAnswer((_) async => mockSecureSocket);
+      when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
       await socketManager.connect('localhost', 8080, ssl: true);
 
@@ -378,8 +364,7 @@ void main() {
       });
 
       // 첫 번째 이벤트
-      const jsonData1 =
-          '{"method":"blockchain.scripthash.subscribe","params":["script123","status1"]}';
+      const jsonData1 = '{"method":"blockchain.scripthash.subscribe","params":["script123","status1"]}';
       streamController.add(utf8.encode(jsonData1));
 
       // 이벤트 처리 시간 기다림
@@ -389,8 +374,7 @@ void main() {
       socketManager.removeSubscriptionCallback('script123');
 
       // 두 번째 이벤트 (콜백이 제거되어 처리되지 않아야 함)
-      const jsonData2 =
-          '{"method":"blockchain.scripthash.subscribe","params":["script123","status2"]}';
+      const jsonData2 = '{"method":"blockchain.scripthash.subscribe","params":["script123","status2"]}';
       streamController.add(utf8.encode(jsonData2));
 
       // 이벤트 처리 시간 기다림
@@ -400,8 +384,7 @@ void main() {
     });
 
     test('onDone 콜백 호출 시 연결 상태가 종료됨으로 변경되어야 함', () async {
-      when(mockSocketFactory.createSecureSocket(any, any))
-          .thenAnswer((_) async => mockSecureSocket);
+      when(mockSocketFactory.createSecureSocket(any, any)).thenAnswer((_) async => mockSecureSocket);
 
       await socketManager.connect('localhost', 8080, ssl: true);
 

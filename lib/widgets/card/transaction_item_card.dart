@@ -51,32 +51,23 @@ class TransactionItemCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        SvgPicture.asset(
-          assetPath,
-          width: 24,
-          height: 24,
-        ),
+        SvgPicture.asset(assetPath, width: 24, height: 24),
         CoconutLayout.spacing_200w,
-        Text(
-          statusString,
-          style: CoconutTypography.body2_14.setColor(CoconutColors.white),
-        )
+        Text(statusString, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
       ],
     );
   }
 
   Widget _buildAmount() {
     final String amountString = currentUnit.displayBitcoinAmount(tx.amount);
-    final bool isReceived =
-        status == TransactionStatus.received || status == TransactionStatus.receiving;
+    final bool isReceived = status == TransactionStatus.received || status == TransactionStatus.receiving;
     final String prefix = isReceived ? '+' : '';
 
     return Expanded(
       child: FittedBox(
         alignment: Alignment.centerRight,
         fit: BoxFit.scaleDown,
-        child: Text('$prefix$amountString',
-            style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+        child: Text('$prefix$amountString', style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
       ),
     );
   }
@@ -85,20 +76,11 @@ class TransactionItemCard extends StatelessWidget {
     final textStyle = CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400);
     return Row(
       children: [
-        Text(
-          transactionTimeStamp[0],
-          style: textStyle,
-        ),
+        Text(transactionTimeStamp[0], style: textStyle),
         CoconutLayout.spacing_200w,
-        Text(
-          '|',
-          style: textStyle,
-        ),
+        Text('|', style: textStyle),
         CoconutLayout.spacing_200w,
-        Text(
-          transactionTimeStamp[1],
-          style: textStyle,
-        ),
+        Text(transactionTimeStamp[1], style: textStyle),
       ],
     );
   }
@@ -107,15 +89,14 @@ class TransactionItemCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        SvgPicture.asset('assets/svg/pen.svg',
-            colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
-            width: Sizes.size12),
+        SvgPicture.asset(
+          'assets/svg/pen.svg',
+          colorFilter: const ColorFilter.mode(CoconutColors.gray350, BlendMode.srcIn),
+          width: Sizes.size12,
+        ),
         CoconutLayout.spacing_100w,
         Text(
-          TextUtils.ellipsisIfLonger(
-            tx.memo!,
-            maxLength: 13,
-          ),
+          TextUtils.ellipsisIfLonger(tx.memo!, maxLength: 13),
           style: CoconutTypography.body3_12.setColor(CoconutColors.white),
         ),
       ],
@@ -124,33 +105,29 @@ class TransactionItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<String>? transactionTimeStamp =
-        DateTimeUtil.formatTimestamp(tx.getDateTimeToDisplay()!.toLocal());
+    List<String>? transactionTimeStamp = DateTimeUtil.formatTimestamp(tx.getDateTimeToDisplay()!.toLocal());
     return ShrinkAnimationButton(
-        onPressed: () {
-          onPressed();
-        },
-        borderWidth: 0,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildTimestamp(transactionTimeStamp),
-              CoconutLayout.spacing_200h,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _buildStatus(),
-                  CoconutLayout.spacing_200w,
-                  _buildAmount(),
-                ],
-              ),
-              if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(),
-            ],
-          ),
-        ));
+      onPressed: () {
+        onPressed();
+      },
+      borderWidth: 0,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildTimestamp(transactionTimeStamp),
+            CoconutLayout.spacing_200h,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [_buildStatus(), CoconutLayout.spacing_200w, _buildAmount()],
+            ),
+            if (tx.memo != null && tx.memo!.isNotEmpty) _buildMemo(),
+          ],
+        ),
+      ),
+    );
   }
 }
