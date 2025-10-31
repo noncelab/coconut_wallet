@@ -247,7 +247,7 @@ wallet_add_scanner_screen:
     step1_em: "XPUB 내보내기"
     step2: "2. "
     step2_em: "XPUB - QR 코드"
-    select: "Select"
+    select: "선택"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
