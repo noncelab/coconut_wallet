@@ -975,11 +975,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     amountTextColor = CoconutColors.white;
                   }
 
-                  final isKorean = context.read<PreferenceProvider>().isKorean;
+                  final isEnglish = context.read<PreferenceProvider>().isEnglish;
                   final maxButtonBaseText = t.send_screen.input_maximum_amount;
                   final maxButtonText =
                       _viewModel.isMaxMode
-                          ? (isKorean ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
+                          ? (!isEnglish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
                           : maxButtonBaseText;
 
                   return Column(

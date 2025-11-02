@@ -291,12 +291,12 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isKorean = Provider.of<PreferenceProvider>(context, listen: false).isKorean;
+    final isEnglish = context.read<PreferenceProvider>().isEnglish;
 
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
@@ -343,7 +343,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.seedSigner:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
@@ -363,7 +363,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.keystone:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
@@ -383,7 +383,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.jade:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
@@ -414,7 +414,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.krux:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step1} '),

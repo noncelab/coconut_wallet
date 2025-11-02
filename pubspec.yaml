@@ -124,7 +124,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/files/glossary_details.json
+    - assets/files/glossary_details_kr.json
+    - assets/files/glossary_details_jp.json
     - assets/files/status_loading.json
     - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
