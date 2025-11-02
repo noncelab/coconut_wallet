@@ -64,7 +64,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isKorean = Provider.of<PreferenceProvider>(context, listen: false).isKorean;
+    final isEnglish = Provider.of<PreferenceProvider>(context, listen: false).isEnglish;
 
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:
@@ -73,7 +73,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.seedSigner:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
@@ -132,7 +132,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.keystone:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
@@ -165,7 +165,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.jade:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
@@ -204,7 +204,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.coldCard:
         {
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
@@ -246,7 +246,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       case WalletImportSource.krux:
         {
           const prefix = 't.wallet_add_scanner_screen.guide_krux';
-          if (isKorean) {
+          if (!isEnglish) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
@@ -273,7 +273,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     }
   }
 
-  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body3_12_Bold);
+  TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
 
   @override
   Widget build(BuildContext context) {
@@ -316,10 +316,11 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               borderColor: CoconutColors.gray900,
               icon: SvgPicture.asset(
                 'assets/svg/circle-info.svg',
+                width: 20,
                 colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
               ),
               tooltipType: CoconutTooltipType.fixed,
-              richText: RichText(text: TextSpan(style: CoconutTypography.body3_12, children: _getGuideTextSpan())),
+              richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
             ),
           ),
         ],

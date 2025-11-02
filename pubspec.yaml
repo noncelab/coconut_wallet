@@ -18,10 +18,10 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 version: 0.4.6+1
 app_versions:
-  ios_regtest: 3.3.1+4
-  ios_mainnet: 0.4.7+1
-  aos_regtest: 3.3.1+52
-  aos_mainnet: 0.4.6+37
+  ios_regtest: 3.3.2+0
+  ios_mainnet: 0.4.7+2
+  aos_regtest: 3.3.2+52
+  aos_mainnet: 0.4.7+38
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -124,7 +124,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/files/glossary_details.json
+    - assets/files/glossary_details_kr.json
+    - assets/files/glossary_details_jp.json
     - assets/files/status_loading.json
     - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
@@ -266,14 +267,14 @@ flutter:
     - assets/svg/star-outlined.svg
     - assets/svg/star-filled.svg
     - assets/svg/hamburger.svg
-    - assets/svg/barefoot.svg
-    - assets/svg/car.svg
-    - assets/svg/rocket.svg
     - assets/svg/plus.svg
     - assets/svg/broom.svg
     - assets/svg/receipt.svg
     - assets/svg/clip.svg
     - assets/svg/edit-outlined.svg
+    - assets/svg/fee-rate/low.svg
+    - assets/svg/fee-rate/medium.svg
+    - assets/svg/fee-rate/high.svg
     - testnet.env
 
   fonts:

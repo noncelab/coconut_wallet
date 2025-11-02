@@ -157,135 +157,139 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                   context: context,
                   isBottom: true,
                 ),
-                body: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-                  child: Stack(
-                    children: [
-                      SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            CoconutLayout.spacing_600h,
-                            CoconutTextField(
-                              textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s+'))],
-                              textAlign: TextAlign.left,
-                              backgroundColor: CoconutColors.gray800,
-                              errorColor: CoconutColors.hotPink,
-                              cursorColor: CoconutColors.white,
-                              activeColor: CoconutColors.white,
-                              placeholderColor: CoconutColors.gray700,
-                              controller: _inputController,
-                              focusNode: _inputFocusNode,
-                              maxLines: 5,
-                              fontFamily: 'SpaceGrotesk',
-                              textInputAction: TextInputAction.done,
-                              onChanged: (text) {},
-                              isError: _isError,
-                              isLengthVisible: false,
-                              errorText: viewModel.errorMessage,
-                              placeholderText: t.wallet_add_input_screen.placeholder_text,
-                              suffix: IconButton(
-                                iconSize: 14,
-                                padding: EdgeInsets.zero,
-                                onPressed: () {
-                                  setState(() {
-                                    _inputController.text = '';
-                                  });
-                                },
-                                icon: SvgPicture.asset(
-                                  'assets/svg/text-field-clear.svg',
-                                  colorFilter: ColorFilter.mode(
-                                    _isError
-                                        ? CoconutColors.hotPink
-                                        : _inputController.text.isNotEmpty
-                                        ? CoconutColors.white
-                                        : CoconutColors.gray700,
-                                    BlendMode.srcIn,
+                body: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                    child: Stack(
+                      children: [
+                        SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              CoconutLayout.spacing_600h,
+                              CoconutTextField(
+                                textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s+'))],
+                                textAlign: TextAlign.left,
+                                backgroundColor: CoconutColors.gray800,
+                                errorColor: CoconutColors.hotPink,
+                                cursorColor: CoconutColors.white,
+                                activeColor: CoconutColors.white,
+                                placeholderColor: CoconutColors.gray700,
+                                controller: _inputController,
+                                focusNode: _inputFocusNode,
+                                maxLines: 5,
+                                fontFamily: 'SpaceGrotesk',
+                                textInputAction: TextInputAction.done,
+                                onChanged: (text) {},
+                                isError: _isError,
+                                isLengthVisible: false,
+                                errorText: viewModel.errorMessage,
+                                placeholderText: t.wallet_add_input_screen.placeholder_text,
+                                suffix: IconButton(
+                                  iconSize: 14,
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    setState(() {
+                                      _inputController.text = '';
+                                    });
+                                  },
+                                  icon: SvgPicture.asset(
+                                    'assets/svg/text-field-clear.svg',
+                                    colorFilter: ColorFilter.mode(
+                                      _isError
+                                          ? CoconutColors.hotPink
+                                          : _inputController.text.isNotEmpty
+                                          ? CoconutColors.white
+                                          : CoconutColors.gray700,
+                                      BlendMode.srcIn,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            CoconutLayout.spacing_900h,
-                            Container(
-                              padding: const EdgeInsets.all(CoconutStyles.radius_200),
-                              decoration: const BoxDecoration(
-                                color: CoconutColors.gray800,
-                                borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        _isWalletInfoExpanded = !_isWalletInfoExpanded;
-                                      });
-                                    },
-                                    child: Container(
-                                      color: Colors.transparent, // touch event
-                                      child: Row(
-                                        children: [
-                                          SvgPicture.asset(
-                                            _isWalletInfoExpanded
-                                                ? 'assets/svg/circle-warning.svg'
-                                                : 'assets/svg/circle-help.svg',
-                                            width: 18,
-                                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                                          ),
-                                          CoconutLayout.spacing_100w,
-                                          Expanded(
-                                            child: Text(
-                                              t.wallet_add_input_screen.wallet_description_text,
-                                              style: CoconutTypography.body2_14,
+                              CoconutLayout.spacing_900h,
+                              Container(
+                                padding: const EdgeInsets.all(CoconutStyles.radius_200),
+                                decoration: const BoxDecoration(
+                                  color: CoconutColors.gray800,
+                                  borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _isWalletInfoExpanded = !_isWalletInfoExpanded;
+                                        });
+                                      },
+                                      child: Container(
+                                        color: Colors.transparent, // touch event
+                                        child: Row(
+                                          children: [
+                                            SvgPicture.asset(
+                                              _isWalletInfoExpanded
+                                                  ? 'assets/svg/circle-warning.svg'
+                                                  : 'assets/svg/circle-help.svg',
+                                              width: 18,
+                                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                                             ),
-                                          ),
-                                        ],
+                                            CoconutLayout.spacing_100w,
+                                            Expanded(
+                                              child: Text(
+                                                t.wallet_add_input_screen.wallet_description_text,
+                                                style: CoconutTypography.body2_14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  if (_isWalletInfoExpanded) ...[
-                                    CoconutLayout.spacing_200h,
-                                    _buildWalletInfo(
-                                      titleText: t.wallet_add_input_screen.blue_wallet_texts[0],
-                                      descriptionList: [...t.wallet_add_input_screen.blue_wallet_texts.getRange(1, 3)],
-                                      addressText: t.wallet_add_input_screen.blue_wallet_texts[3],
-                                    ),
-                                    CoconutLayout.spacing_200h,
-                                    _buildWalletInfo(
-                                      titleText: t.wallet_add_input_screen.nunchuck_wallet_texts[0],
-                                      descriptionList: [
-                                        ...t.wallet_add_input_screen.nunchuck_wallet_texts.getRange(1, 2),
-                                      ],
-                                      addressText:
-                                          Platform.isAndroid
-                                              ? t.wallet_add_input_screen.nunchuck_wallet_texts[2]
-                                              : t.wallet_add_input_screen.nunchuck_wallet_texts[3],
-                                    ),
-                                    CoconutLayout.spacing_200h,
+                                    if (_isWalletInfoExpanded) ...[
+                                      CoconutLayout.spacing_200h,
+                                      _buildWalletInfo(
+                                        titleText: t.wallet_add_input_screen.blue_wallet_texts[0],
+                                        descriptionList: [
+                                          ...t.wallet_add_input_screen.blue_wallet_texts.getRange(1, 3),
+                                        ],
+                                        addressText: t.wallet_add_input_screen.blue_wallet_texts[3],
+                                      ),
+                                      CoconutLayout.spacing_200h,
+                                      _buildWalletInfo(
+                                        titleText: t.wallet_add_input_screen.nunchuck_wallet_texts[0],
+                                        descriptionList: [
+                                          ...t.wallet_add_input_screen.nunchuck_wallet_texts.getRange(1, 2),
+                                        ],
+                                        addressText:
+                                            Platform.isAndroid
+                                                ? t.wallet_add_input_screen.nunchuck_wallet_texts[2]
+                                                : t.wallet_add_input_screen.nunchuck_wallet_texts[3],
+                                      ),
+                                      CoconutLayout.spacing_200h,
+                                    ],
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-                            CoconutLayout.spacing_2500h,
-                          ],
+                              CoconutLayout.spacing_2500h,
+                            ],
+                          ),
                         ),
-                      ),
-                      FixedBottomButton(
-                        onButtonClicked: () {
-                          if (isDescriptorAdding) {
-                            _addWallet(viewModel);
-                          } else {
-                            // 확장공개키의 경우에는 Master Finger Print를 추가로 입력받는다.
-                            showMfpInputBottomSheet(viewModel);
-                          }
-                        },
-                        text: t.complete,
-                        showGradient: true,
-                        gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
-                        horizontalPadding: 0,
-                        isActive: _isButtonEnabled,
-                        backgroundColor: CoconutColors.white,
-                      ),
-                    ],
+                        FixedBottomButton(
+                          onButtonClicked: () {
+                            if (isDescriptorAdding) {
+                              _addWallet(viewModel);
+                            } else {
+                              // 확장공개키의 경우에는 Master Finger Print를 추가로 입력받는다.
+                              showMfpInputBottomSheet(viewModel);
+                            }
+                          },
+                          text: t.complete,
+                          showGradient: true,
+                          gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
+                          horizontalPadding: 0,
+                          isActive: _isButtonEnabled,
+                          backgroundColor: CoconutColors.white,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

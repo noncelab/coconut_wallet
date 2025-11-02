@@ -248,6 +248,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         borderColor: CoconutColors.gray900,
         icon: SvgPicture.asset(
           'assets/svg/circle-info.svg',
+          width: 20,
           colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
         ),
         tooltipType: CoconutTooltipType.fixed,
@@ -269,7 +270,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           by_hardware_wallet: hardwareWalletWords[0],
           hardware_wallet: hardwareWalletWords[1],
         ),
-        style: CoconutTypography.body2_14.copyWith(height: 1.2),
+        style: CoconutTypography.body2_14.copyWith(height: 1.3),
       ),
     ];
   }

@@ -1127,13 +1127,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  bool _isKoreanLanguage() {
-    final preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
-    return preferenceProvider.language == 'kr';
-  }
-
   Widget _buildDropdownMenu() {
-    final bool showGlossary = _isKoreanLanguage();
+    final bool showGlossary = !context.read<PreferenceProvider>().isEnglish;
     return Positioned(
       top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
       right: 20,

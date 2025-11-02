@@ -15,6 +15,7 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		C27F3A112EB7A618000DF5BB /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = C27F3A0F2EB7A618000DF5BB /* InfoPlist.strings */; };
 		C4BD7B19EF57826E7044304F /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BF6E69EA31F680FC5DDC38A4 /* Pods_RunnerTests.framework */; };
 		CEB6D888FCEA72BDAB7E1DC5 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */; };
 		DEB72D872E24830A0069ED9B /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = DEB72D852E24830A0069ED9B /* InfoPlist.strings */; };
@@ -81,6 +82,8 @@
 		BF13FE6D895B8587B01755CA /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		BF6E69EA31F680FC5DDC38A4 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF71A04B35B0249648B60B01 /* Pods-RunnerTests.debug-regtest.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug-regtest.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug-regtest.xcconfig"; sourceTree = "<group>"; };
+		C27F3A072EB7A47C000DF5BB /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ../ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		C27F3A0E2EB7A618000DF5BB /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = InfoPlist.strings; sourceTree = "<group>"; };
 		C67200FB8402D2CCB62072C5 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE599B60C21922DDF10792DC /* Pods-Runner.debug-regtest.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-regtest.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-regtest.xcconfig"; sourceTree = "<group>"; };
 		D092F9B294690AC61D258083 /* Pods-Runner.debug-mainnet.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug-mainnet.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug-mainnet.xcconfig"; sourceTree = "<group>"; };
@@ -192,6 +195,7 @@
 				DEB72D862E24830A0069ED9B /* en.lproj */,
 				36E8CAA72C7DD4F5001E9DFD /* Runner.entitlements */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
+				C27F3A102EB7A618000DF5BB /* ja.lproj */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
 				5F30C6462DD5909E007E3A6E /* LaunchScreenRegtest.storyboard */,
@@ -202,6 +206,14 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		C27F3A102EB7A618000DF5BB /* ja.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				C27F3A0F2EB7A618000DF5BB /* InfoPlist.strings */,
+			);
+			path = ja.lproj;
 			sourceTree = "<group>";
 		};
 		CC252184760F376DD2314C18 /* Frameworks */ = {
@@ -302,6 +314,7 @@
 				en,
 				Base,
 				ko,
+				ja,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
@@ -327,6 +340,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5F30C6482DD5909E007E3A6E /* LaunchScreenRegtest.storyboard in Resources */,
+				C27F3A112EB7A618000DF5BB /* InfoPlist.strings in Resources */,
 				DEB72D8B2E2483130069ED9B /* InfoPlist.strings in Resources */,
 				DEB72D872E24830A0069ED9B /* InfoPlist.strings in Resources */,
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
@@ -353,7 +367,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin\n";
 		};
 		8669427CD0EA7A55FFF5B08B /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -429,7 +443,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\n\n\n# Configuration에 따른 앱 이름 설정\nif [[ \"${CONFIGURATION}\" == *\"mainnet\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\nelif [[ \"${CONFIGURATION}\" == *\"regtest\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet-Regtest\"\n    KO_APP_NAME=\"코코넛 월렛 학습용\"\nelse\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\nfi\n\n# 권한 문구 설정\nEN_NSCameraUsageDescription=\"Camera access is required for QR code scanning.\"\nKO_NSCameraUsageDescription=\"QR 코드 스캔을 위해 카메라가 필요합니다.\"\nEN_NSFaceIDUsageDescription=\"Face ID is required to unlock the app.\"\nKO_NSFaceIDUsageDescription=\"앱의 잠금을 해제할 때 Face ID를 사용하기 위해 필요합니다.\"\n\necho \"EN_APP_NAME: $EN_APP_NAME\"\necho \"KO_APP_NAME: $KO_APP_NAME\"\n\n# 영어 InfoPlist.strings 파일 경로\nEN_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/en.lproj\"\nEN_STRINGS_FILE=\"${EN_STRINGS_PATH}/InfoPlist.strings\"\n\n# 한국어 InfoPlist.strings 파일 경로\nKO_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ko.lproj\"\nKO_STRINGS_FILE=\"${KO_STRINGS_PATH}/InfoPlist.strings\"\n\n# 디렉토리 생성\nmkdir -p \"$EN_STRINGS_PATH\"\nmkdir -p \"$KO_STRINGS_PATH\"\n\n# InfoPlist.strings 생성\ncat > \"$EN_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$EN_APP_NAME\";\nNSCameraUsageDescription = \"$EN_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$EN_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$KO_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$KO_APP_NAME\";\nNSCameraUsageDescription = \"$KO_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$KO_NSFaceIDUsageDescription\";\nEOF\n\n\necho \"✅ 앱 이름 및 권한 설명 설정 완료\"\necho \"📝 Configuration: $CONFIGURATION\"\necho \"📝 English App Name: $EN_APP_NAME\"\necho \"📝 Korean App Name: $KO_APP_NAME\"\n\n# DART_DEFINES에서 USE_FIREBASE 값 추출\nfor value in $(echo \"$DART_DEFINES\" | tr ',' '\\n'); do\n  decoded=$(echo \"$value\" | base64 --decode)\n  if [[ $decoded == USE_FIREBASE=* ]]; then\n    USE_FIREBASE_VALUE=\"${decoded#*=}\"\n  fi\ndone\n\nif [ \"$USE_FIREBASE_VALUE\" = \"true\" ]; then\n  echo \"✅ Firebase enabled - copying GoogleService-Info.plist\"\n  cp \"${PROJECT_DIR}/Runner/GoogleService-Info.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nelse\n  echo \"✅ Firebase disabled - skipping GoogleService-Info.plist\"\nfi\n\n";
+			shellScript = "#!/bin/bash\n\n\n# Configuration에 따른 앱 이름 설정\nif [[ \"${CONFIGURATION}\" == *\"mainnet\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\n    JA_APP_NAME=\"Coconut Wallet\"\nelif [[ \"${CONFIGURATION}\" == *\"regtest\"* ]]; then\n    EN_APP_NAME=\"Coconut Wallet-Regtest\"\n    KO_APP_NAME=\"코코넛 월렛 학습용\"\n    JA_APP_NAME=\"Coconut Wallet-Regtest\"\nelse\n    EN_APP_NAME=\"Coconut Wallet\"\n    KO_APP_NAME=\"코코넛 월렛\"\n    JA_APP_NAME=\"Coconut Wallet\"\nfi\n\n# 권한 문구 설정\nEN_NSCameraUsageDescription=\"Camera access is required for QR code scanning.\"\nKO_NSCameraUsageDescription=\"QR 코드 스캔을 위해 카메라가 필요합니다.\"\nJA_NSCameraUsageDescription=\"QRコードのスキャンにカメラへのアクセスが必要です。\"\n\nEN_NSFaceIDUsageDescription=\"Face ID is required to unlock the app.\"\nKO_NSFaceIDUsageDescription=\"앱의 잠금을 해제할 때 Face ID를 사용하기 위해 필요합니다.\"\nJA_NSFaceIDUsageDescription=\"アプリのロック解除にFace IDを使用するために必要です。\"\n\necho \"EN_APP_NAME: $EN_APP_NAME\"\necho \"KO_APP_NAME: $KO_APP_NAME\"\necho \"JA_APP_NAME: $JA_APP_NAME\"\n\n# 영어 InfoPlist.strings 파일 경로\nEN_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/en.lproj\"\nEN_STRINGS_FILE=\"${EN_STRINGS_PATH}/InfoPlist.strings\"\n\n# 한국어 InfoPlist.strings 파일 경로\nKO_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ko.lproj\"\nKO_STRINGS_FILE=\"${KO_STRINGS_PATH}/InfoPlist.strings\"\n\n# 일본어 InfoPlist.strings 파일 경로\nJA_STRINGS_PATH=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/ja.lproj\"\nJA_STRINGS_FILE=\"${JA_STRINGS_PATH}/InfoPlist.strings\"\n\n# 디렉토리 생성\nmkdir -p \"$EN_STRINGS_PATH\"\nmkdir -p \"$KO_STRINGS_PATH\"\nmkdir -p \"$JA_STRINGS_PATH\"\n\n# InfoPlist.strings 생성\ncat > \"$EN_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$EN_APP_NAME\";\nNSCameraUsageDescription = \"$EN_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$EN_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$KO_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$KO_APP_NAME\";\nNSCameraUsageDescription = \"$KO_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$KO_NSFaceIDUsageDescription\";\nEOF\n\ncat > \"$JA_STRINGS_FILE\" <<EOF\nCFBundleDisplayName = \"$JA_APP_NAME\";\nNSCameraUsageDescription = \"$JA_NSCameraUsageDescription\";\nNSFaceIDUsageDescription = \"$JA_NSFaceIDUsageDescription\";\nEOF\n\n\necho \"✅ 앱 이름 및 권한 설명 설정 완료\"\necho \"📝 Configuration: $CONFIGURATION\"\necho \"📝 English App Name: $EN_APP_NAME\"\necho \"📝 Korean App Name: $KO_APP_NAME\"\n\n# DART_DEFINES에서 USE_FIREBASE 값 추출\nfor value in $(echo \"$DART_DEFINES\" | tr ',' '\\n'); do\n  decoded=$(echo \"$value\" | base64 --decode)\n  if [[ $decoded == USE_FIREBASE=* ]]; then\n    USE_FIREBASE_VALUE=\"${decoded#*=}\"\n  fi\ndone\n\nif [ \"$USE_FIREBASE_VALUE\" = \"true\" ]; then\n  echo \"✅ Firebase enabled - copying GoogleService-Info.plist\"\n  cp \"${PROJECT_DIR}/Runner/GoogleService-Info.plist\" \"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nelse\n  echo \"✅ Firebase disabled - skipping GoogleService-Info.plist\"\nfi\n\n";
 		};
 		DFD5326D7C61DE059C053AD8 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -503,10 +517,19 @@
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
+		C27F3A0F2EB7A618000DF5BB /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C27F3A0E2EB7A618000DF5BB /* ja */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
 		DEB72D852E24830A0069ED9B /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
 				DEB72D842E24830A0069ED9B /* en */,
+				C27F3A072EB7A47C000DF5BB /* ja */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -527,6 +550,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -546,6 +570,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -664,6 +689,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -683,6 +709,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -774,6 +801,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -793,6 +821,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -820,6 +849,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -883,6 +913,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -902,6 +933,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -988,6 +1020,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1007,6 +1040,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -1093,6 +1127,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1112,6 +1147,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -1195,6 +1231,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1214,6 +1251,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -1297,6 +1335,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1316,6 +1355,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -1354,6 +1394,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -1373,6 +1414,7 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
