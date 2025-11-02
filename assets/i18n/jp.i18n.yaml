@@ -249,7 +249,7 @@ wallet_add_scanner_screen:
     step1_em: "XPUB Export"
     step2: "2. "
     step2_em: "XPUB - QR Code"
-
+    select: "選択"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
@@ -408,7 +408,8 @@ unsigned_tx_qr_screen:
     select: "を選択"
     step2: "2. "
     step2_em: "PSBT"
-    step3: "3. カメラで下のQRコードをスキャン"
+    step3: "3. "
+    step3_em: "カメラで下のQRコードをスキャン"
   fast_scan_mode: "高速スキャンモード"
   low_density_qr: "シンプルQR"
   high_density_qr: "複雑QR"
@@ -698,8 +699,8 @@ tooltip:
   wallet_add1: "新しいウォレットを追加または既存のウォレットを更新。"
   wallet_add2: "Vault"
   wallet_add3: "使用したいウォレットを"
-  wallet_add4: "で選択し、画面に表示されるQRコードをスキャンしてください。"
-  wallet_add5: "エクスポート"
+  wallet_add4: "エクスポート"
+  wallet_add5: "で選択し、画面に表示されるQRコードをスキャンしてください。" 
   amount_to_be_sent: "受信したビットコインのみ送信可能。\n受信中金額: $bitcoin $unit"
   scan_signed_psbt:
     guide: "${by_hardware_wallet}での署名が完了しましたか？\n${hardware_wallet}画面のQRコードをスキャンしてください。"
