@@ -309,6 +309,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
         children: [
           SvgPicture.asset(
             'assets/svg/circle-info.svg',
+            width: 20,
             colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
           ),
           CoconutLayout.spacing_200w,
@@ -316,7 +317,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(text, style: CoconutTypography.body3_12),
+                Text(text, style: CoconutTypography.body2_14),
                 CoconutLayout.spacing_50h,
                 CoconutUnderlinedButton(
                   padding: const EdgeInsets.only(top: 8, right: 8, bottom: 8),

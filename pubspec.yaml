@@ -16,14 +16,12 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-# iOS
-#version: 3.3.1+1
-# AOS
-#version: 3.3.1+49
-# iOS Mainnet
 version: 0.4.6+1
-# AOS Mainnet
-#version: 0.4.6+36
+app_versions:
+  ios_regtest: 3.3.1+4
+  ios_mainnet: 0.4.7+1
+  aos_regtest: 3.3.1+52
+  aos_mainnet: 0.4.6+37
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -126,7 +124,8 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/files/glossary_details.json
+    - assets/files/glossary_details_kr.json
+    - assets/files/glossary_details_jp.json
     - assets/files/status_loading.json
     - assets/files/coconut_crew.json
     - assets/images/splash_logo_mainnet.png
@@ -268,14 +267,14 @@ flutter:
     - assets/svg/star-outlined.svg
     - assets/svg/star-filled.svg
     - assets/svg/hamburger.svg
-    - assets/svg/barefoot.svg
-    - assets/svg/car.svg
-    - assets/svg/rocket.svg
     - assets/svg/plus.svg
     - assets/svg/broom.svg
     - assets/svg/receipt.svg
     - assets/svg/clip.svg
     - assets/svg/edit-outlined.svg
+    - assets/svg/fee-rate/low.svg
+    - assets/svg/fee-rate/medium.svg
+    - assets/svg/fee-rate/high.svg
     - testnet.env
 
   fonts:

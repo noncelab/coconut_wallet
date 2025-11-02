@@ -145,6 +145,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 if (rightText.isNotEmpty)
                   LayoutBuilder(
