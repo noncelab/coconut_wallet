@@ -1,3 +1,5 @@
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:dio/dio.dart';
@@ -5,11 +7,12 @@ import 'package:dio/dio.dart';
 class FeeService {
   final Dio _dio = Dio();
 
-  /// mempool.space API 사용
-  /// 네트워크 상관없이 메인넷 FeeRate를 가져옴
+  /// 네트워크에 따라 분기하여 mempool.space API 사용
   Future<RecommendedFee> getRecommendedFees() async {
     try {
-      final response = await _dio.get('https://mempool.space/api/v1/fees/recommended');
+      final response = await _dio.get(
+        NetworkType.currentNetworkType == NetworkType.mainnet ? FEE_SERVICE_URL : FEE_SERVICE_URL_REGTEST,
+      );
 
       return RecommendedFee(
         response.data['fastestFee'] ?? 20,
