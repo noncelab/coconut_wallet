@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -42,12 +40,11 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
-    _fakeBalanceTotalBtc = _preferenceProvider.fakeBalanceTotalAmount != null
-        ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
-        : null;
+    _fakeBalanceTotalBtc =
+        _preferenceProvider.fakeBalanceTotalAmount != null
+            ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
+            : null;
     _isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
-    debugPrint(
-        '_preferenceProvider.fakeBalanceTotalAmount: ${_preferenceProvider.fakeBalanceTotalAmount}\n_isFakeBalanceActive: $_isFakeBalanceActive');
 
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
     _minimumSatoshi = _walletProvider.walletItemList.length;
@@ -59,7 +56,8 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
         // 정수일 때
         _textEditingController.text = _fakeBalanceTotalBtc.toString().split('.')[0];
       } else {
-        _textEditingController.text = _fakeBalanceTotalBtc.toString();
+        // 아주 작은 소수일 때 e-8로 표시되는 경우가 있음 -> toStringAsFixed(8)로 8자리까지 표시 후 뒤에 0이 있으면 제거
+        _textEditingController.text = _fakeBalanceTotalBtc!.toStringAsFixed(8).replaceFirst(RegExp(r'\.?0+$'), '');
       }
     }
 
@@ -89,8 +87,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
 
         setState(() {
           _fakeBalanceTotalBtc = input;
-          debugPrint(
-              '_fakeBalanceTotalBtc : $_fakeBalanceTotalBtc _maximumAmount: $_maximumAmount');
+          debugPrint('_fakeBalanceTotalBtc : $_fakeBalanceTotalBtc _maximumAmount: $_maximumAmount');
           if (_fakeBalanceTotalBtc == null) {
             _inputError = FakeBalanceInputError.none;
           } else {
@@ -143,22 +140,21 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                           children: [
                             Text(
                               t.settings_screen.fake_balance.fake_balance_display,
-                              style: CoconutTypography.body2_14_Bold.setColor(
-                                CoconutColors.white,
-                              ),
+                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: CoconutSwitch(
-                                  isOn: _isFakeBalanceActive,
-                                  activeColor: CoconutColors.gray100,
-                                  trackColor: CoconutColors.gray600,
-                                  thumbColor: CoconutColors.gray800,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _isFakeBalanceActive = value;
-                                    });
-                                  }),
+                                isOn: _isFakeBalanceActive,
+                                activeColor: CoconutColors.gray100,
+                                trackColor: CoconutColors.gray600,
+                                thumbColor: CoconutColors.gray800,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _isFakeBalanceActive = value;
+                                  });
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -167,26 +163,22 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                           visible: _isFakeBalanceActive,
                           child: CoconutTextField(
                             textInputType: const TextInputType.numberWithOptions(decimal: true),
-                            textInputFormatter: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,8}')),
-                            ],
-                            placeholderText: _fakeBalanceTotalBtc != null
-                                ? ''
-                                : t.settings_screen.fake_balance.fake_balance_input_placeholder,
-                            descriptionText: _textFieldFocusNode.hasFocus
-                                ? '  ${t.settings_screen.fake_balance.fake_balance_input_description}'
-                                : '',
-                            suffix: _textEditingController.text.isNotEmpty
-                                ? Padding(
-                                    padding: const EdgeInsets.only(
-                                      right: 16,
-                                    ),
-                                    child: Text(
-                                      t.btc,
-                                      style: CoconutTypography.body1_16,
-                                    ),
-                                  )
-                                : null,
+                            textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,8}'))],
+                            placeholderText:
+                                _fakeBalanceTotalBtc != null
+                                    ? ''
+                                    : t.settings_screen.fake_balance.fake_balance_input_placeholder,
+                            descriptionText:
+                                _textFieldFocusNode.hasFocus
+                                    ? '  ${t.settings_screen.fake_balance.fake_balance_input_description}'
+                                    : '',
+                            suffix:
+                                _textEditingController.text.isNotEmpty
+                                    ? Padding(
+                                      padding: const EdgeInsets.only(right: 16),
+                                      child: Text(t.btc, style: CoconutTypography.body1_16),
+                                    )
+                                    : null,
                             isLengthVisible: false,
                             controller: _textEditingController,
                             focusNode: _textFieldFocusNode,
@@ -197,9 +189,10 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             activeColor: CoconutColors.white,
                             cursorColor: CoconutColors.white,
                             maxLength: _maxInputLength,
-                            errorText: _inputError == FakeBalanceInputError.exceedsTotalSupply
-                                ? '  ${t.settings_screen.fake_balance.fake_balance_input_exceeds_error}'
-                                : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
+                            errorText:
+                                _inputError == FakeBalanceInputError.exceedsTotalSupply
+                                    ? '  ${t.settings_screen.fake_balance.fake_balance_input_exceeds_error}'
+                                    : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
                             isError: _inputError != FakeBalanceInputError.none,
                             maxLines: 1,
                           ),
@@ -227,7 +220,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                 ],
               ),
             ),
-            if (isLoading) const CoconutLoadingOverlay()
+            if (isLoading) const CoconutLoadingOverlay(),
           ],
         ),
       ),
@@ -277,7 +270,6 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
       await _preferenceProvider.changeIsFakeBalanceActive(_isFakeBalanceActive);
     }
 
-    _preferenceProvider.initializeFakeBalance(wallets,
-        fakeBalanceTotalAmount: _fakeBalanceTotalBtc);
+    _preferenceProvider.initializeFakeBalance(wallets, fakeBalanceTotalAmount: _fakeBalanceTotalBtc);
   }
 }

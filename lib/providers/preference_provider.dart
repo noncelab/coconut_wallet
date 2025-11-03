@@ -83,22 +83,22 @@ class PreferenceProvider extends ChangeNotifier {
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
-    _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
-        ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
-        : true;
+    _isBtcUnit =
+        _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit) ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit) : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
-    _excludedFromTotalBalanceWalletIds =
-        _walletPreferencesRepository.getExcludedWalletIds().toList();
+    _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
-    _utxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
-        ? UtxoOrder.values.firstWhere(
-            (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
-            orElse: () => UtxoOrder.byAmountDesc)
-        : UtxoOrder.byAmountDesc;
+    _utxoSortOrder =
+        _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
+            ? UtxoOrder.values.firstWhere(
+              (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
+              orElse: () => UtxoOrder.byAmountDesc,
+            )
+            : UtxoOrder.byAmountDesc;
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -112,10 +112,7 @@ class PreferenceProvider extends ChangeNotifier {
   void _initializeFiat() {
     final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
     if (fiatCode.isNotEmpty) {
-      _selectedFiat = FiatCode.values.firstWhere(
-        (fiat) => fiat.code == fiatCode,
-        orElse: () => FiatCode.KRW,
-      );
+      _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
     } else {
       _selectedFiat = FiatCode.KRW;
       _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
@@ -241,10 +238,12 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 가짜 잔액 분배 작업
-  Future<void> initializeFakeBalance(List<WalletListItemBase> wallets,
-      {bool? isFakeBalanceActive, double? fakeBalanceTotalAmount}) async {
-    var fakeBalanceTotalBtc =
-        fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
+  Future<void> initializeFakeBalance(
+    List<WalletListItemBase> wallets, {
+    bool? isFakeBalanceActive,
+    double? fakeBalanceTotalAmount,
+  }) async {
+    var fakeBalanceTotalBtc = fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
 
     if (fakeBalanceTotalBtc == 0) {
       await setFakeBalanceTotalAmount(0);
@@ -262,27 +261,28 @@ class PreferenceProvider extends ChangeNotifier {
 
     final walletCount = wallets.length;
 
-    if (!fakeBalanceTotalBtc.toString().contains('.')) {
-      // input값이 정수 일 때 sats로 환산
-      fakeBalanceTotalBtc = fakeBalanceTotalBtc * 100000000;
-    } else {
-      // input이 소수일 때 소수점 이하 8자리로 맞춘 후 정수로 변환
-      final fixedString = fakeBalanceTotalBtc.toStringAsFixed(8).replaceAll('.', '');
-      fakeBalanceTotalBtc = double.parse(fixedString);
-    }
+    final fixedString = fakeBalanceTotalBtc.toStringAsFixed(8).replaceAll('.', '');
+    fakeBalanceTotalBtc = double.parse(fixedString);
 
-    if (fakeBalanceTotalBtc < walletCount) return; // 최소 1사토시씩 못 주면 리턴
+    // 최소 1사토시씩 보장을 못하는 경우(지갑에 각가 1사토시씩 배분되어있는 상황에서 지갑이 새로 추가된 경우)
+    final isInsufficientToSplit = fakeBalanceTotalBtc < walletCount;
 
     final random = Random();
     // 1. 각 지갑에 최소 1사토시 할당
     // 2. 남은 사토시를 랜덤 가중치로 분배
     final List<int> weights = List.generate(walletCount, (_) => random.nextInt(100) + 1); // 1~100
     final int weightSum = weights.reduce((a, b) => a + b);
-    final int remainingSats = (fakeBalanceTotalBtc - walletCount).toInt();
+    final int remainingSats = (fakeBalanceTotalBtc - (walletCount - (isInsufficientToSplit ? 1 : 0))).toInt();
     final List<int> splits = [];
 
     for (int i = 0; i < walletCount; i++) {
       final int share = (remainingSats * weights[i] / weightSum).floor();
+      if (isInsufficientToSplit && i == walletCount - 1) {
+        // 원래는 최소 1사토시씩 못 주면 리턴시켰지만, 마지막 지갑에 가짜잔액 총액으로 설정되는 Bug가 있어서 개선함
+        // 마지막 추가한 지갑에는 0으로 설정
+        splits.add(0);
+        break;
+      }
       splits.add(1 + share); // 최소 1 사토시 보장
     }
 
@@ -355,8 +355,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 가짜 잔액 Map 설정
   Future<void> setFakeBalanceMap(Map<int, dynamic> map) async {
-    final Map<String, dynamic> stringKeyMap =
-        map.map((key, value) => MapEntry(key.toString(), value));
+    final Map<String, dynamic> stringKeyMap = map.map((key, value) => MapEntry(key.toString(), value));
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
@@ -420,8 +419,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 일렉트럼 서버 설정
   Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
-    await _sharedPrefs.setString(
-        SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
   }
 
   /// 커스텀 일렉트럼 서버 설정
