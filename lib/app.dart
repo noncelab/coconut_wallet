@@ -101,7 +101,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider.value(value: _realmManager),
 
         Provider<AnalyticsService>(
-          create: 
+          create:
               (context) => AnalyticsService(
                 //CoconutWalletApp.kIsFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null,
                 null,
