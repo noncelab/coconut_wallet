@@ -74,7 +74,7 @@ Bip21Data parseBip21Uri(String input) {
     }
   }
 
-  return Bip21Data(address: address.toLowerCase(), amount: amount, parameters: parameters);
+  return Bip21Data(address: address, amount: amount, parameters: parameters);
 }
 
 bool isBech32(String address) {
