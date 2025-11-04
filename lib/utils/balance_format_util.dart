@@ -90,16 +90,50 @@ class FakeBalanceUtil {
 
     final List<int> splits = [];
 
+    // 최소 1사토시씩 보장을 못하는 경우(지갑에 각가 1사토시씩 배분되어있는 상황에서 지갑이 새로 추가된 경우)
+    final isInsufficientToSplit = fakeBalance < walletCount;
+
     // 가중치에 비례하여 분배
     for (int i = 0; i < walletCount; i++) {
+      if (isInsufficientToSplit && i == walletCount - 1) {
+        splits.add(0);
+        break;
+      }
       final int share = (fakeBalanceSats * weights[i] / weightSum).floor();
       splits.add(share);
     }
 
-    // 보정: 분할의 총합이 fakeBalanceSats와 다를 수 있으므로 마지막 지갑에 차이분 추가
+    // 보정: 분할의 총합이 fakeBalanceSats와 다를 수 있으므로 차이분 추가
     final int currentSum = splits.reduce((a, b) => a + b);
     final int diff = fakeBalanceSats - currentSum;
-    splits[splits.length - 1] += diff;
+
+    if (isInsufficientToSplit) {
+      // isInsufficientToSplit인 경우 마지막 지갑에는 0을 할당했으므로,
+      // 차이분을 마지막 지갑을 제외한 지갑들에 가중치에 비례하여 분배
+      if (splits.length > 1 && diff > 0) {
+        // 마지막 지갑을 제외한 지갑들의 가중치 합 계산
+        final int activeWeightsSum = weights.sublist(0, splits.length - 1).reduce((a, b) => a + b);
+
+        // 가중치에 비례하여 차이분 분배
+        int remainingDiff = diff;
+        for (int i = 0; i < splits.length - 1; i++) {
+          final int share = (diff * weights[i] / activeWeightsSum).floor();
+          splits[i] += share;
+          remainingDiff -= share;
+        }
+        // 반올림으로 인한 오차를 랜덤하게 분배
+        if (remainingDiff > 0) {
+          final randomIndex = random.nextInt(splits.length - 1);
+          splits[randomIndex] += remainingDiff;
+        }
+      } else if (splits.length == 1 && diff > 0) {
+        // 지갑이 1개인 경우 해당 지갑에 추가
+        splits[0] += diff;
+      }
+    } else {
+      // 일반적인 경우 마지막 지갑에 차이분 추가
+      splits[splits.length - 1] += diff;
+    }
 
     return splits;
   }

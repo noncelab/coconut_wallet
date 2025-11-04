@@ -245,59 +245,19 @@ class PreferenceProvider extends ChangeNotifier {
   }) async {
     var fakeBalanceTotalBtc = fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
 
-    if (fakeBalanceTotalBtc == 0) {
-      await setFakeBalanceTotalAmount(0);
-
-      final Map<int, dynamic> fakeBalanceMap = {};
-      for (int i = 0; i < wallets.length; i++) {
-        final walletId = wallets[i].id;
-
-        fakeBalanceMap[walletId] = 0;
-        debugPrint('[Wallet $i]Fake Balance: ${fakeBalanceMap[i]} BTC');
-      }
-      await setFakeBalanceMap(fakeBalanceMap);
-      return;
-    }
-
-    final walletCount = wallets.length;
-
-    final fixedString = fakeBalanceTotalBtc.toStringAsFixed(8).replaceAll('.', '');
-    fakeBalanceTotalBtc = double.parse(fixedString);
-
-    // 최소 1사토시씩 보장을 못하는 경우(지갑에 각가 1사토시씩 배분되어있는 상황에서 지갑이 새로 추가된 경우)
-    final isInsufficientToSplit = fakeBalanceTotalBtc < walletCount;
-
-    final random = Random();
-    // 1. 각 지갑에 최소 1사토시 할당
-    // 2. 남은 사토시를 랜덤 가중치로 분배
-    final List<int> weights = List.generate(walletCount, (_) => random.nextInt(100) + 1); // 1~100
-    final int weightSum = weights.reduce((a, b) => a + b);
-    final int remainingSats = (fakeBalanceTotalBtc - (walletCount - (isInsufficientToSplit ? 1 : 0))).toInt();
-    final List<int> splits = [];
-
-    for (int i = 0; i < walletCount; i++) {
-      final int share = (remainingSats * weights[i] / weightSum).floor();
-      if (isInsufficientToSplit && i == walletCount - 1) {
-        // 원래는 최소 1사토시씩 못 주면 리턴시켰지만, 마지막 지갑에 가짜잔액 총액으로 설정되는 Bug가 있어서 개선함
-        // 마지막 추가한 지갑에는 0으로 설정
-        splits.add(0);
-        break;
-      }
-      splits.add(1 + share); // 최소 1 사토시 보장
-    }
-
-    // 보정: 분할의 총합이 totalSats보다 작을 수 있으므로 마지막 지갑에 부족분 추가
-    final int diff = (fakeBalanceTotalBtc - splits.reduce((a, b) => a + b)).toInt();
-    splits[splits.length - 1] += diff;
-
-    final Map<int, dynamic> fakeBalanceMap = {};
-
+    // isFakeBalanceActive 상태 변경은 0일 때와 아닐 때 모두 처리
     if (isFakeBalanceActive != null && isFakeBalanceActive != _isFakeBalanceActive) {
       await changeIsFakeBalanceActive(_isFakeBalanceActive);
     }
 
+    final fixedString = fakeBalanceTotalBtc.toStringAsFixed(8).replaceAll('.', '');
+    fakeBalanceTotalBtc = double.parse(fixedString);
+
+    final Map<int, dynamic> fakeBalanceMap = {};
+
     debugPrint('_fakeBalanceTotalAmount!.toInt(): ${fakeBalanceTotalBtc.toInt()}');
     await setFakeBalanceTotalAmount(fakeBalanceTotalBtc.toInt());
+    final splits = FakeBalanceUtil.distributeFakeBalance(fakeBalanceTotalBtc, wallets.length, BitcoinUnit.sats);
 
     for (int i = 0; i < splits.length; i++) {
       final walletId = wallets[i].id;
