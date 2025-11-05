@@ -124,11 +124,11 @@ class WalletHomeViewModel extends ChangeNotifier {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
           _isFirstLoaded = true;
-          vibrateLight();
+          // vibrateLight();
         }
         updateWalletBalances();
       } else if (syncState == NodeSyncState.failed) {
-        vibrateLightDouble();
+        // vibrateLightDouble();
       }
       _nodeSyncState = syncState;
       Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
