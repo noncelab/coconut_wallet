@@ -40,7 +40,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
     return Container(
       color: CoconutColors.black,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(children: [_buildTotalRow(utxoSumText, unitText), const SizedBox(height: 32), _buildActionRow()]),
+      child: Column(children: [_buildTotalRow(utxoSumText, unitText), const SizedBox(height: 25), _buildActionRow()]),
     );
   }
 

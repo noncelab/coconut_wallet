@@ -75,6 +75,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
   // --------------------
   Widget _buildHeader() {
     return Container(
+      constraints: const BoxConstraints(minHeight: 170),
       padding: const EdgeInsets.only(left: 20, top: 28, right: 20),
       width: MediaQuery.sizeOf(context).width,
       child: Column(
@@ -157,17 +158,27 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
   // 선택 모드 헤더
   // --------------------
   Widget _buildSelectionModeHeader() {
-    return SelectedUtxoAmountHeader(
-      orderDropdownButtonKey: widget.orderDropdownButtonKey,
-      orderText: widget.orderText,
-      selectedUtxoCount: widget.selectedUtxoCount,
-      selectedUtxoAmountSum: widget.selectedUtxoAmountSum,
-      currentUnit: widget.currentUnit,
-      onSelectAll: widget.onSelectAll,
-      onUnselectAll: widget.onUnselectAll,
-      onToggleOrderDropdown: () {
-        if (widget.isLoadComplete) widget.onTapDropdown();
-      },
+    return Container(
+      constraints: const BoxConstraints(minHeight: 170),
+      width: MediaQuery.sizeOf(context).width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 20),
+          SelectedUtxoAmountHeader(
+            orderDropdownButtonKey: widget.orderDropdownButtonKey,
+            orderText: widget.orderText,
+            selectedUtxoCount: widget.selectedUtxoCount,
+            selectedUtxoAmountSum: widget.selectedUtxoAmountSum,
+            currentUnit: widget.currentUnit,
+            onSelectAll: widget.onSelectAll,
+            onUnselectAll: widget.onUnselectAll,
+            onToggleOrderDropdown: () {
+              if (widget.isLoadComplete) widget.onTapDropdown();
+            },
+          ),
+        ],
+      ),
     );
   }
 }

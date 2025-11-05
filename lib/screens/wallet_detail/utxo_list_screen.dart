@@ -335,6 +335,11 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   selectedUtxoCount: viewModel.selectedUtxoList.length,
                   selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
                   orderText: viewModel.utxoOrder.text,
+                  tagListWidget: UtxoTagListWidget(
+                    selectedUtxoTagName: tagName,
+                    onTagSelected: (name) => viewModel.setSelectedUtxoTagName(name),
+                    isSelectionMode: _isSelectionMode,
+                  ),
                 );
               },
             );

@@ -4,7 +4,6 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:coconut_wallet/widgets/header/selected_utxo_amount_header.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -35,6 +34,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final VoidCallback onSelectAll;
   final VoidCallback onUnselectAll;
   final VoidCallback onToggleOrderDropdown;
+  final Widget tagListWidget;
 
   const UtxoListStickyHeader({
     super.key,
@@ -58,6 +58,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.onSelectAll,
     required this.onUnselectAll,
     required this.onToggleOrderDropdown,
+    required this.tagListWidget,
   });
 
   @override
@@ -100,7 +101,7 @@ class UtxoListStickyHeader extends StatelessWidget {
                       children: [
                         isSelectionMode ? _buildSelectionModeStickyHeader() : _buildStickyHeader(context, totalCount),
                         CoconutLayout.spacing_50h,
-                        _buildTagSelector(viewModel),
+                        tagListWidget,
                         CoconutLayout.spacing_300h,
                       ],
                     ),
@@ -205,19 +206,6 @@ class UtxoListStickyHeader extends StatelessWidget {
       onSelectAll: onSelectAll,
       onUnselectAll: onUnselectAll,
       onToggleOrderDropdown: onToggleOrderDropdown,
-    );
-  }
-
-  // --------------------
-  // 태그 선택 바
-  // --------------------
-  Widget _buildTagSelector(UtxoListViewModel viewModel) {
-    return CustomTagHorizontalSelector(
-      tags: viewModel.utxoTagList.map((e) => e.name).toList(),
-      selectedName: viewModel.selectedUtxoTagName,
-      onSelectedTag: (tagName) => viewModel.setSelectedUtxoTagName(tagName),
-      settingLock: isSelectionMode,
-      scrollPhysics: const AlwaysScrollableScrollPhysics(),
     );
   }
 }
