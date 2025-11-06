@@ -6,10 +6,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:uuid/uuid.dart';
 
-enum ExchangeType {
-  upbit,
-  binance,
-}
+enum ExchangeType { upbit, binance, bitflyer }
 
 class WebSocketService {
   final ExchangeType _exchangeType;
@@ -32,6 +29,8 @@ class WebSocketService {
         return 'wss://api.upbit.com/websocket/v1';
       case ExchangeType.binance:
         return 'wss://stream.binance.com:9443/ws/btcusdt@ticker';
+      case ExchangeType.bitflyer:
+        return 'wss://ws.lightstream.bitflyer.com/json-rpc';
     }
   }
 
@@ -46,16 +45,15 @@ class WebSocketService {
       if (_exchangeType == ExchangeType.upbit) {
         final request = _buildUpbitRequest();
         _channel?.sink.add(jsonEncode(request));
+      } else if (_exchangeType == ExchangeType.bitflyer) {
+        final request = _buildBitflyerRequest();
+        _channel?.sink.add(jsonEncode(request));
       }
 
-      _channel?.stream.listen(
-        _onData,
-        onError: _onError,
-        onDone: _onDone,
-      );
+      _channel?.stream.listen(_onData, onError: _onError, onDone: _onDone);
 
-      // Binance는 ping이 필요하지 않으므로 Upbit만 ping 전송
-      if (_exchangeType == ExchangeType.upbit) {
+      // Binance는 ping이 필요하지 않으므로 Upbit와 Coincheck만 ping 전송
+      if (_exchangeType == ExchangeType.upbit || _exchangeType == ExchangeType.bitflyer) {
         _pingTimer = Timer.periodic(const Duration(seconds: 10), _sendPing);
       }
     } catch (e) {
@@ -70,9 +68,16 @@ class WebSocketService {
       {"ticket": _uuid.v4()},
       {
         "type": "ticker",
-        "codes": ["KRW-BTC"]
-      }
+        "codes": ["KRW-BTC"],
+      },
     ];
+  }
+
+  Map<String, dynamic> _buildBitflyerRequest() {
+    return {
+      "method": "subscribe",
+      "params": {"channel": "lightning_ticker_BTC_JPY"},
+    };
   }
 
   void _reconnect() {
@@ -124,6 +129,14 @@ class WebSocketService {
         case ExchangeType.binance:
           if (decodedData is Map<String, dynamic> && decodedData['c'] != null) {
             priceResponse = BinanceResponse.fromJson(decodedData);
+          }
+          break;
+        case ExchangeType.bitflyer:
+          if (decodedData is Map<String, dynamic> && decodedData['method'] == 'channelMessage') {
+            final message = decodedData['params']['message'];
+            if (message != null) {
+              priceResponse = BitflyerResponse.fromJson(message);
+            }
           }
           break;
       }
@@ -195,9 +208,7 @@ class UpbitResponse extends PriceResponse {
   UpbitResponse({required int tradePrice}) : _tradePrice = tradePrice;
 
   factory UpbitResponse.fromJson(Map<String, dynamic> json) {
-    return UpbitResponse(
-      tradePrice: (json['trade_price']).toInt(),
-    );
+    return UpbitResponse(tradePrice: (json['trade_price']).toInt());
   }
 
   @override
@@ -223,9 +234,33 @@ class BinanceResponse extends PriceResponse {
       throw FormatException('Invalid price format: $priceData');
     }
 
-    return BinanceResponse(
-      tradePrice: price.toInt(),
-    );
+    return BinanceResponse(tradePrice: price.toInt());
+  }
+
+  @override
+  int get tradePrice => _tradePrice;
+}
+
+// Bitflyer 응답 클래스
+class BitflyerResponse extends PriceResponse {
+  final int _tradePrice;
+
+  BitflyerResponse({required int tradePrice}) : _tradePrice = tradePrice;
+
+  factory BitflyerResponse.fromJson(Map<String, dynamic> json) {
+    // Bitflyer는 ltp (Last Traded Price) 필드를 사용
+    final priceData = json['ltp'];
+    double price;
+
+    if (priceData is String) {
+      price = double.parse(priceData);
+    } else if (priceData is num) {
+      price = priceData.toDouble();
+    } else {
+      throw FormatException('Invalid price format: $priceData');
+    }
+
+    return BitflyerResponse(tradePrice: price.toInt());
   }
 
   @override
@@ -240,6 +275,8 @@ class WebSocketServiceFactory {
         return WebSocketService(exchangeType: ExchangeType.upbit);
       case FiatCode.USD:
         return WebSocketService(exchangeType: ExchangeType.binance);
+      case FiatCode.JPY:
+        return WebSocketService(exchangeType: ExchangeType.bitflyer);
       default:
         // 기본값은 KRW
         return WebSocketService(exchangeType: ExchangeType.upbit);

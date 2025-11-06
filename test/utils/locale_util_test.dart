@@ -17,6 +17,13 @@ void main() {
       expect(isSystemLanguageKorean(), isA<bool>());
     });
 
+    test('isSystemLanguageJapanese should return boolean', () {
+      // 테스트를 위해 window.locale을 모킹할 수 없으므로
+      // 실제 시스템에서 테스트해야 합니다.
+      // 이 테스트는 기본 동작을 확인하는 용도입니다.
+      expect(isSystemLanguageJapanese(), isA<bool>());
+    });
+
     test('getSystemLanguageCode should return en for non-Korean locale', () {
       // 이 테스트는 로직을 검증하는 용도입니다.
       // 실제로는 window.locale이 필요하지만, 여기서는 함수가 올바른 값을 반환하는지 확인합니다.

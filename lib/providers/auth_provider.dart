@@ -87,10 +87,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       authenticated = await _auth.authenticate(
         localizedReason: t.bio_auth_required,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true,
-        ),
+        options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
       );
 
       if (isSave) {
@@ -156,8 +153,7 @@ class AuthProvider extends ChangeNotifier {
     final random = Random();
     var randomNumberPad = List<String>.generate(10, (index) => index.toString());
     randomNumberPad.shuffle(random);
-    randomNumberPad.insert(
-        randomNumberPad.length - 1, !isSettings && _isSetBiometrics ? 'bio' : '');
+    randomNumberPad.insert(randomNumberPad.length - 1, !isSettings && _isSetBiometrics ? 'bio' : '');
     randomNumberPad.add('<');
     return randomNumberPad;
   }

@@ -50,7 +50,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
           const initials = [
             'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', // 개행 방지
             'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', // 개행 방지
-            'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ' // 개행 방지
+            'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ', // 개행 방지
           ];
           final initialChar = initials[initialCode];
           final normalizedInitial = switch (initialChar) {
@@ -210,31 +210,21 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.only(
-                          top: 20,
-                          bottom: 20,
-                          left: 20,
-                          right: 12,
-                        ),
+                        padding: const EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 12),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             CircleAvatar(
                               radius: 36,
                               backgroundColor: CoconutColors.borderGray,
-                              backgroundImage: NetworkImage(
-                                profileImageSrc,
-                              ),
+                              backgroundImage: NetworkImage(profileImageSrc),
                             ),
                             CoconutLayout.spacing_400w,
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    nickname,
-                                    style: CoconutTypography.body1_16_Bold,
-                                  ),
+                                  Text(nickname, style: CoconutTypography.body1_16_Bold),
                                   Row(
                                     children: [
                                       if (snsType != null) ...[
@@ -260,17 +250,12 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                       ],
                                       Text(
                                         snsId ?? ' ',
-                                        style: CoconutTypography.body3_12
-                                            .setColor(CoconutColors.gray400),
+                                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                                       ),
                                       if (link != null) ...[
                                         CoconutLayout.spacing_100w,
-                                        SvgPicture.asset(
-                                          'assets/svg/clip.svg',
-                                          width: 12,
-                                          height: 12,
-                                        ),
-                                      ]
+                                        SvgPicture.asset('assets/svg/clip.svg', width: 12, height: 12),
+                                      ],
                                     ],
                                   ),
                                   CoconutLayout.spacing_100h,
@@ -283,10 +268,10 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                                           .copyWith(height: 1.2),
                                       maxLines: 2,
                                     ),
-                                  )
+                                  ),
                                 ],
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -347,13 +332,7 @@ class BetaTester {
   final String? sns;
   final String? link;
 
-  BetaTester({
-    required this.nickname,
-    required this.message,
-    required this.profileImage,
-    this.sns,
-    this.link,
-  });
+  BetaTester({required this.nickname, required this.message, required this.profileImage, this.sns, this.link});
 
   factory BetaTester.fromJson(Map<String, dynamic> json) {
     return BetaTester(

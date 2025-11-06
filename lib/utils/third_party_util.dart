@@ -1,8 +1,7 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
-String getNextThirdPartyWalletName(
-    WalletImportSource walletImportSource, List<String> walletNames) {
+String getNextThirdPartyWalletName(WalletImportSource walletImportSource, List<String> walletNames) {
   assert(walletImportSource != WalletImportSource.coconutVault);
   String baseName = _getThirdPartyDefaultName(walletImportSource);
   final regex = RegExp('^$baseName(?: (\\d+))?\$');
@@ -43,6 +42,8 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
       return t.third_party.seed_signer;
     case WalletImportSource.coldCard:
       return t.third_party.cold_card;
+    case WalletImportSource.krux:
+      return t.third_party.krux;
     case WalletImportSource.extendedPublicKey:
       return t.third_party.zpub;
     case WalletImportSource.coconutVault:

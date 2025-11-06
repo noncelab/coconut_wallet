@@ -53,19 +53,11 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
             child: ClipPath(
               clipper: RightTriangleBubbleClipper(),
               child: Container(
-                padding: const EdgeInsets.only(
-                  top: 25,
-                  left: 18,
-                  right: 18,
-                  bottom: 10,
-                ),
+                padding: const EdgeInsets.only(top: 25, left: 18, right: 18, bottom: 10),
                 color: const Color.fromRGBO(179, 240, 255, 1), // CDS에 없는 색상
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(widget.text,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray900)),
-                  ],
+                  children: [Text(widget.text, style: CoconutTypography.body3_12.setColor(CoconutColors.gray900))],
                 ),
               ),
             ),

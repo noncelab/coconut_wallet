@@ -12,11 +12,7 @@ import 'package:provider/provider.dart';
 class PinCheckScreen extends StatefulWidget {
   final bool appEntrance;
   final Function? onComplete;
-  const PinCheckScreen({
-    super.key,
-    this.appEntrance = false,
-    this.onComplete,
-  });
+  const PinCheckScreen({super.key, this.appEntrance = false, this.onComplete});
 
   @override
   State<PinCheckScreen> createState() => _PinCheckScreenState();
@@ -41,7 +37,6 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _shuffledPinNumbers = _authProvider.getShuffledNumberPad();
 
-    /// appEntrance인 경우 AppGuard가 위젯트리에 없으므로 추가
     if (widget.appEntrance) {
       WidgetsBinding.instance.addObserver(this);
     }
@@ -73,51 +68,56 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
 
   void _verifyBiometric() async {
     context.loaderOverlay.show();
-    _authProvider.authenticateWithBiometrics().then((value) {
-      if (value) {
-        if (!widget.appEntrance && mounted) {
-          Navigator.pop(context, true);
-        }
-        widget.onComplete?.call();
-      }
-    }).whenComplete(() {
-      if (mounted) context.loaderOverlay.hide();
-    });
+    _authProvider
+        .authenticateWithBiometrics()
+        .then((value) {
+          if (value) {
+            if (!widget.appEntrance && mounted) {
+              Navigator.pop(context, true);
+            }
+            widget.onComplete?.call();
+          }
+        })
+        .whenComplete(() {
+          if (mounted) context.loaderOverlay.hide();
+        });
   }
 
   void _verifyPin() async {
     context.loaderOverlay.show();
-    _authProvider.verifyPin(pin).then((value) {
-      if (value) {
-        if (!widget.appEntrance && mounted) {
-          Navigator.pop(context, true);
-        }
-        widget.onComplete?.call();
-      } else {
-        if (widget.appEntrance) {
-          attempt += 1;
-          if (attempt < 3) {
-            errorMessage =
-                t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
-            _shufflePinNumbers();
-            vibrateLightDouble();
+    _authProvider
+        .verifyPin(pin)
+        .then((value) {
+          if (value) {
+            if (!widget.appEntrance && mounted) {
+              Navigator.pop(context, true);
+            }
+            widget.onComplete?.call();
           } else {
-            errorMessage = t.errors.pin_check_error.failed;
+            if (widget.appEntrance) {
+              attempt += 1;
+              if (attempt < 3) {
+                errorMessage = t.errors.pin_check_error.trial_count(count: kMaxNumberOfAttempts - attempt);
+                _shufflePinNumbers();
+                vibrateLightDouble();
+              } else {
+                errorMessage = t.errors.pin_check_error.failed;
+              }
+            } else {
+              errorMessage = t.errors.pin_check_error.incorrect;
+              _shufflePinNumbers();
+              vibrateLightDouble();
+            }
+            pin = '';
           }
-        } else {
-          errorMessage = t.errors.pin_check_error.incorrect;
-          _shufflePinNumbers();
-          vibrateLightDouble();
-        }
-        pin = '';
-      }
 
-      setState(() {});
-    }).whenComplete(() {
-      if (mounted) {
-        context.loaderOverlay.hide();
-      }
-    });
+          setState(() {});
+        })
+        .whenComplete(() {
+          if (mounted) {
+            context.loaderOverlay.hide();
+          }
+        });
   }
 
   void _onKeyTap(String value) {
@@ -149,21 +149,25 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
   void _showResetConfirmDialog() async {
     vibrateMedium();
 
-    await CustomDialogs.showCustomAlertDialog(context,
-        title: t.alert.forgot_password.title,
-        message: t.alert.forgot_password.description,
-        confirmButtonText: t.alert.forgot_password.btn_reset,
-        confirmButtonColor: CoconutColors.hotPink,
-        cancelButtonText: t.close, onConfirm: () async {
-      await _authProvider.resetPassword();
-      Provider.of<RealmManager>(context, listen: false).reset();
-      widget.onComplete?.call();
-      if (mounted) {
+    await CustomDialogs.showCustomAlertDialog(
+      context,
+      title: t.alert.forgot_password.title,
+      message: t.alert.forgot_password.description,
+      confirmButtonText: t.alert.forgot_password.btn_reset,
+      confirmButtonColor: CoconutColors.hotPink,
+      cancelButtonText: t.close,
+      onConfirm: () async {
+        await _authProvider.resetPassword();
+        Provider.of<RealmManager>(context, listen: false).reset();
+        widget.onComplete?.call();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      onCancel: () {
         Navigator.of(context).pop();
-      }
-    }, onCancel: () {
-      Navigator.of(context).pop();
-    });
+      },
+    );
   }
 
   @override
@@ -180,11 +184,12 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
       onClosePressed: () {
         Navigator.pop(context);
       },
-      onReset: widget.appEntrance
-          ? () {
-              _showResetConfirmDialog();
-            }
-          : null,
+      onReset:
+          widget.appEntrance
+              ? () {
+                _showResetConfirmDialog();
+              }
+              : null,
       step: 0,
       pinLength: _authProvider.pinLength,
     );

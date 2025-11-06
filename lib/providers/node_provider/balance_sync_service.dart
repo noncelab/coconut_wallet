@@ -16,23 +16,14 @@ class BalanceSyncService {
   final AddressRepository _addressRepository;
   final WalletRepository _walletRepository;
 
-  BalanceSyncService(
-    this._electrumService,
-    this._stateManager,
-    this._addressRepository,
-    this._walletRepository,
-  );
+  BalanceSyncService(this._electrumService, this._stateManager, this._addressRepository, this._walletRepository);
 
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
-  Future<void> fetchScriptBalance(
-    WalletListItemBase walletItem,
-    ScriptStatus scriptStatus,
-  ) async {
+  Future<void> fetchScriptBalance(WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     // 동기화 시작 state 업데이트
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.balance);
 
-    final balanceResponse =
-        await _electrumService.getBalance(walletItem.walletBase.addressType, scriptStatus.address);
+    final balanceResponse = await _electrumService.getBalance(walletItem.walletBase.addressType, scriptStatus.address);
 
     // GetBalanceRes에서 Balance 객체로 변환
     final addressBalance = Balance(balanceResponse.confirmed, balanceResponse.unconfirmed);
@@ -49,12 +40,9 @@ class BalanceSyncService {
   }
 
   /// 여러 스크립트의 잔액을 일괄적으로 조회하고 업데이트합니다.
-  Future<void> fetchScriptBalanceBatch(
-    WalletListItemBase walletItem,
-    List<ScriptStatus> scriptStatuses,
-  ) async {
+  Future<void> fetchScriptBalanceBatch(WalletListItemBase walletItem, List<ScriptStatus> scriptStatuses) async {
     if (scriptStatuses.isEmpty) {
-      Logger.error('fetchScriptBalanceBatch: scriptStatuses is empty');
+      Logger.error('fetchScriptBalanceBatch: scriptStatus is empty');
       return;
     }
 
@@ -65,22 +53,23 @@ class BalanceSyncService {
       List<UpdateAddressBalanceDto> balanceUpdates = [];
 
       const batchSize = 50; // 배치 사이즈 임의 설정
-      final isOnionHost =
-          scriptStatuses.isNotEmpty && scriptStatuses.first.address.contains('.onion');
+      final isOnionHost = scriptStatuses.isNotEmpty && scriptStatuses.first.address.contains('.onion');
 
       for (int i = 0; i < scriptStatuses.length; i += batchSize) {
-        final endIndex =
-            (i + batchSize < scriptStatuses.length) ? i + batchSize : scriptStatuses.length;
+        final endIndex = (i + batchSize < scriptStatuses.length) ? i + batchSize : scriptStatuses.length;
         final batch = scriptStatuses.sublist(i, endIndex);
 
         Logger.log(
-            'BalanceSyncService: Processing batch ${(i ~/ batchSize) + 1}/${(scriptStatuses.length / batchSize).ceil()}');
+          'BalanceSyncService: Processing batch ${(i ~/ batchSize) + 1}/${(scriptStatuses.length / batchSize).ceil()}',
+        );
 
         // 배치 내에서 병렬 처리
         final batchFutures = batch.map((script) async {
           try {
             final balanceResponse = await _electrumService.getBalance(
-                walletItem.walletBase.addressType, script.address);
+              walletItem.walletBase.addressType,
+              script.address,
+            );
 
             return UpdateAddressBalanceDto(
               scriptStatus: script,
@@ -90,11 +79,7 @@ class BalanceSyncService {
           } catch (e) {
             Logger.error('BalanceSyncService: Error fetching balance for ${script.address}: $e');
             // 에러가 발생한 경우 기본값 반환
-            return UpdateAddressBalanceDto(
-              scriptStatus: script,
-              confirmed: 0,
-              unconfirmed: 0,
-            );
+            return UpdateAddressBalanceDto(scriptStatus: script, confirmed: 0, unconfirmed: 0);
           }
         });
 
@@ -119,10 +104,7 @@ class BalanceSyncService {
       //   ));
       // }
 
-      final totalBalanceDiff = await _addressRepository.updateAddressBalanceBatch(
-        walletItem.id,
-        balanceUpdates,
-      );
+      final totalBalanceDiff = await _addressRepository.updateAddressBalanceBatch(walletItem.id, balanceUpdates);
 
       // 지갑 잔액에 변화량 반영
       await _walletRepository.accumulateWalletBalance(walletItem.id, totalBalanceDiff);

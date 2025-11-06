@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/material.dart';
 
@@ -85,13 +86,24 @@ class BroadcastingViewModel extends ChangeNotifier {
   /// 전달된 문자열이 Base64로 인코딩된 PSBT인지 확인하는 함수
   bool isPsbt() {
     try {
-      final decoded = base64Decode(signedTransaction);
-      return decoded.length >= 5 &&
+      List<int> decoded;
+      // 이미 Base64인지 확인
+      if (RegExp(r'^[A-Za-z0-9+/]*={0,2}$').hasMatch(signedTransaction)) {
+        decoded = base64Decode(signedTransaction);
+      } else {
+        // Base64가 아닌 경우 UTF-8 바이트로 변환
+        decoded = utf8.encode(signedTransaction);
+      }
+
+      bool isPsbtResult =
+          decoded.length >= 5 &&
           decoded[0] == 0x70 &&
           decoded[1] == 0x73 &&
           decoded[2] == 0x62 &&
           decoded[3] == 0x74 &&
           decoded[4] == 0xff;
+
+      return isPsbtResult;
     } catch (_) {
       return false;
     }
@@ -103,17 +115,23 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (isPsbt()) {
       signedPsbt = Psbt.parse(signedTransaction);
     } else {
-      signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
+      try {
+        signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
 
-      // raw transaction 데이터 처리 (hex 또는 base64)
-      String hexTransaction = decodeTransactionToHex();
+        // raw transaction 데이터 처리 (hex 또는 base64)
+        String hexTransaction = decodeTransactionToHex();
+        final signedTx = Transaction.parse(hexTransaction);
+        final unSingedTx = signedPsbt.unsignedTransaction;
 
-      final signedTx = Transaction.parse(hexTransaction);
-      final unSingedTx = signedPsbt.unsignedTransaction;
+        // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
+        bool isContentEqual = isTxContentEqual(signedTx, unSingedTx);
 
-      // 콜드카드의 경우 SignedTransaction을 넘겨주기 때문에, UnsignedTransaction과 같은 데이터인지 검사 필요
-      if (!isTxContentEqual(signedTx, unSingedTx)) {
-        throw InvalidTransactionException();
+        if (!isContentEqual) {
+          throw InvalidTransactionException();
+        }
+      } catch (e) {
+        Logger.log('--> BroadcastingViewModel.setTxInfo: raw transaction processing error: $e');
+        rethrow;
       }
     }
 
@@ -166,8 +184,7 @@ class BroadcastingViewModel extends ChangeNotifier {
         }
       }
       _sendingAmount = psbt.sendingAmount;
-      _recipientAddresses
-          .addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
+      _recipientAddresses.addAll(recipientAmounts.entries.map((e) => '${e.key} (${e.value} ${t.btc})'));
     } else {
       PsbtOutput? output;
       if (outputsToOther.isNotEmpty) {
@@ -227,8 +244,11 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   ///예외: 사용자가 배치 트랜잭션에 '남의 주소 또는 내 Receive 주소 1개'와 '본인 change 주소 1개'를 입력하고, 이 트랜잭션의 잔액이 없는 희박한 상황에서는 배치 트랜잭션임을 구분하지 못함
-  bool _isBatchTransaction(List<PsbtOutput> outputToMyReceivingAddress,
-      List<PsbtOutput> outputToMyChangeAddress, List<PsbtOutput> outputsToOther) {
+  bool _isBatchTransaction(
+    List<PsbtOutput> outputToMyReceivingAddress,
+    List<PsbtOutput> outputToMyChangeAddress,
+    List<PsbtOutput> outputsToOther,
+  ) {
     var countExceptToMyChangeAddress = outputToMyReceivingAddress.length + outputsToOther.length;
     if (countExceptToMyChangeAddress >= 2) {
       return true;
@@ -264,9 +284,23 @@ class BroadcastingViewModel extends ChangeNotifier {
         // 이미 hex 문자열인 경우
         return signedTransaction;
       } else {
-        // base64 문자열인 경우 디코딩
+        // 콜드카드의 경우 Base64로 넘겨주기 때문에 이를 Hex로 변경
         final bytes = base64.decode(signedTransaction);
-        return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
+        final decodedString = String.fromCharCodes(bytes);
+
+        if (decodedString.startsWith('303230')) {
+          // ASCII 문자열이 Hex로 인코딩된 경우, 실제 Hex로 변환
+          final hexResult = String.fromCharCodes(
+            List.generate(decodedString.length ~/ 2, (i) {
+              return int.parse(decodedString.substring(i * 2, i * 2 + 2), radix: 16);
+            }),
+          );
+          return hexResult;
+        } else {
+          final hexResult = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('');
+
+          return hexResult;
+        }
       }
     } catch (e) {
       throw InvalidTransactionException('Failed to decode transaction: $e');

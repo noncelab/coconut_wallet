@@ -75,15 +75,22 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider4<WalletProvider, PreferenceProvider, VisibilityProvider,
-        ConnectivityProvider, WalletHomeViewModel>(
+    return ChangeNotifierProxyProvider4<
+      WalletProvider,
+      PreferenceProvider,
+      VisibilityProvider,
+      ConnectivityProvider,
+      WalletHomeViewModel
+    >(
       create: (_) => _createViewModel(),
-      update: (BuildContext context,
-          WalletProvider walletProvider,
-          PreferenceProvider preferenceProvider,
-          VisibilityProvider visibilityProvider,
-          ConnectivityProvider connectivityProvider,
-          WalletHomeViewModel? previous) {
+      update: (
+        BuildContext context,
+        WalletProvider walletProvider,
+        PreferenceProvider preferenceProvider,
+        VisibilityProvider visibilityProvider,
+        ConnectivityProvider connectivityProvider,
+        WalletHomeViewModel? previous,
+      ) {
         previous ??= _createViewModel();
 
         previous.onPreferenceProviderUpdated();
@@ -96,18 +103,27 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         return previous..onWalletProviderUpdated(walletProvider);
       },
       child: Selector<
-          WalletHomeViewModel,
-          Tuple7<List<WalletListItemBase>, List<WalletListItemBase>, bool, bool,
-              Map<int, AnimatedBalanceData>, Tuple2<int?, Map<int, dynamic>>, NetworkStatus>>(
-        selector: (_, vm) => Tuple7(
-          vm.walletItemList,
-          vm.favoriteWallets,
-          vm.isBalanceHidden,
-          vm.shouldShowLoadingIndicator,
-          vm.walletBalanceMap,
-          Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
-          vm.networkStatus,
-        ),
+        WalletHomeViewModel,
+        Tuple7<
+          List<WalletListItemBase>,
+          List<WalletListItemBase>,
+          bool,
+          bool,
+          Map<int, AnimatedBalanceData>,
+          Tuple2<int?, Map<int, dynamic>>,
+          NetworkStatus
+        >
+      >(
+        selector:
+            (_, vm) => Tuple7(
+              vm.walletItemList,
+              vm.favoriteWallets,
+              vm.isBalanceHidden,
+              vm.shouldShowLoadingIndicator,
+              vm.walletBalanceMap,
+              Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
+              vm.networkStatus,
+            ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletHomeViewModel>(context, listen: false);
 
@@ -134,49 +150,53 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 child: Stack(
                   children: [
                     CustomScrollView(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        semanticChildCount: walletItem.length,
-                        slivers: <Widget>[
-                          _buildAppBar(networkStatus),
-                          // pull to refresh시 로딩 인디케이터를 보이기 위함
-                          CupertinoSliverRefreshControl(
-                            onRefresh: viewModel.onRefresh,
-                          ),
-                          _buildLoadingIndicator(viewModel),
-                          _buildHeader(isBalanceHidden, viewModel.fakeBalanceTotalAmount,
-                              shouldShowLoadingIndicator, viewModel.walletItemList.isEmpty),
-                          if (!shouldShowLoadingIndicator)
-                            SliverToBoxAdapter(
-                                child: Column(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      semanticChildCount: walletItem.length,
+                      slivers: <Widget>[
+                        _buildAppBar(networkStatus),
+                        // pull to refresh시 로딩 인디케이터를 보이기 위함
+                        CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
+                        _buildLoadingIndicator(viewModel),
+                        _buildHeader(
+                          isBalanceHidden,
+                          viewModel.fakeBalanceTotalAmount,
+                          shouldShowLoadingIndicator,
+                          viewModel.walletItemList.isEmpty,
+                        ),
+                        if (!shouldShowLoadingIndicator)
+                          SliverToBoxAdapter(
+                            child: Column(
                               children: [
                                 if (walletItem.isEmpty) ...[
                                   CoconutLayout.spacing_600h,
-                                  WalletAdditionGuideCard(onPressed: _onAddWalletPressed)
-                                ]
+                                  WalletAdditionGuideCard(onPressed: _onAddWalletPressed),
+                                ],
                               ],
-                            )),
-                          if (shouldShowLoadingIndicator && walletItem.isEmpty) ...[
-                            // 처음 로딩시 스켈레톤
-                            _buildBodySkeleton(),
-                          ],
-                          if (walletItem.isNotEmpty) ...[
-                            // 지갑 리스트가 비어있지 않을 때
+                            ),
+                          ),
+                        if (shouldShowLoadingIndicator && walletItem.isEmpty) ...[
+                          // 처음 로딩시 스켈레톤
+                          _buildBodySkeleton(),
+                        ],
+                        if (walletItem.isNotEmpty) ...[
+                          // 지갑 리스트가 비어있지 않을 때
 
-                            // 전체보기 위젯
-                            _buildViewAll(walletItem.length),
+                          // 전체보기 위젯
+                          _buildViewAll(walletItem.length),
 
-                            if (favoriteWallets.isNotEmpty)
-                              // 즐겨찾기된 지갑 목록
-                              _buildWalletList(
-                                walletItem,
-                                favoriteWallets,
-                                walletBalanceMap,
-                                isBalanceHidden,
-                                (id) => viewModel.getFakeBalance(id),
-                              ),
-                          ],
-                        ]),
+                          if (favoriteWallets.isNotEmpty)
+                            // 즐겨찾기된 지갑 목록
+                            _buildWalletList(
+                              walletItem,
+                              favoriteWallets,
+                              walletBalanceMap,
+                              isBalanceHidden,
+                              (id) => viewModel.getFakeBalance(id),
+                            ),
+                        ],
+                      ],
+                    ),
                     _buildDropdownBackdrop(),
                     _buildDropdownMenu(),
                   ],
@@ -196,32 +216,36 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _scrollController = ScrollController();
 
     _dropdownActions = [
-      () => CommonBottomSheets.showBottomSheet_90(
-          context: context, child: const GlossaryBottomSheet()),
+      () => CommonBottomSheets.showCustomHeightBottomSheet(
+        context: context,
+        child: const GlossaryBottomSheet(),
+        heightRatio: 0.9,
+      ),
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
       () => showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return CoconutPopup(
-                title: t.alert.tutorial.title,
-                description: t.alert.tutorial.description,
-                onTapRight: () async {
-                  launchURL(
-                    TUTORIAL_URL,
-                    defaultMode: false,
-                  );
-                  Navigator.of(context).pop();
-                },
-                onTapLeft: () {
-                  Navigator.of(context).pop();
-                },
-                rightButtonText: t.alert.tutorial.btn_view,
-                rightButtonColor: CoconutColors.cyan,
-                leftButtonText: t.close,
-              );
+        context: context,
+        builder: (BuildContext context) {
+          return CoconutPopup(
+            title: t.alert.tutorial.title,
+            description: t.alert.tutorial.description,
+            onTapRight: () async {
+              launchURL(TUTORIAL_URL, defaultMode: false);
+              Navigator.of(context).pop();
             },
-          ),
-      () => CommonBottomSheets.showBottomSheet_90(context: context, child: const SettingsScreen()),
+            onTapLeft: () {
+              Navigator.of(context).pop();
+            },
+            rightButtonText: t.alert.tutorial.btn_view,
+            rightButtonColor: CoconutColors.cyan,
+            leftButtonText: t.close,
+          );
+        },
+      ),
+      () => CommonBottomSheets.showCustomHeightBottomSheet(
+        context: context,
+        child: const SettingsScreen(),
+        heightRatio: 0.9,
+      ),
       () => Navigator.pushNamed(context, '/app-info'),
     ];
 
@@ -233,17 +257,17 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       }
 
       if (_viewModel.isReviewScreenVisible) {
-        var animationController = BottomSheet.createAnimationController(this)
-          ..duration = const Duration(seconds: 2);
+        var animationController = BottomSheet.createAnimationController(this)..duration = const Duration(seconds: 2);
         await CommonBottomSheets.showBottomSheet_100(
-            context: context,
-            child: const UserExperienceSurveyBottomSheet(),
-            enableDrag: false,
-            backgroundColor: CoconutColors.gray900,
-            isDismissible: false,
-            isScrollControlled: true,
-            useSafeArea: false,
-            animationController: animationController);
+          context: context,
+          child: const UserExperienceSurveyBottomSheet(),
+          enableDrag: false,
+          backgroundColor: CoconutColors.gray900,
+          isDismissible: false,
+          isScrollControlled: true,
+          useSafeArea: false,
+          animationController: animationController,
+        );
 
         Future.delayed(const Duration(seconds: 5), () {
           animationController.dispose();
@@ -324,8 +348,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
   }
 
-  Widget _buildHeader(bool isBalanceHidden, int? fakeBalanceTotalAmount,
-      bool shouldShowLoadingIndicator, bool isWalletListEmpty) {
+  Widget _buildHeader(
+    bool isBalanceHidden,
+    int? fakeBalanceTotalAmount,
+    bool shouldShowLoadingIndicator,
+    bool isWalletListEmpty,
+  ) {
     // 처음 로딩시 스켈레톤
     if (shouldShowLoadingIndicator && _viewModel.walletItemList.isEmpty) {
       return SliverToBoxAdapter(
@@ -337,10 +365,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '',
-                    style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.gray350),
-                  ),
+                  Text('', style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.gray350)),
                   Shimmer.fromColors(
                     baseColor: CoconutColors.gray800,
                     highlightColor: CoconutColors.gray750,
@@ -349,10 +374,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
                         color: CoconutColors.gray800,
                       ),
-                      child: Text(
-                        '0.0000 0000 BTC',
-                        style: CoconutTypography.heading3_21_NumberBold,
-                      ),
+                      child: Text('0.0000 0000 BTC', style: CoconutTypography.heading3_21_NumberBold),
                     ),
                   ),
                 ],
@@ -363,10 +385,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
               child: _buildHeaderActions(isActive: false),
             ),
-            const Divider(
-              thickness: 12,
-              color: CoconutColors.gray900,
-            ),
+            const Divider(thickness: 12, color: CoconutColors.gray900),
           ],
         ),
       );
@@ -383,31 +402,30 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   maintainSize: true,
                   maintainAnimation: true,
                   maintainState: true,
-                  visible: (!isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) &&
-                      _viewModel.walletItemList.isNotEmpty,
+                  visible: (!isBalanceHidden) && _viewModel.walletItemList.isNotEmpty,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Selector<WalletHomeViewModel, List<int>>(
                         selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
                         builder: (context, excludedIds, child) {
-                          final balance = _viewModel.fakeBalanceTotalAmount != null
-                              ? _viewModel.fakeBalanceTotalAmount!
-                              : Map.fromEntries(
-                                  _viewModel.walletBalanceMap.entries.where(
-                                    (entry) => !excludedIds.contains(entry.key),
-                                  ),
-                                )
-                                  .values
-                                  .map((e) => e.current)
-                                  .fold(0, (current, element) => current + element);
+                          final balance =
+                              _viewModel.fakeBalanceTotalAmount != null
+                                  ? _viewModel.fakeBalanceMap.entries
+                                      .where((entry) => !excludedIds.contains(entry.key))
+                                      .map((entry) => entry.value as int)
+                                      .fold<int>(0, (current, element) => current + element)
+                                  : Map.fromEntries(
+                                    _viewModel.walletBalanceMap.entries.where(
+                                      (entry) => !excludedIds.contains(entry.key),
+                                    ),
+                                  ).values.map((e) => e.current).fold(0, (current, element) => current + element);
                           return FiatPrice(
                             satoshiAmount: balance,
-                            textStyle:
-                                CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
+                            textStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
                           );
                         },
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -415,112 +433,111 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   selector: (_, viewModel) => viewModel.isBtcUnit,
                   builder: (context, isBtcUnit, child) {
                     return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            isBalanceHidden
-                                ? fakeBalanceTotalAmount != null
-                                    ? Text(
-                                        isBtcUnit
-                                            ? BitcoinUnit.btc.displayBitcoinAmount(
-                                                _viewModel.getHomeFakeBalanceTotal().toInt())
-                                            : BitcoinUnit.sats.displayBitcoinAmount(
-                                                _viewModel.getHomeFakeBalanceTotal().toInt()),
-                                        style: CoconutTypography.heading3_21_NumberBold.merge(
-                                          const TextStyle(
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                      )
-                                    : Text(
+                        Expanded(
+                          child: FittedBox(
+                            alignment: Alignment.centerLeft,
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              children: [
+                                isBalanceHidden
+                                    ? FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
                                         t.view_balance,
                                         style: CoconutTypography.heading3_21_NumberBold
-                                            .setColor(
-                                              CoconutColors.gray600,
+                                            .setColor(CoconutColors.gray600)
+                                            .merge(const TextStyle(height: 1.3)),
+                                      ),
+                                    )
+                                    : fakeBalanceTotalAmount != null
+                                    ? FittedBox(
+                                      child: Text(
+                                        isBtcUnit
+                                            ? BitcoinUnit.btc.displayBitcoinAmount(
+                                              _viewModel.getHomeFakeBalanceTotal().toInt(),
                                             )
-                                            .merge(
-                                              const TextStyle(
-                                                height: 1.3,
-                                              ),
+                                            : BitcoinUnit.sats.displayBitcoinAmount(
+                                              _viewModel.getHomeFakeBalanceTotal().toInt(),
                                             ),
-                                      )
-                                : Selector<WalletHomeViewModel, List<int>>(
-                                    selector: (_, viewModel) =>
-                                        viewModel.excludedFromTotalBalanceWalletIds,
-                                    builder: (context, excludedIds, child) {
-                                      // 총 잔액에서 숨기기 설정된 지갑 ID는 합에서 제외
-                                      final filteredBalanceMap = Map.fromEntries(
-                                        _viewModel.walletBalanceMap.entries.where(
-                                          (entry) => !excludedIds.contains(entry.key),
+                                        style: CoconutTypography.heading3_21_NumberBold.merge(
+                                          const TextStyle(height: 1.4),
                                         ),
-                                      );
+                                        maxLines: 1,
+                                      ),
+                                    )
+                                    : FittedBox(
+                                      alignment: Alignment.centerLeft,
+                                      child: Selector<WalletHomeViewModel, List<int>>(
+                                        selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
+                                        builder: (context, excludedIds, child) {
+                                          // 총 잔액에서 숨기기 설정된 지갑 ID는 합에서 제외
+                                          final filteredBalanceMap = Map.fromEntries(
+                                            _viewModel.walletBalanceMap.entries.where(
+                                              (entry) => !excludedIds.contains(entry.key),
+                                            ),
+                                          );
 
-                                      final prevValue = filteredBalanceMap.values
-                                          .map((e) => e.previous)
-                                          .fold(0, (prev, element) => prev + element);
+                                          final prevValue = filteredBalanceMap.values
+                                              .map((e) => e.previous)
+                                              .fold(0, (prev, element) => prev + element);
 
-                                      final currentValue = filteredBalanceMap.values
-                                          .map((e) => e.current)
-                                          .fold(0, (current, element) => current + element);
-                                      return AnimatedBalance(
-                                        prevValue: prevValue,
-                                        value: currentValue,
-                                        currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                                        textStyle: CoconutTypography.heading3_21_NumberBold.merge(
-                                          const TextStyle(
-                                            height: 1.4,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                            const SizedBox(width: 4.0),
-                            if (!isBalanceHidden || fakeBalanceTotalAmount != null)
-                              Text(
-                                isBtcUnit ? t.btc : t.sats,
-                                style: CoconutTypography.heading3_21_NumberBold,
-                              ),
-                          ],
+                                          final currentValue = filteredBalanceMap.values
+                                              .map((e) => e.current)
+                                              .fold(0, (current, element) => current + element);
+                                          return AnimatedBalance(
+                                            prevValue: prevValue,
+                                            value: currentValue,
+                                            currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                                            textStyle: CoconutTypography.heading3_21_NumberBold.merge(
+                                              const TextStyle(height: 1.4),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                const SizedBox(width: 4.0),
+                                if (!isBalanceHidden)
+                                  Text(isBtcUnit ? t.btc : t.sats, style: CoconutTypography.heading3_21_NumberBold),
+                              ],
+                            ),
+                          ),
                         ),
                         ShrinkAnimationButton(
-                            borderRadius: CoconutStyles.radius_100,
-                            defaultColor: CoconutColors.gray800,
-                            pressedColor: CoconutColors.gray750,
-                            onPressed: () {
-                              if (fakeBalanceTotalAmount != null) {
-                                _viewModel.clearFakeBlanceTotalAmount();
-                                _viewModel.setIsBalanceHidden(true);
-                                return;
-                              }
-                              _viewModel.setIsBalanceHidden(!isBalanceHidden);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              child: Text(
-                                _viewModel.isBalanceHidden && fakeBalanceTotalAmount == null
-                                    ? t.show
-                                    : t.hide,
-                                style: CoconutTypography.body3_12,
-                              ),
-                            ))
+                          borderRadius: CoconutStyles.radius_100,
+                          defaultColor: CoconutColors.gray800,
+                          pressedColor: CoconutColors.gray750,
+                          onPressed: () {
+                            // if (fakeBalanceTotalAmount != null) {
+                            //   _viewModel.clearFakeBlanceTotalAmount();
+                            //   _viewModel.setIsBalanceHidden(true);
+                            //   return;
+                            // }
+                            _viewModel.setIsBalanceHidden(!isBalanceHidden);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            child: Text(
+                              _viewModel.isBalanceHidden ? t.show : t.hide,
+                              style: CoconutTypography.body3_12,
+                            ),
+                          ),
+                        ),
                       ],
                     );
                   },
                 ),
                 CoconutLayout.spacing_500h,
                 _buildHeaderActions(),
-                if (!Platform.isIOS && NetworkType.currentNetworkType == NetworkType.mainnet) ...[
-                  CoconutLayout.spacing_400h,
-                  _buildDonationBanner(),
-                ],
+                // if (!Platform.isIOS && NetworkType.currentNetworkType == NetworkType.mainnet) ...[
+                //   CoconutLayout.spacing_400h,
+                //   _buildDonationBanner(),
+                // ],
               ],
             ),
           ),
-          const Divider(
-            thickness: 12,
-            color: CoconutColors.gray900,
-          ),
+          const Divider(thickness: 12, color: CoconutColors.gray900),
         ],
       ),
     );
@@ -538,18 +555,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               highlightColor: CoconutColors.gray750,
               child: Container(
                 width: MediaQuery.sizeOf(context).width,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: CoconutColors.gray800,
                   borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
                 ),
-                child: const Text(
-                  '',
-                  style: CoconutTypography.body2_14,
-                ),
+                child: const Text('', style: CoconutTypography.body2_14),
               ),
             ),
             CoconutLayout.spacing_300h,
@@ -578,75 +589,67 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         return Row(
           children: [
             Expanded(
-              child: isActive
-                  ? ShrinkAnimationButton(
-                      onPressed: () {
-                        _onTapReceive(walletOrder);
-                      },
-                      borderRadius: CoconutStyles.radius_100,
-                      defaultColor: CoconutColors.gray800,
-                      pressedColor: CoconutColors.gray750,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+              child:
+                  isActive
+                      ? ShrinkAnimationButton(
+                        onPressed: () {
+                          _onTapReceive(walletOrder);
+                        },
+                        borderRadius: CoconutStyles.radius_100,
+                        defaultColor: CoconutColors.gray800,
+                        pressedColor: CoconutColors.gray750,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Text(t.receive, style: CoconutTypography.body2_14),
+                          ),
+                        ),
+                      )
+                      : Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: CoconutColors.gray800,
+                          borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                        ),
+                        child: Center(
                           child: Text(
                             t.receive,
-                            style: CoconutTypography.body2_14,
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withOpacity(0.3)),
                           ),
                         ),
                       ),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: CoconutColors.gray800,
-                        borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
-                      ),
-                      child: Center(
-                        child: Text(
-                          t.receive,
-                          style: CoconutTypography.body3_12.setColor(
-                            CoconutColors.white.withOpacity(0.3),
-                          ),
-                        ),
-                      ),
-                    ),
             ),
             CoconutLayout.spacing_200w,
             Expanded(
-              child: isActive
-                  ? ShrinkAnimationButton(
-                      onPressed: () {
-                        _onTapSend(walletOrder);
-                      },
-                      borderRadius: CoconutStyles.radius_100,
-                      defaultColor: CoconutColors.gray800,
-                      pressedColor: CoconutColors.gray750,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+              child:
+                  isActive
+                      ? ShrinkAnimationButton(
+                        onPressed: () {
+                          _onTapSend(walletOrder);
+                        },
+                        borderRadius: CoconutStyles.radius_100,
+                        defaultColor: CoconutColors.gray800,
+                        pressedColor: CoconutColors.gray750,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Text(t.send, style: CoconutTypography.body2_14),
+                          ),
+                        ),
+                      )
+                      : Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: CoconutColors.gray800,
+                          borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                        ),
+                        child: Center(
                           child: Text(
                             t.send,
-                            style: CoconutTypography.body2_14,
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withOpacity(0.3)),
                           ),
                         ),
                       ),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: CoconutColors.gray800,
-                        borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
-                      ),
-                      child: Center(
-                        child: Text(
-                          t.send,
-                          style: CoconutTypography.body3_12.setColor(
-                            CoconutColors.white.withOpacity(0.3),
-                          ),
-                        ),
-                      ),
-                    ),
             ),
           ],
         );
@@ -655,9 +658,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildDonationBanner() {
-    return DonationBannerCard(
-      walletListLength: _viewModel.walletItemList.length,
-    );
+    return DonationBannerCard(walletListLength: _viewModel.walletItemList.length);
   }
 
   bool _checkStateAndShowToast(int id) {
@@ -669,8 +670,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     // TODO: 실제 특정 id(대표지갑)의 SyncState와 연동-> 대표지갑 sync가 충족되지 않으면 [보내기] 불가하도록 개선, 아래 조건문도 변경이 필요함
     if (walletUpdateInfo.balance == WalletSyncState.completed &&
         walletUpdateInfo.transaction == WalletSyncState.completed) {
-      CoconutToast.showToast(
-          isVisibleIcon: true, context: context, text: t.toast.fetching_onchain_data);
+      CoconutToast.showToast(isVisibleIcon: true, context: context, text: t.toast.fetching_onchain_data);
       return false;
     }
 
@@ -682,18 +682,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     if (firstWallet == null) {
       // 추가된 지갑이 없음
       CoconutToast.showToast(
-          context: context,
-          isVisibleIcon: true,
-          iconPath: 'assets/svg/circle-info.svg',
-          text: t.can_use_after_add_wallet);
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/circle-info.svg',
+        text: t.can_use_after_add_wallet,
+      );
       return;
     }
 
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
-    final targetId = walletOrder.firstWhere(
-      (id) => id == firstWallet.id,
-      orElse: () => firstWallet.id,
-    );
+    final targetId = walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
 
     Navigator.of(context).pushNamed("/receive-address", arguments: {"id": targetId});
   }
@@ -701,20 +699,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   void _onTapSend(List<int> walletOrder) {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
     if (firstWallet == null) {
-      Navigator.pushNamed(context, '/send',
-          arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home});
+      Navigator.pushNamed(context, '/send', arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home});
       return;
     }
 
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
-    final targetId = walletOrder.firstWhere(
-      (id) => id == firstWallet.id,
-      orElse: () => firstWallet.id,
-    );
+    final targetId = walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
 
     if (!_checkStateAndShowToast(targetId)) return;
-    Navigator.pushNamed(context, '/send',
-        arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
+    Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
   }
 
   Widget _buildViewAll(int walletCount) {
@@ -732,40 +725,35 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               },
               borderRadius: CoconutStyles.radius_200,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      t.wallet_list.view_all_wallets,
-                      style: CoconutTypography.body2_14,
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(t.wallet_list.view_all_wallets, style: CoconutTypography.body2_14),
+                      ),
                     ),
                     Row(
                       children: [
-                        Text(
-                          t.wallet_list.wallet_count(count: walletCount),
-                          style: CoconutTypography.body3_12,
-                        ),
+                        CoconutLayout.spacing_200w,
+                        Text(t.wallet_list.wallet_count(count: walletCount), style: CoconutTypography.body3_12),
                         CoconutLayout.spacing_200w,
                         SvgPicture.asset(
                           'assets/svg/arrow-right.svg',
                           width: 6,
                           height: 10,
-                          colorFilter: const ColorFilter.mode(
-                            CoconutColors.gray400,
-                            BlendMode.srcIn,
-                          ),
+                          colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -782,10 +770,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       child: Container(
         margin: const EdgeInsets.only(top: 12, left: 20, right: 20),
         padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: CoconutColors.gray800,
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
         child: Column(
           children: List.generate(walletList.length, (index) {
             final wallet = walletList[index];
@@ -808,19 +793,23 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletItem(WalletListItemBase wallet, Animation<double> animation,
-      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
-    return _getWalletRowItem(
-      Key(wallet.id.toString()),
-      wallet,
-      animatedBalanceData,
-      fakeBalance,
-      isLastItem,
-    );
+  Widget _buildWalletItem(
+    WalletListItemBase wallet,
+    Animation<double> animation,
+    AnimatedBalanceData animatedBalanceData,
+    int? fakeBalance,
+    bool isLastItem,
+  ) {
+    return _getWalletRowItem(Key(wallet.id.toString()), wallet, animatedBalanceData, fakeBalance, isLastItem);
   }
 
-  Widget _getWalletRowItem(Key key, WalletListItemBase walletItem,
-      AnimatedBalanceData animatedBalanceData, int? fakeBalance, bool isLastItem) {
+  Widget _getWalletRowItem(
+    Key key,
+    WalletListItemBase walletItem,
+    AnimatedBalanceData animatedBalanceData,
+    int? fakeBalance,
+    bool isLastItem,
+  ) {
     final WalletListItemBase(
       id: id,
       name: name,
@@ -834,40 +823,45 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
 
     return Selector2<PreferenceProvider, WalletHomeViewModel, Tuple2<bool, bool>>(
-        selector: (_, preferenceProvider, viewModel) =>
-            Tuple2(preferenceProvider.isBtcUnit, viewModel.isBalanceHidden),
-        builder: (context, data, child) {
-          final isBtcUnit = data.item1;
-          final isBalanceHidden = data.item2;
-          return WalletItemCard(
-            key: key,
-            id: id,
-            name: name,
-            animatedBalanceData: animatedBalanceData,
-            iconIndex: iconIndex,
-            colorIndex: colorIndex,
-            isLastItem: isLastItem,
-            isBalanceHidden: isBalanceHidden,
-            fakeBalance: fakeBalance,
-            signers: signers,
-            walletImportSource: walletImportSource,
-            currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-            entryPoint: kEntryPointWalletHome,
-          );
-        });
+      selector: (_, preferenceProvider, viewModel) => Tuple2(preferenceProvider.isBtcUnit, viewModel.isBalanceHidden),
+      builder: (context, data, child) {
+        final isBtcUnit = data.item1;
+        final isBalanceHidden = data.item2;
+        return WalletItemCard(
+          key: key,
+          id: id,
+          name: name,
+          animatedBalanceData: animatedBalanceData,
+          iconIndex: iconIndex,
+          colorIndex: colorIndex,
+          isLastItem: isLastItem,
+          isBalanceHidden: isBalanceHidden,
+          fakeBalance: fakeBalance,
+          signers: signers,
+          walletImportSource: walletImportSource,
+          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+          entryPoint: kEntryPointWalletHome,
+        );
+      },
+    );
   }
 
   void _goToScannerScreen(WalletImportSource walletImportSource) async {
     Navigator.pop(context);
     final ResultOfSyncFromVault? scanResult =
-        (await Navigator.pushNamed(context, '/wallet-add-scanner', arguments: {
-      'walletImportSource': walletImportSource,
-      'onNewWalletAdded': (scanResult) {
-        setState(() {
-          _resultOfSyncFromVault = scanResult;
-        });
-      }
-    }) as ResultOfSyncFromVault?);
+        (await Navigator.pushNamed(
+              context,
+              '/wallet-add-scanner',
+              arguments: {
+                'walletImportSource': walletImportSource,
+                'onNewWalletAdded': (scanResult) {
+                  setState(() {
+                    _resultOfSyncFromVault = scanResult;
+                  });
+                },
+              },
+            )
+            as ResultOfSyncFromVault?);
 
     setState(() {
       _resultOfSyncFromVault = scanResult;
@@ -889,10 +883,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       barrierColor: CoconutColors.black.withOpacity(0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
-        final offsetTween = Tween<Offset>(
-          begin: const Offset(0, -1),
-          end: Offset.zero,
-        );
+        final offsetTween = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero);
         final slideDownAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
 
         return Stack(
@@ -950,8 +941,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 WalletImportSource.coldCard,
                               ),
                             ),
-                            const Expanded(
-                              child: SizedBox(),
+                            Expanded(
+                              child: _buildWalletIconShrinkButton(
+                                () => _goToScannerScreen(WalletImportSource.krux),
+                                WalletImportSource.krux,
+                              ),
                             ),
                           ],
                         ),
@@ -975,43 +969,36 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               right: 0,
               child: Column(
                 children: [
-                  Container(
-                    height: MediaQuery.of(context).padding.top,
-                    color: CoconutColors.black,
-                  ),
+                  Container(height: MediaQuery.of(context).padding.top, color: CoconutColors.black),
                   Container(
                     width: MediaQuery.sizeOf(context).width,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     height: kToolbarHeight,
                     color: CoconutColors.black,
-                    child: Row(children: [
-                      SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          highlightColor: CoconutColors.gray800,
-                          splashRadius: 20,
-                          padding: EdgeInsets.zero,
-                          icon: SvgPicture.asset(
-                            'assets/svg/close-bold.svg',
-                            colorFilter: ColorFilter.mode(
-                              CoconutColors.onPrimary(Brightness.dark),
-                              BlendMode.srcIn,
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            highlightColor: CoconutColors.gray800,
+                            splashRadius: 20,
+                            padding: EdgeInsets.zero,
+                            icon: SvgPicture.asset(
+                              'assets/svg/close-bold.svg',
+                              colorFilter: ColorFilter.mode(CoconutColors.onPrimary(Brightness.dark), BlendMode.srcIn),
+                              width: 14,
+                              height: 14,
                             ),
-                            width: 14,
-                            height: 14,
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        t.wallet_add_scanner_screen.add_wallet,
-                        style: CoconutTypography.heading4_18,
-                      ),
-                      const Spacer(),
-                      const SizedBox(width: 40)
-                    ]),
+                        const Spacer(),
+                        Text(t.wallet_add_scanner_screen.add_wallet, style: CoconutTypography.heading4_18),
+                        const Spacer(),
+                        const SizedBox(width: 40),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -1048,26 +1035,27 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       leadingSvgAsset: AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
         transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
-        child: shouldShow
-            ? Row(
-                key: const ValueKey('error_message'),
-                children: [
-                  SvgPicture.asset('assets/svg/cloud-disconnected.svg', width: 16),
-                  CoconutLayout.spacing_100w,
-                  Text(
-                    message,
-                    style: CoconutTypography.body3_12_Bold.setColor(
-                      CoconutColors.hotPink,
+        child:
+            shouldShow
+                ? Row(
+                  key: const ValueKey('error_message'),
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    SvgPicture.asset('assets/svg/cloud-disconnected.svg', width: 16),
+                    CoconutLayout.spacing_100w,
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width - 160,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(message, style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.hotPink)),
+                      ),
                     ),
-                  )
-                ],
-              )
-            : const SizedBox.shrink(key: ValueKey('empty')),
+                  ],
+                )
+                : const SizedBox.shrink(key: ValueKey('empty')),
       ),
       appTitle: '',
       actionButtonList: [
@@ -1096,35 +1084,29 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       key: key,
       height: 40,
       width: 40,
-      child: IconButton(
-        icon: icon,
-        onPressed: onPressed,
-        color: CoconutColors.white,
-      ),
+      child: IconButton(icon: icon, onPressed: onPressed, color: CoconutColors.white),
     );
   }
 
   Widget _buildLoadingIndicator(WalletHomeViewModel viewModel) {
     return SliverToBoxAdapter(
-        child: AnimatedSwitcher(
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: SizeTransition(
-          sizeFactor: animation,
-          child: child,
-        ),
+      child: AnimatedSwitcher(
+        transitionBuilder:
+            (child, animation) =>
+                FadeTransition(opacity: animation, child: SizeTransition(sizeFactor: animation, child: child)),
+        duration: const Duration(milliseconds: 300),
+        child:
+            viewModel.shouldShowLoadingIndicator && viewModel.walletItemList.isNotEmpty
+                ? const Center(
+                  child: Padding(
+                    key: ValueKey("loading"),
+                    padding: EdgeInsets.only(bottom: 20.0),
+                    child: LoadingIndicator(),
+                  ),
+                )
+                : null,
       ),
-      duration: const Duration(milliseconds: 300),
-      child: viewModel.shouldShowLoadingIndicator && viewModel.walletItemList.isNotEmpty
-          ? const Center(
-              child: Padding(
-                key: ValueKey("loading"),
-                padding: EdgeInsets.only(bottom: 20.0),
-                child: LoadingIndicator(),
-              ),
-            )
-          : null,
-    ));
+    );
   }
 
   Widget _buildDropdownBackdrop() {
@@ -1133,62 +1115,55 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       builder: (context, isVisible, child) {
         return isVisible
             ? Positioned.fill(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    _setPulldownMenuVisiblility(false);
-                  },
-                ),
-              )
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () {
+                  _setPulldownMenuVisiblility(false);
+                },
+              ),
+            )
             : Container();
       },
     );
   }
 
-  bool _isKoreanLanguage() {
-    final preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
-    return preferenceProvider.language == 'kr';
-  }
-
   Widget _buildDropdownMenu() {
-    final bool showGlossary = _isKoreanLanguage();
+    final bool showGlossary = !context.read<PreferenceProvider>().isEnglish;
     return Positioned(
-        top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
-        right: 20,
-        child: ValueListenableBuilder<bool>(
-          valueListenable: _isDropdownMenuVisible,
-          builder: (context, isVisible, child) {
-            return Visibility(
-              visible: isVisible,
-              child: CoconutPulldownMenu(
-                shadowColor: CoconutColors.gray800,
-                dividerColor: CoconutColors.gray800,
-                entries: [
-                  CoconutPulldownMenuGroup(
-                    groupTitle: t.tool,
-                    items: [
-                      if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
-                      CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
-                      if (NetworkType.currentNetworkType.isTestnet)
-                        CoconutPulldownMenuItem(title: t.tutorial),
-                    ],
-                  ),
-                  CoconutPulldownMenuItem(title: t.settings),
-                  CoconutPulldownMenuItem(title: t.view_app_info),
-                ],
-                dividerHeight: 1,
-                thickDividerHeight: 3,
-                thickDividerIndexList: [
-                  _getThickDividerIndex(showGlossary),
-                ],
-                onSelected: ((index, selectedText) {
-                  _setPulldownMenuVisiblility(false);
-                  _handleDropdownSelection(index, showGlossary);
-                }),
-              ),
-            );
-          },
-        ));
+      top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
+      right: 20,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _isDropdownMenuVisible,
+        builder: (context, isVisible, child) {
+          return Visibility(
+            visible: isVisible,
+            child: CoconutPulldownMenu(
+              shadowColor: CoconutColors.gray800,
+              dividerColor: CoconutColors.gray800,
+              entries: [
+                CoconutPulldownMenuGroup(
+                  groupTitle: t.tool,
+                  items: [
+                    if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
+                    CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
+                    if (NetworkType.currentNetworkType.isTestnet) CoconutPulldownMenuItem(title: t.tutorial),
+                  ],
+                ),
+                CoconutPulldownMenuItem(title: t.settings),
+                CoconutPulldownMenuItem(title: t.view_app_info),
+              ],
+              dividerHeight: 1,
+              thickDividerHeight: 3,
+              thickDividerIndexList: [_getThickDividerIndex(showGlossary)],
+              onSelected: ((index, selectedText) {
+                _setPulldownMenuVisiblility(false);
+                _handleDropdownSelection(index, showGlossary);
+              }),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   /// 용어집 표시 여부에 따른 Thick Divider 인덱스 계산
@@ -1221,17 +1196,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _dropdownActions[adjustedIndex].call();
   }
 
-  Widget _buildWalletIconShrinkButton(
-    VoidCallback onPressed,
-    WalletImportSource scanType,
-  ) {
+  Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType) {
     String svgPath;
     String scanText;
 
     switch (scanType) {
       case WalletImportSource.coconutVault:
-        svgPath =
-            'assets/svg/coconut-vault-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg';
+        svgPath = 'assets/svg/coconut-vault-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg';
         scanText = t.wallet_add_scanner_screen.vault;
         break;
       case WalletImportSource.keystone:
@@ -1250,6 +1221,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         svgPath = kColdCardIconPath;
         scanText = t.wallet_add_scanner_screen.cold_card;
         break;
+      case WalletImportSource.krux:
+        svgPath = kKruxIconPath;
+        scanText = t.wallet_add_scanner_screen.krux;
+        break;
       case WalletImportSource.extendedPublicKey:
         svgPath = kZpubIconPath;
         scanText = t.wallet_add_scanner_screen.self;
@@ -1259,45 +1234,48 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       defaultColor: CoconutColors.black,
       pressedColor: CoconutColors.gray750,
       onPressed: () => onPressed(),
-      child: scanType == WalletImportSource.extendedPublicKey
-          ? Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 16,
-                horizontal: 8,
+      child:
+          scanType == WalletImportSource.extendedPublicKey
+              ? Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: Row(
+                  children: [
+                    SvgPicture.asset(svgPath),
+                    CoconutLayout.spacing_400w,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            scanText,
+                            style: CoconutTypography.body2_14,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          CoconutLayout.spacing_50h,
+                          Text(
+                            t.wallet_add_scanner_screen.self_description,
+                            style: CoconutTypography.body3_12,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              : Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: Column(
+                  children: [
+                    SvgPicture.asset(svgPath),
+                    CoconutLayout.spacing_100h,
+                    Text(scanText, style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  SvgPicture.asset(svgPath),
-                  CoconutLayout.spacing_400w,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(scanText, style: CoconutTypography.body2_14),
-                      CoconutLayout.spacing_50h,
-                      Text(t.wallet_add_scanner_screen.self_description,
-                          style: CoconutTypography.body3_12),
-                    ],
-                  ),
-                ],
-              ),
-            )
-          : Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 16,
-                horizontal: 8,
-              ),
-              child: Column(
-                children: [
-                  SvgPicture.asset(svgPath),
-                  CoconutLayout.spacing_100h,
-                  Text(
-                    scanText,
-                    style: CoconutTypography.body2_14,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
     );
   }
 

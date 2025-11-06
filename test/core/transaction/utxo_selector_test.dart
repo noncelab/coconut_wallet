@@ -47,12 +47,7 @@ void main() {
       final paymentMap = {'address1': 60000}; // 0.0006 BTC
       final feeRate = 1.0; // 1 sat/vB
 
-      final result = UtxoSelector.selectOptimalUtxos(
-        utxoList,
-        paymentMap,
-        feeRate,
-        WalletType.singleSignature,
-      );
+      final result = UtxoSelector.selectOptimalUtxos(utxoList, paymentMap, feeRate, WalletType.singleSignature);
 
       expect(result.selectedUtxos.length, 1);
       expect(result.selectedUtxos.first.amount, 100000);
@@ -62,12 +57,7 @@ void main() {
       final paymentMap = {'address1': 120000}; // 0.0012 BTC
       final feeRate = 1.0;
 
-      final result = UtxoSelector.selectOptimalUtxos(
-        utxoList,
-        paymentMap,
-        feeRate,
-        WalletType.singleSignature,
-      );
+      final result = UtxoSelector.selectOptimalUtxos(utxoList, paymentMap, feeRate, WalletType.singleSignature);
 
       expect(result.selectedUtxos.length, 2);
       expect(result.selectedUtxos.map((u) => u.amount).reduce((a, b) => a + b), 150000);
@@ -78,18 +68,9 @@ void main() {
       const feeRate = 1.0;
 
       expect(
-        () => UtxoSelector.selectOptimalUtxos(
-          utxoList,
-          paymentMap,
-          feeRate,
-          WalletType.singleSignature,
-        ),
+        () => UtxoSelector.selectOptimalUtxos(utxoList, paymentMap, feeRate, WalletType.singleSignature),
         throwsA(
-          isA<InsufficientBalanceException>().having(
-            (e) => e.toString(),
-            'message',
-            'Not enough balance for sending.',
-          ),
+          isA<InsufficientBalanceException>().having((e) => e.toString(), 'message', 'Not enough balance for sending.'),
         ),
       );
     });
@@ -99,18 +80,9 @@ void main() {
       const feeRate = 1.0;
 
       expect(
-        () => UtxoSelector.selectOptimalUtxos(
-          utxoList,
-          paymentMap,
-          feeRate,
-          WalletType.singleSignature,
-        ),
+        () => UtxoSelector.selectOptimalUtxos(utxoList, paymentMap, feeRate, WalletType.singleSignature),
         throwsA(
-          isA<InsufficientBalanceException>().having(
-            (e) => e.toString(),
-            'message',
-            'Not enough balance for sending.',
-          ),
+          isA<InsufficientBalanceException>().having((e) => e.toString(), 'message', 'Not enough balance for sending.'),
         ),
       );
     });
@@ -177,9 +149,7 @@ void main() {
           WalletType.singleSignature,
           isFeeSubtractedFromAmount: true,
         ),
-        throwsA(
-          isA<SendAmountTooLowException>(),
-        ),
+        throwsA(isA<SendAmountTooLowException>()),
       );
     });
   });

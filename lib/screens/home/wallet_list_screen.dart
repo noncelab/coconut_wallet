@@ -6,6 +6,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dart';
@@ -49,14 +50,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProxyProvider3<WalletProvider, ConnectivityProvider, PreferenceProvider,
-        WalletListViewModel>(
+    return ChangeNotifierProxyProvider3<WalletProvider, ConnectivityProvider, PreferenceProvider, WalletListViewModel>(
       create: (_) => _createViewModel(),
-      update: (BuildContext context,
-          WalletProvider walletProvider,
-          ConnectivityProvider connectivityProvider,
-          PreferenceProvider preferenceProvider,
-          WalletListViewModel? previous) {
+      update: (
+        BuildContext context,
+        WalletProvider walletProvider,
+        ConnectivityProvider connectivityProvider,
+        PreferenceProvider preferenceProvider,
+        WalletListViewModel? previous,
+      ) {
         previous ??= _createViewModel();
 
         if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
@@ -69,18 +71,19 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         return previous..onWalletProviderUpdated(walletProvider);
       },
       child: Selector<
-          WalletListViewModel,
-          Tuple7<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>,
-              List<int>, bool, List<int>>>(
-        selector: (_, vm) => Tuple7(
-          vm.walletItemList,
-          vm.isNetworkOn ?? false,
-          vm.walletBalanceMap,
-          vm.tempFavoriteWalletIds,
-          vm.tempWalletOrder,
-          vm.isEditMode,
-          vm.walletOrder,
-        ),
+        WalletListViewModel,
+        Tuple7<List<WalletListItemBase>, bool, Map<int, AnimatedBalanceData>, List<int>, List<int>, bool, List<int>>
+      >(
+        selector:
+            (_, vm) => Tuple7(
+              vm.walletItemList,
+              vm.isNetworkOn ?? false,
+              vm.walletBalanceMap,
+              vm.tempFavoriteWalletIds,
+              vm.tempWalletOrder,
+              vm.isEditMode,
+              vm.walletOrder,
+            ),
         builder: (context, data, child) {
           final viewModel = Provider.of<WalletListViewModel>(context, listen: false);
 
@@ -93,13 +96,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           if (viewModel.pinCheckNotifier.value == true) {
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               viewModel.pinCheckNotifier.value = false;
-              await CommonBottomSheets.showBottomSheet_90(
+              await CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
-                child: CustomLoadingOverlay(
-                  child: PinCheckScreen(
-                    onComplete: () => viewModel.handleAuthCompletion(),
-                  ),
-                ),
+                child: CustomLoadingOverlay(child: PinCheckScreen(onComplete: () => viewModel.handleAuthCompletion())),
+                heightRatio: 0.9,
               );
             });
           }
@@ -127,45 +127,48 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   extendBodyBehindAppBar: true,
                   appBar: _buildAppBar(context),
                   body: SafeArea(
-                    top: true,
-                    bottom: false,
-                    child: isEditMode
-                        // 편집 모드
-                        ? Stack(
-                            children: [
-                              _buildEditableWalletList(walletBalanceMap),
-                              FixedBottomButton(
-                                onButtonClicked: () async {
-                                  await viewModel.applyTempDatasToWallets();
-                                },
-                                isActive:
-                                    viewModel.hasFavoriteChanged || viewModel.hasWalletOrderChanged,
-                                backgroundColor: CoconutColors.white,
-                                text: t.complete,
-                              )
-                            ],
-                          )
-                        // 일반 모드
-                        : Stack(
-                            children: [
-                              CustomScrollView(
-                                  controller: _scrollController,
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  semanticChildCount: walletListItem.length,
-                                  slivers: <Widget>[
-                                    // pull to refresh시 로딩 인디케이터를 보이기 위함
-                                    CupertinoSliverRefreshControl(
-                                      onRefresh: viewModel.updateWalletBalances,
-                                    ),
-                                    _buildLoadingIndicator(viewModel),
-                                    // _buildPadding(isOffline),
-                                    _buildTotalAmount(walletBalanceMap),
-                                    // 지갑 목록
-                                    _buildWalletList(walletListItem, walletBalanceMap, walletOrder),
-                                  ]),
-                              // _buildOfflineWarningBar(context, isOffline)
-                            ],
-                          ),
+                    child:
+                        isEditMode
+                            // 편집 모드
+                            ? Stack(
+                              children: [
+                                SizedBox(
+                                  height: MediaQuery.sizeOf(context).height,
+                                  child: _buildEditableWalletList(walletBalanceMap),
+                                ),
+                                FixedBottomButton(
+                                  onButtonClicked: () async {
+                                    await viewModel.applyTempDatasToWallets();
+                                  },
+                                  isActive: viewModel.hasFavoriteChanged || viewModel.hasWalletOrderChanged,
+                                  backgroundColor: CoconutColors.white,
+                                  text: t.complete,
+                                ),
+                              ],
+                            )
+                            // 일반 모드
+                            : Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              child: Stack(
+                                children: [
+                                  CustomScrollView(
+                                    controller: _scrollController,
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    semanticChildCount: walletListItem.length,
+                                    slivers: <Widget>[
+                                      // pull to refresh시 로딩 인디케이터를 보이기 위함
+                                      CupertinoSliverRefreshControl(onRefresh: viewModel.updateWalletBalances),
+                                      _buildLoadingIndicator(viewModel),
+                                      // _buildPadding(isOffline),
+                                      _buildTotalAmount(walletBalanceMap),
+                                      // 지갑 목록
+                                      _buildWalletList(walletListItem, walletBalanceMap, walletOrder),
+                                    ],
+                                  ),
+                                  // _buildOfflineWarningBar(context, isOffline)
+                                ],
+                              ),
+                            ),
                   ),
                 ),
               ),
@@ -174,50 +177,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 builder: (context, isLoading, _) {
                   return isLoading ? const CoconutLoadingOverlay() : Container();
                 },
-              )
+              ),
             ],
           );
         },
       ),
     );
   }
-
-  // Positioned _buildOfflineWarningBar(BuildContext context, bool isOffline) {
-  //   return Positioned(
-  //     top: MediaQuery.of(context).padding.top,
-  //     left: 0,
-  //     right: 0,
-  //     child: AnimatedContainer(
-  //       duration: kOfflineWarningBarDuration,
-  //       curve: Curves.easeOut,
-  //       height: isOffline ? kOfflineWarningBarHeight : 0.0,
-  //       width: double.infinity,
-  //       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-  //       color: CoconutColors.hotPink,
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.center,
-  //         children: [
-  //           SvgPicture.asset('assets/svg/triangle-warning.svg'),
-  //           CoconutLayout.spacing_100w,
-  //           Text(
-  //             t.errors.network_not_found,
-  //             style: CoconutTypography.body3_12,
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Widget _buildPadding(bool isOffline) {
-  //   const kDefaultPadding = Sizes.size12;
-  //   return SliverToBoxAdapter(
-  //       child: AnimatedContainer(
-  //           duration: kOfflineWarningBarDuration,
-  //           height: isOffline ? kOfflineWarningBarHeight + kDefaultPadding : kDefaultPadding,
-  //           curve: Curves.easeInOut,
-  //           child: const SizedBox()));
-  // }
 
   @override
   void initState() {
@@ -239,11 +205,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       Provider.of<AuthProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
+      Provider.of<PriceProvider>(context, listen: false),
     );
     return _viewModel;
   }
 
   Widget _buildEditModeHeader() {
+    SvgPicture starIcon = SvgPicture.asset('assets/svg/star-small.svg', width: 16, height: 16);
+    SvgPicture hamburgerIcon = SvgPicture.asset('assets/svg/hamburger.svg', width: 16, height: 16);
     return Container(
       width: MediaQuery.sizeOf(context).width,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -254,35 +223,29 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       ),
       child: Column(
         children: [
-          _buildEditModeHeaderLine(
-            [
-              WidgetSpan(
-                alignment: PlaceholderAlignment.top,
-                child: SvgPicture.asset(
-                  'assets/svg/star-small.svg',
-                  width: 12,
-                  height: 12,
-                ),
-              ),
+          _buildEditModeHeaderLine([
+            if (_viewModel.isEnglish) ...[
+              TextSpan(text: '${t.select} '),
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
+              const TextSpan(text: ' '),
+            ] else ...[
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
               TextSpan(text: t.wallet_list.edit.star_description),
             ],
-          ),
-          CoconutLayout.spacing_100h,
-          _buildEditModeHeaderLine([
-            WidgetSpan(
-              alignment: PlaceholderAlignment.top,
-              child: SvgPicture.asset(
-                'assets/svg/hamburger.svg',
-                width: 12,
-                height: 12,
-              ),
-            ),
-            TextSpan(text: t.wallet_list.edit.order_description),
           ]),
           CoconutLayout.spacing_100h,
           _buildEditModeHeaderLine([
-            TextSpan(text: t.wallet_list.edit.delete_description),
+            if (_viewModel.isEnglish) ...[
+              TextSpan(text: '${t.tap} '),
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
+              const TextSpan(text: ' '),
+            ] else ...[
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
+              TextSpan(text: t.wallet_list.edit.order_description),
+            ],
           ]),
+          CoconutLayout.spacing_100h,
+          _buildEditModeHeaderLine([TextSpan(text: t.wallet_list.edit.delete_description)]),
         ],
       ),
     );
@@ -293,20 +256,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          margin: const EdgeInsets.symmetric(
-            vertical: 7.2,
-            horizontal: 6,
-          ),
-          height: 2.5,
-          width: 2.5,
+          margin: const EdgeInsets.symmetric(vertical: 8.5, horizontal: 6),
+          height: 3,
+          width: 3,
           decoration: const BoxDecoration(color: CoconutColors.gray400, shape: BoxShape.circle),
         ),
         Expanded(
           child: RichText(
-            text: TextSpan(
-              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-              children: inlineSpan,
-            ),
+            text: TextSpan(style: CoconutTypography.body2_14.setColor(CoconutColors.gray400), children: inlineSpan),
             overflow: TextOverflow.visible,
             softWrap: true,
           ),
@@ -321,26 +278,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          decoration: BoxDecoration(
-            color: CoconutColors.gray900,
-            borderRadius: BorderRadius.circular(12),
-          ),
+          decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
           child: Selector<PreferenceProvider, Tuple3<bool, List<int>, List<int>>>(
-            selector: (_, viewModel) => Tuple3(
-              viewModel.isBtcUnit,
-              viewModel.excludedFromTotalBalanceWalletIds,
-              viewModel.favoriteWalletIds,
-            ),
+            selector:
+                (_, viewModel) => Tuple3(
+                  viewModel.isBtcUnit,
+                  viewModel.excludedFromTotalBalanceWalletIds,
+                  viewModel.favoriteWalletIds,
+                ),
             builder: (context, data, child) {
               final isBtcUnit = data.item1;
               final excludedIds = data.item2;
               final favoriteIds = data.item3;
 
               // 전체 총액
-              final totalBalance =
-                  walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b);
-              final prevTotalBalance =
-                  walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b);
+              final totalBalance = walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b);
+              final prevTotalBalance = walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b);
 
               // 제외 총액 (제외된 지갑들의 총액)
               final excludedBalance = walletBalanceMap.entries
@@ -358,46 +311,47 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   Row(
                     children: [
                       AnimatedBalance(
-                          prevValue: prevTotalBalance,
-                          value: totalBalance,
-                          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                          textStyle: CoconutTypography.heading4_18_NumberBold),
-                      CoconutLayout.spacing_100w,
-                      Text(
-                        isBtcUnit ? t.btc : t.sats,
-                        style: CoconutTypography.heading4_18_NumberBold,
+                        prevValue: prevTotalBalance,
+                        value: totalBalance,
+                        currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                        textStyle: CoconutTypography.heading4_18_NumberBold,
                       ),
+                      CoconutLayout.spacing_100w,
+                      Text(isBtcUnit ? t.btc : t.sats, style: CoconutTypography.heading4_18_NumberBold),
                     ],
+                  ),
+                  // 전체 총액 - Fiat Price
+                  Text(
+                    _viewModel.getBitcoinPrice(totalBalance),
+                    style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
                   ),
 
                   // 홈 화면 총액 (애니메이션)
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      );
+                      return FadeTransition(opacity: animation, child: child);
                     },
-                    child: excludedIds.isNotEmpty
-                        ? Column(
-                            key: const ValueKey('balance_details'),
-                            children: [
-                              CoconutLayout.spacing_300h,
-                              _buildBalanceRow(
-                                label: t.wallet_list.home_balance,
-                                amount: homeBalance,
-                                isBtcUnit: isBtcUnit,
-                              ),
-                              CoconutLayout.spacing_200h,
-                              _buildBalanceRow(
-                                label: t.wallet_list.excluded_balance,
-                                amount: excludedBalance,
-                                isBtcUnit: isBtcUnit,
-                              ),
-                            ],
-                          )
-                        : const SizedBox.shrink(key: ValueKey('balance_empty')),
+                    child:
+                        excludedIds.isNotEmpty
+                            ? Column(
+                              key: const ValueKey('balance_details'),
+                              children: [
+                                CoconutLayout.spacing_300h,
+                                _buildBalanceRow(
+                                  label: t.wallet_list.home_balance,
+                                  amount: homeBalance,
+                                  isBtcUnit: isBtcUnit,
+                                ),
+                                CoconutLayout.spacing_200h,
+                                _buildBalanceRow(
+                                  label: t.wallet_list.excluded_balance,
+                                  amount: excludedBalance,
+                                  isBtcUnit: isBtcUnit,
+                                ),
+                              ],
+                            )
+                            : const SizedBox.shrink(key: ValueKey('balance_empty')),
                   ),
                 ],
               );
@@ -408,51 +362,53 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildBalanceRow({
-    required String label,
-    required int amount,
-    required bool isBtcUnit,
-  }) {
-    return Row(
+  Widget _buildBalanceRow({required String label, required int amount, required bool isBtcUnit}) {
+    return Column(
       children: [
-        Text(
-          label,
-          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+        Row(
+          children: [
+            Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+            const Spacer(),
+            Text(
+              isBtcUnit ? BitcoinUnit.btc.displayBitcoinAmount(amount) : BitcoinUnit.sats.displayBitcoinAmount(amount),
+              style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+            ),
+            CoconutLayout.spacing_100w,
+            Text(isBtcUnit ? t.btc : t.sats, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300)),
+          ],
         ),
-        const Spacer(),
-        Text(
-          isBtcUnit
-              ? BitcoinUnit.btc.displayBitcoinAmount(amount)
-              : BitcoinUnit.sats.displayBitcoinAmount(amount),
-          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
-        ),
-        CoconutLayout.spacing_100w,
-        Text(
-          isBtcUnit ? t.btc : t.sats,
-          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+        // Fiat price
+        Row(
+          children: [
+            const Spacer(),
+            Text(
+              _viewModel.getBitcoinPrice(amount),
+              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildWalletList(List<WalletListItemBase> walletList,
-      Map<int, AnimatedBalanceData> walletBalanceMap, List<int> walletOrder) {
+  Widget _buildWalletList(
+    List<WalletListItemBase> walletList,
+    Map<int, AnimatedBalanceData> walletBalanceMap,
+    List<int> walletOrder,
+  ) {
     walletList.sort((a, b) => walletOrder.indexOf(a.id).compareTo(walletOrder.indexOf(b.id)));
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          if (index < walletList.length) {
-            return _buildWalletItem(
-              walletList[index],
-              walletBalanceMap[walletList[index].id] ?? AnimatedBalanceData(0, 0),
-              index == walletList.length - 1,
-              index == 0,
-            );
-          }
-          return null;
-        },
-        childCount: walletList.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        if (index < walletList.length) {
+          return _buildWalletItem(
+            walletList[index],
+            walletBalanceMap[walletList[index].id] ?? AnimatedBalanceData(0, 0),
+            index == walletList.length - 1,
+            index == 0,
+          );
+        }
+        return null;
+      }, childCount: walletList.length),
     );
   }
 
@@ -462,18 +418,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       primary: false,
       physics: const AlwaysScrollableScrollPhysics(),
       header: _buildEditModeHeader(),
-      footer: const Padding(
-        padding: EdgeInsets.all(60.0),
-      ),
+      footer: const Padding(padding: EdgeInsets.all(60.0)),
       proxyDecorator: (child, index, animation) {
         // 드래그 중인 항목의 외관 변경
         return Container(
           decoration: BoxDecoration(
             color: CoconutColors.gray900,
             borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
-            boxShadow: const [
-              BoxShadow(color: CoconutColors.black, blurRadius: 8, spreadRadius: 0.5)
-            ],
+            boxShadow: const [BoxShadow(color: CoconutColors.black, blurRadius: 8, spreadRadius: 0.5)],
           ),
           child: child,
         );
@@ -496,10 +448,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
             child: SvgPicture.asset(
               'assets/svg/trash.svg',
               width: 16,
-              colorFilter: const ColorFilter.mode(
-                CoconutColors.white,
-                BlendMode.srcIn,
-              ),
+              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
             ),
           ),
           onDismissed: (direction) {
@@ -522,9 +471,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletItem(WalletListItemBase wallet, AnimatedBalanceData animatedBalanceData,
-      bool isLastItem, bool isFirstItem,
-      {bool isEditMode = false, bool isFavorite = false, int? index}) {
+  Widget _buildWalletItem(
+    WalletListItemBase wallet,
+    AnimatedBalanceData animatedBalanceData,
+    bool isLastItem,
+    bool isFirstItem, {
+    bool isEditMode = false,
+    bool isFavorite = false,
+    int? index,
+  }) {
     return Column(
       children: [
         if (isEditMode) CoconutLayout.spacing_100h,
@@ -541,8 +496,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         isEditMode
             ? CoconutLayout.spacing_100h
             : isLastItem
-                ? CoconutLayout.spacing_1000h
-                : CoconutLayout.spacing_200h,
+            ? CoconutLayout.spacing_1000h
+            : CoconutLayout.spacing_200h,
       ],
     );
   }
@@ -569,48 +524,48 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       signers = (walletItem as MultisigWalletListItem).signers;
     }
     return Selector<PreferenceProvider, Tuple2<bool, List<int>>>(
-        selector: (_, viewModel) =>
-            Tuple2(viewModel.isBtcUnit, viewModel.excludedFromTotalBalanceWalletIds),
-        builder: (context, data, child) {
-          bool isBtcUnit = data.item1;
-          bool isExludedFromTotalBalance = data.item2.contains(id);
+      selector: (_, viewModel) => Tuple2(viewModel.isBtcUnit, viewModel.excludedFromTotalBalanceWalletIds),
+      builder: (context, data, child) {
+        bool isBtcUnit = data.item1;
+        bool isExludedFromTotalBalance = data.item2.contains(id);
 
-          return WalletItemCard(
-            key: key,
-            id: id,
-            name: name,
-            animatedBalanceData: animatedBalanceData,
-            iconIndex: iconIndex,
-            colorIndex: colorIndex,
-            isLastItem: isLastItem,
-            isBalanceHidden: false,
-            signers: signers,
-            walletImportSource: walletImportSource,
-            currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-            backgroundColor: CoconutColors.black,
-            isPrimaryWallet: isFirstItem,
-            isExcludeFromTotalBalance: isExludedFromTotalBalance,
-            isEditMode: isEditMode,
-            isFavorite: isFavorite,
-            isStarVisible: isFavorite ||
-                _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
-            onTapStar: (pair) {
-              // pair: (bool isFavorite, int walletId)
-              vibrateExtraLight();
-              _viewModel.toggleTempFavorite(pair.$2);
-            },
-            index: index,
-            entryPoint: kEntryPointWalletList,
-            onLongPressed: () {
-              vibrateExtraLight();
-              CommonBottomSheets.showBottomSheet(
-                  title: '',
-                  titlePadding: EdgeInsets.zero,
-                  context: context,
-                  child: WalletItemSettingBottomSheet(id: id));
-            },
-          );
-        });
+        return WalletItemCard(
+          key: key,
+          id: id,
+          name: name,
+          animatedBalanceData: animatedBalanceData,
+          iconIndex: iconIndex,
+          colorIndex: colorIndex,
+          isLastItem: isLastItem,
+          isBalanceHidden: false,
+          signers: signers,
+          walletImportSource: walletImportSource,
+          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+          backgroundColor: CoconutColors.black,
+          isPrimaryWallet: isFirstItem,
+          isExcludeFromTotalBalance: isExludedFromTotalBalance,
+          isEditMode: isEditMode,
+          isFavorite: isFavorite,
+          isStarVisible: isFavorite || _viewModel.tempFavoriteWalletIds.length < kMaxStarLenght, // 즐겨찾기 제한 만큼 설정
+          onTapStar: (pair) {
+            // pair: (bool isFavorite, int walletId)
+            vibrateExtraLight();
+            _viewModel.toggleTempFavorite(pair.$2);
+          },
+          index: index,
+          entryPoint: kEntryPointWalletList,
+          onLongPressed: () {
+            vibrateExtraLight();
+            CommonBottomSheets.showBottomSheet(
+              title: '',
+              titlePadding: EdgeInsets.zero,
+              context: context,
+              child: WalletItemSettingBottomSheet(id: id),
+            );
+          },
+        );
+      },
+    );
   }
 
   AppBar _buildAppBar(BuildContext context) {
@@ -629,8 +584,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 return CoconutPopup(
                   title: t.wallet_list.edit.finish,
                   description: t.wallet_list.edit.unsaved_changes_confirm_exit,
-                  leftButtonText: t.cancel,
-                  rightButtonText: t.confirm,
+                  leftButtonText: t.no,
+                  rightButtonText: t.yes,
                   onTapRight: () {
                     _viewModel.setEditMode(false);
                     Navigator.pop(context);
@@ -649,7 +604,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         }
       },
       actionButtonList: [
-        if (!isEditMode)
+        if (!isEditMode) ...[
           CoconutUnderlinedButton(
             text: t.edit,
             textStyle: CoconutTypography.body2_14,
@@ -657,30 +612,30 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               _viewModel.setEditMode(true);
             },
           ),
+          CoconutLayout.spacing_200w,
+        ],
       ],
     );
   }
 
   Widget _buildLoadingIndicator(WalletListViewModel viewModel) {
     return SliverToBoxAdapter(
-        child: AnimatedSwitcher(
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: SizeTransition(
-          sizeFactor: animation,
-          child: child,
-        ),
+      child: AnimatedSwitcher(
+        transitionBuilder:
+            (child, animation) =>
+                FadeTransition(opacity: animation, child: SizeTransition(sizeFactor: animation, child: child)),
+        duration: const Duration(milliseconds: 300),
+        child:
+            viewModel.shouldShowLoadingIndicator && viewModel.walletItemList.isNotEmpty
+                ? const Center(
+                  child: Padding(
+                    key: ValueKey("loading"),
+                    padding: EdgeInsets.only(bottom: 20.0),
+                    child: LoadingIndicator(),
+                  ),
+                )
+                : null,
       ),
-      duration: const Duration(milliseconds: 300),
-      child: viewModel.shouldShowLoadingIndicator && viewModel.walletItemList.isNotEmpty
-          ? const Center(
-              child: Padding(
-                key: ValueKey("loading"),
-                padding: EdgeInsets.only(bottom: 20.0),
-                child: LoadingIndicator(),
-              ),
-            )
-          : null,
-    ));
+    );
   }
 }

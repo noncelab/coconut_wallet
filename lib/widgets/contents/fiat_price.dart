@@ -5,12 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FiatPrice extends StatefulWidget {
-  const FiatPrice({
-    super.key,
-    required this.satoshiAmount,
-    this.textStyle,
-    this.textColor,
-  });
+  const FiatPrice({super.key, required this.satoshiAmount, this.textStyle, this.textColor});
 
   final int satoshiAmount;
   final TextStyle? textStyle;
@@ -30,11 +25,10 @@ class _FiatPriceState extends State<FiatPrice> {
           return const SizedBox.shrink();
         }
 
-        final defaultStyle =
-            CoconutTypography.body2_14_Number.copyWith(color: CoconutColors.gray500);
+        final defaultStyle = CoconutTypography.body2_14_Number.copyWith(color: CoconutColors.gray500);
         final appliedStyle =
             widget.textStyle?.copyWith(color: widget.textColor ?? defaultStyle.color) ??
-                defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);
+            defaultStyle.copyWith(color: widget.textColor ?? defaultStyle.color);
 
         try {
           final priceText = priceProvider.getFiatPrice(widget.satoshiAmount);
@@ -44,10 +38,7 @@ class _FiatPriceState extends State<FiatPrice> {
             return const SizedBox.shrink();
           }
 
-          return Text(
-            priceText,
-            style: appliedStyle,
-          );
+          return FittedBox(fit: BoxFit.scaleDown, child: Text(priceText, style: appliedStyle));
         } catch (e) {
           // 오류 발생 시 빈 공간으로 표시
           return const SizedBox.shrink();

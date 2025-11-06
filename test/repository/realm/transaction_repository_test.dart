@@ -24,13 +24,16 @@ void main() {
 
     // 테스트용 지갑 생성
     realmManager.realm.write(() {
-      realmManager.realm.add(RealmWalletBase(
+      realmManager.realm.add(
+        RealmWalletBase(
           testWalletItem.id,
           testWalletItem.colorIndex,
           testWalletItem.iconIndex,
           testWalletItem.descriptor,
           testWalletItem.name,
-          WalletType.singleSignature.name));
+          WalletType.singleSignature.name,
+        ),
+      );
     });
   });
 
@@ -68,10 +71,7 @@ void main() {
 
       // 블록 타임스탬프 데이터 생성
       const blockHeight = 680000;
-      final blockTimestamp = BlockTimestamp(
-        blockHeight,
-        DateTime.fromMillisecondsSinceEpoch(1625097600 * 1000),
-      );
+      final blockTimestamp = BlockTimestamp(blockHeight, DateTime.fromMillisecondsSinceEpoch(1625097600 * 1000));
 
       // 블록 타임스탬프 저장
       realmManager.realm.write(() {
@@ -88,9 +88,7 @@ void main() {
         ),
       };
 
-      final blockTimestampMap = {
-        blockHeight: blockTimestamp,
-      };
+      final blockTimestampMap = {blockHeight: blockTimestamp};
 
       // 지갑의 최근 트랜잭션 상태 플래그 설정
       realmManager.realm.write(() {
@@ -108,7 +106,9 @@ void main() {
 
       // 업데이트된 트랜잭션 조회
       final updatedTransaction = transactionRepository.getTransactionRecord(
-          testWalletItem.id, testTransaction.transactionHash);
+        testWalletItem.id,
+        testTransaction.transactionHash,
+      );
       realmManager.realm.find<RealmWalletBase>(testWalletItem.id);
 
       // 검증
@@ -118,8 +118,7 @@ void main() {
       final actualTimestamp = updatedTransaction?.timestamp;
       expect(actualTimestamp, isNotNull);
       if (actualTimestamp != null) {
-        expect(actualTimestamp.millisecondsSinceEpoch ~/ 1000,
-            blockTimestamp.timestamp.millisecondsSinceEpoch ~/ 1000);
+        expect(actualTimestamp.millisecondsSinceEpoch ~/ 1000, blockTimestamp.timestamp.millisecondsSinceEpoch ~/ 1000);
       }
     });
   });
@@ -351,8 +350,7 @@ void main() {
       );
 
       // 트랜잭션 추가 (순서 섞어서)
-      await transactionRepository
-          .addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
 
       // 트랜잭션 목록 조회
       final transactions = transactionRepository.getTransactionRecordList(testWalletItem.id);
@@ -378,17 +376,13 @@ void main() {
         fee: 20000,
       );
 
-      final unconfirmedTx = TransactionMock.createUnconfirmedTransactionRecord(
-        transactionHash: 'unconfirmed_tx',
-      );
+      final unconfirmedTx = TransactionMock.createUnconfirmedTransactionRecord(transactionHash: 'unconfirmed_tx');
 
       // 트랜잭션 추가
-      await transactionRepository
-          .addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [confirmedTx1, unconfirmedTx, confirmedTx2]);
 
       // 확인된 트랜잭션 해시 목록 조회
-      final confirmedTxHashes =
-          transactionRepository.getExistingConfirmedTxHashes(testWalletItem.id);
+      final confirmedTxHashes = transactionRepository.getExistingConfirmedTxHashes(testWalletItem.id);
 
       // 검증
       expect(confirmedTxHashes.length, 2);
@@ -406,10 +400,7 @@ void main() {
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      final spentTx = TransactionMock.createMockTransactionRecord(
-        transactionHash: 'spent_tx',
-        blockHeight: 0,
-      );
+      final spentTx = TransactionMock.createMockTransactionRecord(transactionHash: 'spent_tx', blockHeight: 0);
 
       // 두 개의 원본 트랜잭션을 DB에 추가
       await transactionRepository.addAllTransactions(testWalletItem.id, [originalTx, spentTx]);
@@ -426,31 +417,22 @@ void main() {
       await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
 
       // 트랜잭션 조회 및 검증
-      final updatedTx = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'original_tx'],
-      ).first;
+      final updatedTx =
+          realmManager.realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+            testWalletItem.id,
+            'original_tx',
+          ]).first;
       // replaceByTransactionHash 필드가 올바르게 설정되었는지 확인
       expect(updatedTx.replaceByTransactionHash, 'spent_tx');
     });
 
     test('존재하지 않는 트랜잭션에 대한 RBF 정보는 처리되지 않아야 함', () async {
       // 테스트용 트랜잭션 추가 - 하나만 DB에 추가
-      final originalTx = TransactionMock.createMockTransactionRecord(
-        transactionHash: 'original_tx',
-        blockHeight: 0,
-      );
-      final spentTx = TransactionMock.createMockTransactionRecord(
-        transactionHash: 'spent_tx',
-        blockHeight: 0,
-      );
-      final spentTx2 = TransactionMock.createMockTransactionRecord(
-        transactionHash: 'spent_tx2',
-        blockHeight: 0,
-      );
+      final originalTx = TransactionMock.createMockTransactionRecord(transactionHash: 'original_tx', blockHeight: 0);
+      final spentTx = TransactionMock.createMockTransactionRecord(transactionHash: 'spent_tx', blockHeight: 0);
+      final spentTx2 = TransactionMock.createMockTransactionRecord(transactionHash: 'spent_tx2', blockHeight: 0);
 
-      await transactionRepository
-          .addAllTransactions(testWalletItem.id, [originalTx, spentTx, spentTx2]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [originalTx, spentTx, spentTx2]);
 
       // 존재하는 트랜잭션과 존재하지 않는 트랜잭션에 대한 RBF 정보 맵 생성
       final rbfInfoMap = {
@@ -468,19 +450,20 @@ void main() {
       await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap);
 
       // 존재하는 트랜잭션 조회 및 검증
-      final updatedTx = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'original_tx'],
-      ).first;
+      final updatedTx =
+          realmManager.realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+            testWalletItem.id,
+            'original_tx',
+          ]).first;
 
       // 존재하는 트랜잭션만 업데이트되었는지 확인
       expect(updatedTx.replaceByTransactionHash, 'spent_tx');
 
       // 존재하지 않는 트랜잭션에 대한 쿼리 실행 - 결과가 없어야 함
-      final nonExistentTx = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'not_exists'],
-      );
+      final nonExistentTx = realmManager.realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+        testWalletItem.id,
+        'not_exists',
+      ]);
 
       expect(nonExistentTx.isEmpty, true);
     });
@@ -498,10 +481,7 @@ void main() {
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      await transactionRepository.addAllTransactions(testWalletItem.id, [
-        originalTx,
-        rbfTx1,
-      ]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [originalTx, rbfTx1]);
 
       // RBF 1회차 정보 맵 생성
       final rbfInfoMap = {
@@ -520,9 +500,7 @@ void main() {
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      await transactionRepository.addAllTransactions(testWalletItem.id, [
-        rbfTx2,
-      ]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [rbfTx2]);
 
       // RBF 2회차 정보 맵 생성
       final rbfInfoMap2 = {
@@ -541,9 +519,7 @@ void main() {
         blockHeight: 0, // 미확인 트랜잭션
       );
 
-      await transactionRepository.addAllTransactions(testWalletItem.id, [
-        rbfTx3,
-      ]);
+      await transactionRepository.addAllTransactions(testWalletItem.id, [rbfTx3]);
 
       // RBF 3회차 정보 맵 생성
       final rbfInfoMap3 = {
@@ -557,34 +533,38 @@ void main() {
       await transactionRepository.markAsRbfReplaced(testWalletItem.id, rbfInfoMap3);
 
       // 원본 트랜잭션 조회 및 검증
-      final realmOriginalTx = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'original_tx'],
-      ).first;
+      final realmOriginalTx =
+          realmManager.realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+            testWalletItem.id,
+            'original_tx',
+          ]).first;
 
       expect(realmOriginalTx.replaceByTransactionHash, 'rbf_tx_1');
 
       // RBF 1회차 트랜잭션 조회 및 검증
-      final realmRbfTx1 = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'rbf_tx_1'],
-      ).first;
+      final realmRbfTx1 =
+          realmManager.realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+            testWalletItem.id,
+            'rbf_tx_1',
+          ]).first;
 
       expect(realmRbfTx1.replaceByTransactionHash, 'rbf_tx_2');
 
       // RBF 2회차 트랜잭션 조회 및 검증
-      final realmRbfTx2 = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'rbf_tx_2'],
-      ).first;
+      final realmRbfTx2 =
+          realmManager.realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+            testWalletItem.id,
+            'rbf_tx_2',
+          ]).first;
 
       expect(realmRbfTx2.replaceByTransactionHash, 'rbf_tx_3');
 
       // RBF 3회차 트랜잭션 조회 및 검증
-      final realmRbfTx3 = realmManager.realm.query<RealmTransaction>(
-        r'walletId == $0 AND transactionHash == $1',
-        [testWalletItem.id, 'rbf_tx_3'],
-      ).first;
+      final realmRbfTx3 =
+          realmManager.realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+            testWalletItem.id,
+            'rbf_tx_3',
+          ]).first;
 
       expect(realmRbfTx3.replaceByTransactionHash, null);
     });

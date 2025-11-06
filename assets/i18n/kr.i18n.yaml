@@ -28,6 +28,7 @@ edit: "편집"
 max: "최대"
 all: "전체"
 no: "아니오"
+yes: "네"
 delete: "삭제"
 delete_label: "삭제하기"
 complete: "완료"
@@ -87,15 +88,18 @@ quick_send: "빨리 보내기"
 copied: "복사 완료"
 change_color: "색 변경"
 select: "선택"
+tap: "탭"
 hardware_wallet: "하드웨어 월렛"
 vault_app: "볼트 앱"
 view_balance: "잔액 보기"
 view: "보기"
 network: "네트워크"
 electrum_server: "일렉트럼 서버"
+block_explorer: "블록 익스플로러"
+log_viewer: "로그 뷰어"
 
 apply_item: "$count개에 적용"
-fee_sats: " ($value sats/vB)"
+fee_sats: " ($value sat/vB)"
 utxo_count: "($count개)"
 total_item_count: "(총 $count개)"
 
@@ -190,6 +194,7 @@ wallet_add_scanner_screen:
   jade: "제이드"
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
+  krux: "크럭스"
   self: "직접 입력"
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
@@ -238,6 +243,12 @@ wallet_add_scanner_screen:
     step4_preposition: ""
     step4_em: "QR "
     step4_end: "버튼 누르기"
+  guide_krux:
+    step0: "wonderMV 기준 가이드입니다."
+    step1: "1. "
+    step1_em: "XPUB 내보내기"
+    step2: "2. "
+    step2_em: "XPUB - QR 코드"
 
 # lib/screens/wallet_list
 wallet_list:
@@ -261,7 +272,6 @@ wallet_list:
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
     
-
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
   placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
@@ -337,6 +347,8 @@ send_screen:
   tooltip_max_mode_text: "모두 보내기 중"
   max_mode_insufficient_balance: "잔액 부족"
   unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
+  fee_rate_too_low: "0.1 미만으로는 설정할 수 없어요"
+  drag_to_add_address: "보낼 주소를 추가하려면 왼쪽으로 드래그 해주세요"
 
 utxo_selection_screen:
   title: "UTXO 고르기"
@@ -390,6 +402,14 @@ unsigned_tx_qr_screen:
     step1_preposition: "콜드카드에서 "
     step1_em: "QR "
     step1_end: "버튼을 눌러주세요."
+  guide_krux:
+    step1: "1. "
+    step1_em: "서명하기"
+    select: "선택"
+    step2: "2. "
+    step2_em: "PSBT"
+    step3: "3. "
+    step3_em: "카메라로 불러오기"
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
@@ -443,6 +463,7 @@ settings_screen:
   language: "언어"
   korean: "한국어"
   english: "English"
+  japanese: "日本語"
   electrum_server: 
     server_address: "서버 주소"
     port: "포트"
@@ -462,7 +483,33 @@ settings_screen:
     popup:
       delete_server_info: "서버 정보 삭제"
       delete_server_info_description: "저장된 서버 정보를 삭제하시겠어요?"
-
+  block_explorer:
+    default_explorer: "기본 익스플로러"
+    custom_explorer: "직접 입력"
+    custom_explorer_description: "입력한 주소를 사용합니다. 하지만, 익스플로러마다 트랜잭션/주소 링크 형식이 다를 수 있어, 일부 링크가 정상적으로 작동하지 않을 수 있습니다."
+    save: "저장"
+    custom_explorer_input_placeholder: "주소를 입력해 주세요"
+    connection_status:
+      connecting: "주소를 확인 중입니다..."
+      connected: "주소가 확인되었습니다."
+      failed: "주소를 확인할 수 없습니다!"
+  log_viewer_screen:
+    log_description_1: "문제가 발생하면 [공유] 버튼을 눌러 이메일로 보내주시거나, 디스코드 또는 포우 커뮤니티로 문의해 주세요."
+    log_description_2: "공유해주신 정보는 문제 해결을 위해서만 사용되며 문제 해결 즉시 폐기됩니다."
+    log_target: "[로깅 대상]"
+    log_target_description_1: "키스톤 3 프로 지갑 추가 시 일부 기기에서 문제가 발생함에 따라 증상 확인 및 문제 해결을 위해 정보를 로깅합니다."
+    clear_log: "로그 지우기"
+    clear_log_description: "로그를 지우시겠어요?"
+    email_subject: "[코코넛 월렛] Debug Log"
+    email_body: "상황: (여기에 어떤 상황에서 발생한 문제인지 간략히 적어주세요)"
+    email_error_msg: "이메일 앱을 열 수 없어요. 로그를 복사해서 디스코드 채널 또는 포우 커뮤니티에 올려주세요."
+    buttons:
+      discord: "디스코드 가기"
+      pow: "포우 가기"
+      copy: "로그 복사"
+      toast:
+        copy_success: "로그가 복사되었어요."
+    
 # lib/screens/wallet_detail
 wallet_detail_screen:
   toast:
@@ -515,11 +562,11 @@ transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
   existing_fee: "기존 수수료"
-  existing_fee_value: "${value} sats/vB"
+  existing_fee_value: "${value} sat/vB"
   total_fee: "총 $fee sats / ${vB} vB"
   new_fee: "새 수수료"
-  sats_vb: "sats/vB"
-  recommend_fee: "최소 수수료: ${fee} sats/vB 이상"
+  sats_vb: "sat/vB"
+  recommend_fee: "최소 수수료: ${fee} sat/vB 이상"
   recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vB 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vB 미만으로 보일 수 있어요."
   recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vB, 추천 수수료율 = ${recommendedFeeRate} sat/vB\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "추천 수수료"
@@ -626,7 +673,7 @@ errors:
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
     not_for_regtest: "레그테스트넷 주소가 아니에요."
-    duplicated: "이미 입력한 주소예요."
+    duplicated: "이미 입력한 주소예요"
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"
     failed: "더 이상 시도할 수 없어요\n앱을 종료해 주세요"
@@ -642,9 +689,9 @@ errors:
   utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
 
 text_field:
-  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sats/vB)"
+  enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sat/vB)"
   enter_fee_directly: "직접 입력하기"
-  search_mnemonic_word: "영문으로 검색해 보세요"
+  search_mnemonic_word: "영문 또는 숫자로 검색해 보세요"
 
 tooltip:
   recommended_fee1: "추천 수수료를 조회하지 못했어요. 수수료를 직접 입력해 주세요."
@@ -660,7 +707,8 @@ tooltip:
     by_seed_signer: "시드사이너로"
     by_jade: "제이드로"
     by_keystone: "키스톤으로"
-    by_coldcard: "콜드카드로"
+    by_coldcard: "콜드카드에서"
+    by_krux: "크럭스에서"
     by_hardware_wallet: "하드웨어 월렛으로"
     by_vault_app: "볼트 앱으로"
   unsigned_tx_qr:
@@ -680,7 +728,7 @@ tooltip:
 
 toast:
   back_exit: "뒤로 가기 버튼을 한 번 더 누르면 종료됩니다."
-  min_fee: "현재 최소 수수료율은 $minimum sats/vB 입니다."
+  min_fee: "현재 최소 추천 수수료율은 $minimum sat/vB 입니다"
   fetching_onchain_data: "최신 데이터를 가져오는 중입니다. 잠시만 기다려주세요."
   screen_capture: "스크린 캡처가 감지되었습니다."
   no_balance: "잔액이 없습니다."
@@ -759,6 +807,7 @@ third_party:
   jade: "제이드"
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
+  krux: "크럭스"
   zpub: "zpub"
 
 trade_exchange:
@@ -767,9 +816,6 @@ trade_exchange:
 
 fiat:
   fiat: "법정화폐"
-  krw_symbol: "₩"
-  usd_symbol: "$"
-  krw_code: "KRW"
-  usd_code: "USD"
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
+  jpy_price: "비트플라이어 기준"

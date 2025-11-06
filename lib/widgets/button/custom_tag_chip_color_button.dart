@@ -9,8 +9,7 @@ class CustomTagChipColorButton extends StatefulWidget {
   final Function(int) onTap;
   final int colorIndex;
   final bool isCreate;
-  const CustomTagChipColorButton(
-      {super.key, required this.onTap, required this.colorIndex, this.isCreate = false});
+  const CustomTagChipColorButton({super.key, required this.onTap, required this.colorIndex, this.isCreate = false});
 
   @override
   State<CustomTagChipColorButton> createState() => _CustomTagChipColorButtonState();
@@ -57,17 +56,17 @@ class _CustomTagChipColorButtonState extends State<CustomTagChipColorButton> {
         decoration: BoxDecoration(
           color: ColorUtil.getColor(_colorIndex).backgroundColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: ColorUtil.getColor(_colorIndex).color,
-            width: 1,
-          ),
+          border: Border.all(color: ColorUtil.getColor(_colorIndex).color, width: 1),
         ),
         child: Center(
-          child: Text(
-            t.change_color,
-            style: CoconutTypography.caption_10
-                .setColor(CoconutColors.white)
-                .copyWith(decoration: TextDecoration.underline),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              t.change_color,
+              style: CoconutTypography.caption_10
+                  .setColor(CoconutColors.white)
+                  .copyWith(decoration: TextDecoration.underline),
+            ),
           ),
         ),
       ),

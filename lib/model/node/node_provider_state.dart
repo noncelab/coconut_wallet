@@ -7,23 +7,14 @@ class NodeProviderState {
   final NodeSyncState nodeSyncState;
   final Map<int, WalletUpdateInfo> registeredWallets;
 
-  const NodeProviderState({
-    required this.nodeSyncState,
-    required this.registeredWallets,
-  });
+  const NodeProviderState({required this.nodeSyncState, required this.registeredWallets});
 
   // 초기 상태를 생성하는 팩토리 생성자 추가
   factory NodeProviderState.initial() {
-    return const NodeProviderState(
-      nodeSyncState: NodeSyncState.completed,
-      registeredWallets: {},
-    );
+    return const NodeProviderState(nodeSyncState: NodeSyncState.completed, registeredWallets: {});
   }
 
-  NodeProviderState copyWith({
-    NodeSyncState? newConnectionState,
-    Map<int, WalletUpdateInfo>? newUpdatedWallets,
-  }) {
+  NodeProviderState copyWith({NodeSyncState? newConnectionState, Map<int, WalletUpdateInfo>? newUpdatedWallets}) {
     return NodeProviderState(
       nodeSyncState: newConnectionState ?? nodeSyncState,
       registeredWallets: newUpdatedWallets ?? registeredWallets,
@@ -72,8 +63,7 @@ class NodeProviderState {
     // 테이블 헤더 출력 (connectionState 포함)
     final logBuffer = StringBuffer();
     logBuffer.writeln('\n┌─────────────────────────────────────────────────┐');
-    logBuffer
-        .writeln('│ 연결 상태: $connectionStateSymbol${' ' * (38 - connectionStateSymbol.length)}│');
+    logBuffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (38 - connectionStateSymbol.length)}│');
     logBuffer.writeln('├─────────┬─────────┬─────────┬─────────┬─────────┤');
     logBuffer.writeln('│ 지갑 ID  │  구독    │   잔액   │   거래    │  UTXO   │');
     logBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
@@ -90,7 +80,8 @@ class NodeProviderState {
 
       // final rowBuffer = StringBuffer();
       logBuffer.writeln(
-          '│ ${key.toString().padRight(7)} │   $subscriptionSymbol     │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │');
+        '│ ${key.toString().padRight(7)} │   $subscriptionSymbol     │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │',
+      );
 
       // 마지막 행이 아니면 행 구분선 추가
       if (i < walletKeys.length - 1) {

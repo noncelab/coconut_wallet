@@ -46,15 +46,14 @@ class UtxoState extends Utxo {
       if (a.isPending && !b.isPending) return -1;
       if (!a.isPending && b.isPending) return 1;
 
-      int primaryCompare = byAmount
-          ? (isAscending ? a.amount : b.amount).compareTo(isAscending ? b.amount : a.amount)
-          : (isAscending ? a.timestamp : b.timestamp)
-              .compareTo(isAscending ? b.timestamp : a.timestamp);
+      int primaryCompare =
+          byAmount
+              ? (isAscending ? a.amount : b.amount).compareTo(isAscending ? b.amount : a.amount)
+              : (isAscending ? a.timestamp : b.timestamp).compareTo(isAscending ? b.timestamp : a.timestamp);
 
       if (primaryCompare != 0) return primaryCompare;
 
-      int secondaryCompare =
-          byAmount ? b.timestamp.compareTo(a.timestamp) : b.amount.compareTo(a.amount);
+      int secondaryCompare = byAmount ? b.timestamp.compareTo(a.timestamp) : b.amount.compareTo(a.amount);
 
       if (secondaryCompare != 0) return secondaryCompare;
 

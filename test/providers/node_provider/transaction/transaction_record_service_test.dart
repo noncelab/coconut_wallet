@@ -17,9 +17,7 @@ import '../../../mock/wallet_mock.dart';
 import '../../../repository/realm/test_realm_manager.dart';
 
 // 모킹할 클래스 목록
-@GenerateMocks([
-  ElectrumService,
-])
+@GenerateMocks([ElectrumService])
 import 'transaction_record_service_test.mocks.dart';
 
 void main() {
@@ -29,10 +27,11 @@ void main() {
   late TransactionRecordService transactionRecordService;
 
   const int testWalletId = 1;
-  final SinglesigWalletListItem testWalletItem =
-      WalletMock.createSingleSigWalletItem(id: testWalletId);
-  final SinglesigWalletListItem testExternalWalletItem =
-      WalletMock.createSingleSigWalletItem(randomDescriptor: true, id: testWalletId + 1);
+  final SinglesigWalletListItem testWalletItem = WalletMock.createSingleSigWalletItem(id: testWalletId);
+  final SinglesigWalletListItem testExternalWalletItem = WalletMock.createSingleSigWalletItem(
+    randomDescriptor: true,
+    id: testWalletId + 1,
+  );
   final blockTimestamp = DateTime.parse('2025-01-01T00:00:00Z');
 
   setUp(() async {
@@ -43,30 +42,34 @@ void main() {
     transactionRecordService = TransactionRecordService(electrumService, addressRepository);
 
     realmManager.realm.write(() {
-      realmManager.realm.add(RealmWalletBase(
-        testWalletId,
-        0, // colorIndex
-        0, // iconIndex
-        testWalletItem.descriptor,
-        testWalletItem.name,
-        testWalletItem.walletType.name,
-      ));
+      realmManager.realm.add(
+        RealmWalletBase(
+          testWalletId,
+          0, // colorIndex
+          0, // iconIndex
+          testWalletItem.descriptor,
+          testWalletItem.name,
+          testWalletItem.walletType.name,
+        ),
+      );
     });
 
     final testAddress = testWalletItem.walletBase.getAddress(0);
     realmManager.realm.write(() {
-      realmManager.realm.add(RealmWalletAddress(
-        1,
-        testWalletId,
-        testAddress,
-        0, // index
-        false, // isChange
-        'm/0/0', // derivationPath
-        false, // isUsed
-        0, // confirmed
-        0, // unconfirmed
-        0, // total
-      ));
+      realmManager.realm.add(
+        RealmWalletAddress(
+          1,
+          testWalletId,
+          testAddress,
+          0, // index
+          false, // isChange
+          'm/0/0', // derivationPath
+          false, // isUsed
+          0, // confirmed
+          0, // unconfirmed
+          0, // total
+        ),
+      );
     });
   });
 
@@ -91,21 +94,19 @@ void main() {
       );
 
       // Given - Mock 동작 설정
-      when(electrumService.getTransaction(receiveTx.transactionHash))
-          .thenAnswer((_) async => receiveTx.serialize());
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')))
-          .thenAnswer((_) async => [prevTx]);
-      when(electrumService.getHistory(AddressType.p2wpkh, testAddress)).thenAnswer((_) async => [
-            GetTxHistoryRes(height: blockHeight, txHash: receiveTx.transactionHash),
-          ]);
-      when(electrumService.getBlockTimestamp(blockHeight))
-          .thenAnswer((_) async => BlockTimestamp(blockHeight, blockTimestamp));
+      when(electrumService.getTransaction(receiveTx.transactionHash)).thenAnswer((_) async => receiveTx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [prevTx]);
+      when(
+        electrumService.getHistory(AddressType.p2wpkh, testAddress),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: blockHeight, txHash: receiveTx.transactionHash)]);
+      when(
+        electrumService.getBlockTimestamp(blockHeight),
+      ).thenAnswer((_) async => BlockTimestamp(blockHeight, blockTimestamp));
 
       // When
-      final result = await transactionRecordService.getTransactionRecord(
-        testWalletItem,
-        receiveTx.transactionHash,
-      );
+      final result = await transactionRecordService.getTransactionRecord(testWalletItem, receiveTx.transactionHash);
 
       TransactionRecord? updatedTx;
       if (result.isSuccess) {
@@ -122,9 +123,7 @@ void main() {
       expect(updatedTx.amount, 1000000);
 
       verify(electrumService.getTransaction(receiveTx.transactionHash)).called(1);
-      verify(electrumService.getPreviousTransactions(any,
-              existingTxList: anyNamed('existingTxList')))
-          .called(1);
+      verify(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).called(1);
       verify(electrumService.getHistory(AddressType.p2wpkh, testAddress)).called(1);
       verify(electrumService.getBlockTimestamp(blockHeight)).called(1);
     });
@@ -133,10 +132,7 @@ void main() {
       // Given
       final testAddress = testWalletItem.walletBase.getAddress(0);
       final externalAddress = testExternalWalletItem.walletBase.getAddress(0);
-      final prevTx = TransactionMock.createMockTransaction(
-        toAddress: testAddress,
-        amount: 150000,
-      );
+      final prevTx = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 150000);
       final sendTx = TransactionMock.createMockTransaction(
         toAddress: externalAddress,
         amount: 140000,
@@ -144,19 +140,18 @@ void main() {
       );
 
       // Given - Mock 동작 설정
-      when(electrumService.getTransaction(sendTx.transactionHash))
-          .thenAnswer((_) async => sendTx.serialize());
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')))
-          .thenAnswer((_) async => [prevTx]);
-      when(electrumService.getHistory(AddressType.p2wpkh, testAddress)).thenAnswer((_) async => [
-            GetTxHistoryRes(height: 0, txHash: sendTx.transactionHash), // 미확인 트랜잭션
-          ]);
+      when(electrumService.getTransaction(sendTx.transactionHash)).thenAnswer((_) async => sendTx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [prevTx]);
+      when(electrumService.getHistory(AddressType.p2wpkh, testAddress)).thenAnswer(
+        (_) async => [
+          GetTxHistoryRes(height: 0, txHash: sendTx.transactionHash), // 미확인 트랜잭션
+        ],
+      );
 
       // When
-      final result = await transactionRecordService.getTransactionRecord(
-        testWalletItem,
-        sendTx.transactionHash,
-      );
+      final result = await transactionRecordService.getTransactionRecord(testWalletItem, sendTx.transactionHash);
 
       // Then
       TransactionRecord? updatedTx;
@@ -172,9 +167,7 @@ void main() {
       expect(updatedTx.amount, -150000);
 
       verify(electrumService.getTransaction(sendTx.transactionHash)).called(1);
-      verify(electrumService.getPreviousTransactions(any,
-              existingTxList: anyNamed('existingTxList')))
-          .called(1);
+      verify(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).called(1);
       verify(electrumService.getHistory(AddressType.p2wpkh, testAddress)).called(1);
     });
 
@@ -182,10 +175,7 @@ void main() {
       // Given
       final testAddress = testWalletItem.walletBase.getAddress(0);
       final externalAddress = testExternalWalletItem.walletBase.getAddress(0);
-      final prevTx = TransactionMock.createMockTransaction(
-        toAddress: externalAddress,
-        amount: 1000000,
-      );
+      final prevTx = TransactionMock.createMockTransaction(toAddress: externalAddress, amount: 1000000);
       final tx = TransactionMock.createMockTransaction(
         toAddress: testAddress,
         amount: 500000,
@@ -193,18 +183,14 @@ void main() {
       );
 
       // Given - Mock 동작 설정 - 히스토리에서 해당 트랜잭션을 찾을 수 없음
-      when(electrumService.getTransaction(tx.transactionHash))
-          .thenAnswer((_) async => tx.serialize());
-      when(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')))
-          .thenAnswer((_) async => [prevTx]);
-      when(electrumService.getHistory(AddressType.p2wpkh, testAddress))
-          .thenAnswer((_) async => []); // 빈 히스토리
+      when(electrumService.getTransaction(tx.transactionHash)).thenAnswer((_) async => tx.serialize());
+      when(
+        electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList')),
+      ).thenAnswer((_) async => [prevTx]);
+      when(electrumService.getHistory(AddressType.p2wpkh, testAddress)).thenAnswer((_) async => []); // 빈 히스토리
 
       // When
-      final result = await transactionRecordService.getTransactionRecord(
-        testWalletItem,
-        tx.transactionHash,
-      );
+      final result = await transactionRecordService.getTransactionRecord(testWalletItem, tx.transactionHash);
 
       TransactionRecord? updatedTx;
       if (result.isSuccess) {
@@ -219,9 +205,7 @@ void main() {
       expect(updatedTx.transactionType, TransactionType.received);
 
       verify(electrumService.getTransaction(tx.transactionHash)).called(1);
-      verify(electrumService.getPreviousTransactions(any,
-              existingTxList: anyNamed('existingTxList')))
-          .called(1);
+      verify(electrumService.getPreviousTransactions(any, existingTxList: anyNamed('existingTxList'))).called(1);
       verify(electrumService.getHistory(AddressType.p2wpkh, testAddress)).called(1);
     });
   });

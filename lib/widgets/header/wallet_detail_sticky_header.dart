@@ -44,38 +44,31 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
             children: [
               Container(
                 color: CoconutColors.black,
-                padding: const EdgeInsets.only(
-                  left: 16.0,
-                  right: 16,
-                  top: 20.0,
-                ),
+                padding: const EdgeInsets.only(left: 16.0, right: 16, top: 20.0),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Row(
-                        children: [
-                          AnimatedBalance(
-                            prevValue: widget.animatedBalanceData.previous,
-                            value: widget.animatedBalanceData.current,
-                            currentUnit: widget.currentUnit,
-                            textStyle: CoconutTypography.body1_16_NumberBold.merge(
-                              const TextStyle(
-                                fontSize: 18,
-                              ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          children: [
+                            AnimatedBalance(
+                              prevValue: widget.animatedBalanceData.previous,
+                              value: widget.animatedBalanceData.current,
+                              currentUnit: widget.currentUnit,
+                              textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
                             ),
-                          ),
-                          Text(
-                            ' ${widget.currentUnit.symbol}',
-                            style: CoconutTypography.body2_14_Number,
-                          ),
-                        ],
+                            Text(' ${widget.currentUnit.symbol}', style: CoconutTypography.body2_14_Number),
+                          ],
+                        ),
                       ),
                     ),
+                    CoconutLayout.spacing_200w,
                     Align(
-                        alignment: Alignment.centerRight,
-                        child: SizedBox(
-                            width: MediaQuery.of(context).size.width / 3,
-                            child: _buildButtonRow())),
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(width: MediaQuery.of(context).size.width / 3, child: _buildButtonRow()),
+                    ),
                   ],
                 ),
               ),
@@ -122,35 +115,27 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildActionButton(
-            label: t.send,
-            onPressed: widget.onTapSend,
-            backgroundColor: CoconutColors.primary,
-          ),
+          child: _buildActionButton(label: t.send, onPressed: widget.onTapSend, backgroundColor: CoconutColors.primary),
         ),
       ],
     );
   }
 
-  Widget _buildActionButton({
-    required String label,
-    required VoidCallback onPressed,
-    required Color backgroundColor,
-  }) {
+  Widget _buildActionButton({required String label, required VoidCallback onPressed, required Color backgroundColor}) {
     return CupertinoButton(
       minSize: 32,
       onPressed: onPressed,
       color: backgroundColor,
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(
-        label,
-        overflow: TextOverflow.fade,
-        softWrap: false,
-        maxLines: 1,
-        style: CoconutTypography.body3_12.merge(
-          const TextStyle(
-            color: CoconutColors.black,
-            fontWeight: FontWeight.w600,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          overflow: TextOverflow.fade,
+          softWrap: false,
+          maxLines: 1,
+          style: CoconutTypography.body3_12.merge(
+            const TextStyle(color: CoconutColors.black, fontWeight: FontWeight.w600),
           ),
         ),
       ),

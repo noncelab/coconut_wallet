@@ -7,12 +7,7 @@ class ToggleWidget extends StatefulWidget {
   final bool initialValue;
   final ValueChanged<bool>? onChanged;
 
-  const ToggleWidget({
-    super.key,
-    required this.toggleName,
-    this.initialValue = false,
-    this.onChanged,
-  });
+  const ToggleWidget({super.key, required this.toggleName, this.initialValue = false, this.onChanged});
 
   @override
   State<ToggleWidget> createState() => _ToggleWidgetState();
@@ -33,8 +28,8 @@ class _ToggleWidgetState extends State<ToggleWidget> {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         Expanded(
-            child: Text(widget.toggleName,
-                style: Styles.subLabel.merge(const TextStyle(color: MyColors.defaultText)))),
+          child: Text(widget.toggleName, style: Styles.subLabel.merge(const TextStyle(color: MyColors.defaultText))),
+        ),
         CupertinoSwitch(
           value: _value,
           onChanged: (newValue) {
@@ -46,7 +41,7 @@ class _ToggleWidgetState extends State<ToggleWidget> {
             }
           },
           activeColor: CoconutColors.primary.withOpacity(0.8),
-        )
+        ),
       ],
     );
   }

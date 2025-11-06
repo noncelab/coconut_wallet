@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
@@ -51,9 +52,9 @@ class WalletHomeViewModel extends ChangeNotifier {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
-    _walletBalance = _walletProvider
-        .fetchWalletBalanceMap()
-        .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
+    _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
+      (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
+    );
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
 
     // NodeProvider의 변경사항 listening 추가
@@ -117,7 +118,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
-    // print('DEBUG - _handleNodeSyncState called with: $syncState');
+    // Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
@@ -129,7 +130,7 @@ class WalletHomeViewModel extends ChangeNotifier {
         vibrateLightDouble();
       }
       _nodeSyncState = syncState;
-      // print('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
+      // Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
       notifyListeners();
     } else if (_nodeSyncState == NodeSyncState.completed &&
         syncState == NodeSyncState.completed &&
@@ -164,10 +165,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, AnimatedBalanceData> _updateBalanceMap(Map<int, Balance> balanceMap) {
     return balanceMap.map((key, balance) {
       final prev = _walletBalance[key]?.current ?? 0;
-      return MapEntry(
-        key,
-        AnimatedBalanceData(balance.total, prev),
-      );
+      return MapEntry(key, AnimatedBalanceData(balance.total, prev));
     });
   }
 
@@ -195,15 +193,16 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     /// 지갑 즐겨찾기 변동 체크
-    if (_favoriteWallets.map((w) => w.id).toList().toString() !=
-            _preferenceProvider.favoriteWalletIds.toString() &&
+    if (_favoriteWallets.map((w) => w.id).toList().toString() != _preferenceProvider.favoriteWalletIds.toString() &&
         walletItemList.isNotEmpty) {
       loadFavoriteWallets();
     }
 
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
-    if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
-        _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
+    if (!const SetEquality().equals(
+      _excludedFromTotalBalanceWalletIds.toSet(),
+      _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet(),
+    )) {
       _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     }
     notifyListeners();
@@ -266,8 +265,11 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isWalletListChanged(List<WalletListItemBase> oldList, List<WalletListItemBase> newList,
-      Map<int, AnimatedBalanceData> walletBalanceMap) {
+  bool isWalletListChanged(
+    List<WalletListItemBase> oldList,
+    List<WalletListItemBase> newList,
+    Map<int, AnimatedBalanceData> walletBalanceMap,
+  ) {
     if (oldList.length != newList.length) return true;
 
     bool walletListChanged = oldList.asMap().entries.any((entry) {
@@ -288,11 +290,11 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     final ids = _preferenceProvider.favoriteWalletIds;
 
-    final wallets = ids
-        .map((id) =>
-            _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
-        .whereType<WalletListItemBase>()
-        .toList();
+    final wallets =
+        ids
+            .map((id) => _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
+            .whereType<WalletListItemBase>()
+            .toList();
 
     _favoriteWallets = wallets;
 

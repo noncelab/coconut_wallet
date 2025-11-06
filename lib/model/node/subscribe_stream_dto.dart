@@ -5,8 +5,5 @@ class SubscribeScriptStreamDto {
   final WalletListItemBase walletItem;
   final ScriptStatus scriptStatus;
 
-  SubscribeScriptStreamDto({
-    required this.walletItem,
-    required this.scriptStatus,
-  });
+  SubscribeScriptStreamDto({required this.walletItem, required this.scriptStatus});
 }

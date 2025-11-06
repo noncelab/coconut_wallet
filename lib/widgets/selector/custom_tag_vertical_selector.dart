@@ -114,17 +114,12 @@ class CustomTagSelectorItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: ColorUtil.getColor(colorIndex).backgroundColor,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: ColorUtil.getColor(colorIndex).color,
-                width: 1,
-              ),
+              border: Border.all(color: ColorUtil.getColor(colorIndex).color, width: 1),
             ),
             child: Center(
-              child: Text(
-                '#',
-                style: CoconutTypography.body2_14.setColor(
-                  ColorUtil.getColor(colorIndex).color,
-                ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('#', style: CoconutTypography.body2_14.setColor(ColorUtil.getColor(colorIndex).color)),
               ),
             ),
           ),
