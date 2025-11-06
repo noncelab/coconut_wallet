@@ -99,8 +99,9 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {
-    // print(
-    //     'DEBUG - _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}');
+    Logger.log(
+      'WalletHomeViewModel: _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}',
+    );
 
     if (!(_isNetworkOn ?? false)) {
       return NetworkStatus.offline;

@@ -63,7 +63,7 @@ class NodeProviderState {
     // 테이블 헤더 출력 (connectionState 포함)
     final logBuffer = StringBuffer();
     logBuffer.writeln('\n┌─────────────────────────────────────────────────┐');
-    logBuffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (38 - connectionStateSymbol.length)}│');
+    logBuffer.writeln('│ 연결 상태: $connectionStateSymbol${' ' * (39 - connectionStateSymbol.length)}│');
     logBuffer.writeln('├─────────┬─────────┬─────────┬─────────┬─────────┤');
     logBuffer.writeln('│ 지갑 ID  │  구독    │   잔액   │   거래    │  UTXO   │');
     logBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
