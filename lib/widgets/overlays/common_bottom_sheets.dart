@@ -16,8 +16,7 @@ class CommonBottomSheets {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
       ),
       builder: (context) {
         return Padding(
@@ -31,17 +30,19 @@ class CommonBottomSheets {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
-                      onTap: isCloseButton
-                          ? () {
-                              Navigator.pop(context);
-                            }
-                          : null,
+                      onTap:
+                          isCloseButton
+                              ? () {
+                                Navigator.pop(context);
+                              }
+                              : null,
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         color: Colors.transparent,
-                        child: isCloseButton
-                            ? const Icon(Icons.close_rounded, color: CoconutColors.white)
-                            : Container(width: 16),
+                        child:
+                            isCloseButton
+                                ? const Icon(Icons.close_rounded, color: CoconutColors.white)
+                                : Container(width: 16),
                       ),
                     ),
                     Text(
@@ -78,8 +79,7 @@ class CommonBottomSheets {
       context: context,
       builder: (context) {
         return ClipRRect(
-          borderRadius:
-              const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
           child: Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
             child: SizedBox(
@@ -129,18 +129,28 @@ class CommonBottomSheets {
     required Widget Function(ScrollController) childBuilder,
     double minChildSize = 0.5,
     double maxChildSize = 0.9,
+    double? initialChildSize,
+    bool showDragHandle = true,
+    String? title,
+    String? subLabel,
   }) async {
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
 
+    // initialChildSize가 지정되지 않은 경우에만 자동 계산
+    final calculatedInitialSize = initialChildSize ?? (minChildSize <= 0.95 ? minChildSize + 0.05 : minChildSize);
+
+    // initialChildSize가 maxChildSize를 초과하지 않도록 보장
+    final finalInitialSize = calculatedInitialSize > maxChildSize ? maxChildSize : calculatedInitialSize;
+
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: CoconutColors.gray900,
+      backgroundColor: CoconutColors.black,
       builder: (context) {
         return DraggableScrollableSheet(
           controller: draggableController,
-          initialChildSize: minChildSize,
+          initialChildSize: finalInitialSize,
           minChildSize: minChildSize,
           maxChildSize: maxChildSize,
           expand: false,
@@ -148,17 +158,15 @@ class CommonBottomSheets {
             void handleDrag() {
               if (isAnimating) return;
               final extent = draggableController.size;
-              final targetExtent = (extent - minChildSize).abs() < (extent - maxChildSize).abs()
-                  ? minChildSize + 0.01
-                  : maxChildSize;
+              final targetExtent =
+                  (extent - minChildSize).abs() < (extent - maxChildSize).abs() ? minChildSize + 0.01 : maxChildSize;
 
               isAnimating = true;
               draggableController
-                  .animateTo(targetExtent,
-                      duration: const Duration(milliseconds: 50), curve: Curves.easeOut)
+                  .animateTo(targetExtent, duration: const Duration(milliseconds: 50), curve: Curves.easeOut)
                   .whenComplete(() {
-                isAnimating = false;
-              });
+                    isAnimating = false;
+                  });
             }
 
             return NotificationListener<ScrollNotification>(
@@ -171,33 +179,65 @@ class CommonBottomSheets {
               },
               child: Column(
                 children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onVerticalDragUpdate: (details) {
-                      final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                      draggableController.jumpTo(draggableController.size + delta);
-                    },
-                    onVerticalDragEnd: (details) {
-                      handleDrag();
-                    },
-                    onVerticalDragCancel: () {
-                      handleDrag();
-                    },
-                    child: Container(
-                      color: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Center(
-                        child: Container(
-                          width: 55,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: CoconutColors.gray400,
-                            borderRadius: BorderRadius.circular(4),
+                  if (showDragHandle)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (details) {
+                        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                        draggableController.jumpTo(draggableController.size + delta);
+                      },
+                      onVerticalDragEnd: (details) {
+                        handleDrag();
+                      },
+                      onVerticalDragCancel: () {
+                        handleDrag();
+                      },
+                      child: Container(
+                        color: CoconutColors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Center(
+                          child: Container(
+                            width: 55,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: CoconutColors.gray400,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  if (title != null)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (details) {
+                        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                        draggableController.jumpTo(draggableController.size + delta);
+                      },
+                      onVerticalDragEnd: (details) {
+                        handleDrag();
+                      },
+                      onVerticalDragCancel: () {
+                        handleDrag();
+                      },
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                        child: CoconutAppBar.build(
+                          title: title,
+                          context: context,
+                          onBackPressed: null,
+                          subLabel: Text(
+                            subLabel ?? '',
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.black),
+                          ),
+                          showSubLabel: subLabel != null,
+                          isBottom: true,
+                        ),
+                      ),
+                    ),
                   Expanded(
                     child: ClipRRect(
                       borderRadius: const BorderRadius.only(

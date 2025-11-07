@@ -22,7 +22,8 @@ enum FakeBalanceInputError {
 }
 
 class WalletHomeEditBottomSheet extends StatefulWidget {
-  const WalletHomeEditBottomSheet({super.key});
+  const WalletHomeEditBottomSheet({super.key, required this.scrollController});
+  final ScrollController scrollController;
 
   @override
   State<WalletHomeEditBottomSheet> createState() => _WalletHomeEditBottomSheetState();
@@ -30,7 +31,6 @@ class WalletHomeEditBottomSheet extends StatefulWidget {
 
 class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> with TickerProviderStateMixin {
   final TextEditingController _textEditingController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   late WalletHomeEditViewModel _viewModel;
 
   GlobalKey fixedBottomButtonKey = GlobalKey();
@@ -72,8 +72,8 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
 
       _textFieldFocusNode.addListener(() {
         if (_textFieldFocusNode.hasFocus) {
-          if (_scrollController.hasClients) {
-            _scrollController.animateTo(
+          if (widget.scrollController.hasClients) {
+            widget.scrollController.animateTo(
               _fixedBottomButtonSize.height,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -180,147 +180,149 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
               }
             },
           ),
-          body: Stack(
-            children: [
-              Container(
-                height: MediaQuery.sizeOf(context).height,
-                color: CoconutColors.black,
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CoconutLayout.spacing_100h,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-                        child: Text(t.wallet_home_screen.edit.title, style: CoconutTypography.heading3_21_Bold),
-                      ),
-                      const Divider(height: 1, color: CoconutColors.gray700),
-                      if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
-                        Consumer<WalletHomeEditViewModel>(
-                          builder: (context, viewModel, child) {
-                            return Column(
-                              children: [
-                                SingleButton(
-                                  isVerticalSubtitle: true,
-                                  title: t.wallet_home_screen.edit.hide_balance,
-                                  subtitle: t.wallet_home_screen.edit.hide_balance_on_home,
-                                  subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                                  customPadding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
-                                  onPressed: () async {
-                                    if (_textFieldFocusNode.hasFocus) {
-                                      FocusScope.of(context).unfocus();
-                                      return;
-                                    }
-                                    viewModel.setTempIsBalanceHidden(!viewModel.tempIsBalanceHidden);
-                                  },
-                                  betweenGap: 16,
-                                  backgroundColor: CoconutColors.black,
-                                  rightElement: CoconutSwitch(
-                                    isOn: viewModel.tempIsBalanceHidden,
-                                    scale: 0.7,
-                                    activeColor: CoconutColors.gray100,
-                                    trackColor: CoconutColors.gray600,
-                                    thumbColor: CoconutColors.gray800,
-                                    onChanged: (value) {
-                                      viewModel.setTempIsBalanceHidden(value);
-                                    },
-                                  ),
-                                ),
-                                SingleButton(
-                                  isVerticalSubtitle: true,
-                                  title: t.wallet_home_screen.edit.fake_balance.fake_balance_display,
-                                  subtitle: t.wallet_home_screen.edit.fake_balance.fake_balance_description,
-                                  subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                                  customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-                                  betweenGap: 16,
-                                  onPressed: () async {
-                                    if (_textFieldFocusNode.hasFocus) {
-                                      FocusScope.of(context).unfocus();
-                                      return;
-                                    }
-
-                                    viewModel.setTempFakeBalanceActive(!viewModel.tempIsFakeBalanceActive);
-                                    _onFakeBalanceToggleChanged(viewModel.tempIsFakeBalanceActive);
-                                  },
-                                  backgroundColor: Colors.transparent,
-                                  rightElement: CoconutSwitch(
-                                    isOn: viewModel.tempIsFakeBalanceActive,
-                                    scale: 0.7,
-                                    activeColor: CoconutColors.gray100,
-                                    trackColor: CoconutColors.gray600,
-                                    thumbColor: CoconutColors.gray800,
-                                    onChanged: (value) {
-                                      viewModel.setTempFakeBalanceActive(value);
-                                      _onFakeBalanceToggleChanged(value);
-                                    },
-                                  ),
-                                ),
-                                _buildDelayedFakeBalanceInput(),
-                              ],
-                            );
-                          },
+          body: SafeArea(
+            child: Stack(
+              children: [
+                Container(
+                  height: MediaQuery.sizeOf(context).height,
+                  color: CoconutColors.black,
+                  child: SingleChildScrollView(
+                    controller: widget.scrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CoconutLayout.spacing_100h,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                          child: Text(t.wallet_home_screen.edit.title, style: CoconutTypography.heading3_21_Bold),
                         ),
                         const Divider(height: 1, color: CoconutColors.gray700),
-                      ],
-                      CoconutLayout.spacing_500h,
-                      _buildHomeWidgetSelector(),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                top: 0,
-                right: 0,
-                child: Consumer<WalletHomeEditViewModel>(
-                  builder: (context, viewModel, _) {
-                    return FixedBottomButton(
-                      gradientKey: fixedBottomButtonKey,
-                      backgroundColor: CoconutColors.white,
-                      isActive: _shouldEnableCompleteButton(),
-                      onButtonClicked: () async {
-                        FocusScope.of(context).unfocus();
-                        if (viewModel.tempIsFakeBalanceActive && _textEditingController.text.isEmpty) {
-                          // 가짜 잔액을 활성화 했지만 금액을 입력하지 않았을 때 -> 0으로 설정할지 다시입력할지 물어봄
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return CoconutPopup(
-                                title: t.wallet_home_screen.edit.alert.empty_fake_balance,
-                                description: t.wallet_home_screen.edit.alert.empty_fake_balance_description,
-                                leftButtonText: t.wallet_home_screen.edit.alert.enter_again,
-                                rightButtonText: t.wallet_home_screen.edit.alert.set_to_0,
-                                onTapRight: () async {
-                                  viewModel.setTempFakeBalanceTotalBtc(0);
+                        if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
+                          Consumer<WalletHomeEditViewModel>(
+                            builder: (context, viewModel, child) {
+                              return Column(
+                                children: [
+                                  SingleButton(
+                                    isVerticalSubtitle: true,
+                                    title: t.wallet_home_screen.edit.hide_balance,
+                                    subtitle: t.wallet_home_screen.edit.hide_balance_on_home,
+                                    subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                    customPadding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                                    onPressed: () async {
+                                      if (_textFieldFocusNode.hasFocus) {
+                                        FocusScope.of(context).unfocus();
+                                        return;
+                                      }
+                                      viewModel.setTempIsBalanceHidden(!viewModel.tempIsBalanceHidden);
+                                    },
+                                    betweenGap: 16,
+                                    backgroundColor: CoconutColors.black,
+                                    rightElement: CoconutSwitch(
+                                      isOn: viewModel.tempIsBalanceHidden,
+                                      scale: 0.7,
+                                      activeColor: CoconutColors.gray100,
+                                      trackColor: CoconutColors.gray600,
+                                      thumbColor: CoconutColors.gray800,
+                                      onChanged: (value) {
+                                        viewModel.setTempIsBalanceHidden(value);
+                                      },
+                                    ),
+                                  ),
+                                  SingleButton(
+                                    isVerticalSubtitle: true,
+                                    title: t.wallet_home_screen.edit.fake_balance.fake_balance_display,
+                                    subtitle: t.wallet_home_screen.edit.fake_balance.fake_balance_description,
+                                    subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                    customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                                    betweenGap: 16,
+                                    onPressed: () async {
+                                      if (_textFieldFocusNode.hasFocus) {
+                                        FocusScope.of(context).unfocus();
+                                        return;
+                                      }
 
-                                  _onComplete();
-                                  if (mounted) {
-                                    Navigator.pop(context);
-                                    Navigator.pop(context);
-                                  }
-                                },
-                                onTapLeft: () {
-                                  Navigator.pop(context);
-                                },
+                                      viewModel.setTempFakeBalanceActive(!viewModel.tempIsFakeBalanceActive);
+                                      _onFakeBalanceToggleChanged(viewModel.tempIsFakeBalanceActive);
+                                    },
+                                    backgroundColor: Colors.transparent,
+                                    rightElement: CoconutSwitch(
+                                      isOn: viewModel.tempIsFakeBalanceActive,
+                                      scale: 0.7,
+                                      activeColor: CoconutColors.gray100,
+                                      trackColor: CoconutColors.gray600,
+                                      thumbColor: CoconutColors.gray800,
+                                      onChanged: (value) {
+                                        viewModel.setTempFakeBalanceActive(value);
+                                        _onFakeBalanceToggleChanged(value);
+                                      },
+                                    ),
+                                  ),
+                                  _buildDelayedFakeBalanceInput(),
+                                ],
                               );
                             },
-                          );
-                          return;
-                        }
-
-                        _onComplete();
-                        if (mounted) {
-                          Navigator.pop(context);
-                        }
-                      },
-                      text: t.complete,
-                    );
-                  },
+                          ),
+                          const Divider(height: 1, color: CoconutColors.gray700),
+                        ],
+                        CoconutLayout.spacing_500h,
+                        _buildHomeWidgetSelector(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  top: 0,
+                  right: 0,
+                  child: Consumer<WalletHomeEditViewModel>(
+                    builder: (context, viewModel, _) {
+                      return FixedBottomButton(
+                        gradientKey: fixedBottomButtonKey,
+                        backgroundColor: CoconutColors.white,
+                        isActive: _shouldEnableCompleteButton(),
+                        onButtonClicked: () async {
+                          FocusScope.of(context).unfocus();
+                          if (viewModel.tempIsFakeBalanceActive && _textEditingController.text.isEmpty) {
+                            // 가짜 잔액을 활성화 했지만 금액을 입력하지 않았을 때 -> 0으로 설정할지 다시입력할지 물어봄
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return CoconutPopup(
+                                  title: t.wallet_home_screen.edit.alert.empty_fake_balance,
+                                  description: t.wallet_home_screen.edit.alert.empty_fake_balance_description,
+                                  leftButtonText: t.wallet_home_screen.edit.alert.enter_again,
+                                  rightButtonText: t.wallet_home_screen.edit.alert.set_to_0,
+                                  onTapRight: () async {
+                                    viewModel.setTempFakeBalanceTotalBtc(0);
+
+                                    _onComplete();
+                                    if (mounted) {
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                                  onTapLeft: () {
+                                    Navigator.pop(context);
+                                  },
+                                );
+                              },
+                            );
+                            return;
+                          }
+
+                          _onComplete();
+                          if (mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                        text: t.complete,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

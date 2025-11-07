@@ -749,13 +749,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           CoconutUnderlinedButton(
             padding: const EdgeInsets.all(8),
             onTap:
-                () => CommonBottomSheets.showBottomSheet_100(
+                () => CommonBottomSheets.showDraggableBottomSheet(
+                  minChildSize: 0.5,
+                  maxChildSize: 0.9,
+                  initialChildSize: 0.9,
                   context: context,
-                  isScrollControlled: true,
-                  // controller: _draggableController,
-                  isDismissible: false,
-                  enableDrag: true,
-                  child: const WalletHomeEditBottomSheet(),
+                  childBuilder: (controller) => WalletHomeEditBottomSheet(scrollController: controller),
                 ),
             text: t.wallet_home_screen.edit_home_screen,
             textStyle: CoconutTypography.body3_12,
