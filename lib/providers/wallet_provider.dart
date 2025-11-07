@@ -394,6 +394,10 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
+    return _utxoRepository.updateUtxoStatus(walletId, utxoList, status);
+  }
+
   /// 백그라운드에서 미리 주소를 저장합니다.
   Future<void> addAddressesWithGapLimit({
     required WalletListItemBase walletItemBase,

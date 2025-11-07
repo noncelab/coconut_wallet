@@ -128,7 +128,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               _buildScaffold(context),
               _buildStickyHeader(context),
               _buildUtxoOrderDropdown(),
-              if (_isSelectionMode) _buildSelectionButtons(),
+              if (_isSelectionMode) ...[_buildBottomGradient(), _buildSelectionButtons()],
             ],
           ),
         ),
@@ -175,7 +175,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   ),
                 ],
               ),
-              _buildBottomGradient(),
             ],
           );
         },

@@ -325,21 +325,20 @@ class UtxoListViewModel extends ChangeNotifier {
 
   Future<void> updateSelectedUtxosStatus(List<String> utxoIds, UtxoStatus status) async {
     try {
-      // 각 UTXO 상태 업데이트
-      await Future.wait(
-        utxoIds.map((utxoId) async {
-          final utxo = _utxoList.firstWhere((u) => u.utxoId == utxoId);
+      // DB에서 한번에 상태 업데이트
+      await _walletProvider.updateUtxoStatus(_walletId, utxoIds, status);
 
-          if (utxo.status != status) {
-            await _walletProvider.toggleUtxoLockStatus(_walletId, utxoId);
-            utxo.status = status;
-          }
-        }),
-      );
+      // 메모리 리스트도 일괄 업데이트
+      for (final utxo in _utxoList) {
+        if (utxoIds.contains(utxo.utxoId)) {
+          utxo.status = status;
+        }
+      }
 
-      // 선택된 UTXO 리스트 업데이트
+      // affected 목록
       final affectedUtxos = _utxoList.where((u) => utxoIds.contains(u.utxoId)).toList();
 
+      // selected 리스트 갱신
       if (status == UtxoStatus.locked) {
         if (_selectedUtxoTagName == t.utxo_detail_screen.utxo_locked) {
           _selectedUtxoList = affectedUtxos;
@@ -356,7 +355,7 @@ class UtxoListViewModel extends ChangeNotifier {
         }
       }
 
-      // confirmed UTXO 리스트 갱신
+      // confirmed 리스트 갱신
       _confirmedUtxoList
         ..clear()
         ..addAll(
