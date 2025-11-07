@@ -896,25 +896,14 @@ class SendViewModel extends ChangeNotifier {
   }
 
   Map<String, int> _getRecipientMapForTx(Map<String, int> map) {
-    // normalize: bc1, tb1, bcrt1 주소는 소문자로 변환
-    final Map<String, int> normalizedMap = {
-      for (var entry in map.entries)
-        (entry.key.startsWith(RegExp(r'^(bc1|tb1|bcrt1)', caseSensitive: false)) ? entry.key.toLowerCase() : entry.key):
-            entry.value,
-    };
+    final Map<String, int> normalizedMap = {for (var entry in map.entries) normalizeAddress(entry.key): entry.value};
 
     if (!_isMaxMode) return normalizedMap;
 
-    // 모두 보내기(max mode) 처리
-    double amountSumExceptLast = _amountSumExceptLast;
-    int maxBalanceInSats =
+    final double amountSumExceptLast = _amountSumExceptLast;
+    final int maxBalanceInSats =
         balance - (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast).toInt();
-    String lastRecipientAddress = _recipientList[lastIndex].address;
-
-    // 마지막 수신자 주소도 normalize
-    if (lastRecipientAddress.startsWith(RegExp(r'^(bc1|tb1|bcrt1)', caseSensitive: false))) {
-      lastRecipientAddress = lastRecipientAddress.toLowerCase();
-    }
+    final String lastRecipientAddress = normalizeAddress(_recipientList[lastIndex].address);
 
     normalizedMap[lastRecipientAddress] = maxBalanceInSats;
     return normalizedMap;
