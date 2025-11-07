@@ -11,14 +11,14 @@ enum TransactionType {
 
 extension TransactionTypeExtension on TransactionType {
   static TransactionType fromString(String name) {
-    return TransactionType.values.firstWhere(
-      (type) => type.name == name,
-      orElse: () => TransactionType.unknown,
-    );
+    return TransactionType.values.firstWhere((type) => type.name == name, orElse: () => TransactionType.unknown);
   }
 }
 
 enum SocketConnectionStatus { reconnecting, connecting, connected, terminated }
+
+/// 네트워크 상태 구분
+enum NetworkStatus { online, offline, connectionFailed }
 
 /// 갱신된 데이터 종류
 enum UpdateElement { subscription, balance, utxo, transaction }

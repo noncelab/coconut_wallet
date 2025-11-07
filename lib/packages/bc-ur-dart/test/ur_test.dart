@@ -27,35 +27,22 @@ void main() {
       var input = Uint8List.fromList([0, 1, 2, 128, 255]);
       expect(Bytewords.encodeStyle(Bytewords.Style.standard, input),
           equals("able acid also lava zoom jade need echo taxi"));
-      expect(Bytewords.encodeStyle(Bytewords.Style.uri, input),
-          equals("able-acid-also-lava-zoom-jade-need-echo-taxi"));
+      expect(Bytewords.encodeStyle(Bytewords.Style.uri, input), equals("able-acid-also-lava-zoom-jade-need-echo-taxi"));
       expect(Bytewords.encodeStyle(Bytewords.Style.minimal, input), equals("aeadaolazmjendeoti"));
 
-      expect(
-          Bytewords.decodeStyle(
-              Bytewords.Style.standard, "able acid also lava zoom jade need echo taxi"),
+      expect(Bytewords.decodeStyle(Bytewords.Style.standard, "able acid also lava zoom jade need echo taxi"),
           equals(input));
-      expect(
-          Bytewords.decodeStyle(
-              Bytewords.Style.uri, "able-acid-also-lava-zoom-jade-need-echo-taxi"),
-          equals(input));
+      expect(Bytewords.decodeStyle(Bytewords.Style.uri, "able-acid-also-lava-zoom-jade-need-echo-taxi"), equals(input));
       expect(Bytewords.decodeStyle(Bytewords.Style.minimal, "aeadaolazmjendeoti"), equals(input));
 
-      expect(
-          () => Bytewords.decodeStyle(
-              Bytewords.Style.standard, "able acid also lava zoom jade need echo wolf"),
+      expect(() => Bytewords.decodeStyle(Bytewords.Style.standard, "able acid also lava zoom jade need echo wolf"),
           throwsA(isA<ArgumentError>()));
-      expect(
-          () => Bytewords.decodeStyle(
-              Bytewords.Style.uri, "able-acid-also-lava-zoom-jade-need-echo-wolf"),
+      expect(() => Bytewords.decodeStyle(Bytewords.Style.uri, "able-acid-also-lava-zoom-jade-need-echo-wolf"),
           throwsA(isA<ArgumentError>()));
-      expect(() => Bytewords.decodeStyle(Bytewords.Style.minimal, "aeadaolazmjendeowf"),
-          throwsA(isA<ArgumentError>()));
+      expect(() => Bytewords.decodeStyle(Bytewords.Style.minimal, "aeadaolazmjendeowf"), throwsA(isA<ArgumentError>()));
 
-      expect(() => Bytewords.decodeStyle(Bytewords.Style.standard, "wolf"),
-          throwsA(isA<ArgumentError>()));
-      expect(
-          () => Bytewords.decodeStyle(Bytewords.Style.standard, ""), throwsA(isA<ArgumentError>()));
+      expect(() => Bytewords.decodeStyle(Bytewords.Style.standard, "wolf"), throwsA(isA<ArgumentError>()));
+      expect(() => Bytewords.decodeStyle(Bytewords.Style.standard, ""), throwsA(isA<ArgumentError>()));
     });
 
     test('Bytewords 2', () {

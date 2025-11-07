@@ -46,45 +46,46 @@ class UtxoSyncService {
   }
 
   /// 스크립트에 대한 UTXO 목록을 가져옵니다.
-  Future<List<UtxoState>> fetchUtxoStateList(
-      WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
+  Future<List<UtxoState>> fetchUtxoStateList(WalletListItemBase walletItem, ScriptStatus scriptStatus) async {
     try {
       final unspentResList = await _electrumService.getUnspentList(
-          walletItem.walletBase.addressType, scriptStatus.address);
+        walletItem.walletBase.addressType,
+        scriptStatus.address,
+      );
 
       final realmTransactions = _transactionRepository.getRealmTransactionListByHashes(
-          walletItem.id, unspentResList.map((unspentRes) => unspentRes.txHash).toSet());
-      final transactionMap = {
-        for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx
-      };
+        walletItem.id,
+        unspentResList.map((unspentRes) => unspentRes.txHash).toSet(),
+      );
+      final transactionMap = {for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx};
       final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked);
-      final lockedUtxoMap = {
-        for (final utxo in realmLockedUtxos) utxo.transactionHash: utxo,
-      };
+      final lockedUtxoMap = {for (final utxo in realmLockedUtxos) utxo.transactionHash: utxo};
       return unspentResList
           // 이미 사용된 UTXO는 필터링하여 제외
-          .map((e) => UtxoState(
-                transactionHash: e.txHash,
-                index: e.txPos,
-                amount: e.value,
-                derivationPath: scriptStatus.derivationPath,
-                blockHeight: e.height,
-                to: scriptStatus.address,
-                status: () {
-                  if (e.height <= 0) return UtxoStatus.incoming;
+          .map(
+            (e) => UtxoState(
+              transactionHash: e.txHash,
+              index: e.txPos,
+              amount: e.value,
+              derivationPath: scriptStatus.derivationPath,
+              blockHeight: e.height,
+              to: scriptStatus.address,
+              status: () {
+                if (e.height <= 0) return UtxoStatus.incoming;
 
-                  final lockedUtxo = lockedUtxoMap[e.txHash];
-                  if (lockedUtxo == null || lockedUtxo.status == UtxoStatus.unspent) {
-                    return UtxoStatus.unspent;
-                  } else {
-                    return UtxoStatus.locked;
-                  }
-                }(),
-                timestamp: transactionMap[e.txHash]!.timestamp,
-              ))
+                final lockedUtxo = lockedUtxoMap[e.txHash];
+                if (lockedUtxo == null || lockedUtxo.status == UtxoStatus.unspent) {
+                  return UtxoStatus.unspent;
+                } else {
+                  return UtxoStatus.locked;
+                }
+              }(),
+              timestamp: transactionMap[e.txHash]!.timestamp,
+            ),
+          )
           .toList();
     } catch (e, stackTrace) {
-      Logger.error('Failed to get UTXO list: $e');
+      Logger.error('Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
       Logger.error('Stack trace: $stackTrace');
       return [];
     }
@@ -97,7 +98,8 @@ class UtxoSyncService {
     Logger.log('---------------- utxoStateList: ${utxoStateList.length} ----------------');
     for (var utxo in utxoStateList) {
       Logger.log(
-          '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTransactionHash: ${utxo.spentByTransactionHash?.substring(0, 10)}');
+        '${utxo.transactionHash.substring(0, 10)}:${utxo.index} - ${utxo.status} isRbfable: ${utxo.isRbfable} isCpfpable: ${utxo.isCpfpable} amount: ${utxo.amount} spentByTransactionHash: ${utxo.spentByTransactionHash?.substring(0, 10)}',
+      );
     }
     Logger.log('---------------- utxoStateList end ----------------');
   }
@@ -107,11 +109,9 @@ class UtxoSyncService {
   Future<void> createOutgoingUtxos(WalletListItemBase walletItem) async {
     try {
       // 1. 언컨펌 출금 트랜잭션 목록 조회
-      final unconfirmedTransactions =
-          _transactionRepository.getUnconfirmedTransactionRecordList(walletItem.id);
-      final sentTransactions = unconfirmedTransactions
-          .where((tx) => tx.transactionType == TransactionType.sent)
-          .toList();
+      final unconfirmedTransactions = _transactionRepository.getUnconfirmedTransactionRecordList(walletItem.id);
+      final sentTransactions =
+          unconfirmedTransactions.where((tx) => tx.transactionType == TransactionType.sent).toList();
 
       // 언컨펌 sent 트랜잭션이 없으면 처리 필요 없음
       if (sentTransactions.isEmpty) {
@@ -147,8 +147,7 @@ class UtxoSyncService {
 
           Transaction? previousTx;
           try {
-            previousTx =
-                previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
+            previousTx = previousTxs.firstWhere((prevTx) => prevTx.transactionHash == input.transactionHash);
           } catch (_) {
             continue;
           }

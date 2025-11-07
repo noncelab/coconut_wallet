@@ -26,52 +26,74 @@ class InputOutputDetailRow extends StatelessWidget {
     this.transactionStatus,
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
-  String get balanceText =>
-      currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
+  String get balanceText => currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
 
   @override
   Widget build(BuildContext context) {
-    bool shouldTrimText = (balanceMaxWidth != 0.0 ? balanceMaxWidth : 100.0) >
-        MediaQuery.of(context).size.width * 0.3;
+    bool shouldTrimText = (balanceMaxWidth != 0.0 ? balanceMaxWidth : 100.0) > MediaQuery.of(context).size.width * 0.3;
     return Row(
       children: [
-        Text(
-          shouldTrimText
-              ? TextUtils.truncate(address, 14, 8, 6)
-              : TextUtils.truncate(address, 19, 11, 8),
-          style: CoconutTypography.body2_14_Number.copyWith(
-            color: rowProperty.leftItemColor,
-            fontSize: 14,
-            height: 16 / 14,
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                shouldTrimText ? TextUtils.truncate(address, 14, 8, 6) : TextUtils.truncate(address, 19, 11, 8),
+                style: CoconutTypography.body2_14_Number.copyWith(
+                  color: rowProperty.leftItemColor,
+                  fontSize: 14,
+                  height: 16 / 14,
+                ),
+                textScaler: const TextScaler.linear(1.0),
+                maxLines: 1,
+              ),
+            ),
           ),
-          maxLines: 1,
         ),
+        CoconutLayout.spacing_300w,
         if (rowType == InputOutputRowType.output || rowType == InputOutputRowType.fee)
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                SvgPicture.asset(
-                  rowProperty.svgPath,
-                  width: 16,
-                  height: 12,
-                  colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                SizedBox(
-                  width: balanceMaxWidth,
-                  child: Text(
-                    textAlign: TextAlign.end,
-                    balanceText,
-                    style: CoconutTypography.body2_14_Number.copyWith(
-                      color: rowProperty.rightItemColor,
-                      height: 16 / 14,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: balanceMaxWidth + 26,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SvgPicture.asset(
+                        rowProperty.svgPath,
+                        width: 16,
+                        height: 12,
+                        colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                          width: balanceMaxWidth,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              textAlign: TextAlign.end,
+                              balanceText,
+                              style: CoconutTypography.body2_14_Number.copyWith(
+                                color: rowProperty.rightItemColor,
+                                height: 16 / 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         if (rowType == InputOutputRowType.input)
@@ -79,19 +101,26 @@ class InputOutputDetailRow extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                SizedBox(
-                  width: balanceMaxWidth,
-                  child: Text(
-                    balanceText,
-                    style: CoconutTypography.body2_14_Number.copyWith(
-                      color: rowProperty.rightItemColor,
-                      height: 16 / 14,
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: balanceMaxWidth,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          balanceText,
+                          style: CoconutTypography.body2_14_Number.copyWith(
+                            color: rowProperty.rightItemColor,
+                            height: 16 / 14,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(
-                  width: 10,
-                ),
+                const SizedBox(width: 14),
                 SvgPicture.asset(
                   rowProperty.svgPath,
                   width: 16,
@@ -128,11 +157,9 @@ class InputOutputDetailRow extends StatelessWidget {
         );
       }
 
-      if (transactionStatus == TransactionStatus.sending ||
-          transactionStatus == TransactionStatus.sent) {
+      if (transactionStatus == TransactionStatus.sending || transactionStatus == TransactionStatus.sent) {
         leftItemColor = rightItemColor = svgColor = CoconutColors.primary;
-      } else if (transactionStatus == TransactionStatus.self ||
-          transactionStatus == TransactionStatus.selfsending) {
+      } else if (transactionStatus == TransactionStatus.self || transactionStatus == TransactionStatus.selfsending) {
         leftItemColor = CoconutColors.white;
         rightItemColor = svgColor = CoconutColors.primary;
       }

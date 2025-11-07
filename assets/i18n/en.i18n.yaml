@@ -28,6 +28,7 @@ edit: "Edit"
 max: "Max"
 all: "All"
 no: "No"
+yes: "Yes"
 delete: "Delete"
 delete_label: "Delete"
 complete: "Complete"
@@ -57,12 +58,12 @@ tx_memo: "Tx Memo"
 tx_id: "Tx ID"
 block_num: "Block Number"
 inquiry_details: "Inquiry"
-utxo_total: "UTXO Total"
+utxo_total: "Amount"
 receiver: "Send To"
 recipient: "Recipient"
 estimated_fee: "Est. Fee"
 total_cost: "Total Cost"
-input_directly: "Direct Input"
+input_directly: "Fee Rate"
 mnemonic_wordlist: "Mnemonic Wordlist"
 self_security_check: "Security Check"
 app_info: "App Info"
@@ -86,10 +87,15 @@ quick_receive: "Quick Recv"
 quick_send: "Quick Send"
 copied: "Copied"
 change_color: "Color"
-selection: "Selection"
+select: "Select"
+tap: "Tap"
 hardware_wallet: "Hardware Wallet"
 vault_app: "Vault App"
 view_balance: "Balance"
+network: "Network"
+electrum_server: "Electrum Server"
+block_explorer: "Block Explorer"
+log_viewer: "Log Viewer"
 
 relative_time:
   days_ago(cardinal):
@@ -98,12 +104,12 @@ relative_time:
     other: "${n} days ago"  # 2일 이상
 
 apply_item: "$count items"
-fee_sats: " ($value sats/vb)"
+fee_sats: " ($value sat/vB)"
 utxo_count: "($count items)"
 total_item_count: "(Total $count items)"
 
 view_app_info: "App Info"
-view_tx_details: "View Tx Details"
+view_tx_details: "Transaction"
 view_more: "More"
 view_less: "Less"
 view_mempool: "Mempool"
@@ -122,6 +128,48 @@ faucet_request: "Test Bitcoin requested. Please wait a moment."
 faucet_already_request: "Already requested. It may take up to 5 minutes for the deposit."
 faucet_failed: "Request failed. Please try again later."
 bio_auth_required: "Biometric auth required"
+
+donation:
+  coconut: "Coconut Donation"
+  donate: "Donate"
+  supportImpactMessage: "Thanks to your support, we can bring the freedom of money to more people."
+  encourageSupportMessage: "Help us keep Coconut running with your support."
+  coffee: "☕️ A Cup of Coffee"
+  late_meal: "🍜️ Late-night Meal"
+  maintenance: "⚒️️ Maintenance Costs"
+  support_heart: "🩷 A Heartfelt Support"
+  onchain: "On-chain Donation"
+  lightning: "Lightning Donation"
+  under_dust_error: "Please enter an amount greater than ${dust} (dust).\n"
+  over_donation_max_value_error: "You can donate up to a maximum of $value sats.\n"
+  donation_wallet: "Donation Wallet"
+  total_donation_amount: "Total Donation Amount"
+  donation_address: "Donation Address"
+  empty_enough_balance_wallet: "No wallet with sufficient balance."
+  unsigned_qr_tooltip: "Scan the QR code to sign."
+  signed_qr_tooltip: "Scan the signed transaction."
+  user_messages: [
+    "With love",
+    "With heartfelt support",
+    "Cheering you on",
+    "To keep you grinding",
+    "Stay strong",
+    "With gratitude",
+    "Because you’re proud of us",
+  ]
+  user_messages_description_1: "To the Coconut Dev Team"
+  user_messages_description_2: "${amount} sats"
+  donate_confirm: "Confirm Donation"
+  complete:
+    thank_you: "Thank You!"
+    description: "Your donation is more than just Bitcoin.\nIt keeps Coconut moving toward better wallets\nand wider adoption."
+
+  # Donation - Lightning
+  donation_amount: "Donation Amount"
+  ln_invoice: "Lightning Invoice"
+  ln_address: "Lightning Address"
+  ln_address_pow: "powbitcoiner@speed.app"
+  ln_invoice_api_error: "Failed to generate Lightning invoice."
 
 # lib/enums
 transaction_enums:
@@ -189,10 +237,12 @@ wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"
   vault: "Coconut Vault"
-  keystone: "Keystone"
+  keystone: "Keystone 3 Pro"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  self: "Input Directly"
+  cold_card: "ColdCard"
+  krux: "Krux"
+  self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
   guide_vault: "Coconut Vault App - Select Wallet - Export Wallet Info"
@@ -213,6 +263,7 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
+    step0: "Devices other than the Keystone 3 Pro are not supported."
     step1: "1. On the home screen, "
     step1_em: " More(•••)"
     step2: "2. "
@@ -228,12 +279,30 @@ wallet_add_scanner_screen:
     step2_em: " Wallet"
     step3: "3. "
     step3_em: " Export Xpub"
-
-# lib/screens/wallet_list
+  guide_coldcard:
+    step1: "1. "
+    step1_em: " Advanced/Tools"
+    step2: "2. "
+    step2_em: " Export Wallet"
+    step3: "3. "
+    step3_em: " Sparrow"
+    step4: "4. "
+    step4_preposition: "Press the "
+    step4_em: "QR "
+    step4_end: "Button"
+  guide_krux:
+    step0: "Guide based on wonderMV"
+    step1: "1. "
+    step1_em: "XPUB Export"
+    step2: "2. "
+    step2_em: "XPUB - QR Code"
+    select: "Select"
 wallet_list:
   wallet_count: "$count Items"
   primary_wallet: "Primary Wallet"
-  exclude_from_total_amount: "Exclude from Home Total"
+  exclude_from_total_amount: "Excluded from Home Total"
+  home_balance: "Home Balance"
+  excluded_balance: "Excluded Balance"
   settings:
     primary_wallet: "Set as Primary Wallet"
     primary_wallet_disabled_description: "This wallet is used as default for Send/Receive on the home screen."
@@ -242,14 +311,14 @@ wallet_list:
     exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen."
   edit:
     wallet_list: "Edit Wallet List"
-    star_description: "Select up to 5 wallets to display on the home screen."
-    order_description: "Tap to change the order of wallets."
+    star_description: "up to 5 wallets to display on the home screen."
+    order_description: "to change the order of wallets."
     delete_description: "Swipe left on a wallet to delete it."
     finish: "Finish Editing"
     unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"    
 
 wallet_add_input_screen:
-  app_bar_title_text: "Input Directly"
+  app_bar_title_text: "Add Manually"
   placeholder_text: "Enter the extended public key (zpub) or descriptor"
   format_error_text: "Unable to verify format"
   invalid_character_error_text: "Invalid character"
@@ -279,7 +348,7 @@ wallet_add_input_screen:
 # lib/screens/review
 negative_feedback_screen:
   text1: "Sorry😭"
-  text2: "Please let us know if you have any inconvenience or suggestions!"
+  text2: "Please let us know\nif you have any inconvenience or suggestions!"
   text3: "Send 1:1 message"
   text4: "Next time"
 positive_feedback_screen:
@@ -290,20 +359,58 @@ positive_feedback_screen:
 
 # lib/screens/send
 broadcasting_complete_screen:
-  complete: "Send Request Complete"
-  memo_placeholder: "Enter memo"
+  complete: "Transaction Sent"
+  memo_placeholder: "Add a memo"
   memo_tags:
-    - "Transaction"
+    - "Payment"
     - "Purchase"
     - "Donation"
-    - "Living expenses"
+    - "Living Expenses"
     - "Savings"
-    - "Pocket money"
+    - "Allowance"
     - "Birthday gift"
 
+# send screen start ----
+send_screen:
+  select_wallet: "Select Wallet"
+  n_utxos: " • ${count} UTXOs"
+  delete: "Delete"
+  fee_rate: "Fee Rate"
+  fee_rate_suffix: "sat/vB"
+  estimated_fee: "Estimated Total Fee"
+  fee_subtracted_from_send_amount: "Fee subtracted from send amount"
+  fee_subtracted_from_send_amount_disabled_description: "Recipient receives the exact amount entered"
+  fee_subtracted_from_send_amount_enabled_description: "The fee will be subtracted from the recipient’s amount"
+  my_address: "My Addresses"
+  add_recipient: "Add Recipient"
+  use_btc_unit: "Use BTC Unit"
+  input_maximum_amount: "Send All"
+  address_placeholder: "Enter the recipient's address"
+  recommended_fee_unavailable: "Failed to Fetch Recommended Fee"
+  recommended_fee_unavailable_description: "Please enter the fee manually."
+  tooltip_text: "${count} addresses • Total ${amount}"
+  tooltip_max_mode_text: "Send All Mode Enabled"
+  max_mode_insufficient_balance: "Insufficient Balance"
+  unintended_dust_fee: "The change of ${unintendedDustFee} sat will be used as a fee."
+  fee_rate_too_low: "Minimum allowed value is 0.1"
+  drag_to_add_address: "Drag to add an address"
+
+
+utxo_selection_screen:
+  title: "Select UTXOs"
+
+select_wallet_with_options_bottom_sheet:
+  select_utxo: "Select UTXOs"
+  select_utxo_auto: "Auto-Select UTXOs"
+  select_utxo_auto_minimal_fee_description: "Automatically selects UTXOs for minimal fee"
+  select_utxo_auto_selected_utxo_description: "Transaction will use your selected UTXOs only"
+  n_utxos: " • ${count} utxos"
+
+# send screen end ----
+
 broadcasting_screen:
-  title: "Final Confirmation"
-  description: "I will send with the information below"
+  title: "Final Review"
+  description: "Ready to send using the details below"
   self_sending: "This is a transaction sending to my own wallet."
   error_popup_title: "Broadcasting Failed"
   btn_submit: "Send"
@@ -314,11 +421,13 @@ send_address_screen:
   address_placeholder: "Please enter the address to send"
   amount_placeholder: "Please enter the amount to send"
 send_confirm_screen:
-  title: "Confirm Input Information"
+  title: "Review Details"
 signed_psbt_scanner_screen:
-  title: "Read Signed Transaction"
+  title: "Scan Signed Tx"
+  bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
+  
 unsigned_tx_qr_screen:
-  hardware_wallet_screen_guide: "Screen Guide"
+  hardware_wallet_screen_guide: "Guide"
   guide_keystone:
     step1: "1. On the home screen, "
     step1_em: "SCAN"
@@ -335,6 +444,17 @@ unsigned_tx_qr_screen:
     step1_em: "Scan QR"
     step1_end: "select"
     step2: "2. Scan the QR code below with camera"
+  guide_coldcard:
+    step1_preposition: "Press the "
+    step1_em: "QR "
+    step1_end: "button on the Coldcard."
+  guide_krux:
+    step1: "1. "
+    step1_em: "Sign"
+    select: "Select"
+    step2: "2. "
+    step2_em: "PSBT"
+    step3: "3. Scan the QR code below with camera"
   fast_scan_mode: "Fast scan mode"
   low_density_qr: "Simple QR"
   high_density_qr: "Complex QR"
@@ -342,9 +462,15 @@ unsigned_tx_qr_screen:
   guide_hardware_wallet:
     step1: "Please scan the QR code below with your hardware wallet to start the signing process."
 
+coconut_qr_scanner:
+  reading_extra_data: "Reading additional data to collect\nPlease keep scanning"
+
 # lib/screens/settings
 app_info_screen:
   made_by_team_pow: "Made by Team POW."
+  coconut_crew_genesis_member: "Coconut Crew: Genesis Member"
+  coconut_crew: "Coconut Crew"
+  coconut_crew_thanks_msg: "These self-custody pioneers\nhave been with us since beta.\nWithout them, Coconut wouldn't exist today."
   category1_ask: "Have any questions?"
   go_to_pow: "Go to POW Community"
   ask_to_discord: "Ask via Discord Channel"
@@ -356,6 +482,7 @@ app_info_screen:
   terms_of_service: "Terms of Service"
   privacy_policy: "Privacy Policy"
   license: "Open Source License"
+  data_collection: "Data Collection Notice"
   version_and_date: "CoconutWallet ver. $version (released at $releasedAt)"
   inquiry: "Inquiry Content"
 bip39_list_screen:
@@ -373,6 +500,53 @@ settings_screen:
   language: "Language"
   korean: "한국어"
   english: "English"
+  japanese: "日本語"
+  electrum_server: 
+    server_address: "Server Address"
+    port: "Port"
+    use_ssl: "Use SSL"
+    ssl_port: "SSL Port: $port"
+    default_server: "Default Servers"
+    user_servers: "My Servers"
+    reset: "Reset"
+    save: "Save"
+    error_msg:
+      invalid_domain_format: "Not a valid domain format"
+      port_out_of_range: "Please enter a valid port number (1–65535)"
+    alert: 
+      connection_failed: "Cannot connect!"
+      connecting: "Connecting..."
+      connected: "Connected"
+    popup:
+      delete_server_info: "Delete Server Info"
+      delete_server_info_description: "Are you sure you want to delete the saved server information?"
+  block_explorer:
+    default_explorer: "Default Explorer"
+    custom_explorer: "Custom Explorer"
+    custom_explorer_description: "Coconut uses the address you entered. However, since the transaction/address link format varies depending on the explorer, some links may not work properly."
+    save: "Save"
+    custom_explorer_input_placeholder: "Enter the address"
+    connection_status:
+      connecting: "Checking address..."
+      connected: "Address verified"
+      failed: "Address not found!"
+  log_viewer_screen:
+    log_description_1: "If you encounter any problems, please press the [Share] button and send it via email or contact us on Discord or POW community."
+    log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
+    log_target: "[Logging Target]"
+    log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
+    clear_log: "Clear Log"
+    clear_log_description: "Are you sure to clear log?"
+    email_subject: "[Coconut Wallet] Debug Log"
+    email_body: "Situation: (Please briefly describe the situation where the problem occurred)"
+    email_error_msg: "Unable to open email app. Please copy the log and post it on the Discord channel or POW community."
+    buttons:
+      discord: "Go to Discord"
+      pow: "Go to POW"
+      copy: "Copy Log"
+      toast:
+        copy_success: "Log copied successfully."
+
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
@@ -399,11 +573,16 @@ utxo_list_screen:
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmations)"
+  time_ago:
+    just_now: just now
+    minutes: ${count} minutes ago
+    hours: ${count} hours ago
+    days: ${count} days ago
 
 utxo_detail_screen:
   pending: "Pending Confirmation"
   address: "Holding Address"
-  utxo_locked: "Usage Locked"
+  utxo_locked: "Coin Locked"
   utxo_unlocked: "Available for Use"
   utxo_locked_toast_msg: "UTXO lock complete! This coin will no longer be used automatically."
   utxo_unlocked_toast_msg: "UTXO unlock complete! Coin has been switched to available status."
@@ -421,13 +600,13 @@ transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
   existing_fee: "Existing Fee"
-  existing_fee_value: "${value} sats/vb"
-  total_fee: "Total $fee sats / ${vb} vb"
+  existing_fee_value: "${value} sat/vB"
+  total_fee: "Total $fee sats / ${vB} vB"
   new_fee: "New Fee"
-  sats_vb: "sats/vb"
-  recommend_fee: "Minimum fee: ${fee} sats/vb or higher"
-  recommend_fee_info_rbf: "Must be at least 1 sat/vb higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vb."
-  recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vb, Recommended fee rate = ${recommendedFeeRate} sat/vb\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vb"
+  sats_vb: "sat/vB"
+  recommend_fee: "Minimum fee: ${fee} sat/vB or higher"
+  recommend_fee_info_rbf: "Must be at least 1 sat/vB higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vB."
+  recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, Recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "Recommended Fee"
   estimated_fee: "Estimated total fee about ${fee} sats"
   estimated_fee_too_high_error: "Estimated total fee is over 0.01 BTC!"
@@ -518,18 +697,21 @@ errors:
   node_unknown: "An unknown error occurred while connecting to node."
   broadcast_error: "Failed to broadcast transaction."
   network_connect: "No network connection."
+  network_disconnected: "Network disconnected"
   network_not_found: "Network is not connected!"
-  insufficient_balance: "Insufficient balance"
+  electrum_connection_failed: "Unable to connect to Electrum server"
+  insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"
     recommended_fee_unavailable: "Could not fetch recommended fee.\nPress the 'Change' button to enter fee directly."
-    insufficient_utxo: "Insufficient UTXO total"
+    insufficient_utxo: "Selected UTXOs are insufficient"
   address_error:
+    empty: "Address is empty"
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"
     not_for_regtest: "Not a regtest address"
-    duplicated: "Address already entered"
+    duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"
     failed: "No more attempts allowed\nPlease close the app"
@@ -545,12 +727,12 @@ errors:
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
 
 text_field:
-  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sats/vb)"
-  enter_fee_directly: "Enter Directly"
-  search_mnemonic_word: "Search in English"
+  enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
+  enter_fee_directly: "Enter Manually"
+  search_mnemonic_word: "Search in English or numbers"
 
 tooltip:
-  recommended_fee1: "Could not fetch recommended fee. Please enter fee directly."
+  recommended_fee1: "Could not fetch recommended fee. Please enter fee manually."
   recommended_fee2: "The fee you set is $bitcoin $unit or higher."
   wallet_add1: "Add new wallet or update existing wallets."
   wallet_add2: "Vault"
@@ -559,17 +741,19 @@ tooltip:
   wallet_add5: "and scan the QR code that appears on the screen."
   amount_to_be_sent: "Only received Bitcoin can be sent.\nAmount being received: $bitcoin $unit"
   scan_signed_psbt:
-    guide: "Have you completed signing with ${by_hardware_wallet}?\nNow, please scan the QR code shown on the ${hardware_wallet} screen."
+    guide: "Done signing with ${by_hardware_wallet}?\nScan the QR code on the ${hardware_wallet} screen."
     by_seed_signer: "SeedSigner"
     by_jade: "Jade"
     by_keystone: "Keystone"
+    by_coldcard: "Coldcard"
+    by_krux: "Krux"
     by_hardware_wallet: "hardware wallet"
     by_vault_app: "Vault app"
   unsigned_tx_qr:
-    in_vault: "In Vault,"
-    select_wallet: "select $name."
-    select_menu: "Go to $menu and "
-    scan_qr_below: "scan the QR code below."
+    open_vault: "Open Coconut Vault"
+    select_wallet: "select $name"
+    select_menu: "tap $menu"
+    scan_qr_below: "and scan the QR code below."
   address_receiving: "This is the address used when receiving Bitcoin. In English, it's called Receiving or External."
   address_change: "This is the address where you get change back when sending Bitcoin. In English, it's called Change."
   utxo: "UTXO stands for Unspent Transaction Output, meaning unused balance. Bitcoin doesn't have a balance concept. Remember that the balance shown in your wallet is the sum of UTXOs."
@@ -578,10 +762,11 @@ tooltip:
   mfp: "This is the unique value of the wallet.\nAlso called Master Fingerprint (MFP)."
   rbf: "A feature to replace an existing transaction with a new one by increasing the fee. (RBF, Replace-By-Fee)"
   cpfp: "A feature to increase priority by setting a high fee on a new transaction (Child) to make the existing transaction (Parent) process faster. (CPFP, Child-Pays-For-Parent)"
+  dont_show_again: "Don't show again"
 
 toast:
   back_exit: "Press the back button once more to exit."
-  min_fee: "Current minimum fee is $minimum sats/vb."
+  min_fee: "Current minimum recommended fee rate is $minimum sat/vB."
   fetching_onchain_data: "Fetching latest data. Please wait a moment."
   screen_capture: "Screen capture detected."
   no_balance: "No balance."
@@ -599,19 +784,19 @@ alert:
   error_send:
     broadcasting_failed: "[Send Failed]\n$error"
     insufficient_balance: "Insufficient balance"
-    minimum_amount: "You can send from $bitcoin $unit"
+    minimum_amount: "You can send at least $bitcoin $unit"
     insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
   signed_psbt:
-    invalid_qr: "Invalid QR code.\nPlease check again."
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."
     need_more_sign: "Need $count more signatures"
     invalid_signature: "Invalid signature information. Please try again."
   scan_failed: "Scan Failed"
   scan_failed_description: "QR code scan failed. Please try again.\n$error"
+  invalid_qr: "Invalid QR code.\nPlease check again."
   tutorial:
-    title: "Need help?"
-    description: "I'll guide you to\nthe tutorial site"
-    btn_view: "View Tutorial"
+    title: "Need some help?"
+    description: "We’ll guide you to the tutorial."
+    btn_view: "Go to Tutorial"
   forgot_password:
     title: "Forgot your password?"
     description: "You can reset your password by pressing [Reset]. Changing the password will reset the synchronized wallet list."
@@ -659,6 +844,8 @@ third_party:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
+  krux: "Krux"  
   zpub: "zpub"
 
 trade_exchange:
@@ -667,9 +854,6 @@ trade_exchange:
 
 fiat:
   fiat: "Fiat"
-  krw_symbol: "₩"
-  usd_symbol: "$"
-  krw_code: "KRW"
-  usd_code: "USD"
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
+  jpy_price: "Bitflyer Price"

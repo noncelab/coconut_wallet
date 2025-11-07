@@ -1,4 +1,94 @@
-## mainnet 0.0.13(beta), regtest 3.1.7 - 2025-07-14
+## mainnet 0.4.6, regtest 3.3.1 - 2025-09-19
+* flutter 3.29.0 + 안드로이드 8.0: BackDropFilter 에러 발생. flutter 3.29.1로 업데이트
+* 안드로이드 앱 첫 실행 시 PrivacyScreen 깜빡임
+
+## mainnet 0.4.5 - 2025-09-13
+* 시드사이너 지갑 추가 버그 수정 (BC-UR)
+* QR Scanner 라이브러리 교체
+* 안드로이드 PrivacyScreen 버그 수정
+* 보내기 화면
+  - 등록된 지갑 주소 목록에서 보낼 주소 선택 시 주소 인덱스 증가
+  - 등록된 지갑 주소 목록 스크롤 추가
+  - 배치 트랜잭션 안내 UI 추가
+
+## mainnet 0.4.4, regtest 3.3.0 - 2025-09-13
+* 니모닉 문구 바이너리 검색
+* utxo 정렬 기준 선택값 유지
+* 보내기 - 내 주소 - 지갑 순서대로 보임 (단, 내 주소가 제일 첫번째)
+* appLifecycle - PrivacyScreen
+* 이름 편집 아이콘 - 서드파티 하드웨어에만 보임
+* 지갑 아이콘, 지갑 상세화면 UI 변경
+* 크럭스 지원
+* block explorer 설정 가능 (only mainnet)
+
+## mainnet 0.4.3 - 2025-08-22
+### Fixed
+* 일부 화면 레이아웃 수정
+
+## mainnet 0.4.2 - 2025-08-22
+### Fixed
+* recipient address prefix 3 허용
+* utxo 선택 화면 스크롤 멈춤 현상
+* 트랜잭션 생성시 추천 수수료율 미만, 0.1 이상의 수수료율 허용
+* 보내기 화면 utxo auto-select 모드일 때 잔액 보여주지 말기 (confirmed utxo의 전체 합이 노출됨)
+* 큰 글자 모드에서 잔액 가려지는 현상 수정
+* 콜드카드 에어갭 트랜잭션 호환성 해결
+### Added
+* wallet_list 법정화폐 가격 보여주기
+
+## mainnet 0.4.1, regtest 3.2.1 - 2025-08-13
+### Fixed
+* 보내기 화면 - 에러 처리 누락 버그 수정
+* 보내기 화면 - masterFingerprint 없는 지갑 보내기 다음 화면 이동 불가
+* 안드로이드 백버튼 클릭 시 키보드 위 요소가 남아있는 버그 수정
+* 가짜 잔액 버그 수정
+### Added
+* JPY 시세 보기 추가
+  
+## mainnet 0.4.0, regtest 3.2.0 - 2025-08-08
+### Fixed
+* coconut_lib 1.0.0 적용
+* Android API 35로 업데이트 (qr-code-scanner 라이브러리 내부로 옮김)
+* 가짜 잔액 버그 수정
+### Added
+* VPN 통한 일렉트럼 서버 연결 지원
+* 새로운 홈화면, 보내기 화면
+* QR 스캔 프로그레스 UI 추가
+* 콜드카드 지원
+
+## mainnet 0.3.0 - 2025-07-28
+### Fixed
+* 지갑 추가 예외 메시지 프롬프트에 추가
+### Added
+* 일렉트럼 노드 설정 기능
+* 추천수수료 조회 루트 2개 추가, util 함수 생성 후 적용
+
+## mainnet 0.2.1 - 2025-07-25
+### Fixed
+* UTXO 조회 시 realm.refresh()
+* 주소 보기 화면 툴팁 개선
+* QR 스캔 시 노이즈 처리, QR Density 변경 시에도 스캔 가능하게 처리
+* RBF 엣지 케이스에서 TX 생성 에러 발생 시 Sweep으로 생성 (임시처리)
+
+## mainnet 0.2.0 - 2025-07-21
+### Fixed
+* 보내기 - 수수료 선택 화면 버그 수정
+* 후원하기 배너 안드로이드에서만 노출
+
+## mainnet 0.1.0
+
+## mainnet 0.0.15(beta), regtest 3.1.8 - 2025-07-18
+### Fixed
+* utxo_selection 버그 수정
+* 영문화 문구 일부 수정
+
+## mainnet 0.0.14(beta) - 2025-07-16
+### Fixed
+* 영문화 문구 일부 수정
+### Added
+* 설정 > 앱 정보 보기 > 코코넛 크루: 제네시스 멤버 추가
+  
+## mainnet 0.0.13(beta), regtest 3.1.7(only aos) - 2025-07-14
 ### Fixed
 * 비밀번호 분실 > 초기화 안되는 버그 수정
 * 지갑 상세 화면에서 지갑 정보 화면으로 가는 앱 바 버튼 스타일 수정

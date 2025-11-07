@@ -1,25 +1,32 @@
-import 'dart:async';
+import 'dart:io';
+import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
+import 'package:coconut_wallet/widgets/overlays/scanner_overlay.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 class CoconutQrScanner extends StatefulWidget {
-  final Function(QRViewController) setQrViewController;
+  static String qrFormatErrorMessage = 'Invalid QR format.';
+  static String qrInvalidErrorMessage = 'Invalid QR Code.';
+  final Function(MobileScannerController) setMobileScannerController;
   final Function(dynamic) onComplete;
-  final Function(String) onFailed;
+  final Function(String, String?) onFailed;
   final Color borderColor;
   final IQrScanDataHandler qrDataHandler;
 
   const CoconutQrScanner({
     super.key,
-    required this.setQrViewController,
+    required this.setMobileScannerController,
     required this.onComplete,
     required this.onFailed,
     required this.qrDataHandler,
-    this.borderColor = CoconutColors.white,
+    this.borderColor = CoconutColors.gray400,
   });
 
   @override
@@ -28,121 +35,106 @@ class CoconutQrScanner extends StatefulWidget {
 
 class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  final double _borderWidth = 8;
-  double scannerLoadingVerticalPos = 0;
-
-  late AnimationController _loadingBarController;
-  late Animation<double> _animation;
-
-  Timer? _scanTimeoutTimer;
+  final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
+  final double _borderWidth = 4;
+  bool _isScanningExtraData = false;
   bool _showLoadingBar = false;
+  bool _isFirstScanData = true;
+
+  MobileScannerController? _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadingBarController = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    )..repeat(reverse: true);
+    _controller = MobileScannerController();
 
-    _animation = Tween<double>(begin: -1.0, end: 1.0).animate(CurvedAnimation(
-      parent: _loadingBarController,
-      curve: Curves.easeInOut,
-    ));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final rect = getQrViewRect();
-      if (rect != null) {
-        setState(() {
-          scannerLoadingVerticalPos =
-              ((MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-                      ? 320.0
-                      : MediaQuery.of(context).size.width * 0.85) +
-                  30;
-        });
-      } else {
-        Logger.log('QRView position not available yet');
-      }
-    });
+    widget.setMobileScannerController(_controller!);
   }
 
   @override
   void dispose() {
-    _scanTimeoutTimer?.cancel();
-    _loadingBarController.dispose();
+    _progressNotifier.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
-  void _onQrViewCreated(QRViewController controller) {
-    widget.setQrViewController(controller);
-    var handler = widget.qrDataHandler;
-    controller.scannedDataStream.listen((scanData) async {
-      if (scanData.code == null) return;
+  void resetScanState() {
+    widget.qrDataHandler.reset();
+    _isFirstScanData = true;
+  }
 
-      _scanTimeoutTimer?.cancel();
-      _scanTimeoutTimer = Timer(const Duration(seconds: 1), () {
-        setState(() {
-          _showLoadingBar = false;
-        });
-      });
-      try {
-        if (!handler.isCompleted() && !handler.joinData(scanData.code!)) {
-          if (!handler.validateFormat(scanData.code!)) {
-            widget.onFailed('Invalid QR code');
-          } // 이어서 다른 Density의 QR(ur 포맷)을 스캔할 때는 alert를 띄우지 않습니다.
-          handler.reset();
+  void _onDetect(BarcodeCapture capture) {
+    final codes = capture.barcodes;
+    if (codes.isEmpty) return;
+
+    final barcode = codes.first;
+    if (barcode.rawValue == null) return;
+
+    final scanData = barcode.rawValue!;
+    var handler = widget.qrDataHandler;
+
+    try {
+      if (_isFirstScanData) {
+        if (!handler.validateFormat(scanData)) {
+          widget.onFailed(CoconutQrScanner.qrFormatErrorMessage, scanData);
           setState(() {
             _showLoadingBar = false;
           });
           return;
         }
-
-        if (!_showLoadingBar) {
-          setState(() {
-            _showLoadingBar = true;
-          });
-        }
-
-        if (handler.isCompleted()) {
-          setState(() {
-            _showLoadingBar = false;
-          });
-          widget.onComplete(handler.result!);
-          handler.reset();
-          _scanTimeoutTimer?.cancel();
-        }
-      } catch (e) {
-        Logger.log(e.toString());
-        setState(() {
-          _showLoadingBar = false;
-        });
-        widget.onFailed(e.toString());
-        handler.reset();
-        _scanTimeoutTimer?.cancel();
+        _isFirstScanData = false;
       }
-    }, onError: (e) {
-      setState(() {
-        _showLoadingBar = false;
-      });
-      widget.onFailed(e.toString());
-      handler.reset();
-      _scanTimeoutTimer?.cancel();
-    });
+
+      // 핸들러가 완료되지 않은 경우 데이터 조인 시도
+      if (!handler.isCompleted()) {
+        try {
+          bool result = handler.joinData(scanData);
+          Logger.log('--> progress: ${handler.progress}');
+          _progressNotifier.value = handler.progress;
+          if (!result && handler is! IFragmentedQrScanDataHandler) {
+            widget.onFailed(CoconutQrScanner.qrInvalidErrorMessage, scanData);
+            resetScanState();
+            return;
+          }
+          /* handler가 IFragmentedQrScanDataHandler일 땐 joinData 실패해도 무시하고 계속 스캔 진행함.
+           왜냐하면 animated qr 스캔 중 노이즈 데이터가 오탐되는 경우가 있는데 매번 처음부터 다시 하면 사용성을 해침 */
+        } on SequenceLengthMismatchException catch (_) {
+          // QR Density 변경됨
+          assert(handler is IFragmentedQrScanDataHandler);
+          resetScanState();
+          return;
+        }
+      }
+
+      if (!_showLoadingBar) {
+        setState(() {
+          _isScanningExtraData = handler.progress > 0.99;
+          _showLoadingBar = true;
+        });
+      }
+
+      if (handler.isCompleted()) {
+        _resetLoadingBarState();
+        final result = handler.result!;
+        resetScanState();
+        widget.onComplete(result);
+      }
+    } catch (e) {
+      Logger.error(e.toString());
+      _resetLoadingBarState();
+      resetScanState();
+      widget.onFailed(e.toString(), scanData);
+    }
   }
 
-  QrScannerOverlayShape _getOverlayShape() {
-    return QrScannerOverlayShape(
-      borderColor: widget.borderColor,
-      borderRadius: 8,
-      borderLength:
-          (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-              ? 160.0
-              : MediaQuery.of(context).size.width * 0.85 / 2,
-      borderWidth: _borderWidth,
-      cutOutSize:
-          (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-              ? 320.0
-              : MediaQuery.of(context).size.width * 0.85,
-    );
+  void _resetLoadingBarState() {
+    _progressNotifier.value = 0;
+    setState(() {
+      _isScanningExtraData = false;
+      if (_showLoadingBar) {
+        _showLoadingBar = false;
+      }
+    });
   }
 
   @override
@@ -151,53 +143,45 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       builder: (BuildContext context, BoxConstraints constraints) {
         return Stack(
           children: [
-            QRView(
-              key: qrKey,
-              onQRViewCreated: _onQrViewCreated,
-              overlay: _getOverlayShape(),
-            ),
-            Positioned(
-              top: scannerLoadingVerticalPos,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Visibility(
-                visible: _showLoadingBar,
-                child: Center(
-                  child: Container(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: 4,
-                    margin: const EdgeInsets.symmetric(horizontal: 100),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: _showLoadingBar
-                        ? AnimatedBuilder(
-                            animation: _animation,
-                            builder: (context, child) {
-                              return Align(
-                                alignment: Alignment(_animation.value, 0),
-                                child: child,
-                              );
-                            },
-                            child: Container(
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-              ),
-            )
+            MobileScanner(controller: _controller!, onDetect: _onDetect),
+            const ScannerOverlay(),
+            _buildProgressOverlay(context),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildProgressOverlay(BuildContext context) {
+    final scanAreaSize =
+        (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
+            ? 320.0
+            : MediaQuery.of(context).size.width * 0.85;
+
+    final scanAreaTop = (MediaQuery.of(context).size.height - scanAreaSize) / 2;
+    final scanAreaBottom = scanAreaTop + scanAreaSize;
+
+    return Stack(
+      children: [
+        // 프로그레스 바
+        Positioned(
+          top: scanAreaBottom,
+          left: 0,
+          right: 0,
+          child: Visibility(
+            visible: _showLoadingBar,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CoconutLayout.spacing_1300w,
+                if (!_isScanningExtraData) ...[_buildProgressBar(), CoconutLayout.spacing_300w, _buildProgressText()],
+                if (_isScanningExtraData) _buildReadingExtraText(),
+                CoconutLayout.spacing_1300w,
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -209,5 +193,73 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       return position & size;
     }
     return null;
+  }
+
+  Widget _buildReadingExtraText() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(
+        textAlign: TextAlign.center,
+        t.coconut_qr_scanner.reading_extra_data,
+        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+      ),
+    );
+  }
+
+  Widget _buildProgressText() {
+    return ValueListenableBuilder<double>(
+      valueListenable: _progressNotifier,
+      builder: (context, value, _) {
+        return SizedBox(
+          width: 35,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(
+              textAlign: TextAlign.center,
+              "${(value * 100).toInt()}%",
+              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProgressBar() {
+    return Expanded(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double maxWidth = constraints.maxWidth;
+          return Stack(
+            children: [
+              Container(
+                width: maxWidth,
+                height: 8,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                  color: CoconutColors.gray350,
+                ),
+              ),
+              ValueListenableBuilder<double>(
+                valueListenable: _progressNotifier,
+                builder: (context, value, _) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: maxWidth * _progressNotifier.value,
+                    height: 6,
+                    margin: const EdgeInsets.all(1),
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      color: Colors.black,
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }

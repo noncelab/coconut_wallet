@@ -8,11 +8,7 @@ class FaucetResponse {
   final double amount;
   final String txHash;
 
-  FaucetResponse({
-    this.address = '',
-    this.amount = 0,
-    this.txHash = '',
-  });
+  FaucetResponse({this.address = '', this.amount = 0, this.txHash = ''});
 
   factory FaucetResponse.fromJson(Map<String, dynamic> json) => _$FaucetResponseFromJson(json);
 

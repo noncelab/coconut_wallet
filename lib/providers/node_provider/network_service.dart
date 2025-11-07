@@ -5,7 +5,6 @@ import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 /// NodeProvider의 네트워크 관련 기능을 담당하는 서비스 클래스
@@ -42,10 +41,12 @@ class NetworkService {
     try {
       var result = await _electrumService.getCurrentBlock();
       var blockHeader = BlockHeader.parse(result.height, result.hex);
-      return Result.success(BlockTimestamp(
-        blockHeader.height,
-        DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000, isUtc: true),
-      ));
+      return Result.success(
+        BlockTimestamp(
+          blockHeader.height,
+          DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000, isUtc: true),
+        ),
+      );
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }
@@ -81,11 +82,9 @@ class NetworkService {
 
       // 반환값이 -1이면 충분한 정보가 없다는 뜻이므로 0으로 처리 (추후 대체)
       double feeFast = (feeFastRaw is int ? feeFastRaw.toDouble() : feeFastRaw) as double;
-      double feeHalfHour =
-          (feeHalfHourRaw is int ? feeHalfHourRaw.toDouble() : feeHalfHourRaw) as double;
+      double feeHalfHour = (feeHalfHourRaw is int ? feeHalfHourRaw.toDouble() : feeHalfHourRaw) as double;
       double feeHour = (feeHourRaw is int ? feeHourRaw.toDouble() : feeHourRaw) as double;
-      double feeEconomy =
-          (feeEconomyRaw is int ? feeEconomyRaw.toDouble() : feeEconomyRaw) as double;
+      double feeEconomy = (feeEconomyRaw is int ? feeEconomyRaw.toDouble() : feeEconomyRaw) as double;
       feeFast = feeFast > 0 ? feeFast : 0;
       feeHalfHour = feeHalfHour > 0 ? feeHalfHour : 0;
       feeHour = feeHour > 0 ? feeHour : 0;
@@ -111,8 +110,7 @@ class NetworkService {
       economyFee = economyFee > 0 ? economyFee : (minimumFee > 0 ? minimumFee : 1);
       minimumFee = minimumFee > 0 ? minimumFee : 1;
 
-      return Result.success(
-          RecommendedFee(fastestFee, halfHourFee, hourFee, economyFee, minimumFee));
+      return Result.success(RecommendedFee(fastestFee, halfHourFee, hourFee, economyFee, minimumFee));
     } catch (e) {
       return Result.failure(e is AppError ? e : ErrorCodes.nodeUnknown);
     }

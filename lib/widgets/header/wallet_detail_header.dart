@@ -57,12 +57,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       onTap: () {
         widget.onPressedUnitToggle();
       },
-      child: Column(
-        children: [
-          FiatPrice(satoshiAmount: widget.animatedBalanceData.current),
-          _buildBtcBalance(),
-        ],
-      ),
+      child: Column(children: [FiatPrice(satoshiAmount: widget.animatedBalanceData.current), _buildBtcBalance()]),
     );
   }
 
@@ -71,16 +66,23 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
       height: 36,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          AnimatedBalance(
-            prevValue: widget.animatedBalanceData.previous,
-            value: widget.animatedBalanceData.current,
-            currentUnit: widget.currentUnit,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: AnimatedBalance(
+              prevValue: widget.animatedBalanceData.previous,
+              value: widget.animatedBalanceData.current,
+              currentUnit: widget.currentUnit,
+            ),
           ),
           const SizedBox(width: 4.0),
-          Text(
-            widget.currentUnit.symbol,
-            style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              widget.currentUnit.symbol,
+              style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
+            ),
           ),
         ],
       ),
@@ -115,23 +117,18 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   Widget _buildPendingAmountRow(bool condition, String animationPath, String text, Color color) {
     if (!condition) return const SizedBox.shrink();
 
-    return SizedBox(
+    return FittedBox(
+      fit: BoxFit.scaleDown,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10.0),
-              color: color,
-            ),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10.0), color: color),
             child: Lottie.asset(animationPath, width: 12, height: 12),
           ),
           CoconutLayout.spacing_200w,
-          Text(
-            text,
-            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200),
-          ),
+          Text(text, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200)),
         ],
       ),
     );
@@ -140,16 +137,14 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   Widget _buildActionButtons() {
     return Row(
       children: [
-        _buildActionButton(
-            widget.onTapReceive, t.receive, CoconutColors.white, CoconutColors.black),
+        _buildActionButton(widget.onTapReceive, t.receive, CoconutColors.white, CoconutColors.black),
         const SizedBox(width: 12.0),
         _buildActionButton(widget.onTapSend, t.send, CoconutColors.primary, CoconutColors.black),
       ],
     );
   }
 
-  Widget _buildActionButton(
-      void Function() onTap, String label, Color backgroundColor, Color textColor) {
+  Widget _buildActionButton(void Function() onTap, String label, Color backgroundColor, Color textColor) {
     return Expanded(
       child: CoconutButton(
         onPressed: onTap,

@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class GlossaryBottomSheet extends StatefulWidget {
@@ -22,24 +24,30 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
   List<String> termList = [];
   Map<String, dynamic> termDetails = {};
   Map<String, List<String>> groupedTermList = {};
+  late final String _language;
 
   @override
   void initState() {
     super.initState();
+    _language = context.read<PreferenceProvider>().language;
     _loadData();
   }
 
   Future<void> _loadData() async {
-    String detailsContent = await rootBundle.loadString('assets/files/glossary_details.json');
+    String detailsContent = await rootBundle.loadString('assets/files/glossary_details_$_language.json');
     setState(() {
       termDetails = json.decode(detailsContent);
       termList = termDetails.keys.toList();
       termList.sort();
-      groupedTermList = groupByInitials(termList);
+      if (_language == 'kr') {
+        groupedTermList = groupByInitialsKr(termList);
+      } else if (_language == 'jp') {
+        groupedTermList = groupByInitialsJp(termList);
+      }
     });
   }
 
-  String getInitial(String input) {
+  String getInitialKr(String input) {
     const int kSBase = 0xAC00;
     const int kLBase = 0x1100;
     const int kLEnd = 0x1112;
@@ -63,7 +71,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       'ㅋ',
       'ㅌ',
       'ㅍ',
-      'ㅎ'
+      'ㅎ',
     ];
 
     // 첫 글자 추출
@@ -84,11 +92,11 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     }
   }
 
-  Map<String, List<String>> groupByInitials(List<String> terms) {
+  Map<String, List<String>> groupByInitialsKr(List<String> terms) {
     Map<String, List<String>> groupedTerms = {};
 
     for (String term in terms) {
-      String initial = getInitial(term);
+      String initial = getInitialKr(term);
 
       if (!groupedTerms.containsKey(initial)) {
         groupedTerms[initial] = [];
@@ -99,69 +107,186 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
     return groupedTerms;
   }
 
+  String getInitialJp(String input) {
+    if (input.isEmpty) return 'その他';
+
+    // 첫 코드포인트
+    final runes = input.runes.iterator..moveNext();
+    int cp = runes.current;
+
+    // 장음부호(ー)로 시작하면 다음 문자로 대체
+    if (cp == 0x30FC /* ー */ ) {
+      if (runes.moveNext()) {
+        cp = runes.current;
+      } else {
+        return 'その他';
+      }
+    }
+
+    // 일본어(히라가나/가타카나)
+    if (_isHiragana(cp) || _isKatakana(cp)) {
+      final header = _japaneseHeaderFor(cp);
+      return header;
+    }
+
+    // 영문
+    final String ch = String.fromCharCode(cp);
+    final int cu = ch.codeUnitAt(0);
+    final bool isAsciiLetter = (cu >= 0x41 && cu <= 0x5A) || (cu >= 0x61 && cu <= 0x7A);
+    if (isAsciiLetter) return ch.toUpperCase();
+
+    // 숫자
+    final bool isDigit = (cu >= 0x30 && cu <= 0x39);
+    if (isDigit) return '0-9';
+
+    // 그 외(한자/기호 등)
+    return 'その他';
+  }
+
+  Map<String, List<String>> groupByInitialsJp(List<String> terms) {
+    final Map<String, List<String>> grouped = {};
+    for (final term in terms) {
+      final initial = getInitialJp(term);
+      (grouped[initial] ??= []).add(term);
+    }
+    return grouped;
+  }
+
+  // ===== 아래는 일본어 헬퍼 =====
+
+  bool _isHiragana(int cp) => (cp >= 0x3040 && cp <= 0x309F);
+  bool _isKatakana(int cp) => (cp >= 0x30A0 && cp <= 0x30FF);
+
+  // 일본어 헤더: あ/か/さ/た/な/は/ま/や/ら/わ/ん/その他
+  String _japaneseHeaderFor(int cp) {
+    final String ch = String.fromCharCode(cp);
+    final String base = _normalizeKana(ch);
+
+    // 각 행(히라가나/가타카나 + 탁점/반탁점/소형 포함)
+    const aSet = 'あぁいぃうぅえぇおぉアイィウゥエェオォ';
+    const kSet = 'かがきぎくぐけげこごカガキギクグケゲコゴ';
+    const sSet = 'さざしじすずせぜそぞサザシジスズセゼソゾ';
+    const tSet = 'ただちぢつづてでとどタダチヂツヅテデトド';
+    const nSet = 'なにぬねのナニヌネノ';
+    const hSet = 'はばぱひびぴふぶぷへべぺほぼぽハバパヒビピフブプヘベペホボポ';
+    const mSet = 'まみむめもマミムメモ';
+    const ySet = 'やゃゆゅよょヤャユュヨョ';
+    const rSet = 'らりるれろラリルレロ';
+    const wSet = 'わゐゑをゎヮワヰヱヲ';
+    const nOnly = 'んン';
+
+    if (aSet.contains(base)) return 'あ';
+    if (kSet.contains(base)) return 'か';
+    if (sSet.contains(base)) return 'さ';
+    if (tSet.contains(base)) return 'た';
+    if (nSet.contains(base)) return 'な';
+    if (hSet.contains(base)) return 'は';
+    if (mSet.contains(base)) return 'ま';
+    if (ySet.contains(base)) return 'や';
+    if (rSet.contains(base)) return 'ら';
+    if (wSet.contains(base)) return 'わ';
+    if (nOnly.contains(base)) return 'ん';
+
+    return 'その他';
+  }
+
+  // 소형 가나를 기본형으로 정규화
+  String _normalizeKana(String ch) {
+    const Map<String, String> small2normal = {
+      'ぁ': 'あ',
+      'ぃ': 'い',
+      'ぅ': 'う',
+      'ぇ': 'え',
+      'ぉ': 'お',
+      'ゃ': 'や',
+      'ゅ': 'ゆ',
+      'ょ': 'よ',
+      'ゎ': 'わ',
+      'ァ': 'ア',
+      'ィ': 'イ',
+      'ゥ': 'ウ',
+      'ェ': 'エ',
+      'ォ': 'オ',
+      'ャ': 'ヤ',
+      'ュ': 'ユ',
+      'ョ': 'ヨ',
+      'ヮ': 'ワ',
+    };
+    return small2normal[ch] ?? ch;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: CoconutColors.black,
-        appBar: CoconutAppBar.build(
-          title: t.glossary,
-          context: context,
-          onBackPressed: null,
-          isBottom: true,
-        ),
-        body: Padding(
-            padding: EdgeInsets.only(
-                left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
-            child: Column(children: [
-              Row(
-                children: [
-                  AskCard(
-                    imagePath: 'assets/images/pow_logo.png',
-                    title: t.glossary_bottom_sheet.ask_to_pow,
-                    backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
-                    gutter: GlossaryBottomSheet.gutter,
-                    url: POW_URL,
-                    externalBrowser: true,
-                  ),
-                  SizedBox(width: GlossaryBottomSheet.gutter / 2),
-                  AskCard(
-                      imagePath: 'assets/images/discord-logo.png',
-                      title: t.glossary_bottom_sheet.ask_to_discord,
-                      backgroundColor: const Color.fromARGB(255, 240, 224, 251),
-                      gutter: GlossaryBottomSheet.gutter,
-                      url: DISCORD_COCONUT),
-                ],
+      backgroundColor: CoconutColors.black,
+      appBar: CoconutAppBar.build(title: t.glossary, context: context, onBackPressed: null, isBottom: true),
+      body: Padding(
+        padding: EdgeInsets.only(left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                AskCard(
+                  imagePath: 'assets/images/pow_logo.png',
+                  title: t.glossary_bottom_sheet.ask_to_pow,
+                  backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
+                  gutter: GlossaryBottomSheet.gutter,
+                  url: POW_URL,
+                  externalBrowser: true,
+                ),
+                SizedBox(width: GlossaryBottomSheet.gutter / 2),
+                AskCard(
+                  imagePath: 'assets/images/discord-logo.png',
+                  title: t.glossary_bottom_sheet.ask_to_discord,
+                  backgroundColor: const Color.fromARGB(255, 240, 224, 251),
+                  gutter: GlossaryBottomSheet.gutter,
+                  url: DISCORD_COCONUT,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                children:
+                    groupedTermList.keys.map((initial) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(initial, style: Styles.body1Bold),
+                          Wrap(
+                            children:
+                                groupedTermList[initial]!.map((term) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: GestureDetector(
+                                      onTap: () => _showBottomSheet(term),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(32),
+                                          color: MyColors.borderLightgrey,
+                                        ),
+                                        child: Text(
+                                          term,
+                                          style: Styles.body2.merge(
+                                            const TextStyle(color: MyColors.transparentWhite_70),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      );
+                    }).toList(),
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                  child: ListView(
-                      children: groupedTermList.keys.map((initial) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(initial, style: Styles.body1Bold),
-                    Wrap(
-                      children: groupedTermList[initial]!.map((term) {
-                        return Padding(
-                          padding: const EdgeInsets.all(4.0),
-                          child: GestureDetector(
-                              onTap: () => _showBottomSheet(term),
-                              child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(32),
-                                      color: MyColors.borderLightgrey),
-                                  child: Text(term,
-                                      style: Styles.body2.merge(
-                                          const TextStyle(color: MyColors.transparentWhite_70))))),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20)
-                  ],
-                );
-              }).toList()))
-            ])));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showBottomSheet(String term) {
@@ -173,92 +298,75 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
       enableDrag: true,
       backgroundColor: MyColors.grey,
       context: context,
-      child: details != null
-          ? LayoutBuilder(builder: (context, constraints) {
-              return ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height * 0.8,
-                ),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 제목
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              term,
-                              style: Styles.h3,
-                            ),
-                            Text(
-                              '${details['en']}',
-                              style: Styles.label,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                          decoration: const BoxDecoration(
-                            color: CoconutColors.black,
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(24),
-                              topRight: Radius.circular(24),
+      child:
+          details != null
+              ? LayoutBuilder(
+                builder: (context, constraints) {
+                  return ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height * 0.8),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 제목
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 36, 16, 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [Text(term, style: Styles.h3), Text('${details['en']}', style: Styles.label)],
                             ),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${details['content']}',
-                                style:
-                                    Styles.label.merge(const TextStyle(color: CoconutColors.white)),
-                              ),
-                              const SizedBox(height: 32),
-                              Text(
-                                t.glossary_bottom_sheet.synonym,
-                                style: Styles.body2Bold,
-                              ),
-                              const SizedBox(height: 8),
-                              if (details['synonym'] != null) ...[
-                                Wrap(
-                                    spacing: 8.0,
-                                    runSpacing: 8.0,
-                                    children: details['synonym']
-                                        .map<Widget>((text) => Keyword(keyword: text))
-                                        .toList()),
-                                const SizedBox(height: 32),
-                                Text(
-                                  t.glossary_bottom_sheet.related,
-                                  style: Styles.body2Bold,
+
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                              decoration: const BoxDecoration(
+                                color: CoconutColors.black,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(24),
+                                  topRight: Radius.circular(24),
                                 ),
-                                const SizedBox(height: 8),
-                                if (details['related'] != null) ...[
-                                  Wrap(
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${details['content']}',
+                                    style: Styles.label.merge(const TextStyle(color: CoconutColors.white)),
+                                  ),
+                                  const SizedBox(height: 32),
+                                  Text(t.glossary_bottom_sheet.synonym, style: Styles.body2Bold),
+                                  const SizedBox(height: 8),
+                                  if (details['synonym'] != null) ...[
+                                    Wrap(
                                       spacing: 8.0,
                                       runSpacing: 8.0,
-                                      children: details['related']
-                                          .map<Widget>((text) => Keyword(keyword: text))
-                                          .toList())
+                                      children:
+                                          details['synonym'].map<Widget>((text) => Keyword(keyword: text)).toList(),
+                                    ),
+                                    const SizedBox(height: 32),
+                                    Text(t.glossary_bottom_sheet.related, style: Styles.body2Bold),
+                                    const SizedBox(height: 8),
+                                    if (details['related'] != null) ...[
+                                      Wrap(
+                                        spacing: 8.0,
+                                        runSpacing: 8.0,
+                                        children:
+                                            details['related'].map<Widget>((text) => Keyword(keyword: text)).toList(),
+                                      ),
+                                    ],
+                                  ],
                                 ],
-                              ],
-                            ],
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            })
-          : Center(
-              child: Text('No details available for $term'),
-            ),
+                    ),
+                  );
+                },
+              )
+              : Center(child: Text('No details available for $term')),
     );
   }
 }
@@ -283,8 +391,7 @@ class AskCard extends StatelessWidget {
 
   Future<void> _launchURL() async {
     final Uri url = Uri.parse(this.url);
-    if (!await launchUrl(url,
-        mode: externalBrowser ? LaunchMode.externalApplication : LaunchMode.platformDefault)) {
+    if (!await launchUrl(url, mode: externalBrowser ? LaunchMode.externalApplication : LaunchMode.platformDefault)) {
       throw 'Could not launch $url';
     }
   }
@@ -292,64 +399,53 @@ class AskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-        onTap: _launchURL,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          width: (MediaQuery.of(context).size.width - gutter * 2 - gutter / 2) / 2,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: backgroundColor,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                margin: const EdgeInsets.only(bottom: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: const Color.fromRGBO(255, 255, 255, 0.5),
-                ),
-                child: Image.asset(
-                  imagePath,
-                  width: 28,
-                  height: 28,
-                ),
+      onTap: _launchURL,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        width: (MediaQuery.of(context).size.width - gutter * 2 - gutter / 2) / 2,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: backgroundColor),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: const Color.fromRGBO(255, 255, 255, 0.5),
               ),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  title,
-                  style: Styles.body2.merge(
-                      const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
-                ),
+              child: Image.asset(imagePath, width: 28, height: 28),
+            ),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                title,
+                style: Styles.body2.merge(const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
               ),
-            ],
-          ),
-        ));
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 class Keyword extends StatelessWidget {
   final String keyword;
 
-  const Keyword({
-    super.key,
-    required this.keyword,
-  });
+  const Keyword({super.key, required this.keyword});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration:
-            BoxDecoration(borderRadius: BorderRadius.circular(100), color: MyColors.lightblue),
-        child: Text(
-          keyword,
-          style: Styles.caption.merge(TextStyle(
-              fontFamily: CustomFonts.text.getFontFamily,
-              color: MyColors.darkgrey,
-              letterSpacing: 0.1)),
-        ));
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(100), color: MyColors.lightblue),
+      child: Text(
+        keyword,
+        style: Styles.caption.merge(
+          TextStyle(fontFamily: CustomFonts.text.getFontFamily, color: MyColors.darkgrey, letterSpacing: 0.1),
+        ),
+      ),
+    );
   }
 }

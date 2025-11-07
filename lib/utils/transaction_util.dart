@@ -2,9 +2,11 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:flutter/material.dart';
 
 class TransactionUtil {
@@ -43,24 +45,37 @@ class TransactionUtil {
     }
   }
 
-  static String getInputAddress(TransactionRecord? transaction, index) =>
-      _getTransactionField<String>(
-          transaction, index, (tx) => transaction!.inputAddressList, (item) => item.address,
-          defaultValue: '');
+  static String getInputAddress(TransactionRecord? transaction, index) => _getTransactionField<String>(
+    transaction,
+    index,
+    (tx) => transaction!.inputAddressList,
+    (item) => item.address,
+    defaultValue: '',
+  );
 
-  static String getOutputAddress(TransactionRecord? transaction, int index) =>
-      _getTransactionField<String>(
-          transaction, index, (tx) => transaction!.outputAddressList, (item) => item.address,
-          defaultValue: '');
+  static String getOutputAddress(TransactionRecord? transaction, int index) => _getTransactionField<String>(
+    transaction,
+    index,
+    (tx) => transaction!.outputAddressList,
+    (item) => item.address,
+    defaultValue: '',
+  );
 
   static int getInputAmount(TransactionRecord? transaction, int index) => _getTransactionField<int>(
-      transaction, index, (tx) => transaction!.inputAddressList, (item) => item.amount,
-      defaultValue: 0);
+    transaction,
+    index,
+    (tx) => transaction!.inputAddressList,
+    (item) => item.amount,
+    defaultValue: 0,
+  );
 
-  static int getOutputAmount(TransactionRecord? transaction, int index) =>
-      _getTransactionField<int>(
-          transaction, index, (tx) => transaction!.outputAddressList, (item) => item.amount,
-          defaultValue: 0);
+  static int getOutputAmount(TransactionRecord? transaction, int index) => _getTransactionField<int>(
+    transaction,
+    index,
+    (tx) => transaction!.outputAddressList,
+    (item) => item.amount,
+    defaultValue: 0,
+  );
 
   static T _getTransactionField<T>(
     TransactionRecord? transaction,
@@ -79,7 +94,11 @@ class TransactionUtil {
 
   /// confirmed uxto만 사용 가능
   static List<UtxoState> selectOptimalUtxos(
-      List<UtxoState> utxoList, int amount, double feeRate, AddressType addressType) {
+    List<UtxoState> utxoList,
+    int amount,
+    double feeRate,
+    AddressType addressType,
+  ) {
     int baseVbyte = 72; // 0 input, 2 output
     int vBytePerInput = 0;
     int dust = _getDustThreshold(addressType);
@@ -89,8 +108,8 @@ class TransactionUtil {
       vBytePerInput = 148;
     }
     List<UtxoState> selectedUtxos = [];
-    List<UtxoState> unspentUtxos = utxoList.where((u) => u.status == UtxoStatus.unspent).toList()
-      ..sort((a, b) => b.amount.compareTo(a.amount));
+    List<UtxoState> unspentUtxos =
+        utxoList.where((u) => u.status == UtxoStatus.unspent).toList()..sort((a, b) => b.amount.compareTo(a.amount));
     // List<UtxoState> incomingUtxos = utxoList
     //     .where((u) => u.status == UtxoStatus.incoming)
     //     .toList()
@@ -149,8 +168,7 @@ class TransactionUtil {
       return false;
     }
 
-    if (tx.inputs[0].transactionHash !=
-        '0000000000000000000000000000000000000000000000000000000000000000') {
+    if (tx.inputs[0].transactionHash != '0000000000000000000000000000000000000000000000000000000000000000') {
       return false;
     }
 
@@ -167,7 +185,6 @@ class TransactionUtil {
           description: t.transaction_fee_bumping_screen.dialog.confirmed_alert_description,
           backgroundColor: CoconutColors.gray800,
           rightButtonText: t.view_tx_details,
-          rightButtonTextStyle: CoconutTypography.body1_16,
           rightButtonColor: CoconutColors.white,
           onTapRight: () {
             Navigator.popUntil(context, (route) {
@@ -176,6 +193,21 @@ class TransactionUtil {
           },
         );
       },
+    );
+  }
+
+  static double estimateVirtualByteByWallet(WalletListItemBase walletListItemBase, Transaction transaction) {
+    int? requiredSignature, totalSigner;
+    if (walletListItemBase.walletType == WalletType.multiSignature) {
+      final multisigWallet = walletListItemBase.walletBase as MultisignatureWallet;
+      requiredSignature = multisigWallet.requiredSignature;
+      totalSigner = multisigWallet.totalSigner;
+    }
+
+    return transaction.estimateVirtualByte(
+      walletListItemBase.walletType.addressType,
+      requiredSignature: requiredSignature,
+      totalSigner: totalSigner,
     );
   }
 }

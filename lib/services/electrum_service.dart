@@ -9,6 +9,7 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/network/socket/socket_manager.dart';
 import 'package:coconut_wallet/utils/electrum_utils.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 
 part 'model/request/electrum_request_types.dart';
@@ -21,7 +22,7 @@ class ElectrumService {
 
   int get reqId => _idCounter;
 
-  SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
+  bool _connectionFailed = false;
 
   ElectrumService._() : _socketManager = SocketManager();
 
@@ -32,30 +33,52 @@ class ElectrumService {
     return instance;
   }
 
+  /// 연결 시도 후 성공/실패를 bool로 반환
   Future<bool> connect(String host, int port, {bool ssl = true}) async {
-    final isConnected = await _socketManager.connect(host, port, ssl: ssl);
+    _connectionFailed = false;
 
-    if (isConnected) {
-      _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
-        ping();
-      });
+    // // 이전 타이머 정리
+    // _pingTimer?.cancel();
+
+    // 연결 실패/손실 콜백 설정
+    _socketManager.onConnectionLost = () {
+      _connectionFailed = true;
+      Logger.log('ElectrumService: $host:$port Connection lost callback triggered');
+      // // 연결 손실 시 타이머 정리
+      // _pingTimer?.cancel();
+    };
+
+    try {
+      final isConnected = await _socketManager.connect(host, port, ssl: ssl);
+
+      if (!isConnected || _socketManager.connectionStatus != SocketConnectionStatus.connected) {
+        return false;
+      }
+
+      /// 1분 이내 요청이 없으면 소켓 연결 중단됨
+      /// 소켓 연결 유지를 위해 ping 요청 필요
+      if (isConnected) {
+        _pingTimer = Timer.periodic(kElectrumPingInterval, (timer) {
+          ping();
+        });
+      }
+
+      return isConnected;
+    } catch (e) {
+      Logger.error('ElectrumService: $host:$port Connection failed: $e');
+      return false;
     }
-
-    return isConnected;
   }
 
-  Future<ElectrumResponse<T>> _call<T>(_ElectrumRequest request,
-      ElectrumResponse<T> Function(dynamic json, {int? id}) fromJson) async {
+  Future<ElectrumResponse<T>> _call<T>(
+    _ElectrumRequest request,
+    ElectrumResponse<T> Function(dynamic json, {int? id}) fromJson,
+  ) async {
     if (connectionStatus != SocketConnectionStatus.connected) {
       throw 'Can not connect to the server. Please connect and try again.';
     }
     final requestId = ++_idCounter;
-    Map jsonRpcRequest = {
-      'id': requestId,
-      'jsonrpc': '2.0',
-      'method': request.method,
-      'params': request.params
-    };
+    Map jsonRpcRequest = {'id': requestId, 'jsonrpc': '2.0', 'method': request.method, 'params': request.params};
     // Logger.log('[${DateTime.now()}]REQ - $jsonRpcRequest');
     await _socketManager.send(json.encode(jsonRpcRequest));
 
@@ -78,22 +101,25 @@ class ElectrumService {
   }
 
   Future<ServerFeaturesRes> serverFeatures() async {
-    var response = await _call(_FeatureReq(),
-        (json, {int? id}) => ElectrumResponse(result: ServerFeaturesRes.fromJson(json), id: id));
+    var response = await _call(
+      _FeatureReq(),
+      (json, {int? id}) => ElectrumResponse(result: ServerFeaturesRes.fromJson(json), id: id),
+    );
 
     return response.result;
   }
 
   Future<List<String>> serverVersion() async {
-    var response = await _call(_VersionReq(),
-        (json, {int? id}) => ElectrumResponse(result: List.castFrom<dynamic, String>(json)));
+    var response = await _call(
+      _VersionReq(),
+      (json, {int? id}) => ElectrumResponse(result: List.castFrom<dynamic, String>(json)),
+    );
 
     return response.result;
   }
 
   Future<String> getBlockHeader(int height) async {
-    var response = await _call(
-        _BlockchainBlockHeaderReq(height), (json, {int? id}) => ElectrumResponse(result: json));
+    var response = await _call(_BlockchainBlockHeaderReq(height), (json, {int? id}) => ElectrumResponse(result: json));
 
     return response.result;
   }
@@ -101,10 +127,7 @@ class ElectrumService {
   Future<BlockTimestamp> getBlockTimestamp(int height) async {
     final blockHeaderHex = await getBlockHeader(height);
     final blockHeader = BlockHeader.parse(height, blockHeaderHex);
-    return BlockTimestamp(
-      height,
-      DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000, isUtc: true),
-    );
+    return BlockTimestamp(height, DateTime.fromMillisecondsSinceEpoch(blockHeader.timestamp * 1000, isUtc: true));
   }
 
   /// 블록 높이를 통해 블록 타임스탬프를 조회합니다.
@@ -123,16 +146,20 @@ class ElectrumService {
   }
 
   Future<num> estimateFee(int targetConfirmation) async {
-    var response = await _call(_BlockchainEstimateFeeReq(targetConfirmation),
-        (json, {int? id}) => ElectrumResponse(result: json as num));
+    var response = await _call(
+      _BlockchainEstimateFeeReq(targetConfirmation),
+      (json, {int? id}) => ElectrumResponse(result: json as num),
+    );
 
     return response.result;
   }
 
   Future<GetBalanceRes> getBalance(AddressType addressType, String address) async {
     var reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
-    var response = await _call(_BlockchainScripthashGetBalanceReq(reversedScriptHash),
-        (json, {int? id}) => ElectrumResponse(result: GetBalanceRes.fromJson(json)));
+    var response = await _call(
+      _BlockchainScripthashGetBalanceReq(reversedScriptHash),
+      (json, {int? id}) => ElectrumResponse(result: GetBalanceRes.fromJson(json)),
+    );
 
     return response.result;
   }
@@ -140,9 +167,10 @@ class ElectrumService {
   Future<List<GetTxHistoryRes>> getHistory(AddressType addressType, String address) async {
     var reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
-        _BlockchainScripthashGetHistoryReq(reversedScriptHash),
-        (json, {int? id}) => ElectrumResponse(
-            result: (json as List<dynamic>).map((e) => GetTxHistoryRes.fromJson(e)).toList()));
+      _BlockchainScripthashGetHistoryReq(reversedScriptHash),
+      (json, {int? id}) =>
+          ElectrumResponse(result: (json as List<dynamic>).map((e) => GetTxHistoryRes.fromJson(e)).toList()),
+    );
 
     response.result.sort((prev, curr) => prev.height.compareTo(curr.height));
 
@@ -152,9 +180,10 @@ class ElectrumService {
   Future<List<ListUnspentRes>> getUnspentList(AddressType addressType, String address) async {
     var reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
-        _BlockchainScripthashListUnspentReq(reversedScriptHash),
-        (json, {int? id}) => ElectrumResponse(
-            result: (json as List<dynamic>).map((e) => ListUnspentRes.fromJson(e)).toList()));
+      _BlockchainScripthashListUnspentReq(reversedScriptHash),
+      (json, {int? id}) =>
+          ElectrumResponse(result: (json as List<dynamic>).map((e) => ListUnspentRes.fromJson(e)).toList()),
+    );
 
     response.result.sort((prev, curr) => prev.height.compareTo(curr.height));
 
@@ -166,23 +195,25 @@ class ElectrumService {
   Future<List<GetMempoolRes>> getMempool(AddressType addressType, String address) async {
     var reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
     var response = await _call(
-        _BlockchainScripthashGetMempoolReq(reversedScriptHash),
-        (json, {int? id}) => ElectrumResponse(
-            result: (json as List<dynamic>).map((e) => GetMempoolRes.fromJson(e)).toList()));
+      _BlockchainScripthashGetMempoolReq(reversedScriptHash),
+      (json, {int? id}) =>
+          ElectrumResponse(result: (json as List<dynamic>).map((e) => GetMempoolRes.fromJson(e)).toList()),
+    );
 
     return response.result;
   }
 
   Future<String> broadcast(String rawTransaction) async {
-    var response = await _call(_BroadcastReq(rawTransaction),
-        (json, {int? id}) => ElectrumResponse(result: json as String));
+    var response = await _call(
+      _BroadcastReq(rawTransaction),
+      (json, {int? id}) => ElectrumResponse(result: json as String),
+    );
 
     return response.result;
   }
 
   Future<String> getTransaction(String txHash, {bool? verbose}) async {
-    var response =
-        await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
+    var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
       // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
       if (json is Map) {
         return ElectrumResponse(result: jsonEncode(json));
@@ -194,8 +225,10 @@ class ElectrumService {
   }
 
   /// 이전 트랜잭션을 조회합니다.
-  Future<List<Transaction>> getPreviousTransactions(Transaction transaction,
-      {List<Transaction>? existingTxList}) async {
+  Future<List<Transaction>> getPreviousTransactions(
+    Transaction transaction, {
+    List<Transaction>? existingTxList,
+  }) async {
     if (transaction.inputs.isEmpty) {
       return [];
     }
@@ -208,10 +241,11 @@ class ElectrumService {
 
     final existingTxHashes = existingTxList?.map((tx) => tx.transactionHash).toSet() ?? {};
 
-    toFetchTransactionHashes = transaction.inputs
-        .map((input) => input.transactionHash)
-        .where((hash) => !existingTxHashes.contains(hash))
-        .toSet();
+    toFetchTransactionHashes =
+        transaction.inputs
+            .map((input) => input.transactionHash)
+            .where((hash) => !existingTxHashes.contains(hash))
+            .toSet();
 
     var futures = toFetchTransactionHashes.map((transactionHash) async {
       try {
@@ -224,8 +258,7 @@ class ElectrumService {
 
     try {
       List<Transaction?> fetchedTransactionsNullable = await Future.wait(futures);
-      List<Transaction> fetchedTransactions =
-          fetchedTransactionsNullable.whereType<Transaction>().toList();
+      List<Transaction> fetchedTransactions = fetchedTransactionsNullable.whereType<Transaction>().toList();
 
       if (existingTxList != null && existingTxList.isNotEmpty) {
         fetchedTransactions.addAll(existingTxList);
@@ -234,8 +267,7 @@ class ElectrumService {
       List<Transaction> previousTransactions = [];
 
       for (var input in transaction.inputs) {
-        final matchingTx =
-            fetchedTransactions.where((tx) => tx.transactionHash == input.transactionHash).toList();
+        final matchingTx = fetchedTransactions.where((tx) => tx.transactionHash == input.transactionHash).toList();
 
         if (matchingTx.isNotEmpty) {
           previousTransactions.add(matchingTx.first);
@@ -252,13 +284,15 @@ class ElectrumService {
     var response = await _call(_MempoolGetFeeHistogramReq(), (json, {int? id}) {
       if (json is List && json.isNotEmpty) {
         return ElectrumResponse(
-            result: json.map((fee) {
-          List<num> list = [];
-          for (var e in fee) {
-            if (e is num) list.add(e);
-          }
-          return list;
-        }).toList());
+          result:
+              json.map((fee) {
+                List<num> list = [];
+                for (var e in fee) {
+                  if (e is num) list.add(e);
+                }
+                return list;
+              }).toList(),
+        );
       }
       List<List<num>> arr = [];
       return ElectrumResponse(result: arr);
@@ -274,11 +308,16 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<String?> subscribeScript(AddressType addressType, String address,
-      {required Function(String, String?) onUpdate}) async {
+  Future<String?> subscribeScript(
+    AddressType addressType,
+    String address, {
+    required Function(String, String?) onUpdate,
+  }) async {
     var reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
-    var response = await _call(_BlockchainScripthashSubscribeReq(reversedScriptHash),
-        (json, {int? id}) => ElectrumResponse(result: json));
+    var response = await _call(
+      _BlockchainScripthashSubscribeReq(reversedScriptHash),
+      (json, {int? id}) => ElectrumResponse(result: json),
+    );
 
     _socketManager.setSubscriptionCallback(reversedScriptHash, onUpdate);
 
@@ -287,8 +326,10 @@ class ElectrumService {
 
   Future<bool> unsubscribeScript(AddressType addressType, String address) async {
     var reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
-    var response = await _call(_BlockchainScripthashUnsubscribeReq(reversedScriptHash),
-        (json, {int? id}) => ElectrumResponse(result: json));
+    var response = await _call(
+      _BlockchainScripthashUnsubscribeReq(reversedScriptHash),
+      (json, {int? id}) => ElectrumResponse(result: json),
+    );
 
     _socketManager.removeSubscriptionCallback(reversedScriptHash);
 
@@ -297,6 +338,18 @@ class ElectrumService {
 
   Future<void> close() async {
     _pingTimer?.cancel();
-    await _socketManager.disconnect();
+    try {
+      await _socketManager.disconnect();
+    } catch (e) {
+      Logger.error('ElectrumService: close failed: $e');
+    }
   }
+
+  /// 소켓 연결 종료 콜백 등록
+  void setOnConnectionLostCallback(void Function() callback) {
+    _socketManager.onConnectionLost = callback;
+  }
+
+  /// connectionStatus getter 추가
+  SocketConnectionStatus get connectionStatus => _socketManager.connectionStatus;
 }

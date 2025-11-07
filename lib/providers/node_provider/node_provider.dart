@@ -1,8 +1,11 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/model/node/node_provider_state.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -11,6 +14,8 @@ import 'package:coconut_wallet/model/node/isolate_state_message.dart';
 import 'package:coconut_wallet/providers/node_provider/state/node_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_manager.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -22,10 +27,9 @@ class NodeProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final ValueNotifier<WalletLoadState> _walletLoadStateNotifier;
   final ValueNotifier<List<WalletListItemBase>> _walletItemListNotifier;
-  final String _host;
-  final int _port;
-  final bool _ssl;
+  ElectrumServer _electrumServer;
   final NetworkType _networkType;
+  final AnalyticsService? _analyticsService;
 
   NodeStateManager? _stateManager;
   StreamSubscription<IsolateStateMessage>? _stateSubscription;
@@ -36,6 +40,8 @@ class NodeProvider extends ChangeNotifier {
   bool _isInitializing = false;
   bool _isClosing = false;
   bool _isPendingInitialization = false;
+  bool _hasConnectionError = false;
+  bool _isServerChanging = false;
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
@@ -104,15 +110,21 @@ class NodeProvider extends ChangeNotifier {
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
   bool get isInitialized => _initCompleter?.isCompleted ?? false;
-  String get host => _host;
-  int get port => _port;
-  bool get ssl => _ssl;
-  int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
+  String get host => _electrumServer.host;
+  int get port => _electrumServer.port;
+  bool get ssl => _electrumServer.ssl;
+  bool get isServerChanging => _isServerChanging;
+  bool get hasConnectionError => _hasConnectionError;
 
-  NodeProvider(this._host, this._port, this._ssl, this._networkType, this._connectivityProvider,
-      this._walletLoadStateNotifier, this._walletItemListNotifier,
-      {IsolateManager? isolateManager})
-      : _isolateManager = isolateManager ?? IsolateManager() {
+  NodeProvider(
+    this._electrumServer,
+    this._networkType,
+    this._connectivityProvider,
+    this._walletLoadStateNotifier,
+    this._walletItemListNotifier,
+    this._analyticsService, {
+    IsolateManager? isolateManager,
+  }) : _isolateManager = isolateManager ?? IsolateManager() {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
 
     _connectivityProvider.addListener(_onConnectivityChanged);
@@ -120,6 +132,13 @@ class NodeProvider extends ChangeNotifier {
     _walletItemListNotifier.addListener(_onWalletItemListChanged);
 
     _checkInitialNetworkState();
+  }
+
+  void _setConnectionError(bool value) {
+    if (_hasConnectionError != value) {
+      _hasConnectionError = value;
+      notifyListeners();
+    }
   }
 
   void _checkInitialNetworkState() {
@@ -165,7 +184,12 @@ class NodeProvider extends ChangeNotifier {
 
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
-    subscribeWallets();
+    subscribeWallets().then((result) {
+      if (result.isFailure) {
+        Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
+        _stateManager?.setNodeSyncStateToFailed();
+      }
+    });
   }
 
   /// WalletItemList 변경 감지 및 처리
@@ -189,7 +213,14 @@ class NodeProvider extends ChangeNotifier {
     for (final wallet in currentWallets) {
       if (!registeredWallets.contains(wallet.id)) {
         // 새로운 지갑 발견
-        subscribeWallet(wallet);
+        subscribeWallet(wallet).then((result) {
+          if (result.isFailure) {
+            Logger.error('NodeProvider: [${wallet.name}] 지갑 구독 실패: ${result.error}');
+            _stateManager?.setNodeSyncStateToFailed();
+          } else {
+            _analyticsService?.logEvent(eventName: AnalyticsEventNames.walletAddSyncCompleted);
+          }
+        });
       }
     }
   }
@@ -241,6 +272,7 @@ class NodeProvider extends ChangeNotifier {
 
     _isInitializing = true;
     _isPendingInitialization = false;
+    _setConnectionError(false); // 초기화 시작 시 에러 상태 리셋
 
     try {
       _createNewCompleter();
@@ -264,6 +296,15 @@ class NodeProvider extends ChangeNotifier {
       _startBlockUpdates();
     } catch (e) {
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
+
+      // 연결 에러 플래그 설정 (notifyListeners 호출됨)
+      _setConnectionError(true);
+
+      // 초기화 실패 시 노드 동기화 상태를 실패로 설정
+      if (_stateManager != null) {
+        _stateManager!.setNodeSyncStateToFailed();
+      }
+
       if (_initCompleter != null && !_initCompleter!.isCompleted) {
         try {
           _initCompleter!.completeError(e);
@@ -366,6 +407,7 @@ class NodeProvider extends ChangeNotifier {
 
     try {
       Logger.log('NodeProvider: Starting reconnect');
+      _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
       await closeConnection();
       await initialize();
       final result = await subscribeWallets();
@@ -376,10 +418,13 @@ class NodeProvider extends ChangeNotifier {
         _updateCurrentBlock();
         _startBlockUpdates();
       } else {
+        _stateManager?.setNodeSyncStateToFailed();
+        _setConnectionError(true);
         Logger.error(result.error.toString());
       }
     } catch (e) {
       Logger.error('NodeProvider: Reconnect failed: $e');
+      _setConnectionError(true);
     }
   }
 
@@ -424,6 +469,69 @@ class NodeProvider extends ChangeNotifier {
       Logger.error('NodeProvider: 연결 종료 중 오류 발생: $e');
     } finally {
       _isClosing = false;
+    }
+  }
+
+  Future<Result<bool>> checkServerConnection(ElectrumServer electrumServer) async {
+    final electrumService = ElectrumService();
+
+    try {
+      await _establishSocketConnection(electrumService, electrumServer);
+      await _verifyProtocolCommunication(electrumService);
+
+      Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
+      return Result.success(true);
+    } catch (e) {
+      Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
+      await electrumService.close();
+      return Result.failure(ErrorCodes.networkError);
+    } finally {
+      await electrumService.close();
+    }
+  }
+
+  Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
+    await service
+        .connect(server.host, server.port, ssl: server.ssl)
+        .timeout(const Duration(seconds: 3));
+
+    if (service.connectionStatus != SocketConnectionStatus.connected) {
+      throw Exception('Socket connection failed');
+    }
+  }
+
+  Future<void> _verifyProtocolCommunication(ElectrumService service) async {
+    await service.serverVersion().timeout(const Duration(seconds: 5));
+  }
+
+  Future<Result<bool>> changeServer(ElectrumServer electrumServer) async {
+    _isServerChanging = true;
+    await closeConnection();
+    _electrumServer = electrumServer;
+
+    Logger.log('NodeProvider: 서버 변경: $host:$port, ssl=$ssl');
+
+    try {
+      await initialize();
+
+      subscribeWallets().then((result) {
+        if (result.isFailure) {
+          Logger.error('NodeProvider: 서버 변경 실패: ${result.error}');
+          _stateManager?.setNodeSyncStateToFailed();
+          notifyListeners();
+        }
+      });
+
+      Logger.log('NodeProvider: 서버 변경 성공');
+      notifyListeners();
+      return Result.success(true);
+    } catch (e) {
+      Logger.error('NodeProvider: 서버 변경 중 초기화 실패: $e');
+      _stateManager?.setNodeSyncStateToFailed();
+      notifyListeners();
+      return Result.failure(ErrorCodes.networkError);
+    } finally {
+      _isServerChanging = false;
     }
   }
 

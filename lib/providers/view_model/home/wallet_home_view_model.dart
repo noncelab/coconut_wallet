@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -30,6 +31,7 @@ const kRecenctTransactionDays = 1;
 class WalletHomeViewModel extends ChangeNotifier {
   late final VisibilityProvider _visibilityProvider;
   WalletProvider _walletProvider;
+  final NodeProvider _nodeProvider;
   final Stream<NodeSyncState> _syncNodeStateStream;
   final Stream<BlockTimestamp?> _currentBlockStream;
   late final PreferenceProvider _preferenceProvider;
@@ -102,12 +104,20 @@ class WalletHomeViewModel extends ChangeNotifier {
         .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalancesAndRecentTxs);
 
+    // NodeProvider의 변경사항 listening 추가
+    _nodeProvider.addListener(_onNodeProviderChanged);
+
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     _analysisPeriod = _preferenceProvider.analysisPeriod;
     _selectedAnalysisTransactionType = _preferenceProvider.selectedAnalysisTransactionType;
+  }
+
+  void _onNodeProviderChanged() {
+    // NodeProvider의 hasConnectionError 등이 변경되었을 때 UI 업데이트
+    notifyListeners();
   }
 
   bool get isEmptyFavoriteWallet => _isEmptyFavoriteWallet;
@@ -137,15 +147,29 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
 
-  String get derivationPath => _receiveAddress.derivationPath;
-  String get receiveAddressIndex => _receiveAddress.derivationPath.split('/').last;
-  String get receiveAddress => _receiveAddress.address;
+  /// 네트워크 상태를 구분하여 반환
+  NetworkStatus get networkStatus {
+    print(
+      'DEBUG - _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}',
+    );
+
+    if (!(_isNetworkOn ?? false)) {
+      return NetworkStatus.offline;
+    }
+
+    if (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) {
+      return NetworkStatus.connectionFailed;
+    }
+
+    return NetworkStatus.online;
+  }
 
   WalletListItemBase getWalletById(int walletId) {
     return _walletProvider.getWalletById(walletId);
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
+    Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
@@ -157,6 +181,7 @@ class WalletHomeViewModel extends ChangeNotifier {
         vibrateLightDouble();
       }
       _nodeSyncState = syncState;
+      Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
       notifyListeners();
     } else if (_nodeSyncState == NodeSyncState.completed &&
         syncState == NodeSyncState.completed &&
@@ -181,6 +206,16 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> onRefresh() async {
+    updateWalletBalancesAndRecentTxs();
+
+    if (networkStatus != NetworkStatus.connectionFailed) {
+      return;
+    }
+
+    _nodeProvider.reconnect();
+  }
+
   Future<void> updateWalletBalancesAndRecentTxs() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
@@ -202,10 +237,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, AnimatedBalanceData> _updateBalanceMap(Map<int, Balance> balanceMap) {
     return balanceMap.map((key, balance) {
       final prev = _walletBalance[key]?.current ?? 0;
-      return MapEntry(
-        key,
-        AnimatedBalanceData(balance.total, prev),
-      );
+      return MapEntry(key, AnimatedBalanceData(balance.total, prev));
     });
   }
 
@@ -243,8 +275,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     loadHomeFeatures();
 
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
-    if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
-        _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
+    if (!const SetEquality().equals(
+      _excludedFromTotalBalanceWalletIds.toSet(),
+      _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet(),
+    )) {
       _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     }
 
@@ -289,8 +323,22 @@ class WalletHomeViewModel extends ChangeNotifier {
     return _fakeBalanceMap[id] ?? _fakeBalanceTotalAmount;
   }
 
-  int? getFakeTotalBalance() {
-    return _fakeBalanceTotalAmount;
+  int getHomeFakeBalanceTotal() {
+    if (_fakeBalanceTotalAmount == null) return 0;
+
+    int totalAmount = 0;
+
+    // excludedFromTotalBalanceWalletIds에 포함되지 않은 지갑들의 가짜 잔액을 더함
+    for (final wallet in walletItemList) {
+      if (!_excludedFromTotalBalanceWalletIds.contains(wallet.id)) {
+        final fakeBalance = _fakeBalanceMap[wallet.id];
+        if (fakeBalance != null && fakeBalance is num) {
+          totalAmount += fakeBalance.toInt();
+        }
+      }
+    }
+
+    return totalAmount;
   }
 
   void onNodeProviderUpdated() {
@@ -302,8 +350,11 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isWalletListChanged(List<WalletListItemBase> oldList, List<WalletListItemBase> newList,
-      Map<int, AnimatedBalanceData> walletBalanceMap) {
+  bool isWalletListChanged(
+    List<WalletListItemBase> oldList,
+    List<WalletListItemBase> newList,
+    Map<int, AnimatedBalanceData> walletBalanceMap,
+  ) {
     if (oldList.length != newList.length) return true;
 
     bool walletListChanged = oldList.asMap().entries.any((entry) {
@@ -475,6 +526,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   void dispose() {
     _currentBlockSubscription?.cancel();
     _syncNodeStateSubscription?.cancel();
+    _nodeProvider.removeListener(_onNodeProviderChanged);
     super.dispose();
   }
 }

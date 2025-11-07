@@ -18,26 +18,21 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
   late bool _isPrimaryWallet;
   late bool _isExcludedFromTotalAmount;
 
-  final GlobalKey<CoconutShakeAnimationState> _primaryWalletShakeKey =
-      GlobalKey<CoconutShakeAnimationState>();
+  final GlobalKey<CoconutShakeAnimationState> _primaryWalletShakeKey = GlobalKey<CoconutShakeAnimationState>();
 
   @override
   void initState() {
     super.initState();
     _preferenceProvider = context.read<PreferenceProvider>();
     _isPrimaryWallet = _preferenceProvider.walletOrder.first == widget.id;
-    _isExcludedFromTotalAmount =
-        _preferenceProvider.excludedFromTotalBalanceWalletIds.contains(widget.id);
+    _isExcludedFromTotalAmount = _preferenceProvider.excludedFromTotalBalanceWalletIds.contains(widget.id);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
       ),
       padding: const EdgeInsets.only(top: 10, bottom: 80, left: 20, right: 20),
       child: Column(
@@ -57,10 +52,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
               setState(() {
                 _isPrimaryWallet = value;
               });
-              final updatedOrder = [
-                widget.id,
-                ..._preferenceProvider.walletOrder.where((id) => id != widget.id),
-              ];
+              final updatedOrder = [widget.id, ..._preferenceProvider.walletOrder.where((id) => id != widget.id)];
               _preferenceProvider.setWalletOrder(updatedOrder);
             },
           ),
@@ -78,13 +70,12 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
               });
               List<int> prevExcludedIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
               if (value && !prevExcludedIds.contains(widget.id)) {
-                _preferenceProvider
-                    .setExcludedFromTotalBalanceWalletIds([...prevExcludedIds, widget.id]);
+                _preferenceProvider.setExcludedFromTotalBalanceWalletIds([...prevExcludedIds, widget.id]);
               } else if (!value && prevExcludedIds.contains(widget.id)) {
                 _preferenceProvider.removeExcludedFromTotalBalanceWalletId(widget.id);
               }
             },
-          )
+          ),
         ],
       ),
     );
@@ -100,35 +91,21 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: CoconutTypography.body3_12),
-            Text(
-              description,
-              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: CoconutTypography.body2_14),
+              Text(
+                description,
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                maxLines: 2,
+                softWrap: true,
+              ),
+            ],
+          ),
         ),
-        // CoconutShakeAnimation(
-        //         key: _primaryWalletShakeKey,
-        //         shakeOffset: 3,
-        //         shakeAmount: 2,
-        //         direction: Axis.horizontal,
-        //         curve: Curves.linear,
-        //         child: CoconutSwitch(
-        //           isOn: value,
-        //           activeColor: CoconutColors.gray100,
-        //           thumbColor: value ? CoconutColors.black : CoconutColors.gray500,
-        //           trackColor: CoconutColors.gray600,
-        //           scale: 0.8,
-        //           onChanged: (bool newValue) {
-        //             setState(() {
-        //               onChanged(newValue);
-        //             });
-        //           },
-        //         ),
-        //       )
+        CoconutLayout.spacing_200w,
         Visibility(
           visible: shouldHideWhenOn ? !value : true,
           maintainSize: true,

@@ -7,15 +7,15 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:ur/ur.dart';
 import 'package:cbor/cbor.dart';
 
@@ -29,9 +29,12 @@ class SignedPsbtScannerScreen extends StatefulWidget {
 class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   bool _isProcessing = false;
-  QRViewController? controller;
+  MobileScannerController? controller;
 
   late SignedPsbtScannerViewModel _viewModel;
+  late IQrScanDataHandler _qrScanDataHandler;
+  bool _isHandlerInitialized = false;
+  final int _qrScannerKey = 0; // QR 스캐너 재생성을 위한 key
 
   @override
   Widget build(BuildContext context) {
@@ -44,24 +47,33 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       child: Scaffold(
         backgroundColor: CoconutColors.black,
         appBar: CoconutAppBar.build(
-          title:
-              _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
+          title: _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
           context: context,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
-        body: Stack(children: [
-          // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
-          CoconutQrScanner(
-            setQrViewController: _setQRViewController,
-            onComplete: _onCompletedScanningForBcUr,
-            onFailed: _onFailedScanning,
-            qrDataHandler: BcUrQrScanDataHandler(),
-          ),
-          Padding(
+        body: Stack(
+          children: [
+            // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
+            CoconutQrScanner(
+              key: ValueKey(_qrScannerKey),
+              setMobileScannerController: _setQRViewController,
+              onComplete:
+                  _qrScanDataHandler is BcUrQrScanDataHandler
+                      ? _onCompletedScanningForBcUr
+                      : _onCompletedScanningForBbQr,
+              onFailed: _onFailedScanning,
+              qrDataHandler: _qrScanDataHandler,
+            ),
+            Padding(
               padding: const EdgeInsets.only(
-                  top: 20, left: CoconutLayout.defaultPadding, right: CoconutLayout.defaultPadding),
-              child: _buildToolTip()),
-        ]),
+                top: 20,
+                left: CoconutLayout.defaultPadding,
+                right: CoconutLayout.defaultPadding,
+              ),
+              child: _buildToolTip(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -86,8 +98,32 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   @override
   void initState() {
     super.initState();
-    _viewModel = SignedPsbtScannerViewModel(Provider.of<SendInfoProvider>(context, listen: false),
-        Provider.of<WalletProvider>(context, listen: false));
+    _viewModel = SignedPsbtScannerViewModel(
+      Provider.of<SendInfoProvider>(context, listen: false),
+      Provider.of<WalletProvider>(context, listen: false),
+    );
+    _initializeQrScanDataHandler();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isHandlerInitialized) {
+      _initializeQrScanDataHandler();
+    }
+  }
+
+  void _initializeQrScanDataHandler() {
+    // ColdCard는 BBQR 핸들러로 시작 (Raw 데이터와 BBQR 모두 처리 가능)
+    if (_viewModel.walletImportSource == WalletImportSource.coldCard) {
+      _qrScanDataHandler = BbQrScanDataHandler();
+      _isHandlerInitialized = true;
+    } else {
+      // 다른 하드웨어 지갑은 BcUr 핸들러 사용
+      _qrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoPsbt, UrType.psbt]);
+      _isHandlerInitialized = true;
+    }
   }
 
   Future<void> _onCompletedScanningForBcUr(dynamic signedPsbt) async {
@@ -95,16 +131,15 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     if (_isProcessing) return;
     _isProcessing = true;
 
-    final ur = signedPsbt as UR;
-    final cborBytes = ur.cbor;
-    final decodedCbor = cbor.decode(cborBytes) as CborBytes;
-
     Psbt psbt;
     try {
-      printLongString('--> _onCompletedScanningForBcUr: ${base64Encode(decodedCbor.bytes)}');
+      final ur = signedPsbt as UR;
+      final cborBytes = ur.cbor;
+      final decodedCbor = cbor.decode(cborBytes) as CborBytes;
+
       psbt = _viewModel.parseBase64EncodedToPsbt(base64Encode(decodedCbor.bytes));
     } catch (e) {
-      await _showErrorDialog(t.alert.signed_psbt.invalid_qr);
+      await _showErrorDialog(t.alert.invalid_qr);
       return;
     }
 
@@ -118,7 +153,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         int missingCount = _viewModel.getMissingSignaturesCount(psbt);
         if (missingCount > 0) {
           await _showErrorDialog(t.alert.signed_psbt.need_more_sign(count: missingCount));
-          controller?.pauseCamera();
+          controller?.pause();
           await _stopCamera();
           return;
         }
@@ -126,7 +161,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
       _viewModel.setSignedPsbt(psbt.serialize());
 
-      controller?.pauseCamera();
+      controller?.pause();
       await _stopCamera();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/broadcasting');
@@ -136,15 +171,38 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     }
   }
 
-  void _onFailedScanning(String message) async {
+  Future<void> _onCompletedScanningForBbQr(dynamic signedPsbt) async {
+    assert(signedPsbt is String);
     if (_isProcessing) return;
     _isProcessing = true;
 
-    Logger.error("[SignedPsbtScannerScreen] onFailed: $message");
+    try {
+      // raw transaction 데이터 저장
+      _viewModel.setSignedPsbt(signedPsbt);
+
+      controller?.pause();
+      await _stopCamera();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/broadcasting');
+      }
+    } catch (e) {
+      await _showErrorDialog(t.alert.scan_failed_description(error: e));
+    }
+  }
+
+  void _onFailedScanning(String message, String? scannedData) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    if (!_isHandlerInitialized) {
+      _initializeQrScanDataHandler();
+      _isProcessing = false;
+      return;
+    }
 
     String errorMessage;
-    if (message.contains('Invalid Scheme')) {
-      errorMessage = t.alert.signed_psbt.invalid_signature;
+    if (message == CoconutQrScanner.qrFormatErrorMessage) {
+      errorMessage = '${t.alert.invalid_qr}${scannedData != null ? "\ndata: $scannedData" : null}';
     } else {
       errorMessage = t.alert.scan_failed_description(error: message);
     }
@@ -153,65 +211,35 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _showErrorDialog(String errorMessage) async {
-    await CustomDialogs.showCustomAlertDialog(context,
-        title: t.alert.scan_failed, message: errorMessage, onConfirm: () {
-      _isProcessing = false;
-      Navigator.pop(context);
-    });
+    await CustomDialogs.showCustomAlertDialog(
+      context,
+      title: t.alert.scan_failed,
+      message: errorMessage,
+      onConfirm: () {
+        _isProcessing = false;
+        Navigator.pop(context);
+      },
+    );
   }
 
   Future<void> _stopCamera() async {
     if (controller != null) {
-      await controller?.pauseCamera();
+      await controller?.stop();
     }
   }
 
-  void _setQRViewController(QRViewController qrViewcontroller) {
+  void _setQRViewController(MobileScannerController qrViewcontroller) {
     controller = qrViewcontroller;
   }
 
   Widget _buildToolTip() {
     // TODO: 코코넛 지갑인 경우 UI는 볼트와 한꺼번에 수정합니다.
-    if (_viewModel.walletImportSource == WalletImportSource.coconutVault) {
-      return CoconutToolTip(
-        tooltipType: CoconutTooltipType.fixed,
-        baseBackgroundColor: CoconutColors.white.withOpacity(0.9),
-        richText: RichText(
-          text: TextSpan(
-            text: '[5] ',
-            style: const TextStyle(
-              fontFamily: 'Pretendard',
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-              height: 1.4,
-              letterSpacing: 0.5,
-              color: CoconutColors.black,
-            ),
-            children: [
-              TextSpan(
-                text: t.tooltip.scan_signed_psbt.guide(
-                    by_hardware_wallet: t.tooltip.scan_signed_psbt.by_vault_app,
-                    hardware_wallet: t.vault_app),
-                style: const TextStyle(
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
-        showIcon: true,
-      );
-    } else if (_viewModel.isSendingDonation == true) {
+    if (_viewModel.isSendingDonation == true) {
       return Padding(
-        padding: const EdgeInsets.only(
-          top: 30,
-        ),
+        padding: const EdgeInsets.only(top: 30),
         child: Align(
           alignment: Alignment.topCenter,
-          child: Text(
-            t.donation.signed_qr_tooltip,
-            style: CoconutTypography.body2_14_Bold,
-          ),
+          child: Text(t.donation.signed_qr_tooltip, style: CoconutTypography.body2_14_Bold),
         ),
       );
     } else {
@@ -220,18 +248,11 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         borderColor: CoconutColors.gray900,
         icon: SvgPicture.asset(
           'assets/svg/circle-info.svg',
-          colorFilter: const ColorFilter.mode(
-            CoconutColors.white,
-            BlendMode.srcIn,
-          ),
+          width: 20,
+          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
         ),
         tooltipType: CoconutTooltipType.fixed,
-        richText: RichText(
-          text: TextSpan(
-            style: CoconutTypography.body3_12,
-            children: _getGuideTextSpan(),
-          ),
-        ),
+        richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
       );
     }
   }
@@ -239,9 +260,18 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   List<TextSpan> _getGuideTextSpan() {
     final hardwareWalletWords = _getHardwareWalletWords();
     return [
+      // TODO: third party 추가 시 [5]가 갑자기 나와서 임시 주석 처리
+      // TextSpan(
+      //   text: '[5] ',
+      //   style: CoconutTypography.body2_14_Bold.copyWith(height: 1),
+      // ),
       TextSpan(
-          text: t.tooltip.scan_signed_psbt.guide(
-              by_hardware_wallet: hardwareWalletWords[0], hardware_wallet: hardwareWalletWords[1])),
+        text: t.tooltip.scan_signed_psbt.guide(
+          by_hardware_wallet: hardwareWalletWords[0],
+          hardware_wallet: hardwareWalletWords[1],
+        ),
+        style: CoconutTypography.body2_14.copyWith(height: 1.3),
+      ),
     ];
   }
 
@@ -255,6 +285,10 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         return [t.tooltip.scan_signed_psbt.by_jade, t.third_party.jade];
       case WalletImportSource.seedSigner:
         return [t.tooltip.scan_signed_psbt.by_seed_signer, t.third_party.seed_signer];
+      case WalletImportSource.coldCard:
+        return [t.tooltip.scan_signed_psbt.by_coldcard, t.third_party.cold_card];
+      case WalletImportSource.krux:
+        return [t.tooltip.scan_signed_psbt.by_krux, t.third_party.krux];
       default:
         return [t.tooltip.scan_signed_psbt.by_hardware_wallet, t.hardware_wallet];
     }

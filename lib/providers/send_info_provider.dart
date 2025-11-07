@@ -3,6 +3,9 @@ import 'dart:collection';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
+
+enum SendEntryPoint { home, walletDetail }
 
 class SendInfoProvider {
   int? _walletId;
@@ -12,6 +15,7 @@ class SendInfoProvider {
   bool? _isMaxMode;
   bool? _isMultisig;
   bool? _isDonation;
+  SendEntryPoint? _sendEntryPoint;
   Transaction? _transaction;
   String? _txWaitingForSign;
   String? _signedPsbtBase64Encoded;
@@ -28,6 +32,7 @@ class SendInfoProvider {
   bool? get isMaxMode => _isMaxMode;
   bool? get isMultisig => _isMultisig;
   bool? get isDonation => _isDonation;
+  SendEntryPoint? get sendEntryPoint => _sendEntryPoint;
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
   String? get signedPsbt => _signedPsbtBase64Encoded;
@@ -40,11 +45,11 @@ class SendInfoProvider {
     _walletId = id;
   }
 
-  void setRecipientAddress(String address) {
+  void setRecipientAddress(String? address) {
     _recipientAddress = address;
   }
 
-  void setAmount(double amount) {
+  void setAmount(double? amount) {
     _amount = amount;
   }
 
@@ -72,7 +77,7 @@ class SendInfoProvider {
     _signedPsbtBase64Encoded = signedPsbtBase64Encoded;
   }
 
-  void setRecipientsForBatch(Map<String, double> recipients) {
+  void setRecipientsForBatch(Map<String, double>? recipients) {
     _recipientsForBatch = recipients;
   }
 
@@ -88,9 +93,34 @@ class SendInfoProvider {
     _isDonation = isDonation;
   }
 
+  void setSendEntryPoint(SendEntryPoint sendEntryPoint) {
+    _sendEntryPoint = sendEntryPoint;
+  }
+
   void clear() {
-    _walletId = _recipientAddress = _amount = _estimatedFee = _isMaxMode = _isMultisig =
-        _transaction = _txWaitingForSign = _signedPsbtBase64Encoded =
-            _isDonation = _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
+    _walletId =
+        _recipientAddress =
+            _amount =
+                _estimatedFee =
+                    _isMaxMode =
+                        _isMultisig =
+                            _transaction =
+                                _txWaitingForSign =
+                                    _signedPsbtBase64Encoded =
+                                        _isDonation =
+                                            _sendEntryPoint =
+                                                _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
+  }
+
+  Map<String, int>? getRecipientMap() {
+    if (_recipientsForBatch == null && _recipientAddress == null) {
+      return null;
+    }
+
+    if (_recipientsForBatch != null) {
+      return _recipientsForBatch!.map((key, value) => MapEntry(key, UnitUtil.convertBitcoinToSatoshi(value)));
+    }
+
+    return {_recipientAddress!: UnitUtil.convertBitcoinToSatoshi(_amount!)};
   }
 }

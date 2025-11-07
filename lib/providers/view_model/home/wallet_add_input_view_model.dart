@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
@@ -11,18 +14,22 @@ class WalletAddInputViewModel extends ChangeNotifier {
   final WalletImportSource importSource = WalletImportSource.extendedPublicKey;
   final WalletProvider _walletProvider;
   final WalletAddService _walletAddService = WalletAddService();
+  final PreferenceProvider _preferenceProvider;
   String? validExtendedPublicKey;
   String? validDescriptor;
   String? errorMessage;
   String? masterFingerPrint;
 
-  WalletAddInputViewModel(this._walletProvider);
-
+  WalletAddInputViewModel(this._walletProvider, this._preferenceProvider);
+  int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
   bool isExtendedPublicKey(String xpub) {
     try {
       _validateXpubPrefixSupport(xpub);
       SingleSignatureWallet.fromExtendedPublicKey(
-          AddressType.p2wpkh, xpub, WalletAddService.masterFingerprintPlaceholder);
+        AddressType.p2wpkh,
+        xpub,
+        WalletAddService.masterFingerprintPlaceholder,
+      );
       validExtendedPublicKey = xpub;
       validDescriptor = null;
       return true;
@@ -65,13 +72,14 @@ class WalletAddInputViewModel extends ChangeNotifier {
 
   void _setErrorMessageByError(e) {
     if (e.toString().contains("network type")) {
-      errorMessage = NetworkType.currentNetworkType == NetworkType.mainnet
-          ? t.wallet_add_input_screen.mainnet_wallet_error_text
-          : t.wallet_add_input_screen.testnet_wallet_error_text;
+      errorMessage =
+          NetworkType.currentNetworkType == NetworkType.mainnet
+              ? t.wallet_add_input_screen.mainnet_wallet_error_text
+              : t.wallet_add_input_screen.testnet_wallet_error_text;
     } else if (e.toString().contains("not supported")) {
       errorMessage = t.wallet_add_input_screen.unsupported_wallet_error_text;
     } else {
-      errorMessage = t.wallet_add_input_screen.format_error_text;
+      errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
     }
     notifyListeners();
   }
@@ -86,18 +94,18 @@ class WalletAddInputViewModel extends ChangeNotifier {
   }
 
   Future<ResultOfSyncFromVault> addWalletFromExtendedPublicKey(String extendedPublicKey) async {
-    final name = getNextThirdPartyWalletName(
-        importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
-    final wallet =
-        _walletAddService.createExtendedPublicKeyWallet(extendedPublicKey, name, masterFingerPrint);
+    final name = getNextThirdPartyWalletName(importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final wallet = _walletAddService.createExtendedPublicKeyWallet(extendedPublicKey, name, masterFingerPrint);
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
   Future<ResultOfSyncFromVault> addWalletFromDescriptor(String descriptor) async {
-    final name = getNextThirdPartyWalletName(
-        importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
+    final name = getNextThirdPartyWalletName(importSource, _walletProvider.walletItemList.map((e) => e.name).toList());
     final wallet = _walletAddService.createWalletFromDescriptor(
-        descriptor: descriptor, name: name, walletImportSource: importSource);
+      descriptor: descriptor,
+      name: name,
+      walletImportSource: importSource,
+    );
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

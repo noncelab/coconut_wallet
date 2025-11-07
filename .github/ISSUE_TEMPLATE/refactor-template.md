@@ -3,7 +3,7 @@ name: Refactor Template
 about: 리팩토링 작업 사항을 적습니다
 title: ''
 labels: "♻️ refactor"
-assignees: Ella-noncelab, pio-noncelab
+assignees: ''
 
 ---
 

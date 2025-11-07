@@ -70,7 +70,7 @@
    flutter pub run slang
 
    # or
-   flutter pub run build_runner clean && flutter pub run build_runner build --delete-conflicting-outputs && dart run realm generate && flutter pub run slang
+   dart run build_runner clean && dart run build_runner build --delete-conflicting-outputs && dart run realm generate && flutter pub run slang
    ```
 
 ### 실행하기

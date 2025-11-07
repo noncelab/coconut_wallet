@@ -47,16 +47,20 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      buildTextField(),
-      if (widget.errorMessage.isNotEmpty && widget.valid == false)
-        Padding(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buildTextField(),
+        if (widget.errorMessage.isNotEmpty && widget.valid == false)
+          Padding(
             padding: const EdgeInsets.only(left: 4, top: 8),
             child: Text(
               widget.errorMessage,
               style: const TextStyle(color: MyColors.red, fontFamily: 'Pretendard', fontSize: 12),
-            )),
-    ]);
+            ),
+          ),
+      ],
+    );
   }
 
   Stack buildTextField() {
@@ -64,10 +68,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Text(
-            widget.controller.text.isNotEmpty ? '' : widget.placeholder,
-            style: widget.placeholderStyle,
-          ),
+          child: Text(widget.controller.text.isNotEmpty ? '' : widget.placeholder, style: widget.placeholderStyle),
         ),
         FocusScope(
           child: Focus(
@@ -77,19 +78,15 @@ class _CustomTextFieldState extends State<CustomTextField> {
               });
             },
             child: Container(
-                padding: EdgeInsets.only(
-                    right: widget.clearButtonMode != OverlayVisibilityMode.never ? 4 : 0),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isFocused ? CoconutColors.white : MyColors.transparentBlack_06,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(16.0),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                        child: CupertinoTextField(
+              padding: EdgeInsets.only(right: widget.clearButtonMode != OverlayVisibilityMode.never ? 4 : 0),
+              decoration: BoxDecoration(
+                border: Border.all(color: isFocused ? CoconutColors.white : MyColors.transparentBlack_06, width: 1),
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: CupertinoTextField(
                       controller: widget.controller,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16.0),
@@ -106,9 +103,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
                       clearButtonMode: widget.clearButtonMode,
                       focusNode: widget.focusNode,
                       maxLength: widget.maxLength,
-                    )),
-                  ],
-                )),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],

@@ -7,11 +7,7 @@ class WalletDetailTitleWidget extends StatefulWidget {
   final String walletName;
   final VoidCallback onTap;
 
-  const WalletDetailTitleWidget({
-    super.key,
-    required this.walletName,
-    required this.onTap,
-  });
+  const WalletDetailTitleWidget({super.key, required this.walletName, required this.onTap});
 
   @override
   State<WalletDetailTitleWidget> createState() => _WalletDetailTitleWidgetState();

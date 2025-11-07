@@ -36,7 +36,8 @@ class AddressListViewModel extends ChangeNotifier {
   /// AddressList 초기화 함수(showOnlyUnusedAddresses 변경시 호출)
   Future<void> initializeAddressList(int firstCount, bool showOnlyUnusedAddresses) async {
     Logger.log(
-        "[address_list_view_model.initializeAddressList] firstCount = $firstCount, showOnlyUnusedAddresses = $showOnlyUnusedAddresses");
+      "[address_list_view_model.initializeAddressList] firstCount = $firstCount, showOnlyUnusedAddresses = $showOnlyUnusedAddresses",
+    );
     _receivingAddressList = await getWalletAddressList(
       _walletBaseItem!,
       -1,
@@ -44,13 +45,7 @@ class AddressListViewModel extends ChangeNotifier {
       false,
       showOnlyUnusedAddresses,
     );
-    _changeAddressList = await getWalletAddressList(
-      _walletBaseItem!,
-      -1,
-      firstCount,
-      true,
-      showOnlyUnusedAddresses,
-    );
+    _changeAddressList = await getWalletAddressList(_walletBaseItem!, -1, firstCount, true, showOnlyUnusedAddresses);
     notifyListeners();
   }
 

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
 enum SingleButtonPosition { none, top, middle, bottom }
@@ -9,15 +10,11 @@ extension SingleButtonBorderRadiusExtension on SingleButtonPosition {
       case SingleButtonPosition.none:
         return BorderRadius.circular(Sizes.size24);
       case SingleButtonPosition.top:
-        return const BorderRadius.vertical(
-          top: Radius.circular(Sizes.size24),
-        );
+        return const BorderRadius.vertical(top: Radius.circular(Sizes.size24));
       case SingleButtonPosition.middle:
         return BorderRadius.zero;
       case SingleButtonPosition.bottom:
-        return const BorderRadius.vertical(
-          bottom: Radius.circular(Sizes.size24),
-        );
+        return const BorderRadius.vertical(bottom: Radius.circular(Sizes.size24));
     }
   }
 
@@ -49,6 +46,8 @@ class SingleButton extends StatelessWidget {
   final Color? backgroundColor;
   final double? betweenGap;
   final EdgeInsets? customPadding;
+  final bool enableShrinkAnim;
+  final double animationEndValue;
 
   const SingleButton({
     super.key,
@@ -63,40 +62,36 @@ class SingleButton extends StatelessWidget {
     this.backgroundColor = CoconutColors.gray800,
     this.betweenGap = 0,
     this.customPadding,
+    this.enableShrinkAnim = false,
+    this.animationEndValue = 0.95,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-        onTap: onPressed,
-        child: Container(
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: buttonPosition.radius,
-          ),
-          padding: getPadding(),
-          child: Row(
-            children: [
-              if (leftElement != null) ...{
-                Container(child: leftElement),
-                CoconutLayout.spacing_400w,
-              },
-              Expanded(
-                  child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                  if (subtitle != null)
-                    Text(subtitle!,
-                        style: subtitleStyle ??
-                            CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
-                ],
-              )),
-              Container(width: betweenGap),
-              rightElement ?? _rightArrow(),
-            ],
-          ),
-        ));
+    final buttonContent = _buildButtonContent();
+
+    return enableShrinkAnim
+        ? ShrinkAnimationButton(
+            onPressed: onPressed ?? () {},
+            defaultColor: CoconutColors.gray800,
+            pressedColor: CoconutColors.gray750,
+            borderRadius: 24,
+            animationEndValue: animationEndValue,
+            child: Container(
+              decoration: BoxDecoration(borderRadius: buttonPosition.radius),
+              padding: buttonPosition.padding,
+              child: buttonContent,
+            ),
+          )
+        : GestureDetector(
+            onTap: onPressed,
+            child: Container(
+              decoration:
+                  BoxDecoration(color: CoconutColors.gray800, borderRadius: buttonPosition.radius),
+              padding: buttonPosition.padding,
+              child: buttonContent,
+            ),
+          );
   }
 
   /// padding을 계산하는 메서드 - 하위 클래스에서 오버라이드 가능
@@ -104,6 +99,36 @@ class SingleButton extends StatelessWidget {
     return customPadding ?? buttonPosition.padding;
   }
 
+  Widget _buildButtonContent() {
+    return Row(
+      children: [
+        if (leftElement != null) ...{Container(child: leftElement), CoconutLayout.spacing_400w},
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(title,
+                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+              ),
+            ],
+          ),
+        ),
+        if (subtitle != null)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              subtitle!,
+              style: subtitleStyle ??
+                  CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+            ),
+          ),
+        rightElement ?? _rightArrow(),
+      ],
+    );
+  }
+
   Widget _rightArrow() =>
-      const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray600);
+      const Icon(Icons.keyboard_arrow_right_rounded, color: CoconutColors.gray400);
 }

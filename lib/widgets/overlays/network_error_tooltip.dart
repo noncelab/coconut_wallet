@@ -15,26 +15,15 @@ class NetworkErrorTooltip extends StatelessWidget {
       curve: Curves.easeOutCubic,
       alignment: Alignment.center,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 8,
-          horizontal: CoconutLayout.defaultPadding,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: CoconutLayout.defaultPadding),
         child: CoconutToolTip(
-          richText: RichText(
-            text: TextSpan(
-              text: t.errors.network_error,
-              style: CoconutTypography.body3_12,
-            ),
-          ),
+          richText: RichText(text: TextSpan(text: t.errors.network_error, style: CoconutTypography.body3_12)),
           showIcon: true,
           tooltipType: CoconutTooltipType.fixed,
           tooltipState: CoconutTooltipState.error,
           icon: SvgPicture.asset(
             'assets/svg/triangle-warning.svg',
-            colorFilter: const ColorFilter.mode(
-              CoconutColors.hotPink,
-              BlendMode.srcIn,
-            ),
+            colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
           ),
         ),
       ),

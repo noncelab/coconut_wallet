@@ -1,8 +1,18 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 
 enum WalletType {
   singleSignature,
-  multiSignature,
+  multiSignature;
+
+  AddressType get addressType {
+    switch (this) {
+      case WalletType.singleSignature:
+        return AddressType.p2wpkh;
+      case WalletType.multiSignature:
+        return AddressType.p2wsh;
+    }
+  }
 }
 
 enum WalletSyncResult {
@@ -13,19 +23,9 @@ enum WalletSyncResult {
   existingWalletUpdateImpossible, // 이미 추가된 descriptor를 서드파티 방법으로 또 추가한 경우
 }
 
-enum WalletLoadState {
-  never,
-  loadingFromDB,
-  loadCompleted,
-}
+enum WalletLoadState { never, loadingFromDB, loadCompleted }
 
-enum WalletImportSource {
-  coconutVault,
-  keystone,
-  jade,
-  seedSigner,
-  extendedPublicKey,
-}
+enum WalletImportSource { coconutVault, keystone, jade, seedSigner, coldCard, krux, extendedPublicKey }
 
 extension WalletImportSourceExtension on WalletImportSource {
   static WalletImportSource fromString(String name) {
@@ -43,6 +43,10 @@ extension WalletImportSourceExtension on WalletImportSource {
         return kJadeIconPath;
       case WalletImportSource.seedSigner:
         return kSeedSignerIconPath;
+      case WalletImportSource.coldCard:
+        return kColdCardIconPath;
+      case WalletImportSource.krux:
+        return kKruxIconPath;
       default:
         return kZpubIconPath;
     }

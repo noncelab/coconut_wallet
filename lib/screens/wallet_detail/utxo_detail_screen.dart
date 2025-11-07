@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -14,7 +13,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
@@ -37,11 +35,7 @@ class UtxoDetailScreen extends StatefulWidget {
   final int id;
   final UtxoState utxo;
 
-  const UtxoDetailScreen({
-    super.key,
-    required this.id,
-    required this.utxo,
-  });
+  const UtxoDetailScreen({super.key, required this.id, required this.utxo});
 
   @override
   State<UtxoDetailScreen> createState() => _UtxoDetailScreenState();
@@ -54,6 +48,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   final GlobalKey _balanceWidthKey = GlobalKey();
   bool _isUtxoTooltipVisible = false;
+  late UtxoDetailViewModel _viewModel;
   late UtxoState _utxoState;
   late WalletProvider _walletProvider;
   late BitcoinUnit _currentUnit;
@@ -66,8 +61,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     _utxoState = widget.utxo;
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final utxoTooltipIconRenderBox =
-          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+      final utxoTooltipIconRenderBox = _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
 
       if (utxoTooltipIconRenderBox != null) {
         setState(() {
@@ -82,13 +76,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    _walletSyncStateStream =
-        Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id);
+    _walletSyncStateStream = Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id);
     _walletSyncStateSubscription = _walletSyncStateStream.listen(_onWalletUpdate);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final utxoTooltipIconRenderBox =
-          _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
+      final utxoTooltipIconRenderBox = _utxoTooltipIconKey.currentContext?.findRenderObject() as RenderBox?;
 
       if (utxoTooltipIconRenderBox != null) {
         setState(() {
@@ -123,25 +115,25 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<UtxoDetailViewModel>(
-      create: (_) => UtxoDetailViewModel(
-        widget.id,
-        _utxoState,
-        Provider.of<UtxoTagProvider>(_, listen: false),
-        Provider.of<TransactionProvider>(_, listen: false),
-        Provider.of<WalletProvider>(_, listen: false),
-        Provider.of<NodeProvider>(_, listen: false).getWalletStateStream(widget.id),
-      ),
-      child: Builder(builder: (context) {
-        return GestureDetector(
-          onTap: _removeUtxoTooltip,
-          child: Stack(
-            children: [
-              _buildScaffold(context),
-              if (_isUtxoTooltipVisible) _buildTooltip(context),
-            ],
-          ),
+      create: (_) {
+        _viewModel = UtxoDetailViewModel(
+          widget.id,
+          _utxoState,
+          Provider.of<UtxoTagProvider>(context, listen: false),
+          Provider.of<TransactionProvider>(context, listen: false),
+          Provider.of<WalletProvider>(context, listen: false),
+          Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
         );
-      }),
+        return _viewModel;
+      },
+      child: Builder(
+        builder: (context) {
+          return GestureDetector(
+            onTap: _removeUtxoTooltip,
+            child: Stack(children: [_buildScaffold(context), if (_isUtxoTooltipVisible) _buildTooltip(context)]),
+          );
+        },
+      ),
     );
   }
 
@@ -155,15 +147,16 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       context: context,
       backgroundColor: CoconutColors.black,
       isScrollControlled: true,
-      builder: (context) => TagBottomSheet(
-        walletId: widget.id,
-        utxoTags: tags,
-        selectedTagNames: selectedTags.map((e) => e.name).toList(),
-        onUpdate: (selectedNames, updatedTagList, updateMode) {
-          viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, updatedTagList, updateMode);
-          viewModel.refreshTagList(widget.id);
-        },
-      ),
+      builder:
+          (context) => TagBottomSheet(
+            walletId: widget.id,
+            utxoTags: tags,
+            selectedTagNames: selectedTags.map((e) => e.name).toList(),
+            onUpdate: (selectedNames, updatedTagList, updateMode) {
+              viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, updatedTagList, updateMode);
+              viewModel.refreshTagList(widget.id);
+            },
+          ),
     );
   }
 
@@ -174,87 +167,87 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 20,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: Selector<
-                  UtxoDetailViewModel,
-                  Tuple5<TransactionRecord?, List<String>, List<UtxoTag>, List<UtxoTag>,
-                      UtxoStatus>>(
-              selector: (_, viewModel) => Tuple5(
-                    viewModel.transaction,
-                    viewModel.dateString,
-                    viewModel.utxoTagList,
-                    viewModel.selectedUtxoTagList,
-                    viewModel.utxoStatus,
-                  ),
-              builder: (_, data, __) {
-                final tx = data.item1;
-                final dateString = data.item2;
-                final tags = data.item3;
-                final selectedTags = data.item4;
-                final utxoStatus = data.item5;
+            UtxoDetailViewModel,
+            Tuple5<TransactionRecord?, List<String>, List<UtxoTag>, List<UtxoTag>, UtxoStatus>
+          >(
+            selector:
+                (_, viewModel) => Tuple5(
+                  viewModel.transaction,
+                  viewModel.dateString,
+                  viewModel.utxoTagList,
+                  viewModel.selectedUtxoTagList,
+                  viewModel.utxoStatus,
+                ),
+            builder: (_, data, __) {
+              final tx = data.item1;
+              final dateString = data.item2;
+              final tags = data.item3;
+              final selectedTags = data.item4;
+              final utxoStatus = data.item5;
 
-                return Column(
-                  children: [
-                    if (tx == null)
-                      const Center(child: CircularProgressIndicator())
+              return Column(
+                children: [
+                  if (tx == null)
+                    const Center(child: CircularProgressIndicator())
+                  else ...{
+                    _buildDateTime(dateString),
+                    _buildAmount(),
+                    if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
+                      _buildPrice()
                     else ...{
-                      _buildDateTime(dateString),
-                      _buildAmount(),
-                      if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
-                        _buildPrice()
-                      else ...{_buildPendingStatus(utxoStatus)},
-                      if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
-                        UtxoLockToggleButton(
-                          isLocked: utxoStatus == UtxoStatus.locked,
-                          onPressed: () async {
-                            Logger.log('>> toggleUtxoLockStatus');
-                            final viewModel = context.read<UtxoDetailViewModel>();
-                            final result = await viewModel.toggleUtxoLockStatus();
-                            if (mounted && !result) {
-                              debugPrint('utxoStatue : $utxoStatus');
-                              CoconutToast.showWarningToast(
-                                context: context,
-                                text: utxoStatus == UtxoStatus.locked
-                                    ? t.errors.utxo_unlock_error
-                                    : t.errors.utxo_lock_error,
-                              );
-                              return;
-                            }
-                            _removeUtxoTooltip();
-                            vibrateLight();
-                            CoconutToast.showToast(
-                                context: context,
-                                isVisibleIcon: true,
-                                iconPath: 'assets/svg/circle-info.svg',
-                                text: utxoStatus != UtxoStatus.locked
+                      _buildPendingStatus(utxoStatus),
+                    },
+                    if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
+                      UtxoLockToggleButton(
+                        isLocked: utxoStatus == UtxoStatus.locked,
+                        onPressed: () async {
+                          final viewModel = context.read<UtxoDetailViewModel>();
+                          final result = await viewModel.toggleUtxoLockStatus();
+                          if (mounted && !result) {
+                            CoconutToast.showWarningToast(
+                              context: context,
+                              text:
+                                  utxoStatus == UtxoStatus.locked
+                                      ? t.errors.utxo_unlock_error
+                                      : t.errors.utxo_lock_error,
+                            );
+                            return;
+                          }
+                          _removeUtxoTooltip();
+                          vibrateLight();
+                          CoconutToast.showToast(
+                            context: context,
+                            isVisibleIcon: true,
+                            iconPath: 'assets/svg/circle-info.svg',
+                            text:
+                                utxoStatus != UtxoStatus.locked
                                     ? t.utxo_detail_screen.utxo_locked_toast_msg
-                                    : t.utxo_detail_screen.utxo_unlocked_toast_msg);
-                          },
-                        ),
-                      TransactionInputOutputCard(
-                        transaction: tx,
-                        isSameAddress: (address, index) {
-                          return address == widget.utxo.to && index == widget.utxo.index;
+                                    : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+                          );
                         },
-                        isForTransaction: false,
-                        currentUnit: _currentUnit,
                       ),
-                      _buildAddress(),
-                      _buildTxMemo(
-                        tx.memo,
-                      ),
-                      _buildTagSection(context, tags, selectedTags),
-                      _buildTxId(),
-                      _buildBlockHeight(),
-                      CoconutLayout.spacing_1000h,
-                      _buildBalanceWidthCheck(),
-                    }
-                  ],
-                );
-              }),
+                    TransactionInputOutputCard(
+                      transaction: tx,
+                      isSameAddress: (address, index) {
+                        return address == widget.utxo.to && index == widget.utxo.index;
+                      },
+                      isForTransaction: false,
+                      currentUnit: _currentUnit,
+                    ),
+                    _buildAddress(),
+                    _buildTxMemo(tx.memo),
+                    _buildTagSection(context, tags, selectedTags),
+                    _buildTxId(),
+                    _buildBlockHeight(),
+                    CoconutLayout.spacing_1000h,
+                    _buildBalanceWidthCheck(),
+                  },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -272,7 +265,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           key: _utxoTooltipIconKey,
           icon: SvgPicture.asset('assets/svg/question-mark.svg'),
           onPressed: _toggleUtxoTooltip,
-        )
+        ),
       ],
     );
   }
@@ -287,16 +280,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           clipper: RightTriangleBubbleClipper(),
           child: Container(
             width: MediaQuery.sizeOf(context).width * 0.68,
-            padding: const EdgeInsets.only(
-              top: 28,
-              left: 16,
-              right: 16,
-              bottom: 12,
-            ),
+            padding: const EdgeInsets.only(top: 28, left: 16, right: 16, bottom: 12),
             color: CoconutColors.white,
-            child: Text(t.tooltip.utxo,
-                style:
-                    CoconutTypography.body3_12.copyWith(color: CoconutColors.gray900, height: 1.3)),
+            child: Text(
+              t.tooltip.utxo,
+              style: CoconutTypography.body3_12.copyWith(color: CoconutColors.gray900, height: 1.3),
+            ),
           ),
         ),
       ),
@@ -324,8 +313,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildDateTime(List<String> timeString) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28.0),
-      child:
-          HighlightedInfoArea(textList: timeString, textStyle: CoconutTypography.body2_14_Number),
+      child: HighlightedInfoArea(textList: timeString, textStyle: CoconutTypography.body2_14_Number),
     );
   }
 
@@ -337,16 +325,19 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       child: Padding(
         padding: const EdgeInsets.only(bottom: 2.0),
         child: Center(
-            child: RichText(
-                text: TextSpan(
-                    text: _currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                    style: CoconutTypography.heading2_28_NumberBold,
-                    children: <InlineSpan>[
-              WidgetSpan(
-                  alignment: PlaceholderAlignment.middle,
-                  child:
-                      Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number))
-            ]))),
+          child: FittedBox(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _currentUnit.displayBitcoinAmount(widget.utxo.amount),
+                  style: CoconutTypography.heading2_28_NumberBold,
+                ),
+                Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -354,13 +345,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   Widget _buildPrice() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 28),
-      child: Center(
-          child: GestureDetector(
-        onTap: _toggleUnit,
-        child: FiatPrice(
-          satoshiAmount: widget.utxo.amount,
-        ),
-      )),
+      child: Center(child: GestureDetector(onTap: _toggleUnit, child: FiatPrice(satoshiAmount: widget.utxo.amount))),
     );
   }
 
@@ -372,15 +357,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: status == UtxoStatus.incoming
-                  ? CoconutColors.cyan.withOpacity(0.2)
-                  : CoconutColors.primary.withOpacity(0.2),
+              color:
+                  status == UtxoStatus.incoming
+                      ? CoconutColors.cyan.withValues(alpha: 0.2)
+                      : CoconutColors.primary.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(100),
             ),
             child: Lottie.asset(
-              status == UtxoStatus.incoming
-                  ? 'assets/lottie/arrow-down.json'
-                  : 'assets/lottie/arrow-up.json',
+              status == UtxoStatus.incoming ? 'assets/lottie/arrow-down.json' : 'assets/lottie/arrow-up.json',
               width: 20,
               height: 20,
             ),
@@ -402,47 +386,48 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return Column(
       children: [
         UnderlineButtonItemCard(
-            label: t.utxo_detail_screen.address,
-            underlineButtonLabel: t.view_mempool,
-            onTapUnderlineButton: () =>
-                launchUrl(Uri.parse("${CoconutWalletApp.kMempoolHost}/address/${widget.utxo.to}")),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CopyTextContainer(
-                  text: widget.utxo.to,
-                  textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                ),
-                const SizedBox(height: 2),
-                Row(children: [
+          label: t.utxo_detail_screen.address,
+          underlineButtonLabel: t.view_mempool,
+          onTapUnderlineButton: () => launchUrl(Uri.parse("${_viewModel.mempoolHost}/address/${widget.utxo.to}")),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CopyTextContainer(
+                text: widget.utxo.to,
+                textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
                   Text.rich(
                     TextSpan(
                       children: [
                         for (int i = 0; i < path.length; i++) ...[
                           TextSpan(
                             text: path[i],
-                            style: i == changeIndex && path[changeIndex] == '1'
-                                ? CoconutTypography.body3_12_NumberBold
-                                    .setColor(CoconutColors.gray200)
-                                : CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                            style:
+                                i == changeIndex && path[changeIndex] == '1'
+                                    ? CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.gray200)
+                                    : CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
                           ),
                           if (i < path.length - 1)
                             TextSpan(
-                                text: "/",
-                                style: CoconutTypography.body3_12_Number
-                                    .setColor(CoconutColors.gray500)),
-                        ]
+                              text: "/",
+                              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                            ),
+                        ],
                       ],
                     ),
                   ),
                   CoconutLayout.spacing_100w,
                   if (path[changeIndex] == '1') ...{
-                    Text('(${t.change})',
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray500))
-                  }
-                ])
-              ],
-            )),
+                    Text('(${t.change})', style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+                  },
+                ],
+              ),
+            ],
+          ),
+        ),
         _divider,
       ],
     );
@@ -458,7 +443,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
           ),
         ),
-        _divider
+        _divider,
       ],
     );
   }
@@ -470,8 +455,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           label: t.tx_id,
           underlineButtonLabel: t.view_tx_details,
           onTapUnderlineButton: () {
-            Navigator.pushNamed(context, '/transaction-detail',
-                arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash});
+            Navigator.pushNamed(
+              context,
+              '/transaction-detail',
+              arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash},
+            );
           },
           child: CopyTextContainer(
             text: widget.utxo.transactionHash,
@@ -485,25 +473,21 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   Widget _buildBlockHeight() {
     return UnderlineButtonItemCard(
-        label: t.block_num,
-        underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
-        onTapUnderlineButton: () {
-          widget.utxo.status == UtxoStatus.unspent
-              ? launchUrl(
-                  Uri.parse("${CoconutWalletApp.kMempoolHost}/block/${widget.utxo.blockHeight}"))
-              : ();
-        },
-        child: Text(
-          widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',
-          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-        ));
+      label: t.block_num,
+      underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
+      onTapUnderlineButton: () {
+        widget.utxo.status == UtxoStatus.unspent
+            ? launchUrl(Uri.parse("${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}"))
+            : ();
+      },
+      child: Text(
+        widget.utxo.blockHeight != 0 ? widget.utxo.blockHeight.toString() : '-',
+        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+      ),
+    );
   }
 
-  Widget _buildTagSection(
-    BuildContext context,
-    List<UtxoTag> tags,
-    List<UtxoTag> selectedTags,
-  ) {
+  Widget _buildTagSection(BuildContext context, List<UtxoTag> tags, List<UtxoTag> selectedTags) {
     final viewModel = context.read<UtxoDetailViewModel>();
     return Column(
       children: [
@@ -515,32 +499,26 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (selectedTags.isEmpty) ...{
-                Text(
-                  '-',
-                  style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                )
+                Text('-', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
               } else ...{
                 Wrap(
                   spacing: 4,
                   runSpacing: 4,
-                  children: List.generate(
-                    selectedTags.length,
-                    (index) {
-                      Color foregroundColor = tagColorPalette[selectedTags[index]
-                          .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
-                      return IntrinsicWidth(
-                        child: CoconutChip(
-                          minWidth: 40,
-                          color: CoconutColors
-                              .backgroundColorPaletteDark[selectedTags[index].colorIndex],
-                          borderColor: foregroundColor,
-                          label: '#${selectedTags[index].name}',
-                          labelSize: 12,
-                          labelColor: foregroundColor,
-                        ),
-                      );
-                    },
-                  ),
+                  children: List.generate(selectedTags.length, (index) {
+                    Color foregroundColor =
+                        tagColorPalette[selectedTags[index]
+                            .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                    return IntrinsicWidth(
+                      child: CoconutChip(
+                        minWidth: 40,
+                        color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                        borderColor: foregroundColor,
+                        label: '#${selectedTags[index].name}',
+                        labelSize: 12,
+                        labelColor: foregroundColor,
+                      ),
+                    );
+                  }),
                 ),
               },
             ],
@@ -571,12 +549,14 @@ class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
       children: [
         GestureDetector(
           behavior: HitTestBehavior.translucent,
-          onTapDown: (details) => setState(() {
-            isPressing = true;
-          }),
-          onTapCancel: () => setState(() {
-            isPressing = false;
-          }),
+          onTapDown:
+              (details) => setState(() {
+                isPressing = true;
+              }),
+          onTapCancel:
+              () => setState(() {
+                isPressing = false;
+              }),
           onTap: () {
             setState(() {
               isPressing = false;
@@ -590,19 +570,18 @@ class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
                 SvgPicture.asset(
                   'assets/svg/${widget.isLocked ? 'lock' : 'unlock'}.svg',
                   colorFilter: ColorFilter.mode(
-                      isPressing ? CoconutColors.gray800 : CoconutColors.white, BlendMode.srcIn),
+                    isPressing ? CoconutColors.gray800 : CoconutColors.white,
+                    BlendMode.srcIn,
+                  ),
                 ),
                 Text(
-                  widget.isLocked
-                      ? t.utxo_detail_screen.utxo_locked
-                      : t.utxo_detail_screen.utxo_unlocked,
-                  style: CoconutTypography.body3_12
-                      .setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),
-                )
+                  widget.isLocked ? t.utxo_detail_screen.utxo_locked : t.utxo_detail_screen.utxo_unlocked,
+                  style: CoconutTypography.body3_12.setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),
+                ),
               ],
             ),
           ),
-        )
+        ),
       ],
     );
   }

@@ -54,22 +54,22 @@ class _MultiButtonState extends State<MultiButton> with TickerProviderStateMixin
                 curve: Curves.easeInOut,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: widget.children.length > 1
-                      ? [
-                          Container(
-                            height: widget.showDivider ? 1 : 0,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              color: CoconutColors.gray700,
+                  children:
+                      widget.children.length > 1
+                          ? [
+                            Container(
+                              height: 1,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                color: CoconutColors.gray700,
+                              ),
+                              margin: EdgeInsets.symmetric(
+                                horizontal: widget.children.first.buttonPosition.padding.horizontal / 2,
+                              ),
                             ),
-                            margin: EdgeInsets.symmetric(
-                              horizontal:
-                                  widget.children.first.buttonPosition.padding.horizontal / 2,
-                            ),
-                          ),
-                          ...widget.children.sublist(1),
-                        ]
-                      : [],
+                            ...widget.children.sublist(1),
+                          ]
+                          : [],
                 ),
               ),
             ),
@@ -83,20 +83,22 @@ class _MultiButtonState extends State<MultiButton> with TickerProviderStateMixin
     final firstElement = widget.children.first;
     final radius = firstElement.buttonPosition.radius;
     return BorderRadius.only(
-        topLeft: radius.topLeft,
-        topRight: radius.topRight,
-        bottomLeft: radius.bottomLeft,
-        bottomRight: radius.bottomRight);
+      topLeft: radius.topLeft,
+      topRight: radius.topRight,
+      bottomLeft: radius.bottomLeft,
+      bottomRight: radius.bottomRight,
+    );
   }
 
   BorderRadius _getLastElementRadius() {
     final lastElement = widget.children.last;
     final radius = lastElement.buttonPosition.radius;
     return BorderRadius.only(
-        topLeft: radius.topLeft,
-        topRight: radius.topRight,
-        bottomLeft: radius.bottomLeft,
-        bottomRight: radius.bottomRight);
+      topLeft: radius.topLeft,
+      topRight: radius.topRight,
+      bottomLeft: radius.bottomLeft,
+      bottomRight: radius.bottomRight,
+    );
   }
 }
 

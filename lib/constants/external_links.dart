@@ -1,5 +1,5 @@
 // ignore_for_file: constant_identifier_names
-const LICENSE_URL = 'https://github.com/noncelab/coconut_wallet/blob/main/LICENSE.md';
+const LICENSE_URL = 'https://github.com/noncelab/coconut_wallet/blob/main/LICENSE';
 const CONTRIBUTING_URL = 'https://github.com/noncelab/coconut_wallet/blob/main/CONTRIBUTING.md';
 const MIT_LICENSE_URL = 'https://mit-license.org';
 
@@ -14,6 +14,7 @@ const GITHUB_URL_COCONUT_LIBRARY = 'https://github.com/noncelab/coconut_lib';
 /// Terms of service, Policy
 const TERMS_OF_SERVICE_URL = "https://www.noncelab.com/coconut/tos";
 const PRIVACY_POLICY_URL = "https://www.noncelab.com/coconut/privacy";
+const DATA_COLLECTION_URL = "https://www.noncelab.com/coconut/data-collection";
 
 /// Email To Address
 const CONTACT_EMAIL_ADDRESS = 'hello@noncelab.com';
@@ -25,4 +26,8 @@ const DISCORD_COCONUT = 'https://discord.gg/YHxGQRxa7R';
 const X_POW = 'https://x.com/POWbitcoiner';
 
 /// Tutorial
-const TUTORIAL_URL = 'https://www.coconut.onl/';
+const TUTORIAL_URL = 'https://tutorial.coconut.onl';
+
+/// Block explorer
+const BLOCK_EXPLORER_URL = 'https://mempool.space/ko';
+const BLOCK_EXPLORER_URL_REGTEST = 'https://regtest-mempool.coconut.onl';

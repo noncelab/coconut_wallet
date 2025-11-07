@@ -4,7 +4,10 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
+import 'package:coconut_wallet/firebase_options.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,58 +34,70 @@ void main() {
     Logger.log("Stack trace: ${details.stack}");
   };
 
-  runZonedGuarded(() async {
-    // This app is designed only to work vertically, so we limit
-    // orientations to portrait up and down.
-    WidgetsFlutterBinding.ensureInitialized();
-    final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
-    BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
-    if (Platform.isAndroid) {
-      try {
-        const MethodChannel channel = MethodChannel(methodChannelOS);
+  runZonedGuarded(
+    () async {
+      // This app is designed only to work vertically, so we limit
+      // orientations to portrait up and down.
+      WidgetsFlutterBinding.ensureInitialized();
+      final RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+      BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+      if (Platform.isAndroid) {
+        try {
+          const MethodChannel channel = MethodChannel(methodChannelOS);
 
-        final int version = await channel.invokeMethod('getSdkVersion');
-        if (version != 26) {
-          SystemChrome.setPreferredOrientations(
-              [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+          final int version = await channel.invokeMethod('getSdkVersion');
+          if (version != 26) {
+            SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+          }
+        } on PlatformException catch (e) {
+          Logger.log("Failed to get platform version: '${e.message}'.");
         }
-      } on PlatformException catch (e) {
-        Logger.log("Failed to get platform version: '${e.message}'.");
+      } else {
+        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
       }
-    } else {
-      SystemChrome.setPreferredOrientations(
-          [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-    }
-    await SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.manual,
-      overlays: [
-        SystemUiOverlay.top,
-        SystemUiOverlay.bottom,
-      ],
-    );
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: [SystemUiOverlay.top, SystemUiOverlay.bottom],
+      );
 
-    setSystemBarColor(Platform.isIOS
-        ? CoconutColors.black
-        : appFlavor == "mainnet"
+      setSystemBarColor(
+        Platform.isIOS
+            ? CoconutColors.black
+            : appFlavor == "mainnet"
             ? splashBackgroundColorMainnet
-            : splashBackgroundColorRegtest);
-    Provider.debugCheckInvalidValueType = null;
-    await SharedPrefsRepository().init();
+            : splashBackgroundColorRegtest,
+      );
+      Provider.debugCheckInvalidValueType = null;
+      await SharedPrefsRepository().init();
 
-    String envFile = '$appFlavor.env';
-    await dotenv.load(fileName: envFile);
-    CoconutWalletApp.kElectrumHost = dotenv.env[DotenvKeys.electrumHost] ?? '';
-    String? portString = dotenv.env[DotenvKeys.electrumPort];
-    CoconutWalletApp.kElectrumPort = portString != null ? int.tryParse(portString) ?? 0 : 0;
-    CoconutWalletApp.kElectrumIsSSL = dotenv.env[DotenvKeys.electrumIsSsl]?.toLowerCase() == 'true';
-    CoconutWalletApp.kMempoolHost = dotenv.env[DotenvKeys.mempoolHost] ?? '';
-    CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
-    CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';
-    CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
-    NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
-    runApp(const CoconutWalletApp());
-  }, (error, stackTrace) {
-    Logger.error(">>>>> runZoneGuarded error: $error");
-    Logger.log('>>>>> runZoneGuarded StackTrace: $stackTrace');
-  });
+      String envFile = '$appFlavor.env';
+      await dotenv.load(fileName: envFile);
+
+      // Faucet - regtest-only
+      CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
+
+      // Donation
+      CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';
+
+      // Mainnet, Regtest 등 네트워크 타입 설정
+      CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
+      NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
+
+      // Firebase
+      CoconutWalletApp.kIsFirebaseAnalyticsUsed = const bool.fromEnvironment('USE_FIREBASE', defaultValue: false);
+      Logger.log('👉 Firebase 사용 여부: ${CoconutWalletApp.kIsFirebaseAnalyticsUsed}');
+      if (CoconutWalletApp.kIsFirebaseAnalyticsUsed) {
+        await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      }
+
+      // FileLogger 초기화
+      await FileLogger.initialize();
+
+      runApp(const CoconutWalletApp());
+    },
+    (error, stackTrace) {
+      Logger.error(">>>>> runZoneGuarded error: $error");
+      Logger.log('>>>>> runZoneGuarded StackTrace: $stackTrace');
+    },
+  );
 }

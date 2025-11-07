@@ -22,9 +22,11 @@ class PriceProvider extends ChangeNotifier {
   /// 통화별 가격 저장
   int? _bitcoinPriceKrw;
   int? _bitcoinPriceUsd;
+  int? _bitcoinPriceJpy;
 
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   int? get bitcoinPriceUsd => _bitcoinPriceUsd;
+  int? get bitcoinPriceJpy => _bitcoinPriceJpy;
 
   /// 현재 선택된 통화의 가격
   int? get currentBitcoinPrice {
@@ -33,6 +35,8 @@ class PriceProvider extends ChangeNotifier {
         return _bitcoinPriceKrw;
       case FiatCode.USD:
         return _bitcoinPriceUsd;
+      case FiatCode.JPY:
+        return _bitcoinPriceJpy;
     }
   }
 
@@ -103,14 +107,17 @@ class PriceProvider extends ChangeNotifier {
       _isPendingConnection = false;
 
       _currentWebSocketService = WebSocketServiceFactory.create(selectedFiat);
-      _currentWebSocketService?.tickerStream.listen((ticker) {
-        _updatePrice(ticker);
-        notifyListeners();
-      }, onError: (error) {
-        Logger.error('PriceProvider: WebSocket 스트림 오류: $error');
-        // 오류 발생 시 WebSocket 서비스 정리
-        disposeWebSocketService();
-      });
+      _currentWebSocketService?.tickerStream.listen(
+        (ticker) {
+          _updatePrice(ticker);
+          notifyListeners();
+        },
+        onError: (error) {
+          Logger.error('PriceProvider: WebSocket 스트림 오류: $error');
+          // 오류 발생 시 WebSocket 서비스 정리
+          disposeWebSocketService();
+        },
+      );
     } catch (e) {
       Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
       _isPendingConnection = true;
@@ -126,6 +133,9 @@ class PriceProvider extends ChangeNotifier {
         break;
       case FiatCode.USD:
         _bitcoinPriceUsd = ticker.tradePrice;
+        break;
+      case FiatCode.JPY:
+        _bitcoinPriceJpy = ticker.tradePrice;
         break;
     }
   }
@@ -165,8 +175,7 @@ class PriceProvider extends ChangeNotifier {
         return '';
       }
 
-      final amount =
-          FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
+      final amount = FiatUtil.calculateFiatAmount(satoshiAmount, price).toThousandsSeparatedString();
 
       if (showCurrencySymbol) {
         return '${targetFiat.symbol} $amount';
@@ -203,6 +212,8 @@ class PriceProvider extends ChangeNotifier {
         return _bitcoinPriceKrw;
       case FiatCode.USD:
         return _bitcoinPriceUsd;
+      case FiatCode.JPY:
+        return _bitcoinPriceJpy;
     }
   }
 }

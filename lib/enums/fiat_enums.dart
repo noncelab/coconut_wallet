@@ -8,7 +8,7 @@ import '../utils/balance_format_util.dart';
 enum FiatCode {
   KRW('KRW', 'South Korean Won', '₩'),
   USD('USD', 'US Dollar', '\$'),
-  ;
+  JPY('JPY', 'Japanese Yen', '¥');
 
   final String code; // ISO 4217 코드
   final String fullName; // 통화 이름
@@ -28,19 +28,21 @@ enum BitcoinUnit {
 
   String get symbol => this == BitcoinUnit.btc ? t.btc : t.sats;
 
-  String displayBitcoinAmount(int? amount,
-      {String defaultWhenNull = '',
-      String defaultWhenZero = '',
-      bool shouldCheckZero = false,
-      bool withUnit = false,
-      bool forceEightDecimals = false}) {
+  String displayBitcoinAmount(
+    int? amount, {
+    String defaultWhenNull = '',
+    String defaultWhenZero = '',
+    bool shouldCheckZero = false,
+    bool withUnit = false,
+    bool forceEightDecimals = false,
+  }) {
     if (amount == null) return defaultWhenNull;
     if (shouldCheckZero && amount == 0) return defaultWhenZero;
 
-    String amountText = this == BitcoinUnit.btc
-        ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(amount,
-            forceEightDecimals: forceEightDecimals)
-        : amount.toThousandsSeparatedString();
+    String amountText =
+        this == BitcoinUnit.btc
+            ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(amount, forceEightDecimals: forceEightDecimals)
+            : amount.toThousandsSeparatedString();
 
     return withUnit ? "$amountText $symbol" : amountText;
   }

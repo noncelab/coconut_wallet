@@ -60,21 +60,21 @@ class TransactionRecord {
 
   /// @nodoc
   TransactionRecord(
-      this._transactionHash,
-      this._timestamp,
-      this._blockHeight,
-      this._transactionType,
-      this._memo,
-      this._amount,
-      this._fee,
-      this._inputAddressList,
-      this._outputAddressList,
-      this._vSize,
-      this.createdAt,
-      {List<RbfHistory>? rbfHistoryList,
-      CpfpHistory? cpfpHistory})
-      : _rbfHistoryList = rbfHistoryList,
-        _cpfpHistory = cpfpHistory;
+    this._transactionHash,
+    this._timestamp,
+    this._blockHeight,
+    this._transactionType,
+    this._memo,
+    this._amount,
+    this._fee,
+    this._inputAddressList,
+    this._outputAddressList,
+    this._vSize,
+    this.createdAt, {
+    List<RbfHistory>? rbfHistoryList,
+    CpfpHistory? cpfpHistory,
+  }) : _rbfHistoryList = rbfHistoryList,
+       _cpfpHistory = cpfpHistory;
 
   factory TransactionRecord.fromTransactions({
     required String transactionHash,

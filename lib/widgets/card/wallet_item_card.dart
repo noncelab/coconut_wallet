@@ -4,8 +4,9 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_item_icon.dart';
+import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter_svg/svg.dart';
@@ -66,23 +67,25 @@ class WalletItemCard extends StatelessWidget {
     final displayedFakeBalance = currentUnit.displayBitcoinAmount(fakeBalance);
     final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     if (isEditMode) {
-      return _buildWalletItemContent(displayedFakeBalance, isEditMode: true, onTapStar: (pair) {
-        if (isPrimaryWallet != null) {
-          onTapStar?.call(pair);
-        }
-      }, index: index);
+      return _buildWalletItemContent(
+        displayedFakeBalance,
+        isEditMode: true,
+        onTapStar: (pair) {
+          if (isPrimaryWallet != null) {
+            onTapStar?.call(pair);
+          }
+        },
+        index: index,
+      );
     }
     final row = ShrinkAnimationButton(
       defaultColor: backgroundColor ?? CoconutColors.gray800,
       pressedColor: pressedColor ?? CoconutColors.gray750,
       borderRadius: 12,
       onPressed: () {
-        Navigator.pushNamed(context, '/wallet-detail', arguments: {
-          'id': id,
-          'entryPoint': entryPoint,
-        });
+        Navigator.pushNamed(context, '/wallet-detail', arguments: {'id': id, 'entryPoint': entryPoint});
       },
-      onLongPressed: () {
+      onLongPress: () {
         onLongPressed?.call();
       },
       // ** gradient 사용안할수도 있음**
@@ -99,11 +102,7 @@ class WalletItemCard extends StatelessWidget {
       return row;
     }
 
-    return Column(
-      children: [
-        row,
-      ],
-    );
+    return Column(children: [row]);
   }
 
   Widget _buildWalletItemContent(
@@ -127,67 +126,63 @@ class WalletItemCard extends StatelessWidget {
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: SvgPicture.asset(
-                    'assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg',
-                  ),
+                  child: SvgPicture.asset('assets/svg/${isFavorite ? 'star-filled' : 'star-outlined'}.svg'),
                 ),
               ),
             ),
-          WalletItemIcon(
-              walletImportSource: walletImportSource, iconIndex: iconIndex, colorIndex: colorIndex),
+          WalletIconSmall(
+            walletImportSource: walletImportSource,
+            iconIndex: iconIndex,
+            colorIndex: colorIndex,
+            gradientColors: signers != null ? ColorUtil.getGradientColors(signers!) : null,
+          ),
           CoconutLayout.spacing_200w,
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 isBalanceHidden
-                    ? fakeBalance != null
-                        ? FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  displayFakeBalance,
-                                  style: CoconutTypography.body2_14_NumberBold
-                                      .setColor(CoconutColors.white),
-                                ),
-                                Text(
-                                  " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
-                                  style: CoconutTypography.body2_14_NumberBold
-                                      .setColor(CoconutColors.white),
-                                ),
-                              ],
-                            ),
-                          )
-                        : Text(
-                            t.view_balance,
-                            style: CoconutTypography.body2_14_Bold
-                                .copyWith(color: CoconutColors.gray600),
-                          )
-                    : FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            AnimatedBalance(
-                                prevValue: animatedBalanceData.previous,
-                                value: animatedBalanceData.current,
-                                currentUnit: currentUnit == BitcoinUnit.btc
-                                    ? BitcoinUnit.btc
-                                    : BitcoinUnit.sats,
-                                textStyle: CoconutTypography.body2_14_NumberBold
-                                    .setColor(CoconutColors.white)),
-                            Text(
-                              " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
-                              style: CoconutTypography.body2_14_NumberBold
-                                  .setColor(CoconutColors.white),
-                            ),
-                          ],
-                        ),
+                    ? Text(
+                      t.view_balance,
+                      style: CoconutTypography.body2_14_Bold.copyWith(color: CoconutColors.gray600),
+                    )
+                    : fakeBalance != null
+                    ? FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            displayFakeBalance,
+                            style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                          ),
+                          Text(
+                            " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                            style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                          ),
+                        ],
                       ),
+                    )
+                    : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          AnimatedBalance(
+                            prevValue: animatedBalanceData.previous,
+                            value: animatedBalanceData.current,
+                            currentUnit: currentUnit == BitcoinUnit.btc ? BitcoinUnit.btc : BitcoinUnit.sats,
+                            textStyle: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                          ),
+                          Text(
+                            " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
+                            style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                          ),
+                        ],
+                      ),
+                    ),
                 Row(
                   children: [
                     Flexible(
@@ -219,25 +214,20 @@ class WalletItemCard extends StatelessWidget {
           CoconutLayout.spacing_200w,
           isEditMode
               ? ReorderableDragStartListener(
-                  index: index!,
-                  child: GestureDetector(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: SvgPicture.asset(
-                        'assets/svg/hamburger.svg',
-                      ),
-                    ),
+                index: index!,
+                child: GestureDetector(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: SvgPicture.asset('assets/svg/hamburger.svg'),
                   ),
-                )
+                ),
+              )
               : SvgPicture.asset(
-                  'assets/svg/arrow-right.svg',
-                  width: 6,
-                  height: 10,
-                  colorFilter: const ColorFilter.mode(
-                    CoconutColors.gray400,
-                    BlendMode.srcIn,
-                  ),
-                )
+                'assets/svg/arrow-right.svg',
+                width: 6,
+                height: 10,
+                colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+              ),
         ],
       ),
     );

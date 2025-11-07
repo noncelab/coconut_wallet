@@ -76,6 +76,8 @@ devtools_options.yaml
 **/android/key.properties
 **/android/key_*.properties
 *.jks
+# Android NDK build cache
+android/app/.cxx/
 
 # iOS/XCode related
 **/ios/**/*.mode1v3
@@ -159,9 +161,17 @@ default.realm.management
 *.mocks.dart
 *.realm.dart
 *.g.dart
+*/fastlane/report.xml
 /fastlane/report.xml
 
 # Cursor IDE
 .cursor
-
+.cursorrules
+features/*
 .metadata
+
+# Google Services
+GoogleService-Info.plist
+google-services.json
+firebase.json
+play_store_credentials.json

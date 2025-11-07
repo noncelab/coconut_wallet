@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/services.dart';
 
 class SocketManager {
   /// Socket
-  final SocketFactory socketFactory;
+  SocketFactory socketFactory;
   Socket? _socket;
   SocketConnectionStatus _connectionStatus = SocketConnectionStatus.reconnecting;
   int _connectionAttempts = 0;
@@ -29,18 +30,23 @@ class SocketManager {
 
   /// Response
   final Map<int, Completer<dynamic>> _completerMap = {};
-  final Map<String, Function(String, String?)> _scriptSubscribeCallbacks =
-      {}; // ScriptPubKey -> Callback
+  final Map<String, Function(String, String?)> _scriptSubscribeCallbacks = {}; // ScriptPubKey -> Callback
 
   /// On Reconnect callback
   void Function()? onReconnect;
 
-  /// [factory]: 테스트용 모킹 객체를 주입하기 위한 클래스로 실제 사용 시 별도로 지정하지 않아도 됨 <br/>
+  /// On Connection Lost callback
+  void Function()? onConnectionLost;
+
+  /// On Connection Failed callback
+  void Function()? onConnectionFailed;
+
+  /// [factory]: 테스트용 모킹 객체를 주입하기 위해 만들었으나, Tor를 지원하기 위해 확장 클래스로 사용 <br/>
   /// [maxConnectionAttempts]: 최대 연결 시도 횟수, default: 30 <br/>
   /// [reconnectDelaySeconds]: 재연결 주기, default: 10 (s) <br/>
   SocketManager({SocketFactory? factory, int maxConnectionAttempts = kSocketMaxConnectionAttempts})
-      : socketFactory = factory ?? DefaultSocketFactory(),
-        _maxConnectionAttempts = maxConnectionAttempts {
+    : socketFactory = factory ?? DefaultSocketFactory(),
+      _maxConnectionAttempts = maxConnectionAttempts {
     _streamController.stream.listen(_handleResponse);
   }
 
@@ -56,10 +62,26 @@ class SocketManager {
     _scriptSubscribeCallbacks.remove(scriptReverseHash);
   }
 
+  // .onion 주소인 경우 타임아웃을 길게 설정
+  Duration getConnectionTimeout(bool isOnionHost, bool isTailscale) {
+    if (isOnionHost) {
+      return kIsolateInitTimeoutForOnion;
+    } else if (isTailscale) {
+      return kIsolateInitTimeout;
+    } else {
+      return kIsolateInitTimeout;
+    }
+  }
+
   Future<bool> connect(String host, int port, {bool ssl = true}) async {
     _host = host;
     _port = port;
     _ssl = ssl;
+
+    final isOnionHost = _isOnionAddress(host);
+    _ssl = isOnionHost ? false : ssl;
+
+    Logger.log('SocketManager: Connecting to $host:$port (SSL: $_ssl)');
 
     if (_connectionAttempts >= _maxConnectionAttempts) {
       _connectionStatus = SocketConnectionStatus.terminated;
@@ -73,19 +95,74 @@ class SocketManager {
     }
 
     _connectionStatus = SocketConnectionStatus.connecting;
+
+    final isTailscale = await _detectTailscaleNetwork();
+
+    final connectionTimeout = getConnectionTimeout(isOnionHost, isTailscale);
+
     try {
-      if (_ssl) {
-        _socket = await socketFactory.createSecureSocket(_host, _port);
+      // ssl false이거나 tailscale이 감지되는 경우, 일반 연결 사용
+      if (!_ssl || isTailscale || isOnionHost) {
+        Logger.log('Socket connection: $_host:$_port');
+        _socket = await socketFactory.createSocket(_host, _port, timeout: connectionTimeout);
       } else {
-        _socket = await socketFactory.createSocket(_host, _port);
+        Logger.log('Secure Socket connection: $_host:$_port (SSL: $_ssl, Tailscale: $isTailscale)');
+        _socket = await socketFactory.createSecureSocket(_host, _port);
       }
+
       _connectionStatus = SocketConnectionStatus.connected;
       _connectionAttempts = 0;
       _socket!.listen(_onData, onError: _onError, onDone: _onDone, cancelOnError: true);
     } catch (e) {
+      Logger.error('Socket connection failed: $e');
       _connectionStatus = SocketConnectionStatus.terminated;
+      onConnectionLost?.call();
+      return false;
     }
     return true;
+  }
+
+  bool _isOnionAddress(String host) {
+    return host.trim().toLowerCase().endsWith('.onion');
+  }
+
+  Future<bool> _detectTailscaleNetwork() async {
+    try {
+      final interfaces = await NetworkInterface.list();
+      final tailscaleIps = <String>[];
+
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          if (_isTailscaleIP(addr.address)) {
+            tailscaleIps.add(addr.address);
+            Logger.log('🌐 Tailscale IP Detected: ${addr.address} (${interface.name})');
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      Logger.log('❌ Tailscale IP Not Detected');
+      return false;
+    }
+    return false;
+  }
+
+  /// Tailscale IP 범위 확인
+  bool _isTailscaleIP(String ip) {
+    try {
+      final parts = ip.split('.');
+      if (parts.length != 4) return false;
+
+      final firstOctet = int.tryParse(parts[0]);
+      final secondOctet = int.tryParse(parts[1]);
+
+      if (firstOctet == null || secondOctet == null) return false;
+
+      // 100.64.0.0/10 범위: 100.64.x.x ~ 100.127.x.x
+      return firstOctet == 100 && secondOctet >= 64 && secondOctet <= 127;
+    } catch (e) {
+      return false;
+    }
   }
 
   Future<void> disconnect() async {
@@ -98,11 +175,15 @@ class SocketManager {
   }
 
   void _onDone() {
+    Logger.log('Socket connection closed');
     _connectionStatus = SocketConnectionStatus.terminated;
+    onConnectionLost?.call();
   }
 
   void _onError(error) {
+    Logger.error('Socket connection error: $error');
     _connectionStatus = SocketConnectionStatus.terminated;
+    onConnectionLost?.call();
   }
 
   Future<void> send(String data) async {

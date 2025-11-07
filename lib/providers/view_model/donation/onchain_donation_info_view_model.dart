@@ -5,13 +5,13 @@ import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/utils/result.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
@@ -25,8 +25,13 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
   late StreamSubscription<NodeSyncState> _syncNodeStateSubscription;
   late NodeSyncState _nodeSyncState;
 
-  OnchainDonationInfoViewModel(this._walletProvider, this._nodeProvider, this._sendInfoProvider,
-      this._isNetworkOn, this._amount) {
+  OnchainDonationInfoViewModel(
+    this._walletProvider,
+    this._nodeProvider,
+    this._sendInfoProvider,
+    this._isNetworkOn,
+    this._amount,
+  ) {
     _nodeSyncState = _nodeProvider.state.nodeSyncState;
     _syncNodeStateSubscription = _nodeProvider.syncStateStream.listen(_handleNodeSyncState);
     initialize();
@@ -50,9 +55,8 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   List<AvailableDonationWallet> get availableDonationWalletList => _availableDonationWalletList;
 
-  List<WalletListItemBase> get singlesigWalletList => _walletProvider.walletItemList
-      .where((wallet) => wallet.walletType == WalletType.singleSignature)
-      .toList();
+  List<WalletListItemBase> get singlesigWalletList =>
+      _walletProvider.walletItemList.where((wallet) => wallet.walletType == WalletType.singleSignature).toList();
 
   initialize() async {
     if (singlesigWalletList.isEmpty) {
@@ -61,20 +65,8 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _isNetworkOn = isNetworkOn;
 
-    var result = await _nodeProvider.getRecommendedFees().timeout(
-      const Duration(seconds: 10), // 타임아웃 초
-      onTimeout: () {
-        return Result.failure(
-            const AppError('NodeProvider', 'TimeoutException: Isolate response timeout'));
-      },
-    );
-
-    if (result.isFailure) {
-      _isRecommendedFeeFetchSuccess = false;
-      return;
-    }
-
-    satsPerVb = result.value.hourFee.toDouble();
+    RecommendedFee result = await getRecommendedFees(_nodeProvider);
+    satsPerVb = result.hourFee.toDouble();
 
     _availableDonationWalletList.clear(); // 지갑 동기화 완료 후 initialize 호출 시 기존 목록 초기화
     for (var wallet in singlesigWalletList) {
@@ -89,10 +81,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
         final sendingAmount = confirmedBalance - estimatedFee;
 
         if (sendingAmount >= _amount && sendingAmount > dustLimit) {
-          _availableDonationWalletList.add(AvailableDonationWallet(
-            wallet: wallet,
-            estimatedFee: estimatedFee,
-          ));
+          _availableDonationWalletList.add(AvailableDonationWallet(wallet: wallet, estimatedFee: estimatedFee));
         } else {
           debugPrint('Skipping wallet: ${wallet.name}, insufficient sendingAmount: $sendingAmount');
         }
@@ -100,8 +89,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
         debugPrint('catch : $wallet, error: $error');
 
         final message = error.toString();
-        final feeMatch =
-            RegExp(r'Not enough amount for sending\. \(Fee : (\d+)\)').firstMatch(message);
+        final feeMatch = RegExp(r'Not enough amount for sending\. \(Fee : (\d+)\)').firstMatch(message);
 
         if (feeMatch != null) {
           final fee = int.tryParse(feeMatch.group(1)!);
@@ -116,10 +104,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
               wallet.walletBase,
             );
 
-            _availableDonationWalletList.add(AvailableDonationWallet(
-              wallet: wallet,
-              estimatedFee: fee,
-            ));
+            _availableDonationWalletList.add(AvailableDonationWallet(wallet: wallet, estimatedFee: fee));
 
             debugPrint('Sweep 실행: ${wallet.name}, sendingAmount: $sendingAmount');
           } else {
@@ -165,15 +150,19 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     return transaction.estimateFee(satsPerVb, walletBase.addressType); // singlesignature
   }
 
-  Transaction _createTransaction(double satsPerVb, int walletId, WalletBase walletBase, int amount,
-      {bool isFinal = false}) {
+  Transaction _createTransaction(
+    double satsPerVb,
+    int walletId,
+    WalletBase walletBase,
+    int amount, {
+    bool isFinal = false,
+  }) {
     final utxoPool = _walletProvider.getUtxoListByStatus(walletId, UtxoStatus.unspent);
 
     final changeAddress = _walletProvider.getChangeAddress(walletId);
     try {
       Transaction tx = Transaction.forSinglePayment(
-        TransactionUtil.selectOptimalUtxos(
-            utxoPool, amount, satsPerVb, walletBase.addressType), // singlesignature
+        TransactionUtil.selectOptimalUtxos(utxoPool, amount, satsPerVb, walletBase.addressType), // singlesignature
         _sendInfoProvider.recipientAddress!,
         changeAddress.derivationPath,
         amount,
@@ -185,8 +174,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     } catch (e) {
       if (isFinal) {
         final message = e.toString();
-        final feeMatch =
-            RegExp(r'Not enough amount for sending\. \(Fee : (\d+)\)').firstMatch(message);
+        final feeMatch = RegExp(r'Not enough amount for sending\. \(Fee : (\d+)\)').firstMatch(message);
 
         if (feeMatch != null) {
           final fee = int.tryParse(feeMatch.group(1)!);
@@ -276,14 +264,15 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(walletId);
     _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _sendInfoProvider.setIsDonation(true);
+    _sendInfoProvider.setSendEntryPoint(SendEntryPoint.home);
     _sendInfoProvider.setAmount(_amount.toDouble() - estimatedFee.toDouble());
     _sendInfoProvider.setEstimatedFee(estimatedFee);
     _sendInfoProvider.setWalletImportSource(walletImportSource);
     _sendInfoProvider.setIsMultisig(false);
     _sendInfoProvider.setFeeBumpfingType(null);
-    _sendInfoProvider.setTransaction(_createTransaction(
-        satsPerVb!, walletId, walletBase, _amount - estimatedFee,
-        isFinal: true));
+    _sendInfoProvider.setTransaction(
+      _createTransaction(satsPerVb!, walletId, walletBase, _amount - estimatedFee, isFinal: true),
+    );
     debugPrint('amount - estimatedFee: ${_amount - estimatedFee}');
 
     await generateUnsignedPsbt(walletBase).then((value) {
@@ -311,8 +300,5 @@ class AvailableDonationWallet {
   final WalletListItemBase wallet;
   final int estimatedFee;
 
-  AvailableDonationWallet({
-    required this.wallet,
-    required this.estimatedFee,
-  });
+  AvailableDonationWallet({required this.wallet, required this.estimatedFee});
 }

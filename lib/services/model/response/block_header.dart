@@ -35,24 +35,28 @@ class BlockHeader {
     Uint8List bits = bytes.sublist(72, 76);
     Uint8List nonce = bytes.sublist(76, 80);
 
-    return BlockHeader(height, timestamp, header,
-        version: version,
-        prevBlockHash: prevBlockHash,
-        merkleRoot: merkleRoot,
-        bits: bits,
-        nonce: nonce);
+    return BlockHeader(
+      height,
+      timestamp,
+      header,
+      version: version,
+      prevBlockHash: prevBlockHash,
+      merkleRoot: merkleRoot,
+      bits: bits,
+      nonce: nonce,
+    );
   }
 
   ///@nodoc
   BlockHeader.fromJson(Map<String, dynamic> json)
-      : height = json['height'],
-        timestamp = json['timestamp'],
-        header = json['header'],
-        version = json['version'],
-        prevBlockHash = json['prevBlockHash'] != null ? base64Decode(json['prevBlockHash']) : null,
-        merkleRoot = json['merkleRoot'] != null ? base64Decode(json['merkleRoot']) : null,
-        bits = json['bits'] != null ? base64Decode(json['bits']) : null,
-        nonce = json['nonce'] != null ? base64Decode(json['nonce']) : null;
+    : height = json['height'],
+      timestamp = json['timestamp'],
+      header = json['header'],
+      version = json['version'],
+      prevBlockHash = json['prevBlockHash'] != null ? base64Decode(json['prevBlockHash']) : null,
+      merkleRoot = json['merkleRoot'] != null ? base64Decode(json['merkleRoot']) : null,
+      bits = json['bits'] != null ? base64Decode(json['bits']) : null,
+      nonce = json['nonce'] != null ? base64Decode(json['nonce']) : null;
 
   ///@nodoc
   Map<String, dynamic> toJson() {

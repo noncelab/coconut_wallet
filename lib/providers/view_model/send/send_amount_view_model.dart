@@ -25,8 +25,13 @@ class SendAmountViewModel extends ChangeNotifier {
   int? _errorIndex;
   bool _isUtxoUpdating = false;
 
-  SendAmountViewModel(this._sendInfoProvider, this._walletProvider, this._syncWalletStateStream,
-      this._isNetworkOn, this._currentUnit) {
+  SendAmountViewModel(
+    this._sendInfoProvider,
+    this._walletProvider,
+    this._syncWalletStateStream,
+    this._isNetworkOn,
+    this._currentUnit,
+  ) {
     _initBalances(); // _confirmedBalance, _incomingBalance
     _input = '';
     _isNextButtonEnabled = false;
@@ -57,10 +62,11 @@ class SendAmountViewModel extends ChangeNotifier {
   void toggleUnit() {
     _currentUnit = isBtcUnit ? BitcoinUnit.sats : BitcoinUnit.btc;
     if (_input.isNotEmpty && _input != '0') {
-      _input = (isBtcUnit
-              ? UnitUtil.convertSatoshiToBitcoin(int.parse(_input))
-              : UnitUtil.convertBitcoinToSatoshi(double.parse(_input)))
-          .toString();
+      _input =
+          (isBtcUnit
+                  ? UnitUtil.convertSatoshiToBitcoin(int.parse(_input))
+                  : UnitUtil.convertBitcoinToSatoshi(double.parse(_input)))
+              .toString();
 
       // sats to btc 변환에서 지수로 표현되는 경우에는 다시 변환한다.
       if (_input.contains('e')) {
@@ -137,8 +143,7 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void _setAmountWithInput() {
-    double bitcoin =
-        isBtcUnit ? double.parse(_input) : UnitUtil.convertSatoshiToBitcoin(int.parse(_input));
+    double bitcoin = isBtcUnit ? double.parse(_input) : UnitUtil.convertSatoshiToBitcoin(int.parse(_input));
     _sendInfoProvider.setAmount(bitcoin);
   }
 
@@ -148,11 +153,11 @@ class SendAmountViewModel extends ChangeNotifier {
   }
 
   void setMaxAmount() {
-    _input = (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance) : _confirmedBalance)
-        .toString();
+    _input = (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(_confirmedBalance) : _confirmedBalance).toString();
     if (double.parse(_input) <= dustLimit / dustLimitDenominator) {
       _errorIndex = 1;
       _isNextButtonEnabled = false;
+      notifyListeners();
       return;
     }
 
