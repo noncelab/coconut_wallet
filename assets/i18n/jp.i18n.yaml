@@ -186,6 +186,49 @@ pin_check_screen:
   text: "パスワードを入力してください"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "マイウォレット一覧"
+  edit_home_screen: "ホーム画面を編集"
+  edit:
+    title: "ホーム画面で機能を\n非表示にしたり、追加したりできます"
+    hide_balance: "残高を非表示"
+    hide_balance_on_home: "ホーム画面に残高を表示しません。"
+    fake_balance:
+      fake_balance_display: "フェイク残高表示"
+      fake_balance_description: "代わりにフェイク残高を表示します。ウォレットが複数ある場合は、それぞれの残高が自動で合算されます。"
+      fake_balance_input_placeholder: "ホーム画面に表示する金額（BTC単位）"
+      fake_balance_input_exceeds_error: "最大で2100万BTCまで設定できます。"
+      fake_balance_input_not_enough_error: "$btc ($sats sats)未満には設定できません。"
+    category:
+      total_balance: "残高合計"
+      wallet_list: "ウォレット一覧"
+      recent_transactions: "最近の取引"
+      analysis: "分析"
+    alert: 
+      empty_fake_balance: "フェイク残高を入力"
+      empty_fake_balance_description: "金額が設定されていません。\nもう一度入力するか、0 BTCに設定しますか？"
+      set_to_0: "0 BTCに設定"
+      enter_again: "再入力"
+  empty_recent_transaction: "最近取引がありません"
+  empty_analysis_result: "分析に必要な取引はありません"
+  analysis_period: "直近${days}日 • ${transaction_type}"
+  analysis_period_cutsom: "直接設定 • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "照会期間"
+    days_15: "15日"
+    days_30: "30日"
+    days_60: "60日"
+    days_90: "90日"
+    custom: "直接設定"
+    transaction_type: "取引タイプ"
+
+  transaction_count: "取引 $count回"
+  count: "$count回"
+  increase: "増加しました"
+  decrease: "減少しました"
+  sent: "送りました"
+  received: "いただきました"
+
 wallet_add_scanner_screen:
   add_wallet: "ウォレット追加"
   add_watch_only_wallet: "ウォッチオンリー\nウォレット追加"
@@ -452,13 +495,6 @@ settings_screen:
   use_biometric: "生体認証を使用"
   change_password: "パスワード変更"
   hide_balance: "残高を非表示"
-  fake_balance:
-    fake_balance_setting: "偽残高設定"
-    fake_balance_display: "偽残高を表示"
-    fake_balance_input_placeholder: "偽の総残高を設定してください（BTC単位）"
-    fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
-    fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます"
-    fake_balance_input_not_enough_error: "$btc（$sats sats）以下は設定できません"
   language: "言語"
   korean: "한국어"
   english: "English"

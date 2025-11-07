@@ -9,8 +9,8 @@ import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -23,6 +23,7 @@ import 'package:tuple/tuple.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+  final WalletPreferencesRepository _walletPreferencesRepository;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -93,19 +94,18 @@ class PreferenceProvider extends ChangeNotifier {
   late AnalysisTransactionType _selectedAnalysisTransactionType;
   AnalysisTransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
 
-  late UtxoOrder utxoSortOrder;
-  UtxoOrder get utxoSortOrder => utxoSortOrder;
+  late UtxoOrder _utxoSortOrder;
+  UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
-  PreferenceProvider() {
+  PreferenceProvider(this._walletPreferencesRepository) {
     initializeFiat();
 
     /// 마지막으로 선택한 UTXO 정렬 기준(default - 큰 금액순)
     _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
-    _isBtcUnit = _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
-        ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
-        : true;
+    _isBtcUnit =
+        _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit) ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit) : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
     _walletOrder = getWalletOrder();
     _favoriteWalletIds = getFavoriteWalletIds();
@@ -117,12 +117,13 @@ class PreferenceProvider extends ChangeNotifier {
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
-    utxoSortOrder = _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
-        ? UtxoOrder.values.firstWhere(
-            (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
-            orElse: () => UtxoOrder.byAmountDesc,
-          )
-        : UtxoOrder.byAmountDesc;
+    _utxoSortOrder =
+        _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder).isNotEmpty
+            ? UtxoOrder.values.firstWhere(
+              (e) => e.name == _sharedPrefs.getString(SharedPrefKeys.kUtxoSortOrder),
+              orElse: () => UtxoOrder.byAmountDesc,
+            )
+            : UtxoOrder.byAmountDesc;
 
     // 통화 설정 초기화
     initializeFiat();
@@ -136,8 +137,7 @@ class PreferenceProvider extends ChangeNotifier {
   void initializeFiat() {
     final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
     if (fiatCode.isNotEmpty) {
-      _selectedFiat =
-          FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
+      _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
     } else {
       _selectedFiat = FiatCode.KRW;
       _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
@@ -273,8 +273,7 @@ class PreferenceProvider extends ChangeNotifier {
     bool? isFakeBalanceActive,
     double? fakeBalanceTotalAmount,
   }) async {
-    var fakeBalanceTotalBtc =
-        fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
+    var fakeBalanceTotalBtc = fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
 
     if (fakeBalanceTotalBtc == 0) {
       await setFakeBalanceTotalAmount(0);
@@ -385,18 +384,16 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 가짜 잔액 Map 설정
   Future<void> setFakeBalanceMap(Map<int, dynamic> map) async {
-    final Map<String, dynamic> stringKeyMap =
-        map.map((key, value) => MapEntry(key.toString(), value));
+    final Map<String, dynamic> stringKeyMap = map.map((key, value) => MapEntry(key.toString(), value));
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
 
   /// 지갑 순서 불러오기
   List<int> getWalletOrder() {
-    final encoded = _sharedPrefs.getString(SharedPrefKeys.kWalletOrder);
+    final encoded = _walletPreferencesRepository.getWalletOrder().toList();
     if (encoded.isEmpty) return [];
-    final List<dynamic> decoded = jsonDecode(encoded);
-    return decoded.cast<int>();
+    return encoded;
   }
 
   /// 지갑 순서 설정
@@ -446,8 +443,7 @@ class PreferenceProvider extends ChangeNotifier {
   /// 총 잔액에서 제외할 지갑 설정
   Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
     _excludedFromTotalBalanceWalletIds = ids;
-    await _sharedPrefs.setString(
-        SharedPrefKeys.kExcludedFromTotalBalanceWalletIds, jsonEncode(ids));
+    await _sharedPrefs.setString(SharedPrefKeys.kExcludedFromTotalBalanceWalletIds, jsonEncode(ids));
     notifyListeners();
   }
 
@@ -471,10 +467,7 @@ class PreferenceProvider extends ChangeNotifier {
     // 토글 가능한 항목('최근 거래', '분석'...)만 리스트에 포함됩니다.
     // 추후 홈 화면 기능이 추가됨에 따라 kHomeFeatures를 수정할 필요가 있습니다.
     _homeFeatures = List.from(features);
-    await _sharedPrefs.setString(
-      SharedPrefKeys.kHomeFeatures,
-      jsonEncode(features.map((e) => e.toJson()).toList()),
-    );
+    await _sharedPrefs.setString(SharedPrefKeys.kHomeFeatures, jsonEncode(features.map((e) => e.toJson()).toList()));
     notifyListeners();
   }
 
@@ -515,10 +508,12 @@ class PreferenceProvider extends ChangeNotifier {
         );
         updatedHomeFeatures.add(existing ?? defaultFeature);
       }
-      homeFeatures.removeWhere((e) =>
-          !initialHomeFeatures.any((k) => k.homeFeatureTypeString == e.homeFeatureTypeString));
-      homeFeatures.addAll(updatedHomeFeatures.where(
-          (e) => !homeFeatures.any((h) => h.homeFeatureTypeString == e.homeFeatureTypeString)));
+      homeFeatures.removeWhere(
+        (e) => !initialHomeFeatures.any((k) => k.homeFeatureTypeString == e.homeFeatureTypeString),
+      );
+      homeFeatures.addAll(
+        updatedHomeFeatures.where((e) => !homeFeatures.any((h) => h.homeFeatureTypeString == e.homeFeatureTypeString)),
+      );
       await setHomeFeautres(homeFeatures);
     }
 
@@ -529,8 +524,7 @@ class PreferenceProvider extends ChangeNotifier {
     final start = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodStart);
     final end = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodEnd);
     debugPrint('Analysis period range: $start ~ $end');
-    return Tuple2(
-        start.isEmpty ? null : DateTime.parse(start), end.isEmpty ? null : DateTime.parse(end));
+    return Tuple2(start.isEmpty ? null : DateTime.parse(start), end.isEmpty ? null : DateTime.parse(end));
   }
 
   Future<void> setAnalysisPeriodRange(DateTime start, DateTime end) async {
@@ -563,8 +557,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   Future<void> setAnalysisTransactionType(AnalysisTransactionType transactionType) async {
     _selectedAnalysisTransactionType = transactionType;
-    await _sharedPrefs.setString(
-        SharedPrefKeys.kSelectedTransactionTypeIndices, _selectedAnalysisTransactionType.name);
+    await _sharedPrefs.setString(SharedPrefKeys.kSelectedTransactionTypeIndices, _selectedAnalysisTransactionType.name);
     notifyListeners();
   }
 
@@ -588,8 +581,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 일렉트럼 서버 설정
   Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
-    await _sharedPrefs.setString(
-        SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
   }
 
   /// 커스텀 일렉트럼 서버 설정
@@ -646,7 +638,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   // 마지막으로 선택한 UTXO 정렬 방식 저장
   Future<void> setLastUtxoOrder(UtxoOrder utxoOrder) async {
-    utxoSortOrder = utxoOrder;
+    _utxoSortOrder = utxoOrder;
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
     notifyListeners();

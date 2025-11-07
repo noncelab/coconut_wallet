@@ -33,7 +33,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   WalletProvider _walletProvider;
   final NodeProvider _nodeProvider;
   final Stream<NodeSyncState> _syncNodeStateStream;
-  final Stream<BlockTimestamp?> _currentBlockStream;
   late final PreferenceProvider _preferenceProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
@@ -47,7 +46,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isEmptyFavoriteWallet = false; // 즐겨찾기 설정된 지갑이 없는지 여부
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
-  StreamSubscription<BlockTimestamp?>? _currentBlockSubscription;
   List<WalletListItemBase> _favoriteWallets = [];
   final List<HomeFeature> _homeFeatures = [];
   late int _analysisPeriod;
@@ -91,17 +89,21 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isBtcUnit = false;
   bool get isBtcUnit => _isBtcUnit;
 
-  WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._visibilityProvider,
-      this._connectivityProvider, this._syncNodeStateStream, this._currentBlockStream) {
+  WalletHomeViewModel(
+    this._walletProvider,
+    this._preferenceProvider,
+    this._visibilityProvider,
+    this._connectivityProvider,
+    this._nodeProvider,
+  ) : _syncNodeStateStream = _nodeProvider.syncStateStream {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
-    _currentBlockSubscription = _currentBlockStream.listen(_handleCurrentBlockUpdate);
 
-    _walletBalance = _walletProvider
-        .fetchWalletBalanceMap()
-        .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
+    _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
+      (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
+    );
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalancesAndRecentTxs);
 
     // NodeProvider의 변경사항 listening 추가
@@ -265,8 +267,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     /// 지갑 즐겨찾기 변동 체크
-    if (_favoriteWallets.map((w) => w.id).toList().toString() !=
-            _preferenceProvider.favoriteWalletIds.toString() &&
+    if (_favoriteWallets.map((w) => w.id).toList().toString() != _preferenceProvider.favoriteWalletIds.toString() &&
         walletItemList.isNotEmpty) {
       loadFavoriteWallets();
     }
@@ -375,11 +376,11 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     final ids = _preferenceProvider.favoriteWalletIds;
 
-    final wallets = ids
-        .map((id) =>
-            _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
-        .whereType<WalletListItemBase>()
-        .toList();
+    final wallets =
+        ids
+            .map((id) => _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
+            .whereType<WalletListItemBase>()
+            .toList();
 
     _favoriteWallets = wallets;
 
@@ -409,8 +410,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     _isFetchingLatestTx = true;
 
     final walletIds = walletItemList.map((w) => w.id).toList();
-    final transactions =
-        _walletProvider.getPendingAndDaysAgoTransactions(walletIds, blockHeight, days);
+    final transactions = _walletProvider.getPendingAndDaysAgoTransactions(walletIds, blockHeight, days);
     _recentTransactions = transactions;
 
     debugPrint('_recentTransactions = (${days}days) $_recentTransactions');
@@ -421,7 +421,8 @@ class WalletHomeViewModel extends ChangeNotifier {
       // 개별 트랜잭션의 해시와 value 출력
       for (var tx in entry.value) {
         Logger.log(
-            '\tTxHash: ${tx.transactionHash}, Type: ${tx.transactionType.name}, Amount: ${tx.amount}, Status: ${TransactionUtil.getStatus(tx)}');
+          '\tTxHash: ${tx.transactionHash}, Type: ${tx.transactionType.name}, Amount: ${tx.amount}, Status: ${TransactionUtil.getStatus(tx)}',
+        );
       }
     }
 
@@ -444,22 +445,21 @@ class WalletHomeViewModel extends ChangeNotifier {
     debugPrint('analysisPeriodRange.item1: ${_preferenceProvider.analysisPeriodRange.item1}');
     debugPrint('analysisPeriodRange.item2: ${_preferenceProvider.analysisPeriodRange.item2}');
     debugPrint('days: $days');
-    final transactions = _analysisPeriod == 0 &&
-            _preferenceProvider.analysisPeriodRange.item1 != null &&
-            _preferenceProvider.analysisPeriodRange.item2 != null
-        ? _walletProvider.getConfirmedTransactionRecordListWithinDateRange(
-            walletIds,
-            currentBlockHeight,
-            Tuple2<DateTime, DateTime>(
-              _preferenceProvider.analysisPeriodRange.item1!,
-              _preferenceProvider.analysisPeriodRange.item2!,
-            ),
-          )
-        : _walletProvider.getConfirmedTransactionRecordListWithin(
-            walletIds, currentBlockHeight, days);
+    final transactions =
+        _analysisPeriod == 0 &&
+                _preferenceProvider.analysisPeriodRange.item1 != null &&
+                _preferenceProvider.analysisPeriodRange.item2 != null
+            ? _walletProvider.getConfirmedTransactionRecordListWithinDateRange(
+              walletIds,
+              currentBlockHeight,
+              Tuple2<DateTime, DateTime>(
+                _preferenceProvider.analysisPeriodRange.item1!,
+                _preferenceProvider.analysisPeriodRange.item2!,
+              ),
+            )
+            : _walletProvider.getConfirmedTransactionRecordListWithin(walletIds, currentBlockHeight, days);
 
-    final receivedTxs =
-        transactions.where((t) => t.transactionType == TransactionType.received).toList();
+    final receivedTxs = transactions.where((t) => t.transactionType == TransactionType.received).toList();
     final sentTxs = transactions.where((t) => t.transactionType == TransactionType.sent).toList();
     final selfTxs = transactions.where((t) => t.transactionType == TransactionType.self).toList();
 
@@ -473,36 +473,40 @@ class WalletHomeViewModel extends ChangeNotifier {
     Logger.log('WalletHomeViewModel: 최근 $days일 동안의 트랜잭션 분석 결과');
     Logger.log('WalletHomeViewModel: ${totalAmount.abs()}${totalAmount > 0 ? ' 증가했어요' : ' 감소했어요'}');
     // UTC 기간 출력 : 30일 전 - 오늘 yy.mm.dd 형식으로 출력
-    final startDate = _analysisPeriod == 0 &&
-            _preferenceProvider.analysisPeriodRange.item1 != null &&
-            _preferenceProvider.analysisPeriodRange.item2 != null
-        ? _preferenceProvider.analysisPeriodRange.item1!
-        : DateTime.now().subtract(Duration(days: days)).toUtc();
-    final endDate = _analysisPeriod == 0 &&
-            _preferenceProvider.analysisPeriodRange.item1 != null &&
-            _preferenceProvider.analysisPeriodRange.item2 != null
-        ? _preferenceProvider.analysisPeriodRange.item2!
-        : DateTime.now().toUtc();
+    final startDate =
+        _analysisPeriod == 0 &&
+                _preferenceProvider.analysisPeriodRange.item1 != null &&
+                _preferenceProvider.analysisPeriodRange.item2 != null
+            ? _preferenceProvider.analysisPeriodRange.item1!
+            : DateTime.now().subtract(Duration(days: days)).toUtc();
+    final endDate =
+        _analysisPeriod == 0 &&
+                _preferenceProvider.analysisPeriodRange.item1 != null &&
+                _preferenceProvider.analysisPeriodRange.item2 != null
+            ? _preferenceProvider.analysisPeriodRange.item2!
+            : DateTime.now().toUtc();
 
     Logger.log(
-        'WalletHomeViewModel: 기간: ${startDate.toLocal().toString().split(' ')[0]} ~ ${endDate.toLocal().toString().split(' ')[0]} | 트랜잭션 $totalTransactionCount 회');
+      'WalletHomeViewModel: 기간: ${startDate.toLocal().toString().split(' ')[0]} ~ ${endDate.toLocal().toString().split(' ')[0]} | 트랜잭션 $totalTransactionCount 회',
+    );
     Logger.log('WalletHomeViewModel: ⬇️ Received: ${receivedTxs.length}회 $receivedAmount ');
     Logger.log('WalletHomeViewModel: ⬆️ Sent: ${sentTxs.length}회 $sentAmount ');
     Logger.log('WalletHomeViewModel: 🔄 Self: ${selfTxs.length}회 $selfAmount ');
 
     _recentTransactionAnalysis = RecentTransactionAnalysis(
-        startDate: startDate,
-        endDate: endDate,
-        receivedTxs: receivedTxs,
-        sentTxs: sentTxs,
-        selfTxs: selfTxs,
-        totalAmount: totalAmount,
-        receivedAmount: receivedAmount,
-        sentAmount: sentAmount,
-        selfAmount: selfAmount,
-        days: days,
-        isBtcUnit: _isBtcUnit,
-        selectedAnalysisTransactionType: _selectedAnalysisTransactionType);
+      startDate: startDate,
+      endDate: endDate,
+      receivedTxs: receivedTxs,
+      sentTxs: sentTxs,
+      selfTxs: selfTxs,
+      totalAmount: totalAmount,
+      receivedAmount: receivedAmount,
+      sentAmount: sentAmount,
+      selfAmount: selfAmount,
+      days: days,
+      isBtcUnit: _isBtcUnit,
+      selectedAnalysisTransactionType: _selectedAnalysisTransactionType,
+    );
     _isLatestTxAnalysisRunning = false;
     notifyListeners();
   }
@@ -524,7 +528,6 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _currentBlockSubscription?.cancel();
     _syncNodeStateSubscription?.cancel();
     _nodeProvider.removeListener(_onNodeProviderChanged);
     super.dispose();
@@ -573,35 +576,34 @@ class RecentTransactionAnalysis {
       selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
           ? t.wallet_home_screen.received
           : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
-              ? t.wallet_home_screen.sent
-              : totalAmount > 0
-                  ? t.wallet_home_screen.increase
-                  : t.wallet_home_screen.decrease;
+          ? t.wallet_home_screen.sent
+          : totalAmount > 0
+          ? t.wallet_home_screen.increase
+          : t.wallet_home_screen.decrease;
   String get dateRange => '$_startDate ~ $_endDate';
-  String get _startDate => days == 0
-      ? _formatYyMmDd(startDate ?? DateTime.now().subtract(Duration(days: days)))
-      : _formatYyMmDd(DateTime.now().subtract(Duration(days: days)));
-  String get _endDate =>
-      days == 0 ? _formatYyMmDd(endDate ?? DateTime.now()) : _formatYyMmDd(DateTime.now());
+  String get _startDate =>
+      days == 0
+          ? _formatYyMmDd(startDate ?? DateTime.now().subtract(Duration(days: days)))
+          : _formatYyMmDd(DateTime.now().subtract(Duration(days: days)));
+  String get _endDate => days == 0 ? _formatYyMmDd(endDate ?? DateTime.now()) : _formatYyMmDd(DateTime.now());
 
-  String get titleString => '${isBtcUnit ? BitcoinUnit.btc.displayBitcoinAmount(
-      selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
-          ? receivedAmount
-          : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
+  String get titleString =>
+      '${isBtcUnit ? BitcoinUnit.btc.displayBitcoinAmount(selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
+              ? receivedAmount
+              : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
               ? (sentAmount + selfAmount).abs()
-              : totalAmount,
-      withUnit: true,
-    ) : BitcoinUnit.sats.displayBitcoinAmount(
-      selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
-          ? receivedAmount
-          : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
+              : totalAmount, withUnit: true) : BitcoinUnit.sats.displayBitcoinAmount(selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
+              ? receivedAmount
+              : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
               ? sentAmount + selfAmount
-              : totalAmount,
-      withUnit: true,
-    )} ';
+              : totalAmount, withUnit: true)} ';
   String get totalAmountResult => totalTransactionResult;
   String get subtitleString =>
-      '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == TransactionType.received ? receivedTxs.length.toString() : selectedAnalysisTransactionType == TransactionType.sent ? (sentTxs.length + selfTxs.length).toString() : totalTransactionCount.toString())}';
+      '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == TransactionType.received
+          ? receivedTxs.length.toString()
+          : selectedAnalysisTransactionType == TransactionType.sent
+          ? (sentTxs.length + selfTxs.length).toString()
+          : totalTransactionCount.toString())}';
 
   String _formatYyMmDd(DateTime dt) {
     final local = dt.toLocal();
@@ -613,8 +615,4 @@ class RecentTransactionAnalysis {
   }
 }
 
-enum AnalysisTransactionType {
-  onlySent,
-  onlyReceived,
-  all,
-}
+enum AnalysisTransactionType { onlySent, onlyReceived, all }

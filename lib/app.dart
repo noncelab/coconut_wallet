@@ -16,6 +16,7 @@ import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
@@ -101,41 +102,33 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider.value(value: _realmManager),
 
         Provider<AnalyticsService>(
-          create: (context) => AnalyticsService(
-            CoconutWalletApp.kIsFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null,
-            !CoconutWalletApp.kIsFirebaseAnalyticsUsed,
-          ),
+          create:
+              (context) => AnalyticsService(
+                CoconutWalletApp.kIsFirebaseAnalyticsUsed ? FirebaseAnalytics.instance : null,
+                !CoconutWalletApp.kIsFirebaseAnalyticsUsed,
+              ),
         ),
 
         // Repository 등록 - Provider보다 먼저 등록해야 함
-        Provider<WalletRepository>(
-            create: (context) => WalletRepository(context.read<RealmManager>())),
-        Provider<AddressRepository>(
-            create: (context) => AddressRepository(context.read<RealmManager>())),
-        Provider<TransactionRepository>(
-            create: (context) => TransactionRepository(context.read<RealmManager>())),
+        Provider<WalletRepository>(create: (context) => WalletRepository(context.read<RealmManager>())),
+        Provider<AddressRepository>(create: (context) => AddressRepository(context.read<RealmManager>())),
+        Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
         Provider<UtxoRepository>(create: (context) => UtxoRepository(context.read<RealmManager>())),
-        Provider<SubscriptionRepository>(
-            create: (context) => SubscriptionRepository(context.read<RealmManager>())),
+        Provider<SubscriptionRepository>(create: (context) => SubscriptionRepository(context.read<RealmManager>())),
         Provider<WalletPreferencesRepository>(
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
 
-        ChangeNotifierProvider(
-            create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
 
-        ChangeNotifierProvider(
-            create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
 
         ChangeNotifierProvider<PriceProvider>(
-          create: (context) => PriceProvider(
-              context.read<ConnectivityProvider>(), context.read<PreferenceProvider>()),
+          create: (context) => PriceProvider(context.read<ConnectivityProvider>(), context.read<PreferenceProvider>()),
         ),
 
-        ChangeNotifierProvider(
-            create: (context) => UtxoTagProvider(context.read<UtxoRepository>())),
-        ChangeNotifierProvider(
-            create: (context) => TransactionProvider(context.read<TransactionRepository>())),
+        ChangeNotifierProvider(create: (context) => UtxoTagProvider(context.read<UtxoRepository>())),
+        ChangeNotifierProvider(create: (context) => TransactionProvider(context.read<TransactionRepository>())),
 
         /// main 에서만 사용하는 모델
         if (_appEntryFlow == AppEntryFlow.main) ...{
@@ -215,20 +208,21 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 barBackgroundColor: CoconutColors.black, // AppBar 배경 색상
               ),
               color: CoconutColors.black,
-              home: _appEntryFlow == AppEntryFlow.splash
-                  ? StartScreen(onComplete: _completeSplash)
-                  : _appEntryFlow == AppEntryFlow.main
+              home:
+                  _appEntryFlow == AppEntryFlow.splash
+                      ? StartScreen(onComplete: _completeSplash)
+                      : _appEntryFlow == AppEntryFlow.main
                       ? const WalletHomeScreen()
                       : CustomLoadingOverlay(
-                          child: PinCheckScreen(
-                            appEntrance: true,
-                            onComplete: () {
-                              setState(() {
-                                _appEntryFlow = AppEntryFlow.main;
-                              });
-                            },
-                          ),
+                        child: PinCheckScreen(
+                          appEntrance: true,
+                          onComplete: () {
+                            setState(() {
+                              _appEntryFlow = AppEntryFlow.main;
+                            });
+                          },
                         ),
+                      ),
               routes: {
                 '/wallet-list': (context) => const WalletListScreen(),
                 '/app-info': (context) => const AppInfoScreen(),
@@ -242,29 +236,29 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/block-explorer': (context) => const BlockExplorerScreen(),
 
                 // 로딩이 필요한 화면들
-                '/wallet-add-input': (context) =>
-                    const CustomLoadingOverlay(child: WalletAddInputScreen()),
-                '/broadcasting': (context) =>
-                    const CustomLoadingOverlay(child: BroadcastingScreen()),
+                '/wallet-add-input': (context) => const CustomLoadingOverlay(child: WalletAddInputScreen()),
+                '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
 
                 // 인자가 있는 기본 화면들 (Privacy Screen 사용 ❌ - 각 화면 내부에서 설정/해제 합니다)
                 // 1. 주소 보기
-                '/receive-address': (context) =>
-                    buildScreenWithArgs(context, (args) => ReceiveAddressScreen(id: args['id'])),
+                '/receive-address':
+                    (context) => buildScreenWithArgs(context, (args) => ReceiveAddressScreen(id: args['id'])),
                 // 인자가 있는 기본 화면들 (Privacy Screen 사용)
-                '/address-list': (context) =>
-                    buildScreenWithArgs(context, (args) => AddressListScreen(id: args['id'])),
-                '/wallet-detail': (context) => buildScreenWithArgs(
+                '/address-list': (context) => buildScreenWithArgs(context, (args) => AddressListScreen(id: args['id'])),
+                '/wallet-detail':
+                    (context) => buildScreenWithArgs(
                       context,
                       (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint']),
                     ),
-                '/address-search': (context) =>
-                    buildScreenWithArgs(context, (args) => AddressSearchScreen(id: args['id'])),
-                '/transaction-detail': (context) => buildScreenWithArgs(
+                '/address-search':
+                    (context) => buildScreenWithArgs(context, (args) => AddressSearchScreen(id: args['id'])),
+                '/transaction-detail':
+                    (context) => buildScreenWithArgs(
                       context,
                       (args) => TransactionDetailScreen(id: args['id'], txHash: args['txHash']),
                     ),
-                '/transaction-fee-bumping': (context) => buildScreenWithArgs(
+                '/transaction-fee-bumping':
+                    (context) => buildScreenWithArgs(
                       context,
                       (args) => TransactionFeeBumpingScreen(
                         transaction: args['transaction'],
@@ -273,39 +267,42 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         walletName: args['walletName'],
                       ),
                     ),
-                '/unsigned-transaction-qr': (context) => buildScreenWithArgs(
+                '/unsigned-transaction-qr':
+                    (context) => buildScreenWithArgs(
                       context,
                       (args) => UnsignedTransactionQrScreen(walletName: args['walletName']),
                     ),
-                '/send': (context) => buildScreenWithArgs(
+                '/send':
+                    (context) => buildScreenWithArgs(
                       context,
-                      (args) => SendScreen(
-                          walletId: args['walletId'], sendEntryPoint: args['sendEntryPoint']),
+                      (args) => SendScreen(walletId: args['walletId'], sendEntryPoint: args['sendEntryPoint']),
                     ),
-                '/utxo-tag': (context) =>
-                    buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
-                '/select-donation-amount': (context) => buildScreenWithArgs(
+                '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
+                '/select-donation-amount':
+                    (context) => buildScreenWithArgs(
                       context,
-                      (args) =>
-                          SelectDonationAmountScreen(walletListLength: args['wallet-list-length']),
+                      (args) => SelectDonationAmountScreen(walletListLength: args['wallet-list-length']),
                     ),
-                '/onchain-donation-info': (context) => buildScreenWithArgs(
+                '/onchain-donation-info':
+                    (context) => buildScreenWithArgs(
                       context,
                       (args) => OnchainDonationInfoScreen(donationAmount: args['donation-amount']),
                     ),
-                '/lightning-donation-info': (context) => buildScreenWithArgs(
+                '/lightning-donation-info':
+                    (context) => buildScreenWithArgs(
                       context,
-                      (args) =>
-                          LightningDonationInfoScreen(donationAmount: args['donation-amount']),
+                      (args) => LightningDonationInfoScreen(donationAmount: args['donation-amount']),
                     ),
 
                 // 인자가 있고 로딩이 필요한 화면들
-                '/wallet-add-scanner': (context) => buildLoadingScreenWithArgs(
+                '/wallet-add-scanner':
+                    (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => WalletAddScannerScreen(importSource: args['walletImportSource']),
                     ),
 
-                '/wallet-info': (context) => buildLoadingScreenWithArgs(
+                '/wallet-info':
+                    (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => WalletInfoScreen(
                         id: args['id'],
@@ -313,7 +310,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         entryPoint: args['entryPoint'],
                       ),
                     ),
-                '/broadcasting-complete': (context) => buildLoadingScreenWithArgs(
+                '/broadcasting-complete':
+                    (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => BroadcastingCompleteScreen(
                         id: args['id'],
@@ -321,7 +319,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         isDonation: args['isDonation'],
                       ),
                     ),
-                '/utxo-selection': (context) => buildLoadingScreenWithArgs(
+                '/utxo-selection':
+                    (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => UtxoSelectionScreen(
                         selectedUtxoList: args['selectedUtxoList'],
@@ -329,13 +328,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         currentUnit: args['currentUnit'],
                       ),
                     ),
-                '/send-confirm': (context) => buildLoadingScreenWithArgs(
+                '/send-confirm':
+                    (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => SendConfirmScreen(currentUnit: args['currentUnit']),
                     ),
-                '/utxo-list': (context) =>
-                    buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
-                '/utxo-detail': (context) => buildLoadingScreenWithArgs(
+                '/utxo-list':
+                    (context) => buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
+                '/utxo-detail':
+                    (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
                     ),
@@ -352,16 +353,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 화면 생성 헬퍼 메서드
   /// 1. 인자가 있는 화면
   Widget buildScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
-    final Map<String, dynamic> args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
     return builder(args);
   }
 
   /// 2. CustomLoadingOverlay + 인자가 있는 화면
-  Widget buildLoadingScreenWithArgs(
-      BuildContext context, Widget Function(Map<String, dynamic>) builder) {
-    final Map<String, dynamic> args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+  Widget buildLoadingScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
+    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
     return CustomLoadingOverlay(child: builder(args));
   }
 }

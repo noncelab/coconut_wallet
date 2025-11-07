@@ -45,11 +45,6 @@ class NodeProvider extends ChangeNotifier {
 
   final _syncStateController = StreamController<NodeSyncState>.broadcast();
   final _walletStateController = StreamController<Map<int, WalletUpdateInfo>>.broadcast();
-  final _currentBlockController = StreamController<BlockTimestamp?>.broadcast();
-
-  final ValueNotifier<BlockTimestamp?> _currentBlockNotifier = ValueNotifier<BlockTimestamp?>(null);
-  Timer? _blockUpdateTimer;
-  ValueNotifier<BlockTimestamp?> get currentBlockNotifier => _currentBlockNotifier;
 
   /// 전체 동기화 상태를 구독할 수 있는 스트림
   Stream<NodeSyncState> get syncStateStream {
@@ -76,35 +71,6 @@ class NodeProvider extends ChangeNotifier {
           .cast<WalletUpdateInfo>()
           .listen(controller.add);
       controller.onCancel = () => subscription.cancel();
-    });
-  }
-
-  /// 현재 블록 높이 상태를 구독할 수 있는 스트림
-  Stream<BlockTimestamp?> get currentBlockStream {
-    return Stream.multi((controller) {
-      controller.add(_currentBlockNotifier.value);
-
-      final subscription = _currentBlockController.stream.listen(controller.add);
-      controller.onCancel = () => subscription.cancel();
-    });
-  }
-
-  Future<void> _updateCurrentBlock() async {
-    final result = await getLatestBlock();
-    Logger.log('NodeProvider: 현재 블록 높이 업데이트 시작 - ${result.value.height}');
-    if (result.isSuccess) {
-      // 블록 높이가 변경되었을 때만 업데이트
-      if (_currentBlockNotifier.value?.height != result.value.height) {
-        _currentBlockNotifier.value = result.value;
-        _currentBlockController.add(result.value);
-        Logger.log('NodeProvider: 현재 블록 높이 업데이트 - ${_currentBlockNotifier.value?.height}');
-      }
-    }
-  }
-
-  void _startBlockUpdates() {
-    _blockUpdateTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
-      _updateCurrentBlock();
     });
   }
 
@@ -239,8 +205,7 @@ class NodeProvider extends ChangeNotifier {
   void _createNewCompleter() {
     if (_initCompleter != null && !_initCompleter!.isCompleted) {
       try {
-        _initCompleter!
-            .completeError(Exception('NodeProvider: Previous initialization was cancelled'));
+        _initCompleter!.completeError(Exception('NodeProvider: Previous initialization was cancelled'));
       } catch (e) {
         // 이미 완료된 경우 무시
       }
@@ -291,9 +256,6 @@ class NodeProvider extends ChangeNotifier {
       if (_isWalletLoaded && _isFirstInitialization) {
         _subscribeInitialWallets();
       }
-
-      _updateCurrentBlock();
-      _startBlockUpdates();
     } catch (e) {
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
 
@@ -340,8 +302,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallets() async {
-    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted ||
-        _connectivityProvider.isNetworkOff) {
+    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isNetworkOff) {
       return Result.success(false);
     }
     final walletItems = _walletItemListNotifier.value;
@@ -386,8 +347,7 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getSocketConnectionStatus();
   }
 
-  Future<Result<TransactionRecord>> getTransactionRecord(
-      WalletListItemBase walletItem, String txHash) async {
+  Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) async {
     return _isolateManager.getTransactionRecord(walletItem, txHash);
   }
 
@@ -414,9 +374,6 @@ class NodeProvider extends ChangeNotifier {
       notifyListeners();
       if (result.isSuccess) {
         Logger.log('NodeProvider: Reconnect completed successfully');
-        // 연결 성공 후 현재 블록 높이 업데이트 시작
-        _updateCurrentBlock();
-        _startBlockUpdates();
       } else {
         _stateManager?.setNodeSyncStateToFailed();
         _setConnectionError(true);
@@ -444,10 +401,6 @@ class NodeProvider extends ChangeNotifier {
       // 스트림 구독 취소
       _stateSubscription?.cancel();
       _stateSubscription = null;
-
-      // 현재 블록 높이 업데이트 중단
-      _blockUpdateTimer?.cancel();
-      _blockUpdateTimer = null;
 
       // Isolate 정리
       await _isolateManager.closeIsolate();
@@ -491,9 +444,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
-    await service
-        .connect(server.host, server.port, ssl: server.ssl)
-        .timeout(const Duration(seconds: 3));
+    await service.connect(server.host, server.port, ssl: server.ssl).timeout(const Duration(seconds: 3));
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');
@@ -546,7 +497,6 @@ class NodeProvider extends ChangeNotifier {
     // Stream Controllers 정리
     _syncStateController.close();
     _walletStateController.close();
-    _currentBlockController.close();
 
     super.dispose();
   }
