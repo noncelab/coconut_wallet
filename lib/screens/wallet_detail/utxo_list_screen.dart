@@ -249,7 +249,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               headerGlobalKey: _headerKey,
               dropdownGlobalKey: _headerDropdownKey,
               isLoadComplete: canShowDropdown,
-              isBalanceHidden: _isSelectionMode,
               animatedBalanceData: AnimatedBalanceData(vm.balance, vm.prevBalance),
               selectedOption: order.text,
               onTapDropdown: () {

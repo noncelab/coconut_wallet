@@ -19,7 +19,6 @@ class UtxoListHeader extends StatefulWidget {
   final void Function() onPressedUnitToggle;
   final BitcoinUnit currentUnit;
   final Widget tagListWidget;
-  final bool isBalanceHidden;
   final GlobalKey orderDropdownButtonKey;
   final String orderText;
   final int selectedUtxoCount;
@@ -40,7 +39,6 @@ class UtxoListHeader extends StatefulWidget {
     required this.currentUnit,
     required this.onPressedUnitToggle,
     required this.tagListWidget,
-    this.isBalanceHidden = false,
     required this.orderDropdownButtonKey,
     required this.orderText,
     required this.selectedUtxoCount,
@@ -62,7 +60,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
       key: widget.headerGlobalKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        widget.isBalanceHidden ? _buildSelectionModeHeader() : _buildHeader(),
+        widget.isSelectionMode ? _buildSelectionModeHeader() : _buildHeader(),
         CoconutLayout.spacing_50h,
         widget.tagListWidget,
         CoconutLayout.spacing_300h,
