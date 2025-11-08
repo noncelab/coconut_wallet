@@ -55,7 +55,7 @@ tag_manage: "タグ管理"
 tag_manage_label: "タグ管理"
 extended_public_key: "ExPub Key"
 tx_memo: "取引メモ"
-tx_id: "取引ID"
+tx_id: "トランザクションID"
 block_num: "ブロック番号"
 inquiry_details: "お問い合わせ"
 utxo_total: "金額"
@@ -104,10 +104,10 @@ utxo_count: "($count 項目)"
 total_item_count: "(合計 $count 項目)"
 
 view_app_info: "アプリ情報"
-view_tx_details: "取引"
+view_tx_details: "トランザクション"
 view_more: "もっと見る"
 view_less: "閉じる"
-view_mempool: "メンプール"
+view_mempool: "mempool"
 view_all_addresses: "すべてのアドレス"
 select_utxo: "UTXO選択"
 select_all: "すべて選択"
@@ -116,7 +116,7 @@ delete_confirm: "削除確認"
 sign_multisig: "マルチシグ署名"
 
 forgot_password: "パスワードを忘れましたか？"
-tx_not_found: "取引が見つかりません"
+tx_not_found: "トランザクションが見つかりません"
 utxo_not_found: "UTXOが見つかりません"
 utxo_loading: "UTXO読み込み中"
 faucet_request: "テストビットコインをリクエストしました。しばらくお待ちください。"
@@ -143,7 +143,7 @@ donation:
   donation_address: "寄付アドレス"
   empty_enough_balance_wallet: "十分な残高のあるウォレットがありません。"
   unsigned_qr_tooltip: "署名するためにQRコードをスキャンしてください。"
-  signed_qr_tooltip: "署名された取引をスキャンしてください。"
+  signed_qr_tooltip: "署名されたトランザクションをスキャンしてください。"
   user_messages: [
     "愛を込めて",
     "心からのサポート",
@@ -314,7 +314,7 @@ positive_feedback_screen:
 
 # lib/screens/send
 broadcasting_complete_screen:
-  complete: "取引送信完了"
+  complete: "トランザクション送信完了"
   memo_placeholder: "メモを追加"
   memo_tags:
     - "支払い"
@@ -357,7 +357,7 @@ select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO選択"
   select_utxo_auto: "UTXO自動選択"
   select_utxo_auto_minimal_fee_description: "最小手数料でUTXOを自動選択"
-  select_utxo_auto_selected_utxo_description: "取引は選択されたUTXOのみを使用します"
+  select_utxo_auto_selected_utxo_description: "トランザクションは選択されたUTXOのみを使用します"
   n_utxos: " • ${count} utxos"
 
 # send screen end ----
@@ -365,7 +365,7 @@ select_wallet_with_options_bottom_sheet:
 broadcasting_screen:
   title: "最終確認"
   description: "以下の詳細で送信する準備ができました"
-  self_sending: "これは自分のウォレットへの送信取引です。"
+  self_sending: "これは自分のウォレットへ送信するトランザクションです。"
   error_popup_title: "送信失敗"
   btn_submit: "送信"
 send_address_screen:
@@ -412,10 +412,10 @@ unsigned_tx_qr_screen:
     step3_em: "カメラで下のQRコードをスキャン"
   fast_scan_mode: "高速スキャンモード"
   low_density_qr: "シンプルQR"
-  high_density_qr: "複雑QR"
+  high_density_qr: "高密度QR"
 
   guide_hardware_wallet:
-    step1: "署名プロセスを開始するために、ハードウェアウォレットで下のQRコードをスキャンしてください。"
+    step1: "署名を開始するために、ハードウェアウォレットで下のQRコードをスキャンしてください。"
 
 coconut_qr_scanner:
   reading_extra_data: "追加データを読み取り中\nスキャンを続けてください"
@@ -567,7 +567,7 @@ transaction_fee_bumping_screen:
   new_fee: "新しい手数料"
   sats_vb: "sat/vB"
   recommend_fee: "最小手数料: ${fee} sat/vB以上"
-  recommend_fee_info_rbf: "既存手数料より少なくとも1 sat/vB高くする必要があります。\nただし、（既存手数料 + 1）が低速送信手数料より低い場合は、低速送信手数料を推奨します。\n注意: 新しい取引サイズが増加した場合、推奨手数料と既存手数料の差が1 sat/vB未満に見える場合があります。"
+  recommend_fee_info_rbf: "既存手数料より少なくとも1 sat/vB高くする必要があります。\nただし、（既存手数料 + 1）が低速送信手数料より低い場合は、低速送信手数料を推奨します。\n注意: 新しいトランザクションサイズが増加した場合、推奨手数料と既存手数料の差が1 sat/vB未満に見える場合があります。"
   recommend_fee_info_cpfp: "新しい取引で不足している手数料を補う必要があります。\n • 新しい取引サイズ = ${newTxSize} vB、推奨手数料率 = ${recommendedFeeRate} sat/vB\n • 必要総手数料 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 新しい取引手数料 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 新しい取引手数料率 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "推奨手数料"
   estimated_fee: "推定総手数料約${fee} sats"
