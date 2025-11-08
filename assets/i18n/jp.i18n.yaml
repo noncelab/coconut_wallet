@@ -815,7 +815,7 @@ trade_exchange:
   binance: "Binance"
 
 fiat:
-  fiat: "フィアット"
+  fiat: "法定通貨"
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"
