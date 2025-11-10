@@ -432,7 +432,6 @@ class WalletProvider extends ChangeNotifier {
     // 가짜 잔액 활성화 상태라면 재분배 작업 수행
     if (_preferenceProvider.isFakeBalanceActive) {
       final fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
-      print('+++++ fakeBalanceTotalAmount: $fakeBalanceTotalAmount');
       await _preferenceProvider.distributeFakeBalance(
         _walletItemList,
         isFakeBalanceActive: true,
