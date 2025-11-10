@@ -52,9 +52,9 @@ class WalletHomeViewModel extends ChangeNotifier {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
-    _walletBalance = _walletProvider
-        .fetchWalletBalanceMap()
-        .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
+    _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
+      (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
+    );
     _walletProvider.walletLoadStateNotifier.addListener(updateWalletBalances);
 
     // NodeProvider의 변경사항 listening 추가
@@ -100,7 +100,8 @@ class WalletHomeViewModel extends ChangeNotifier {
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {
     print(
-        'DEBUG - _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}');
+      'DEBUG - _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}',
+    );
 
     if (!(_isNetworkOn ?? false)) {
       return NetworkStatus.offline;
@@ -165,10 +166,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   Map<int, AnimatedBalanceData> _updateBalanceMap(Map<int, Balance> balanceMap) {
     return balanceMap.map((key, balance) {
       final prev = _walletBalance[key]?.current ?? 0;
-      return MapEntry(
-        key,
-        AnimatedBalanceData(balance.total, prev),
-      );
+      return MapEntry(key, AnimatedBalanceData(balance.total, prev));
     });
   }
 
@@ -196,15 +194,16 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     /// 지갑 즐겨찾기 변동 체크
-    if (_favoriteWallets.map((w) => w.id).toList().toString() !=
-            _preferenceProvider.favoriteWalletIds.toString() &&
+    if (_favoriteWallets.map((w) => w.id).toList().toString() != _preferenceProvider.favoriteWalletIds.toString() &&
         walletItemList.isNotEmpty) {
       loadFavoriteWallets();
     }
 
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
-    if (!const SetEquality().equals(_excludedFromTotalBalanceWalletIds.toSet(),
-        _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet())) {
+    if (!const SetEquality().equals(
+      _excludedFromTotalBalanceWalletIds.toSet(),
+      _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet(),
+    )) {
       _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     }
     notifyListeners();
@@ -223,7 +222,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   void clearFakeBlanceTotalAmount() {
     _preferenceProvider.clearFakeBalanceTotalAmount();
-    _preferenceProvider.changeIsFakeBalanceActive(false); // 가짜잔액 초기화시 비활성화도 같이 수행(Wallet_home 에서만)
+    _preferenceProvider.toggleFakeBalanceActivation(false); // 가짜잔액 초기화시 비활성화도 같이 수행(Wallet_home 에서만)
     notifyListeners();
   }
 
@@ -267,8 +266,11 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isWalletListChanged(List<WalletListItemBase> oldList, List<WalletListItemBase> newList,
-      Map<int, AnimatedBalanceData> walletBalanceMap) {
+  bool isWalletListChanged(
+    List<WalletListItemBase> oldList,
+    List<WalletListItemBase> newList,
+    Map<int, AnimatedBalanceData> walletBalanceMap,
+  ) {
     if (oldList.length != newList.length) return true;
 
     bool walletListChanged = oldList.asMap().entries.any((entry) {
@@ -289,11 +291,11 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     final ids = _preferenceProvider.favoriteWalletIds;
 
-    final wallets = ids
-        .map((id) =>
-            _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
-        .whereType<WalletListItemBase>()
-        .toList();
+    final wallets =
+        ids
+            .map((id) => _walletProvider.walletItemListNotifier.value.firstWhereOrNull((w) => w.id == id))
+            .whereType<WalletListItemBase>()
+            .toList();
 
     _favoriteWallets = wallets;
 

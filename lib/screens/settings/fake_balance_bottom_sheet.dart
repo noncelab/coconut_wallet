@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 
 enum FakeBalanceInputError {
   none,
-  notEnoughForAllWallets, // 지갑 수만큼 1사토시 이상 배정 불가한 경우
   exceedsTotalSupply, // 2100만 BTC를 초과하는 경우
 }
 
@@ -29,7 +28,6 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
 
   late final WalletProvider _walletProvider;
   late final PreferenceProvider _preferenceProvider;
-  late int _minimumSatoshi;
   final int _maximumAmount = 21000000;
   final int _maxInputLength = 17; // 21000000.00000000
 
@@ -47,7 +45,6 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
     _isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
 
     _walletProvider = Provider.of<WalletProvider>(context, listen: false);
-    _minimumSatoshi = _walletProvider.walletItemList.length;
     if (_fakeBalanceTotalBtc != null) {
       if (_fakeBalanceTotalBtc == 0) {
         // 0일 때
@@ -72,7 +69,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
             _textEditingController.text[0] == '0' &&
             _textEditingController.text[1] == '0' &&
             !_textEditingController.text.contains('.')) {
-          // 정수 자리의 첫번째가 0인 경우 0의 추가입력을 막음
+          // 정수 자리의 첫번째가 0인 경우 0의 추가 입력을 막음
           _textEditingController.text = _textEditingController.text.substring(1);
           _textEditingController.selection = TextSelection.fromPosition(
             TextPosition(offset: _textEditingController.text.length),
@@ -87,14 +84,10 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
 
         setState(() {
           _fakeBalanceTotalBtc = input;
-          debugPrint('_fakeBalanceTotalBtc : $_fakeBalanceTotalBtc _maximumAmount: $_maximumAmount');
           if (_fakeBalanceTotalBtc == null) {
             _inputError = FakeBalanceInputError.none;
           } else {
-            if (_fakeBalanceTotalBtc! > 0 &&
-                _fakeBalanceTotalBtc! < UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi)) {
-              _inputError = FakeBalanceInputError.notEnoughForAllWallets;
-            } else if (_fakeBalanceTotalBtc! > _maximumAmount) {
+            if (_fakeBalanceTotalBtc! > _maximumAmount) {
               _inputError = FakeBalanceInputError.exceedsTotalSupply;
             } else {
               _inputError = FakeBalanceInputError.none;
@@ -183,7 +176,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             controller: _textEditingController,
                             focusNode: _textFieldFocusNode,
                             onChanged: (text) {},
-                            backgroundColor: CoconutColors.white.withOpacity(0.15),
+                            backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
                             errorColor: CoconutColors.hotPink,
                             placeholderColor: CoconutColors.gray700,
                             activeColor: CoconutColors.white,
@@ -192,7 +185,7 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
                             errorText:
                                 _inputError == FakeBalanceInputError.exceedsTotalSupply
                                     ? '  ${t.settings_screen.fake_balance.fake_balance_input_exceeds_error}'
-                                    : '  ${t.settings_screen.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(_minimumSatoshi).toStringAsFixed(8), sats: _walletProvider.walletItemList.length)}',
+                                    : '',
                             isError: _inputError != FakeBalanceInputError.none,
                             maxLines: 1,
                           ),
@@ -258,18 +251,22 @@ class _FakeBalanceBottomSheetState extends State<FakeBalanceBottomSheet> {
 
   void _onComplete() async {
     final wallets = _walletProvider.walletItemList;
-    debugPrint('_isFakeBalanceActive: $_isFakeBalanceActive');
     if (!_isFakeBalanceActive) {
-      await _preferenceProvider.changeIsFakeBalanceActive(false);
+      await _preferenceProvider.toggleFakeBalanceActivation(false);
       return;
     }
     if (_fakeBalanceTotalBtc == null || wallets.isEmpty) return;
 
     // fake balance 토글 상태 변경 시 상태 업데이트
     if (_preferenceProvider.isFakeBalanceActive != _isFakeBalanceActive) {
-      await _preferenceProvider.changeIsFakeBalanceActive(_isFakeBalanceActive);
+      await _preferenceProvider.toggleFakeBalanceActivation(_isFakeBalanceActive);
     }
 
-    _preferenceProvider.initializeFakeBalance(wallets, fakeBalanceTotalAmount: _fakeBalanceTotalBtc);
+    final isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
+    _preferenceProvider.distributeFakeBalance(
+      wallets,
+      isFakeBalanceActive: isFakeBalanceActive,
+      fakeBalanceTotalSats: UnitUtil.convertBitcoinToSatoshi(_fakeBalanceTotalBtc!.toDouble()).toDouble(),
+    );
   }
 }

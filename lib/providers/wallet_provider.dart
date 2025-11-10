@@ -164,8 +164,9 @@ class WalletProvider extends ChangeNotifier {
       if (_walletItemList[index].walletImportSource != WalletImportSource.coconutVault) {
         // case 5
         return ResultOfSyncFromVault(
-            result: WalletSyncResult.existingWalletUpdateImpossible,
-            walletId: _walletItemList[index].id);
+          result: WalletSyncResult.existingWalletUpdateImpossible,
+          walletId: _walletItemList[index].id,
+        );
       }
       // case 3
       result = WalletSyncResult.existingWalletNoUpdate;
@@ -183,8 +184,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // 새 지갑 추가
-    final sameNameIndex =
-        _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
+    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
       return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
@@ -204,8 +204,7 @@ class WalletProvider extends ChangeNotifier {
 
   /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
-    final sameNameIndex =
-        _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
+    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
     assert(sameNameIndex == -1);
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
@@ -214,8 +213,9 @@ class WalletProvider extends ChangeNotifier {
 
     if (index != -1) {
       return ResultOfSyncFromVault(
-          result: WalletSyncResult.existingWalletUpdateImpossible,
-          walletId: _walletItemList[index].id);
+        result: WalletSyncResult.existingWalletUpdateImpossible,
+        walletId: _walletItemList[index].id,
+      );
     }
     // case 1: 새 지갑 생성
     bool isMultisig = watchOnlyWallet.signers != null;
@@ -285,10 +285,14 @@ class WalletProvider extends ChangeNotifier {
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
       await _preferenceProvider.clearFakeBalanceTotalAmount();
-      await _preferenceProvider.changeIsFakeBalanceActive(false);
+      await _preferenceProvider.toggleFakeBalanceActivation(false);
     } else if (_preferenceProvider.isFakeBalanceActive) {
-      // 가짜 잔액 활성화 상태라면 재분배 작업 수행
-      await _preferenceProvider.initializeFakeBalance(_walletItemList);
+      final fakeBalanceTotalSats = _preferenceProvider.fakeBalanceTotalAmount;
+      await _preferenceProvider.distributeFakeBalance(
+        _walletItemList,
+        isFakeBalanceActive: true,
+        fakeBalanceTotalSats: fakeBalanceTotalSats?.toDouble(),
+      );
     }
 
     notifyListeners();
@@ -303,13 +307,14 @@ class WalletProvider extends ChangeNotifier {
 
     // 싱글시그니처 지갑만 허용하므로, _requiredSignatureCount과 _signers는 null로 할당
     WatchOnlyWallet watchOnlyWallet = WatchOnlyWallet(
-        name,
-        walletItemList[index].colorIndex,
-        walletItemList[index].iconIndex,
-        walletItemList[index].descriptor,
-        null,
-        null,
-        walletItemList[index].walletImportSource.name);
+      name,
+      walletItemList[index].colorIndex,
+      walletItemList[index].iconIndex,
+      walletItemList[index].descriptor,
+      null,
+      null,
+      walletItemList[index].walletImportSource.name,
+    );
     _walletRepository.updateWalletUI(id, watchOnlyWallet);
     _setWalletItemList(await _fetchWalletListFromDB());
 
@@ -323,10 +328,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     final realmBalance = _walletRepository.getWalletBalance(walletId);
-    return Balance(
-      realmBalance.confirmed,
-      realmBalance.unconfirmed,
-    );
+    return Balance(realmBalance.confirmed, realmBalance.unconfirmed);
   }
 
   Future<List<WalletAddress>> getWalletAddressList(
@@ -336,8 +338,7 @@ class WalletProvider extends ChangeNotifier {
     bool isChange,
     bool showOnlyUnusedAddresses,
   ) async {
-    return _addressRepository.getWalletAddressList(
-        wallet, cursor, count, isChange, showOnlyUnusedAddresses);
+    return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange, showOnlyUnusedAddresses);
   }
 
   List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {
@@ -353,11 +354,7 @@ class WalletProvider extends ChangeNotifier {
   }
 
   bool containsAddress(int walletId, String address, {bool? isChange}) {
-    return _addressRepository.containsAddress(
-      walletId,
-      address,
-      isChange: isChange,
-    );
+    return _addressRepository.containsAddress(walletId, address, isChange: isChange);
   }
 
   List<WalletAddress> filterChangeAddressesFromList(int walletId, List<String> addresses) {
@@ -434,7 +431,13 @@ class WalletProvider extends ChangeNotifier {
   Future<void> _handleNewWalletAdded(int walletId) async {
     // 가짜 잔액 활성화 상태라면 재분배 작업 수행
     if (_preferenceProvider.isFakeBalanceActive) {
-      await _preferenceProvider.initializeFakeBalance(_walletItemList);
+      final fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
+      print('+++++ fakeBalanceTotalAmount: $fakeBalanceTotalAmount');
+      await _preferenceProvider.distributeFakeBalance(
+        _walletItemList,
+        isFakeBalanceActive: true,
+        fakeBalanceTotalSats: fakeBalanceTotalAmount?.toDouble(),
+      );
     }
 
     // 지갑 순서 목록에 추가
