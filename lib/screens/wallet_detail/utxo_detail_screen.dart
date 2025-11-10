@@ -205,7 +205,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                         onPressed: () async {
                           final viewModel = context.read<UtxoDetailViewModel>();
                           final result = await viewModel.toggleUtxoLockStatus();
-                          if (mounted && !result) {
+                          if (context.mounted && !result) {
                             CoconutToast.showWarningToast(
                               context: context,
                               text:
@@ -217,15 +217,17 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                           }
                           _removeUtxoTooltip();
                           vibrateLight();
-                          CoconutToast.showToast(
-                            context: context,
-                            isVisibleIcon: true,
-                            iconPath: 'assets/svg/circle-info.svg',
-                            text:
-                                utxoStatus != UtxoStatus.locked
-                                    ? t.utxo_detail_screen.utxo_locked_toast_msg
-                                    : t.utxo_detail_screen.utxo_unlocked_toast_msg,
-                          );
+                          if (context.mounted) {
+                            CoconutToast.showToast(
+                              context: context,
+                              isVisibleIcon: true,
+                              iconPath: 'assets/svg/circle-info.svg',
+                              text:
+                                  utxoStatus != UtxoStatus.locked
+                                      ? t.utxo_detail_screen.utxo_locked_toast_msg
+                                      : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+                            );
+                          }
                         },
                       ),
                     TransactionInputOutputCard(

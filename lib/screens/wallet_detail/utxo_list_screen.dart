@@ -388,9 +388,9 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       bottom: 50,
       child: Row(
         children: [
-          Expanded(child: _buildLockButton(false, t.utxo_detail_screen.utxo_unlocked)),
+          Expanded(child: _buildLockButton(false, t.utxo_list_screen.utxo_unlocked_button)),
           const SizedBox(width: 16),
-          Expanded(child: _buildLockButton(true, t.utxo_detail_screen.utxo_locked)),
+          Expanded(child: _buildLockButton(true, t.utxo_list_screen.utxo_locked_button)),
         ],
       ),
     );
