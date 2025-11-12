@@ -104,10 +104,10 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
       // B$HT: hex+base32, psbt 형식
       // B$2T: transaction+base32, transaction 형식
 
-      // encoding: 2(base32), Z(zlib+base32)
-      if (encoding != '2' && encoding != 'Z') return false;
-      // dataType: J(Json), P(PSBT), A(Address), M(Multisig Info), S(Seed), T(Transaction/Text)
-      if (!['J', 'P', 'A', 'M', 'S', 'T'].contains(dataType)) return false;
+      // encoding: 2(base32), Z(zlib+base32) H(hex)
+      if (encoding != '2' && encoding != 'Z' && encoding != 'H') return false;
+      // dataType: J(Json), P(PSBT), T(Transaction/Text)
+      if (!['J', 'P', 'T'].contains(dataType)) return false;
 
       // total, index가 base36 숫자인지 확인
       try {
