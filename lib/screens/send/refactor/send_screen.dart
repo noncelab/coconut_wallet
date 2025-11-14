@@ -1535,7 +1535,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           _viewModel.setAmountText(bip21Data.amount!, index);
         }
       } else {
-        _addressControllerList[index].text = scannedData;
+        final normalized = normalizeAddress(scannedData);
+        _addressControllerList[index].text = normalized;
+        _viewModel.setAddressText(normalized, index);
       }
     }
     _disposeQrViewController();

@@ -1,7 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
@@ -73,7 +72,6 @@ class TransactionBuilder {
   List<UtxoState>? _selectedUtxos;
   Transaction? _transaction;
   int? _estimatedFeeByFeeEstimator; // 처음엔 추정된 값으로 초기화됨
-  int? _estimatedFeeByTransaction; // 트랜잭션 생성 후에 Transaction 객체에서 추정한 값 (더 정확)
   int? _subtractedFeeFromAmount; // 최종 생성된 tx.estimateFee()와 실제로 사용되는 fee가 다를 때 설정됨
 
   TransactionBuilder({
@@ -467,30 +465,6 @@ class TransactionBuilder {
     final inputSum = _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
     final outputSum = _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
     return inputSum - outputSum;
-  }
-
-  int _estimateFee() {
-    assert(_transaction != null);
-
-    /// change가 dust미만이어서 change output이 없는 경우는 그 금액이 수수료로 소진된다는 의미입니다.
-    /// 하지만 _transaction의 estimatedFee 결과에는 change값이 포함되지 않으므로 아래와 같이 조치합니다.
-    final hasChangeOutput = _transaction!.outputs.any((output) => output.isChangeOutput == true);
-    if (!hasChangeOutput) {
-      final inputSum = _selectedUtxos!.fold(0, (previousValue, element) => previousValue + element.amount);
-      final outputSum = _transaction!.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
-
-      return inputSum - outputSum;
-    }
-
-    if (walletListItemBase.walletType == WalletType.multiSignature) {
-      return _transaction!.estimateFee(
-        feeRate,
-        walletListItemBase.walletType.addressType,
-        requiredSignature: walletListItemBase.multisigConfig!.requiredSignature,
-        totalSigner: walletListItemBase.multisigConfig!.totalSigner,
-      );
-    }
-    return _transaction!.estimateFee(feeRate, walletListItemBase.walletType.addressType);
   }
 
   /// availableUtxos중 selectedUtxos를 제외한 utxo들을 id로 비교해서 반환한다.
