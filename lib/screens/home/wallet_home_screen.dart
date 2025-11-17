@@ -1026,43 +1026,61 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SvgPicture.asset(iconSource, fit: BoxFit.fill, width: 24, height: 24),
-              CoconutLayout.spacing_300w,
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
+                  SvgPicture.asset(iconSource, fit: BoxFit.fill, width: 24, height: 24),
+                  CoconutLayout.spacing_300w,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(transactionTimeStamp[0], style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                      CoconutLayout.spacing_50w,
-                      Text('|', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                      CoconutLayout.spacing_50w,
-                      Text(transactionTimeStamp[1], style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                      Row(
+                        children: [
+                          Text(
+                            transactionTimeStamp[0],
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          ),
+                          CoconutLayout.spacing_50w,
+                          Text('|', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                          CoconutLayout.spacing_50w,
+                          Text(
+                            transactionTimeStamp[1],
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          ),
+                        ],
+                      ),
+                      Text(walletName, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
                     ],
                   ),
-                  Text(walletName, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
                 ],
               ),
-            ],
+            ),
           ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                (() {
-                  final now = DateTime.now();
-                  final diffDays = now.difference(txDate).inDays;
-                  return t.relative_time.days_ago(n: diffDays);
-                })(),
-                style: CoconutTypography.body3_12,
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    (() {
+                      final now = DateTime.now();
+                      final diffDays = now.difference(txDate).inDays;
+                      return t.relative_time.days_ago(n: diffDays);
+                    })(),
+                    style: CoconutTypography.body3_12,
+                  ),
+                  Text('$prefix $amountString', style: CoconutTypography.body2_14_Number),
+                ],
               ),
-              Text('$prefix $amountString', style: CoconutTypography.body2_14_Number),
-            ],
+            ),
           ),
         ],
       );
@@ -1154,7 +1172,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               onPressed: () {
                 CommonBottomSheets.showCustomHeightBottomSheet(
                   context: context,
-                  heightRatio: 0.5,
+                  heightRatio: 0.55,
                   child: AnalysisPeriodBottomSheet(
                     onSelected: (days) {
                       _viewModel.setAnalysisPeriod(days);
@@ -1222,9 +1240,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       children: [
                         Row(
                           children: [
-                            Text(
-                              _viewModel.recentTransactionAnalysis!.titleString,
-                              style: CoconutTypography.body2_14_NumberBold,
+                            Expanded(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  _viewModel.recentTransactionAnalysis!.titleString,
+                                  style: CoconutTypography.body2_14_NumberBold,
+                                ),
+                              ),
                             ),
                             Text(
                               _viewModel.recentTransactionAnalysis!.totalAmountResult,
@@ -1316,15 +1340,27 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               ],
             ),
             if (type == TransactionType.self) ...[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
-                  Text(t.fee, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                ],
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
+                      Text(t.fee, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                    ],
+                  ),
+                ),
               ),
             ] else ...[
-              Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
+                ),
+              ),
             ],
           ],
         ),

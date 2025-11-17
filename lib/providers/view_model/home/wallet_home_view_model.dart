@@ -33,6 +33,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   WalletProvider _walletProvider;
   final NodeProvider _nodeProvider;
   final Stream<NodeSyncState> _syncNodeStateStream;
+  final Stream<BlockTimestamp?> _currentBlockStream;
   late final PreferenceProvider _preferenceProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
@@ -46,6 +47,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isEmptyFavoriteWallet = false; // 즐겨찾기 설정된 지갑이 없는지 여부
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
+  StreamSubscription<BlockTimestamp?>? _currentBlockSubscription;
   List<WalletListItemBase> _favoriteWallets = [];
   final List<HomeFeature> _homeFeatures = [];
   late int _analysisPeriod;
@@ -95,11 +97,13 @@ class WalletHomeViewModel extends ChangeNotifier {
     this._visibilityProvider,
     this._connectivityProvider,
     this._nodeProvider,
-  ) : _syncNodeStateStream = _nodeProvider.syncStateStream {
+  ) : _syncNodeStateStream = _nodeProvider.syncStateStream,
+      _currentBlockStream = _nodeProvider.currentBlockStream {
     _isTermsShortcutVisible = _visibilityProvider.visibleTermsShortcut;
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
     _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
+    _currentBlockSubscription = _currentBlockStream.listen(_handleCurrentBlockUpdate);
 
     _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
       (key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)),
@@ -195,10 +199,35 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   void _handleCurrentBlockUpdate(BlockTimestamp? currentBlock) {
     _currentBlock = currentBlock;
-    Logger.log('WalletHomeViewModel: 현재 블록 높이 업데이트 - ${currentBlock?.height}');
-    // latest tx 조회 및 analysis 수행
-    getPendingAndRecentDaysTransactions(currentBlock?.height, kRecenctTransactionDays);
-    getRecentTransactionAnalysis(_analysisPeriod);
+    Logger.log('WalletHomeViewModel: 현재 블록 높이 업데이트 - ${currentBlock?.height}, 동기화 상태: $_nodeSyncState');
+
+    // 동기화가 완료되었고 블록 높이가 있으면 트랜잭션 조회
+    if (_nodeSyncState == NodeSyncState.completed && currentBlock?.height != null) {
+      final bool shouldFetchRecentTx = homeFeatures.any(
+        (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name && f.isEnabled,
+      );
+      final bool shouldFetchAnalysis = homeFeatures.any(
+        (f) => f.homeFeatureTypeString == HomeFeatureType.analysis.name && f.isEnabled,
+      );
+
+      Logger.log(
+        'WalletHomeViewModel: _handleCurrentBlockUpdate - shouldFetchRecentTx: $shouldFetchRecentTx, shouldFetchAnalysis: $shouldFetchAnalysis',
+      );
+
+      if (shouldFetchRecentTx) {
+        Logger.log('WalletHomeViewModel: 동기화 완료 후 블록 높이 업데이트 - 트랜잭션 조회 실행 (블록 높이: ${currentBlock!.height})');
+        getPendingAndRecentDaysTransactions(currentBlock.height, kRecenctTransactionDays);
+      }
+
+      if (shouldFetchAnalysis) {
+        getRecentTransactionAnalysis(_analysisPeriod);
+      }
+    } else {
+      Logger.log(
+        'WalletHomeViewModel: _handleCurrentBlockUpdate - 트랜잭션 조회 건너뜀 (동기화 상태: $_nodeSyncState, 블록 높이: ${currentBlock?.height})',
+      );
+    }
+
     notifyListeners();
   }
 
@@ -220,19 +249,32 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   Future<void> updateWalletBalancesAndRecentTxs() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
+    debugPrint('DEBUG11 - updatedWalletBalance: $updatedWalletBalance');
     _walletBalance = updatedWalletBalance;
+    debugPrint('DEBUG11 - _walletBalance: $_walletBalance');
+    Logger.log('WalletHomeViewModel: updateWalletBalancesAndRecentTxs - currentBlock?.height: ${currentBlock?.height}');
     final bool shouldFetchRecentTx = homeFeatures.any(
       (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name && f.isEnabled,
     );
+    debugPrint('DEBUG11 - shouldFetchRecentTx: $shouldFetchRecentTx');
     final bool shouldFetchAnalysis = homeFeatures.any(
       (f) => f.homeFeatureTypeString == HomeFeatureType.analysis.name && f.isEnabled,
     );
+    debugPrint('DEBUG11 - shouldFetchAnalysis: $shouldFetchAnalysis');
     if (shouldFetchRecentTx && currentBlock?.height != null) {
+      Logger.log('WalletHomeViewModel: updateWalletBalancesAndRecentTxs - 트랜잭션 조회 실행 (블록 높이: ${currentBlock!.height})');
       getPendingAndRecentDaysTransactions(currentBlock!.height, kRecenctTransactionDays);
+      debugPrint('DEBUG11 - getPendingAndRecentDaysTransactions');
+    } else if (shouldFetchRecentTx && currentBlock?.height == null) {
+      Logger.log(
+        'WalletHomeViewModel: updateWalletBalancesAndRecentTxs - 블록 높이가 null이어서 트랜잭션 조회 건너뜀 (나중에 _handleCurrentBlockUpdate에서 처리)',
+      );
     }
     if (shouldFetchAnalysis && currentBlock?.height != null) {
       getRecentTransactionAnalysis(_analysisPeriod);
+      debugPrint('DEBUG11 - getRecentTransactionAnalysis');
     }
+    debugPrint('DEBUG11 - notifyListeners');
     notifyListeners();
   }
 
@@ -528,6 +570,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _currentBlockSubscription?.cancel();
     _syncNodeStateSubscription?.cancel();
     _nodeProvider.removeListener(_onNodeProviderChanged);
     super.dispose();

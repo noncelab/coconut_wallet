@@ -153,6 +153,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           appBar: CoconutAppBar.build(
+            backgroundColor: CoconutColors.black,
             context: context,
             isBottom: true,
             onBackPressed: () {
@@ -194,7 +195,14 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                         CoconutLayout.spacing_100h,
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-                          child: Text(t.wallet_home_screen.edit.title, style: CoconutTypography.heading3_21_Bold),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width / 3 * 2,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(t.wallet_home_screen.edit.title, style: CoconutTypography.heading3_21_Bold),
+                            ),
+                          ),
                         ),
                         const Divider(height: 1, color: CoconutColors.gray700),
                         if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
@@ -435,9 +443,14 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                           children: [
                                             Align(
                                               alignment: Alignment.topLeft,
-                                              child: Text(
-                                                _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
-                                                style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                                              child: MediaQuery(
+                                                data: MediaQuery.of(
+                                                  context,
+                                                ).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                                child: Text(
+                                                  _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
+                                                  style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                                                ),
                                               ),
                                             ),
                                             Align(
@@ -545,7 +558,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
         }
         return AnimatedCrossFade(
           duration: const Duration(milliseconds: 300),
-          firstChild: SizedBox(height: viewModel.tempIsBalanceHidden ? 12 : 0),
+          firstChild: const SizedBox(height: 6),
           secondChild: Column(
             children: [
               Container(

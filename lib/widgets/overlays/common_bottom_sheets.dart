@@ -146,114 +146,111 @@ class CommonBottomSheets {
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+      ),
       builder: (context) {
-        return DraggableScrollableSheet(
-          controller: draggableController,
-          initialChildSize: finalInitialSize,
-          minChildSize: minChildSize,
-          maxChildSize: maxChildSize,
-          expand: false,
-          builder: (context, scrollController) {
-            void handleDrag() {
-              if (isAnimating) return;
-              final extent = draggableController.size;
-              final targetExtent =
-                  (extent - minChildSize).abs() < (extent - maxChildSize).abs() ? minChildSize + 0.01 : maxChildSize;
+        return ClipRRect(
+          borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
+          child: DraggableScrollableSheet(
+            controller: draggableController,
+            initialChildSize: finalInitialSize,
+            minChildSize: minChildSize,
+            maxChildSize: maxChildSize,
+            expand: false,
+            builder: (context, scrollController) {
+              void handleDrag() {
+                if (isAnimating) return;
+                final extent = draggableController.size;
+                final targetExtent =
+                    (extent - minChildSize).abs() < (extent - maxChildSize).abs() ? minChildSize + 0.01 : maxChildSize;
 
-              isAnimating = true;
-              draggableController
-                  .animateTo(targetExtent, duration: const Duration(milliseconds: 50), curve: Curves.easeOut)
-                  .whenComplete(() {
-                    isAnimating = false;
-                  });
-            }
+                isAnimating = true;
+                draggableController
+                    .animateTo(targetExtent, duration: const Duration(milliseconds: 50), curve: Curves.easeOut)
+                    .whenComplete(() {
+                      isAnimating = false;
+                    });
+              }
 
-            return NotificationListener<ScrollNotification>(
-              onNotification: (notification) {
-                if (notification is ScrollEndNotification) {
-                  handleDrag();
-                  return true;
-                }
-                return false;
-              },
-              child: Column(
-                children: [
-                  if (showDragHandle)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onVerticalDragUpdate: (details) {
-                        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                        draggableController.jumpTo(draggableController.size + delta);
-                      },
-                      onVerticalDragEnd: (details) {
-                        handleDrag();
-                      },
-                      onVerticalDragCancel: () {
-                        handleDrag();
-                      },
-                      child: Container(
-                        color: CoconutColors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Center(
+              return NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollEndNotification) {
+                    handleDrag();
+                    return true;
+                  }
+                  return false;
+                },
+                child: Container(
+                  color: CoconutColors.black,
+                  child: Column(
+                    children: [
+                      if (showDragHandle)
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onVerticalDragUpdate: (details) {
+                            final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                            draggableController.jumpTo(draggableController.size + delta);
+                          },
+                          onVerticalDragEnd: (details) {
+                            handleDrag();
+                          },
+                          onVerticalDragCancel: () {
+                            handleDrag();
+                          },
                           child: Container(
-                            width: 55,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: CoconutColors.gray400,
-                              borderRadius: BorderRadius.circular(4),
+                            color: CoconutColors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                              child: Container(
+                                width: 55,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: CoconutColors.gray400,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  if (title != null)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onVerticalDragUpdate: (details) {
-                        final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
-                        draggableController.jumpTo(draggableController.size + delta);
-                      },
-                      onVerticalDragEnd: (details) {
-                        handleDrag();
-                      },
-                      onVerticalDragCancel: () {
-                        handleDrag();
-                      },
-                      child: ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(24),
-                          topRight: Radius.circular(24),
-                        ),
-                        child: CoconutAppBar.build(
-                          title: title,
-                          context: context,
-                          onBackPressed: null,
-                          subLabel: Text(
-                            subLabel ?? '',
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.black),
+                      if (title != null)
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onVerticalDragUpdate: (details) {
+                            final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
+                            draggableController.jumpTo(draggableController.size + delta);
+                          },
+                          onVerticalDragEnd: (details) {
+                            handleDrag();
+                          },
+                          onVerticalDragCancel: () {
+                            handleDrag();
+                          },
+                          child: CoconutAppBar.build(
+                            title: title,
+                            context: context,
+                            onBackPressed: null,
+                            subLabel: Text(
+                              subLabel ?? '',
+                              style: CoconutTypography.body3_12.setColor(CoconutColors.black),
+                            ),
+                            showSubLabel: subLabel != null,
+                            isBottom: true,
                           ),
-                          showSubLabel: subLabel != null,
-                          isBottom: true,
+                        ),
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          child: childBuilder(scrollController),
                         ),
                       ),
-                    ),
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-                        child: childBuilder(scrollController),
-                      ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         );
       },
     );
