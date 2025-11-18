@@ -1028,7 +1028,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         message = '';
         break;
     }
-    Logger.log('Error message: $message');
+    if (message.isNotEmpty) Logger.log('Error message: $message');
 
     return CoconutAppBar.buildHomeAppbar(
       context: context,
