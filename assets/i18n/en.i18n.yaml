@@ -97,6 +97,12 @@ electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
 
+relative_time:
+  days_ago(cardinal):
+    zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
+    one: "1 day ago"   # 1일
+    other: "${n} days ago"  # 2일 이상
+
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
 utxo_count: "($count items)"
@@ -185,6 +191,50 @@ pin_check_screen:
   text: "Enter your password"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "View All My Wallets"
+  edit_home_screen: "Edit Home Screen"
+  edit:
+    title: "You can hide or add features\non the home screen"
+    hide_balance: "Hide Balance"
+    hide_balance_on_home: "Balance will not be displayed on the home screen."
+    fake_balance:
+      fake_balance_setting: "Set Fake Balance"
+      fake_balance_display: "Show Fake Balance"
+      fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
+      fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
+      fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
+    category:
+      total_balance: "Total\nBalance"
+      wallet_list: "Wallet\nList"
+      recent_transactions: "Recent\nTransactions"
+      analysis: "Analysis"
+    alert: 
+          empty_fake_balance: "Enter Fake Balance"
+          empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
+          set_to_0: "Set balance to 0 BTC"
+          enter_again: "Try again"
+  empty_recent_transaction: "No recent transactions"
+  syncing_recent_transaction: "Syncing recent transactions"
+  empty_analysis_result: "No transactions needed for analysis"
+  analysis_period: "Recent ${days} days • ${transaction_type}"
+  analysis_period_custom: "Custom • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "Analysis Period"
+    days_15: "15 days"
+    days_30: "30 days"
+    days_60: "60 days"
+    days_90: "90 days"
+    custom: "Custom"
+    transaction_type: "Transaction Type"
+
+  transaction_count: "Transaction $count times"
+  count: "$count times"
+  increase: "Increased"
+  decrease: "Decreased"
+  sent: "Sent"
+  received: "Received"
+
 wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"
@@ -252,7 +302,6 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
-  view_all_wallets: "View All My Wallets"
   primary_wallet: "Primary Wallet"
   exclude_from_total_amount: "Excluded from Home Total"
   home_balance: "Home Balance"
@@ -451,13 +500,6 @@ settings_screen:
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
   change_password: "Change Password"
-  hide_balance: "Hide Balance"
-  fake_balance:
-    fake_balance_setting: "Set Fake Balance"
-    fake_balance_display: "Show Fake Balance"
-    fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
-    fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
-    fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
   language: "Language"
   korean: "한국어"
   english: "English"

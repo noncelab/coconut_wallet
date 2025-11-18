@@ -19,6 +19,8 @@ class FixedBottomButton extends StatefulWidget {
     this.subWidget,
     this.backgroundColor = CoconutColors.primary,
     this.pressedBackgroundColor,
+    this.gradientKey,
+    this.buttonKey,
   });
 
   final Function onButtonClicked;
@@ -33,6 +35,8 @@ class FixedBottomButton extends StatefulWidget {
   final Widget? subWidget;
   final Color backgroundColor;
   final Color? pressedBackgroundColor;
+  final Key? gradientKey;
+  final Key? buttonKey;
 
   @override
   State<FixedBottomButton> createState() => _FixedBottomButtonState();
@@ -48,6 +52,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
         children: [
           if (widget.showGradient)
             Positioned(
+              key: widget.gradientKey,
               left: 0,
               right: 0,
               bottom: keyboardHeight,
@@ -71,6 +76,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
             right: widget.horizontalPadding,
             bottom: keyboardHeight + widget.bottomPadding,
             child: Column(
+              key: widget.buttonKey,
               children: [
                 widget.subWidget ?? Container(),
                 CoconutLayout.spacing_300h,

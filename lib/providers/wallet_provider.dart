@@ -17,9 +17,11 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:tuple/tuple.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
@@ -43,6 +45,7 @@ class WalletProvider extends ChangeNotifier {
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
+  late final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier;
 
   void _setWalletItemList(List<WalletListItemBase> value) {
     _walletItemList = value;
@@ -60,9 +63,10 @@ class WalletProvider extends ChangeNotifier {
     // ValueNotifier들 초기화
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
+    currentBlockHeightNotifier = ValueNotifier(null);
 
     _loadWalletListFromDB().then((_) {
-      _fetchWalletPreferences(); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
+      _preferenceProvider.setWalletPreferences(walletItemList); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
       notifyListeners();
     });
   }
@@ -182,7 +186,9 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // 새 지갑 추가
-    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
+    final sameNameIndex = _walletItemList.indexWhere(
+      (element) => element.name == watchOnlyWallet.name,
+    );
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
       return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
@@ -202,7 +208,9 @@ class WalletProvider extends ChangeNotifier {
 
   /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
-    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
+    final sameNameIndex = _walletItemList.indexWhere(
+      (element) => element.name == watchOnlyWallet.name,
+    );
     assert(sameNameIndex == -1);
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
@@ -336,7 +344,13 @@ class WalletProvider extends ChangeNotifier {
     bool isChange,
     bool showOnlyUnusedAddresses,
   ) async {
-    return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange, showOnlyUnusedAddresses);
+    return _addressRepository.getWalletAddressList(
+      wallet,
+      cursor,
+      count,
+      isChange,
+      showOnlyUnusedAddresses,
+    );
   }
 
   List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {
@@ -383,6 +397,72 @@ class WalletProvider extends ChangeNotifier {
     return _transactionRepository.getTransactionRecordList(walletId);
   }
 
+  Map<int, List<TransactionRecord>> getPendingAndDaysAgoTransactions(
+    List<int> walletIds,
+    int currentBlockHeight,
+    int days,
+  ) {
+    Map<int, List<TransactionRecord>> result = {};
+    // 7일 전 블록 높이 (1008 blocks = 6 block/h * 24h * 7d)
+    // N일 전 블록 높이 (144 * N blocks = 6 block/h * 24h * Nd)
+
+    final blockHeight =
+        currentBlockHeight - (144 * days) > 0 ? currentBlockHeight - (144 * days) : 0;
+    for (int walletId in walletIds) {
+      final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
+      // 현재 트랜잭션 기준 N일 내 트랜잭션 조회
+      final recentTxs = _transactionRepository.getTransactionRecordListAfterBlockHeight(
+        walletId,
+        blockHeight,
+      );
+
+      if (pendingTxs.isNotEmpty || recentTxs.isNotEmpty) {
+        result.addAll({
+          walletId: [...pendingTxs, ...recentTxs],
+        });
+      }
+    }
+
+    return result;
+  }
+
+  List<TransactionRecord> getConfirmedTransactionRecordListWithin(
+    List<int> walletIds,
+    int currentBlockHeight,
+    int daysAgo,
+  ) {
+    final startBlockHeight =
+        currentBlockHeight - 6 * 24 * daysAgo > 0 ? currentBlockHeight - 6 * 24 * daysAgo : 0;
+
+    List<TransactionRecord> result = [];
+    for (int walletId in walletIds) {
+      final transactions = _transactionRepository.getTransactionRecordListAfterBlockHeight(
+        walletId,
+        startBlockHeight,
+      );
+      result.addAll(transactions);
+    }
+
+    return result;
+  }
+
+  List<TransactionRecord> getConfirmedTransactionRecordListWithinDateRange(
+    List<int> walletIds,
+    int currentBlockHeight,
+    Tuple2<DateTime, DateTime> dateRange,
+  ) {
+    List<TransactionRecord> result = [];
+    for (int walletId in walletIds) {
+      final transactions = _transactionRepository.getTransactionRecordListWithDateRange(
+        walletId,
+        dateRange,
+      );
+      result.addAll(transactions);
+    }
+
+    return result;
+  }
+
   UtxoState? getUtxoState(int walletId, String utxoId) {
     return _utxoRepository.getUtxoState(walletId, utxoId);
   }
@@ -415,18 +495,8 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
-  /// DB에서 지갑 로드(_loadWalletListFromDB) 완료 후 수행
-  Future<void> _fetchWalletPreferences() async {
-    var walletOrder = _preferenceProvider.walletOrder;
-    var favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
-    if (walletOrder.isEmpty) {
-      walletOrder = List.from(walletItemList.map((w) => w.id));
-      await _preferenceProvider.setWalletOrder(walletOrder);
-    }
-    if (favoriteWalletIds.isEmpty) {
-      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
-      await _preferenceProvider.setFavoriteWalletIds(favoriteWalletIds);
-    }
+  void setCurrentBlockHeight(BlockTimestamp? blockHeight) {
+    currentBlockHeightNotifier.value = blockHeight;
   }
 
   /// 새 지갑이 추가되었을 때 처리하는 함수(가짜 잔액 재분배, 즐겨찾기, 지갑 순서 추가)
@@ -453,6 +523,7 @@ class WalletProvider extends ChangeNotifier {
     // ValueNotifier들 해제
     walletLoadStateNotifier.dispose();
     walletItemListNotifier.dispose();
+    currentBlockHeightNotifier.dispose();
     super.dispose();
   }
 }
