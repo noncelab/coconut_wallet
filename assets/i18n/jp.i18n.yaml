@@ -48,14 +48,14 @@ glossary: "用語集"
 tool: "ツール"
 tutorial: "チュートリアル"
 settings: "設定"
-tx_list: "取引履歴"
+tx_list: "トランザクション履歴"
 utxo_list: "UTXO一覧"
 wallet_id: "ウォレットID"
 tag_manage: "タグ管理"
 tag_manage_label: "タグ管理"
 extended_public_key: "ExPub Key"
-tx_memo: "取引メモ"
-tx_id: "取引ID"
+tx_memo: "Tx メモ"
+tx_id: "Tx ID"
 block_num: "ブロック番号"
 inquiry_details: "お問い合わせ"
 utxo_total: "金額"
@@ -103,10 +103,10 @@ utxo_count: "($count 項目)"
 total_item_count: "(合計 $count 項目)"
 
 view_app_info: "アプリ情報"
-view_tx_details: "取引"
+view_tx_details: "トランザクション"
 view_more: "もっと見る"
 view_less: "閉じる"
-view_mempool: "メンプール"
+view_mempool: "mempool.space"
 view_all_addresses: "すべてのアドレス"
 select_utxo: "UTXO選択"
 select_all: "すべて選択"
@@ -115,7 +115,7 @@ delete_confirm: "削除確認"
 sign_multisig: "マルチシグ署名"
 
 forgot_password: "パスワードを忘れましたか？"
-tx_not_found: "取引が見つかりません"
+tx_not_found: "Tx が見つかりません"
 utxo_not_found: "UTXOが見つかりません"
 utxo_loading: "UTXO読み込み中"
 faucet_request: "テストビットコインをリクエストしました。しばらくお待ちください。"
@@ -142,7 +142,7 @@ donation:
   donation_address: "寄付アドレス"
   empty_enough_balance_wallet: "十分な残高のあるウォレットがありません。"
   unsigned_qr_tooltip: "署名するためにQRコードをスキャンしてください。"
-  signed_qr_tooltip: "署名された取引をスキャンしてください。"
+  signed_qr_tooltip: "署名されたトランザクションをスキャンしてください。"
   user_messages: [
     "愛を込めて",
     "心からのサポート",
@@ -292,7 +292,7 @@ wallet_add_scanner_screen:
     step1_em: "XPUB Export"
     step2: "2. "
     step2_em: "XPUB - QR Code"
-
+    select: "選択"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
@@ -357,7 +357,7 @@ positive_feedback_screen:
 
 # lib/screens/send
 broadcasting_complete_screen:
-  complete: "取引送信完了"
+  complete: "トランザクション送信完了"
   memo_placeholder: "メモを追加"
   memo_tags:
     - "支払い"
@@ -400,7 +400,7 @@ select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO選択"
   select_utxo_auto: "UTXO自動選択"
   select_utxo_auto_minimal_fee_description: "最小手数料でUTXOを自動選択"
-  select_utxo_auto_selected_utxo_description: "取引は選択されたUTXOのみを使用します"
+  select_utxo_auto_selected_utxo_description: "トランザクションは選択されたUTXOのみを使用します"
   n_utxos: " • ${count} utxos"
 
 # send screen end ----
@@ -408,7 +408,7 @@ select_wallet_with_options_bottom_sheet:
 broadcasting_screen:
   title: "最終確認"
   description: "以下の詳細で送信する準備ができました"
-  self_sending: "これは自分のウォレットへの送信取引です。"
+  self_sending: "これは自分のウォレットへ送信するトランザクションです。"
   error_popup_title: "送信失敗"
   btn_submit: "送信"
 send_address_screen:
@@ -420,7 +420,7 @@ send_address_screen:
 send_confirm_screen:
   title: "詳細確認"
 signed_psbt_scanner_screen:
-  title: "署名済み取引スキャン"
+  title: "署名済みトランザクションをスキャン"
   bbqr_mode_switching: "BBQRモードに切り替え中。\nしばらくお待ちください。"
   
 unsigned_tx_qr_screen:
@@ -451,13 +451,14 @@ unsigned_tx_qr_screen:
     select: "を選択"
     step2: "2. "
     step2_em: "PSBT"
-    step3: "3. カメラで下のQRコードをスキャン"
+    step3: "3. "
+    step3_em: "カメラで下のQRコードをスキャン"
   fast_scan_mode: "高速スキャンモード"
   low_density_qr: "シンプルQR"
-  high_density_qr: "複雑QR"
+  high_density_qr: "高密度QR"
 
   guide_hardware_wallet:
-    step1: "署名プロセスを開始するために、ハードウェアウォレットで下のQRコードをスキャンしてください。"
+    step1: "署名を開始するために、ハードウェアウォレットで下のQRコードをスキャンしてください。"
 
 coconut_qr_scanner:
   reading_extra_data: "追加データを読み取り中\nスキャンを続けてください"
@@ -521,7 +522,7 @@ settings_screen:
   block_explorer:
     default_explorer: "デフォルトエクスプローラー"
     custom_explorer: "カスタムエクスプローラー"
-    custom_explorer_description: "Coconutは入力されたアドレスを使用します。ただし、エクスプローラーによって取引/アドレスリンクフォーマットが異なるため、一部のリンクが正しく動作しない場合があります。"
+    custom_explorer_description: "Coconutは入力されたアドレスを使用します。ただし、エクスプローラーによってトランザクション/アドレスリンクフォーマットが異なるため、一部のリンクが正しく動作しない場合があります。"
     save: "保存"
     custom_explorer_input_placeholder: "アドレスを入力"
     connection_status:
@@ -602,8 +603,8 @@ transaction_fee_bumping_screen:
   new_fee: "新しい手数料"
   sats_vb: "sat/vB"
   recommend_fee: "最小手数料: ${fee} sat/vB以上"
-  recommend_fee_info_rbf: "既存手数料より少なくとも1 sat/vB高くする必要があります。\nただし、（既存手数料 + 1）が低速送信手数料より低い場合は、低速送信手数料を推奨します。\n注意: 新しい取引サイズが増加した場合、推奨手数料と既存手数料の差が1 sat/vB未満に見える場合があります。"
-  recommend_fee_info_cpfp: "新しい取引で不足している手数料を補う必要があります。\n • 新しい取引サイズ = ${newTxSize} vB、推奨手数料率 = ${recommendedFeeRate} sat/vB\n • 必要総手数料 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 新しい取引手数料 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 新しい取引手数料率 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
+  recommend_fee_info_rbf: "既存手数料より少なくとも1 sat/vB高くする必要があります。\nただし、（既存手数料 + 1）が低速送信手数料より低い場合は、低速送信手数料を推奨します。\n注意: 新しいトランザクションサイズが増加した場合、推奨手数料と既存手数料の差が1 sat/vB未満に見える場合があります。"
+  recommend_fee_info_cpfp: "新しいトランザクションで不足している手数料を補う必要があります。\n • 新しいトランザクションサイズ = ${newTxSize} vB、推奨手数料率 = ${recommendedFeeRate} sat/vB\n • 必要総手数料 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 新しいトランザクション手数料 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 新しいトランザクション手数料率 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "推奨手数料"
   estimated_fee: "推定総手数料約${fee} sats"
   estimated_fee_too_high_error: "推定総手数料が0.01 BTCを超えています！"
@@ -614,10 +615,10 @@ transaction_fee_bumping_screen:
   dialog:
     fee_alert_title: "通知"
     fee_alert_description: "設定した総手数料が0.01 BTCを超えています。それでも続行しますか？"
-    confirmed_alert_title: "取引完了"
-    confirmed_alert_description: "保留中だった取引が完了しました。"
+    confirmed_alert_title: "トランザクション完了"
+    confirmed_alert_description: "保留中だったトランザクションが完了しました。"
   toast:
-    insufficient_utxo: "新しい取引を作成するための残高が不足しています"
+    insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
@@ -684,15 +685,15 @@ errors:
   fetch_wallet_error: "ウォレットの取得に失敗しました。"
   wallet_sync_failed_error: "ネットワークからウォレット情報の読み込みに失敗"
   fetch_balance_error: "残高の取得に失敗しました。"
-  fetch_transaction_list_error: "取引履歴の取得に失敗しました。"
-  fetch_transactions_error: "取引履歴の取得に失敗しました。"
+  fetch_transaction_list_error: "トランザクション履歴の取得に失敗しました。"
+  fetch_transactions_error: "トランザクション履歴の取得に失敗しました。"
   database_path_error: "DBパスが見つかりません。"
   fee_estimation_error: "手数料の計算に失敗しました。"
   realm_unknown: "不明なエラーが発生しました。"
   realm_not_found: "データが見つかりません。"
   realm_exception: "Realm操作中にエラーが発生しました。"
   node_unknown: "ノード接続中に不明なエラーが発生しました。"
-  broadcast_error: "取引の送信に失敗しました。"
+  broadcast_error: "トランザクションの送信に失敗しました。"
   network_connect: "ネットワーク接続がありません。"
   network_disconnected: "ネットワークが切断されました"
   network_not_found: "ネットワークが接続されていません！"
@@ -734,8 +735,8 @@ tooltip:
   wallet_add1: "新しいウォレットを追加または既存のウォレットを更新。"
   wallet_add2: "Vault"
   wallet_add3: "使用したいウォレットを"
-  wallet_add4: "で選択し、画面に表示されるQRコードをスキャンしてください。"
-  wallet_add5: "エクスポート"
+  wallet_add4: "エクスポート"
+  wallet_add5: "で選択し、画面に表示されるQRコードをスキャンしてください。" 
   amount_to_be_sent: "受信したビットコインのみ送信可能。\n受信中金額: $bitcoin $unit"
   scan_signed_psbt:
     guide: "${by_hardware_wallet}での署名が完了しましたか？\n${hardware_wallet}画面のQRコードをスキャンしてください。"
@@ -757,8 +758,8 @@ tooltip:
   faucet: "テストビットコインで自由にテスト"
   multisig_wallet: "これは$total個のキーのうち$count個の署名が必要なマルチシグウォレットです。\n"
   mfp: "これはウォレットの固有値です。\nマスターフィンガープリント（MFP）とも呼ばれます。"
-  rbf: "手数料を増やすことで既存の取引を新しい取引に置き換える機能。（RBF、Replace-By-Fee）"
-  cpfp: "新しい取引（Child）に高い手数料を設定して既存の取引（Parent）をより早く処理するために優先度を上げる機能。（CPFP、Child-Pays-For-Parent）"
+  rbf: "手数料を増やすことで既存のトランザクションを新しいトランザクションに置き換える機能。（RBF、Replace-By-Fee）"
+  cpfp: "新しい子トランザクションに高い手数料を設定して既存の親トランザクションをより早く処理するために優先度を上げる機能。（CPFP、Child-Pays-For-Parent）"
   dont_show_again: "今後表示しない"
 
 toast:
@@ -775,9 +776,9 @@ toast:
 
 alert:
   error_tx:
-    created_failed: "取引作成に失敗しました。"
-    not_parsed: "取引解析に失敗しました。$error"
-    not_created: "取引作成に失敗しました。$error"
+    created_failed: "トランザクション作成に失敗しました。"
+    not_parsed: "トランザクション解析に失敗しました。$error"
+    not_created: "トランザクション作成に失敗しました。$error"
   error_send:
     broadcasting_failed: "[送信失敗]\n$error"
     insufficient_balance: "残高が不足しています。"
@@ -822,7 +823,7 @@ alert:
     description: "既存 UTXOのタグを新しいUTXOにも適用しますか？"
     btn_apply: "適用する"
   tx_detail:
-    fetch_failed: "取引取得に失敗しました"
+    fetch_failed: "トランザクション取得に失敗しました"
     fetch_failed_description: "しばらく待ってからもう一度お試しください"
   tag_delete:
     title: "タグ削除"
@@ -850,7 +851,7 @@ trade_exchange:
   binance: "Binance"
 
 fiat:
-  fiat: "フィアット"
+  fiat: "法定通貨"
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"

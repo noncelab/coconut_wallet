@@ -48,6 +48,18 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
         itemCount: _tags.length,
         itemBuilder: (BuildContext context, int index) {
           final name = _tags[index];
+
+          // 표시할 이름 결정
+          String displayName;
+          bool isFixedTag;
+          if (widget.showDefaultTags) {
+            displayName = index <= 2 ? name : '#$name';
+            isFixedTag = index <= 2;
+          } else {
+            displayName = index == 0 ? name : '#$name';
+            isFixedTag = index == 0;
+          }
+
           return Row(
             children: [
               if (index == 0) CoconutLayout.spacing_400w,
@@ -55,7 +67,7 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
                 onTap: () {
                   widget.onSelectedTag.call(name);
                 },
-                child: _tagSelectorChip(index <= 2 ? _tags[index] : '#$name', widget.selectedName == name, index <= 2),
+                child: _tagSelectorChip(displayName, widget.selectedName == name, isFixedTag),
               ),
               if (index == _tags.length) CoconutLayout.spacing_400w,
             ],
@@ -66,19 +78,22 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
   }
 
   Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
+    Color bgColor;
+    Color textColor;
+
+    bgColor = isSelected ? CoconutColors.white : CoconutColors.gray800;
+    textColor = isSelected ? CoconutColors.gray800 : CoconutColors.white;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       margin: const EdgeInsets.only(right: 4),
       height: 32,
-      decoration: BoxDecoration(
-        color: isSelected ? CoconutColors.white : CoconutColors.gray800,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)),
       child: FittedBox(
         child: Text(
           name,
           style: CoconutTypography.body3_12_Number.copyWith(
-            color: isSelected ? CoconutColors.gray800 : CoconutColors.white,
+            color: textColor,
             height: 1.3,
             fontWeight:
                 isFixedTag

@@ -7,20 +7,23 @@ class UtxoOrderDropdown extends StatelessWidget {
   final double positionTop;
   final UtxoOrder selectedOption;
   final Function onOptionSelected;
+  final bool isSelectionMode;
   const UtxoOrderDropdown({
     super.key,
     required this.isVisible,
     required this.positionTop,
     required this.selectedOption,
     required this.onOptionSelected,
+    required this.isSelectionMode,
   });
 
   @override
   Widget build(BuildContext context) {
     return isVisible
         ? Positioned(
-          top: positionTop,
-          right: 16,
+          top: isSelectionMode ? positionTop + 10 : positionTop,
+          left: isSelectionMode ? 16 : null,
+          right: isSelectionMode ? null : 16,
           child: Material(
             borderRadius: BorderRadius.circular(16),
             child: CoconutPulldownMenu(

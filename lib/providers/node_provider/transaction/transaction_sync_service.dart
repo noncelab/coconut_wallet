@@ -63,6 +63,7 @@ class TransactionSyncService {
     // 1. 초기화 및 준비 단계
     _prepareTransactionFetch(walletId, inBatchProcess);
 
+    // walletId의 트랜잭션 조회
     final knownTransactionHashes = _transactionRepository.getConfirmedTransactionHashSet(walletId);
     final txFetchResults = await getFetchTransactionResponses(
       walletItem.walletBase.addressType,
@@ -70,6 +71,7 @@ class TransactionSyncService {
       knownTransactionHashes,
     );
 
+    // 트랜잭션 조회 결과가 없으면 종료
     if (txFetchResults.isEmpty) {
       await _finalizeTransactionFetch(walletId, {}, inBatchProcess);
       if (!inBatchProcess) {
@@ -329,7 +331,7 @@ class TransactionSyncService {
     }
   }
 
-  /// 스크립트에 대한 트랜잭션 응답을 가져옵니다.
+  /// 일렉트럼으로 부터 스크립트에 대한 트랜잭션 응답을 가져옵니다.
   Future<List<FetchTransactionResponse>> getFetchTransactionResponses(
     AddressType addressType,
     ScriptStatus scriptStatus,
@@ -364,7 +366,7 @@ class TransactionSyncService {
     }
   }
 
-  /// 트랜잭션 목록을 가져옵니다.
+  /// 일렉트럼으로 부터 트랜잭션 목록을 가져옵니다.
   Future<List<Transaction>> fetchTransactions(Set<String> transactionHashes) async {
     List<Transaction> results = [];
 
@@ -382,5 +384,334 @@ class TransactionSyncService {
     results.addAll(transactions.whereType<Transaction>());
 
     return results;
+  }
+
+  Future<Map<ScriptStatus, List<String>>> fetchScriptTransactionBatch(
+    WalletListItemBase walletItem,
+    List<ScriptStatus> scriptStatuses, {
+    DateTime? now,
+    bool inBatchProcess = false,
+  }) async {
+    final startTime = DateTime.now();
+    final int walletId = walletItem.id;
+    final Map<ScriptStatus, List<String>> results = {};
+
+    Logger.performance('=== BATCH PERFORMANCE ANALYSIS ===');
+    Logger.performance('Starting batch transaction fetch for ${scriptStatuses.length} scripts (wallet: $walletId)');
+
+    try {
+      // 1. 초기화 및 준비 단계
+      final initStartTime = DateTime.now();
+      _prepareTransactionFetch(walletId, inBatchProcess);
+      final initDuration = DateTime.now().difference(initStartTime);
+      Logger.performance('Initialization: ${initDuration.inMilliseconds}ms');
+
+      // 2. 모든 스크립트의 히스토리 조회 (병렬)
+      final historyStartTime = DateTime.now();
+      final knownTransactionHashes = _transactionRepository.getConfirmedTransactionHashSet(walletId);
+      final dbReadDuration = DateTime.now().difference(historyStartTime);
+      Logger.performance('DB read (knownTransactionHashes): ${dbReadDuration.inMilliseconds}ms');
+
+      final txFetchResultsMap = await getFetchTransactionResponsesBatch(
+        walletItem.walletBase.addressType,
+        scriptStatuses,
+        knownTransactionHashes,
+      );
+      final historyDuration = DateTime.now().difference(historyStartTime);
+      Logger.performance('History fetch total: ${historyDuration.inMilliseconds}ms');
+
+      // 3. 모든 트랜잭션 해시 수집
+      final collectionStartTime = DateTime.now();
+      final allTxHashes = <String>{};
+      final allTxFetchResults = <FetchTransactionResponse>[];
+
+      for (final entry in txFetchResultsMap.entries) {
+        final scriptStatus = entry.key;
+        final txResults = entry.value;
+
+        allTxFetchResults.addAll(txResults);
+        allTxHashes.addAll(txResults.map((tx) => tx.transactionHash));
+
+        results[scriptStatus] = txResults.map((tx) => tx.transactionHash).toList();
+      }
+      final collectionDuration = DateTime.now().difference(collectionStartTime);
+      Logger.performance('Data collection: ${collectionDuration.inMilliseconds}ms');
+      Logger.performance('Found ${allTxHashes.length} total transactions across ${scriptStatuses.length} scripts');
+
+      if (allTxHashes.isEmpty) {
+        await _finalizeTransactionFetch(walletId, {}, inBatchProcess);
+        return results;
+      }
+
+      // 4. 처리 대상 트랜잭션 식별
+      final identifyStartTime = DateTime.now();
+      final newTxHashes = _registerProcessableTransactionsBatch(walletId, allTxFetchResults, _scriptCallbackService);
+      final identifyDuration = DateTime.now().difference(identifyStartTime);
+      Logger.performance('Transaction identification: ${identifyDuration.inMilliseconds}ms');
+      Logger.performance('Identified ${newTxHashes.length} new transactions to process');
+
+      if (newTxHashes.isEmpty) {
+        await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
+        return results;
+      }
+
+      // 5. 트랜잭션 상세 정보 조회 (병렬)
+      final detailsStartTime = DateTime.now();
+      final fetchedTransactionDetails = await _fetchTransactionDetailsBatch(
+        newTxHashes,
+        allTxFetchResults,
+        _electrumService,
+      );
+      final detailsDuration = DateTime.now().difference(detailsStartTime);
+      Logger.performance(
+        'Transaction details fetch: ${detailsDuration.inMilliseconds}ms for ${newTxHashes.length} transactions',
+      );
+
+      // 6. 트랜잭션 레코드 생성 및 저장
+      final dbStartTime = DateTime.now();
+      final txRecords = await _transactionRecordService.createTransactionRecords(
+        walletId,
+        fetchedTransactionDetails,
+        now: now,
+      );
+
+      final recordCreationDuration = DateTime.now().difference(dbStartTime);
+      Logger.performance('Transaction record creation: ${recordCreationDuration.inMilliseconds}ms');
+
+      await _transactionRepository.addAllTransactions(walletItem.id, txRecords);
+      final dbWriteDuration = DateTime.now().difference(dbStartTime);
+      Logger.performance('Database write: ${dbWriteDuration.inMilliseconds}ms');
+
+      // 7. UTXO 상태 업데이트 및 RBF/CPFP 처리
+      final utxoStartTime = DateTime.now();
+      final unconfirmedFetchedTxHashes =
+          allTxFetchResults.where((tx) => tx.height <= 0).map((tx) => tx.transactionHash).toSet();
+      final confirmedFetchedTxHashes =
+          allTxFetchResults.where((tx) => tx.height > 0).map((tx) => tx.transactionHash).toSet();
+
+      final rbfCpfpResult = await _processFetchedTransactionsAndUpdateUtxos(
+        walletId,
+        fetchedTransactionDetails.fetchedTransactions,
+        unconfirmedFetchedTxHashes,
+        confirmedFetchedTxHashes,
+      );
+      final utxoDuration = DateTime.now().difference(utxoStartTime);
+      Logger.performance('UTXO and RBF/CPFP processing: ${utxoDuration.inMilliseconds}ms');
+
+      // 8. RBF/CPFP 히스토리 저장
+      final historySaveStartTime = DateTime.now();
+      await _saveRbfAndCpfpHistory(walletItem, txRecords, rbfCpfpResult);
+      final historySaveDuration = DateTime.now().difference(historySaveStartTime);
+      Logger.performance('RBF/CPFP history save: ${historySaveDuration.inMilliseconds}ms');
+
+      // 9. 대체된 언컨펌 트랜잭션 삭제
+      final cleanupStartTime = DateTime.now();
+      await _cleanupOrphanedUnconfirmedTransactions(walletId, fetchedTransactionDetails.fetchedTransactions);
+      final cleanupDuration = DateTime.now().difference(cleanupStartTime);
+      Logger.performance('Cleanup orphaned transactions: ${cleanupDuration.inMilliseconds}ms');
+
+      // 10. 마무리 단계
+      final finalizeStartTime = DateTime.now();
+      await _finalizeTransactionFetch(walletId, newTxHashes, inBatchProcess);
+      final finalizeDuration = DateTime.now().difference(finalizeStartTime);
+      Logger.performance('Finalization: ${finalizeDuration.inMilliseconds}ms');
+
+      final totalDuration = DateTime.now().difference(startTime);
+      Logger.performance('=== TOTAL BATCH TIME: ${totalDuration.inMilliseconds}ms ===');
+      Logger.performance('Breakdown:');
+      Logger.performance(
+        '  - History fetch: ${historyDuration.inMilliseconds}ms (${(historyDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
+      );
+      Logger.performance(
+        '  - Transaction details: ${detailsDuration.inMilliseconds}ms (${(detailsDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
+      );
+      Logger.performance(
+        '  - Database operations: ${dbWriteDuration.inMilliseconds}ms (${(dbWriteDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
+      );
+      Logger.performance(
+        '  - UTXO processing: ${utxoDuration.inMilliseconds}ms (${(utxoDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
+      );
+      Logger.performance(
+        '  - Others: ${(totalDuration.inMilliseconds - historyDuration.inMilliseconds - detailsDuration.inMilliseconds - dbWriteDuration.inMilliseconds - utxoDuration.inMilliseconds)}ms',
+      );
+
+      return results;
+    } catch (e, stackTrace) {
+      Logger.error('Batch transaction fetch failed: $e');
+      Logger.error('Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// 여러 스크립트의 히스토리를 한 번에 조회
+  Future<Map<ScriptStatus, List<FetchTransactionResponse>>> getFetchTransactionResponsesBatch(
+    AddressType addressType,
+    List<ScriptStatus> scriptStatuses,
+    Set<String> knownTransactionHashes,
+  ) async {
+    // 각 스크립트별로 독립적인 knownTransactionHashes 복사본 사용
+    final knownHashesCopy = Set<String>.from(knownTransactionHashes);
+
+    // 모든 트랜잭션 해시를 먼저 수집
+    final allTxHashes = <String>{};
+    final scriptStatusToHistoryMap = <ScriptStatus, List<dynamic>>{};
+
+    // 병렬로 히스토리 조회
+    final futures = scriptStatuses.map((scriptStatus) async {
+      final historyList = await _electrumService.getHistory(addressType, scriptStatus.address);
+      return MapEntry(scriptStatus, historyList);
+    });
+
+    final historyResults = await Future.wait(futures);
+
+    // for (final entry in historyResults) {
+    //   final scriptStatus = entry.key;
+    //   final historyList = entry.value;
+
+    //   final filteredHistoryList = historyList.where((history) {
+    //     if (knownTransactionHashes.contains(history.txHash)) return false;
+    //     knownTransactionHashes.add(history.txHash);
+    //     return true;
+    //   });
+
+    //   results[scriptStatus] = filteredHistoryList
+    //       .map((history) => FetchTransactionResponse(
+    //             transactionHash: history.txHash,
+    //             height: history.height,
+    //             addressIndex: scriptStatus.index,
+    //             isChange: scriptStatus.isChange,
+    //           ))
+    //       .toList();
+    // }
+
+    // 중복 제거를 위한 2단계 처리
+    for (final entry in historyResults) {
+      final scriptStatus = entry.key;
+      final historyList = entry.value;
+      scriptStatusToHistoryMap[scriptStatus] = historyList;
+
+      for (final history in historyList) {
+        allTxHashes.add(history.txHash);
+      }
+    }
+
+    // 중복 제거된 새로운 트랜잭션만 필터링
+    final newTxHashes = allTxHashes.where((txHash) => !knownHashesCopy.contains(txHash)).toSet();
+
+    // 결과 생성
+    final results = <ScriptStatus, List<FetchTransactionResponse>>{};
+    for (final entry in scriptStatusToHistoryMap.entries) {
+      final scriptStatus = entry.key;
+      final historyList = entry.value;
+
+      final filteredHistoryList = historyList.where((history) => newTxHashes.contains(history.txHash));
+
+      results[scriptStatus] =
+          filteredHistoryList
+              .map(
+                (history) => FetchTransactionResponse(
+                  transactionHash: history.txHash,
+                  height: history.height,
+                  addressIndex: scriptStatus.index,
+                  isChange: scriptStatus.isChange,
+                ),
+              )
+              .toList();
+    }
+
+    return results;
+  }
+
+  /// 여러 트랜잭션을 병렬로 조회
+  Future<List<Transaction>> fetchTransactionsBatch(Set<String> transactionHashes) async {
+    // 청크 단위로 나누어 병렬 처리 (너무 많은 동시 요청 방지)
+    const chunkSize = 10;
+    final chunks = <Set<String>>[];
+
+    final hashList = transactionHashes.toList();
+    for (int i = 0; i < hashList.length; i += chunkSize) {
+      final end = (i + chunkSize < hashList.length) ? i + chunkSize : hashList.length;
+      chunks.add(hashList.sublist(i, end).toSet());
+    }
+
+    final allResults = <Transaction>[];
+
+    for (final chunk in chunks) {
+      final futures = chunk.map((txHash) async {
+        try {
+          final txHex = await _electrumService.getTransaction(txHash);
+          return Transaction.parse(txHex);
+        } catch (e) {
+          Logger.error('Failed to fetch transaction $txHash: $e');
+          return null;
+        }
+      });
+
+      final transactions = await Future.wait(futures);
+      allResults.addAll(transactions.whereType<Transaction>());
+    }
+
+    return allResults;
+  }
+
+  /// 중복 제거된 블록 높이들을 한 번에 조회
+  Future<Map<int, BlockTimestamp>> fetchBlockTimestampsBatch(Map<String, int> txBlockHeightMap) async {
+    final uniqueBlockHeights = txBlockHeightMap.values.toSet();
+
+    if (uniqueBlockHeights.isEmpty) {
+      return <int, BlockTimestamp>{};
+    }
+
+    return await _electrumService.fetchBlocksByHeight(uniqueBlockHeights);
+  }
+
+  /// 4. 처리 대상 트랜잭션 식별 (배치 버전)
+  Set<String> _registerProcessableTransactionsBatch(
+    int walletId,
+    List<FetchTransactionResponse> txFetchResults,
+    ScriptCallbackService scriptCallbackManager,
+  ) {
+    final Set<String> newTxHashes = {};
+
+    for (final txFetchResult in txFetchResults) {
+      bool isConfirmed = txFetchResult.height > 0;
+      if (scriptCallbackManager.isTransactionProcessable(
+        txHashKey: getTxHashKey(walletId, txFetchResult.transactionHash),
+        isConfirmed: isConfirmed,
+      )) {
+        scriptCallbackManager.registerTransactionProcessing(walletId, txFetchResult.transactionHash, isConfirmed);
+        newTxHashes.add(txFetchResult.transactionHash);
+      }
+    }
+
+    return newTxHashes;
+  }
+
+  /// 5. 트랜잭션 상세 정보 조회 (배치 버전)
+  Future<FetchedTransactionDetails> _fetchTransactionDetailsBatch(
+    Set<String> newTxHashes,
+    List<FetchTransactionResponse> allTxFetchResults,
+    ElectrumService electrumService,
+  ) async {
+    // 새로운 트랜잭션만 필터링
+    final filteredTxFetchResults = allTxFetchResults.where((tx) => newTxHashes.contains(tx.transactionHash)).toList();
+
+    // 블록 높이 맵 생성 (컨펌된 트랜잭션만)
+    final txBlockHeightMap = Map<String, int>.fromEntries(
+      filteredTxFetchResults.where((tx) => tx.height > 0).map((tx) => MapEntry(tx.transactionHash, tx.height)),
+    );
+
+    // 블록 타임스탬프 조회 (병렬 처리)
+    final blockTimestampMap =
+        txBlockHeightMap.isEmpty ? <int, BlockTimestamp>{} : await fetchBlockTimestampsBatch(txBlockHeightMap);
+
+    // 트랜잭션 상세 정보 조회 (병렬 처리)
+    final fetchedTransactions = await fetchTransactionsBatch(newTxHashes);
+
+    return (
+      fetchedTransactions: fetchedTransactions,
+      txBlockHeightMap: txBlockHeightMap,
+      blockTimestampMap: blockTimestampMap,
+    );
   }
 }

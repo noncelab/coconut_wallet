@@ -113,7 +113,6 @@ class WalletListViewModel extends ChangeNotifier {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
           _isFirstLoaded = true;
-          vibrateLight();
         }
         updateWalletBalances();
       } else if (syncState == NodeSyncState.failed) {

@@ -103,7 +103,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _viewModel = SendViewModel(
       context.read<WalletProvider>(),
       context.read<SendInfoProvider>(),
-      context.read<NodeProvider>(),
       context.read<PreferenceProvider>(),
       context.read<ConnectivityProvider>().isNetworkOn,
       _onAmountTextUpdate,

@@ -247,4 +247,87 @@ class TransactionRecordService {
     }
     return 0;
   }
+
+  /// 배치 처리를 위한 최적화된 트랜잭션 레코드 생성
+  Future<List<TransactionRecord>> createTransactionRecordsBatch(
+    int walletId,
+    FetchedTransactionDetails fetchedTransactionDetails, {
+    DateTime? now,
+  }) async {
+    // 1. 모든 트랜잭션의 입력에서 이전 트랜잭션 해시 수집
+    final allPreviousTxHashes = <String>{};
+    for (final tx in fetchedTransactionDetails.fetchedTransactions) {
+      for (final input in tx.inputs) {
+        allPreviousTxHashes.add(input.transactionHash);
+      }
+    }
+
+    // 2. 모든 이전 트랜잭션을 한 번에 조회
+    final previousTxsMap = await _fetchPreviousTransactionsBatch(allPreviousTxHashes);
+
+    // 3. 각 트랜잭션 레코드 생성 (네트워크 요청 없이)
+    return fetchedTransactionDetails.fetchedTransactions.map((tx) {
+      final blockHeight = fetchedTransactionDetails.txBlockHeightMap[tx.transactionHash];
+      final blockTimestamp = fetchedTransactionDetails.blockTimestampMap[blockHeight];
+
+      // 이전 트랜잭션들을 맵에서 조회
+      final prevTxs = tx.inputs.map((input) => previousTxsMap[input.transactionHash]).whereType<Transaction>().toList();
+
+      final txDetails = processTransactionDetails(tx, prevTxs, walletId);
+
+      return TransactionRecord.fromTransactions(
+        transactionHash: tx.transactionHash,
+        timestamp: blockTimestamp?.timestamp ?? (now ?? DateTime.now()),
+        blockHeight: blockTimestamp?.height ?? 0,
+        inputAddressList: txDetails.inputAddressList,
+        outputAddressList: txDetails.outputAddressList,
+        transactionType: txDetails.txType,
+        amount: txDetails.amount,
+        fee: txDetails.fee,
+        vSize: tx.getVirtualByte(),
+      );
+    }).toList();
+  }
+
+  /// 모든 이전 트랜잭션을 배치로 조회
+  Future<Map<String, Transaction>> _fetchPreviousTransactionsBatch(Set<String> txHashes) async {
+    final Map<String, Transaction> results = {};
+
+    // 청크 단위로 나누어 조회
+    const chunkSize = 10;
+    final chunks = <Set<String>>[];
+
+    final hashList = txHashes.toList();
+    for (int i = 0; i < hashList.length; i += chunkSize) {
+      final end = (i + chunkSize < hashList.length) ? i + chunkSize : hashList.length;
+      chunks.add(hashList.sublist(i, end).toSet());
+    }
+
+    for (final chunk in chunks) {
+      final futures = chunk.map((txHash) async {
+        try {
+          final txHex = await _electrumService.getTransaction(txHash);
+          final tx = Transaction.parse(txHex);
+          return MapEntry(txHash, tx);
+        } catch (e) {
+          Logger.error('Failed to fetch previous transaction $txHash: $e');
+          return null;
+        }
+      });
+
+      final chunkResults = await Future.wait(futures);
+      for (final result in chunkResults) {
+        if (result != null) {
+          results[result.key] = result.value;
+        }
+      }
+
+      // 청크 간 지연
+      if (chunks.indexOf(chunk) < chunks.length - 1) {
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
+    }
+
+    return results;
+  }
 }

@@ -112,7 +112,7 @@ view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"
 view_more: "더보기"
 view_less: "간단히 보기"
-view_mempool: "멤풀 보기"
+view_mempool: "mempool.space"
 view_all_addresses: "전체 주소 보기"
 select_utxo: "UTXO 고르기"
 select_all: "모두 선택"
@@ -298,7 +298,7 @@ wallet_add_scanner_screen:
     step1_em: "XPUB 내보내기"
     step2: "2. "
     step2_em: "XPUB - QR 코드"
-
+    select: "선택"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
@@ -466,7 +466,7 @@ unsigned_tx_qr_screen:
     step1: "하드웨어 월렛으로 아래 QR 코드를 스캔하여 서명 과정을 시작해 주세요."
 
 coconut_qr_scanner:
-   reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
+  reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
 
 # lib/screens/settings
 app_info_screen:
@@ -572,6 +572,8 @@ address_search_screen:
   change_address: "잔돈 주소"
 utxo_list_screen:
   total_balance: "총 잔액"
+  utxo_locked_button: "사용 잠금"
+  utxo_unlocked_button: "사용 가능으로 전환"
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
@@ -587,7 +589,7 @@ utxo_detail_screen:
   utxo_locked: "사용 잠금"
   utxo_unlocked: "사용 가능"
   utxo_locked_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
-  utxo_unlocked_toast_msg: "UTXO 잠금 해체 완료! 코인이 사용 가능한 상태로 전환됐어요."
+  utxo_unlocked_toast_msg: "UTXO 잠금 해제 완료! 코인이 사용 가능한 상태로 전환됐어요."
 
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"

@@ -186,8 +186,9 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // 새 지갑 추가
-    final sameNameIndex =
-        _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
+    final sameNameIndex = _walletItemList.indexWhere(
+      (element) => element.name == watchOnlyWallet.name,
+    );
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
       return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
@@ -207,8 +208,9 @@ class WalletProvider extends ChangeNotifier {
 
   /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
-    final sameNameIndex =
-        _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
+    final sameNameIndex = _walletItemList.indexWhere(
+      (element) => element.name == watchOnlyWallet.name,
+    );
     assert(sameNameIndex == -1);
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
@@ -343,7 +345,12 @@ class WalletProvider extends ChangeNotifier {
     bool showOnlyUnusedAddresses,
   ) async {
     return _addressRepository.getWalletAddressList(
-        wallet, cursor, count, isChange, showOnlyUnusedAddresses);
+      wallet,
+      cursor,
+      count,
+      isChange,
+      showOnlyUnusedAddresses,
+    );
   }
 
   List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {
@@ -391,7 +398,10 @@ class WalletProvider extends ChangeNotifier {
   }
 
   Map<int, List<TransactionRecord>> getPendingAndDaysAgoTransactions(
-      List<int> walletIds, int currentBlockHeight, int days) {
+    List<int> walletIds,
+    int currentBlockHeight,
+    int days,
+  ) {
     Map<int, List<TransactionRecord>> result = {};
     // 7일 전 블록 높이 (1008 blocks = 6 block/h * 24h * 7d)
     // N일 전 블록 높이 (144 * N blocks = 6 block/h * 24h * Nd)
@@ -401,12 +411,14 @@ class WalletProvider extends ChangeNotifier {
     for (int walletId in walletIds) {
       final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
       // 현재 트랜잭션 기준 N일 내 트랜잭션 조회
-      final recentTxs =
-          _transactionRepository.getTransactionRecordListAfterBlockHeight(walletId, blockHeight);
+      final recentTxs = _transactionRepository.getTransactionRecordListAfterBlockHeight(
+        walletId,
+        blockHeight,
+      );
 
       if (pendingTxs.isNotEmpty || recentTxs.isNotEmpty) {
         result.addAll({
-          walletId: [...pendingTxs, ...recentTxs]
+          walletId: [...pendingTxs, ...recentTxs],
         });
       }
     }
@@ -415,14 +427,19 @@ class WalletProvider extends ChangeNotifier {
   }
 
   List<TransactionRecord> getConfirmedTransactionRecordListWithin(
-      List<int> walletIds, int currentBlockHeight, int daysAgo) {
+    List<int> walletIds,
+    int currentBlockHeight,
+    int daysAgo,
+  ) {
     final startBlockHeight =
         currentBlockHeight - 6 * 24 * daysAgo > 0 ? currentBlockHeight - 6 * 24 * daysAgo : 0;
 
     List<TransactionRecord> result = [];
     for (int walletId in walletIds) {
       final transactions = _transactionRepository.getTransactionRecordListAfterBlockHeight(
-          walletId, startBlockHeight);
+        walletId,
+        startBlockHeight,
+      );
       result.addAll(transactions);
     }
 
@@ -430,11 +447,16 @@ class WalletProvider extends ChangeNotifier {
   }
 
   List<TransactionRecord> getConfirmedTransactionRecordListWithinDateRange(
-      List<int> walletIds, int currentBlockHeight, Tuple2<DateTime, DateTime> dateRange) {
+    List<int> walletIds,
+    int currentBlockHeight,
+    Tuple2<DateTime, DateTime> dateRange,
+  ) {
     List<TransactionRecord> result = [];
     for (int walletId in walletIds) {
-      final transactions =
-          _transactionRepository.getTransactionRecordListWithDateRange(walletId, dateRange);
+      final transactions = _transactionRepository.getTransactionRecordListWithDateRange(
+        walletId,
+        dateRange,
+      );
       result.addAll(transactions);
     }
 
@@ -454,6 +476,10 @@ class WalletProvider extends ChangeNotifier {
     if (result.isFailure) {
       throw result.error;
     }
+  }
+
+  Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
+    return _utxoRepository.updateUtxoStatus(walletId, utxoList, status);
   }
 
   /// 백그라운드에서 미리 주소를 저장합니다.
