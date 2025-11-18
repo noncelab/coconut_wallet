@@ -172,13 +172,23 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _onCompletedScanningForBbQr(dynamic signedPsbt) async {
-    assert(signedPsbt is String);
+    String? encodedSignedPsbt;
+    if (signedPsbt is Map) {
+      final String jsonString = jsonEncode(signedPsbt);
+      debugPrint(jsonString);
+      encodedSignedPsbt = jsonString;
+    } else if (signedPsbt is String) {
+      encodedSignedPsbt = signedPsbt;
+    }
+
+    assert(encodedSignedPsbt != null);
+
     if (_isProcessing) return;
     _isProcessing = true;
 
     try {
       // raw transaction 데이터 저장
-      _viewModel.setSignedPsbt(signedPsbt);
+      _viewModel.setSignedPsbt(encodedSignedPsbt!);
 
       controller?.pause();
       await _stopCamera();

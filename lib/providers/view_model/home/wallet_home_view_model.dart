@@ -124,11 +124,11 @@ class WalletHomeViewModel extends ChangeNotifier {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
           _isFirstLoaded = true;
-          vibrateLight();
+          // vibrateLight(); 네트워크 동기화 완료시 진동 - 제거 요청됨
         }
         updateWalletBalances();
       } else if (syncState == NodeSyncState.failed) {
-        vibrateLightDouble();
+        // vibrateLightDouble(); 네트워크 동기화 실패시 진동 - 제거 요청됨
       }
       _nodeSyncState = syncState;
       Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
@@ -222,7 +222,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   void clearFakeBlanceTotalAmount() {
     _preferenceProvider.clearFakeBalanceTotalAmount();
-    _preferenceProvider.changeIsFakeBalanceActive(false); // 가짜잔액 초기화시 비활성화도 같이 수행(Wallet_home 에서만)
+    _preferenceProvider.toggleFakeBalanceActivation(false); // 가짜잔액 초기화시 비활성화도 같이 수행(Wallet_home 에서만)
     notifyListeners();
   }
 

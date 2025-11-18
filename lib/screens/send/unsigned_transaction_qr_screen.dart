@@ -101,7 +101,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
       case WalletImportSource.jade:
         // 제이드는 카메라 성능 최악
-        _qrScanDensity = isNarrowScreen ? QrScanDensity.slow : QrScanDensity.normal;
+        _qrScanDensity = QrScanDensity.slow;
         break;
       case WalletImportSource.krux:
         _qrScanDensity = QrScanDensity.slow;

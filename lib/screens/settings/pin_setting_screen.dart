@@ -159,7 +159,7 @@ class _PinSettingScreenState extends State<PinSettingScreen> {
             await _authProvider.checkDeviceBiometrics();
           }
 
-          vibrateLightDouble();
+          vibrateLight();
           await _showPinSetSuccessLottie();
 
           if (mounted) {

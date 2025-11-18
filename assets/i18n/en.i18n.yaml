@@ -60,7 +60,6 @@ block_num: "Block Number"
 inquiry_details: "Inquiry"
 utxo_total: "Amount"
 receiver: "Send To"
-recipient: "Recipient"
 estimated_fee: "Est. Fee"
 total_cost: "Total Cost"
 input_directly: "Fee Rate"
@@ -454,12 +453,11 @@ settings_screen:
   change_password: "Change Password"
   hide_balance: "Hide Balance"
   fake_balance:
-    fake_balance_setting: "Fake Balance Setting"
-    fake_balance_display: "Display Fake Balance"
-    fake_balance_input_placeholder: "Please set the fake total balance (in BTC units)"
+    fake_balance_setting: "Set Fake Balance"
+    fake_balance_display: "Show Fake Balance"
+    fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
     fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
     fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
-    fake_balance_input_not_enough_error: "Cannot set below $btc ($sats sats)"
   language: "Language"
   korean: "한국어"
   english: "English"
@@ -532,6 +530,8 @@ address_search_screen:
   change_address: "Change Address"
 utxo_list_screen:
   total_balance: "Total Balance"
+  utxo_locked_button: "Lock for spending"
+  utxo_unlocked_button: "Unlock for spending"
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmations)"
@@ -544,8 +544,8 @@ transaction_detail_screen:
 utxo_detail_screen:
   pending: "Pending Confirmation"
   address: "Holding Address"
-  utxo_locked: "Coin Locked"
-  utxo_unlocked: "Available for Use"
+  utxo_locked: "Locked"
+  utxo_unlocked: "Spendable"
   utxo_locked_toast_msg: "UTXO lock complete! This coin will no longer be used automatically."
   utxo_unlocked_toast_msg: "UTXO unlock complete! Coin has been switched to available status."
 

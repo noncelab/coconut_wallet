@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:math' as math;
 
+/// INFO: 현재 사용 안되고 있음
 class OnchainDonationInfoScreen extends StatefulWidget {
   final int donationAmount;
   const OnchainDonationInfoScreen({super.key, required this.donationAmount});

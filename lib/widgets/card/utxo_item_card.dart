@@ -13,8 +13,17 @@ class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
   final Function onPressed;
   final BitcoinUnit currentUnit;
+  final bool isSelected;
+  final bool isSelectionMode;
 
-  const UtxoItemCard({super.key, required this.utxo, required this.onPressed, required this.currentUnit});
+  const UtxoItemCard({
+    super.key,
+    required this.utxo,
+    required this.onPressed,
+    required this.currentUnit,
+    this.isSelected = false,
+    this.isSelectionMode = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +38,14 @@ class UtxoItemCard extends StatelessWidget {
         onPressed();
       },
       child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color:
+                isSelectionMode ? (isSelected ? CoconutColors.primary : CoconutColors.borderGray) : Colors.transparent,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -48,68 +65,85 @@ class UtxoItemCard extends StatelessWidget {
                 CoconutLayout.spacing_200w,
                 // amount
                 Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (utxo.isPending) ...[
-                        _buildPendingStatus(utxo.status),
-                      ] else if (utxo.status == UtxoStatus.locked) ...[
-                        SvgPicture.asset('assets/svg/lock.svg'),
-                      ],
-                      Expanded(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            currentUnit.displayBitcoinAmount(utxo.amount),
-                            style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
-                          ),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (utxo.isPending) ...[
+                          _buildPendingStatus(utxo.status),
+                          SizedBox(width: 4),
+                        ] else if (utxo.status == UtxoStatus.locked) ...[
+                          SvgPicture.asset('assets/svg/lock.svg'),
+                          SizedBox(width: 4),
+                        ],
+                        Text(
+                          currentUnit.displayBitcoinAmount(utxo.amount),
+                          style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
             CoconutLayout.spacing_100h,
-            // address
-            Text(utxo.to, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray350)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // address
+                Expanded(
+                  child: Text(
+                    utxo.to,
+                    style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray350).copyWith(height: 1.3),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
             Column(
               children: [
                 if ((utxo.tags?.isNotEmpty ?? false) || utxo.isChange)
                   CoconutLayout.spacing_100h, // utxo.tags가 있거나 잔돈일때만 마진 추가
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: List.generate((utxo.tags?.length ?? 0) + 1, (index) {
-                    if (index == 0) {
-                      if (utxo.isChange) {
-                        return IntrinsicWidth(
-                          child: CoconutChip(
-                            minWidth: 40,
-                            color: CoconutColors.gray800,
-                            borderColor: CoconutColors.gray800,
-                            label: t.change,
-                            labelSize: 12,
-                            labelColor: CoconutColors.white,
-                          ),
-                        );
-                      } else {
-                        return Container();
-                      }
-                    }
-                    Color foregroundColor = tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
-                    return IntrinsicWidth(
-                      child: CoconutChip(
-                        minWidth: 40,
-                        color: CoconutColors.backgroundColorPaletteDark[utxo.tags?[index - 1].colorIndex ?? 0],
-                        borderColor: foregroundColor,
-                        label: '#${utxo.tags?[index - 1].name ?? ''}',
-                        labelSize: 12,
-                        labelColor: foregroundColor,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: List.generate((utxo.tags?.length ?? 0) + 1, (index) {
+                          if (index == 0) {
+                            if (utxo.isChange) {
+                              return IntrinsicWidth(
+                                child: CoconutChip(
+                                  minWidth: 40,
+                                  color: CoconutColors.gray800,
+                                  borderColor: CoconutColors.gray800,
+                                  label: t.change,
+                                  labelSize: 12,
+                                  labelColor: CoconutColors.white,
+                                ),
+                              );
+                            } else {
+                              return Container();
+                            }
+                          }
+                          Color foregroundColor = tagColorPalette[utxo.tags?[index - 1].colorIndex ?? 0];
+                          return IntrinsicWidth(
+                            child: CoconutChip(
+                              minWidth: 40,
+                              color: CoconutColors.backgroundColorPaletteDark[utxo.tags?[index - 1].colorIndex ?? 0],
+                              borderColor: foregroundColor,
+                              label: '#${utxo.tags?[index - 1].name ?? ''}',
+                              labelSize: 12,
+                              labelColor: foregroundColor,
+                            ),
+                          );
+                        }),
                       ),
-                    );
-                  }),
+                    ),
+                  ],
                 ),
               ],
             ),
