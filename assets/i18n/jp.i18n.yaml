@@ -458,7 +458,6 @@ settings_screen:
     fake_balance_input_placeholder: "偽の総残高を設定してください（BTC単位）"
     fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
     fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます"
-    fake_balance_input_not_enough_error: "$btc（$sats sats）以下は設定できません"
   language: "言語"
   korean: "한국어"
   english: "English"
@@ -531,6 +530,8 @@ address_search_screen:
   change_address: "おつりアドレス"
 utxo_list_screen:
   total_balance: "総残高"
+  utxo_locked_button: "使用ロック"
+  utxo_unlocked_button: "使用可能にする"
 
 transaction_detail_screen:
   confirmation: "$height（$count確認）"

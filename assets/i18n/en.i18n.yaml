@@ -530,8 +530,8 @@ address_search_screen:
   change_address: "Change Address"
 utxo_list_screen:
   total_balance: "Total Balance"
-  utxo_locked_button: "Lock for spending"
-  utxo_unlocked_button: "Unlock for spending"
+  utxo_locked_button: "Lock"
+  utxo_unlocked_button: "Unlock"
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmations)"
