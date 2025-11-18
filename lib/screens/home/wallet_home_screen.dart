@@ -593,7 +593,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   isActive
                       ? ShrinkAnimationButton(
                         onPressed: () {
-                          _onTapReceive(walletOrder);
+                          // 받기 버튼 기능을 리뷰 테스트로 변경 (추후 원래 기능 복구 필요)
+                          // _onTapReceive(walletOrder);
+                          Navigator.pushNamed(context, '/positive-feedback');
+                          //
                         },
                         borderRadius: CoconutStyles.radius_100,
                         defaultColor: CoconutColors.gray800,
