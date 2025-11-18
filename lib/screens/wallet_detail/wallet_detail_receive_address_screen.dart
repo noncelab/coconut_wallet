@@ -70,8 +70,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(_selectedWalletItem?.name ?? t.send_screen.select_wallet,
-                    style: CoconutTypography.body1_16),
+                Text(_selectedWalletItem?.name ?? t.send_screen.select_wallet, style: CoconutTypography.body1_16),
                 CoconutLayout.spacing_50w,
                 const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
               ],
@@ -86,66 +85,65 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
           Navigator.of(context).pop();
         },
       ),
-      body: _selectedWalletItem != null
-          ? SafeArea(
-              child: SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
-                  child: Column(
-                    children: [
-                      QrCodeInfo(
-                        qrcodeTopWidget: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: FittedBox(
-                                  alignment: Alignment.centerLeft,
-                                  fit: BoxFit.scaleDown,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        t.address_list_screen
-                                            .address_index(index: receiveAddressIndex),
-                                        style: CoconutTypography.body1_16,
-                                      ),
-                                      Text(
-                                        derivationPath,
-                                        style: CoconutTypography.body2_14.setColor(
-                                          CoconutColors.white.withOpacity(0.7),
+      body:
+          _selectedWalletItem != null
+              ? SafeArea(
+                child: SingleChildScrollView(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                    child: Column(
+                      children: [
+                        QrCodeInfo(
+                          qrcodeTopWidget: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: FittedBox(
+                                    alignment: Alignment.centerLeft,
+                                    fit: BoxFit.scaleDown,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          t.address_list_screen.address_index(index: receiveAddressIndex),
+                                          style: CoconutTypography.body1_16,
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          derivationPath,
+                                          style: CoconutTypography.body2_14.setColor(
+                                            CoconutColors.white.withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              GestureDetector(
-                                onTap: _onAddressListButtonPressed,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    color: CoconutColors.white.withOpacity(0.15),
+                                GestureDetector(
+                                  onTap: _onAddressListButtonPressed,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: CoconutColors.white.withOpacity(0.15),
+                                    ),
+                                    child: Text(t.view_all_addresses, style: CoconutTypography.body3_12),
                                   ),
-                                  child:
-                                      Text(t.view_all_addresses, style: CoconutTypography.body3_12),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          qrData: receiveAddress,
+                          isAddress: true,
                         ),
-                        qrData: receiveAddress,
-                        isAddress: true,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            )
-          : const SizedBox(),
+              )
+              : const SizedBox(),
     );
   }
 
@@ -161,19 +159,20 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     AppGuard.enablePrivacyScreen();
     CommonBottomSheets.showDraggableBottomSheet(
       context: context,
-      childBuilder: (scrollController) => SelectWalletBottomSheet(
-        showOnlyMfpWallets: false,
-        scrollController: scrollController,
-        currentUnit: context.read<PreferenceProvider>().currentUnit,
-        walletId: selectedWalletId,
-        onWalletChanged: (id) {
-          final walletProvider = context.read<WalletProvider>();
-          _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
-          _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
-          setState(() {});
-          Navigator.pop(context);
-        },
-      ),
+      childBuilder:
+          (scrollController) => SelectWalletBottomSheet(
+            showOnlyMfpWallets: false,
+            scrollController: scrollController,
+            currentUnit: context.read<PreferenceProvider>().currentUnit,
+            walletId: selectedWalletId,
+            onWalletChanged: (id) {
+              final walletProvider = context.read<WalletProvider>();
+              _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
+              _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
+              setState(() {});
+              Navigator.pop(context);
+            },
+          ),
     ).whenComplete(() => AppGuard.disablePrivacyScreen());
   }
 }

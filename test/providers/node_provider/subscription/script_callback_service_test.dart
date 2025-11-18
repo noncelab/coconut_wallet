@@ -34,10 +34,7 @@ void main() {
 
       test('등록되지 않은 트랜잭션은 처리 가능해야 함', () {
         // When & Then
-        expect(
-            scriptCallbackManager.isTransactionProcessable(
-                txHashKey: txHashKey1, isConfirmed: false),
-            isTrue);
+        expect(scriptCallbackManager.isTransactionProcessable(txHashKey: txHashKey1, isConfirmed: false), isTrue);
       });
 
       test('최근 등록된 트랜잭션은 처리 불가능해야 함', () {
@@ -46,10 +43,10 @@ void main() {
 
         // When & Then
         expect(
-            scriptCallbackManager.isTransactionProcessable(
-                txHashKey: txHashKey1, isConfirmed: false),
-            isFalse,
-            reason: '방금 등록된 트랜잭션은 처리 불가능해야 합니다.');
+          scriptCallbackManager.isTransactionProcessable(txHashKey: txHashKey1, isConfirmed: false),
+          isFalse,
+          reason: '방금 등록된 트랜잭션은 처리 불가능해야 합니다.',
+        );
       });
 
       test('트랜잭션이 컨펌 상태로 변경되면 처리 가능해야 함', () {
@@ -59,16 +56,16 @@ void main() {
         // When & Then
         // 같은 트랜잭션 키에 대해 확정 상태로 처리 가능 여부를 확인하면 true를 반환해야 합니다.
         expect(
-            scriptCallbackManager.isTransactionProcessable(
-                txHashKey: txHashKey1, isConfirmed: true),
-            isTrue,
-            reason: '확정 상태로 변경되었으므로 처리 가능해야 합니다.');
+          scriptCallbackManager.isTransactionProcessable(txHashKey: txHashKey1, isConfirmed: true),
+          isTrue,
+          reason: '확정 상태로 변경되었으므로 처리 가능해야 합니다.',
+        );
         // 내부 상태가 confirmed로 변경되었는지 확인 (다음 isProcessable 호출 시 false가 되어야 함)
         expect(
-            scriptCallbackManager.isTransactionProcessable(
-                txHashKey: txHashKey1, isConfirmed: true),
-            isFalse,
-            reason: '상태 변경 후 다시 호출하면 처리 불가능해야 합니다.');
+          scriptCallbackManager.isTransactionProcessable(txHashKey: txHashKey1, isConfirmed: true),
+          isFalse,
+          reason: '상태 변경 후 다시 호출하면 처리 불가능해야 합니다.',
+        );
       });
 
       test('트랜잭션 완료 시 완료 상태로 표시되고 종속성이 제거되어야 함', () async {
@@ -83,8 +80,10 @@ void main() {
         scriptCallbackManager.registerFetchUtxosCallback(scriptKey1, callback1);
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash1, false);
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash2, false);
-        await scriptCallbackManager
-            .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1, txHash2]);
+        await scriptCallbackManager.registerTransactionDependency(testWalletItem, testScriptStatus1, [
+          txHash1,
+          txHash2,
+        ]);
 
         // When
         await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
@@ -92,10 +91,10 @@ void main() {
         // Then
         expect(callback1Called, isFalse, reason: 'txHash2가 완료되지 않았으므로 콜백은 아직 호출되지 않아야 합니다.');
         expect(
-            scriptCallbackManager
-                .areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
-            isFalse,
-            reason: 'txHash1은 완료되었으나 txHash2가 완료되지 않았으므로 false를 반환해야 합니다.');
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
+          isFalse,
+          reason: 'txHash1은 완료되었으나 txHash2가 완료되지 않았으므로 false를 반환해야 합니다.',
+        );
 
         // txHash2 완료 처리
         await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
@@ -106,58 +105,63 @@ void main() {
 
         // 두 트랜잭션 모두 완료 상태여야 함
         expect(
-            scriptCallbackManager
-                .areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
-            isTrue,
-            reason: 'txHash1과 txHash2 모두 완료 처리되었습니다.');
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
+          isTrue,
+          reason: 'txHash1과 txHash2 모두 완료 처리되었습니다.',
+        );
       });
 
       test('areAllTransactionsCompleted가 정확한 완료 상태를 반환해야 함', () async {
         // Given
         scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash1, false);
-        scriptCallbackManager.registerTransactionProcessing(
-            testWalletItem.id, txHash2, true); // confirmed 상태
+        scriptCallbackManager.registerTransactionProcessing(testWalletItem.id, txHash2, true); // confirmed 상태
 
         // When & Then
-        expect(scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1]),
-            isFalse,
-            reason: 'txHash1은 아직 완료되지 않았습니다.');
         expect(
-            scriptCallbackManager
-                .areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
-            isFalse,
-            reason: '두 트랜잭션 모두 아직 완료되지 않았습니다.');
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1]),
+          isFalse,
+          reason: 'txHash1은 아직 완료되지 않았습니다.',
+        );
+        expect(
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
+          isFalse,
+          reason: '두 트랜잭션 모두 아직 완료되지 않았습니다.',
+        );
 
         // When
         await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash1});
 
         // Then
         expect(
-            scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1]), isTrue,
-            reason: 'txHash1이 완료되었습니다.');
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1]),
+          isTrue,
+          reason: 'txHash1이 완료되었습니다.',
+        );
         expect(
-            scriptCallbackManager
-                .areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
-            isFalse,
-            reason: 'txHash2는 아직 완료되지 않았습니다.'); // txHash2는 아직
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
+          isFalse,
+          reason: 'txHash2는 아직 완료되지 않았습니다.',
+        ); // txHash2는 아직
 
         // When
         await scriptCallbackManager.registerTransactionCompletion(testWalletItem.id, {txHash2});
 
         // Then
         expect(
-            scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash2]), isTrue,
-            reason: 'txHash2가 완료되었습니다.');
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash2]),
+          isTrue,
+          reason: 'txHash2가 완료되었습니다.',
+        );
         expect(
-            scriptCallbackManager
-                .areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
-            isTrue,
-            reason: '두 트랜잭션 모두 완료되었습니다.'); // 모두 완료
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2]),
+          isTrue,
+          reason: '두 트랜잭션 모두 완료되었습니다.',
+        ); // 모두 완료
         expect(
-            scriptCallbackManager
-                .areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2, 'unknown_tx']),
-            isFalse,
-            reason: '목록에 존재하지 않는 트랜잭션 해시가 포함되면 false를 반환해야 합니다.');
+          scriptCallbackManager.areAllTransactionsCompleted(testWalletItem.id, [txHash1, txHash2, 'unknown_tx']),
+          isFalse,
+          reason: '목록에 존재하지 않는 트랜잭션 해시가 포함되면 false를 반환해야 합니다.',
+        );
       });
     });
 
@@ -227,8 +231,10 @@ void main() {
 
         // When
         // 이미 모든 트랜잭션이 완료된 상태에서 종속성 등록 시도
-        await scriptCallbackManager
-            .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1, txHash2]);
+        await scriptCallbackManager.registerTransactionDependency(testWalletItem, testScriptStatus1, [
+          txHash1,
+          txHash2,
+        ]);
 
         // Then
         expect(callbackCalled, isTrue, reason: '종속성 등록 시점에 모든 트랜잭션이 이미 완료 상태이므로 콜백이 즉시 호출되어야 합니다.');
@@ -254,10 +260,11 @@ void main() {
         // 각 스크립트에 대한 종속성 등록
         // script1 -> txHash1
         // script2 -> txHash1, txHash2
-        await scriptCallbackManager
-            .registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1]);
-        await scriptCallbackManager
-            .registerTransactionDependency(testWalletItem, testScriptStatus2, [txHash1, txHash2]);
+        await scriptCallbackManager.registerTransactionDependency(testWalletItem, testScriptStatus1, [txHash1]);
+        await scriptCallbackManager.registerTransactionDependency(testWalletItem, testScriptStatus2, [
+          txHash1,
+          txHash2,
+        ]);
 
         // When
         // txHash1 완료 처리

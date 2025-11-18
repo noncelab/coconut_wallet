@@ -42,10 +42,7 @@ void main() {
   }
 
   Future<void> realmDataSetup({required int initialVersion, required bool wallet}) async {
-    config = Configuration.local(
-      realmAllSchemas,
-      schemaVersion: initialVersion,
-    );
+    config = Configuration.local(realmAllSchemas, schemaVersion: initialVersion);
 
     realm = Realm(config);
     realmManager = RealmManager(realm: realm);
@@ -119,7 +116,6 @@ Future<void> walletListFlow(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   final Finder walletListScreen = find.byType(WalletListScreen);
-  await waitForWidget(tester, walletListScreen,
-      timeoutMessage: 'walletListScreen not found after 60 seconds');
+  await waitForWidget(tester, walletListScreen, timeoutMessage: 'walletListScreen not found after 60 seconds');
   await tester.pumpAndSettle();
 }

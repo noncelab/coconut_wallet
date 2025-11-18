@@ -15,8 +15,10 @@ bool isWalletWithoutMfp(WalletListItemBase? wallet) {
 
 // MFP가 있는 지갑이 하나라도 존재하는지 여부
 bool hasMfpWallet(List<WalletListItemBase> walletItemList) {
-  return walletItemList.any((wallet) =>
-      wallet is MultisigWalletListItem ||
-      (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint !=
-          WalletAddService.masterFingerprintPlaceholder);
+  return walletItemList.any(
+    (wallet) =>
+        wallet is MultisigWalletListItem ||
+        (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint !=
+            WalletAddService.masterFingerprintPlaceholder,
+  );
 }

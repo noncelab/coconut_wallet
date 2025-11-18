@@ -15,11 +15,19 @@ class IsolateController {
   final IsolateStateManager _isolateStateManager;
   final ElectrumService _electrumService;
   final TransactionRecordService _transactionRecordService;
-  IsolateController(this._subscriptionService, this._networkManager, this._isolateStateManager,
-      this._electrumService, this._transactionRecordService);
+  IsolateController(
+    this._subscriptionService,
+    this._networkManager,
+    this._isolateStateManager,
+    this._electrumService,
+    this._transactionRecordService,
+  );
 
   Future<void> executeNetworkCommand(
-      IsolateControllerCommand messageType, SendPort isolateToMainSendPort, List params) async {
+    IsolateControllerCommand messageType,
+    SendPort isolateToMainSendPort,
+    List params,
+  ) async {
     try {
       switch (messageType) {
         case IsolateControllerCommand.subscribeWallets:
@@ -69,8 +77,7 @@ class IsolateController {
           isolateToMainSendPort.send(Result.success(_electrumService.connectionStatus));
           break;
         case IsolateControllerCommand.getTransactionRecord:
-          isolateToMainSendPort
-              .send(await _transactionRecordService.getTransactionRecord(params[0], params[1]));
+          isolateToMainSendPort.send(await _transactionRecordService.getTransactionRecord(params[0], params[1]));
           break;
       }
     } catch (e, stack) {

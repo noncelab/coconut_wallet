@@ -19,26 +19,40 @@ class WalletAddService {
     return createWalletFromJson(json: json, name: name, walletImportSource: walletImportSource);
   }
 
-  WatchOnlyWallet createExtendedPublicKeyWallet(
-      String extendedPublicKey, String name, String? masterFingerPrint) {
+  WatchOnlyWallet createExtendedPublicKeyWallet(String extendedPublicKey, String name, String? masterFingerPrint) {
     final singleSigWallet = SingleSignatureWallet.fromExtendedPublicKey(
-        AddressType.p2wpkh, extendedPublicKey, masterFingerPrint ?? masterFingerprintPlaceholder);
-    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null,
-        WalletImportSource.extendedPublicKey.name);
-  }
-
-  WatchOnlyWallet createWalletFromDescriptor(
-      {required String descriptor,
-      required String name,
-      required WalletImportSource walletImportSource}) {
-    final singleSigWallet = SingleSignatureWallet.fromDescriptor(descriptor,
-        ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptor));
+      AddressType.p2wpkh,
+      extendedPublicKey,
+      masterFingerPrint ?? masterFingerprintPlaceholder,
+    );
     return WatchOnlyWallet(
-        name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+      name,
+      0,
+      0,
+      singleSigWallet.descriptor,
+      null,
+      null,
+      WalletImportSource.extendedPublicKey.name,
+    );
   }
 
-  WatchOnlyWallet createWalletFromUR(
-      {required UR ur, required String name, required WalletImportSource walletImportSource}) {
+  WatchOnlyWallet createWalletFromDescriptor({
+    required String descriptor,
+    required String name,
+    required WalletImportSource walletImportSource,
+  }) {
+    final singleSigWallet = SingleSignatureWallet.fromDescriptor(
+      descriptor,
+      ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptor),
+    );
+    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+  }
+
+  WatchOnlyWallet createWalletFromUR({
+    required UR ur,
+    required String name,
+    required WalletImportSource walletImportSource,
+  }) {
     const className = 'WalletAddService';
     const methodName = 'createWalletFromUR';
 
@@ -58,18 +72,18 @@ class WalletAddService {
       FileLogger.log(className, methodName, 'convertKeysToString completed $jsonCompatibleMap');
       final singleSigWallet = SingleSignatureWallet.fromCryptoAccountPayload(jsonCompatibleMap);
       FileLogger.log(className, methodName, 'SingleSignatureWallet.fromCryptoAccountPayload');
-      return WatchOnlyWallet(
-          name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+      return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
     } catch (e, stackTrace) {
       FileLogger.error(className, methodName, 'failed: $e', stackTrace);
       rethrow;
     }
   }
 
-  WatchOnlyWallet createWalletFromJson(
-      {required Map<String, dynamic> json,
-      required String name,
-      required WalletImportSource walletImportSource}) {
+  WatchOnlyWallet createWalletFromJson({
+    required Map<String, dynamic> json,
+    required String name,
+    required WalletImportSource walletImportSource,
+  }) {
     // BBQR 스캔 결과에서 xpub과 fingerprint 추출
     String? xpub;
     String? fingerprint;
@@ -92,15 +106,7 @@ class WalletAddService {
     try {
       if (descriptor != null) {
         final singleSigWallet = SingleSignatureWallet.fromDescriptor(descriptor);
-        return WatchOnlyWallet(
-          name,
-          0,
-          0,
-          singleSigWallet.descriptor,
-          null,
-          null,
-          walletImportSource.name,
-        );
+        return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
       }
     } catch (e) {
       // descriptor 파싱 실패 시 xpub으로 지갑 생성

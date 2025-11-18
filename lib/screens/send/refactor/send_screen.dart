@@ -191,6 +191,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     super.didChangeMetrics();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final currentKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
       if (_previousKeyboardHeight > 0 && currentKeyboardHeight == 0) {

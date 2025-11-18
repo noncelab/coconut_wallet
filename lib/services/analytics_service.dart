@@ -46,21 +46,13 @@ class AnalyticsService {
   }
 
   /// 커스텀 이벤트 로깅
-  Future<void> logEvent({
-    required String eventName,
-    Map<String, Object>? parameters,
-  }) async {
+  Future<void> logEvent({required String eventName, Map<String, Object>? parameters}) async {
     if (_isAnalyticsDisabled) return;
 
     try {
-      final combinedParameters = <String, Object>{
-        ...?parameters,
-      };
+      final combinedParameters = <String, Object>{...?parameters};
 
-      await _analytics?.logEvent(
-        name: eventName,
-        parameters: combinedParameters,
-      );
+      await _analytics?.logEvent(name: eventName, parameters: combinedParameters);
     } catch (e) {
       // 에러 발생 시 조용히 처리 (Analytics 실패가 앱 동작에 영향을 주지 않도록)
       Logger.error('Analytics error: $e');
@@ -68,17 +60,11 @@ class AnalyticsService {
   }
 
   /// 사용자 속성 설정
-  Future<void> setUserProperty({
-    required String name,
-    required String value,
-  }) async {
+  Future<void> setUserProperty({required String name, required String value}) async {
     if (_isAnalyticsDisabled) return;
 
     try {
-      await _analytics?.setUserProperty(
-        name: name,
-        value: value,
-      );
+      await _analytics?.setUserProperty(name: name, value: value);
     } catch (e) {
       Logger.error('Analytics user property error: $e');
     }

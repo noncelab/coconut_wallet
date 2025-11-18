@@ -15,12 +15,10 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:math' as math;
 
+/// INFO: 현재 사용 안되고 있음
 class OnchainDonationInfoScreen extends StatefulWidget {
   final int donationAmount;
-  const OnchainDonationInfoScreen({
-    super.key,
-    required this.donationAmount,
-  });
+  const OnchainDonationInfoScreen({super.key, required this.donationAmount});
 
   @override
   State<OnchainDonationInfoScreen> createState() => _OnchainDonationInfoScreenState();
@@ -55,14 +53,9 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CoconutAppBar.build(
-        title: t.donation.donate,
-        context: context,
-        backgroundColor: CoconutColors.black,
-      ),
+      appBar: CoconutAppBar.build(title: t.donation.donate, context: context, backgroundColor: CoconutColors.black),
       resizeToAvoidBottomInset: false,
-      body: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider,
-          OnchainDonationInfoViewModel>(
+      body: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, OnchainDonationInfoViewModel>(
         create: (_) => _viewModel,
         update: (_, connectivityProvider, walletProvider, viewModel) {
           if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
@@ -78,23 +71,16 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
               if (viewModel.isRecommendedFeeFetchSuccess != null &&
                   !viewModel.isRecommendedFeeFetchSuccess! &&
                   !viewModel.hasShownFeeErrorToast) {
-                CoconutToast.showWarningToast(
-                  context: context,
-                  text: ErrorCodes.feeEstimationError.message,
-                );
+                CoconutToast.showWarningToast(context: context, text: ErrorCodes.feeEstimationError.message);
                 viewModel.setHasShownFeeErrorToast(true);
               }
 
-              if ((viewModel.singlesigWalletList.isEmpty &&
-                      !viewModel.hasShownNotEnoughBalanceToast) ||
+              if ((viewModel.singlesigWalletList.isEmpty && !viewModel.hasShownNotEnoughBalanceToast) ||
                   (viewModel.isSyncCompleted &&
                       viewModel.isRecommendedFeeFetchSuccess == true &&
                       viewModel.availableDonationWalletList.isEmpty &&
                       !viewModel.hasShownNotEnoughBalanceToast)) {
-                CoconutToast.showWarningToast(
-                  context: context,
-                  text: t.donation.empty_enough_balance_wallet,
-                );
+                CoconutToast.showWarningToast(context: context, text: t.donation.empty_enough_balance_wallet);
                 viewModel.setHasShownNotEnoughBalanceToast(true);
               }
             });
@@ -113,37 +99,36 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
                             alignment: Alignment.topCenter,
-                            child: (viewModel.singlesigWalletList.isNotEmpty &&
-                                    (!viewModel.isSyncCompleted ||
-                                        viewModel.isRecommendedFeeFetchSuccess == null ||
-                                        viewModel.availableDonationWalletList.isNotEmpty))
-                                ? Stack(
-                                    children: [
-                                      Column(
-                                        children: [
-                                          _buildWalletSelectionWidget(),
-                                          _divider(topPaddingWidget: CoconutLayout.spacing_300h),
-                                          _buildDonationAmountInfoWidget(),
-                                          _divider(),
-                                        ],
-                                      ),
-                                      if (!viewModel.isSyncCompleted ||
-                                          viewModel.isRecommendedFeeFetchSuccess == null)
-                                        // 동기화 중이거나 수수료 조회중 일 때
-                                        Positioned.fill(
-                                          child: IgnorePointer(
-                                            child: Container(
-                                              alignment: Alignment.topCenter,
-                                              color: CoconutColors.black.withOpacity(0.6),
-                                              child: const CoconutCircularIndicator(
-                                                size: 150,
+                            child:
+                                (viewModel.singlesigWalletList.isNotEmpty &&
+                                        (!viewModel.isSyncCompleted ||
+                                            viewModel.isRecommendedFeeFetchSuccess == null ||
+                                            viewModel.availableDonationWalletList.isNotEmpty))
+                                    ? Stack(
+                                      children: [
+                                        Column(
+                                          children: [
+                                            _buildWalletSelectionWidget(),
+                                            _divider(topPaddingWidget: CoconutLayout.spacing_300h),
+                                            _buildDonationAmountInfoWidget(),
+                                            _divider(),
+                                          ],
+                                        ),
+                                        if (!viewModel.isSyncCompleted ||
+                                            viewModel.isRecommendedFeeFetchSuccess == null)
+                                          // 동기화 중이거나 수수료 조회중 일 때
+                                          Positioned.fill(
+                                            child: IgnorePointer(
+                                              child: Container(
+                                                alignment: Alignment.topCenter,
+                                                color: CoconutColors.black.withOpacity(0.6),
+                                                child: const CoconutCircularIndicator(size: 150),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                    ],
-                                  )
-                                : const SizedBox(),
+                                      ],
+                                    )
+                                    : const SizedBox(),
                           ),
                           _buildDonationAddressWidget(),
                         ],
@@ -157,8 +142,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       showGradient: false,
                       onButtonClicked: () {
                         if (!viewModel.isNetworkOn) {
-                          CoconutToast.showWarningToast(
-                              context: context, text: ErrorCodes.networkError.message);
+                          CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
                           return;
                         }
 
@@ -166,16 +150,13 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                         viewModel.saveFinalSendInfo();
                         viewModel.setIsLoading(false);
 
-                        final walletName = viewModel
-                            .availableDonationWalletList[viewModel.selectedIndex!].wallet.name;
-                        Navigator.pushNamed(context, '/unsigned-transaction-qr',
-                            arguments: {'walletName': walletName});
+                        final walletName = viewModel.availableDonationWalletList[viewModel.selectedIndex!].wallet.name;
+                        Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': walletName});
                       },
                       // 버튼 보이지 않을 때: 수수료 조회에 실패, 잔액이 충분한 지갑이 없음
                       // 비활성화 상태로 보일 때: 지갑 동기화 진행 중, 수수료 조회 중,
                       // 활성화 상태로 보일 때: 모든 지갑 동기화 완료, 지갑별 수수료 조회 성공
-                      isActive: viewModel.isSyncCompleted &&
-                          viewModel.isRecommendedFeeFetchSuccess != null,
+                      isActive: viewModel.isSyncCompleted && viewModel.isRecommendedFeeFetchSuccess != null,
                       text: t.next,
                       backgroundColor: CoconutColors.gray100,
                       pressedBackgroundColor: CoconutColors.gray500,
@@ -191,18 +172,12 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
     );
   }
 
-  Widget _divider(
-      {Widget topPaddingWidget = CoconutLayout.spacing_400h,
-      Widget bottomPaddingWidget = CoconutLayout.spacing_400h}) {
+  Widget _divider({
+    Widget topPaddingWidget = CoconutLayout.spacing_400h,
+    Widget bottomPaddingWidget = CoconutLayout.spacing_400h,
+  }) {
     return Column(
-      children: [
-        topPaddingWidget,
-        const Divider(
-          height: 1,
-          color: CoconutColors.gray600,
-        ),
-        bottomPaddingWidget,
-      ],
+      children: [topPaddingWidget, const Divider(height: 1, color: CoconutColors.gray600), bottomPaddingWidget],
     );
   }
 
@@ -212,12 +187,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            t.donation.donation_wallet,
-            style: CoconutTypography.body2_14_Bold.setColor(
-              CoconutColors.white,
-            ),
-          ),
+          Text(t.donation.donation_wallet, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
           SizedBox(
             width: _viewModel.availableDonationWalletList.length == 1 ? 60 : 130,
             height: 35,
@@ -234,16 +204,13 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       child: Container(
                         width: 12,
                         height: 12,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         child: Transform.rotate(
                           angle: math.pi / 2,
                           child: SvgPicture.asset(
                             'assets/svg/caret-down.svg',
                             fit: BoxFit.contain,
-                            colorFilter:
-                                const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
                           ),
                         ),
                       ),
@@ -267,15 +234,10 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       child: SizedBox(
                         height: 35,
                         child: Text(
-                          _viewModel
-                              .availableDonationWalletList[_viewModel.selectedIndex!].wallet.name,
+                          _viewModel.availableDonationWalletList[_viewModel.selectedIndex!].wallet.name,
                           style: CoconutTypography.body2_14_Number
-                              .setColor(
-                                CoconutColors.gray400,
-                              )
-                              .merge(const TextStyle(
-                                height: 2.4,
-                              )),
+                              .setColor(CoconutColors.gray400)
+                              .merge(const TextStyle(height: 2.4)),
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -294,16 +256,13 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
                       child: Container(
                         width: 12,
                         height: 12,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                        ),
+                        decoration: const BoxDecoration(shape: BoxShape.circle),
                         child: Transform.rotate(
                           angle: math.pi / 2 * 3,
                           child: SvgPicture.asset(
                             'assets/svg/caret-down.svg',
                             fit: BoxFit.contain,
-                            colorFilter:
-                                const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
                           ),
                         ),
                       ),
@@ -328,15 +287,11 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
             children: [
               Text(
                 t.donation.total_donation_amount,
-                style: CoconutTypography.body2_14_Bold.setColor(
-                  CoconutColors.white,
-                ),
+                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
               ),
               Text(
                 '${_viewModel.selectedIndex == null ? '-' : widget.donationAmount - _viewModel.availableDonationWalletList[_viewModel.selectedIndex!].estimatedFee} sats',
-                style: CoconutTypography.body2_14_NumberBold.setColor(
-                  CoconutColors.gray400,
-                ),
+                style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.gray400),
               ),
             ],
           ),
@@ -346,17 +301,10 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  t.donation.donation_amount,
-                  style: CoconutTypography.body2_14_Bold.setColor(
-                    CoconutColors.white,
-                  ),
-                ),
+                Text(t.donation.donation_amount, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
                 Text(
                   '${widget.donationAmount} ${t.sats}',
-                  style: CoconutTypography.body2_14_NumberBold.setColor(
-                    CoconutColors.gray400,
-                  ),
+                  style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.gray400),
                 ),
               ],
             ),
@@ -367,18 +315,11 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  t.fee,
-                  style: CoconutTypography.body2_14_Bold.setColor(
-                    CoconutColors.white,
-                  ),
-                ),
+                Text(t.fee, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
                 Text(
                   // TODO 수수료
                   '${_viewModel.selectedIndex == null ? '-' : _viewModel.availableDonationWalletList[_viewModel.selectedIndex!].estimatedFee} ${t.sats}',
-                  style: CoconutTypography.body2_14_NumberBold.setColor(
-                    CoconutColors.gray400,
-                  ),
+                  style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.gray400),
                 ),
               ],
             ),
@@ -396,9 +337,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
           alignment: Alignment.centerLeft,
           child: Text(
             t.donation.donation_address,
-            style: CoconutTypography.body2_14_Bold.setColor(
-              CoconutColors.white,
-            ),
+            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
           ),
         ),
         CoconutLayout.spacing_500h,
@@ -416,10 +355,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
         CoconutLayout.spacing_600h,
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: CopyTextContainer(
-            text: CoconutWalletApp.kDonationAddress,
-            textStyle: CoconutTypography.body2_14,
-          ),
+          child: CopyTextContainer(text: CoconutWalletApp.kDonationAddress, textStyle: CoconutTypography.body2_14),
         ),
       ],
     );

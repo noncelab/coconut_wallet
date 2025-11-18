@@ -31,10 +31,8 @@ void main() {
         2: FaucetRecord(id: 2, dateTime: 1627848390, count: 3),
       };
 
-      final encodedData =
-          json.encode(histories.map((key, value) => MapEntry(key.toString(), value.toJson())));
-      when(mockPrefs.setString(SharedPrefKeys.kFaucetHistories, encodedData))
-          .thenAnswer((_) async => true);
+      final encodedData = json.encode(histories.map((key, value) => MapEntry(key.toString(), value.toJson())));
+      when(mockPrefs.setString(SharedPrefKeys.kFaucetHistories, encodedData)).thenAnswer((_) async => true);
       when(mockPrefs.getString(SharedPrefKeys.kFaucetHistories)).thenReturn(encodedData);
 
       await sharedPrefs.saveFaucetHistory(histories[1]!);

@@ -286,7 +286,9 @@ class SendViewModel extends ChangeNotifier {
 
     _recipientList = [RecipientInfo()];
     _initBalances();
-    _setRecommendedFees();
+    _setRecommendedFees().whenComplete(() {
+      notifyListeners();
+    });
   }
 
   List<WalletListItemBase> _getOrderedRegisteredWallets() {
@@ -459,14 +461,21 @@ class SendViewModel extends ChangeNotifier {
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
     final recommendedFees = await FeeService().getRecommendedFees();
 
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
-    feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
-    _minimumFeeRate = recommendedFees.hourFee.toDouble();
+    if (recommendedFees == null) {
+      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
+      return false;
+    }
 
-    final defaultFeeRate = recommendedFees.halfHourFee.toString();
-    _feeRateText = defaultFeeRate;
-    _onFeeRateTextUpdate(defaultFeeRate);
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee?.toDouble();
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee?.toDouble();
+    feeInfos[2].satsPerVb = recommendedFees.hourFee?.toDouble();
+    _minimumFeeRate = recommendedFees.hourFee?.toDouble();
+
+    final defaultFeeRate = recommendedFees.halfHourFee?.toString();
+    if (defaultFeeRate != null) {
+      _feeRateText = defaultFeeRate;
+      _onFeeRateTextUpdate(_feeRateText);
+    }
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
     return true;
   }

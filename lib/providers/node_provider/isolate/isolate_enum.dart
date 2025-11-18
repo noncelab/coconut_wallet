@@ -21,8 +21,4 @@ enum IsolateStateMethod {
   setNodeSyncStateToFailed,
 }
 
-enum IsolateManagerCommand {
-  initializationCompleted,
-  initializationFailed,
-  updateState,
-}
+enum IsolateManagerCommand { initializationCompleted, initializationFailed, updateState }

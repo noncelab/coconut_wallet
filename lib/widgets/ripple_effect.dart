@@ -42,11 +42,7 @@ class _RippleEffectState extends State<RippleEffect> {
         onTapDown: _handleTapDown,
         onTapUp: _handleTapUp,
         onTapCancel: _handleTapCancel,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 100),
-          opacity: _opacity,
-          child: widget.child,
-        ),
+        child: AnimatedOpacity(duration: const Duration(milliseconds: 100), opacity: _opacity, child: widget.child),
       ),
     );
   }

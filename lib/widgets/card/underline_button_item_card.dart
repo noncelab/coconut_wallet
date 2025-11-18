@@ -8,45 +8,45 @@ class UnderlineButtonItemCard extends StatelessWidget {
   final String? underlineButtonLabel;
   final VoidCallback? onTapUnderlineButton;
 
-  const UnderlineButtonItemCard(
-      {super.key,
-      required this.label,
-      required this.child,
-      this.underlineButtonLabel,
-      this.onTapUnderlineButton});
+  const UnderlineButtonItemCard({
+    super.key,
+    required this.label,
+    required this.child,
+    this.underlineButtonLabel,
+    this.onTapUnderlineButton,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 16,
-        horizontal: 2,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(children: [
-            Text(label, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray400)),
-            const SizedBox(width: 4),
-            if (underlineButtonLabel != null)
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: CustomUnderlinedButton(
-                    text: underlineButtonLabel!,
-                    onTap: () {
-                      if (onTapUnderlineButton != null) {
-                        onTapUnderlineButton!();
-                      }
-                    },
-                    fontSize: 12,
-                    lineHeight: 18,
+          Row(
+            children: [
+              Text(label, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray400)),
+              const SizedBox(width: 4),
+              if (underlineButtonLabel != null)
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: CustomUnderlinedButton(
+                      text: underlineButtonLabel!,
+                      onTap: () {
+                        if (onTapUnderlineButton != null) {
+                          onTapUnderlineButton!();
+                        }
+                      },
+                      fontSize: 12,
+                      lineHeight: 18,
+                    ),
                   ),
                 ),
-              ),
-          ]),
+            ],
+          ),
           const SizedBox(height: 4),
-          child
+          child,
         ],
       ),
     );

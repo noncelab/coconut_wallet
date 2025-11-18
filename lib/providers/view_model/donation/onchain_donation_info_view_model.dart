@@ -65,8 +65,8 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _isNetworkOn = isNetworkOn;
 
-    RecommendedFee result = await FeeService().getRecommendedFees();
-    satsPerVb = result.hourFee.toDouble();
+    RecommendedFee? result = await FeeService().getRecommendedFees();
+    satsPerVb = result?.hourFee?.toDouble() ?? 1;
 
     _availableDonationWalletList.clear(); // 지갑 동기화 완료 후 initialize 호출 시 기존 목록 초기화
     for (var wallet in singlesigWalletList) {
