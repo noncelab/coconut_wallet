@@ -30,10 +30,8 @@ import 'package:tuple/tuple.dart';
 
 class UtxoListScreen extends StatefulWidget {
   final int id; // wallet id
-  final List<UtxoState> selectedUtxoList;
 
-  const UtxoListScreen({super.key, required this.id, List<UtxoState>? selectedUtxoList})
-    : selectedUtxoList = selectedUtxoList ?? const [];
+  const UtxoListScreen({super.key, required this.id});
 
   @override
   State<UtxoListScreen> createState() => _UtxoListScreenState();
@@ -95,7 +93,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       context.read<PriceProvider>(),
       context.read<PreferenceProvider>(),
       context.read<NodeProvider>().getWalletStateStream(widget.id),
-      widget.selectedUtxoList,
     );
 
     _scrollController.addListener(_onScroll);
@@ -261,7 +258,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               tagListWidget: UtxoTagListWidget(
                 selectedUtxoTagName: tagName,
                 onTagSelected: (name) => vm.setSelectedUtxoTagName(name),
-                isSelectionMode: _isSelectionMode,
               ),
               orderDropdownButtonKey: _selectModeHeaderDropdownKey,
               orderText: vm.utxoOrder.text,
@@ -337,7 +333,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   tagListWidget: UtxoTagListWidget(
                     selectedUtxoTagName: tagName,
                     onTagSelected: (name) => viewModel.setSelectedUtxoTagName(name),
-                    isSelectionMode: _isSelectionMode,
                   ),
                 );
               },

@@ -48,7 +48,6 @@ class UtxoListViewModel extends ChangeNotifier {
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
   UtxoOrder get utxoOrder => _preferenceProvider.utxoSortOrder;
-  final List<UtxoState> _initialSelectedUtxoList = []; // 초기 선택 상태 저장
 
   UtxoListViewModel(
     this._walletId,
@@ -59,7 +58,6 @@ class UtxoListViewModel extends ChangeNotifier {
     this._priceProvider,
     this._preferenceProvider,
     this._syncWalletStateStream,
-    List<UtxoState> selectedUtxoList,
   ) {
     _walletListBaseItem = _walletProvider.getWalletById(_walletId);
     _initUtxoAndTags();
@@ -79,10 +77,6 @@ class UtxoListViewModel extends ChangeNotifier {
     _updateFilteredUtxoList();
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-
-    // 초기 선택 상태 저장
-    _selectedUtxoList = List.from(selectedUtxoList);
-    _initialSelectedUtxoList.addAll(selectedUtxoList);
   }
 
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
@@ -270,27 +264,6 @@ class UtxoListViewModel extends ChangeNotifier {
     _confirmedUtxoList.clear();
     _confirmedUtxoList.addAll(unlockedUtxos);
     _confirmedUtxoList.addAll(lockedUtxos);
-  }
-
-  /// 선택 상태가 초기 상태와 다른지 확인
-  bool get hasSelectionChanged {
-    // 선택된 UTXO가 하나도 없으면 비활성화
-    if (_selectedUtxoList.isEmpty) {
-      return false;
-    }
-
-    if (_selectedUtxoList.length != _initialSelectedUtxoList.length) {
-      return true;
-    }
-
-    // 같은 UTXO들이 선택되어 있는지 확인 (순서는 상관없음)
-    for (final utxo in _selectedUtxoList) {
-      if (!_initialSelectedUtxoList.any((initial) => initial.utxoId == utxo.utxoId)) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   void _initUtxoAndTags() {

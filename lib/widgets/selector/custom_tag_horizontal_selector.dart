@@ -9,7 +9,6 @@ class CustomTagHorizontalSelector extends StatefulWidget {
   final List<String> tags;
   final String selectedName;
   final bool showDefaultTags;
-  final bool settingLock;
   final Function(String) onSelectedTag;
   final ScrollPhysics? scrollPhysics;
   const CustomTagHorizontalSelector({
@@ -18,7 +17,6 @@ class CustomTagHorizontalSelector extends StatefulWidget {
     required this.selectedName,
     required this.onSelectedTag,
     this.showDefaultTags = true,
-    required this.settingLock,
     this.scrollPhysics = const AlwaysScrollableScrollPhysics(),
   });
 

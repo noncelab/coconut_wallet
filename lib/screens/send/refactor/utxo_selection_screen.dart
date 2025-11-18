@@ -280,7 +280,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           onSelectedTag: (tagName) {
             viewModel.setSelectedUtxoTagName(tagName);
           },
-          settingLock: false,
         ),
       ),
     );
