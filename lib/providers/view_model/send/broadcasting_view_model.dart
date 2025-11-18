@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -74,8 +75,27 @@ class BroadcastingViewModel extends ChangeNotifier {
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    debugPrint('signedTx: ${signedTx.serialize()}');
+    Logger.log('BroadcastingViewModel: signedTx = ${signedTx.serialize()}');
+    final isConnected = await isElectrumServerConnected();
+    if (!isConnected) {
+      await _nodeProvider.reconnect();
+    }
     return _nodeProvider.broadcast(signedTx);
+  }
+
+  Future<bool> isElectrumServerConnected() async {
+    try {
+      // getLatestBlock 호출하여 실제 네트워크 연결 상태 확인
+      final result = await _nodeProvider.getLatestBlock();
+
+      if (result.isSuccess) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {
