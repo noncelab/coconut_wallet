@@ -209,6 +209,7 @@ wallet_home_screen:
       set_to_0: "0 BTCに設定"
       enter_again: "再入力"
   empty_recent_transaction: "最近取引がありません"
+  syncing_recent_transaction: "最近の取引履歴を読み込んでいます"
   empty_analysis_result: "分析に必要な取引はありません"
   analysis_period: "直近${days}日 • ${transaction_type}"
   analysis_period_cutsom: "直接設定 • ${transaction_type}"

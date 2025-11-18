@@ -29,6 +29,7 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/card/donation_banner_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
@@ -748,18 +749,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           CoconutLayout.spacing_800h,
           CoconutUnderlinedButton(
             padding: const EdgeInsets.all(8),
-            onTap:
-                () => CommonBottomSheets.showDraggableBottomSheet(
-                  minChildSize: 0.5,
-                  maxChildSize: 0.9,
-                  initialChildSize: 0.9,
-                  context: context,
-                  childBuilder: (controller) => WalletHomeEditBottomSheet(scrollController: controller),
-                ),
+            onTap: () {
+              CommonBottomSheets.showDraggableBottomSheet(
+                minChildSize: 0.5,
+                maxChildSize: 0.9,
+                initialChildSize: 0.9,
+                context: context,
+                childBuilder: (controller) => WalletHomeEditBottomSheet(scrollController: controller),
+              );
+            },
             text: t.wallet_home_screen.edit_home_screen,
             textStyle: CoconutTypography.body3_12,
           ),
-          CoconutLayout.spacing_1600h,
+          CoconutLayout.spacing_2500h,
         ],
       ),
     );
@@ -927,7 +929,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   if (ordered.isEmpty) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: _buildEmptyRecentTransactions(),
+                      child: _buildEmptyRecentTransactions(
+                        _viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty,
+                      ),
                     );
                   }
 
@@ -1124,7 +1128,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildEmptyRecentTransactions() {
+  Widget _buildEmptyRecentTransactions(bool isSyncing) {
     return Container(
       padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
       decoration: const BoxDecoration(
@@ -1132,10 +1136,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
       child: Center(
-        child: Text(
-          t.wallet_home_screen.empty_recent_transaction,
-          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-        ),
+        child:
+            isSyncing
+                ? AnimatedDotsText(
+                  text: t.wallet_home_screen.syncing_recent_transaction,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                )
+                : Text(
+                  t.wallet_home_screen.empty_recent_transaction,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                ),
       ),
     );
   }

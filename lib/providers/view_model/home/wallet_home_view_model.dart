@@ -203,25 +203,10 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     // 동기화가 완료되었고 블록 높이가 있으면 트랜잭션 조회
     if (_nodeSyncState == NodeSyncState.completed && currentBlock?.height != null) {
-      final bool shouldFetchRecentTx = homeFeatures.any(
-        (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name && f.isEnabled,
-      );
-      final bool shouldFetchAnalysis = homeFeatures.any(
-        (f) => f.homeFeatureTypeString == HomeFeatureType.analysis.name && f.isEnabled,
-      );
+      Logger.log('WalletHomeViewModel: 동기화 완료 후 블록 높이 업데이트 - 트랜잭션 조회 실행 (블록 높이: ${currentBlock!.height})');
+      getPendingAndRecentDaysTransactions(currentBlock.height, kRecenctTransactionDays);
 
-      Logger.log(
-        'WalletHomeViewModel: _handleCurrentBlockUpdate - shouldFetchRecentTx: $shouldFetchRecentTx, shouldFetchAnalysis: $shouldFetchAnalysis',
-      );
-
-      if (shouldFetchRecentTx) {
-        Logger.log('WalletHomeViewModel: 동기화 완료 후 블록 높이 업데이트 - 트랜잭션 조회 실행 (블록 높이: ${currentBlock!.height})');
-        getPendingAndRecentDaysTransactions(currentBlock.height, kRecenctTransactionDays);
-      }
-
-      if (shouldFetchAnalysis) {
-        getRecentTransactionAnalysis(_analysisPeriod);
-      }
+      getRecentTransactionAnalysis(_analysisPeriod);
     } else {
       Logger.log(
         'WalletHomeViewModel: _handleCurrentBlockUpdate - 트랜잭션 조회 건너뜀 (동기화 상태: $_nodeSyncState, 블록 높이: ${currentBlock?.height})',
@@ -249,32 +234,13 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   Future<void> updateWalletBalancesAndRecentTxs() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
-    debugPrint('DEBUG11 - updatedWalletBalance: $updatedWalletBalance');
     _walletBalance = updatedWalletBalance;
-    debugPrint('DEBUG11 - _walletBalance: $_walletBalance');
-    Logger.log('WalletHomeViewModel: updateWalletBalancesAndRecentTxs - currentBlock?.height: ${currentBlock?.height}');
-    final bool shouldFetchRecentTx = homeFeatures.any(
-      (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name && f.isEnabled,
-    );
-    debugPrint('DEBUG11 - shouldFetchRecentTx: $shouldFetchRecentTx');
-    final bool shouldFetchAnalysis = homeFeatures.any(
-      (f) => f.homeFeatureTypeString == HomeFeatureType.analysis.name && f.isEnabled,
-    );
-    debugPrint('DEBUG11 - shouldFetchAnalysis: $shouldFetchAnalysis');
-    if (shouldFetchRecentTx && currentBlock?.height != null) {
-      Logger.log('WalletHomeViewModel: updateWalletBalancesAndRecentTxs - 트랜잭션 조회 실행 (블록 높이: ${currentBlock!.height})');
+    if (currentBlock?.height != null) {
       getPendingAndRecentDaysTransactions(currentBlock!.height, kRecenctTransactionDays);
-      debugPrint('DEBUG11 - getPendingAndRecentDaysTransactions');
-    } else if (shouldFetchRecentTx && currentBlock?.height == null) {
-      Logger.log(
-        'WalletHomeViewModel: updateWalletBalancesAndRecentTxs - 블록 높이가 null이어서 트랜잭션 조회 건너뜀 (나중에 _handleCurrentBlockUpdate에서 처리)',
-      );
     }
-    if (shouldFetchAnalysis && currentBlock?.height != null) {
+    if (currentBlock?.height != null) {
       getRecentTransactionAnalysis(_analysisPeriod);
-      debugPrint('DEBUG11 - getRecentTransactionAnalysis');
     }
-    debugPrint('DEBUG11 - notifyListeners');
     notifyListeners();
   }
 
@@ -476,14 +442,17 @@ class WalletHomeViewModel extends ChangeNotifier {
     // if (_isLatestTxAnalysisRunning) return;
 
     _isLatestTxAnalysisRunning = true;
+    debugPrint('DEBUG11 - getRecentTransactionAnalysis');
     // 최근 n days 동안의 트랜잭션을 분석한 결과
     // 조회 기간 내 트랜잭션 개수
     // 조회 기간 내 트랜잭션의 받은 총 금액
     // 조회 기간 내 트랜잭션의 보낸 총 금액
     final walletIds = walletItemList.map((w) => w.id).toList();
+    debugPrint('DEBUG11 - currentBlock?.height: ${currentBlock?.height}');
     if (currentBlock?.height == null) return;
     final currentBlockHeight = currentBlock!.height;
-    debugPrint('analysisPeriod: $_analysisPeriod');
+    debugPrint('DEBUG11 - currentBlockHeight: $currentBlockHeight');
+    debugPrint('DEBUG11 - analysisPeriod: $_analysisPeriod');
     debugPrint('analysisPeriodRange.item1: ${_preferenceProvider.analysisPeriodRange.item1}');
     debugPrint('analysisPeriodRange.item2: ${_preferenceProvider.analysisPeriodRange.item2}');
     debugPrint('days: $days');

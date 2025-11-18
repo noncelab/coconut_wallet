@@ -213,6 +213,7 @@ wallet_home_screen:
           set_to_0: "Set balance to 0 BTC"
           enter_again: "Try again"
   empty_recent_transaction: "No recent transactions"
+  syncing_recent_transaction: "Syncing recent transactions"
   empty_analysis_result: "No transactions needed for analysis"
   analysis_period: "Recent ${days} days • ${transaction_type}"
   analysis_period_custom: "Custom • ${transaction_type}"

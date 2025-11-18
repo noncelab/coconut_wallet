@@ -191,6 +191,7 @@ class NodeProvider extends ChangeNotifier {
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
     subscribeWallets().then((result) {
+      _updateCurrentBlock();
       if (result.isFailure) {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
         _stateManager?.setNodeSyncStateToFailed();
