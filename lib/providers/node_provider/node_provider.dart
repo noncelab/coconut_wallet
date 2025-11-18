@@ -370,18 +370,39 @@ class NodeProvider extends ChangeNotifier {
       _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
       await closeConnection();
       await initialize();
-      final result = await subscribeWallets();
-      notifyListeners();
-      if (result.isSuccess) {
-        Logger.log('NodeProvider: Reconnect completed successfully');
+
+      _setConnectionError(false); // initializa 완료 후 에러 상태 명시적 리셋
+
+      final walletLoadState = _walletLoadStateNotifier.value;
+      final walletItems = _walletItemListNotifier.value;
+
+      if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isNotEmpty) {
+        Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Not Empty, start subscribing');
+        final result = await subscribeWallets();
+        notifyListeners();
+
+        if (result.isSuccess) {
+          Logger.log('NodeProvider: Reconnect completed successfully');
+          _setConnectionError(false);
+        } else {
+          Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');
+          _stateManager?.setNodeSyncStateToFailed();
+          _setConnectionError(true);
+        }
+      } else if (walletLoadState == WalletLoadState.loadCompleted && walletItems.isEmpty) {
+        Logger.log('NodeProvider: Wallet Loaded & Wallet Items is Empty, set state to completed');
+        _stateManager?.setNodeSyncStateToCompleted();
+        _setConnectionError(false);
+        notifyListeners();
       } else {
-        _stateManager?.setNodeSyncStateToFailed();
-        _setConnectionError(true);
-        Logger.error(result.error.toString());
+        Logger.log('NodeProvider: Wallet Loading, reset flag for auto-subscription');
+        _isFirstInitialization = true;
+        notifyListeners();
       }
     } catch (e) {
       Logger.error('NodeProvider: Reconnect failed: $e');
       _setConnectionError(true);
+      _stateManager?.setNodeSyncStateToFailed();
     }
   }
 

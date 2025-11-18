@@ -99,8 +99,8 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {
-    print(
-      'DEBUG - _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}',
+    Logger.log(
+      'WalletHomeViewModel: _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}',
     );
 
     if (!(_isNetworkOn ?? false)) {
@@ -119,7 +119,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
-    Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
+    // Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
@@ -131,7 +131,7 @@ class WalletHomeViewModel extends ChangeNotifier {
         // vibrateLightDouble(); 네트워크 동기화 실패시 진동 - 제거 요청됨
       }
       _nodeSyncState = syncState;
-      Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
+      // Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
       notifyListeners();
     } else if (_nodeSyncState == NodeSyncState.completed &&
         syncState == NodeSyncState.completed &&

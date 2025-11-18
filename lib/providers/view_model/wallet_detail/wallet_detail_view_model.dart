@@ -113,7 +113,7 @@ class WalletDetailViewModel extends ChangeNotifier {
 
     _setPendingAmount();
     _prevBalance = balance;
-    debugPrint('prev :: $_prevBalance');
+    // debugPrint('prev :: $_prevBalance');
 
     // Faucet
     _setReceiveAddress();
