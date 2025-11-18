@@ -91,6 +91,7 @@ tap: "Tap"
 hardware_wallet: "Hardware Wallet"
 vault_app: "Vault App"
 view_balance: "Balance"
+view: "View"
 network: "Network"
 electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
@@ -105,7 +106,7 @@ view_app_info: "App Info"
 view_tx_details: "Transaction"
 view_more: "More"
 view_less: "Less"
-view_mempool: "Mempool"
+view_mempool: "mempool.space"
 view_all_addresses: "All Addresses"
 select_utxo: "Select UTXO"
 select_all: "Select All"
@@ -121,6 +122,7 @@ faucet_request: "Test Bitcoin requested. Please wait a moment."
 faucet_already_request: "Already requested. It may take up to 5 minutes for the deposit."
 faucet_failed: "Request failed. Please try again later."
 bio_auth_required: "Biometric auth required"
+can_use_after_add_wallet: "Can use it after adding the wallet."
 
 donation:
   coconut: "Coconut Donation"
@@ -247,6 +249,7 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Select"
+# lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
   view_all_wallets: "View All My Wallets"
@@ -266,7 +269,7 @@ wallet_list:
     order_description: "to change the order of wallets."
     delete_description: "Swipe left on a wallet to delete it."
     finish: "Finish Editing"
-    unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"    
+    unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
 
 wallet_add_input_screen:
   app_bar_title_text: "Add Manually"
@@ -346,7 +349,6 @@ send_screen:
   fee_rate_too_low: "Minimum allowed value is 0.1"
   drag_to_add_address: "Drag to add an address"
 
-
 utxo_selection_screen:
   title: "Select UTXOs"
 
@@ -405,7 +407,8 @@ unsigned_tx_qr_screen:
     select: "Select"
     step2: "2. "
     step2_em: "PSBT"
-    step3: "3. Scan the QR code below with camera"
+    step3: "3. "
+    step3_em: "Scan the QR code below with camera"
   fast_scan_mode: "Fast scan mode"
   low_density_qr: "Simple QR"
   high_density_qr: "Complex QR"
@@ -504,7 +507,6 @@ settings_screen:
       copy: "Copy Log"
       toast:
         copy_success: "Log copied successfully."
-
 
 # lib/screens/wallet_detail
 wallet_detail_screen:
