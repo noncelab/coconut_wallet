@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
@@ -128,7 +129,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               _buildScaffold(context),
               _buildStickyHeader(context),
               _buildUtxoOrderDropdown(),
-              if (_isSelectionMode) ...[_buildBottomGradient(), _buildSelectionButtons()],
+              if (_isSelectionMode) ...[_buildSelectionButtons()],
             ],
           ),
         ),
@@ -382,27 +383,25 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildSelectionButtons() {
-    return Positioned(
-      left: 16,
-      right: 16,
-      bottom: 50,
-      child: Row(
-        children: [
-          Expanded(child: _buildLockButton(false, t.utxo_list_screen.utxo_unlocked_button)),
-          const SizedBox(width: 16),
-          Expanded(child: _buildLockButton(true, t.utxo_list_screen.utxo_locked_button)),
-        ],
-      ),
+    return FixedBottomTweenButton(
+      leftText: t.utxo_list_screen.utxo_unlocked_button,
+      rightText: t.utxo_list_screen.utxo_locked_button,
+      leftButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: false),
+      rightButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: true),
+      leftButtonRatio: 0.5,
+      showGradient: true,
+      bottomPadding: 40,
+      gradientPadding: const EdgeInsets.only(top: 0, bottom: 0, left: 0, right: 0),
+      leftButtonBackgroundColor: CoconutColors.white,
+      rightButtonBackgroundColor: CoconutColors.white,
+      leftButtonTextColor: CoconutColors.black,
+      rightButtonTextColor: CoconutColors.black,
+      buttonSpacing: 16,
+      // FixedBottomTweenButton 안에서 gradient 색상을 커스텀하도록 추가
+      // 아래와 같이 필요하면 FixedBottomTweenButton에 gradientColors 파라미터를 추가
+      // gradientColors: [Colors.transparent, CoconutColors.black],
     );
   }
-
-  Widget _buildLockButton(bool lock, String text) => CoconutButton(
-    onPressed: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: lock),
-    backgroundColor: CoconutColors.white,
-    buttonType: CoconutButtonType.filled,
-    text: text,
-    foregroundColor: CoconutColors.black,
-  );
 
   // ──────────────────────────────
   // Event Handlers
