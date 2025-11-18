@@ -390,16 +390,11 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       rightButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: true),
       leftButtonRatio: 0.5,
       showGradient: true,
-      bottomPadding: 40,
       gradientPadding: const EdgeInsets.only(top: 0, bottom: 0, left: 0, right: 0),
       leftButtonBackgroundColor: CoconutColors.white,
       rightButtonBackgroundColor: CoconutColors.white,
       leftButtonTextColor: CoconutColors.black,
       rightButtonTextColor: CoconutColors.black,
-      buttonSpacing: 16,
-      // FixedBottomTweenButton 안에서 gradient 색상을 커스텀하도록 추가
-      // 아래와 같이 필요하면 FixedBottomTweenButton에 gradientColors 파라미터를 추가
-      // gradientColors: [Colors.transparent, CoconutColors.black],
     );
   }
 
