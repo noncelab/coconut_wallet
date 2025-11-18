@@ -289,10 +289,14 @@ class WalletProvider extends ChangeNotifier {
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
       await _preferenceProvider.clearFakeBalanceTotalAmount();
-      await _preferenceProvider.changeIsFakeBalanceActive(false);
+      await _preferenceProvider.toggleFakeBalanceActivation(false);
     } else if (_preferenceProvider.isFakeBalanceActive) {
-      // 가짜 잔액 활성화 상태라면 재분배 작업 수행
-      await _preferenceProvider.initializeFakeBalance(_walletItemList);
+      final fakeBalanceTotalSats = _preferenceProvider.fakeBalanceTotalAmount;
+      await _preferenceProvider.distributeFakeBalance(
+        _walletItemList,
+        isFakeBalanceActive: true,
+        fakeBalanceTotalSats: fakeBalanceTotalSats?.toDouble(),
+      );
     }
 
     notifyListeners();
@@ -473,7 +477,12 @@ class WalletProvider extends ChangeNotifier {
   Future<void> _handleNewWalletAdded(int walletId) async {
     // 가짜 잔액 활성화 상태라면 재분배 작업 수행
     if (_preferenceProvider.isFakeBalanceActive) {
-      await _preferenceProvider.initializeFakeBalance(_walletItemList);
+      final fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
+      await _preferenceProvider.distributeFakeBalance(
+        _walletItemList,
+        isFakeBalanceActive: true,
+        fakeBalanceTotalSats: fakeBalanceTotalAmount?.toDouble(),
+      );
     }
 
     // 지갑 순서 목록에 추가

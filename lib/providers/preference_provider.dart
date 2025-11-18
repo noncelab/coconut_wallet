@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -32,9 +31,9 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isFakeBalanceActive;
   bool get isFakeBalanceActive => _isFakeBalanceActive;
 
-  /// 가짜 진엑 총량
-  late int? _fakeBalanceTotalAmount;
-  int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
+  /// 가짜 잔액 총량
+  late int? _fakeBalanceTotalBtc;
+  int? get fakeBalanceTotalAmount => _fakeBalanceTotalBtc;
 
   late bool _isBtcUnit;
   bool get isBtcUnit => _isBtcUnit;
@@ -98,14 +97,13 @@ class PreferenceProvider extends ChangeNotifier {
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
   PreferenceProvider(this._walletPreferencesRepository) {
-    initializeFiat();
-
-    /// 마지막으로 선택한 UTXO 정렬 기준(default - 큰 금액순)
-    _fakeBalanceTotalAmount = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
-    _isFakeBalanceActive = _fakeBalanceTotalAmount != null;
+    _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
+    _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _isBtcUnit =
-        _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit) ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit) : true;
+        _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)
+            ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit)
+            : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
     _walletOrder = getWalletOrder();
     _favoriteWalletIds = getFavoriteWalletIds();
@@ -137,7 +135,10 @@ class PreferenceProvider extends ChangeNotifier {
   void initializeFiat() {
     final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
     if (fiatCode.isNotEmpty) {
-      _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
+      _selectedFiat = FiatCode.values.firstWhere(
+        (fiat) => fiat.code == fiatCode,
+        orElse: () => FiatCode.KRW,
+      );
     } else {
       _selectedFiat = FiatCode.KRW;
       _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, _selectedFiat.code);
@@ -211,8 +212,8 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 홈 화면 잔액 숨기기
-  Future<void> changeIsFakeBalanceActive(bool isActive) async {
+  /// 가짜 잔액 활성화 상태 변경
+  Future<void> toggleFakeBalanceActivation(bool isActive) async {
     _isFakeBalanceActive = isActive;
     if (!isActive) {
       await clearFakeBalanceTotalAmount();
@@ -267,88 +268,58 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 가짜 잔액 분배 작업
-  Future<void> initializeFakeBalance(
+  /// 가짜 잔액 분배
+  Future<void> distributeFakeBalance(
     List<WalletListItemBase> wallets, {
-    bool? isFakeBalanceActive,
-    double? fakeBalanceTotalAmount,
+    required bool isFakeBalanceActive,
+    double? fakeBalanceTotalSats,
   }) async {
-    var fakeBalanceTotalBtc = fakeBalanceTotalAmount ?? UnitUtil.convertSatoshiToBitcoin(_fakeBalanceTotalAmount!);
+    assert(
+      isFakeBalanceActive == true && fakeBalanceTotalSats != null,
+      'isFakeBalanceActive일 때, fakeBalanceTotalSats는 필수 값입니다.',
+    );
 
-    if (fakeBalanceTotalBtc == 0) {
-      await setFakeBalanceTotalAmount(0);
+    var fakeBalanceTotalBtc = fakeBalanceTotalSats ?? _fakeBalanceTotalBtc!.toDouble();
+    fakeBalanceTotalBtc = fakeBalanceTotalBtc / 100000000;
 
-      final Map<int, dynamic> fakeBalanceMap = {};
-      for (int i = 0; i < wallets.length; i++) {
-        final walletId = wallets[i].id;
-
-        fakeBalanceMap[walletId] = 0;
-        debugPrint('[Wallet $i]Fake Balance: ${fakeBalanceMap[i]} BTC');
-      }
-      await setFakeBalanceMap(fakeBalanceMap);
-      return;
+    if (isFakeBalanceActive != _isFakeBalanceActive) {
+      await toggleFakeBalanceActivation(_isFakeBalanceActive);
     }
 
-    final walletCount = wallets.length;
+    if (!isFakeBalanceActive) return;
 
-    if (!fakeBalanceTotalBtc.toString().contains('.')) {
-      // input값이 정수 일 때 sats로 환산
-      fakeBalanceTotalBtc = fakeBalanceTotalBtc * 100000000;
-    } else {
-      // input이 소수일 때 소수점 이하 8자리로 맞춘 후 정수로 변환
-      final fixedString = fakeBalanceTotalBtc.toStringAsFixed(8).replaceAll('.', '');
-      fakeBalanceTotalBtc = double.parse(fixedString);
-    }
-
-    if (fakeBalanceTotalBtc < walletCount) return; // 최소 1사토시씩 못 주면 리턴
-
-    final random = Random();
-    // 1. 각 지갑에 최소 1사토시 할당
-    // 2. 남은 사토시를 랜덤 가중치로 분배
-    final List<int> weights = List.generate(walletCount, (_) => random.nextInt(100) + 1); // 1~100
-    final int weightSum = weights.reduce((a, b) => a + b);
-    final int remainingSats = (fakeBalanceTotalBtc - walletCount).toInt();
-    final List<int> splits = [];
-
-    for (int i = 0; i < walletCount; i++) {
-      final int share = (remainingSats * weights[i] / weightSum).floor();
-      splits.add(1 + share); // 최소 1 사토시 보장
-    }
-
-    // 보정: 분할의 총합이 totalSats보다 작을 수 있으므로 마지막 지갑에 부족분 추가
-    final int diff = (fakeBalanceTotalBtc - splits.reduce((a, b) => a + b)).toInt();
-    splits[splits.length - 1] += diff;
+    final fixedString = fakeBalanceTotalBtc.toStringAsFixed(8).replaceAll('.', '');
+    fakeBalanceTotalBtc = double.parse(fixedString);
 
     final Map<int, dynamic> fakeBalanceMap = {};
 
-    if (isFakeBalanceActive != null && isFakeBalanceActive != _isFakeBalanceActive) {
-      await changeIsFakeBalanceActive(_isFakeBalanceActive);
-    }
-
-    debugPrint('_fakeBalanceTotalAmount!.toInt(): ${fakeBalanceTotalBtc.toInt()}');
-    await setFakeBalanceTotalAmount(fakeBalanceTotalBtc.toInt());
+    final splits = FakeBalanceUtil.distributeFakeBalance(
+      fakeBalanceTotalBtc,
+      wallets.length,
+      BitcoinUnit.sats,
+    );
 
     for (int i = 0; i < splits.length; i++) {
       final walletId = wallets[i].id;
       final fakeBalance = splits[i];
       fakeBalanceMap[walletId] = fakeBalance;
-      debugPrint('[Wallet $i]Fake Balance: ${splits[i]} Sats');
     }
 
+    await setFakeBalanceTotalAmount(fakeBalanceTotalBtc.toInt());
     await setFakeBalanceMap(fakeBalanceMap);
-    await changeIsBalanceHidden(false); // 가짜 잔액 설정 시 잔액 숨기기 해제
+    await changeIsBalanceHidden(false); // 가짜 잔액 설정 시 잔액 숨기기는 해제
   }
 
   /// 가짜 잔액 총량 수정
   Future<void> setFakeBalanceTotalAmount(int balance) async {
-    _fakeBalanceTotalAmount = balance;
+    _fakeBalanceTotalBtc = balance;
     await _sharedPrefs.setInt(SharedPrefKeys.kFakeBalanceTotal, balance);
     notifyListeners();
   }
 
   /// 가짜 잔액 총량 초기화
   Future<void> clearFakeBalanceTotalAmount() async {
-    _fakeBalanceTotalAmount = null;
+    _fakeBalanceTotalBtc = null;
     await _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kFakeBalanceTotal);
     await _sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kFakeBalanceMap);
     notifyListeners();
@@ -384,7 +355,9 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 가짜 잔액 Map 설정
   Future<void> setFakeBalanceMap(Map<int, dynamic> map) async {
-    final Map<String, dynamic> stringKeyMap = map.map((key, value) => MapEntry(key.toString(), value));
+    final Map<String, dynamic> stringKeyMap = map.map(
+      (key, value) => MapEntry(key.toString(), value),
+    );
     final String encoded = json.encode(stringKeyMap);
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
@@ -443,7 +416,10 @@ class PreferenceProvider extends ChangeNotifier {
   /// 총 잔액에서 제외할 지갑 설정
   Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
     _excludedFromTotalBalanceWalletIds = ids;
-    await _sharedPrefs.setString(SharedPrefKeys.kExcludedFromTotalBalanceWalletIds, jsonEncode(ids));
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kExcludedFromTotalBalanceWalletIds,
+      jsonEncode(ids),
+    );
     notifyListeners();
   }
 
@@ -467,7 +443,10 @@ class PreferenceProvider extends ChangeNotifier {
     // 토글 가능한 항목('최근 거래', '분석'...)만 리스트에 포함됩니다.
     // 추후 홈 화면 기능이 추가됨에 따라 kHomeFeatures를 수정할 필요가 있습니다.
     _homeFeatures = List.from(features);
-    await _sharedPrefs.setString(SharedPrefKeys.kHomeFeatures, jsonEncode(features.map((e) => e.toJson()).toList()));
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kHomeFeatures,
+      jsonEncode(features.map((e) => e.toJson()).toList()),
+    );
     notifyListeners();
   }
 
@@ -512,7 +491,9 @@ class PreferenceProvider extends ChangeNotifier {
         (e) => !initialHomeFeatures.any((k) => k.homeFeatureTypeString == e.homeFeatureTypeString),
       );
       homeFeatures.addAll(
-        updatedHomeFeatures.where((e) => !homeFeatures.any((h) => h.homeFeatureTypeString == e.homeFeatureTypeString)),
+        updatedHomeFeatures.where(
+          (e) => !homeFeatures.any((h) => h.homeFeatureTypeString == e.homeFeatureTypeString),
+        ),
       );
       await setHomeFeautres(homeFeatures);
     }
@@ -524,7 +505,10 @@ class PreferenceProvider extends ChangeNotifier {
     final start = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodStart);
     final end = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodEnd);
     debugPrint('Analysis period range: $start ~ $end');
-    return Tuple2(start.isEmpty ? null : DateTime.parse(start), end.isEmpty ? null : DateTime.parse(end));
+    return Tuple2(
+      start.isEmpty ? null : DateTime.parse(start),
+      end.isEmpty ? null : DateTime.parse(end),
+    );
   }
 
   Future<void> setAnalysisPeriodRange(DateTime start, DateTime end) async {
@@ -557,7 +541,10 @@ class PreferenceProvider extends ChangeNotifier {
 
   Future<void> setAnalysisTransactionType(AnalysisTransactionType transactionType) async {
     _selectedAnalysisTransactionType = transactionType;
-    await _sharedPrefs.setString(SharedPrefKeys.kSelectedTransactionTypeIndices, _selectedAnalysisTransactionType.name);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kSelectedTransactionTypeIndices,
+      _selectedAnalysisTransactionType.name,
+    );
     notifyListeners();
   }
 
@@ -581,7 +568,10 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 일렉트럼 서버 설정
   Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
-    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kElectrumServerName,
+      defaultElectrumServer.serverName,
+    );
   }
 
   /// 커스텀 일렉트럼 서버 설정
