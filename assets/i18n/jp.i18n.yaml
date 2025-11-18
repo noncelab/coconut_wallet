@@ -193,11 +193,11 @@ wallet_home_screen:
     hide_balance: "残高を非表示"
     hide_balance_on_home: "ホーム画面に残高を表示しません。"
     fake_balance:
+      fake_balance_setting: "フェイク残高設定"
       fake_balance_display: "フェイク残高表示"
-      fake_balance_description: "代わりにフェイク残高を表示します。ウォレットが複数ある場合は、それぞれの残高が自動で合算されます。"
-      fake_balance_input_placeholder: "ホーム画面に表示する金額（BTC単位）"
-      fake_balance_input_exceeds_error: "最大で2100万BTCまで設定できます。"
-      fake_balance_input_not_enough_error: "$btc ($sats sats)未満には設定できません。"
+      fake_balance_input_placeholder: "偽の総残高を設定してください（BTC単位）"
+      fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
+      fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます。"
     category:
       total_balance: "残高合計"
       wallet_list: "ウォレット一覧"
