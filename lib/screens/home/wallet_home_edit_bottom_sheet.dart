@@ -239,7 +239,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                   SingleButton(
                                     isVerticalSubtitle: true,
                                     title: t.wallet_home_screen.edit.fake_balance.fake_balance_display,
-                                    subtitle: t.wallet_home_screen.edit.fake_balance.fake_balance_description,
+                                    subtitle: t.wallet_home_screen.edit.fake_balance.fake_balance_input_description,
                                     subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                                     customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
                                     betweenGap: 16,
@@ -584,7 +584,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                   errorText:
                       _viewModel.inputError == FakeBalanceInputError.exceedsTotalSupply
                           ? '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_exceeds_error}'
-                          : '  ${t.wallet_home_screen.edit.fake_balance.fake_balance_input_not_enough_error(btc: UnitUtil.convertSatoshiToBitcoin(viewModel.minimumSatoshi).toStringAsFixed(8), sats: viewModel.walletItemLength)}',
+                          : '',
                   isError: _viewModel.inputError != FakeBalanceInputError.none,
                   maxLines: 1,
                 ),

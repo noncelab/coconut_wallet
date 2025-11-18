@@ -31,10 +31,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   late double? _tempFakeBalanceTotalBtc;
   late int? _tempFakeBalanceTotalAmount;
 
-  WalletHomeEditViewModel(
-    this._walletProvider,
-    this._preferenceProvider,
-  ) {
+  WalletHomeEditViewModel(this._walletProvider, this._preferenceProvider) {
     // _walletBalance = _walletProvider
     //     .fetchWalletBalanceMap()
     //     .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
@@ -44,9 +41,10 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
 
-    _fakeBalanceTotalBtc = _preferenceProvider.fakeBalanceTotalAmount != null
-        ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
-        : null;
+    _fakeBalanceTotalBtc =
+        _preferenceProvider.fakeBalanceTotalAmount != null
+            ? UnitUtil.convertSatoshiToBitcoin(_preferenceProvider.fakeBalanceTotalAmount!)
+            : null;
 
     if (_fakeBalanceTotalBtc != null) {
       if (_fakeBalanceTotalBtc == 0) {
@@ -62,12 +60,13 @@ class WalletHomeEditViewModel extends ChangeNotifier {
 
     _homeFeatures = _preferenceProvider.homeFeatures;
 
-    _tempHomeFeatures = homeFeatures
-        .map((feature) => HomeFeature(
-              homeFeatureTypeString: feature.homeFeatureTypeString,
-              isEnabled: feature.isEnabled,
-            ))
-        .toList();
+    _tempHomeFeatures =
+        homeFeatures
+            .map(
+              (feature) =>
+                  HomeFeature(homeFeatureTypeString: feature.homeFeatureTypeString, isEnabled: feature.isEnabled),
+            )
+            .toList();
     _tempIsBalanceHidden = isBalanceHidden;
     _tempIsFakeBalanceActive = isFakeBalanceActive;
     _tempFakeBalanceTotalBtc = fakeBalanceTotalBtc;
@@ -120,20 +119,20 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     _tempIsBalanceHidden = value;
     if (!value) {
       _tempFakeBalanceTotalAmount = null;
-      _tempIsFakeBalanceActive = false;
+      // _tempIsFakeBalanceActive = false;
     }
     notifyListeners();
   }
 
   void clearFakeBlanceTotalAmount() {
     _preferenceProvider.clearFakeBalanceTotalAmount();
-    _preferenceProvider.changeIsFakeBalanceActive(false);
+    _preferenceProvider.toggleFakeBalanceActivation(false);
     _isFakeBalanceActive = false;
     notifyListeners();
   }
 
   void setIsFakeBalanceActive(bool value) {
-    _preferenceProvider.changeIsFakeBalanceActive(value);
+    _preferenceProvider.toggleFakeBalanceActivation(value);
     _isFakeBalanceActive = value;
     notifyListeners();
   }
@@ -174,8 +173,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   }
 
   void toggleTempHomeFeatureEnabled(String homeFeatureTypeString) {
-    final index = _tempHomeFeatures
-        .indexWhere((element) => element.homeFeatureTypeString == homeFeatureTypeString);
+    final index = _tempHomeFeatures.indexWhere((element) => element.homeFeatureTypeString == homeFeatureTypeString);
     if (index != -1) {
       final feature = _tempHomeFeatures[index];
       _tempHomeFeatures[index] = HomeFeature(
@@ -203,7 +201,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   Future<void> _setFakeBalance() async {
     final wallets = _walletProvider.walletItemList;
     if (!_tempIsFakeBalanceActive) {
-      await _preferenceProvider.changeIsFakeBalanceActive(false);
+      await _preferenceProvider.toggleFakeBalanceActivation(false);
 
       return;
     }
@@ -221,7 +219,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
         debugPrint('[Wallet $i]Fake Balance: ${fakeBalanceMap[i]} BTC');
       }
       await _preferenceProvider.setFakeBalanceMap(fakeBalanceMap);
-      await _preferenceProvider.changeIsFakeBalanceActive(_tempIsFakeBalanceActive);
+      await _preferenceProvider.toggleFakeBalanceActivation(_tempIsFakeBalanceActive);
       return;
     }
 
@@ -258,7 +256,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     final Map<int, dynamic> fakeBalanceMap = {};
 
     if (_preferenceProvider.isFakeBalanceActive != _tempIsFakeBalanceActive) {
-      await _preferenceProvider.changeIsFakeBalanceActive(_tempIsFakeBalanceActive);
+      await _preferenceProvider.toggleFakeBalanceActivation(_tempIsFakeBalanceActive);
     }
 
     await _preferenceProvider.setFakeBalanceTotalAmount(_tempFakeBalanceTotalBtc!.toInt());
