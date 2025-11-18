@@ -20,8 +20,6 @@ import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
-import 'package:path/path.dart';
-import 'package:provider/provider.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
@@ -398,6 +396,10 @@ class WalletProvider extends ChangeNotifier {
     if (result.isFailure) {
       throw result.error;
     }
+  }
+
+  Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
+    return _utxoRepository.updateUtxoStatus(walletId, utxoList, status);
   }
 
   /// 백그라운드에서 미리 주소를 저장합니다.

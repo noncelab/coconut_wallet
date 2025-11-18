@@ -1651,7 +1651,7 @@ const _clock = Package(
   dependencies: [],
 );
 
-/// coconut_design_system 0.9.5
+/// coconut_design_system 0.9.7
 const _coconut_design_system = Package(
   name: 'coconut_design_system',
   description:
@@ -1659,7 +1659,7 @@ const _coconut_design_system = Package(
   homepage: 'https://www.noncelab.com',
   repository: 'https://github.com/noncelab/coconut_design_system',
   authors: [],
-  version: '0.9.5',
+  version: '0.9.7',
   license: '''MIT License
 
 Copyright 2025 Nonce Lab
@@ -4090,7 +4090,7 @@ const _firebase_core = Package(
   ],
 );
 
-/// firebase_core_platform_interface 6.0.1
+/// firebase_core_platform_interface 6.0.2
 const _firebase_core_platform_interface = Package(
   name: 'firebase_core_platform_interface',
   description: 'A common platform interface for the firebase_core plugin.',
@@ -4098,7 +4098,7 @@ const _firebase_core_platform_interface = Package(
   repository:
       'https://github.com/firebase/flutterfire/tree/main/packages/firebase_core/firebase_core_platform_interface',
   authors: [],
-  version: '6.0.1',
+  version: '6.0.2',
   license: '''// Copyright 2017 The Chromium Authors. All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without

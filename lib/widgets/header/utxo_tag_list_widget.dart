@@ -6,8 +6,14 @@ import 'package:provider/provider.dart';
 class UtxoTagListWidget extends StatelessWidget {
   final String selectedUtxoTagName;
   final Function(String) onTagSelected;
+  final bool isSelectionMode;
 
-  const UtxoTagListWidget({super.key, required this.selectedUtxoTagName, required this.onTagSelected});
+  const UtxoTagListWidget({
+    super.key,
+    required this.selectedUtxoTagName,
+    required this.onTagSelected,
+    required this.isSelectionMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +27,7 @@ class UtxoTagListWidget extends StatelessWidget {
           tags: utxoTagList.map((e) => e.name).toList(),
           selectedName: selectedUtxoTagName,
           onSelectedTag: onTagSelected,
+          settingLock: isSelectionMode,
         );
       },
     );
