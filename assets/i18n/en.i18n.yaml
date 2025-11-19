@@ -296,7 +296,7 @@ wallet_add_input_screen:
     - "A unique value required to identify a watch-only wallet"
     - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
     - "Without fingerprint, you will not be able to use the send feature."
-  mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
+  mfp_input_placeholder: "masterfingerprint ex: f75f7ab5"
   mfp_skip: "Skip"
 
 # lib/screens/review
