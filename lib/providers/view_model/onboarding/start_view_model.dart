@@ -62,7 +62,7 @@ class StartViewModel extends ChangeNotifier {
     Uri storeUrl =
         Platform.isAndroid
             ? Uri.parse('https://play.google.com/store/apps/details?id=${_packageInfo.packageName}')
-            : Uri.parse('https://apps.apple.com/kr/app/$APPSTORE_ID');
+            : Uri.parse('https://apps.apple.com/kr/app/$APPSTORE_ID_REGTEST');
 
     if (await canLaunchUrl(storeUrl)) {
       await launchUrl(storeUrl);
