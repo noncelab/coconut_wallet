@@ -479,9 +479,9 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                                       ? Container(
                                                         width: 16,
                                                         height: 16,
-                                                        decoration: const BoxDecoration(
+                                                        decoration: BoxDecoration(
                                                           shape: BoxShape.circle,
-                                                          color: CoconutColors.gray700,
+                                                          color: CoconutColors.gray700.withValues(alpha: 0.5),
                                                         ),
                                                         child: Center(
                                                           child: SvgPicture.asset(
