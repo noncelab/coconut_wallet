@@ -16,10 +16,10 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
+import 'package:coconut_wallet/services/fee_service.dart';
+import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/recommended_fee_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -720,14 +720,22 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // 노드 프로바이더에서 추천 수수료 조회
   Future<void> _fetchRecommendedFees() async {
-    final recommendedFees = await getRecommendedFees(_nodeProvider);
+    final RecommendedFee? recommendedFees = await FeeService().getRecommendedFees();
 
+    if (recommendedFees == null) {
+      _isFeeFetchSuccess = false;
+      return;
+    }
     // TODO: 테스트 코드 - 추천수수료 mock
     // final recommendedFees = await DioClient().getRecommendedFee();
+    if (recommendedFees.fastestFee == null || recommendedFees.halfHourFee == null || recommendedFees.hourFee == null) {
+      _isFeeFetchSuccess = false;
+      return;
+    }
 
-    _feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
-    _feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
-    _feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
+    _feeInfos[0].satsPerVb = recommendedFees.fastestFee?.toDouble();
+    _feeInfos[1].satsPerVb = recommendedFees.halfHourFee?.toDouble();
+    _feeInfos[2].satsPerVb = recommendedFees.hourFee?.toDouble();
     _isFeeFetchSuccess = true;
   }
 

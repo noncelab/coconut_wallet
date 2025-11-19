@@ -17,10 +17,10 @@ class AppReviewService {
       if (await _inAppReview.isAvailable()) {
         _inAppReview.requestReview();
       } else {
-        _inAppReview.openStoreListing(appStoreId: APPSTORE_ID);
+        _inAppReview.openStoreListing(appStoreId: APPSTORE_ID_REGTEST);
       }
     } catch (_) {
-      _inAppReview.openStoreListing(appStoreId: APPSTORE_ID);
+      _inAppReview.openStoreListing(appStoreId: APPSTORE_ID_REGTEST);
     } finally {
       setHasReviewed();
     }

@@ -59,8 +59,7 @@ tx_id: "트랜잭션 ID"
 block_num: "블록 번호"
 inquiry_details: "문의 내용"
 utxo_total: "UTXO 합계"
-receiver: "보낼 주소"
-recipient: "받는 사람"
+receiver: "받는 주소"
 estimated_fee: "예상 수수료"
 total_cost: "총 소요 수량"
 input_directly: "직접 입력"
@@ -107,7 +106,7 @@ view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"
 view_more: "더보기"
 view_less: "간단히 보기"
-view_mempool: "멤풀 보기"
+view_mempool: "mempool.space"
 view_all_addresses: "전체 주소 보기"
 select_utxo: "UTXO 고르기"
 select_all: "모두 선택"
@@ -340,7 +339,7 @@ send_screen:
   add_recipient: "수신자 추가하기"
   use_btc_unit: "BTC 단위 사용"
   input_maximum_amount: "모두 보내기"
-  address_placeholder: "보낼 주소를 입력해 주세요"
+  address_placeholder: "받을 주소를 입력해 주세요"
   recommended_fee_unavailable: "추천 수수료 조회 실패"
   recommended_fee_unavailable_description: "수수료를 직접 입력해 주세요."
   tooltip_text: "수신 주소 ${count}개 • 총 ${amount}"
@@ -348,7 +347,7 @@ send_screen:
   max_mode_insufficient_balance: "잔액 부족"
   unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
   fee_rate_too_low: "0.1 미만으로는 설정할 수 없어요"
-  drag_to_add_address: "보낼 주소를 추가하려면 왼쪽으로 드래그 해주세요"
+  drag_to_add_address: "받을 주소를 추가하려면 왼쪽으로 드래그 해주세요"
 
 utxo_selection_screen:
   title: "UTXO 고르기"
@@ -372,8 +371,8 @@ send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"
   add_recipient: "받는 사람 추가하기"
-  address_placeholder: "보낼 주소를 입력해 주세요"
-  amount_placeholder: "보낼 수량을 입력해 주세요"
+  address_placeholder: "받을 주소를 입력해 주세요"
+  amount_placeholder: "수량을 입력해 주세요"
 send_confirm_screen:
   title: "입력 정보 확인"
 signed_psbt_scanner_screen:
@@ -456,10 +455,9 @@ settings_screen:
   fake_balance:
     fake_balance_setting: "가짜 잔액 설정"
     fake_balance_display: "가짜 잔액 표시"
-    fake_balance_input_placeholder: "가짜 총 잔액을 설정해 주세요.(BTC 단위)"
+    fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
     fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
     fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
-    fake_balance_input_not_enough_error: "$btc ($sats sats) 미만으로는 설정할 수 없어요"
   language: "언어"
   korean: "한국어"
   english: "English"
@@ -532,6 +530,8 @@ address_search_screen:
   change_address: "잔돈 주소"
 utxo_list_screen:
   total_balance: "총 잔액"
+  utxo_locked_button: "사용 잠금"
+  utxo_unlocked_button: "사용 가능으로 전환"
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
@@ -547,7 +547,7 @@ utxo_detail_screen:
   utxo_locked: "사용 잠금"
   utxo_unlocked: "사용 가능"
   utxo_locked_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
-  utxo_unlocked_toast_msg: "UTXO 잠금 해체 완료! 코인이 사용 가능한 상태로 전환됐어요."
+  utxo_unlocked_toast_msg: "UTXO 잠금 해제 완료! 코인이 사용 가능한 상태로 전환됐어요."
 
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"

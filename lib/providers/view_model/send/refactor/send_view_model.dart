@@ -7,20 +7,18 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
+import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
@@ -56,7 +54,6 @@ enum AddressError {
           }
         }
       case AddressError.none:
-      default:
         return "";
     }
   }
@@ -83,7 +80,6 @@ enum AmountError {
           unit: currentUnit.symbol,
         );
       case AmountError.none:
-      default:
         return "";
     }
   }
@@ -92,7 +88,6 @@ enum AmountError {
 class SendViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
-  final NodeProvider _nodeProvider;
   final PreferenceProvider _preferenceProvider;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
@@ -272,7 +267,6 @@ class SendViewModel extends ChangeNotifier {
   SendViewModel(
     this._walletProvider,
     this._sendInfoProvider,
-    this._nodeProvider,
     this._preferenceProvider,
     this._isNetworkOn,
     this._onAmountTextUpdate,
@@ -292,7 +286,9 @@ class SendViewModel extends ChangeNotifier {
 
     _recipientList = [RecipientInfo()];
     _initBalances();
-    _setRecommendedFees();
+    _setRecommendedFees().whenComplete(() {
+      notifyListeners();
+    });
   }
 
   List<WalletListItemBase> _getOrderedRegisteredWallets() {
@@ -463,28 +459,24 @@ class SendViewModel extends ChangeNotifier {
 
   Future<bool> _setRecommendedFees() async {
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
-    final recommendedFeesResult = await _nodeProvider.getRecommendedFees().timeout(
-      const Duration(seconds: 10),
-      onTimeout: () {
-        return Result.failure(const AppError('NodeProvider', "TimeoutException: Isolate response timeout"));
-      },
-    );
 
-    if (recommendedFeesResult.isFailure) {
+    final recommendedFees = await FeeService().getRecommendedFees();
+
+    if (recommendedFees == null) {
       _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
-      _onFeeRateTextUpdate('-');
       return false;
     }
 
-    final recommendedFees = recommendedFeesResult.value;
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee.toDouble();
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee.toDouble();
-    feeInfos[2].satsPerVb = recommendedFees.hourFee.toDouble();
-    _minimumFeeRate = recommendedFees.hourFee.toDouble();
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee?.toDouble();
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee?.toDouble();
+    feeInfos[2].satsPerVb = recommendedFees.hourFee?.toDouble();
+    _minimumFeeRate = recommendedFees.hourFee?.toDouble();
 
-    final defaultFeeRate = recommendedFees.halfHourFee.toString();
-    _feeRateText = defaultFeeRate;
-    _onFeeRateTextUpdate(defaultFeeRate);
+    final defaultFeeRate = recommendedFees.halfHourFee?.toString();
+    if (defaultFeeRate != null) {
+      _feeRateText = defaultFeeRate;
+      _onFeeRateTextUpdate(_feeRateText);
+    }
     _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
     return true;
   }
@@ -898,14 +890,17 @@ class SendViewModel extends ChangeNotifier {
   }
 
   Map<String, int> _getRecipientMapForTx(Map<String, int> map) {
-    if (!_isMaxMode) return map;
-    // 모두 보내기 상황에서 마지막 수신자의 amount에 수수료를 제하지 않은 상태로 반환한다. (트랜잭션 처리를 위해)
-    double amountSumExceptLast = _amountSumExceptLast;
-    int maxBalanceInSats =
+    final Map<String, int> normalizedMap = {for (var entry in map.entries) normalizeAddress(entry.key): entry.value};
+
+    if (!_isMaxMode) return normalizedMap;
+
+    final double amountSumExceptLast = _amountSumExceptLast;
+    final int maxBalanceInSats =
         balance - (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast).toInt();
-    String lastRecipientAddress = _recipientList[lastIndex].address;
-    map[lastRecipientAddress] = maxBalanceInSats;
-    return map;
+    final String lastRecipientAddress = normalizeAddress(_recipientList[lastIndex].address);
+
+    normalizedMap[lastRecipientAddress] = maxBalanceInSats;
+    return normalizedMap;
   }
 
   void saveSendInfo() {

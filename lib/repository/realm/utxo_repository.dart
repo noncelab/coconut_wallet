@@ -248,7 +248,6 @@ class UtxoRepository extends BaseRepository {
     return mapRealmToUtxoState(realmUtxo);
   }
 
-  /// 미사용된 UTXO의 잠금 상태 업데이트
   Future<Result<void>> toggleUtxoLockStatus(int walletId, String utxoId) async {
     return handleAsyncRealm(() async {
       final utxo =
@@ -263,6 +262,22 @@ class UtxoRepository extends BaseRepository {
           utxo.status = utxoStatusToString(UtxoStatus.locked);
         }
       });
+    });
+  }
+
+  Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
+    final statusStr = utxoStatusToString(status);
+    final utxosToUpdate = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [
+      walletId,
+      utxoList,
+    ]);
+
+    if (utxosToUpdate.isEmpty) return;
+
+    await realm.writeAsync(() {
+      for (var utxo in utxosToUpdate) {
+        utxo.status = statusStr;
+      }
     });
   }
 
