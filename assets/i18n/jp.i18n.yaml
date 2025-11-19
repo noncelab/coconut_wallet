@@ -672,7 +672,7 @@ errors:
     invalid: "有効なアドレスではありません"
     not_for_testnet: "テストネットアドレスではありません"
     not_for_mainnet: "メインネットアドレスではありません"
-    not_for_regtest: "regtestアドレスではありません"
+    not_for_regtest: "アドレス形式を確認してください。（Native SegWit 対応）"
     duplicated: "アドレスは既に追加されています"
   pin_check_error:
     trial_count: "あと$count回試行できます"

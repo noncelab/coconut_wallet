@@ -672,7 +672,7 @@ errors:
     invalid: "올바른 주소가 아니에요."
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
-    not_for_regtest: "레그테스트넷 주소가 아니에요."
+    not_for_regtest: "주소 형식을 확인해 주세요.(Native Segwit 지원)"
     duplicated: "이미 입력한 주소예요"
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"

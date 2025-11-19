@@ -672,7 +672,7 @@ errors:
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"
-    not_for_regtest: "Not a regtest address"
+    not_for_regtest: "Please check the address format. (Native SegWit supported)"
     duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"
