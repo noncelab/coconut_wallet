@@ -102,6 +102,12 @@ android {
             versionNameSuffix ""
         }
     }
+
+    packagingOptions {
+      jniLibs {
+        useLegacyPackaging true
+      }
+    }
 }
 
 flutter {
