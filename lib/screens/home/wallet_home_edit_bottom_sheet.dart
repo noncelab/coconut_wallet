@@ -458,9 +458,14 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                                 data: MediaQuery.of(
                                                   context,
                                                 ).copyWith(textScaler: const TextScaler.linear(1.0)),
-                                                child: Text(
-                                                  _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
-                                                  style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                                                child: FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  alignment: Alignment.centerLeft,
+                                                  child: Text(
+                                                    _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
+                                                    maxLines: 2,
+                                                    style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                                                  ),
                                                 ),
                                               ),
                                             ),
