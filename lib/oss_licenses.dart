@@ -103,7 +103,6 @@ const allDependencies = <Package>[
   _local_auth_windows,
   _logging,
   _lottie,
-  _macros,
   _matcher,
   _material_color_utilities,
   _meta,
@@ -144,7 +143,6 @@ const allDependencies = <Package>[
   _realm_dart,
   _realm_generator,
   _retrofit,
-  _retrofit_generator,
   _sane_uuid,
   _scoped_model,
   _screen_capture_event,
@@ -274,7 +272,6 @@ const devDependencies = <Package>[
   _flutter_oss_licenses,
   _json_serializable,
   _mockito,
-  _retrofit_generator,
   _test,
 ];
 
@@ -332,13 +329,13 @@ class PackageRef {
   Package resolve() => allDependencies.firstWhere((d) => d.name == name);
 }
 
-/// _fe_analyzer_shared 76.0.0
+/// _fe_analyzer_shared 85.0.0
 const __fe_analyzer_shared = Package(
   name: '_fe_analyzer_shared',
   description: 'Logic that is shared between the front_end and analyzer packages.',
   repository: 'https://github.com/dart-lang/sdk/tree/main/pkg/_fe_analyzer_shared',
   authors: [],
-  version: '76.0.0',
+  version: '85.0.0',
   license: '''Copyright 2019, the Dart project authors.
 
 Redistribution and use in source and binary forms, with or without
@@ -371,13 +368,58 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('meta')],
 );
 
-/// analyzer 6.11.0
+/// _flutterfire_internals 1.3.59
+const __flutterfire_internals = Package(
+  name: '_flutterfire_internals',
+  description: 'A package hosting Dart code shared between FlutterFire plugins.',
+  homepage: 'https://firebase.google.com/docs/firestore',
+  repository: 'https://github.com/firebase/flutterfire/tree/main/packages/_flutterfire_internals',
+  authors: [],
+  version: '1.3.59',
+  license: '''Copyright 2017, the Chromium project authors. All rights reserved.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+    * Neither the name of Google Inc. nor the names of its
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
+  isMarkdown: false,
+  isSdk: false,
+  dependencies: [
+    PackageRef('collection'),
+    PackageRef('firebase_core'),
+    PackageRef('firebase_core_platform_interface'),
+    PackageRef('flutter'),
+    PackageRef('meta'),
+  ],
+);
+
+/// analyzer 7.7.1
 const _analyzer = Package(
   name: 'analyzer',
   description: 'This package provides a library that performs static analysis of Dart code.',
   repository: 'https://github.com/dart-lang/sdk/tree/main/pkg/analyzer',
   authors: [],
-  version: '6.11.0',
+  version: '7.7.1',
   license: '''Copyright 2013, the Dart project authors.
 
 Redistribution and use in source and binary forms, with or without
@@ -413,7 +455,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('convert'),
     PackageRef('crypto'),
     PackageRef('glob'),
-    PackageRef('macros'),
     PackageRef('meta'),
     PackageRef('package_config'),
     PackageRef('path'),
@@ -667,13 +708,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('source_span'), PackageRef('string_scanner')],
 );
 
-/// build 2.5.4
+/// build 2.4.2
 const _build = Package(
   name: 'build',
   description: 'A package for authoring build_runner compatible code generators.',
   repository: 'https://github.com/dart-lang/build/tree/master/build',
   authors: [],
-  version: '2.5.4',
+  version: '2.4.2',
   license: '''Copyright 2016, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -706,18 +747,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [
     PackageRef('analyzer'),
     PackageRef('async'),
-    PackageRef('build_runner_core'),
-    PackageRef('built_collection'),
-    PackageRef('built_value'),
     PackageRef('convert'),
     PackageRef('crypto'),
     PackageRef('glob'),
-    PackageRef('graphs'),
     PackageRef('logging'),
     PackageRef('meta'),
     PackageRef('package_config'),
     PackageRef('path'),
-    PackageRef('pool'),
   ],
 );
 
@@ -851,13 +887,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// build_resolvers 2.5.4
+/// build_resolvers 2.4.4
 const _build_resolvers = Package(
   name: 'build_resolvers',
   description: 'Resolve Dart code in a Builder',
   repository: 'https://github.com/dart-lang/build/tree/master/build_resolvers',
   authors: [],
-  version: '2.5.4',
+  version: '2.4.4',
   license: '''Copyright 2018, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -891,7 +927,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('analyzer'),
     PackageRef('async'),
     PackageRef('build'),
-    PackageRef('build_runner_core'),
     PackageRef('collection'),
     PackageRef('convert'),
     PackageRef('crypto'),
@@ -902,16 +937,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('pool'),
     PackageRef('pub_semver'),
     PackageRef('stream_transform'),
+    PackageRef('yaml'),
   ],
 );
 
-/// build_runner 2.5.4
+/// build_runner 2.4.15
 const _build_runner = Package(
   name: 'build_runner',
   description: 'A build system for Dart code generation and modular compilation.',
   repository: 'https://github.com/dart-lang/build/tree/master/build_runner',
   authors: [],
-  version: '2.5.4',
+  version: '2.4.15',
   license: '''Copyright 2016, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -981,13 +1017,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// build_runner_core 9.1.2
+/// build_runner_core 8.0.0
 const _build_runner_core = Package(
   name: 'build_runner_core',
   description: 'Core tools to organize the structure of a build and run Builders.',
   repository: 'https://github.com/dart-lang/build/tree/master/build_runner_core',
   authors: [],
-  version: '9.1.2',
+  version: '8.0.0',
   license: '''Copyright 2018, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -1018,14 +1054,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   isMarkdown: false,
   isSdk: false,
   dependencies: [
-    PackageRef('analyzer'),
     PackageRef('async'),
     PackageRef('build'),
     PackageRef('build_config'),
     PackageRef('build_resolvers'),
-    PackageRef('build_runner'),
-    PackageRef('built_collection'),
-    PackageRef('built_value'),
     PackageRef('collection'),
     PackageRef('convert'),
     PackageRef('crypto'),
@@ -2324,13 +2356,13 @@ SOFTWARE.''',
   dependencies: [PackageRef('yaml'), PackageRef('path'), PackageRef('json_annotation')],
 );
 
-/// dart_style 2.3.8
+/// dart_style 3.1.1
 const _dart_style = Package(
   name: 'dart_style',
   description: 'Opinionated, automatic Dart source code formatter. Provides an API and a CLI tool.',
   repository: 'https://github.com/dart-lang/dart_style',
   authors: [],
-  version: '2.3.8',
+  version: '3.1.1',
   license: '''Copyright 2014, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -2368,6 +2400,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('path'),
     PackageRef('pub_semver'),
     PackageRef('source_span'),
+    PackageRef('yaml'),
   ],
 );
 
@@ -5158,13 +5191,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('meta')],
 );
 
-/// json_serializable 6.9.0
+/// json_serializable 6.9.5
 const _json_serializable = Package(
   name: 'json_serializable',
   description: 'Automatically generate code for converting to and from JSON by annotating Dart classes.',
   repository: 'https://github.com/google/json_serializable.dart/tree/master/json_serializable',
   authors: [],
-  version: '6.9.0',
+  version: '6.9.5',
   license: '''Copyright 2017, the Dart project authors. All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
@@ -5199,6 +5232,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('build'),
     PackageRef('build_config'),
     PackageRef('collection'),
+    PackageRef('dart_style'),
     PackageRef('json_annotation'),
     PackageRef('meta'),
     PackageRef('path'),
@@ -5678,46 +5712,6 @@ SOFTWARE.''',
   ],
 );
 
-/// macros 0.1.3-main.0
-const _macros = Package(
-  name: 'macros',
-  description:
-      'This package is for macro authors, and exposes the APIs necessary to write a macro. It exports the APIs from the private `_macros` SDK vendored package.',
-  repository: 'https://github.com/dart-lang/sdk/tree/main/pkg/macros',
-  authors: [],
-  version: '0.1.3-main.0',
-  license: '''Copyright 2024, the Dart project authors.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above
-      copyright notice, this list of conditions and the following
-      disclaimer in the documentation and/or other materials provided
-      with the distribution.
-    * Neither the name of Google LLC nor the names of its
-      contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
-  isMarkdown: false,
-  isSdk: false,
-  dependencies: [],
-);
-
 /// matcher 0.12.17
 const _matcher = Package(
   name: 'matcher',
@@ -6106,13 +6100,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// mockito 5.4.5
+/// mockito 5.4.6
 const _mockito = Package(
   name: 'mockito',
   description: 'A mock framework inspired by Mockito with APIs for Fakes, Mocks, behavior verification, and stubbing.',
   repository: 'https://github.com/dart-lang/mockito',
   authors: [],
-  version: '5.4.5',
+  version: '5.4.6',
   license: '''Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -7982,7 +7976,7 @@ const _rational = Package(
   dependencies: [],
 );
 
-/// realm 20.0.1
+/// realm 20.2.0
 const _realm = Package(
   name: 'realm',
   description:
@@ -7990,7 +7984,7 @@ const _realm = Package(
   homepage: 'https://www.realm.io',
   repository: 'https://github.com/realm/realm-dart',
   authors: [],
-  version: '20.0.1',
+  version: '20.2.0',
   license: '''Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -8362,7 +8356,7 @@ const _realm_common = Package(
   dependencies: [PackageRef('collection'), PackageRef('objectid'), PackageRef('sane_uuid')],
 );
 
-/// realm_dart 20.0.1
+/// realm_dart 20.2.0
 const _realm_dart = Package(
   name: 'realm_dart',
   description:
@@ -8370,7 +8364,7 @@ const _realm_dart = Package(
   homepage: 'https://www.realm.io',
   repository: 'https://github.com/realm/realm-dart',
   authors: [],
-  version: '20.0.1',
+  version: '20.2.0',
   license: '''Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -8575,7 +8569,7 @@ const _realm_dart = Package(
   ],
 );
 
-/// realm_generator 20.0.1
+/// realm_generator 20.2.0
 const _realm_generator = Package(
   name: 'realm_generator',
   description:
@@ -8583,7 +8577,7 @@ const _realm_generator = Package(
   homepage: 'https://www.realm.io',
   repository: 'https://github.com/realm/realm-dart',
   authors: [],
-  version: '20.0.1',
+  version: '20.2.0',
   license: '''Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -8806,50 +8800,6 @@ SOFTWARE.''',
   isMarkdown: false,
   isSdk: false,
   dependencies: [PackageRef('dio'), PackageRef('meta')],
-);
-
-/// retrofit_generator 7.0.8
-const _retrofit_generator = Package(
-  name: 'retrofit_generator',
-  description: 'retrofit generator is an dio client generator using source_gen and inspired by Chopper and Retrofit.',
-  homepage: 'https://mings.in/retrofit.dart/',
-  repository: 'https://github.com/trevorwang/retrofit.dart/',
-  authors: [],
-  version: '7.0.8',
-  license: '''MIT License
-
-Copyright (c) 2019 Trevor Wang
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.''',
-  isMarkdown: false,
-  isSdk: false,
-  dependencies: [
-    PackageRef('analyzer'),
-    PackageRef('build'),
-    PackageRef('built_collection'),
-    PackageRef('code_builder'),
-    PackageRef('dart_style'),
-    PackageRef('dio'),
-    PackageRef('retrofit'),
-    PackageRef('source_gen'),
-    PackageRef('tuple'),
-  ],
 );
 
 /// sane_uuid 1.1.0
@@ -9627,13 +9577,13 @@ SOFTWARE.''',
   dependencies: [PackageRef('flutter'), PackageRef('slang')],
 );
 
-/// source_gen 1.5.0
+/// source_gen 2.0.0
 const _source_gen = Package(
   name: 'source_gen',
   description: 'Source code generation builders and utilities for the Dart build system',
   repository: 'https://github.com/dart-lang/source_gen/tree/master/source_gen',
   authors: [],
-  version: '1.5.0',
+  version: '2.0.0',
   license: '''Copyright 2015, the Dart project authors.
 
 Redistribution and use in source and binary forms, with or without
@@ -9670,6 +9620,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('dart_style'),
     PackageRef('glob'),
     PackageRef('path'),
+    PackageRef('pub_semver'),
     PackageRef('source_span'),
     PackageRef('yaml'),
   ],
@@ -10236,13 +10187,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// tar 1.0.5
+/// tar 2.0.1
 const _tar = Package(
   name: 'tar',
   description: 'Memory-efficient, streaming implementation of the tar file format',
   repository: 'https://github.com/simolus3/tar/',
   authors: [],
-  version: '1.0.5',
+  version: '2.0.1',
   license: '''MIT License
 
 Copyright (c) 2021 Simon Binder
