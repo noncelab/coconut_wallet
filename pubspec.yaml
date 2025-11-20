@@ -18,10 +18,10 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 version: 0.5.0+1
 app_versions:
-  ios_regtest: 3.4.0+1
+  ios_regtest: 3.4.0+3
   ios_mainnet: 0.5.0+1
-  aos_regtest: 3.4.0+53
-  aos_mainnet: 0.5.0+40
+  aos_regtest: 3.4.0+57
+  aos_mainnet: 0.5.0+41
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -71,7 +71,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   device_info_plus: ^10.1.1
   package_info_plus: ^8.0.1
-  realm: ^20.0.0
+  realm: 20.2.0
   cryptography: ^2.7.0
   slang: ^4.7.0
   slang_flutter: ^4.7.0
@@ -99,10 +99,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
-  retrofit_generator: '>=7.0.0 <8.0.0'
   json_serializable: ^6.7.1
   build_runner: '>=2.3.0 <4.0.0'
-  mockito: ^5.4.4
+  mockito: 5.4.6
   test: ^1.25.7
 
   flutter_test:
