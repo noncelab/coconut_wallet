@@ -296,7 +296,7 @@ wallet_add_input_screen:
     - "A unique value required to identify a watch-only wallet"
     - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
     - "Without fingerprint, you will not be able to use the send feature."
-  mfp_input_placeholder: "f75f7ab5"
+  mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
   mfp_skip: "Skip"
 
 # lib/screens/review
@@ -511,7 +511,7 @@ settings_screen:
 # lib/screens/wallet_detail
 wallet_detail_screen:
   toast:
-    no_mfp_wallet_cant_send: "Wallets without master fingerprint cannot send"
+    no_mfp_wallet_cant_send: "Wallets without Master Fingerprint cannot send"
 address_list_screen:
   wallet_name: "$name's Address"
   address_index: "Address - $index"
@@ -557,7 +557,7 @@ wallet_info_screen:
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
   tooltip:
-    mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
+    mfp_placeholder_description: "This is a wallet added with extended public key\nand the Master Fingerprint was not entered\nso it is displayed as 00000000."
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
