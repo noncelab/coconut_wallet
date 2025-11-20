@@ -567,7 +567,7 @@ class _UtxoListState extends State<UtxoList> {
         }
 
         return SliverPadding(
-          padding: EdgeInsets.only(bottom: bottomInset + 75),
+          padding: EdgeInsets.only(bottom: bottomInset + 70),
           sliver: _buildSliverAnimatedList(utxoList, selectedTag),
         );
       },
