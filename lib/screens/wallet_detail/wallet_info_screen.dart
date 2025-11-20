@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -296,13 +295,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         _walletTooltipIconPosition = _walletTooltipIconRenderBox!.localToGlobal(Offset.zero);
         _tooltipTopPadding = _walletTooltipIconPosition.dy + _walletTooltipIconRenderBox!.size.height;
 
-        debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
-        debugPrint('kToolbarHeight = $kToolbarHeight');
-        debugPrint('_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
-        debugPrint('_tooltipTopPadding: $_tooltipTopPadding');
+        // debugPrint('MediaQuery.paddingOf(context).top = ${MediaQuery.paddingOf(context).top}');
+        // debugPrint('kToolbarHeight = $kToolbarHeight');
+        // debugPrint(
+        //     '_walletTooltipIconRenderBox!.size.height: ${_walletTooltipIconRenderBox!.size.height}');
+        // debugPrint('_tooltipTopPadding: $_tooltipTopPadding');
       }
     } catch (e) {
-      debugPrint('Tooltip position initialization failed: $e');
+      // debugPrint('Tooltip position initialization failed: $e');
       _walletTooltipIconPosition = Offset.zero;
     }
   }

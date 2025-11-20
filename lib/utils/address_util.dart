@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 
 String shortenAddress(String address, {int head = 8, int tail = 8}) {
   if (address.length <= head + tail) return address;
@@ -64,8 +65,8 @@ Bip21Data parseBip21Uri(String input) {
 
         if (key == 'amount') {
           try {
-            final satoshiAmount = double.parse(value);
-            amount = (satoshiAmount * 100000000).toInt();
+            final bitcoinAmount = double.parse(value);
+            amount = UnitUtil.convertBitcoinToSatoshi(bitcoinAmount);
           } catch (e) {
             // amount 파싱 실패 시 무시
           }
@@ -74,7 +75,7 @@ Bip21Data parseBip21Uri(String input) {
     }
   }
 
-  return Bip21Data(address: address.toLowerCase(), amount: amount, parameters: parameters);
+  return Bip21Data(address: address, amount: amount, parameters: parameters);
 }
 
 bool isBech32(String address) {
