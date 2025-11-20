@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 
@@ -59,6 +60,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
   @override
   Widget build(BuildContext context) {
     double keyboardHeight = (widget.isVisibleAboveKeyboard ? MediaQuery.of(context).viewInsets.bottom : 0);
+    double bottomInset = MediaQuery.of(context).padding.bottom;
 
     // 전체 너비에서 패딩과 버튼 간격을 제외한 실제 버튼 영역
     final totalWidth = MediaQuery.sizeOf(context).width - (widget.horizontalPadding * 2) - widget.buttonSpacing;
@@ -79,8 +81,8 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
             Positioned(
               left: 0,
               right: 0,
-              bottom: keyboardHeight,
-              height: 150,
+              bottom: 0,
+              height: 150 + bottomInset,
               child: IgnorePointer(
                 ignoring: true,
                 child: Container(
@@ -98,7 +100,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
           Positioned(
             left: widget.horizontalPadding,
             right: widget.horizontalPadding,
-            bottom: keyboardHeight + widget.bottomPadding,
+            bottom: keyboardHeight + widget.bottomPadding + bottomInset,
             child: Column(
               children: [
                 widget.subWidget ?? Container(),
