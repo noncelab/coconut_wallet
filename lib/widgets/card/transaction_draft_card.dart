@@ -16,38 +16,135 @@ import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:realm/realm.dart';
 
-class TransactionDraftCard extends StatelessWidget {
+class TransactionDraftCard extends StatefulWidget {
   final RealmTransactionDraft transactionDraft;
-  const TransactionDraftCard({super.key, required this.transactionDraft});
+  final bool isSwiped;
+  final void Function(bool isSwiped) onSwipeChanged;
+  final VoidCallback onDelete;
+
+  const TransactionDraftCard({
+    super.key,
+    required this.transactionDraft,
+    required this.isSwiped,
+    required this.onSwipeChanged,
+    required this.onDelete,
+  });
+
+  @override
+  State<TransactionDraftCard> createState() => _TransactionDraftCardState();
+}
+
+class _TransactionDraftCardState extends State<TransactionDraftCard> with SingleTickerProviderStateMixin {
+  late double _dragOffset;
+  final double _swipeThreshold = 0.2; // 20% 스와이프
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _dragOffset = 0;
+    _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+    _animation = Tween<double>(
+      begin: 0,
+      end: 0,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(TransactionDraftCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSwiped != widget.isSwiped) {
+      if (widget.isSwiped) {
+        _animateToSwipedPosition();
+      } else {
+        _animateToOriginalPosition();
+      }
+    }
+  }
+
+  void _animateToSwipedPosition() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final targetOffset = -screenWidth * _swipeThreshold;
+
+    // 기존 리스너 제거
+    _animation.removeListener(_animationListener);
+    _animationController.stop();
+    _animationController.reset();
+
+    _animation = Tween<double>(
+      begin: _dragOffset,
+      end: targetOffset,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+
+    _animation.addListener(_animationListener);
+    _animationController.forward();
+  }
+
+  void _animateToOriginalPosition() {
+    // 기존 리스너 제거
+    _animation.removeListener(_animationListener);
+    _animationController.stop();
+    _animationController.reset();
+
+    _animation = Tween<double>(
+      begin: _dragOffset,
+      end: 0,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+
+    _animation.addListener(_animationListener);
+    _animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+        _animation.removeListener(_animationListener);
+      }
+    });
+    _animationController.forward();
+  }
+
+  void _animationListener() {
+    if (mounted) {
+      setState(() {
+        _dragOffset = _animation.value;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final walletId = transactionDraft.walletId;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final walletId = widget.transactionDraft.walletId;
     // recipientListJson에서 amount 합산 (BTC 단위)
-    final totalAmount = transactionDraft.recipientListJson.fold<double>(0.0, (sum, jsonString) {
+    final totalAmount = widget.transactionDraft.recipientListJson.fold<double>(0.0, (sum, jsonString) {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       final amountStr = json['amount'] as String? ?? '0';
       final amount = double.tryParse(amountStr) ?? 0.0;
       return sum + amount;
     });
-    final currentUnit = transactionDraft.currentUnit;
+    final currentUnit = widget.transactionDraft.currentUnit;
     // BTC를 사토시로 변환
     final totalAmountSats = currentUnit == t.btc ? UnitUtil.convertBitcoinToSatoshi(totalAmount) : totalAmount.toInt();
-    final feeRate = transactionDraft.feeRate;
-    final isMaxMode = transactionDraft.isMaxMode;
-    final isMultisig = transactionDraft.isMultisig;
-    final isFeeSubtractedFromSendAmount = transactionDraft.isFeeSubtractedFromSendAmount;
-    final transactionHex = transactionDraft.transactionHex;
-    final txWaitingForSign = transactionDraft.txWaitingForSign;
-    final signedPsbtBase64Encoded = transactionDraft.signedPsbtBase64Encoded;
-    final recipientListJson = transactionDraft.recipientListJson;
-    final createdAt = transactionDraft.createdAt;
+    final feeRate = widget.transactionDraft.feeRate;
+    final isMaxMode = widget.transactionDraft.isMaxMode;
+    final isMultisig = widget.transactionDraft.isMultisig;
+    final isFeeSubtractedFromSendAmount = widget.transactionDraft.isFeeSubtractedFromSendAmount;
+    final transactionHex = widget.transactionDraft.transactionHex;
+    final txWaitingForSign = widget.transactionDraft.txWaitingForSign;
+    final signedPsbtBase64Encoded = widget.transactionDraft.signedPsbtBase64Encoded;
+    final recipientListJson = widget.transactionDraft.recipientListJson;
+    final createdAt = widget.transactionDraft.createdAt;
     final formattedCreatedAt = DateTimeUtil.formatTimestamp(createdAt!.toLocal());
 
-    final selectedUtxoListJson = transactionDraft.selectedUtxoListJson;
+    final selectedUtxoListJson = widget.transactionDraft.selectedUtxoListJson;
     final formattedSelectedUtxoList =
         selectedUtxoListJson.map((jsonString) {
           final json = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -99,28 +196,105 @@ class TransactionDraftCard extends StatelessWidget {
 
     return ShrinkAnimationButton(
       onPressed: () {
-        debugPrint('TransactionDraftCard onPressed');
+        if (_dragOffset != 0) {
+          // 스와이프된 상태면 닫기
+          widget.onSwipeChanged(false);
+        } else {
+          // 아니면 기본 동작
+          debugPrint('TransactionDraftCard onPressed');
+        }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
           children: [
-            _buildTimestamp(formattedCreatedAt),
-            CoconutLayout.spacing_200h,
-            _buildWalletNameAmount(
-              walletImportSource,
-              walletName,
-              totalAmountSats,
-              iconIndex,
-              colorIndex,
-              signers,
-              context.read<PreferenceProvider>().currentUnit,
+            // 삭제 버튼
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: CoconutColors.gray800,
+                  borderRadius: BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: SizedBox(
+                    width: screenWidth * _swipeThreshold + 20,
+                    height: double.infinity,
+                    child: GestureDetector(
+                      onTap: widget.onDelete,
+                      child: Container(
+                        decoration: const BoxDecoration(color: CoconutColors.hotPink),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CoconutLayout.spacing_500w,
+                            SvgPicture.asset(
+                              'assets/svg/trash.svg',
+                              width: 24,
+                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            CoconutLayout.spacing_200h,
-            _buildRecipientAddress(recipientListJson),
-            CoconutLayout.spacing_200h,
-            _buildFeeRate(feeRate ?? 0),
+            GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                if (details.delta.dx < 0) {
+                  // 왼쪽으로 드래그
+                  setState(() {
+                    _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
+                  });
+                } else if (details.delta.dx > 0 && _dragOffset < 0) {
+                  // 오른쪽으로 드래그 (복원)
+                  setState(() {
+                    _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
+                  });
+                }
+              },
+              onHorizontalDragEnd: (details) {
+                final threshold = screenWidth * _swipeThreshold;
+                if (_dragOffset.abs() >= threshold * 0.5) {
+                  // 50% 이상 스와이프되면 완전히 열기
+                  widget.onSwipeChanged(true);
+                  _animateToSwipedPosition();
+                } else {
+                  // 그렇지 않으면 닫기
+                  widget.onSwipeChanged(false);
+                  _animateToOriginalPosition();
+                }
+              },
+              child: Transform.translate(
+                offset: Offset(_dragOffset, 0),
+                child: Container(
+                  decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTimestamp(formattedCreatedAt),
+                      CoconutLayout.spacing_200h,
+                      _buildWalletNameAmount(
+                        walletImportSource,
+                        walletName,
+                        totalAmountSats,
+                        iconIndex,
+                        colorIndex,
+                        signers,
+                        context.read<PreferenceProvider>().currentUnit,
+                      ),
+                      CoconutLayout.spacing_200h,
+                      _buildRecipientAddress(recipientListJson),
+                      CoconutLayout.spacing_200h,
+                      _buildFeeRate(feeRate ?? 0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
