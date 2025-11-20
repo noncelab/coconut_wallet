@@ -124,6 +124,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
       context: context,
       backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
       title: t.transaction_draft.title,
+      isBottom: true,
     );
   }
 

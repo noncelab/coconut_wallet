@@ -368,7 +368,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           leftButtonText: t.transaction_draft.dialog.cancel,
           rightButtonText: t.transaction_draft.dialog.move,
           onTapRight: () {
-            Navigator.pop(context);
+            Navigator.pushNamedAndRemoveUntil(context, '/transaction-draft', ModalRoute.withName("/"));
           },
           onTapLeft: () {
             Navigator.pop(context);
