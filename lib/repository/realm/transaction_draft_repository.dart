@@ -154,9 +154,11 @@ class TransactionDraftRepository extends BaseRepository {
     required bool isMaxMode,
     required bool isMultisig,
     required bool isFeeSubtractedFromSendAmount,
+    List<UtxoState>? selectedUtxoList,
   }) {
     final feeRate = feeRateText != null && feeRateText.isNotEmpty ? int.tryParse(feeRateText) : null;
     final recipientListJson = _recipientListToJson(recipientList);
+    final selectedUtxoListJson = selectedUtxoList != null ? _utxoListToJson(selectedUtxoList) : const <String>[];
 
     // walletId로 필터링
     final drafts = realm.query<RealmTransactionDraft>('walletId == $walletId').toList();
@@ -186,7 +188,21 @@ class TransactionDraftRepository extends BaseRepository {
         }
       }
 
-      if (isRecipientListIdentical) {
+      if (!isRecipientListIdentical) continue;
+
+      // selectedUtxoListJson 비교 (순서와 개수 모두 일치해야 함)
+      final draftSelectedUtxoListJson = draft.selectedUtxoListJson.toList();
+      if (draftSelectedUtxoListJson.length != selectedUtxoListJson.length) continue;
+
+      bool isSelectedUtxoListIdentical = true;
+      for (int i = 0; i < selectedUtxoListJson.length; i++) {
+        if (draftSelectedUtxoListJson[i] != selectedUtxoListJson[i]) {
+          isSelectedUtxoListIdentical = false;
+          break;
+        }
+      }
+
+      if (isSelectedUtxoListIdentical) {
         return true;
       }
     }
@@ -216,6 +232,7 @@ class TransactionDraftRepository extends BaseRepository {
       isMaxMode: isMaxMode,
       isMultisig: isMultisig,
       isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount,
+      selectedUtxoList: selectedUtxoList,
     )) {
       return Result<RealmTransactionDraft>.failure(ErrorCodes.transactionDraftAlreadyExists);
     }
