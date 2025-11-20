@@ -145,6 +145,7 @@ class WalletRepository extends BaseRepository {
     }
 
     final transactions = realm.query<RealmTransaction>('walletId == $walletId');
+    final transactionDrafts = realm.query<RealmTransactionDraft>('walletId == $walletId');
     final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
     final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');
     final utxos = realm.query<RealmUtxo>('walletId == $walletId');
@@ -167,6 +168,9 @@ class WalletRepository extends BaseRepository {
       realm.delete(walletBase);
       if (transactions.isNotEmpty) {
         realm.deleteMany(transactions);
+      }
+      if (transactionDrafts.isNotEmpty) {
+        realm.deleteMany(transactionDrafts);
       }
       if (realmMultisigWallet != null) {
         realm.delete(realmMultisigWallet);
