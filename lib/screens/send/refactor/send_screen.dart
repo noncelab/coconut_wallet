@@ -1,5 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -8,6 +10,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -45,6 +48,8 @@ class SendScreen extends StatefulWidget {
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _viewMoreButtonKey = GlobalKey();
+  final ValueNotifier<bool> _isDropdownMenuVisible = ValueNotifier(false);
+
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
@@ -116,6 +121,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       () => setState(() {
         if (!_amountFocusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
+        }
+        if (_isDropdownMenuVisible.value) {
+          _setDropdownMenuVisiblility(false);
         }
       }),
     );
@@ -215,6 +223,24 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     setState(() {});
   }
 
+  void _setDropdownMenuVisiblility(bool isVisible) {
+    if (isVisible) {
+      _clearFocus();
+    }
+    debugPrint('setDropdownMenuVisiblility: $isVisible');
+    _isDropdownMenuVisible.value = isVisible;
+  }
+
+  bool _validateEnteredAddresses() {
+    // 임시저장 가능한지 확인하기 위한 함수
+    for (var address in _addressControllerList) {
+      if (address.text.isEmpty || !_viewModel.validateAddress(address.text, _addressControllerList.indexOf(address))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     // usableHeight: height - safeArea - toolbar
@@ -234,13 +260,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         }
         return previous ?? _viewModel;
       },
-      child: GestureDetector(
-        onTap: _clearFocus,
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: Colors.black,
-          appBar: _buildAppBar(context),
-          body: SizedBox(
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: Colors.black,
+        appBar: _buildAppBar(context),
+        body: GestureDetector(
+          onTap: _clearFocus,
+          behavior: HitTestBehavior.translucent,
+          child: SizedBox(
             height: usableHeight,
             child: Stack(
               children: [
@@ -263,11 +290,106 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   ),
                 ),
                 _buildFinalButton(context),
+                _buildDropdownMenu(),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDropdownMenu() {
+    return Positioned(
+      top: 0,
+      right: 20,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _isDropdownMenuVisible,
+        builder: (context, isVisible, child) {
+          return Visibility(
+            visible: isVisible,
+            child: CoconutPulldownMenu(
+              shadowColor: CoconutColors.gray800,
+              dividerColor: CoconutColors.gray800,
+              entries: [
+                CoconutPulldownMenuItem(title: t.transaction_draft.save, isDisabled: !_validateEnteredAddresses()),
+                CoconutPulldownMenuItem(title: t.transaction_draft.load),
+              ],
+              onSelected: ((index, selectedText) async {
+                _setDropdownMenuVisiblility(false);
+                if (index == 0) {
+                  debugPrint('walletId: ${_viewModel.selectedWalletItem?.id}');
+                  debugPrint('recipientAddress: ${_viewModel.recipientList.map((e) => e.address).join(', ')}');
+                  debugPrint('amount: ${_viewModel.recipientList.map((e) => e.amount).join(', ')}');
+                  debugPrint('feeRate: ${_feeRateController.text}');
+                  debugPrint('isMaxMode: ${_viewModel.isMaxMode}');
+                  debugPrint('isMultisig: ${_viewModel.selectedWalletItem?.walletType == WalletType.multiSignature}');
+
+                  final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
+                  final result = await transactionDraftRepository.saveTransactionDraft(
+                    walletId: _viewModel.selectedWalletItem?.id ?? 0,
+                    recipientList: _viewModel.recipientList,
+                    feeRateText: _feeRateController.text,
+                    isMaxMode: _viewModel.isMaxMode,
+                    isMultisig: _viewModel.selectedWalletItem?.walletType == WalletType.multiSignature,
+                    isFeeSubtractedFromSendAmount: _viewModel.isFeeSubtractedFromSendAmount,
+                    transaction: null, // 서명된 트랜잭션이 있는 경우
+                    txWaitingForSign: null,
+                    signedPsbtBase64Encoded: null,
+                    draftStatus: TransactionDraftStatus.unsignedFromSendScreen,
+                  );
+
+                  if (result.isSuccess) {
+                    _showTransactionDraftSavedDialog();
+                  } else {
+                    // 저장 실패
+                    debugPrint('저장 실패 ${result.error.message}');
+                    _showTransactionDraftSaveFailedDialog(result.error.message);
+                  }
+                } else {
+                  debugPrint('불러오기 버튼 클릭');
+                }
+              }),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showTransactionDraftSavedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: t.transaction_draft.dialog.transaction_draft_saved_send_screen,
+          description: t.transaction_draft.dialog.transaction_draft_saved_send_screen_description,
+          leftButtonText: t.transaction_draft.dialog.cancel,
+          rightButtonText: t.transaction_draft.dialog.move,
+          onTapRight: () {
+            Navigator.pop(context);
+          },
+          onTapLeft: () {
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  void _showTransactionDraftSaveFailedDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: t.transaction_draft.dialog.transaction_draft_save_failed,
+          description: errorMessage,
+          rightButtonText: t.transaction_draft.dialog.confirm,
+          onTapRight: () {
+            Navigator.pop(context);
+          },
+        );
+      },
     );
   }
 
@@ -336,7 +458,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       },
       context: context,
       isBottom: true,
-      actionButtonList: [const SizedBox(width: 24, height: 24)],
+      actionButtonList: [
+        SizedBox(
+          height: 40,
+          width: 40,
+          child: IconButton(
+            icon: SvgPicture.asset('assets/svg/kebab.svg'),
+            onPressed: () => _setDropdownMenuVisiblility(true),
+            color: CoconutColors.white,
+          ),
+        ),
+      ],
       onBackPressed: () {
         Navigator.of(context).pop();
       },
@@ -907,6 +1039,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           _viewModel.addRecipient();
           _amountController.text = '';
           _addAddressField();
+          _setDropdownMenuVisiblility(false);
         },
         child: CustomPaint(
           painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: CoconutColors.gray600),
@@ -1075,6 +1208,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       iconSize: 14,
                       padding: EdgeInsets.zero,
                       onPressed: () async {
+                        _setDropdownMenuVisiblility(false);
                         if (controller.text.isEmpty) {
                           await _showAddressScanner(index);
                         } else {
@@ -1116,6 +1250,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                             onTap: () {
                               _deleteAddressField(_viewModel.currentIndex);
                               _viewModel.deleteRecipient();
+                              _setDropdownMenuVisiblility(false);
                             },
                             textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                             padding: EdgeInsets.zero,
@@ -1627,6 +1762,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         if (!focusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
         }
+        if (_isDropdownMenuVisible.value) {
+          _setDropdownMenuVisiblility(false);
+        }
         Future.delayed(const Duration(milliseconds: 1000), () {
           final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
           final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
@@ -1675,6 +1813,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       setState(() {
         _isLeftDragGuideViewVisible = false;
       });
+    }
+    if (_isDropdownMenuVisible.value) {
+      _setDropdownMenuVisiblility(false);
     }
   }
 

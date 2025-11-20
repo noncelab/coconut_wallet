@@ -26,6 +26,7 @@ final realmAllSchemas = [
   RealmCpfpHistory.schema,
   RealmTransactionMemo.schema,
   RealmWalletPreferences.schema,
+  RealmTransactionDraft.schema,
 ];
 
 @RealmModel()
@@ -225,4 +226,24 @@ class _RealmWalletPreferences {
   late List<int> favoriteWalletIds;
   // 총 잔액에서 제외되는 지갑 ID 목록.
   late List<int> excludedFromTotalBalanceWalletIds;
+}
+
+@RealmModel()
+class _RealmTransactionDraft {
+  @PrimaryKey()
+  late int id;
+  late int walletId;
+  late int? feeRate;
+  late bool? isMaxMode;
+  late bool? isMultisig;
+  late bool? isFeeSubtractedFromSendAmount;
+  // Transaction 객체를 hex 문자열로 직렬화하여 저장
+  late String? transactionHex;
+  late String? txWaitingForSign;
+  late String? signedPsbtBase64Encoded;
+  // 각 문자열은 {"address": "...", "amount": "...", "addressError": "...", "minimumAmountError": "..."} 형태
+  late List<String> recipientListJson;
+  // 서명된 트랜잭션인지, 서명되지 않은 트랜잭션인지, 그리고 서명되지 않은 경우 어느 화면에서 저장되었는지 구분
+  // 값: 'signed', 'unsignedFromSendScreen', 'unsignedFromConfirmScreen'
+  late String? draftStatus;
 }

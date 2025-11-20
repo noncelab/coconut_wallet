@@ -82,7 +82,9 @@ dependencies:
   ur:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
-  coconut_design_system: ^0.9.5
+  # coconut_design_system: ^0.9.5
+  coconut_design_system:
+    path: ../design_system/coconut_design_system
   coconut_lib: 1.0.1
   base32: ^2.1.3
   share_plus: ^10.0.0

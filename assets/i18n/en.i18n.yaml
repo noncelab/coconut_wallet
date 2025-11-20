@@ -166,6 +166,29 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "Failed to generate Lightning invoice."
 
+transaction_draft:
+  title: "Temporary Transaction"
+  save: "Temporary Save"
+  load: "Load Transaction"
+  dialog:
+    transaction_draft_saved_send_screen: "Transaction Draft Saved"
+    transaction_draft_saved_send_screen_description: "The transaction information has been temporarily saved. Would you like to move to the list now?"
+    transaction_draft_saved_confirm_screen: "Transaction Draft Saved"
+    transaction_draft_saved_description_confirm_screen: "The transaction has been temporarily saved. Would you like to move to the list now?"
+    transaction_draft_saved_broadcast_screen: "Transaction Draft Saved"
+    transaction_draft_saved_description_broadcast_screen: "The transaction has been temporarily saved. Would you like to move to the list now?"
+    transaction_draft_save_failed: "Transaction Draft Save Failed"
+    transaction_draft_already_exists: "Transaction Draft Already Exists"
+    transaction_draft_empty_required_fields: "Please enter the address and amount to send."
+    transaction_unavailable_to_sign: "Transaction Unavailable to Sign"
+    transaction_already_used_utxo_included: "Transaction Already Used UTXO Included. Would you like to delete the saved transaction?"
+    cancel: "Cancel"
+    remove: "Remove"
+    move: "Move"
+    confirm: "Confirm"
+  signed: "Signed"
+  unsigned: "Unsigned"
+
 # lib/enums
 transaction_enums:
   high_priority: "Fast"

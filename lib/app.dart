@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -113,6 +114,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<AddressRepository>(create: (context) => AddressRepository(context.read<RealmManager>())),
         Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
         Provider<UtxoRepository>(create: (context) => UtxoRepository(context.read<RealmManager>())),
+        Provider<TransactionDraftRepository>(
+          create: (context) => TransactionDraftRepository(context.read<RealmManager>()),
+        ),
         Provider<SubscriptionRepository>(create: (context) => SubscriptionRepository(context.read<RealmManager>())),
         Provider<WalletPreferencesRepository>(
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),

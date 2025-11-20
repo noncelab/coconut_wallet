@@ -166,6 +166,29 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "라이트닝 인보이스 생성에 실패했어요"
 
+transaction_draft:
+  title: "임시 저장 트랜잭션"
+  save: "임시 저장"
+  load: "불러오기"
+  dialog:
+    transaction_draft_saved_send_screen: "보내기 정보 저장 완료"
+    transaction_draft_saved_send_screen_description: "나중에 입력할 수 있도록 보내기 정보를 임시 저장했어요.\n지금 목록으로 이동할까요?"
+    transaction_draft_saved_confirm_screen: "트랜잭션 저장 완료"
+    transaction_draft_saved_description_confirm_screen: "나중에 서명할 수 있도록 트랜잭션을 임시 저장했어요.\n지금 목록으로 이동할까요?"
+    transaction_draft_saved_broadcast_screen: "트랜잭션 저장 완료"
+    transaction_draft_saved_description_broadcast_screen: "나중에 전송할 수 있도록 트랜잭션을 임시 저장했어요.\n지금 목록으로 이동할까요?"
+    transaction_draft_save_failed: "트랜잭션 저장 실패"
+    transaction_draft_already_exists: "이미 저장된 트랜잭션이에요."
+    transaction_draft_empty_required_fields: "주소와 보낼 금액을 모두 입력해야 해요. 빠진 항목을 확인해 주세요."
+    transaction_unavailable_to_sign: "트랜잭션 서명 불가"
+    transaction_already_used_utxo_included: "이미 사용된 UTXO가 포함되어 있어요. 저장된 트랜잭션을 지울까요?"
+    cancel: "취소"
+    remove: "지우기"
+    move: "이동하기"
+    confirm: "확인"
+  signed: "서명 완료"
+  unsigned: "서명 전"
+
 # lib/enums
 transaction_enums:
   high_priority: "빠른 전송"
