@@ -168,8 +168,13 @@ donation:
 
 transaction_draft:
   title: "Temporary Transaction"
+  empty_message: "No temporary transaction saved"
+  deleted_wallet: "Deleted Wallet"
   save: "Temporary Save"
   load: "Load Transaction"
+  recipient_batch_address: "$address and $count other addresses"
+  fee_rate: "Fee Rate"
+  sats_per_vbyte: "sat/vB"
   dialog:
     transaction_draft_saved_send_screen: "Transaction Draft Saved"
     transaction_draft_saved_send_screen_description: "The transaction information has been temporarily saved. Would you like to move to the list now?"

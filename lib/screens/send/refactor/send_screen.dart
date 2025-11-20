@@ -336,7 +336,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     transaction: null, // 서명된 트랜잭션이 있는 경우
                     txWaitingForSign: null,
                     signedPsbtBase64Encoded: null,
-                    draftStatus: TransactionDraftStatus.unsignedFromSendScreen,
+                    currentUnit: _viewModel.currentUnit.symbol,
+                    selectedUtxoList: _viewModel.isUtxoSelectionAuto ? null : _viewModel.selectedUtxoList,
                   );
 
                   if (result.isSuccess) {

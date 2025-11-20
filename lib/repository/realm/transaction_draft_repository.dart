@@ -1,8 +1,9 @@
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart' as lib;
-import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -44,6 +45,69 @@ AmountError _parseAmountError(String? value) {
   return AmountError.values.firstWhere((e) => e.name == value, orElse: () => AmountError.none);
 }
 
+/// UtxoState 리스트를 JSON 문자열 리스트로 변환
+List<String> _utxoListToJson(List<UtxoState> utxoList) {
+  return utxoList.map((utxo) {
+    return jsonEncode({
+      'transactionHash': utxo.transactionHash,
+      'index': utxo.index,
+      'amount': utxo.amount,
+      'derivationPath': utxo.derivationPath,
+      'blockHeight': utxo.blockHeight,
+      'to': utxo.to,
+      'timestamp': utxo.timestamp.toIso8601String(),
+      'tags':
+          utxo.tags
+              ?.map(
+                (tag) => {
+                  'id': tag.id,
+                  'walletId': tag.walletId,
+                  'name': tag.name,
+                  'colorIndex': tag.colorIndex,
+                  'utxoIdList': tag.utxoIdList,
+                },
+              )
+              .toList(),
+      'status': utxo.status.name,
+      'spentByTransactionHash': utxo.spentByTransactionHash,
+    });
+  }).toList();
+}
+
+/// JSON 문자열 리스트를 UtxoState 리스트로 변환
+List<UtxoState> _jsonToUtxoList(List<String> utxoListJson) {
+  return utxoListJson.map((jsonString) {
+    final json = jsonDecode(jsonString) as Map<String, dynamic>;
+    final tagsJson = json['tags'] as List<dynamic>?;
+    final tags =
+        tagsJson?.map((tagJson) {
+          return UtxoTag(
+            id: tagJson['id'] as String,
+            walletId: tagJson['walletId'] as int,
+            name: tagJson['name'] as String,
+            colorIndex: tagJson['colorIndex'] as int,
+            utxoIdList: (tagJson['utxoIdList'] as List<dynamic>?)?.map((e) => e as String).toList(),
+          );
+        }).toList();
+
+    final statusString = json['status'] as String? ?? 'unspent';
+    final status = UtxoStatus.values.firstWhere((s) => s.name == statusString, orElse: () => UtxoStatus.unspent);
+
+    return UtxoState(
+      transactionHash: json['transactionHash'] as String,
+      index: json['index'] as int,
+      amount: json['amount'] as int,
+      derivationPath: json['derivationPath'] as String,
+      blockHeight: json['blockHeight'] as int,
+      to: json['to'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      tags: tags,
+      status: status,
+      spentByTransactionHash: json['spentByTransactionHash'] as String?,
+    );
+  }).toList();
+}
+
 /// SendViewModel 데이터를 RealmTransactionDraft로 변환
 RealmTransactionDraft _mapToRealmTransactionDraft({
   required int id,
@@ -56,7 +120,8 @@ RealmTransactionDraft _mapToRealmTransactionDraft({
   lib.Transaction? transaction,
   String? txWaitingForSign,
   String? signedPsbtBase64Encoded,
-  required TransactionDraftStatus draftStatus,
+  required String currentUnit,
+  List<UtxoState>? selectedUtxoList,
 }) {
   final feeRate = feeRateText != null && feeRateText.isNotEmpty ? int.tryParse(feeRateText) : null;
   final transactionHex = transaction?.serialize();
@@ -72,7 +137,9 @@ RealmTransactionDraft _mapToRealmTransactionDraft({
     txWaitingForSign: txWaitingForSign,
     signedPsbtBase64Encoded: signedPsbtBase64Encoded,
     recipientListJson: _recipientListToJson(recipientList),
-    draftStatus: draftStatus.name,
+    createdAt: DateTime.now(),
+    currentUnit: currentUnit,
+    selectedUtxoListJson: selectedUtxoList != null ? _utxoListToJson(selectedUtxoList) : const [],
   );
 }
 
@@ -138,7 +205,8 @@ class TransactionDraftRepository extends BaseRepository {
     lib.Transaction? transaction,
     String? txWaitingForSign,
     String? signedPsbtBase64Encoded,
-    required TransactionDraftStatus draftStatus,
+    required String currentUnit,
+    List<UtxoState>? selectedUtxoList,
   }) async {
     // 동일한 draft가 이미 존재하는지 확인
     if (_isDuplicateDraft(
@@ -167,7 +235,8 @@ class TransactionDraftRepository extends BaseRepository {
         transaction: transaction,
         txWaitingForSign: txWaitingForSign,
         signedPsbtBase64Encoded: signedPsbtBase64Encoded,
-        draftStatus: draftStatus,
+        currentUnit: currentUnit,
+        selectedUtxoList: selectedUtxoList,
       );
 
       await realm.writeAsync(() {
@@ -192,7 +261,8 @@ class TransactionDraftRepository extends BaseRepository {
     lib.Transaction? transaction,
     String? txWaitingForSign,
     String? signedPsbtBase64Encoded,
-    TransactionDraftStatus? draftStatus,
+    String? currentUnit,
+    List<UtxoState>? selectedUtxoList,
   }) async {
     return handleAsyncRealm<RealmTransactionDraft>(() async {
       final draft = realm.find<RealmTransactionDraft>(id);
@@ -215,7 +285,11 @@ class TransactionDraftRepository extends BaseRepository {
           draft.recipientListJson.clear();
           draft.recipientListJson.addAll(_recipientListToJson(recipientList));
         }
-        if (draftStatus != null) draft.draftStatus = draftStatus.name;
+        if (currentUnit != null) draft.currentUnit = currentUnit;
+        if (selectedUtxoList != null) {
+          draft.selectedUtxoListJson.clear();
+          draft.selectedUtxoListJson.addAll(_utxoListToJson(selectedUtxoList));
+        }
       });
 
       return draft;
@@ -237,11 +311,6 @@ class TransactionDraftRepository extends BaseRepository {
     return realm.query<RealmTransactionDraft>('walletId == $walletId').toList();
   }
 
-  /// draftStatus로 TransactionDraft 조회
-  List<RealmTransactionDraft> getTransactionDraftsByStatus(TransactionDraftStatus status) {
-    return realm.query<RealmTransactionDraft>('draftStatus == "${status.name}"').toList();
-  }
-
   /// RealmTransactionDraft를 RecipientInfo 리스트와 함께 반환하는 헬퍼 클래스
   TransactionDraftData? getTransactionDraftData(int id) {
     final draft = getTransactionDraft(id);
@@ -251,10 +320,6 @@ class TransactionDraftRepository extends BaseRepository {
       draft: draft,
       recipientList: _jsonToRecipientList(draft.recipientListJson.toList()),
       transaction: draft.transactionHex != null ? lib.Transaction.parse(draft.transactionHex!) : null,
-      draftStatus:
-          draft.draftStatus != null
-              ? TransactionDraftStatusExtension.fromString(draft.draftStatus!)
-              : TransactionDraftStatus.unsignedFromSendScreen,
     );
   }
 
@@ -287,12 +352,6 @@ class TransactionDraftData {
   final RealmTransactionDraft draft;
   final List<RecipientInfo> recipientList;
   final lib.Transaction? transaction;
-  final TransactionDraftStatus draftStatus;
 
-  TransactionDraftData({
-    required this.draft,
-    required this.recipientList,
-    required this.transaction,
-    required this.draftStatus,
-  });
+  TransactionDraftData({required this.draft, required this.recipientList, required this.transaction});
 }

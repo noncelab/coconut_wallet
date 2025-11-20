@@ -168,8 +168,13 @@ donation:
 
 transaction_draft:
   title: "一時保存トランザクション"
+  empty_message: "一時保存されたトランザクションがありません"
+  deleted_wallet: "削除されたウォレット"
   save: "一時保存"
   load: "読み込み"
+  recipient_batch_address: "$address および $count 個の他のアドレス"
+  fee_rate: "手数料率"
+  sats_per_vbyte: "sat/vB"
   dialog:
     transaction_draft_saved_send_screen: "送信情報保存完了"
     transaction_draft_saved_send_screen_description: "後で入力できるように送信情報を一時保存しました。\n今すぐリストに移動しますか？"

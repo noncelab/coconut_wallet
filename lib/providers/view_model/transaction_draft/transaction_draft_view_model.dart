@@ -17,22 +17,8 @@ class TransactionDraftViewModel extends ChangeNotifier {
 
   Future<void> initializeDraftList() async {
     final draft = _transactionDraftRepository.getAllTransactionDrafts();
-    _unsignedTransactionDraftList =
-        draft
-            .where(
-              (draft) =>
-                  draft.draftStatus.toString().toLowerCase() ==
-                      TransactionDraftStatus.unsignedFromSendScreen.name.toLowerCase() ||
-                  draft.draftStatus.toString().toLowerCase() ==
-                      TransactionDraftStatus.unsignedFromConfirmScreen.name.toLowerCase(),
-            )
-            .toList();
-    _signedTransactionDraftList =
-        draft
-            .where(
-              (draft) => draft.draftStatus.toString().toLowerCase() == TransactionDraftStatus.signed.name.toLowerCase(),
-            )
-            .toList();
+    _unsignedTransactionDraftList = draft.where((draft) => draft.signedPsbtBase64Encoded == null).toList();
+    _signedTransactionDraftList = draft.where((draft) => draft.signedPsbtBase64Encoded != null).toList();
     notifyListeners();
   }
 

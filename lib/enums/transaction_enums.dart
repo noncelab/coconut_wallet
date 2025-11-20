@@ -6,32 +6,6 @@ enum TransactionFeeLevel { fastest, halfhour, hour }
 
 enum TransactionDirection { incoming, outgoing, unknown }
 
-enum TransactionDraftStatus {
-  signed, // 서명된 트랜잭션
-  unsignedFromSendScreen, // 보내기 화면에서 저장된 서명되지 않은 트랜잭션
-  unsignedFromConfirmScreen, // 입력정보확인 화면에서 저장된 서명되지 않은 트랜잭션
-}
-
-extension TransactionDraftStatusExtension on TransactionDraftStatus {
-  String get name {
-    switch (this) {
-      case TransactionDraftStatus.signed:
-        return 'signed';
-      case TransactionDraftStatus.unsignedFromSendScreen:
-        return 'unsignedFromSendScreen';
-      case TransactionDraftStatus.unsignedFromConfirmScreen:
-        return 'unsignedFromConfirmScreen';
-    }
-  }
-
-  static TransactionDraftStatus fromString(String name) {
-    return TransactionDraftStatus.values.firstWhere(
-      (status) => status.name == name,
-      orElse: () => TransactionDraftStatus.unsignedFromSendScreen,
-    );
-  }
-}
-
 extension TransactionFeeLevelExtension on TransactionFeeLevel {
   String get text {
     switch (this) {

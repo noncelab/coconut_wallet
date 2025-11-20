@@ -32,6 +32,7 @@ import 'package:coconut_wallet/screens/settings/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/settings/log_viewer_screen.dart';
+import 'package:coconut_wallet/screens/transaction_draft/transaction_draft_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
@@ -343,6 +344,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
                     ),
+                '/transaction-draft': (context) => const TransactionDraftScreen(),
               },
             );
 

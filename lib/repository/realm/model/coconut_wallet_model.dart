@@ -243,7 +243,11 @@ class _RealmTransactionDraft {
   late String? signedPsbtBase64Encoded;
   // 각 문자열은 {"address": "...", "amount": "...", "addressError": "...", "minimumAmountError": "..."} 형태
   late List<String> recipientListJson;
-  // 서명된 트랜잭션인지, 서명되지 않은 트랜잭션인지, 그리고 서명되지 않은 경우 어느 화면에서 저장되었는지 구분
-  // 값: 'signed', 'unsignedFromSendScreen', 'unsignedFromConfirmScreen'
-  late String? draftStatus;
+  // 저장 시간
+  late DateTime? createdAt;
+  // 저장 시 사용한 단위
+  late String? currentUnit;
+  // 선택된 UTXO 리스트 (자동 선택 모드면 null)
+  // 각 문자열은 UtxoState의 JSON 직렬화된 형태
+  late List<String> selectedUtxoListJson;
 }
