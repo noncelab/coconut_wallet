@@ -549,6 +549,8 @@ class _UtxoListState extends State<UtxoList> {
 
   @override
   Widget build(BuildContext context) {
+    double bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Selector<UtxoListViewModel, Tuple3<List<UtxoState>, String, UtxoOrder>>(
       selector: (_, vm) => Tuple3(vm.utxoList, vm.selectedUtxoTagName, vm.selectedUtxoOrder),
       shouldRebuild: (prev, next) => prev.item1 != next.item1 || prev.item2 != next.item2 || prev.item3 != next.item3,
@@ -565,7 +567,7 @@ class _UtxoListState extends State<UtxoList> {
         }
 
         return SliverPadding(
-          padding: const EdgeInsets.only(bottom: 100),
+          padding: EdgeInsets.only(bottom: bottomInset + 70),
           sliver: _buildSliverAnimatedList(utxoList, selectedTag),
         );
       },
