@@ -187,15 +187,19 @@ transaction_draft:
     transaction_draft_empty_required_fields: "Please enter the address and amount to send."
     transaction_unavailable_to_sign: "Transaction Unavailable to Sign"
     transaction_already_used_utxo_included: "Transaction Already Used UTXO Included. Would you like to delete the saved transaction?"
+    transaction_has_been_locked_utxo_included: "Locked UTXO Included. Would you like to delete the saved transaction?"
     transaction_draft_delete: "Delete Temporary Transaction"
     transaction_draft_delete_description: "Would you like to delete the temporary transaction? Once deleted, it cannot be restored."
     transaction_draft_delete_failed: "Transaction Draft Delete Failed"
+    transaction_draft_delete_completed: "Transaction Draft Delete Completed"
+    transaction_draft_delete_completed_description: "The temporary transaction has been deleted."
     cancel: "Cancel"
     remove: "Remove"
     move: "Move"
     confirm: "Confirm"
   signed: "Signed"
   unsigned: "Unsigned"
+  max: "Max"
 
 # lib/enums
 transaction_enums:

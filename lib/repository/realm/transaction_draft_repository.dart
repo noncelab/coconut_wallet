@@ -8,7 +8,15 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/result.dart';
+
+/// 선택된 UTXO의 상태를 나타내는 enum
+enum SelectedUtxoStatus {
+  unused, // 모든 UTXO가 사용 가능
+  used, // 일부 UTXO가 이미 사용됨
+  locked, // 일부 UTXO가 잠금됨
+}
 
 /// RecipientInfo 리스트를 JSON 문자열 리스트로 변환
 List<String> _recipientListToJson(List<RecipientInfo> recipients) {
@@ -144,7 +152,9 @@ RealmTransactionDraft _mapToRealmTransactionDraft({
 }
 
 class TransactionDraftRepository extends BaseRepository {
-  TransactionDraftRepository(super._realmManager);
+  final UtxoRepository _utxoRepository;
+
+  TransactionDraftRepository(super._realmManager, this._utxoRepository);
 
   /// 동일한 TransactionDraft가 이미 존재하는지 확인
   bool _isDuplicateDraft({
@@ -225,17 +235,17 @@ class TransactionDraftRepository extends BaseRepository {
     List<UtxoState>? selectedUtxoList,
   }) async {
     // 동일한 draft가 이미 존재하는지 확인
-    if (_isDuplicateDraft(
-      walletId: walletId,
-      recipientList: recipientList,
-      feeRateText: feeRateText,
-      isMaxMode: isMaxMode,
-      isMultisig: isMultisig,
-      isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount,
-      selectedUtxoList: selectedUtxoList,
-    )) {
-      return Result<RealmTransactionDraft>.failure(ErrorCodes.transactionDraftAlreadyExists);
-    }
+    // if (_isDuplicateDraft(
+    //   walletId: walletId,
+    //   recipientList: recipientList,
+    //   feeRateText: feeRateText,
+    //   isMaxMode: isMaxMode,
+    //   isMultisig: isMultisig,
+    //   isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount,
+    //   selectedUtxoList: selectedUtxoList,
+    // )) {
+    //   return Result<RealmTransactionDraft>.failure(ErrorCodes.transactionDraftAlreadyExists);
+    // }
 
     return handleAsyncRealm<RealmTransactionDraft>(() async {
       final lastId = getLastId(realm, (RealmTransactionDraft).toString());
@@ -361,6 +371,31 @@ class TransactionDraftRepository extends BaseRepository {
         realm.deleteAll<RealmTransactionDraft>();
       });
     });
+  }
+
+  /// 선택된 UTXO의 상태 확인 (unused, used, locked)
+  SelectedUtxoStatus getSelectedUtxoStatus(int walletId, List<String> selectedUtxoListJson) {
+    if (selectedUtxoListJson.isEmpty) return SelectedUtxoStatus.unused;
+
+    final utxoList = _utxoRepository.getUtxoStateList(walletId);
+    final selectedUtxoIds = _jsonToUtxoList(selectedUtxoListJson).map((utxo) => utxo.utxoId).toList();
+
+    bool hasUsed = false;
+    bool hasLocked = false;
+
+    for (final utxo in utxoList) {
+      if (selectedUtxoIds.contains(utxo.utxoId)) {
+        if (utxo.status == UtxoStatus.locked) {
+          hasLocked = true;
+        } else if (utxo.status != UtxoStatus.unspent) {
+          hasUsed = true;
+        }
+      }
+    }
+
+    if (hasUsed) return SelectedUtxoStatus.used;
+    if (hasLocked) return SelectedUtxoStatus.locked;
+    return SelectedUtxoStatus.unused;
   }
 }
 

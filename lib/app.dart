@@ -116,7 +116,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
         Provider<UtxoRepository>(create: (context) => UtxoRepository(context.read<RealmManager>())),
         Provider<TransactionDraftRepository>(
-          create: (context) => TransactionDraftRepository(context.read<RealmManager>()),
+          create: (context) => TransactionDraftRepository(context.read<RealmManager>(), context.read<UtxoRepository>()),
         ),
         Provider<SubscriptionRepository>(create: (context) => SubscriptionRepository(context.read<RealmManager>())),
         Provider<WalletPreferencesRepository>(
@@ -279,7 +279,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/send':
                     (context) => buildScreenWithArgs(
                       context,
-                      (args) => SendScreen(walletId: args['walletId'], sendEntryPoint: args['sendEntryPoint']),
+                      (args) => SendScreen(
+                        walletId: args['walletId'],
+                        sendEntryPoint: args['sendEntryPoint'],
+                        transactionDraft: args['transactionDraft'],
+                      ),
                     ),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
                 '/select-donation-amount':

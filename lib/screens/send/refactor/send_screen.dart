@@ -1,6 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -10,7 +9,9 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart'
+    show TransactionDraftRepository, SelectedUtxoStatus;
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -19,14 +20,17 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/utils/transaction_draft_list_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -39,8 +43,9 @@ import 'package:tuple/tuple.dart';
 class SendScreen extends StatefulWidget {
   final int? walletId;
   final SendEntryPoint sendEntryPoint;
+  final RealmTransactionDraft? transactionDraft;
 
-  const SendScreen({super.key, this.walletId, required this.sendEntryPoint});
+  const SendScreen({super.key, this.walletId, required this.sendEntryPoint, this.transactionDraft});
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -48,7 +53,7 @@ class SendScreen extends StatefulWidget {
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _viewMoreButtonKey = GlobalKey();
-  final ValueNotifier<bool> _isDropdownMenuVisible = ValueNotifier(false);
+  bool _isDropdownMenuVisible = false;
 
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
@@ -90,6 +95,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   bool _isQrDataHandling = false;
   String _previousAmountText = "";
 
+  // Transaction draft 선택 상태
+  int? _selectedDraftId;
+
   bool get _hasKeyboard => _amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus || _isAddressFocused;
 
   bool get _isAddressFocused => _addressFocusNodeList.any((e) => e.hasFocus);
@@ -115,14 +123,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       _onRecipientPageDeleted,
       widget.walletId,
       widget.sendEntryPoint,
+      widget.transactionDraft,
     );
+    if (widget.transactionDraft != null) {
+      _syncAddressControllersWithRecipientList();
+    }
 
     _amountFocusNode.addListener(
       () => setState(() {
         if (!_amountFocusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
         }
-        if (_isDropdownMenuVisible.value) {
+        if (_isDropdownMenuVisible) {
           _setDropdownMenuVisiblility(false);
         }
       }),
@@ -225,10 +237,24 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   void _setDropdownMenuVisiblility(bool isVisible) {
     if (isVisible) {
-      _clearFocus();
+      _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+      _amountController.text = _removeTrailingDot(_amountController.text);
+      FocusManager.instance.primaryFocus?.unfocus();
+
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isDropdownMenuVisible = true;
+          });
+        }
+      });
+    } else {
+      if (_isDropdownMenuVisible != isVisible) {
+        setState(() {
+          _isDropdownMenuVisible = false;
+        });
+      }
     }
-    debugPrint('setDropdownMenuVisiblility: $isVisible');
-    _isDropdownMenuVisible.value = isVisible;
   }
 
   bool _validateEnteredAddresses() {
@@ -300,62 +326,148 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildDropdownMenu() {
+    // unsigned draft가 있는지 확인
+    final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
+    final sortedDrafts = getSortedUnsignedTransactionDrafts(transactionDraftRepository);
+    final hasUnsignedDrafts = sortedDrafts.isNotEmpty;
+
     return Positioned(
       top: 0,
       right: 20,
-      child: ValueListenableBuilder<bool>(
-        valueListenable: _isDropdownMenuVisible,
-        builder: (context, isVisible, child) {
-          return Visibility(
-            visible: isVisible,
-            child: CoconutPulldownMenu(
-              shadowColor: CoconutColors.gray800,
-              dividerColor: CoconutColors.gray800,
-              entries: [
-                CoconutPulldownMenuItem(title: t.transaction_draft.save, isDisabled: !_validateEnteredAddresses()),
-                CoconutPulldownMenuItem(title: t.transaction_draft.load),
-              ],
-              onSelected: ((index, selectedText) async {
-                _setDropdownMenuVisiblility(false);
-                if (index == 0) {
-                  debugPrint('walletId: ${_viewModel.selectedWalletItem?.id}');
-                  debugPrint('recipientAddress: ${_viewModel.recipientList.map((e) => e.address).join(', ')}');
-                  debugPrint('amount: ${_viewModel.recipientList.map((e) => e.amount).join(', ')}');
-                  debugPrint('feeRate: ${_feeRateController.text}');
-                  debugPrint('isMaxMode: ${_viewModel.isMaxMode}');
-                  debugPrint('isMultisig: ${_viewModel.selectedWalletItem?.walletType == WalletType.multiSignature}');
+      child: Visibility(
+        visible: _isDropdownMenuVisible,
+        child: CoconutPulldownMenu(
+          shadowColor: CoconutColors.gray800,
+          dividerColor: CoconutColors.gray800,
+          entries: [
+            CoconutPulldownMenuItem(title: t.transaction_draft.save, isDisabled: !_validateEnteredAddresses()),
+            if (hasUnsignedDrafts) CoconutPulldownMenuItem(title: t.transaction_draft.load),
+          ],
+          onSelected: ((index, selectedText) async {
+            _setDropdownMenuVisiblility(false);
+            if (index == 0) {
+              final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
+              final result = await transactionDraftRepository.saveTransactionDraft(
+                walletId: _viewModel.selectedWalletItem?.id ?? 0,
+                recipientList: _viewModel.recipientList,
+                feeRateText: _feeRateController.text,
+                isMaxMode: _viewModel.isMaxMode,
+                isMultisig: _viewModel.selectedWalletItem?.walletType == WalletType.multiSignature,
+                isFeeSubtractedFromSendAmount: _viewModel.isFeeSubtractedFromSendAmount,
+                transaction: null, // 서명된 트랜잭션이 있는 경우
+                txWaitingForSign: null,
+                signedPsbtBase64Encoded: null,
+                currentUnit: _viewModel.currentUnit.symbol,
+                selectedUtxoList: _viewModel.isUtxoSelectionAuto ? null : _viewModel.selectedUtxoList,
+              );
 
+              if (result.isSuccess) {
+                _showTransactionDraftSavedDialog();
+              } else {
+                // 저장 실패
+                debugPrint('저장 실패 ${result.error.message}');
+                _showTransactionDraftSaveFailedDialog(result.error.message);
+              }
+            } else {
+              _selectedDraftId = null;
+              CommonBottomSheets.showDraggableBottomSheet(
+                context: context,
+                childBuilder: (scrollController) {
                   final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-                  final result = await transactionDraftRepository.saveTransactionDraft(
-                    walletId: _viewModel.selectedWalletItem?.id ?? 0,
-                    recipientList: _viewModel.recipientList,
-                    feeRateText: _feeRateController.text,
-                    isMaxMode: _viewModel.isMaxMode,
-                    isMultisig: _viewModel.selectedWalletItem?.walletType == WalletType.multiSignature,
-                    isFeeSubtractedFromSendAmount: _viewModel.isFeeSubtractedFromSendAmount,
-                    transaction: null, // 서명된 트랜잭션이 있는 경우
-                    txWaitingForSign: null,
-                    signedPsbtBase64Encoded: null,
-                    currentUnit: _viewModel.currentUnit.symbol,
-                    selectedUtxoList: _viewModel.isUtxoSelectionAuto ? null : _viewModel.selectedUtxoList,
+                  return _TransactionDraftBottomSheet(
+                    scrollController: scrollController,
+                    transactionDraftRepository: transactionDraftRepository,
+                    selectedDraftId: _selectedDraftId,
+                    onSelectedDraftIdChanged: (id) {
+                      _selectedDraftId = id;
+                    },
+                    onDraftSelected: (context, setSheetState, removeItem) async {
+                      await _onDraftSelected(context, setSheetState, removeItem);
+                    },
                   );
-
-                  if (result.isSuccess) {
-                    _showTransactionDraftSavedDialog();
-                  } else {
-                    // 저장 실패
-                    debugPrint('저장 실패 ${result.error.message}');
-                    _showTransactionDraftSaveFailedDialog(result.error.message);
-                  }
-                } else {
-                  debugPrint('불러오기 버튼 클릭');
-                }
-              }),
-            ),
-          );
-        },
+                },
+              );
+            }
+          }),
+        ),
       ),
     );
+  }
+
+  Future<void> _onDraftSelected(BuildContext context, StateSetter setSheetState, Function(int, int) removeItem) async {
+    if (_selectedDraftId == null) return;
+    final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
+    final draft = transactionDraftRepository.getTransactionDraft(_selectedDraftId!);
+    debugPrint('draft: ${draft?.recipientListJson[0].toString()}');
+
+    // selectedUtxo 상태 확인
+    final selectedUtxoStatus = transactionDraftRepository.getSelectedUtxoStatus(
+      _viewModel.selectedWalletItem?.id ?? 0,
+      draft?.selectedUtxoListJson ?? [],
+    );
+
+    if (selectedUtxoStatus == SelectedUtxoStatus.locked || selectedUtxoStatus == SelectedUtxoStatus.used) {
+      // 이미 사용되거나 [UTXO 잠금] 설정된 경우
+      final description =
+          selectedUtxoStatus == SelectedUtxoStatus.locked
+              ? t.transaction_draft.dialog.transaction_has_been_locked_utxo_included
+              : t.transaction_draft.dialog.transaction_already_used_utxo_included;
+
+      final shouldDelete = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return CoconutPopup(
+            title: t.transaction_draft.dialog.transaction_unavailable_to_sign,
+            description: description,
+            rightButtonText: t.confirm,
+            onTapLeft: () {
+              Navigator.pop(context, false);
+            },
+            onTapRight: () async {
+              final deletedDraftId = _selectedDraftId!;
+              final result = await transactionDraftRepository.deleteTransactionDraft(deletedDraftId);
+              if (result.isSuccess) {
+                await _showDeleteCompletedDialog();
+                final sortedDrafts = getSortedUnsignedTransactionDrafts(transactionDraftRepository);
+                final index = sortedDrafts.indexWhere((d) {
+                  try {
+                    return d.id == deletedDraftId;
+                  } catch (e) {
+                    return false;
+                  }
+                });
+
+                if (index != -1) {
+                  removeItem(index, deletedDraftId);
+                }
+
+                setSheetState(() {
+                  _selectedDraftId = null;
+                });
+              }
+              Navigator.pop(context, true);
+            },
+          );
+        },
+      );
+
+      if (shouldDelete == true) {
+        return;
+      }
+      return;
+    }
+
+    _viewModel.loadTransactionDraft(draft);
+
+    // recipientList와 _addressControllerList 동기화
+    // WidgetsBinding.instance.addPostFrameCallback을 사용하여 다음 프레임에 실행
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncAddressControllersWithRecipientList();
+      }
+    });
+
+    Navigator.pop(context);
   }
 
   void _showTransactionDraftSavedDialog() {
@@ -385,6 +497,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         return CoconutPopup(
           title: t.transaction_draft.dialog.transaction_draft_save_failed,
           description: errorMessage,
+          rightButtonText: t.transaction_draft.dialog.confirm,
+          onTapRight: () {
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showDeleteCompletedDialog() async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: t.transaction_draft.dialog.transaction_draft_delete_completed,
+          description: t.transaction_draft.dialog.transaction_draft_delete_completed_description,
           rightButtonText: t.transaction_draft.dialog.confirm,
           onTapRight: () {
             Navigator.pop(context);
@@ -465,7 +593,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           width: 40,
           child: IconButton(
             icon: SvgPicture.asset('assets/svg/kebab.svg'),
-            onPressed: () => _setDropdownMenuVisiblility(true),
+            onPressed: () {
+              if (_isDropdownMenuVisible) {
+                _setDropdownMenuVisiblility(false);
+              } else {
+                _setDropdownMenuVisiblility(true);
+              }
+            },
             color: CoconutColors.white,
           ),
         ),
@@ -1300,10 +1434,29 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
     return ShrinkAnimationButton(
       onPressed: () {
-        _addressControllerList[_viewModel.currentIndex].text = address;
+        final currentIndex = _viewModel.currentIndex;
+        if (currentIndex < _addressControllerList.length) {
+          // 리스너를 제거하여 notifyListeners 호출 방지
+          _addressControllerList[currentIndex].removeListener(_addressTextListenerList[currentIndex]);
+          _addressControllerList[currentIndex].text = address;
+          // 리스너는 빌드 완료 후 다시 추가
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            if (mounted && currentIndex < _addressControllerList.length) {
+              _addressControllerList[currentIndex].addListener(_addressTextListenerList[currentIndex]);
+              // ViewModel에 직접 설정 (이미 텍스트가 같으면 notifyListeners 호출 안 함)
+              _viewModel.setAddressText(address, currentIndex);
+            }
+          });
+        }
         _viewModel.markWalletAddressForUpdate(index);
-        _clearFocus();
         vibrateLight();
+
+        // _clearFocus는 한 프레임 더 지연
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _clearFocus();
+          }
+        });
       },
       defaultColor: Colors.transparent,
       pressedColor: CoconutColors.gray800,
@@ -1704,6 +1857,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _onRecipientPageDeleted(int page) {
+    // PageController가 아직 attach되지 않았으면 (PageView가 빌드되지 않았으면) 실행하지 않음
+    if (!_recipientPageController.hasClients) return;
     if (_recipientPageController.page == page) return;
     _recipientPageController.animateToPage(page, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
   }
@@ -1763,7 +1918,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         if (!focusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
         }
-        if (_isDropdownMenuVisible.value) {
+        if (_isDropdownMenuVisible) {
           _setDropdownMenuVisiblility(false);
         }
         Future.delayed(const Duration(milliseconds: 1000), () {
@@ -1810,14 +1965,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _feeRateController.text = _removeTrailingDot(_feeRateController.text);
     _amountController.text = _removeTrailingDot(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
-    if (_isLeftDragGuideViewVisible) {
-      setState(() {
-        _isLeftDragGuideViewVisible = false;
-      });
-    }
-    if (_isDropdownMenuVisible.value) {
-      _setDropdownMenuVisiblility(false);
-    }
+
+    // setState 변경은 빌드 완료 후 실행
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (_isLeftDragGuideViewVisible || _isDropdownMenuVisible) {
+        setState(() {
+          _isLeftDragGuideViewVisible = false;
+          _isDropdownMenuVisible = false;
+        });
+      }
+    });
   }
 
   /// 텍스트 끝의 소수점을 제거하는 함수
@@ -1826,6 +1985,64 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       return text.substring(0, text.length - 1);
     }
     return text;
+  }
+
+  /// recipientList와 _addressControllerList 동기화
+  void _syncAddressControllersWithRecipientList() {
+    final recipientListLength = _viewModel.recipientList.length;
+    final currentControllerLength = _addressControllerList.length;
+
+    // recipientList의 길이에 맞춰 _addressControllerList 조정
+    if (recipientListLength > currentControllerLength) {
+      // 부족한 만큼 추가
+      for (int i = currentControllerLength; i < recipientListLength; i++) {
+        _addAddressField();
+      }
+    } else if (recipientListLength < currentControllerLength) {
+      // 초과하는 만큼 삭제
+      for (int i = currentControllerLength - 1; i >= recipientListLength; i--) {
+        _deleteAddressField(i);
+      }
+    }
+
+    // 각 컨트롤러의 텍스트를 recipientList의 address로 업데이트
+    // 리스너를 모두 제거한 후 텍스트를 설정하고, 나중에 다시 추가
+    for (int i = 0; i < recipientListLength; i++) {
+      if (i < _addressControllerList.length) {
+        _addressControllerList[i].removeListener(_addressTextListenerList[i]);
+      }
+    }
+
+    for (int i = 0; i < recipientListLength; i++) {
+      if (i < _addressControllerList.length) {
+        final address = _viewModel.recipientList[i].address;
+        if (_addressControllerList[i].text != address) {
+          _addressControllerList[i].text = address;
+        }
+      }
+    }
+
+    // 모든 리스너를 다시 추가 (빌드 완료 후)
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (int i = 0; i < recipientListLength && i < _addressControllerList.length; i++) {
+        _addressControllerList[i].addListener(_addressTextListenerList[i]);
+      }
+    });
+
+    // amount 컨트롤러도 업데이트
+    if (recipientListLength > 0) {
+      final currentIndex = _viewModel.currentIndex;
+      if (currentIndex < recipientListLength) {
+        final amount = _viewModel.recipientList[currentIndex].amount;
+        if (_amountController.text != amount) {
+          _amountController.removeListener(_amountTextListener);
+          _amountController.text = amount;
+          _previousAmountText = amount;
+          _amountController.addListener(_amountTextListener);
+        }
+      }
+    }
   }
 }
 
@@ -1848,3 +2065,177 @@ class FinalButtonMessage {
 }
 
 enum RecommendedFeeFetchStatus { fetching, succeed, failed }
+
+class _TransactionDraftBottomSheet extends StatefulWidget {
+  final ScrollController scrollController;
+  final TransactionDraftRepository transactionDraftRepository;
+  final int? selectedDraftId;
+  final ValueChanged<int?> onSelectedDraftIdChanged;
+  final Future<void> Function(BuildContext, StateSetter, Function(int, int)) onDraftSelected;
+
+  const _TransactionDraftBottomSheet({
+    required this.scrollController,
+    required this.transactionDraftRepository,
+    required this.selectedDraftId,
+    required this.onSelectedDraftIdChanged,
+    required this.onDraftSelected,
+  });
+
+  @override
+  State<_TransactionDraftBottomSheet> createState() => _TransactionDraftBottomSheetState();
+}
+
+class _TransactionDraftBottomSheetState extends State<_TransactionDraftBottomSheet> {
+  final GlobalKey<AnimatedListState> _animatedListKey = GlobalKey<AnimatedListState>();
+  List<RealmTransactionDraft> _displayedDraftList = [];
+  int? _selectedDraftId;
+  static const Duration _duration = Duration(milliseconds: 300);
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDraftId = widget.selectedDraftId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateDisplayedList();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_TransactionDraftBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedDraftId != widget.selectedDraftId) {
+      setState(() {
+        _selectedDraftId = widget.selectedDraftId;
+      });
+    }
+  }
+
+  void _updateDisplayedList() {
+    final sortedDrafts = getSortedUnsignedTransactionDrafts(widget.transactionDraftRepository);
+    if (mounted) {
+      setState(() {
+        _displayedDraftList = List.from(sortedDrafts);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sortedDrafts = getSortedUnsignedTransactionDrafts(widget.transactionDraftRepository);
+
+    if (_displayedDraftList.length != sortedDrafts.length ||
+        !_displayedDraftList.every((draft) => sortedDrafts.any((s) => s.id == draft.id))) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _displayedDraftList = List.from(sortedDrafts);
+          });
+        }
+      });
+    }
+
+    return Scaffold(
+      appBar: CoconutAppBar.build(title: t.transaction_draft.title, context: context, isBottom: true),
+      backgroundColor: CoconutColors.gray900,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            ClipRect(
+              clipBehavior: Clip.none,
+              child: AnimatedList(
+                key: ValueKey('${_displayedDraftList.length}'),
+                controller: widget.scrollController,
+                initialItemCount: _displayedDraftList.length,
+                itemBuilder: (context, index, animation) {
+                  if (index >= _displayedDraftList.length) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final transactionDraft = _displayedDraftList[index];
+                  try {
+                    transactionDraft.id;
+                  } catch (e) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final draft = transactionDraft;
+
+                  return Column(
+                    children: [
+                      if (index == 0) CoconutLayout.spacing_300h,
+                      TransactionDraftCard(
+                        transactionDraft: draft,
+                        isSelectable: true,
+                        isSelected: _selectedDraftId == draft.id,
+                        onTap: () {
+                          setState(() {
+                            if (_selectedDraftId == draft.id) {
+                              _selectedDraftId = null;
+                              widget.onSelectedDraftIdChanged(null);
+                            } else {
+                              _selectedDraftId = draft.id;
+                              widget.onSelectedDraftIdChanged(draft.id);
+                            }
+                          });
+                        },
+                      ),
+                      CoconutLayout.spacing_300h,
+                      if (index == _displayedDraftList.length - 1) CoconutLayout.spacing_2500h,
+                    ],
+                  );
+                },
+              ),
+            ),
+            FixedBottomButton(
+              onButtonClicked: () async {
+                await widget.onDraftSelected(context, setState, removeItem);
+              },
+              isActive: _selectedDraftId != null,
+              text: t.select,
+              backgroundColor: CoconutColors.white,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRemoveCardPlaceholder(Animation<double> animation) {
+    return SizeTransition(
+      sizeFactor: animation,
+      child: FadeTransition(
+        opacity: animation,
+        child: Column(
+          children: [
+            if (_displayedDraftList.isNotEmpty) CoconutLayout.spacing_300h,
+            Container(
+              decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
+              height: 120,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void removeItem(int index, int draftId) {
+    setState(() {
+      _displayedDraftList.removeWhere((draft) {
+        try {
+          return draft.id == draftId;
+        } catch (e) {
+          return false;
+        }
+      });
+    });
+
+    if (_animatedListKey.currentState != null && index >= 0 && index < _displayedDraftList.length + 1) {
+      _animatedListKey.currentState?.removeItem(
+        index,
+        (context, animation) => _buildRemoveCardPlaceholder(animation),
+        duration: _duration,
+      );
+    }
+  }
+}

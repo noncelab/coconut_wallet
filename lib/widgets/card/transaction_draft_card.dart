@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -22,16 +23,22 @@ import 'package:realm/realm.dart';
 
 class TransactionDraftCard extends StatefulWidget {
   final RealmTransactionDraft transactionDraft;
-  final bool isSwiped;
-  final void Function(bool isSwiped) onSwipeChanged;
-  final VoidCallback onDelete;
+  final bool? isSwiped;
+  final void Function(bool isSwiped)? onSwipeChanged;
+  final VoidCallback? onDelete;
+  final bool isSelectable;
+  final bool isSelected;
+  final VoidCallback? onTap;
 
   const TransactionDraftCard({
     super.key,
     required this.transactionDraft,
-    required this.isSwiped,
-    required this.onSwipeChanged,
-    required this.onDelete,
+    this.isSwiped,
+    this.onSwipeChanged,
+    this.onDelete,
+    this.isSelectable = false,
+    this.isSelected = false,
+    this.onTap,
   });
 
   @override
@@ -65,7 +72,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   void didUpdateWidget(TransactionDraftCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isSwiped != widget.isSwiped) {
-      if (widget.isSwiped) {
+      if (widget.isSwiped != null && widget.isSwiped!) {
         _animateToSwipedPosition();
       } else {
         _animateToOriginalPosition();
@@ -159,18 +166,6 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
           );
         }).toList();
 
-    debugPrint('formattedSelectedUtxoList: $formattedSelectedUtxoList');
-    debugPrint('formattedCreatedAt: $formattedCreatedAt');
-    debugPrint('totalAmountSats: $totalAmountSats');
-    debugPrint('feeRate: $feeRate');
-    debugPrint('isMaxMode: $isMaxMode');
-    debugPrint('isMultisig: $isMultisig');
-    debugPrint('isFeeSubtractedFromSendAmount: $isFeeSubtractedFromSendAmount');
-    debugPrint('transactionHex: $transactionHex');
-    debugPrint('txWaitingForSign: $txWaitingForSign');
-    debugPrint('signedPsbtBase64Encoded: $signedPsbtBase64Encoded');
-    debugPrint('recipientListJson: $recipientListJson');
-    debugPrint('selectedUtxoListJson: $selectedUtxoListJson');
     String walletName;
     int iconIndex;
     int colorIndex;
@@ -194,108 +189,138 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
       signers = null;
     }
 
-    return ShrinkAnimationButton(
-      onPressed: () {
-        if (_dragOffset != 0) {
-          // 스와이프된 상태면 닫기
-          widget.onSwipeChanged(false);
-        } else {
-          // 아니면 기본 동작
-          debugPrint('TransactionDraftCard onPressed');
-        }
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          children: [
-            // 삭제 버튼
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: CoconutColors.gray800,
-                  borderRadius: BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
-                ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: SizedBox(
-                    width: screenWidth * _swipeThreshold + 20,
-                    height: double.infinity,
-                    child: GestureDetector(
-                      onTap: widget.onDelete,
-                      child: Container(
-                        decoration: const BoxDecoration(color: CoconutColors.hotPink),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CoconutLayout.spacing_500w,
-                            SvgPicture.asset(
-                              'assets/svg/trash.svg',
-                              width: 24,
-                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+    return SizedBox(
+      width: screenWidth - 32,
+      child: ShrinkAnimationButton(
+        onPressed: () {
+          if (_dragOffset != 0) {
+            // 스와이프된 상태면 닫기
+            widget.onSwipeChanged?.call(false);
+          } else {
+            // 선택 가능한 경우 onTap 호출
+            if (widget.isSelectable && widget.onTap != null) {
+              // 불러오기 바텀 시트에서 카드를 '선택' 했을 때 -> 선택된 테두리로 변경
+              widget.onTap?.call();
+            } else {
+              // 임시 저장 트랜잭션 화면에서 카드를 눌렀을 때 -> 화면 이동
+              Navigator.pushNamed(
+                context,
+                '/send',
+                arguments: {
+                  'walletId': null,
+                  'sendEntryPoint': SendEntryPoint.home,
+                  'transactionDraft': widget.transactionDraft,
+                },
+              );
+            }
+          }
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Stack(
+            children: [
+              // 삭제 버튼
+              if (widget.onDelete != null)
+                Positioned.fill(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: CoconutColors.gray800,
+                      borderRadius: BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: screenWidth * _swipeThreshold + 20,
+                        height: double.infinity,
+                        child: GestureDetector(
+                          onTap: widget.onDelete,
+                          child: Container(
+                            decoration: const BoxDecoration(color: CoconutColors.hotPink),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CoconutLayout.spacing_500w,
+                                SvgPicture.asset(
+                                  'assets/svg/trash.svg',
+                                  width: 24,
+                                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            GestureDetector(
-              onHorizontalDragUpdate: (details) {
-                if (details.delta.dx < 0) {
-                  // 왼쪽으로 드래그
-                  setState(() {
-                    _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
-                  });
-                } else if (details.delta.dx > 0 && _dragOffset < 0) {
-                  // 오른쪽으로 드래그 (복원)
-                  setState(() {
-                    _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
-                  });
-                }
-              },
-              onHorizontalDragEnd: (details) {
-                final threshold = screenWidth * _swipeThreshold;
-                if (_dragOffset.abs() >= threshold * 0.5) {
-                  // 50% 이상 스와이프되면 완전히 열기
-                  widget.onSwipeChanged(true);
-                  _animateToSwipedPosition();
-                } else {
-                  // 그렇지 않으면 닫기
-                  widget.onSwipeChanged(false);
-                  _animateToOriginalPosition();
-                }
-              },
-              child: Transform.translate(
-                offset: Offset(_dragOffset, 0),
-                child: Container(
-                  decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTimestamp(formattedCreatedAt),
-                      CoconutLayout.spacing_200h,
-                      _buildWalletNameAmount(
-                        walletImportSource,
-                        walletName,
-                        totalAmountSats,
-                        iconIndex,
-                        colorIndex,
-                        signers,
-                        context.read<PreferenceProvider>().currentUnit,
-                      ),
-                      CoconutLayout.spacing_200h,
-                      _buildRecipientAddress(recipientListJson),
-                      CoconutLayout.spacing_200h,
-                      _buildFeeRate(feeRate ?? 0),
-                    ],
+              GestureDetector(
+                onHorizontalDragUpdate: (details) {
+                  if (widget.onSwipeChanged == null) return;
+                  if (details.delta.dx < 0) {
+                    // 왼쪽으로 드래그
+                    setState(() {
+                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
+                    });
+                  } else if (details.delta.dx > 0 && _dragOffset < 0) {
+                    // 오른쪽으로 드래그 (복원)
+                    setState(() {
+                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
+                    });
+                  }
+                },
+                onHorizontalDragEnd: (details) {
+                  if (widget.onSwipeChanged == null) return;
+                  final threshold = screenWidth * _swipeThreshold;
+                  if (_dragOffset.abs() >= threshold * 0.5) {
+                    // 50% 이상 스와이프되면 완전히 열기
+                    widget.onSwipeChanged?.call(true);
+                    _animateToSwipedPosition();
+                  } else {
+                    // 그렇지 않으면 닫기
+                    widget.onSwipeChanged?.call(false);
+                    _animateToOriginalPosition();
+                  }
+                },
+                child: Transform.translate(
+                  offset: Offset(_dragOffset, 0),
+                  child: Container(
+                    decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTimestamp(formattedCreatedAt),
+                        CoconutLayout.spacing_200h,
+                        _buildWalletNameAmount(
+                          walletImportSource,
+                          walletName,
+                          totalAmountSats,
+                          iconIndex,
+                          colorIndex,
+                          signers,
+                          context.read<PreferenceProvider>().currentUnit,
+                          isMaxMode ?? false,
+                        ),
+                        CoconutLayout.spacing_200h,
+                        _buildRecipientAddress(recipientListJson),
+                        CoconutLayout.spacing_200h,
+                        _buildFeeRate(feeRate ?? 0),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+              if (widget.isSelectable && widget.isSelected)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: CoconutColors.gray350, width: 1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -323,6 +348,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     int colorIndex,
     List<MultisigSigner>? signers,
     BitcoinUnit currentUnit,
+    bool isMaxMode,
   ) {
     String amountString = currentUnit.displayBitcoinAmount(amountSats, withUnit: true);
     if (amountString != '0 BTC') {
@@ -346,7 +372,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
           ],
         ),
         CoconutLayout.spacing_200w,
-        Text(amountString, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+        Text(
+          isMaxMode ? t.transaction_draft.max : amountString,
+          style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+        ),
       ],
     );
   }

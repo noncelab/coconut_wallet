@@ -44,10 +44,9 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<TransactionDraftViewModel>(
       create:
-          (_) => TransactionDraftViewModel(
-            Provider.of<TransactionDraftRepository>(context, listen: false),
-            0, // id는 사용되지 않음
-          )..initializeDraftList(),
+          (_) =>
+              TransactionDraftViewModel(Provider.of<TransactionDraftRepository>(context, listen: false))
+                ..initializeDraftList(),
       child: Consumer<TransactionDraftViewModel>(
         builder: (context, viewModel, child) {
           // 초기 선택 상태 설정 (한 번만 실행)
@@ -86,14 +85,11 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
           return Scaffold(
             backgroundColor: CoconutColors.black,
             appBar: _buildAppBar(context),
-            body: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  _buildSegmentedControl(context, viewModel),
-                  Expanded(child: _buildTransactionDraftList(currentList)),
-                ],
-              ),
+            body: Column(
+              children: [
+                _buildSegmentedControl(context, viewModel),
+                Expanded(child: _buildTransactionDraftList(currentList)),
+              ],
             ),
           );
         },
@@ -119,6 +115,22 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     }
   }
 
+  Future<void> _showDeleteCompletedDialog() async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: t.transaction_draft.dialog.transaction_draft_delete_completed,
+          description: t.transaction_draft.dialog.transaction_draft_delete_completed_description,
+          rightButtonText: t.transaction_draft.dialog.confirm,
+          onTapRight: () {
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       context: context,
@@ -130,7 +142,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
 
   Widget _buildSegmentedControl(BuildContext context, TransactionDraftViewModel viewModel) {
     return Padding(
-      padding: const EdgeInsets.only(top: 14, bottom: 14),
+      padding: const EdgeInsets.only(top: 14, bottom: 14, left: 16, right: 16),
       child: CoconutSegmentedControl(
         labels: [t.transaction_draft.signed, t.transaction_draft.unsigned],
         isSelected: [_isSignedTransactionSelected ?? true, !(_isSignedTransactionSelected ?? true)],
@@ -302,6 +314,8 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                         );
                         vibrateLight();
                       }
+
+                      await _showDeleteCompletedDialog();
                     } else {
                       vibrateLightDouble();
                       if (mounted) {

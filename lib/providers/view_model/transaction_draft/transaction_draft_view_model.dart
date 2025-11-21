@@ -9,7 +9,7 @@ class TransactionDraftViewModel extends ChangeNotifier {
   List<RealmTransactionDraft> _unsignedTransactionDraftList = [];
   List<RealmTransactionDraft> _signedTransactionDraftList = [];
 
-  TransactionDraftViewModel(this._transactionDraftRepository, int id);
+  TransactionDraftViewModel(this._transactionDraftRepository);
 
   List<RealmTransactionDraft> get signedTransactionDraftList => _signedTransactionDraftList;
   List<RealmTransactionDraft> get unsignedTransactionDraftList => _unsignedTransactionDraftList;
