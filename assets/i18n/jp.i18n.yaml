@@ -177,9 +177,7 @@ transaction_draft:
   sats_per_vbyte: "sat/vB"
   dialog:
     transaction_draft_saved_send_screen: "送信情報保存完了"
-    transaction_draft_saved_send_screen_description: "後で入力できるように送信情報を一時保存しました。\n今すぐリストに移動しますか？"
-    transaction_draft_saved_confirm_screen: "トランザクション保存完了"
-    transaction_draft_saved_description_confirm_screen: "後で署名できるようにトランザクションを一時保存しました。\n今すぐリストに移動しますか？"
+    transaction_draft_saved_send_screen_description: "後で署名できるように送信情報を一時保存しました。\n今すぐリストに移動しますか？"
     transaction_draft_saved_broadcast_screen: "トランザクション保存完了"
     transaction_draft_saved_description_broadcast_screen: "後で送信できるようにトランザクションを一時保存しました。\n今すぐリストに移動しますか？"
     transaction_draft_save_failed: "トランザクション保存失敗"

@@ -2,7 +2,6 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -53,6 +52,15 @@ class BroadcastingViewModel extends ChangeNotifier {
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
     _isSendingDonation = _sendInfoProvider.isDonation ?? false;
+
+    debugPrint('sendInfoProvider.transactionDraftId: ${_sendInfoProvider.transactionDraftId}');
+    debugPrint('sendInfoProvider.signedPsbt: ${_sendInfoProvider.signedPsbt}');
+    debugPrint('sendInfoProvider.txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
+    debugPrint('sendInfoProvider.transaction: ${_sendInfoProvider.transaction}');
+    debugPrint('sendInfoProvider.walletId: ${_sendInfoProvider.walletId}');
+    debugPrint('sendInfoProvider.walletBase: $_walletBase');
+    debugPrint('sendInfoProvider.walletAddressType: ${_walletBase.addressType}');
+    debugPrint('sendInfoProvider.walletId: $_walletId');
   }
 
   List<String> get recipientAddresses => UnmodifiableListView(_recipientAddresses);
@@ -73,6 +81,15 @@ class BroadcastingViewModel extends ChangeNotifier {
   UtxoTagProvider get tagProvider => _tagProvider;
 
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
+
+  int? get transactionDraftId => _sendInfoProvider.transactionDraftId;
+  double? get feeRate => _sendInfoProvider.feeRate;
+  bool? get isMaxMode => _sendInfoProvider.isMaxMode;
+  bool? get isMultisig => _sendInfoProvider.isMultisig;
+  Transaction? get transaction => _sendInfoProvider.transaction;
+  String? get txWaitingForSign => _sendInfoProvider.txWaitingForSign;
+  String? get signedPsbt => _sendInfoProvider.signedPsbt;
+  String? get signedPsbtBase64Encoded => _sendInfoProvider.signedPsbt;
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
     Logger.log('BroadcastingViewModel: signedTx = ${signedTx.serialize()}');

@@ -11,7 +11,10 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -19,6 +22,7 @@ import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/floating_widget.dart';
@@ -30,7 +34,8 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class BroadcastingScreen extends StatefulWidget {
-  const BroadcastingScreen({super.key});
+  final RealmTransactionDraft? transactionDraft;
+  const BroadcastingScreen({super.key, this.transactionDraft});
 
   @override
   State<BroadcastingScreen> createState() => _BroadcastingScreenState();
@@ -101,6 +106,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         vibrateLight();
         await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
 
+        // transactionDraft가 있으면 삭제
+        if (widget.transactionDraft != null) {
+          final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
+          await transactionDraftRepository.deleteTransactionDraft(widget.transactionDraft!.id);
+        }
+
         if (!mounted) return;
 
         Navigator.pushNamedAndRemoveUntil(
@@ -166,24 +177,54 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           viewModel.isNetworkOn,
                         ),
                     if (!viewModel.isSendingDonation)
-                      FixedBottomButton(
-                        showGradient: false,
-                        isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                        onButtonClicked: () async {
-                          if (viewModel.isNetworkOn == false) {
-                            CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
-                            return;
-                          }
-                          if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
-                            await TransactionUtil.showTransactionConfirmedDialog(context);
-                            return;
-                          }
-                          if (viewModel.isInitDone) {
-                            broadcast();
-                          }
-                        },
-                        text: t.broadcasting_screen.btn_submit,
-                      ),
+                      if (viewModel.transactionDraftId == null && viewModel.feeBumpingType == null) ...{
+                        FixedBottomTweenButton(
+                          leftButtonRatio: 0.35,
+                          leftButtonClicked: () async {
+                            final transactionDraftRepository = Provider.of<TransactionDraftRepository>(
+                              context,
+                              listen: false,
+                            );
+                            final result = await transactionDraftRepository.saveTransactionDraft(
+                              walletId: viewModel.walletId,
+                              feeRateText: viewModel.feeRate?.toString() ?? '',
+                              isMaxMode: viewModel.isMaxMode ?? false,
+                              isMultisig: viewModel.isMultisig ?? false,
+                              transaction: viewModel.transaction,
+                              recipientList:
+                                  viewModel.recipientAddresses
+                                      .map((address) => RecipientInfo(address: address))
+                                      .toList(),
+                              txWaitingForSign: viewModel.txWaitingForSign,
+                              signedPsbtBase64Encoded: viewModel.signedPsbtBase64Encoded,
+                              currentUnit: context.read<PreferenceProvider>().currentUnit.symbol,
+                              totalAmount: (viewModel.totalAmount ?? 0) - viewModel.fee!,
+                            );
+
+                            if (result.isSuccess) {
+                              _showTransactionDraftSavedDialog();
+                            } else {
+                              // 저장 실패
+                              debugPrint('저장 실패 ${result.error.message}');
+                              _showTransactionDraftSaveFailedDialog(result.error.message);
+                            }
+                          },
+                          rightButtonClicked: () async {
+                            _onBroadcastButtonClicked(viewModel);
+                          },
+                          leftText: t.transaction_draft.save,
+                          rightText: t.broadcasting_screen.btn_submit,
+                        ),
+                      } else ...{
+                        FixedBottomButton(
+                          showGradient: false,
+                          isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                          onButtonClicked: () async {
+                            _onBroadcastButtonClicked(viewModel);
+                          },
+                          text: t.broadcasting_screen.btn_submit,
+                        ),
+                      },
                   ],
                 ),
               ),
@@ -192,10 +233,99 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     );
   }
 
+  void _showTransactionDraftSavedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: t.transaction_draft.dialog.transaction_draft_saved_broadcast_screen,
+          description: t.transaction_draft.dialog.transaction_draft_saved_description_broadcast_screen,
+          leftButtonText: t.transaction_draft.dialog.cancel,
+          rightButtonText: t.transaction_draft.dialog.move,
+          onTapRight: () {
+            Navigator.pushNamedAndRemoveUntil(context, '/transaction-draft', ModalRoute.withName("/"));
+          },
+          onTapLeft: () {
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  void _showTransactionDraftSaveFailedDialog(String errorMessage) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          title: t.transaction_draft.dialog.transaction_draft_save_failed,
+          description: errorMessage,
+          rightButtonText: t.transaction_draft.dialog.confirm,
+          onTapRight: () {
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  void _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
+    if (viewModel.isNetworkOn == false) {
+      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      return;
+    }
+    if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
+      await TransactionUtil.showTransactionConfirmedDialog(context);
+      return;
+    }
+    if (viewModel.isInitDone) {
+      broadcast();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
+
+    // transactionDraft가 전달된 경우 SendInfoProvider에 데이터 설정
+    if (widget.transactionDraft != null) {
+      final sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
+      final draft = widget.transactionDraft!;
+
+      sendInfoProvider.setTransactionDraftId(draft.id);
+      sendInfoProvider.setWalletId(draft.walletId);
+
+      if (draft.feeRate != null) {
+        sendInfoProvider.setFeeRate(draft.feeRate!.toDouble());
+      }
+
+      if (draft.isMaxMode != null) {
+        sendInfoProvider.setIsMaxMode(draft.isMaxMode!);
+      }
+
+      if (draft.isMultisig != null) {
+        sendInfoProvider.setIsMultisig(draft.isMultisig!);
+      }
+
+      if (draft.txWaitingForSign != null && draft.txWaitingForSign!.isNotEmpty) {
+        sendInfoProvider.setTxWaitingForSign(draft.txWaitingForSign!);
+      }
+
+      if (draft.signedPsbtBase64Encoded != null && draft.signedPsbtBase64Encoded!.isNotEmpty) {
+        sendInfoProvider.setSignedPsbtBase64Encoded(draft.signedPsbtBase64Encoded!);
+      }
+
+      if (draft.transactionHex != null && draft.transactionHex!.isNotEmpty) {
+        try {
+          final transaction = Transaction.parse(draft.transactionHex!);
+          sendInfoProvider.setTransaction(transaction);
+        } catch (e) {
+          Logger.log('Failed to parse transactionHex from draft: $e');
+        }
+      }
+    }
+
     _viewModel = BroadcastingViewModel(
       Provider.of<SendInfoProvider>(context, listen: false),
       Provider.of<WalletProvider>(context, listen: false),

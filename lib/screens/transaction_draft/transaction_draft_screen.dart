@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/transaction_draft/transaction_draft_view_model.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
@@ -88,7 +89,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
             body: Column(
               children: [
                 _buildSegmentedControl(context, viewModel),
-                Expanded(child: _buildTransactionDraftList(currentList)),
+                Expanded(child: _buildTransactionDraftList(currentList, viewModel)),
               ],
             ),
           );
@@ -184,7 +185,10 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     );
   }
 
-  Widget _buildTransactionDraftList(List<RealmTransactionDraft> transactionDraftList) {
+  Widget _buildTransactionDraftList(
+    List<RealmTransactionDraft> transactionDraftList,
+    TransactionDraftViewModel viewModel,
+  ) {
     if (transactionDraftList.isEmpty) {
       // 리스트가 비어있으면 _displayedDraftList도 비우기
       if (_displayedDraftList.isNotEmpty) {
@@ -236,7 +240,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
               return Column(
                 children: [
                   if (index > 0) CoconutLayout.spacing_300h,
-                  _buildTransactionDraftCard(transactionDraft, index, animation, cardId),
+                  _buildTransactionDraftCard(transactionDraft, index, animation, cardId, viewModel),
                 ],
               );
             },
@@ -249,6 +253,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     int index,
     Animation<double> animation,
     int cardId,
+    TransactionDraftViewModel viewModel,
   ) {
     return GestureDetector(
       onHorizontalDragStart: (details) {
@@ -266,6 +271,9 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
           setState(() {
             _swipedCardId = isSwiped ? cardId : null;
           });
+        },
+        onTap: () {
+          _handleTransactionDraftCardTap(transactionDraft, viewModel);
         },
         onDelete: () async {
           final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
@@ -362,6 +370,41 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _handleTransactionDraftCardTap(
+    RealmTransactionDraft transactionDraft,
+    TransactionDraftViewModel viewModel,
+  ) async {
+    if (transactionDraft.signedPsbtBase64Encoded != null) {
+      await Navigator.pushNamed(context, '/broadcasting', arguments: {'transactionDraft': transactionDraft});
+    } else {
+      await Navigator.pushNamed(
+        context,
+        '/send',
+        arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home, 'transactionDraft': transactionDraft},
+      );
+    }
+    if (!mounted) return;
+    await _refreshTransactionDraftList(viewModel);
+  }
+
+  Future<void> _refreshTransactionDraftList(TransactionDraftViewModel viewModel) async {
+    await viewModel.initializeDraftList();
+
+    if (!mounted) {
+      return;
+    }
+
+    final updatedList =
+        (_isSignedTransactionSelected ?? true)
+            ? viewModel.signedTransactionDraftList
+            : viewModel.unsignedTransactionDraftList;
+
+    setState(() {
+      _displayedDraftList = List.from(updatedList);
+      _swipedCardId = null;
+    });
   }
 
   Widget _buildRemoveCardPlaceholder(Animation<double> animation) {

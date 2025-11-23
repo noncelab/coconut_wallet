@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -14,6 +16,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -199,6 +202,7 @@ class SendViewModel extends ChangeNotifier {
   int? get unintendedDustFee => _unintendedDustFee;
 
   TransactionBuildResult? _txBuildResult;
+  final RealmTransactionDraft? _transactionDraft;
 
   List<RecipientInfo> get validRecipientList {
     return _recipientList
@@ -274,6 +278,7 @@ class SendViewModel extends ChangeNotifier {
     this._onRecipientPageDeleted,
     int? walletId,
     SendEntryPoint sendEntryPoint,
+    this._transactionDraft,
   ) {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
@@ -285,6 +290,11 @@ class SendViewModel extends ChangeNotifier {
     }
 
     _recipientList = [RecipientInfo()];
+
+    if (_transactionDraft != null) {
+      loadTransactionDraft(_transactionDraft);
+    }
+
     _initBalances();
     _setRecommendedFees().whenComplete(() {
       notifyListeners();
@@ -380,6 +390,148 @@ class SendViewModel extends ChangeNotifier {
     _updateAmountValidationState();
     _updateFeeBoardVisibility();
     _buildTransaction();
+    notifyListeners();
+  }
+
+  /// TransactionDraft를 로드하여 SendViewModel 상태에 반영
+  void loadTransactionDraft(RealmTransactionDraft? draft) {
+    if (draft == null) return;
+    debugPrint('draft id: ${draft.id}');
+    // draft id 설정
+    _sendInfoProvider.setTransactionDraftId(draft.id);
+
+    // 지갑 선택
+    final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == draft.walletId);
+    if (walletIndex != -1) {
+      _initializeWithSelectedWallet(walletIndex);
+    }
+
+    // recipientList 설정
+    final recipientListJson = draft.recipientListJson.toList();
+    final recipientList =
+        recipientListJson.map((jsonString) {
+          final json = jsonDecode(jsonString) as Map<String, dynamic>;
+          debugPrint('json: $json');
+          debugPrint('address: ${json['address']}');
+          debugPrint('amount: ${json['amount']}');
+          debugPrint('addressError: ${json['addressError']}');
+          debugPrint('minimumAmountError: ${json['minimumAmountError']}');
+          return RecipientInfo(
+            address: json['address'] as String? ?? '',
+            amount: json['amount'] as String? ?? '',
+            addressError: AddressError.values.firstWhere(
+              (e) => e.name == (json['addressError'] as String? ?? 'none'),
+              orElse: () => AddressError.none,
+            ),
+            minimumAmountError: AmountError.values.firstWhere(
+              (e) => e.name == (json['minimumAmountError'] as String? ?? 'none'),
+              orElse: () => AmountError.none,
+            ),
+          );
+        }).toList();
+    _recipientList = recipientList;
+
+    // address 설정
+    if (_recipientList.isNotEmpty) {
+      for (int i = 0; i < _recipientList.length; i++) {
+        setAddressText(_recipientList[i].address, i);
+        debugPrint('address: ${_recipientList[i].address}');
+      }
+    }
+
+    // feeRate 설정
+    if (draft.feeRate != null) {
+      setFeeRateText(draft.feeRate.toString());
+    }
+
+    // maxMode 설정 (amount 설정 전에 먼저 설정, skipAmountReset으로 amount 초기화 방지)
+    if (draft.isMaxMode == true) {
+      setMaxMode(true);
+    } else {
+      setMaxMode(false, skipAmountReset: true);
+    }
+
+    // amount 설정 (maxMode 설정 후에 설정하여 덮어쓰기 방지)
+    if (_recipientList.isNotEmpty) {
+      for (int i = 0; i < _recipientList.length; i++) {
+        if (draft.currentUnit == t.btc) {
+          if (_recipientList[i].amount.isNotEmpty) {
+            setAmountText(UnitUtil.convertBitcoinToSatoshi(double.parse(_recipientList[i].amount)), i);
+          }
+        } else {
+          if (_recipientList[i].amount.isNotEmpty) {
+            setAmountText(int.parse(_recipientList[i].amount), i);
+          }
+        }
+      }
+    }
+
+    // isFeeSubtractedFromSendAmount 설정
+    if (draft.isFeeSubtractedFromSendAmount == true) {
+      _isFeeSubtractedFromSendAmount = true;
+    }
+
+    // selectedUtxoList 설정
+    if (draft.selectedUtxoListJson.isNotEmpty) {
+      // 수동 선택 모드
+      _isUtxoSelectionAuto = false;
+      final selectedUtxoListJson = draft.selectedUtxoListJson.toList();
+      final allUtxoList = _walletProvider.getUtxoList(draft.walletId);
+      _selectedUtxoList =
+          selectedUtxoListJson.map((jsonString) {
+            final json = jsonDecode(jsonString) as Map<String, dynamic>;
+            final utxoId = '${json['transactionHash'] as String}${json['index'] as int}';
+            return allUtxoList.firstWhere(
+              (utxo) => utxo.utxoId == utxoId,
+              orElse:
+                  () => UtxoState(
+                    transactionHash: json['transactionHash'] as String,
+                    index: json['index'] as int,
+                    amount: json['amount'] as int,
+                    derivationPath: json['derivationPath'] as String,
+                    blockHeight: json['blockHeight'] as int,
+                    to: json['to'] as String,
+                    timestamp: DateTime.parse(json['timestamp'] as String),
+                  ),
+            );
+          }).toList();
+    } else {
+      // 자동 선택 모드
+      _isUtxoSelectionAuto = true;
+      _selectedUtxoList = _walletProvider.getUtxoList(draft.walletId);
+    }
+    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+
+    // 현재 단위 확인 및 업데이트
+    if (draft.currentUnit != null) {
+      final draftUnit = BitcoinUnit.values.firstWhere(
+        (unit) => unit.symbol == draft.currentUnit,
+        orElse: () => _currentUnit,
+      );
+      if (draftUnit != _currentUnit) {
+        toggleUnit();
+      }
+    }
+
+    // 페이지 인덱스 초기화
+    _currentIndex = 0;
+    _onRecipientPageDeleted(0); // 페이지 초기화를 위해 삭제 콜백 호출
+    _initBalances();
+
+    for (int i = 0; i < _recipientList.length; i++) {
+      _onAmountTextUpdate(_recipientList[i].amount);
+    }
+    _onFeeRateTextUpdate(_feeRateText);
+
+    // 트랜잭션 빌드 및 잔액 검증 상태 업데이트
+    _buildTransaction();
+    _updateAmountValidationState();
+
+    setShowAddressBoard(false);
+    if (recipientList.length > 1 || recipientList.any((r) => r.amount.isNotEmpty && r.address.isNotEmpty)) {
+      _showFeeBoard = true;
+    }
+    _updateFeeBoardVisibility();
     notifyListeners();
   }
 
@@ -522,7 +674,7 @@ class SendViewModel extends ChangeNotifier {
     _updateAmountValidationState(recipientIndex: recipientIndex);
   }
 
-  void setMaxMode(bool isEnabled) {
+  void setMaxMode(bool isEnabled, {bool skipAmountReset = false}) {
     if (_isMaxMode == isEnabled) return;
 
     _isMaxMode = isEnabled;
@@ -532,10 +684,14 @@ class SendViewModel extends ChangeNotifier {
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
     } else {
-      /// maxMode 꺼지면 마지막 수신자 금액 초기화
-      _recipientList[lastIndex].amount = "";
-      if (_currentIndex == lastIndex) {
-        _onAmountTextUpdate(_recipientList[lastIndex].amount);
+      /// maxMode 꺼지면 마지막 수신자 금액 초기화 (skipAmountReset이 true면 스킵)
+      if (!skipAmountReset) {
+        if (_recipientList.isNotEmpty && lastIndex >= 0) {
+          _recipientList[lastIndex].amount = "";
+          if (_currentIndex == lastIndex) {
+            _onAmountTextUpdate(_recipientList[lastIndex].amount);
+          }
+        }
       }
       _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
     }
@@ -627,7 +783,19 @@ class SendViewModel extends ChangeNotifier {
     }
   }
 
+  /// recipientIndex 유효성 검사
+  bool _isValidRecipientIndex(int recipientIndex, String methodName) {
+    if (recipientIndex < 0 || recipientIndex >= _recipientList.length) {
+      debugPrint(
+        '$methodName: Invalid recipientIndex $recipientIndex, _recipientList.length: ${_recipientList.length}',
+      );
+      return false;
+    }
+    return true;
+  }
+
   void setAddressText(String text, int recipientIndex) {
+    if (!_isValidRecipientIndex(recipientIndex, 'setAddressText')) return;
     if (_recipientList[recipientIndex].address == text) return;
     _recipientList[recipientIndex].address = text;
     if (text.isEmpty) {
@@ -638,6 +806,7 @@ class SendViewModel extends ChangeNotifier {
 
   /// bip21 url에서 amount값 파싱 성공했을 때 사용
   void setAmountText(int satoshi, int recipientIndex) {
+    if (!_isValidRecipientIndex(recipientIndex, 'setAmountText')) return;
     if (currentUnit == BitcoinUnit.sats) {
       _recipientList[recipientIndex].amount = satoshi.toString();
     } else {
@@ -804,9 +973,16 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _updateIsAmountSumExceedsBalance(double amountSum) {
+    // 수수료가 아직 계산되지 않았으면 잔액 검증을 하지 않음
+    if (_estimatedFee == null && !_isFeeSubtractedFromSendAmount) {
+      _isAmountSumExceedsBalance = AmountError.none;
+      return;
+    }
+
     double total = _isFeeSubtractedFromSendAmount ? amountSum : amountSum + _estimatedFeeByUnit;
+    double balanceInUnit = balance / _dustLimitDenominator;
     _isAmountSumExceedsBalance =
-        total > 0 && total > balance / _dustLimitDenominator ? AmountError.insufficientBalance : AmountError.none;
+        total > 0 && total > balanceInUnit ? AmountError.insufficientBalance : AmountError.none;
   }
 
   void _validateOneAmount(int recipientIndex) {
@@ -856,6 +1032,8 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _setAddressError(AddressError error, int index) {
+    debugPrint('setAddressError: $error, $index');
+    if (!_isValidRecipientIndex(index, '_setAddressError')) return;
     if (_recipientList[index].addressError != error) {
       _recipientList[index].addressError = error;
       _updateFinalErrorMessage();
@@ -868,6 +1046,8 @@ class SendViewModel extends ChangeNotifier {
   }
 
   bool validateAddress(String address, int recipientIndex) {
+    if (!_isValidRecipientIndex(recipientIndex, 'validateAddress')) return false;
+
     AddressValidationError? error = AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
 
     switch (error) {
@@ -932,6 +1112,37 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setTransaction(_txBuildResult!.transaction!);
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
+    _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
+    // transaction draft가 있다면, 정보가 변경되었는지 확인
+    if (_transactionDraft != null && _isTransactionDraftChanged()) {
+      _sendInfoProvider.setTransactionDraftId(null);
+    }
+  }
+
+  bool _isTransactionDraftChanged() {
+    if (_transactionDraft == null) return false;
+
+    // recipientList 비교
+    final recipientListJson = _transactionDraft.recipientListJson.toList();
+    if (recipientListJson.length != _recipientList.length) {
+      return true;
+    }
+
+    for (int i = 0; i < recipientListJson.length; i++) {
+      final json = jsonDecode(recipientListJson[i]) as Map<String, dynamic>;
+      final savedAddress = json['address'] as String? ?? '';
+      final savedAmount = json['amount'] as String? ?? '';
+      final currentRecipient = _recipientList[i];
+
+      if (savedAddress != currentRecipient.address || savedAmount != currentRecipient.amount) {
+        return true;
+      }
+    }
+
+    return _transactionDraft.feeRate?.toString() != _feeRateText ||
+        _transactionDraft.isMaxMode != _isMaxMode ||
+        _transactionDraft.isMultisig != (_selectedWalletItem!.walletType == WalletType.multiSignature) ||
+        _transactionDraft.isFeeSubtractedFromSendAmount != _isFeeSubtractedFromSendAmount;
   }
 }
 

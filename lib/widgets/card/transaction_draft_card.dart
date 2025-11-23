@@ -140,6 +140,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     final currentUnit = widget.transactionDraft.currentUnit;
     // BTC를 사토시로 변환
     final totalAmountSats = currentUnit == t.btc ? UnitUtil.convertBitcoinToSatoshi(totalAmount) : totalAmount.toInt();
+    final totalAmountForSignedTransaction = widget.transactionDraft.totalAmount;
     final feeRate = widget.transactionDraft.feeRate;
     final isMaxMode = widget.transactionDraft.isMaxMode;
     final isMultisig = widget.transactionDraft.isMultisig;
@@ -149,7 +150,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     final signedPsbtBase64Encoded = widget.transactionDraft.signedPsbtBase64Encoded;
     final recipientListJson = widget.transactionDraft.recipientListJson;
     final createdAt = widget.transactionDraft.createdAt;
-    final formattedCreatedAt = DateTimeUtil.formatTimestamp(createdAt!.toLocal());
+    final formattedCreatedAt = createdAt != null ? DateTimeUtil.formatTimestamp(createdAt.toLocal()) : <String>[];
 
     final selectedUtxoListJson = widget.transactionDraft.selectedUtxoListJson;
     final formattedSelectedUtxoList =
@@ -192,18 +193,16 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     return SizedBox(
       width: screenWidth - 32,
       child: ShrinkAnimationButton(
-        onPressed: () {
+        onPressed: () async {
           if (_dragOffset != 0) {
             // 스와이프된 상태면 닫기
             widget.onSwipeChanged?.call(false);
           } else {
-            // 선택 가능한 경우 onTap 호출
-            if (widget.isSelectable && widget.onTap != null) {
-              // 불러오기 바텀 시트에서 카드를 '선택' 했을 때 -> 선택된 테두리로 변경
-              widget.onTap?.call();
+            if (widget.onTap != null) {
+              widget.onTap!.call();
             } else {
               // 임시 저장 트랜잭션 화면에서 카드를 눌렀을 때 -> 화면 이동
-              Navigator.pushNamed(
+              await Navigator.pushNamed(
                 context,
                 '/send',
                 arguments: {
@@ -294,6 +293,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                         _buildWalletNameAmount(
                           walletImportSource,
                           walletName,
+                          totalAmountForSignedTransaction,
                           totalAmountSats,
                           iconIndex,
                           colorIndex,
@@ -327,6 +327,9 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   }
 
   Widget _buildTimestamp(List<String> transactionTimeStamp) {
+    if (transactionTimeStamp.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final textStyle = CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -343,6 +346,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   Widget _buildWalletNameAmount(
     WalletImportSource walletImportSource,
     String walletName,
+    int? totalAmountForSignedTransaction,
     int amountSats,
     int iconIndex,
     int colorIndex,
@@ -350,7 +354,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     BitcoinUnit currentUnit,
     bool isMaxMode,
   ) {
-    String amountString = currentUnit.displayBitcoinAmount(amountSats, withUnit: true);
+    String amountString = currentUnit.displayBitcoinAmount(
+      totalAmountForSignedTransaction ?? amountSats,
+      withUnit: true,
+    );
     if (amountString != '0 BTC') {
       amountString = '- $amountString';
     } else {
@@ -381,6 +388,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   }
 
   Widget _buildRecipientAddress(RealmList<String> recipientListJson) {
+    if (recipientListJson.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     bool isBatchTransaction = recipientListJson.length > 1;
     final firstRecipientAddress = jsonDecode(recipientListJson[0])['address'] as String;
     return isBatchTransaction
@@ -394,7 +405,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
         : Text(firstRecipientAddress, style: CoconutTypography.body3_12.setColor(CoconutColors.white));
   }
 
-  Widget _buildFeeRate(int feeRate) {
+  Widget _buildFeeRate(double feeRate) {
     return Row(
       children: [
         Text(t.transaction_draft.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),

@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
+import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -241,7 +242,16 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
 
                 // 로딩이 필요한 화면들
                 '/wallet-add-input': (context) => const CustomLoadingOverlay(child: WalletAddInputScreen()),
-                '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
+                '/broadcasting':
+                    (context) => buildLoadingScreenWithArgs(
+                      context,
+                      (args) => BroadcastingScreen(
+                        transactionDraft:
+                            args.containsKey('transactionDraft')
+                                ? args['transactionDraft'] as RealmTransactionDraft?
+                                : null,
+                      ),
+                    ),
 
                 // 인자가 있는 기본 화면들 (Privacy Screen 사용 ❌ - 각 화면 내부에서 설정/해제 합니다)
                 // 1. 주소 보기
@@ -362,13 +372,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 화면 생성 헬퍼 메서드
   /// 1. 인자가 있는 화면
   Widget buildScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
-    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     return builder(args);
   }
 
   /// 2. CustomLoadingOverlay + 인자가 있는 화면
   Widget buildLoadingScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
-    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     return CustomLoadingOverlay(child: builder(args));
   }
 }

@@ -233,7 +233,7 @@ class _RealmTransactionDraft {
   @PrimaryKey()
   late int id;
   late int walletId;
-  late int? feeRate;
+  late double? feeRate;
   late bool? isMaxMode;
   late bool? isMultisig;
   late bool? isFeeSubtractedFromSendAmount;
@@ -250,4 +250,6 @@ class _RealmTransactionDraft {
   // 선택된 UTXO 리스트 (자동 선택 모드면 null)
   // 각 문자열은 UtxoState의 JSON 직렬화된 형태
   late List<String> selectedUtxoListJson;
+  // totalAmount는 서명된 트랜잭션 임시저장에 사용됨
+  late int? totalAmount;
 }

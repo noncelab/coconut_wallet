@@ -130,8 +130,9 @@ RealmTransactionDraft _mapToRealmTransactionDraft({
   String? signedPsbtBase64Encoded,
   required String currentUnit,
   List<UtxoState>? selectedUtxoList,
+  int? totalAmount,
 }) {
-  final feeRate = feeRateText != null && feeRateText.isNotEmpty ? int.tryParse(feeRateText) : null;
+  final feeRate = feeRateText != null && feeRateText.isNotEmpty ? double.tryParse(feeRateText) : null;
   final transactionHex = transaction?.serialize();
 
   return RealmTransactionDraft(
@@ -148,6 +149,7 @@ RealmTransactionDraft _mapToRealmTransactionDraft({
     createdAt: DateTime.now(),
     currentUnit: currentUnit,
     selectedUtxoListJson: selectedUtxoList != null ? _utxoListToJson(selectedUtxoList) : const [],
+    totalAmount: totalAmount,
   );
 }
 
@@ -223,16 +225,17 @@ class TransactionDraftRepository extends BaseRepository {
   /// TransactionDraft 저장
   Future<Result<RealmTransactionDraft>> saveTransactionDraft({
     required int walletId,
-    required List<RecipientInfo> recipientList,
+    List<RecipientInfo>? recipientList,
     required String? feeRateText,
     required bool isMaxMode,
     required bool isMultisig,
-    required bool isFeeSubtractedFromSendAmount,
+    bool? isFeeSubtractedFromSendAmount,
     lib.Transaction? transaction,
     String? txWaitingForSign,
     String? signedPsbtBase64Encoded,
     required String currentUnit,
     List<UtxoState>? selectedUtxoList,
+    int? totalAmount,
   }) async {
     // 동일한 draft가 이미 존재하는지 확인
     // if (_isDuplicateDraft(
@@ -254,16 +257,17 @@ class TransactionDraftRepository extends BaseRepository {
       final draft = _mapToRealmTransactionDraft(
         id: newId,
         walletId: walletId,
-        recipientList: recipientList,
+        recipientList: recipientList ?? [],
         feeRateText: feeRateText,
         isMaxMode: isMaxMode,
         isMultisig: isMultisig,
-        isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount,
+        isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount ?? false,
         transaction: transaction,
         txWaitingForSign: txWaitingForSign,
         signedPsbtBase64Encoded: signedPsbtBase64Encoded,
         currentUnit: currentUnit,
         selectedUtxoList: selectedUtxoList,
+        totalAmount: totalAmount,
       );
 
       await realm.writeAsync(() {
@@ -300,7 +304,7 @@ class TransactionDraftRepository extends BaseRepository {
       await realm.writeAsync(() {
         if (walletId != null) draft.walletId = walletId;
         if (feeRateText != null) {
-          draft.feeRate = feeRateText.isNotEmpty ? int.tryParse(feeRateText) : null;
+          draft.feeRate = feeRateText.isNotEmpty ? double.tryParse(feeRateText) : null;
         }
         if (isMaxMode != null) draft.isMaxMode = isMaxMode;
         if (isMultisig != null) draft.isMultisig = isMultisig;

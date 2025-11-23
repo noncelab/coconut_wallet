@@ -25,6 +25,7 @@ class SendInfoProvider {
   FeeBumpingType? _feeBumpingType;
   WalletImportSource? _walletImportSource;
   int? _transactionDraftId;
+  double? _feeRate;
 
   int? get walletId => _walletId;
   String? get recipientAddress => _recipientAddress;
@@ -42,8 +43,13 @@ class SendInfoProvider {
   FeeBumpingType? get feeBumpingType => _feeBumpingType;
   WalletImportSource? get walletImportSource => _walletImportSource;
   int? get transactionDraftId => _transactionDraftId;
+  double? get feeRate => _feeRate;
 
-  void setTransactionDraftId(int id) {
+  void setFeeRate(double feeRate) {
+    _feeRate = feeRate;
+  }
+
+  void setTransactionDraftId(int? id) {
     _transactionDraftId = id;
   }
 

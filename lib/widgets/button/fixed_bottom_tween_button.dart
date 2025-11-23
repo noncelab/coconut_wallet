@@ -5,8 +5,8 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomTweenButton extends StatefulWidget {
-  static const fixedBottomButtonDefaultHeight = 40.0;
-  static const fixedBottomButtonDefaultBottomPadding = 16.0;
+  static const fixedBottomButtonDefaultHeight = 50.0;
+  static const fixedBottomButtonDefaultBottomPadding = 30.0;
 
   const FixedBottomTweenButton({
     super.key,
