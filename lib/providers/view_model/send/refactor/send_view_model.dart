@@ -1139,7 +1139,15 @@ class SendViewModel extends ChangeNotifier {
       }
     }
 
-    return _transactionDraft.feeRate?.toString() != _feeRateText ||
+    // feeRate 비교: double 값을 String으로 변환하여 비교
+    final savedFeeRate = _transactionDraft.feeRate;
+    final currentFeeRate = double.tryParse(_feeRateText);
+    final feeRateChanged =
+        savedFeeRate != null && currentFeeRate != null
+            ? (savedFeeRate != currentFeeRate)
+            : (savedFeeRate?.toString() != _feeRateText);
+
+    return feeRateChanged ||
         _transactionDraft.isMaxMode != _isMaxMode ||
         _transactionDraft.isMultisig != (_selectedWalletItem!.walletType == WalletType.multiSignature) ||
         _transactionDraft.isFeeSubtractedFromSendAmount != _isFeeSubtractedFromSendAmount;

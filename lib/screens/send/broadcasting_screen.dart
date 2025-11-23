@@ -107,9 +107,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
 
         // transactionDraft가 있으면 삭제
+        // 서명된 임시저장 트랜잭션인 경우 widget.transactionDraft가 있음
+        // 서명되지 않은 임시저장 트랜잭션인 경우 widget.transactionDraft가 없고, sendInfoProvider.transactionDraftId가 있음
         if (widget.transactionDraft != null) {
           final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
           await transactionDraftRepository.deleteTransactionDraft(widget.transactionDraft!.id);
+        } else if (_viewModel.transactionDraftId != null) {
+          final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
+          await transactionDraftRepository.deleteTransactionDraft(_viewModel.transactionDraftId!);
         }
 
         if (!mounted) return;
