@@ -1113,44 +1113,6 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
-    // transaction draft가 있다면, 정보가 변경되었는지 확인
-    if (_transactionDraft != null && _isTransactionDraftChanged()) {
-      _sendInfoProvider.setTransactionDraftId(null);
-    }
-  }
-
-  bool _isTransactionDraftChanged() {
-    if (_transactionDraft == null) return false;
-
-    // recipientList 비교
-    final recipientListJson = _transactionDraft.recipientListJson.toList();
-    if (recipientListJson.length != _recipientList.length) {
-      return true;
-    }
-
-    for (int i = 0; i < recipientListJson.length; i++) {
-      final json = jsonDecode(recipientListJson[i]) as Map<String, dynamic>;
-      final savedAddress = json['address'] as String? ?? '';
-      final savedAmount = json['amount'] as String? ?? '';
-      final currentRecipient = _recipientList[i];
-
-      if (savedAddress != currentRecipient.address || savedAmount != currentRecipient.amount) {
-        return true;
-      }
-    }
-
-    // feeRate 비교: double 값을 String으로 변환하여 비교
-    final savedFeeRate = _transactionDraft.feeRate;
-    final currentFeeRate = double.tryParse(_feeRateText);
-    final feeRateChanged =
-        savedFeeRate != null && currentFeeRate != null
-            ? (savedFeeRate != currentFeeRate)
-            : (savedFeeRate?.toString() != _feeRateText);
-
-    return feeRateChanged ||
-        _transactionDraft.isMaxMode != _isMaxMode ||
-        _transactionDraft.isMultisig != (_selectedWalletItem!.walletType == WalletType.multiSignature) ||
-        _transactionDraft.isFeeSubtractedFromSendAmount != _isFeeSubtractedFromSendAmount;
   }
 }
 
