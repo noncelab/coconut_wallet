@@ -200,14 +200,12 @@ class SendViewModel extends ChangeNotifier {
 
   TransactionBuildResult? _txBuildResult;
 
+  String _amountStr = '';
+
   List<RecipientInfo> get validRecipientList {
     return _recipientList
         .where(
-          (e) =>
-              e.address.isNotEmpty &&
-              e.amount.isNotEmpty &&
-              e.addressError.isNotError &&
-              e.minimumAmountError.isNotError,
+          (e) => e.address.isNotEmpty && e.amount > 0 && e.addressError.isNotError && e.minimumAmountError.isNotError,
         )
         .toList();
   }
@@ -215,20 +213,20 @@ class SendViewModel extends ChangeNotifier {
   Map<String, int> get recipientMap {
     final Map<String, int> recipientMap = {};
     for (final recipient in validRecipientList) {
-      recipientMap[recipient.address] =
-          (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(double.parse(recipient.amount)) : int.parse(recipient.amount));
+      recipientMap[recipient.address] = recipient.amount;
     }
     return recipientMap;
   }
 
   double get _amountSumExceptLast {
-    double sumExceptLast = 0;
+    int sumExceptLast = 0;
     for (int i = 0; i < lastIndex; ++i) {
-      if (_recipientList[i].amount.isNotEmpty) {
-        sumExceptLast += double.parse(_recipientList[i].amount);
+      if (_recipientList[i].amount > 0) {
+        sumExceptLast += _recipientList[i].amount;
       }
     }
-    return sumExceptLast.roundTo8Digits();
+    double sumInBtc = sumExceptLast / 100000000;
+    return sumInBtc.roundTo8Digits();
   }
 
   bool get isReadyToSend {
@@ -357,10 +355,10 @@ class SendViewModel extends ChangeNotifier {
   void onWalletInfoUpdated(WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto) {
     // 모두 보내기 모드 활성화 상태에서 지갑 변경시 모두 보내기 모드를 끄고 마지막 수신자 정보를 초기화
     if (_selectedWalletItem != null && _selectedWalletItem!.id != walletItem.id && _isMaxMode) {
-      _recipientList[lastIndex].amount = "";
+      _recipientList[lastIndex].amount = 0;
       setMaxMode(false);
       if (_currentIndex == lastIndex) {
-        _onAmountTextUpdate(recipientList[lastIndex].amount);
+        _onAmountTextUpdate(UnitUtil.convertSatoshiToBitcoin(recipientList[lastIndex].amount).toString());
       }
     }
 
@@ -488,7 +486,7 @@ class SendViewModel extends ChangeNotifier {
     if (index == recipientList.length) {
       setShowAddressBoard(false);
     } else {
-      _onAmountTextUpdate(recipientList[_currentIndex].amount);
+      _onAmountTextUpdate(UnitUtil.convertSatoshiToBitcoin(recipientList[_currentIndex].amount).toString());
     }
     notifyListeners();
   }
@@ -503,20 +501,14 @@ class SendViewModel extends ChangeNotifier {
   void _adjustLastReceiverAmount({int? recipientIndex}) {
     double amountSumExceptLast = _amountSumExceptLast;
     int estimatedFeeInSats = _estimatedFee ?? 0;
-    int maxBalanceInSats =
-        balance -
-        (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast).toInt() -
-        estimatedFeeInSats;
-    _recipientList[lastIndex].amount =
-        maxBalanceInSats > dustLimit
-            ? (isBtcUnit
-                    ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxBalanceInSats).replaceAll(' ', '')
-                    : maxBalanceInSats)
-                .toString()
-            : "0";
+    int amountSumExceptLastInSats =
+        isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSumExceptLast) : amountSumExceptLast.toInt();
+    int maxBalanceInSats = balance - amountSumExceptLastInSats - estimatedFeeInSats;
+
+    _recipientList[lastIndex].amount = maxBalanceInSats > dustLimit ? maxBalanceInSats : 0;
 
     if (_currentIndex == lastIndex) {
-      _onAmountTextUpdate(recipientList[lastIndex].amount);
+      _onAmountTextUpdate(UnitUtil.convertSatoshiToBitcoin(recipientList[lastIndex].amount).toString());
     }
 
     _updateAmountValidationState(recipientIndex: recipientIndex);
@@ -533,9 +525,9 @@ class SendViewModel extends ChangeNotifier {
       _isFeeSubtractedFromSendAmount = true;
     } else {
       /// maxMode 꺼지면 마지막 수신자 금액 초기화
-      _recipientList[lastIndex].amount = "";
+      _recipientList[lastIndex].amount = 0;
       if (_currentIndex == lastIndex) {
-        _onAmountTextUpdate(_recipientList[lastIndex].amount);
+        _onAmountTextUpdate(UnitUtil.convertSatoshiToBitcoin(recipientList[lastIndex].amount).toString());
       }
       _isFeeSubtractedFromSendAmount = _previousIsFeeSubtractedFromSendAmount;
     }
@@ -547,7 +539,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void addRecipient() {
-    final newList = [..._recipientList, RecipientInfo(address: '', amount: '')];
+    final newList = [..._recipientList, RecipientInfo(address: '', amount: 0)];
     _recipientList = newList;
     _updateFinalErrorMessage();
     vibrateLight();
@@ -638,12 +630,12 @@ class SendViewModel extends ChangeNotifier {
 
   /// bip21 url에서 amount값 파싱 성공했을 때 사용
   void setAmountText(int satoshi, int recipientIndex) {
-    if (currentUnit == BitcoinUnit.sats) {
-      _recipientList[recipientIndex].amount = satoshi.toString();
-    } else {
-      _recipientList[recipientIndex].amount = UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
-    }
-    notifyListeners();
+    _recipientList[recipientIndex].amount = satoshi;
+
+    final displayAmount =
+        currentUnit == BitcoinUnit.sats ? satoshi.toString() : UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
+
+    _onAmountTextUpdate(displayAmount);
   }
 
   void setFeeRateText(String feeRate) {
@@ -665,23 +657,19 @@ class SendViewModel extends ChangeNotifier {
     // 너무 큰 수가 입력된 경우: Positive input exceeds the limit of integer
     try {
       _currentUnit = isBtcUnit ? BitcoinUnit.sats : BitcoinUnit.btc;
-      for (RecipientInfo recipient in recipientList) {
-        if (recipient.amount.isNotEmpty && recipient.amount != '0') {
-          recipient.amount =
-              (isBtcUnit
-                      ? UnitUtil.convertSatoshiToBitcoin(int.parse(recipient.amount))
-                      : UnitUtil.convertBitcoinToSatoshi(double.parse(recipient.amount)))
-                  .toString();
+      for (int i = 0; i < recipientList.length; i++) {
+        final recipient = recipientList[i];
+        final amountInSats = recipient.amount; // 항상 사토시 int
 
-          // sats to btc 변환에서 지수로 표현되는 경우에는 다시 변환한다.
-          if (recipient.amount.contains('e')) {
-            recipient.amount = double.parse(recipient.amount).toStringAsFixed(8);
-          }
+        if (amountInSats > 0) {
+          final displayAmount =
+              isBtcUnit
+                  ? amountInSats
+                      .toString() // sats
+                  : UnitUtil.convertSatoshiToBitcoin(amountInSats).toStringAsFixed(8); // btc, 8자리 반올림
+
+          _onAmountTextUpdate(displayAmount);
         }
-      }
-
-      if (currentIndex != recipientList.length) {
-        _onAmountTextUpdate(recipientList[_currentIndex].amount);
       }
 
       vibrateLight();
@@ -703,43 +691,43 @@ class SendViewModel extends ChangeNotifier {
     if (_currentIndex == _recipientList.length) return;
     if (isSatsUnit && newInput == '.') return;
 
-    final recipient = _recipientList[_currentIndex];
     if (newInput == '<') {
-      if (recipient.amount.isNotEmpty) {
-        recipient.amount = recipient.amount.substring(0, recipient.amount.length - 1);
+      if (_amountStr.isNotEmpty) {
+        _amountStr = _amountStr.substring(0, _amountStr.length - 1);
       }
     } else if (newInput == '.') {
-      if (recipient.amount.isEmpty) {
-        recipient.amount = '0.';
-      } else {
-        if (!recipient.amount.contains('.')) {
-          recipient.amount += newInput;
-        }
+      if (_amountStr.isEmpty) {
+        _amountStr = '0.';
+      } else if (!_amountStr.contains('.')) {
+        _amountStr += '.';
       }
     } else {
-      if (recipient.amount.isEmpty) {
-        /// 첫 입력이 0인 경우는 바로 추가
-        if (newInput == '0') {
-          recipient.amount += newInput;
-        } else if (newInput != '0' || recipient.amount.contains('.')) {
-          recipient.amount += newInput;
-        }
-      } else if (recipient.amount == '0' && newInput != '.') {
-        /// 첫 입력이 0이고, 그 후 0이 아닌 숫자가 올 경우에는 기존 0을 대체
-        recipient.amount = newInput;
-      } else if (recipient.amount.contains('.')) {
-        /// 소수점 이후 숫자가 8자리 이하인 경우 추가
-        int decimalIndex = recipient.amount.indexOf('.');
-        if (recipient.amount.length - decimalIndex <= 8) {
-          recipient.amount += newInput;
+      if (_amountStr.isEmpty) {
+        _amountStr = newInput;
+      } else if (_amountStr == '0' && newInput != '.') {
+        _amountStr = newInput;
+      } else if (_amountStr.contains('.')) {
+        int decimalIndex = _amountStr.indexOf('.');
+        if (_amountStr.length - decimalIndex <= 8) {
+          _amountStr += newInput;
         }
       } else {
-        /// 자연수인 경우 BTC 8자리 제한, sats 16자리 제한
-        if (recipient.amount.length < (isBtcUnit ? 8 : 16)) {
-          recipient.amount += newInput;
+        // 자연수인 경우 BTC 8자리 제한, sats 16자리 제한
+        if (_amountStr.length < (isBtcUnit ? 8 : 15)) {
+          _amountStr += newInput;
         }
       }
     }
+
+    final recipient = _recipientList[_currentIndex];
+    double parsedVal = _amountStr.isEmpty ? 0.0 : double.parse(_amountStr);
+
+    if (isBtcUnit) {
+      recipient.amount = UnitUtil.convertBitcoinToSatoshi(parsedVal);
+    } else {
+      recipient.amount = parsedVal.toInt();
+    }
+
     notifyListeners();
   }
 
@@ -756,7 +744,7 @@ class SendViewModel extends ChangeNotifier {
 
   void clearAmountText() {
     if (_currentIndex == _recipientList.length) return;
-    _recipientList[_currentIndex].amount = "";
+    _recipientList[_currentIndex].amount = 0;
     _updateAmountValidationState(recipientIndex: _currentIndex);
     _txBuildResult = null;
     _updateFinalErrorMessage();
@@ -794,8 +782,8 @@ class SendViewModel extends ChangeNotifier {
 
   void _updateAmountSum() {
     double amountSum = recipientList
-        .where((r) => r.amount.isNotEmpty)
-        .fold(0, (sum, r) => sum + double.parse(r.amount));
+        .where((r) => r.amount > 0)
+        .fold(0, (sum, r) => sum + UnitUtil.convertSatoshiToBitcoin(r.amount));
     amountSum = amountSum.roundTo8Digits();
     _amountSum = isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amountSum) : amountSum.toInt();
 
@@ -812,8 +800,8 @@ class SendViewModel extends ChangeNotifier {
   void _validateOneAmount(int recipientIndex) {
     assert(recipientIndex != -1);
     final recipient = recipientList[recipientIndex];
-    if (recipient.amount.isNotEmpty && double.parse(recipient.amount) > 0) {
-      if (double.parse(recipient.amount) <= dustLimit / _dustLimitDenominator) {
+    if (recipient.amount > 0) {
+      if (UnitUtil.convertSatoshiToBitcoin(recipient.amount) <= dustLimit / _dustLimitDenominator) {
         recipient.minimumAmountError = AmountError.minimumAmount;
       } else {
         recipient.minimumAmountError = AmountError.none;
@@ -833,8 +821,8 @@ class SendViewModel extends ChangeNotifier {
       return;
     }
 
-    if (_recipientList[lastIndex].amount.isNotEmpty) {
-      double amount = double.parse(_recipientList[lastIndex].amount);
+    if (_recipientList[lastIndex].amount > 0) {
+      double amount = UnitUtil.convertSatoshiToBitcoin(_recipientList[lastIndex].amount);
       int estimatedFeeInSats = _estimatedFee ?? 0;
       bool isAmountInsufficientForFee =
           (isBtcUnit ? UnitUtil.convertBitcoinToSatoshi(amount) : amount).toInt() - estimatedFeeInSats <= dustLimit;
@@ -937,25 +925,19 @@ class SendViewModel extends ChangeNotifier {
 
 class RecipientInfo {
   String address;
-  String amount;
+  int amount;
   AddressError addressError;
   AmountError minimumAmountError; // 전송량이 적은 경우
 
   RecipientInfo({
     this.address = '',
-    this.amount = '',
+    this.amount = 0,
     this.addressError = AddressError.none,
     this.minimumAmountError = AmountError.none,
   });
 
   bool get isInputValid {
-    final amountDecimal = Decimal.tryParse(amount);
-    return address.trim().isNotEmpty &&
-        amount.trim().isNotEmpty &&
-        amountDecimal != null &&
-        amountDecimal != Decimal.zero &&
-        addressError.isNotError &&
-        minimumAmountError.isNotError;
+    return address.trim().isNotEmpty && amount > 0 && addressError.isNotError && minimumAmountError.isNotError;
   }
 }
 

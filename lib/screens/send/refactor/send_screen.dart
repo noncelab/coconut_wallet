@@ -947,7 +947,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
           child: Column(
             children: [
-              Selector<SendViewModel, Tuple7<BitcoinUnit, String, bool, bool, bool, bool, int?>>(
+              Selector<SendViewModel, Tuple7<BitcoinUnit, int, bool, bool, bool, bool, int?>>(
                 selector:
                     (_, viewModel) => Tuple7(
                       viewModel.currentUnit,
@@ -959,7 +959,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       viewModel.estimatedFeeInSats,
                     ),
                 builder: (context, data, child) {
-                  String amountText = data.item2;
+                  String amountText =
+                      _viewModel.isBtcUnit
+                          ? UnitUtil.convertSatoshiToBitcoin(data.item2).toString().replaceAll(RegExp(r'\.0$'), '')
+                          : data.item2.toString();
                   final isMinimumAmount = data.item6;
                   final hasInsufficientBalanceErrorOfLastRecipient = data.item5 && index == _viewModel.lastIndex;
 
