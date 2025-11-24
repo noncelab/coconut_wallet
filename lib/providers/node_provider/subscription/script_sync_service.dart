@@ -174,6 +174,9 @@ class ScriptSyncService {
       // 최초 지갑 구독 시 Outgoing Transaction이 있을 경우 UTXO가 생성되지 않을 경우 임의로 UTXO를 생성해야 함
       await _utxoSyncService.createOutgoingUtxos(walletItem);
 
+      // orphaned UTXO가 있으면 정리함
+      await _utxoSyncService.cleanupOrphanedUtxos(walletItem);
+
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.utxo);
 
       final utxoEndTime = DateTime.now();
