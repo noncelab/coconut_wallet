@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart' as lib;
+import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
@@ -9,6 +10,7 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 /// 선택된 UTXO의 상태를 나타내는 enum
@@ -155,75 +157,12 @@ RealmTransactionDraft _mapToRealmTransactionDraft({
 
 class TransactionDraftRepository extends BaseRepository {
   final UtxoRepository _utxoRepository;
+  final SecureStorageRepository _secureStorage = SecureStorageRepository();
 
   TransactionDraftRepository(super._realmManager, this._utxoRepository);
 
-  /// 동일한 TransactionDraft가 이미 존재하는지 확인
-  bool _isDuplicateDraft({
-    required int walletId,
-    required List<RecipientInfo> recipientList,
-    required String? feeRateText,
-    required bool isMaxMode,
-    required bool isMultisig,
-    required bool isFeeSubtractedFromSendAmount,
-    List<UtxoState>? selectedUtxoList,
-  }) {
-    final feeRate = feeRateText != null && feeRateText.isNotEmpty ? int.tryParse(feeRateText) : null;
-    final recipientListJson = _recipientListToJson(recipientList);
-    final selectedUtxoListJson = selectedUtxoList != null ? _utxoListToJson(selectedUtxoList) : const <String>[];
-
-    // walletId로 필터링
-    final drafts = realm.query<RealmTransactionDraft>('walletId == $walletId').toList();
-
-    for (final draft in drafts) {
-      // feeRate 비교
-      if (draft.feeRate != feeRate) continue;
-
-      // isMaxMode 비교
-      if (draft.isMaxMode != isMaxMode) continue;
-
-      // isMultisig 비교
-      if (draft.isMultisig != isMultisig) continue;
-
-      // 수신자 부담 비교
-      if (draft.isFeeSubtractedFromSendAmount != isFeeSubtractedFromSendAmount) continue;
-
-      // recipientListJson 비교 (순서와 개수 모두 일치해야 함)
-      if (draft.recipientListJson.length != recipientListJson.length) continue;
-
-      final draftRecipientJsonList = draft.recipientListJson.toList();
-      bool isRecipientListIdentical = true;
-      for (int i = 0; i < recipientListJson.length; i++) {
-        if (draftRecipientJsonList[i] != recipientListJson[i]) {
-          isRecipientListIdentical = false;
-          break;
-        }
-      }
-
-      if (!isRecipientListIdentical) continue;
-
-      // selectedUtxoListJson 비교 (순서와 개수 모두 일치해야 함)
-      final draftSelectedUtxoListJson = draft.selectedUtxoListJson.toList();
-      if (draftSelectedUtxoListJson.length != selectedUtxoListJson.length) continue;
-
-      bool isSelectedUtxoListIdentical = true;
-      for (int i = 0; i < selectedUtxoListJson.length; i++) {
-        if (draftSelectedUtxoListJson[i] != selectedUtxoListJson[i]) {
-          isSelectedUtxoListIdentical = false;
-          break;
-        }
-      }
-
-      if (isSelectedUtxoListIdentical) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /// TransactionDraft 저장
-  Future<Result<RealmTransactionDraft>> saveTransactionDraft({
+  /// Unsigned TransactionDraft 저장
+  Future<Result<RealmTransactionDraft>> saveUnsignedTransactionDraft({
     required int walletId,
     List<RecipientInfo>? recipientList,
     required String? feeRateText,
@@ -237,19 +176,25 @@ class TransactionDraftRepository extends BaseRepository {
     List<UtxoState>? selectedUtxoList,
     int? totalAmount,
   }) async {
-    // 동일한 draft가 이미 존재하는지 확인
-    // if (_isDuplicateDraft(
-    //   walletId: walletId,
-    //   recipientList: recipientList,
-    //   feeRateText: feeRateText,
-    //   isMaxMode: isMaxMode,
-    //   isMultisig: isMultisig,
-    //   isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount,
-    //   selectedUtxoList: selectedUtxoList,
-    // )) {
-    //   return Result<RealmTransactionDraft>.failure(ErrorCodes.transactionDraftAlreadyExists);
-    // }
+    // SignedTransactionDraft인 경우 SecureStorage에만 저장
+    if (signedPsbtBase64Encoded != null && signedPsbtBase64Encoded.isNotEmpty) {
+      return await _saveSignedTransactionDraftToSecureStorage(
+        walletId: walletId,
+        recipientList: recipientList ?? [],
+        feeRateText: feeRateText,
+        isMaxMode: isMaxMode,
+        isMultisig: isMultisig,
+        isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount ?? false,
+        transaction: transaction,
+        txWaitingForSign: txWaitingForSign,
+        signedPsbtBase64Encoded: signedPsbtBase64Encoded,
+        currentUnit: currentUnit,
+        selectedUtxoList: selectedUtxoList,
+        totalAmount: totalAmount,
+      );
+    }
 
+    // UnsignedTransactionDraft는 Realm에 저장
     return handleAsyncRealm<RealmTransactionDraft>(() async {
       final lastId = getLastId(realm, (RealmTransactionDraft).toString());
       final newId = lastId + 1;
@@ -264,7 +209,7 @@ class TransactionDraftRepository extends BaseRepository {
         isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount ?? false,
         transaction: transaction,
         txWaitingForSign: txWaitingForSign,
-        signedPsbtBase64Encoded: signedPsbtBase64Encoded,
+        signedPsbtBase64Encoded: null, // Unsigned는 null
         currentUnit: currentUnit,
         selectedUtxoList: selectedUtxoList,
         totalAmount: totalAmount,
@@ -281,7 +226,7 @@ class TransactionDraftRepository extends BaseRepository {
   }
 
   /// TransactionDraft 업데이트
-  Future<Result<RealmTransactionDraft>> updateTransactionDraft({
+  Future<Result<RealmTransactionDraft>> updateUnsignedTransactionDraft({
     required int id,
     int? walletId,
     List<RecipientInfo>? recipientList,
@@ -327,24 +272,24 @@ class TransactionDraftRepository extends BaseRepository {
     });
   }
 
-  /// TransactionDraft 조회 (ID로)
-  RealmTransactionDraft? getTransactionDraft(int id) {
+  /// Unsigned TransactionDraft 조회 (ID로)
+  RealmTransactionDraft? getUnsignedTransactionDraft(int id) {
     return realm.find<RealmTransactionDraft>(id);
   }
 
-  /// 모든 TransactionDraft 조회
-  List<RealmTransactionDraft> getAllTransactionDrafts() {
+  /// 모든 Unsigned TransactionDraft 조회
+  List<RealmTransactionDraft> getAllUnsignedTransactionDrafts() {
     return realm.all<RealmTransactionDraft>().toList();
   }
 
-  /// walletId로 TransactionDraft 조회
-  List<RealmTransactionDraft> getTransactionDraftsByWalletId(int walletId) {
+  /// walletId로 Unsigned TransactionDraft 조회
+  List<RealmTransactionDraft> getUnsignedTransactionDraftsByWalletId(int walletId) {
     return realm.query<RealmTransactionDraft>('walletId == $walletId').toList();
   }
 
   /// RealmTransactionDraft를 RecipientInfo 리스트와 함께 반환하는 헬퍼 클래스
-  TransactionDraftData? getTransactionDraftData(int id) {
-    final draft = getTransactionDraft(id);
+  TransactionDraftData? getUnsignedTransactionDraftData(int id) {
+    final draft = getUnsignedTransactionDraft(id);
     if (draft == null) return null;
 
     return TransactionDraftData(
@@ -354,8 +299,13 @@ class TransactionDraftRepository extends BaseRepository {
     );
   }
 
-  /// TransactionDraft 삭제
+  /// Signed TransactionDraft 삭제
   Future<Result<void>> deleteTransactionDraft(int id) async {
+    return await deleteSignedTransactionDraft(id);
+  }
+
+  /// Unsigned TransactionDraft 삭제
+  Future<Result<void>> deleteUnsignedTransactionDraft(int id) async {
     return handleAsyncRealm<void>(() async {
       final draft = realm.find<RealmTransactionDraft>(id);
       if (draft == null) {
@@ -369,7 +319,7 @@ class TransactionDraftRepository extends BaseRepository {
   }
 
   /// 모든 TransactionDraft 삭제
-  Future<Result<void>> deleteAllTransactionDrafts() async {
+  Future<Result<void>> deleteAllUnsignedTransactionDrafts() async {
     return handleAsyncRealm<void>(() async {
       await realm.writeAsync(() {
         realm.deleteAll<RealmTransactionDraft>();
@@ -400,6 +350,154 @@ class TransactionDraftRepository extends BaseRepository {
     if (hasUsed) return SelectedUtxoStatus.used;
     if (hasLocked) return SelectedUtxoStatus.locked;
     return SelectedUtxoStatus.unused;
+  }
+
+  /// SignedTransactionDraft를 SecureStorage에 저장
+  Future<Result<RealmTransactionDraft>> _saveSignedTransactionDraftToSecureStorage({
+    required int walletId,
+    required List<RecipientInfo> recipientList,
+    required String? feeRateText,
+    required bool isMaxMode,
+    required bool isMultisig,
+    required bool isFeeSubtractedFromSendAmount,
+    lib.Transaction? transaction,
+    String? txWaitingForSign,
+    required String signedPsbtBase64Encoded,
+    required String currentUnit,
+    List<UtxoState>? selectedUtxoList,
+    int? totalAmount,
+  }) async {
+    try {
+      // ID 생성 (Realm의 lastId를 사용하되, Signed는 별도로 관리)
+      final lastId = getLastId(realm, (RealmTransactionDraft).toString());
+      final newId = lastId + 1;
+
+      final draft = _mapToRealmTransactionDraft(
+        id: newId,
+        walletId: walletId,
+        recipientList: recipientList,
+        feeRateText: feeRateText,
+        isMaxMode: isMaxMode,
+        isMultisig: isMultisig,
+        isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount,
+        transaction: transaction,
+        txWaitingForSign: txWaitingForSign,
+        signedPsbtBase64Encoded: signedPsbtBase64Encoded,
+        currentUnit: currentUnit,
+        selectedUtxoList: selectedUtxoList,
+        totalAmount: totalAmount,
+      );
+
+      final key = '$kSecureStorageSignedTransactionDraftPrefix$newId';
+      final jsonData = jsonEncode({
+        'id': draft.id,
+        'walletId': draft.walletId,
+        'feeRate': draft.feeRate,
+        'isMaxMode': draft.isMaxMode,
+        'isMultisig': draft.isMultisig,
+        'isFeeSubtractedFromSendAmount': draft.isFeeSubtractedFromSendAmount,
+        'transactionHex': draft.transactionHex,
+        'txWaitingForSign': draft.txWaitingForSign,
+        'signedPsbtBase64Encoded': draft.signedPsbtBase64Encoded,
+        'recipientListJson': draft.recipientListJson.toList(),
+        'createdAt': draft.createdAt?.toIso8601String(),
+        'currentUnit': draft.currentUnit,
+        'selectedUtxoListJson': draft.selectedUtxoListJson.toList(),
+        'totalAmount': draft.totalAmount,
+      });
+      await _secureStorage.write(key: key, value: jsonData);
+
+      // ID를 업데이트하여 다음 SignedTransactionDraft가 다른 ID를 사용하도록 함
+      saveLastId(realm, (RealmTransactionDraft).toString(), newId);
+
+      return Result<RealmTransactionDraft>.success(draft);
+    } catch (e) {
+      return Result<RealmTransactionDraft>.failure(
+        AppError('SAVE_SIGNED_DRAFT_ERROR', 'Failed to save signed transaction draft: $e'),
+      );
+    }
+  }
+
+  /// SecureStorage에서 SignedTransactionDraft 조회
+  Future<RealmTransactionDraft?> _getSignedTransactionDraftFromSecureStorage(int id) async {
+    final key = '$kSecureStorageSignedTransactionDraftPrefix$id';
+    try {
+      final jsonString = await _secureStorage.read(key: key);
+      if (jsonString == null) return null;
+
+      final json = jsonDecode(jsonString) as Map<String, dynamic>;
+      return RealmTransactionDraft(
+        json['id'] as int,
+        json['walletId'] as int,
+        feeRate: json['feeRate'] as double?,
+        isMaxMode: json['isMaxMode'] as bool?,
+        isMultisig: json['isMultisig'] as bool?,
+        isFeeSubtractedFromSendAmount: json['isFeeSubtractedFromSendAmount'] as bool?,
+        transactionHex: json['transactionHex'] as String?,
+        txWaitingForSign: json['txWaitingForSign'] as String?,
+        signedPsbtBase64Encoded: json['signedPsbtBase64Encoded'] as String?,
+        recipientListJson: (json['recipientListJson'] as List<dynamic>).map((e) => e as String).toList(),
+        createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : null,
+        currentUnit: json['currentUnit'] as String?,
+        selectedUtxoListJson: (json['selectedUtxoListJson'] as List<dynamic>).map((e) => e as String).toList(),
+        totalAmount: json['totalAmount'] as int?,
+      );
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 모든 SignedTransactionDraft 조회
+  Future<List<RealmTransactionDraft>> getAllSignedTransactionDrafts() async {
+    final allKeys = await _secureStorage.getAllKeys();
+    final signedDraftKeys = allKeys.where((key) => key.startsWith(kSecureStorageSignedTransactionDraftPrefix)).toList();
+
+    final drafts = <RealmTransactionDraft>[];
+    for (final key in signedDraftKeys) {
+      final idString = key.replaceFirst(kSecureStorageSignedTransactionDraftPrefix, '');
+      final id = int.tryParse(idString);
+      if (id != null) {
+        final draft = await _getSignedTransactionDraftFromSecureStorage(id);
+        if (draft != null) {
+          drafts.add(draft);
+        }
+      }
+    }
+
+    return drafts;
+  }
+
+  /// SignedTransactionDraft 삭제
+  Future<Result<void>> deleteSignedTransactionDraft(int id) async {
+    try {
+      final key = '$kSecureStorageSignedTransactionDraftPrefix$id';
+      await _secureStorage.delete(key: key);
+      return Result<void>.success(null);
+    } catch (e) {
+      return Result<void>.failure(
+        AppError('DELETE_SIGNED_DRAFT_ERROR', 'Failed to delete signed transaction draft: $e'),
+      );
+    }
+  }
+
+  /// 모든 TransactionDraft 조회 (Unsigned + Signed)
+  Future<List<RealmTransactionDraft>> getAllTransactionDrafts() async {
+    final unsignedDrafts = getAllUnsignedTransactionDrafts();
+    final signedDrafts = await getAllSignedTransactionDrafts();
+
+    final allDrafts = [...unsignedDrafts, ...signedDrafts];
+
+    // createdAt 기준 최신순으로 정렬
+    allDrafts.sort((a, b) {
+      final aCreatedAt = a.createdAt;
+      final bCreatedAt = b.createdAt;
+      if (aCreatedAt == null && bCreatedAt == null) return 0;
+      if (aCreatedAt == null) return 1;
+      if (bCreatedAt == null) return -1;
+      return bCreatedAt.compareTo(aCreatedAt);
+    });
+
+    return allDrafts;
   }
 }
 

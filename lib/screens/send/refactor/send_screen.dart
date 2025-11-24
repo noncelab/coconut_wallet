@@ -347,7 +347,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             _setDropdownMenuVisiblility(false);
             if (index == 0) {
               final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-              final result = await transactionDraftRepository.saveTransactionDraft(
+              final result = await transactionDraftRepository.saveUnsignedTransactionDraft(
                 walletId: _viewModel.selectedWalletItem?.id ?? 0,
                 recipientList: _viewModel.recipientList,
                 feeRateText: _feeRateController.text,
@@ -397,7 +397,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Future<void> _onDraftSelected(BuildContext context, StateSetter setSheetState, Function(int, int) removeItem) async {
     if (_selectedDraftId == null) return;
     final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-    final draft = transactionDraftRepository.getTransactionDraft(_selectedDraftId!);
+    final draft = transactionDraftRepository.getUnsignedTransactionDraft(_selectedDraftId!);
     debugPrint('draft: ${draft?.recipientListJson[0].toString()}');
 
     // selectedUtxo 상태 확인
@@ -425,7 +425,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             },
             onTapRight: () async {
               final deletedDraftId = _selectedDraftId!;
-              final result = await transactionDraftRepository.deleteTransactionDraft(deletedDraftId);
+              final result = await transactionDraftRepository.deleteUnsignedTransactionDraft(deletedDraftId);
               if (result.isSuccess) {
                 await _showDeleteCompletedDialog();
                 final sortedDrafts = getSortedUnsignedTransactionDrafts(transactionDraftRepository);
@@ -565,12 +565,25 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    isWalletWithoutMfp(_viewModel.selectedWalletItem) ? '-' : selectedWalletItem!.name,
-                    style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          isWalletWithoutMfp(_viewModel.selectedWalletItem)
+                              ? '-'
+                              : (selectedWalletItem!.name.length > 10
+                                  ? '${selectedWalletItem.name.substring(0, 10)}...'
+                                  : selectedWalletItem.name),
+                          style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        CoconutLayout.spacing_50w,
+                        const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
+                      ],
+                    ),
                   ),
-                  CoconutLayout.spacing_50w,
-                  const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
                 ],
               ),
               if (!isWalletWithoutMfp(_viewModel.selectedWalletItem) && !isUtxoSelectionAuto)

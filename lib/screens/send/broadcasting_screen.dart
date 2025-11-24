@@ -111,10 +111,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         // 서명되지 않은 임시저장 트랜잭션인 경우 widget.transactionDraft가 없고, sendInfoProvider.transactionDraftId가 있음
         if (widget.transactionDraft != null) {
           final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-          await transactionDraftRepository.deleteTransactionDraft(widget.transactionDraft!.id);
+          await transactionDraftRepository.deleteSignedTransactionDraft(widget.transactionDraft!.id);
         } else if (_viewModel.transactionDraftId != null) {
           final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-          await transactionDraftRepository.deleteTransactionDraft(_viewModel.transactionDraftId!);
+          await transactionDraftRepository.deleteUnsignedTransactionDraft(_viewModel.transactionDraftId!);
         }
 
         if (!mounted) return;
@@ -190,7 +190,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                               context,
                               listen: false,
                             );
-                            final result = await transactionDraftRepository.saveTransactionDraft(
+                            final result = await transactionDraftRepository.saveUnsignedTransactionDraft(
                               walletId: viewModel.walletId,
                               feeRateText: viewModel.feeRate?.toString() ?? '',
                               isMaxMode: viewModel.isMaxMode ?? false,

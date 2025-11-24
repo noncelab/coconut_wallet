@@ -50,16 +50,18 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                 ..initializeDraftList(),
       child: Consumer<TransactionDraftViewModel>(
         builder: (context, viewModel, child) {
-          // 초기 선택 상태 설정 (한 번만 실행)
-          if (!_initialSelectionSet) {
+          // 초기 선택 상태 설정 (한 번만 실행, initializeDraftList 완료 후)
+          if (!_initialSelectionSet && viewModel.isInitialized) {
             final signedList = viewModel.signedTransactionDraftList;
             final unsignedList = viewModel.unsignedTransactionDraftList;
-
-            if (signedList.isEmpty && unsignedList.isNotEmpty) {
+            if (signedList.isNotEmpty) {
+              // 서명 완료 탭에 데이터가 있으면 서명 완료 탭 선택
+              _isSignedTransactionSelected = true;
+            } else if (unsignedList.isNotEmpty) {
               // 서명 완료 탭이 비어있고 서명 전 탭이 비어있지 않으면 서명 전 탭 선택
               _isSignedTransactionSelected = false;
             } else {
-              // 둘 다 비어있거나 다른 경우 서명 완료 탭 선택 (기본값)
+              // 둘 다 비어있으면 서명 완료 탭 선택 (기본값)
               _isSignedTransactionSelected = true;
             }
             _initialSelectionSet = true;
@@ -295,7 +297,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                     final deletedCardId = cardId;
 
                     // Realm 객체 삭제 먼저 수행
-                    final result = await transactionDraftRepository.deleteTransactionDraft(cardId);
+                    final result = await transactionDraftRepository.deleteUnsignedTransactionDraft(cardId);
 
                     if (result.isSuccess) {
                       // _displayedDraftList에서 해당 ID를 가진 항목만 제거 (인덱스로 접근하면 안됨)

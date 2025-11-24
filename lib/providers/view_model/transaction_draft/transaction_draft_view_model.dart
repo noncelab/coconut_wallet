@@ -8,34 +8,22 @@ class TransactionDraftViewModel extends ChangeNotifier {
   /// Wallet variables ---------------------------------------------------------
   List<RealmTransactionDraft> _unsignedTransactionDraftList = [];
   List<RealmTransactionDraft> _signedTransactionDraftList = [];
+  bool _isInitialized = false;
 
   TransactionDraftViewModel(this._transactionDraftRepository);
 
   List<RealmTransactionDraft> get signedTransactionDraftList => _signedTransactionDraftList;
   List<RealmTransactionDraft> get unsignedTransactionDraftList => _unsignedTransactionDraftList;
+  bool get isInitialized => _isInitialized;
 
   Future<void> initializeDraftList() async {
-    final draft = _transactionDraftRepository.getAllTransactionDrafts();
+    final allDrafts = await _transactionDraftRepository.getAllTransactionDrafts();
 
-    // createdAt 기준 최신순으로 정렬
-    final sortedDrafts =
-        draft.toList()..sort((a, b) {
-          final aCreatedAt = a.createdAt;
-          final bCreatedAt = b.createdAt;
-          if (aCreatedAt == null && bCreatedAt == null) return 0;
-          if (aCreatedAt == null) return 1; // null은 뒤로
-          if (bCreatedAt == null) return -1; // null은 뒤로
-          return bCreatedAt.compareTo(aCreatedAt); // 최신순 (내림차순)
-        });
+    // createdAt 기준 최신순으로 정렬 (이미 getAllTransactionDrafts에서 정렬됨)
+    _unsignedTransactionDraftList = allDrafts.where((draft) => draft.signedPsbtBase64Encoded == null).toList();
+    _signedTransactionDraftList = allDrafts.where((draft) => draft.signedPsbtBase64Encoded != null).toList();
+    _isInitialized = true;
 
-    _unsignedTransactionDraftList = sortedDrafts.where((draft) => draft.signedPsbtBase64Encoded == null).toList();
-    _signedTransactionDraftList = sortedDrafts.where((draft) => draft.signedPsbtBase64Encoded != null).toList();
     notifyListeners();
-  }
-
-  Future<RealmTransactionDraft?> getTransactionDraftById(int id) async {
-    final draft = _transactionDraftRepository.getTransactionDraft(id);
-
-    return draft;
   }
 }
