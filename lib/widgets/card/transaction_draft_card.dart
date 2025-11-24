@@ -366,22 +366,37 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            WalletIconSmall(
-              walletImportSource: walletImportSource,
-              iconIndex: iconIndex,
-              colorIndex: colorIndex,
-              gradientColors: signers != null ? ColorUtil.getGradientColors(signers) : null,
-            ),
-            CoconutLayout.spacing_150w,
-            Text(walletName, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
-          ],
+        Expanded(
+          child: Row(
+            children: [
+              WalletIconSmall(
+                walletImportSource: walletImportSource,
+                iconIndex: iconIndex,
+                colorIndex: colorIndex,
+                gradientColors: signers != null ? ColorUtil.getGradientColors(signers) : null,
+              ),
+              CoconutLayout.spacing_150w,
+              Expanded(
+                child: Text(
+                  walletName,
+                  style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
         CoconutLayout.spacing_200w,
-        Text(
-          isMaxMode ? t.transaction_draft.max : amountString,
-          style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              isMaxMode ? t.transaction_draft.max : amountString,
+              style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+            ),
+          ),
         ),
       ],
     );
