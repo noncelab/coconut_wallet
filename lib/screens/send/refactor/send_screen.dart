@@ -961,7 +961,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 builder: (context, data, child) {
                   String amountText =
                       _viewModel.isBtcUnit
-                          ? UnitUtil.convertSatoshiToBitcoin(data.item2).toString().replaceAll(RegExp(r'\.0$'), '')
+                          ? UnitUtil.convertSatoshiToBitcoin(
+                            data.item2,
+                          ).toStringAsFixed(8).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')
                           : data.item2.toString();
                   final isMinimumAmount = data.item6;
                   final hasInsufficientBalanceErrorOfLastRecipient = data.item5 && index == _viewModel.lastIndex;
