@@ -657,18 +657,15 @@ class SendViewModel extends ChangeNotifier {
     // 너무 큰 수가 입력된 경우: Positive input exceeds the limit of integer
     try {
       _currentUnit = isBtcUnit ? BitcoinUnit.sats : BitcoinUnit.btc;
-      for (int i = 0; i < recipientList.length; i++) {
-        final recipient = recipientList[i];
-        final amountInSats = recipient.amount; // 항상 사토시 int
 
-        if (amountInSats > 0) {
-          final displayAmount =
-              isBtcUnit
-                  ? amountInSats
-                      .toString() // sats
-                  : UnitUtil.convertSatoshiToBitcoin(amountInSats).toStringAsFixed(8); // btc, 8자리 반올림
+      for (RecipientInfo recipient in recipientList) {
+        if (recipient.amount > 0) {
+          _amountStr = (isBtcUnit ? UnitUtil.convertSatoshiToBitcoin(recipient.amount) : recipient.amount).toString();
 
-          _onAmountTextUpdate(displayAmount);
+          // sats to btc 변환에서 지수로 표현되는 경우에는 다시 변환한다.
+          if (_amountStr.contains('e')) {
+            _amountStr = double.parse(_amountStr).toStringAsFixed(8);
+          }
         }
       }
 
@@ -713,17 +710,18 @@ class SendViewModel extends ChangeNotifier {
         }
       } else {
         // 자연수인 경우 BTC 8자리 제한, sats 16자리 제한
-        if (_amountStr.length < (isBtcUnit ? 8 : 15)) {
+        if (_amountStr.length < (isBtcUnit ? 8 : 16)) {
           _amountStr += newInput;
         }
       }
     }
 
     final recipient = _recipientList[_currentIndex];
-    double parsedVal = _amountStr.isEmpty ? 0.0 : double.parse(_amountStr);
+    double parsedVal = _amountStr.isEmpty ? 0 : double.parse(_amountStr);
 
     if (isBtcUnit) {
-      recipient.amount = UnitUtil.convertBitcoinToSatoshi(parsedVal);
+      int convertedParsedVal = UnitUtil.convertBitcoinToSatoshi(parsedVal);
+      recipient.amount = convertedParsedVal;
     } else {
       recipient.amount = parsedVal.toInt();
     }
