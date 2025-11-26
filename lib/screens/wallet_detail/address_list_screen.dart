@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -378,7 +378,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             CommonBottomSheets.showCustomHeightBottomSheet(
                               context: context,
                               heightRatio: 0.9,
-                              child: QrcodeBottomSheet(
+                              child: QrWithCopyTextScreen(
                                 qrcodeTopWidget: Text(
                                   addressList[index].derivationPath,
                                   style: CoconutTypography.body2_14.merge(
@@ -388,6 +388,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                 qrData: addressList[index].address,
                                 isAddress: true,
                                 title: t.address_list_screen.address_index(index: addressList[index].index),
+                                isBottom: true,
                               ),
                             ).whenComplete(() => AppGuard.enablePrivacyScreen());
                           },
