@@ -646,7 +646,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         borderColor: CoconutColors.gray800,
         borderRadius: 12,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        icon: SvgPicture.asset(iconPath, colorFilter: const ColorFilter.mode(CoconutColors.gray300, BlendMode.srcIn)),
+        icon: Transform.translate(
+          offset: const Offset(0, 3),
+          child: SvgPicture.asset(
+            iconPath,
+            colorFilter: const ColorFilter.mode(CoconutColors.gray300, BlendMode.srcIn),
+          ),
+        ),
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(
           text: TextSpan(text: text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300)),
