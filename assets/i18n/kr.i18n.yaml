@@ -296,7 +296,7 @@ wallet_add_input_screen:
     - "보기 전용 지갑을 식별할 때 필요한 고유 값이에요."
     - "입력한 정보만으로는 이 값을 자동으로 알 수 없기 때문에, 안전하고 정확한 지갑 연결을 위해 직접 입력해주셔야 해요."
     - "이 정보가 없으면 보내기 기능을 사용하실 수 없어요."
-  mfp_input_placeholder: "f75f7ab5"
+  mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
   mfp_skip: "건너뛰기"
 
 # lib/screens/review
