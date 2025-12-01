@@ -57,7 +57,12 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
                 color: const Color.fromRGBO(179, 240, 255, 1), // CDS에 없는 색상
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [Text(widget.text, style: CoconutTypography.body3_12.setColor(CoconutColors.gray900))],
+                  children: [
+                    MediaQuery(
+                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                      child: Text(widget.text, style: CoconutTypography.body3_12.setColor(CoconutColors.gray900)),
+                    ),
+                  ],
                 ),
               ),
             ),
