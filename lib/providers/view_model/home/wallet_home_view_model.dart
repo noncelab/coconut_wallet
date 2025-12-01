@@ -37,6 +37,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   late final PreferenceProvider _preferenceProvider;
   late bool _isTermsShortcutVisible;
   late bool _isBalanceHidden;
+  late bool _isFiatBalanceHidden;
   late final bool _isReviewScreenVisible;
   late final ConnectivityProvider _connectivityProvider;
   late bool? _isNetworkOn;
@@ -114,6 +115,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     _nodeProvider.addListener(_onNodeProviderChanged);
 
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
+    _isFiatBalanceHidden = _preferenceProvider.isFiatBalanceHidden;
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
@@ -128,6 +130,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   bool get isEmptyFavoriteWallet => _isEmptyFavoriteWallet;
   bool get isBalanceHidden => _isBalanceHidden;
+  bool get isFiatBalanceHidden => _isFiatBalanceHidden;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
   bool get isTermsShortcutVisible => _isTermsShortcutVisible;
   bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
@@ -262,6 +265,11 @@ class WalletHomeViewModel extends ChangeNotifier {
       setIsBalanceHidden(_preferenceProvider.isBalanceHidden);
     }
 
+    /// 법정화폐잔액숨기기 변동 체크
+    if (_isFiatBalanceHidden != _preferenceProvider.isFiatBalanceHidden) {
+      setIsFiatBalanceHidden(_preferenceProvider.isFiatBalanceHidden);
+    }
+
     /// 가짜 잔액 총량 변동 체크 (on/off 판별)
     if (_fakeBalanceTotalAmount != _preferenceProvider.fakeBalanceTotalAmount) {
       _setFakeBlancTotalAmount(_preferenceProvider.fakeBalanceTotalAmount);
@@ -305,6 +313,12 @@ class WalletHomeViewModel extends ChangeNotifier {
   void setIsBalanceHidden(bool value) {
     _preferenceProvider.changeIsBalanceHidden(value);
     _isBalanceHidden = value;
+    notifyListeners();
+  }
+
+  void setIsFiatBalanceHidden(bool value) {
+    _preferenceProvider.changeIsFiatBalanceHidden(value);
+    _isFiatBalanceHidden = value;
     notifyListeners();
   }
 

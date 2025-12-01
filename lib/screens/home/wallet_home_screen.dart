@@ -122,7 +122,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         Tuple7<
           List<WalletListItemBase>,
           List<WalletListItemBase>,
-          bool,
+          Tuple2<bool, bool>,
           bool,
           Map<int, AnimatedBalanceData>,
           Tuple2<int?, Map<int, dynamic>>,
@@ -133,7 +133,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             (_, vm) => Tuple7(
               vm.walletItemList,
               vm.favoriteWallets,
-              vm.isBalanceHidden,
+              Tuple2(vm.isBalanceHidden, vm.isBalanceHidden),
               vm.shouldShowLoadingIndicator,
               vm.walletBalanceMap,
               Tuple2(vm.fakeBalanceTotalAmount, vm.fakeBalanceMap),
@@ -144,7 +144,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
           final walletItem = data.item1;
           final favoriteWallets = data.item2;
-          final isBalanceHidden = data.item3;
+          final balnaceVisibilityData = data.item3;
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
           final fakeBalanceData = data.item6;
@@ -176,7 +176,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
                         _buildLoadingIndicator(viewModel),
                         _buildHeader(
-                          isBalanceHidden,
+                          balnaceVisibilityData.item1,
+                          balnaceVisibilityData.item2,
                           fakeBalanceData.item1,
                           shouldShowLoadingIndicator,
                           walletItem.isEmpty,
@@ -208,7 +209,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               walletItem,
                               favoriteWallets,
                               walletBalanceMap,
-                              isBalanceHidden,
+                              balnaceVisibilityData.item1,
                               (id) => viewModel.getFakeBalance(id),
                             ),
                           if (homeFeatures.isNotEmpty) ...[
@@ -386,6 +387,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget _buildHeader(
     bool isBalanceHidden,
+    bool isFiatBalanceHidden,
     int? fakeBalanceTotalAmount,
     bool shouldShowLoadingIndicator,
     bool isWalletListEmpty,
@@ -442,9 +444,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Selector<WalletHomeViewModel, List<int>>(
-                        selector: (_, viewModel) => viewModel.excludedFromTotalBalanceWalletIds,
-                        builder: (context, excludedIds, child) {
+                      Selector<WalletHomeViewModel, Tuple2<List<int>, bool>>(
+                        selector:
+                            (_, viewModel) =>
+                                Tuple2(viewModel.excludedFromTotalBalanceWalletIds, viewModel.isFiatBalanceHidden),
+                        builder: (context, data, child) {
+                          final excludedIds = data.item1;
+                          final isFiatBalanceHidden = data.item2;
                           final balance =
                               _viewModel.fakeBalanceTotalAmount != null
                                   ? _viewModel.fakeBalanceMap.entries
@@ -456,9 +462,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                       (entry) => !excludedIds.contains(entry.key),
                                     ),
                                   ).values.map((e) => e.current).fold(0, (current, element) => current + element);
-                          return FiatPrice(
-                            satoshiAmount: balance,
-                            textStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
+                          return Visibility(
+                            maintainSize: true,
+                            maintainAnimation: true,
+                            maintainState: true,
+                            visible: !isFiatBalanceHidden,
+                            child: FiatPrice(
+                              satoshiAmount: balance,
+                              textStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray350),
+                            ),
                           );
                         },
                       ),
