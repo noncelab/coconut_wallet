@@ -146,6 +146,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                       Padding(padding: const EdgeInsets.only(top: 8), child: _buildToolTip()),
                       Container(
                         margin: const EdgeInsets.only(top: 40),
+                        constraints: const BoxConstraints(maxWidth: 500),
                         // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
                         // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
