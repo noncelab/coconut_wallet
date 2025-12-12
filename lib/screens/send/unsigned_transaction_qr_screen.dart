@@ -298,7 +298,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (!isEnglish) {
             return [
-              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
                 style: CoconutTypography.body2_14.copyWith(height: 1.2),
@@ -318,7 +317,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
                 style: CoconutTypography.body2_14.copyWith(height: 1.2),
