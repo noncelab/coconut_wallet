@@ -556,8 +556,20 @@ wallet_info_screen:
   title: "$name情報"
   view_xpub: "拡張公開鍵を表示"
   duplicated_name: "名前が既に使用されています"
+  view_wallet_backup_data: "ウォレットバックアップデータを表示"
+  wallet_backup_data: "ウォレットバックアップデータ"
+  confirm_backup_data: "バックアップデータを確認"
   tooltip:
     mfp_placeholder_description: "これは拡張公開鍵で追加されたウォレットで\nマスターフィンガープリントが入力されていないため\n00000000として表示されています。"
+    wallet_backup_data: "これはこのウォレットのBSMS(BIP-129)バックアップ情報です。デバイスの紛失や交換の場合に、このデータを使用してマルチシグウォレットを再構築できます。外部で共有する際は注意して保管してください。"
+    confirm_backup_data:
+      step1_em: "ココナッツボルトで$nameウォレットの詳細画面に移動した後"
+      step2_preposition: ""
+      step2_em: "1. ウォレットをエクスポート"
+      step3_preposition: ""
+      step3_em: "2. ウォレットデータをバックアップ"
+      step4: "下のQRコードをカメラでスキャンしてください。"
+      select: "選択"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

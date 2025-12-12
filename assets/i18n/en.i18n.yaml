@@ -556,8 +556,20 @@ wallet_info_screen:
   title: "$name Information"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  view_wallet_backup_data: "View Wallet Backup Data"
+  wallet_backup_data: "Wallet Backup Data"
+  confirm_backup_data: "Confirm Backup Data"
   tooltip:
-    mfp_placeholder_description: "This is a wallet added with extended public key\nand the Master Fingerprint was not entered\nso it is displayed as 00000000."
+    mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
+    wallet_backup_data: "This is the BSMS(BIP-129) backup information for this wallet. You can use this data to reconstruct the multisig wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
+    confirm_backup_data:
+      step1_em: "Go to $name wallet detail screen"
+      step2_preposition: "1. "
+      step2_em: "Export Wallet"
+      step3_preposition: "2. "
+      step3_em: "Backup Wallet Data"
+      step4: "Please scan the QR code below with camera."
+      select: "Select"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
