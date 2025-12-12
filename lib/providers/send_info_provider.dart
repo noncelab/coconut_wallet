@@ -24,6 +24,8 @@ class SendInfoProvider {
   // null인 경우 RBF 또는 CPFP가 아닙니다.
   FeeBumpingType? _feeBumpingType;
   WalletImportSource? _walletImportSource;
+  int? _transactionDraftId;
+  double? _feeRate;
 
   int? get walletId => _walletId;
   String? get recipientAddress => _recipientAddress;
@@ -40,6 +42,16 @@ class SendInfoProvider {
       _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
   FeeBumpingType? get feeBumpingType => _feeBumpingType;
   WalletImportSource? get walletImportSource => _walletImportSource;
+  int? get transactionDraftId => _transactionDraftId;
+  double? get feeRate => _feeRate;
+
+  void setFeeRate(double feeRate) {
+    _feeRate = feeRate;
+  }
+
+  void setTransactionDraftId(int? id) {
+    _transactionDraftId = id;
+  }
 
   void setWalletId(int id) {
     _walletId = id;
@@ -109,7 +121,8 @@ class SendInfoProvider {
                                     _signedPsbtBase64Encoded =
                                         _isDonation =
                                             _sendEntryPoint =
-                                                _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
+                                                _recipientsForBatch =
+                                                    _feeBumpingType = _walletImportSource = _transactionDraftId = null;
   }
 
   Map<String, int>? getRecipientMap() {

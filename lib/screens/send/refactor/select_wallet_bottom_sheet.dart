@@ -176,25 +176,39 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     }
     return Row(
       children: [
-        SizedBox(
-          width: Sizes.size32,
-          height: Sizes.size32,
-          child: WalletIconSmall(
-            walletImportSource: walletBase.walletImportSource,
-            iconIndex: walletBase.iconIndex,
-            colorIndex: walletBase.colorIndex,
-            gradientColors: signer != null ? ColorUtil.getGradientColors(signer) : null,
+        Expanded(
+          child: Row(
+            children: [
+              SizedBox(
+                width: Sizes.size32,
+                height: Sizes.size32,
+                child: WalletIconSmall(
+                  walletImportSource: walletBase.walletImportSource,
+                  iconIndex: walletBase.iconIndex,
+                  colorIndex: walletBase.colorIndex,
+                  gradientColors: signer != null ? ColorUtil.getGradientColors(signer) : null,
+                ),
+              ),
+              CoconutLayout.spacing_300w,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(amountText, style: CoconutTypography.body2_14_Number),
+                    Text(
+                      walletBase.name,
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        CoconutLayout.spacing_300w,
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(amountText, style: CoconutTypography.body2_14_Number),
-            Text(walletBase.name, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-          ],
-        ),
-        if (isChecked) ...{const Spacer(), SvgPicture.asset('assets/svg/check.svg')},
+
+        if (isChecked) ...{SvgPicture.asset('assets/svg/check.svg')},
       ],
     );
   }
