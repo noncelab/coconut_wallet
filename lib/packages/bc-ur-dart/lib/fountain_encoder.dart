@@ -59,12 +59,11 @@ class FountainEncoder {
   int seqNum;
 
   FountainEncoder(Uint8List message, int maxFragmentLen, {int firstSeqNum = 0, int minFragmentLen = 10})
-      : messageLen = message.length,
-        checksum = crc32Int(message),
-        fragmentLen = findNominalFragmentLength(message.length, minFragmentLen, maxFragmentLen),
-        fragments =
-            partitionMessage(message, findNominalFragmentLength(message.length, minFragmentLen, maxFragmentLen)),
-        seqNum = firstSeqNum {
+    : messageLen = message.length,
+      checksum = crc32Int(message),
+      fragmentLen = findNominalFragmentLength(message.length, minFragmentLen, maxFragmentLen),
+      fragments = partitionMessage(message, findNominalFragmentLength(message.length, minFragmentLen, maxFragmentLen)),
+      seqNum = firstSeqNum {
     assert(message.length <= MAX_UINT32);
   }
 

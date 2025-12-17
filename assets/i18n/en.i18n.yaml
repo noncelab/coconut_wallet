@@ -556,6 +556,7 @@ wallet_info_screen:
   title: "$name Information"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  view_descriptor: "View Descriptor"
   view_wallet_backup_data: "View Wallet Backup Data"
   wallet_backup_data: "Wallet Backup Data"
   confirm_backup_data: "Confirm Backup Data"

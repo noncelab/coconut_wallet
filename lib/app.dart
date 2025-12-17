@@ -50,6 +50,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_descriptor_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
@@ -250,6 +251,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     (context) => buildScreenWithArgs(
                       context,
                       (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint']),
+                    ),
+                '/wallet-descriptor':
+                    (context) => buildScreenWithArgs(
+                      context,
+                      (args) => WalletDescriptorScreen(
+                        id: args['id'],
+                        descriptor: args['descriptor'],
+                        walletName: args['walletName'],
+                      ),
                     ),
                 '/wallet-backup-data':
                     (context) => buildScreenWithArgs(

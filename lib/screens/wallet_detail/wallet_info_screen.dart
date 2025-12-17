@@ -8,10 +8,8 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -156,15 +154,29 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     },
                                   ),
                                 },
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.tag_manage_label,
-                                  onPressed: () {
-                                    _removeTooltip();
-                                    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
-                                  },
-                                ),
                                 if (widget.isMultisig) ...{
+                                  SingleButton(
+                                    enableShrinkAnim: true,
+                                    title: t.wallet_info_screen.view_descriptor,
+                                    onPressed: () {
+                                      _removeTooltip();
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/wallet-descriptor',
+                                        arguments: {
+                                          'id': widget.id,
+                                          'descriptor':
+                                              'BSMS 1.0 wsh(sortedmulti(2,[1cf0bf7e/48'
+                                              '/0'
+                                              '/0'
+                                              '/2'
+                                              ']xpub6FL8FhxNNUVnG64YurPd16AfGyvFLhh7S2uSsDqR3Qfcm6o9jtcMYwh6DvmcBF9qozxNQmTCVvWtxLpKTnhVLN3Pgnu2D3pAoXYFgVyd...',
+                                          // TODO: backupData 추가
+                                          'walletName': viewModel.walletName,
+                                        },
+                                      );
+                                    },
+                                  ),
                                   SingleButton(
                                     enableShrinkAnim: true,
                                     title: t.wallet_info_screen.view_wallet_backup_data,
@@ -188,6 +200,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     },
                                   ),
                                 },
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.tag_manage_label,
+                                  onPressed: () {
+                                    _removeTooltip();
+                                    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+                                  },
+                                ),
                               ],
                             ),
                           ),

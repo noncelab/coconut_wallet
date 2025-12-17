@@ -233,6 +233,7 @@ flutter:
     - assets/files/LICENSE
     - assets/files/CONTRIBUTING.md
     - assets/svg/download.svg
+    - assets/svg/arrow-circle-down.svg
     - assets/svg/text-field-clear.svg
     - assets/svg/question-mark.svg
     - assets/svg/circle-arrow-right.svg

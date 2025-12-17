@@ -47,16 +47,16 @@ class MultisigSignerCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(Sizes.size10),
                     decoration: BoxDecoration(
-                      color: isInnerWallet ? ColorUtil.getColor(8).backgroundColor : const Color(0xFFE7E7E7),
+                      color: isInnerWallet ? ColorUtil.getColor(8).backgroundColor : CoconutColors.gray800,
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                     child: SvgPicture.asset(
-                      isInnerWallet ? CustomIcons.getPathByIndex(iconIndex) : 'assets/svg/download.svg',
+                      isInnerWallet ? CustomIcons.getPathByIndex(iconIndex) : 'assets/svg/arrow-circle-down.svg',
                       colorFilter: ColorFilter.mode(
-                        isInnerWallet ? ColorUtil.getColor(colorIndex).color : CoconutColors.white, // index 8 is gray
+                        isInnerWallet ? ColorUtil.getColor(colorIndex).color : CoconutColors.gray600,
                         BlendMode.srcIn,
                       ),
-                      width: isInnerWallet ? 18 : 15,
+                      width: isInnerWallet ? 18 : 18,
                     ),
                   ),
                   CoconutLayout.spacing_300w,

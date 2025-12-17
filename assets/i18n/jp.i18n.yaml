@@ -556,6 +556,7 @@ wallet_info_screen:
   title: "$name情報"
   view_xpub: "拡張公開鍵を表示"
   duplicated_name: "名前が既に使用されています"
+  view_descriptor: "ディスクリプタを表示"
   view_wallet_backup_data: "ウォレットバックアップデータを表示"
   wallet_backup_data: "ウォレットバックアップデータ"
   confirm_backup_data: "バックアップデータを確認"
