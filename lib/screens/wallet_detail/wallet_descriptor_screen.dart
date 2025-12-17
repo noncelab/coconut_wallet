@@ -19,17 +19,7 @@ class _WalletDescriptorScreenState extends State<WalletDescriptorScreen> {
   Widget build(BuildContext context) {
     return QrWithCopyTextScreen(
       qrData: widget.descriptor,
-      title: t.wallet_info_screen.wallet_backup_data,
-      actionButton: IconButton(
-        onPressed: () {
-          Navigator.pushReplacementNamed(
-            context,
-            '/confirm-backup-data',
-            arguments: {'id': widget.id, 'walletName': widget.walletName},
-          );
-        },
-        icon: SvgPicture.asset('assets/svg/scan.svg'),
-      ),
+      title: t.wallet_info_screen.view_descriptor,
       tooltipDescription: CoconutToolTip(
         backgroundColor: CoconutColors.gray800,
         borderColor: CoconutColors.gray800,

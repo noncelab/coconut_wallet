@@ -15,8 +15,10 @@ class CopyTextContainer extends StatefulWidget {
   final String text;
   final String? copyText;
   final String? middleText;
+  final String? toastMsg;
   final TextAlign? textAlign;
   final TextStyle? textStyle;
+  final RichText? textRichText;
   final bool showButton;
   final bool isAddress;
 
@@ -25,8 +27,10 @@ class CopyTextContainer extends StatefulWidget {
     required this.text,
     this.copyText,
     this.middleText,
+    this.toastMsg,
     this.textAlign,
     this.textStyle,
+    this.textRichText,
     this.showButton = true,
     this.isAddress = false,
   });
@@ -40,14 +44,15 @@ class CopyTextContainer extends StatefulWidget {
 class _CopyTextContainerState extends State<CopyTextContainer> {
   late Color _textColor;
   late Color _buttonColor;
+  late Color _iconColor;
   late int _prefixLength;
 
   @override
   void initState() {
     super.initState();
-    _textColor = CoconutColors.white;
-    _buttonColor = CoconutColors.gray800;
-    // 네트워크 타입에 따라 P2WPKH prefix: bc1q(4자리), bcrt1q(6자리)
+    _textColor = CoconutColors.black;
+    _buttonColor = CoconutColors.gray100;
+    _iconColor = CoconutColors.black;
     _prefixLength = NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
   }
 
@@ -56,8 +61,9 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     return GestureDetector(
       onTap: () async {
         setState(() {
-          _textColor = CoconutColors.white;
-          _buttonColor = CoconutColors.gray800;
+          _textColor = CoconutColors.black;
+          _buttonColor = CoconutColors.gray100;
+          _iconColor = CoconutColors.black;
         });
 
         Clipboard.setData(ClipboardData(text: widget.copyText ?? widget.text)).then((value) => null);
@@ -79,77 +85,94 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         if (!context.mounted) return;
 
         fToast.init(context);
-        final toast = MyToast.getToastWidget(t.copied);
+        final toast = MyToast.getToastWidget(widget.toastMsg ?? t.copied);
         fToast.showToast(child: toast, gravity: ToastGravity.BOTTOM, toastDuration: const Duration(seconds: 2));
       },
       onTapDown: (details) {
         setState(() {
-          _textColor = CoconutColors.gray400;
-          _buttonColor = CoconutColors.gray900;
+          _textColor = CoconutColors.gray500;
+          _buttonColor = CoconutColors.gray200;
+          _iconColor = CoconutColors.gray500;
         });
       },
       onTapCancel: () {
         setState(() {
-          _textColor = CoconutColors.white;
-          _buttonColor = CoconutColors.gray800;
+          _textColor = CoconutColors.black;
+          _buttonColor = CoconutColors.gray100;
+          _iconColor = CoconutColors.black;
         });
       },
-      child: SizedBox(
+      child: Container(
         width: MediaQuery.sizeOf(context).width,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
+          color: CoconutColors.gray150,
+        ),
         child: Row(
           children: [
-            Expanded(
-              child:
-                  widget.isAddress
-                      ? Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: widget.text.substring(0, _prefixLength),
-                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400),
-                            ),
-                            TextSpan(
-                              text: widget.text.substring(_prefixLength, _prefixLength + 4),
-                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
-                            ),
-                            TextSpan(
-                              text: widget.text.substring(_prefixLength + 4, widget.text.length - 4),
-                              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                            ),
-                            TextSpan(
-                              text: widget.text.substring(widget.text.length - 4),
-                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
-                            ),
-                          ],
-                        ),
-                      )
-                      : Text(
-                        widget.text,
-                        textAlign: widget.textAlign ?? TextAlign.start,
-                        style:
-                            widget.textStyle?.setColor(_textColor) ??
-                            CoconutTypography.body1_16_Number.setColor(_textColor),
-                      ),
-            ),
-            CoconutLayout.spacing_400w,
+            Expanded(child: _buildTextContent()),
+
             if (widget.middleText != null) ...[
-              Text(widget.middleText!, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400)),
+              CoconutLayout.spacing_400w,
+              Text(widget.middleText!, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500)),
               CoconutLayout.spacing_200w,
+            ] else ...[
+              CoconutLayout.spacing_400w,
             ],
-            Opacity(
-              opacity: widget.showButton ? 1.0 : 0.0,
-              child: Container(
+
+            if (widget.showButton)
+              Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
                   color: _buttonColor,
                 ),
-                child: SvgPicture.asset('assets/svg/copy.svg'),
+                child: SvgPicture.asset(
+                  'assets/svg/copy.svg',
+                  colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
+                ),
               ),
-            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTextContent() {
+    if (widget.textRichText != null) {
+      return RichText(text: widget.textRichText!.text);
+    }
+
+    if (widget.isAddress) {
+      return Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: widget.text.substring(0, _prefixLength),
+              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
+            ),
+            TextSpan(
+              text: widget.text.substring(_prefixLength, _prefixLength + 4),
+              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
+            ),
+            TextSpan(
+              text: widget.text.substring(_prefixLength + 4, widget.text.length - 4),
+              style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+            ),
+            TextSpan(
+              text: widget.text.substring(widget.text.length - 4),
+              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Text(
+      widget.text,
+      textAlign: widget.textAlign ?? TextAlign.start,
+      style: widget.textStyle?.setColor(_textColor) ?? CoconutTypography.body1_16_Number.setColor(_textColor),
     );
   }
 }
