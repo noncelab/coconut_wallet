@@ -50,8 +50,8 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
   @override
   void initState() {
     super.initState();
-    _textColor = CoconutColors.black;
-    _buttonColor = CoconutColors.gray100;
+    _textColor = CoconutColors.white;
+    _buttonColor = CoconutColors.gray800;
     _iconColor = CoconutColors.black;
     _prefixLength = NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
   }
@@ -61,8 +61,8 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     return GestureDetector(
       onTap: () async {
         setState(() {
-          _textColor = CoconutColors.black;
-          _buttonColor = CoconutColors.gray100;
+          _textColor = CoconutColors.white;
+          _buttonColor = CoconutColors.gray800;
           _iconColor = CoconutColors.black;
         });
 
@@ -90,16 +90,16 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       },
       onTapDown: (details) {
         setState(() {
-          _textColor = CoconutColors.gray500;
-          _buttonColor = CoconutColors.gray200;
-          _iconColor = CoconutColors.gray500;
+          _textColor = CoconutColors.gray400;
+          _buttonColor = CoconutColors.gray900;
+          _iconColor = CoconutColors.gray400;
         });
       },
       onTapCancel: () {
         setState(() {
-          _textColor = CoconutColors.black;
-          _buttonColor = CoconutColors.gray100;
-          _iconColor = CoconutColors.black;
+          _textColor = CoconutColors.white;
+          _buttonColor = CoconutColors.gray800;
+          _iconColor = CoconutColors.white;
         });
       },
       child: Container(
@@ -107,7 +107,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
-          color: CoconutColors.gray150,
+          color: CoconutColors.black,
         ),
         child: Row(
           children: [

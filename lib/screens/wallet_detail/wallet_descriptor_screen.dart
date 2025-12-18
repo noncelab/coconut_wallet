@@ -31,6 +31,7 @@ class _WalletDescriptorScreenState extends State<WalletDescriptorScreen> {
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(text: TextSpan(text: t.wallet_info_screen.tooltip.wallet_backup_data)),
       ),
+      showPulldownMenu: false,
     );
   }
 }

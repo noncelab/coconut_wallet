@@ -1,4 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/packages/bc-ur-dart/lib/cbor_lite.dart';
+import 'package:ur/ur.dart';
+import 'package:coconut_wallet/packages/bc-ur-dart/lib/ur_encoder.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/bb_qr/bb_qr_encoder.dart';
 import 'package:flutter/material.dart';
 
 class CoordinatorBsmsQrViewModel extends ChangeNotifier {
@@ -11,190 +18,217 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
   }
 
   void _init(WalletProvider walletProvider, int id) {
-    //   final vaultListItem = walletProvider.getVaultById(id) as MultisigVaultListItem;
+    final walletListItem = walletProvider.getWalletById(id) as MultisigWalletListItem;
 
-    //   String outputDescriptor = _generateDescriptor(vaultListItem);
+    String descriptor = walletListItem.descriptor;
 
-    //   String bsmsText = _generateBsmsTextFormat(vaultListItem, outputDescriptor);
-    //   String coldcardText = _generateColdcardTextFormat(vaultListItem);
-    //   String keystoneText = _generateKeystoneTextFormat(vaultListItem);
+    String bsmsText = _generateBsmsTextFormat(descriptor);
+    List<_ParsedSignerInfo> parsedSigners = _parseSignersFromDescriptor(descriptor);
 
-    //   String bsmsUr = _encodeToUrBytes(bsmsText);
-    //   String coldcardQr = _encodeColdcardQr(coldcardText);
-    //   String keystoneUr = _encodeToUrBytes(keystoneText);
+    // 각 하드웨어 월렛 포맷 텍스트 생성
+    String coldcardText = _generateColdcardTextFormat(walletListItem, parsedSigners);
+    String keystoneText = _generateKeystoneTextFormat(walletListItem, parsedSigners);
+    String blueWalletText = _generateBlueWalletFormat(walletListItem, parsedSigners);
+    String specterText = _generateSpecterFormat(walletListItem, descriptor);
 
-    //   Map<String, dynamic> walletSyncString = jsonDecode(vaultListItem.getWalletSyncString());
-    //   Map<String, String> namesMap = {};
-    //   for (var signer in vaultListItem.signers) {
-    //     if (signer.name == null) continue;
-    //     namesMap[signer.keyStore.masterFingerprint] = signer.name!;
-    //   }
+    // QR 인코딩
+    String bsmsUr = _encodeToUrBytes(bsmsText);
+    String keystoneUr = _encodeToUrBytes(keystoneText);
+    String coldcardQr = _encodeColdcardQr(coldcardText);
 
-    //   qrData = jsonEncode(
-    //     MultisigImportDetail(
-    //       name: walletSyncString['name'],
-    //       colorIndex: walletSyncString['colorIndex'],
-    //       iconIndex: walletSyncString['iconIndex'],
-    //       namesMap: namesMap,
-    //       coordinatorBsms: bsmsText,
-    //     ),
-    //   );
+    // Import Detail JSON 생성 (지갑 동기화용)
+    Map<String, String> namesMap = {};
 
-    //   walletQrDataMap = {
-    //     'BSMS': bsmsUr,
-    //     'BlueWallet Vault Multisig': _generateBlueWalletFormat(vaultListItem),
-    //     'Coldcard Multisig': coldcardQr,
-    //     'Keystone Multisig': keystoneUr,
-    //     'Output Descriptor': outputDescriptor,
-    //     'Specter Desktop': _generateSpecterFormat(vaultListItem, outputDescriptor),
-    //   };
+    // 파싱된 Fingerprint와 기존 signers 리스트의 이름을 매핑
+    // (순서가 보장되지 않을 수 있으므로, 기존 로직이 Fingerprint를 알 수 없다면
+    //  단순히 인덱스 기반으로 매칭하거나 이름을 생략합니다.
+    //  여기서는 Fingerprint를 키로 사용해야 하므로, parsedSigners를 기준으로 합니다.)
 
-    //   walletTextDataMap = {
-    //     'BSMS': bsmsText,
-    //     'BlueWallet Vault Multisig': walletQrDataMap['BlueWallet Vault Multisig']!,
-    //     'Coldcard Multisig': coldcardText,
-    //     'Keystone Multisig': keystoneText,
-    //     'Output Descriptor': outputDescriptor,
-    //     'Specter Desktop': walletQrDataMap['Specter Desktop']!,
-    //   };
+    // 만약 MultisigSigner 모델 안에 fingerprint 정보가 전혀 없다면 이름 매칭이 어렵지만,
+    // 보통 지갑 생성 순서대로 signers 리스트가 유지된다고 가정하고 인덱스로 매칭 시도합니다.
+    for (int i = 0; i < parsedSigners.length; i++) {
+      if (i < walletListItem.signers.length) {
+        final signerName = walletListItem.signers[i].name;
+        if (signerName != null && signerName.isNotEmpty) {
+          namesMap[parsedSigners[i].fingerprint] = signerName;
+        }
+      }
+    }
 
-    //   notifyListeners();
+    Map<String, dynamic> importDetailMap = {
+      'name': walletListItem.name,
+      'colorIndex': walletListItem.colorIndex,
+      'iconIndex': walletListItem.iconIndex,
+      'namesMap': namesMap,
+      'coordinatorBsms': bsmsText,
+    };
+    qrData = jsonEncode(importDetailMap);
+
+    // 7. 데이터 맵 할당
+    walletQrDataMap = {
+      'BSMS': bsmsUr,
+      'BlueWallet Vault Multisig': blueWalletText,
+      'Coldcard Multisig': coldcardQr,
+      'Keystone Multisig': keystoneUr,
+      'Output Descriptor': descriptor,
+      'Specter Desktop': specterText,
+    };
+
+    walletTextDataMap = {
+      'BSMS': bsmsText,
+      'BlueWallet Vault Multisig': blueWalletText,
+      'Coldcard Multisig': coldcardText,
+      'Keystone Multisig': keystoneText,
+      'Output Descriptor': descriptor,
+      'Specter Desktop': specterText,
+    };
+
+    notifyListeners();
   }
 
-  // String _encodeToUrBytes(String text) {
-  //   try {
-  //     Uint8List utf8Data = Uint8List.fromList(utf8.encode(text));
-  //     final cborEncoder = CBOREncoder();
-  //     cborEncoder.encodeBytes(utf8Data);
-  //     final ur = UR('bytes', cborEncoder.getBytes());
-  //     final urEncoder = UREncoder(ur, 2000);
-  //     return urEncoder.nextPart();
-  //   } catch (e) {
-  //     return "Error encoding UR: $e";
-  //   }
-  // }
+  // --- [핵심] Descriptor 파싱 로직 ---
 
-  // String _encodeColdcardQr(String text) {
-  //   try {
-  //     List<String> qrFragments = BbQrEncoder.encode(data: text);
-  //     if (qrFragments.isNotEmpty) {
-  //       return qrFragments.first;
-  //     } else {
-  //       return "Error: Empty QR result";
-  //     }
-  //   } catch (e) {
-  //     return "Error encoding Coldcard QR: $e";
-  //   }
-  // }
+  // Descriptor 문자열에서 [fingerprint/path]xpub 정보를 정규식으로 추출
+  List<_ParsedSignerInfo> _parseSignersFromDescriptor(String descriptor) {
+    List<_ParsedSignerInfo> results = [];
 
-  // String _generateBsmsTextFormat(MultisigVaultListItem vault, String descriptor) {
-  //   StringBuffer buffer = StringBuffer();
-  //   buffer.writeln("BSMS 1.0");
-  //   buffer.writeln(descriptor);
-  //   return buffer.toString();
-  // }
+    // Regex 패턴 설명:
+    // \[             : '[' 시작
+    // ([0-9a-fA-F]{8}) : 그룹1 - Fingerprint (8자리 16진수)
+    // ([^\]]+)       : 그룹2 - Derivation Path (']' 전까지의 문자열, 예: /48h/0h/0h/2h)
+    // \]             : ']' 끝
+    // ([a-zA-Z0-9]+) : 그룹3 - Xpub (알파벳+숫자)
+    final RegExp regex = RegExp(r'\[([0-9a-fA-F]{8})([^\]]+)\]([a-zA-Z0-9]+)');
 
-  // String _generateKeystoneTextFormat(MultisigVaultListItem vault) {
-  //   StringBuffer buffer = StringBuffer();
-  //   buffer.writeln("# Keystone Multisig setup file (created by Coconut Vault)");
-  //   buffer.writeln("#\n");
+    final matches = regex.allMatches(descriptor);
 
-  //   String safeName = vault.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '-');
-  //   if (safeName.isEmpty) safeName = "Multisig";
-  //   buffer.writeln("Name: $safeName");
-  //   buffer.writeln("Policy: ${vault.requiredSignatureCount} of ${vault.signers.length}");
+    for (final match in matches) {
+      if (match.groupCount >= 3) {
+        String fingerprint = match.group(1) ?? "";
+        String rawPath = match.group(2) ?? "";
+        String xpub = match.group(3) ?? "";
 
-  //   String derivation = vault.signers.first.getSignerDerivationPath();
-  //   if (!derivation.startsWith("m/")) derivation = "m/$derivation";
-  //   buffer.writeln("Derivation: $derivation");
-  //   buffer.writeln("Format: P2WSH\n");
+        // Path 변환:
+        // 1. h -> ' 로 변경 (Display용)
+        // 2. m 접두사 확인
+        String normalizedPath = rawPath.replaceAll('h', "'");
+        if (!normalizedPath.startsWith('/') && !normalizedPath.startsWith('m')) {
+          normalizedPath = "/$normalizedPath";
+        }
 
-  //   for (var signer in vault.signers) {
-  //     String fingerprint = signer.keyStore.masterFingerprint.toUpperCase();
-  //     String xpub = signer.keyStore.extendedPublicKey.serialize(toXpub: true);
-  //     buffer.writeln("$fingerprint: $xpub");
-  //   }
+        String fullPath = normalizedPath.startsWith('m') ? normalizedPath : "m$normalizedPath";
 
-  //   return buffer.toString();
-  // }
+        results.add(_ParsedSignerInfo(fingerprint: fingerprint.toUpperCase(), path: fullPath, xpub: xpub));
+      }
+    }
+    return results;
+  }
 
-  // String _generateColdcardTextFormat(MultisigVaultListItem vault) {
-  //   StringBuffer buffer = StringBuffer();
-  //   String safeName = vault.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-  //   if (safeName.isEmpty) safeName = "Multisig";
-  //   if (safeName.length > 20) safeName = safeName.substring(0, 20);
-  //   buffer.writeln("Name: $safeName");
+  // --- Encoders ---
 
-  //   buffer.writeln("Policy: ${vault.requiredSignatureCount} of ${vault.signers.length}");
-  //   buffer.writeln("Format: P2WSH");
+  String _encodeToUrBytes(String text) {
+    try {
+      Uint8List utf8Data = Uint8List.fromList(utf8.encode(text));
+      final cborEncoder = CBOREncoder();
+      cborEncoder.encodeBytes(utf8Data);
+      final ur = UR('bytes', cborEncoder.getBytes());
+      final urEncoder = UREncoder(ur, 2000);
+      return urEncoder.nextPart();
+    } catch (e) {
+      return "Error encoding UR: $e";
+    }
+  }
 
-  //   String path = vault.signers.first.getSignerDerivationPath();
-  //   if (!path.startsWith('m/')) path = 'm/$path';
-  //   path = path.trim();
-  //   buffer.writeln("Derivation: $path");
+  String _encodeColdcardQr(String text) {
+    try {
+      return BbQrEncoder.encode(data: text, encodingType: 'Z').first;
+    } catch (e) {
+      return "Error: $e";
+    }
+  }
 
-  //   for (var signer in vault.signers) {
-  //     String xpub = signer.keyStore.extendedPublicKey.serialize(toXpub: true);
-  //     String fingerprint = signer.keyStore.masterFingerprint.toUpperCase();
-  //     buffer.writeln("$fingerprint: $xpub");
-  //   }
+  // --- Generators ---
 
-  //   return buffer.toString().trim();
-  // }
+  String _generateBsmsTextFormat(String descriptor) {
+    // 이미 BSMS 헤더가 있는지 확인
+    if (descriptor.trim().startsWith("BSMS")) return descriptor;
 
-  // String _generateBlueWalletFormat(MultisigVaultListItem vault) {
-  //   StringBuffer buffer = StringBuffer();
-  //   buffer.writeln("# Blue Wallet Vault Multisig setup file (created by Coconut Vault)\n#");
-  //   buffer.writeln("Name: ${vault.name}");
-  //   buffer.writeln("Policy: ${vault.requiredSignatureCount} of ${vault.signers.length}");
-  //   buffer.writeln("Derivation: ${vault.signers.first.getSignerDerivationPath()}");
-  //   buffer.writeln("Format: P2WSH\n");
-  //   for (var signer in vault.signers) {
-  //     String xpub = signer.keyStore.extendedPublicKey.serialize(toXpub: true);
-  //     buffer.writeln("${signer.keyStore.masterFingerprint}: $xpub");
-  //   }
-  //   return buffer.toString();
-  // }
+    StringBuffer buffer = StringBuffer();
+    buffer.writeln("BSMS 1.0");
+    buffer.writeln(descriptor);
+    return buffer.toString();
+  }
 
-  // String _generateDescriptor(MultisigVaultListItem vault) {
-  //   String derivationPath = vault.signers.first.getSignerDerivationPath().replaceAll('m/', '').replaceAll("'", "h");
+  String _generateKeystoneTextFormat(MultisigWalletListItem wallet, List<_ParsedSignerInfo> signers) {
+    StringBuffer buffer = StringBuffer();
+    buffer.writeln("# Keystone Multisig setup file (created by Coconut Vault)");
+    buffer.writeln("#\n");
 
-  //   List<_SignerSortWrapper> sortedSigners =
-  //       vault.signers.map((signer) {
-  //         String fingerprint = signer.keyStore.masterFingerprint.toLowerCase();
-  //         String xpub = signer.keyStore.extendedPublicKey.serialize(toXpub: true);
+    String safeName = wallet.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '-');
+    if (safeName.isEmpty) safeName = "Multisig";
+    buffer.writeln("Name: $safeName");
+    buffer.writeln("Policy: ${wallet.requiredSignatureCount} of ${signers.length}");
 
-  //         String keyString = "[$fingerprint/$derivationPath]$xpub/<0;1>/*";
-  //         return _SignerSortWrapper(xpub, fingerprint, keyString);
-  //       }).toList();
+    // 첫 번째 서명자의 경로 사용 (없으면 기본값)
+    String derivation = signers.isNotEmpty ? signers.first.path : "m/48'/0'/0'/2'";
+    buffer.writeln("Derivation: $derivation");
+    buffer.writeln("Format: P2WSH\n");
 
-  //   sortedSigners.sort((a, b) => a.fullKeyString.compareTo(b.fullKeyString));
+    for (var signer in signers) {
+      buffer.writeln("${signer.fingerprint}: ${signer.xpub}");
+    }
 
-  //   List<String> publicKeyList = sortedSigners.map((e) => e.xpub).toList();
-  //   List<String> fingerprintList = sortedSigners.map((e) => e.fingerprint).toList();
+    return buffer.toString();
+  }
 
-  //   Descriptor descriptor = Descriptor.forMultisignature(
-  //     AddressType.p2wsh,
-  //     publicKeyList,
-  //     derivationPath,
-  //     fingerprintList,
-  //     vault.requiredSignatureCount,
-  //   );
+  String _generateColdcardTextFormat(MultisigWalletListItem wallet, List<_ParsedSignerInfo> signers) {
+    StringBuffer buffer = StringBuffer();
+    String safeName = wallet.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
+    if (safeName.isEmpty) safeName = "Multisig";
+    if (safeName.length > 20) safeName = safeName.substring(0, 20);
+    buffer.writeln("Name: $safeName");
 
-  //   return descriptor.serialize();
-  // }
+    buffer.writeln("Policy: ${wallet.requiredSignatureCount} of ${signers.length}");
+    buffer.writeln("Format: P2WSH");
 
-  // String _generateSpecterFormat(MultisigVaultListItem vault, String descriptor) {
-  //   final Map<String, dynamic> data = {"label": vault.name, "blockheight": 0, "descriptor": descriptor};
-  //   const encoder = JsonEncoder.withIndent('  ');
-  //   return encoder.convert(data);
-  // }
+    String derivation = signers.isNotEmpty ? signers.first.path : "m/48'/0'/0'/2'";
+    buffer.writeln("Derivation: $derivation");
+
+    for (var signer in signers) {
+      buffer.writeln("${signer.fingerprint}: ${signer.xpub}");
+    }
+
+    return buffer.toString().trim();
+  }
+
+  String _generateBlueWalletFormat(MultisigWalletListItem wallet, List<_ParsedSignerInfo> signers) {
+    StringBuffer buffer = StringBuffer();
+    buffer.writeln("# Blue Wallet Vault Multisig setup file (created by Coconut Vault)\n#");
+    buffer.writeln("Name: ${wallet.name}");
+    buffer.writeln("Policy: ${wallet.requiredSignatureCount} of ${signers.length}");
+
+    String derivation = signers.isNotEmpty ? signers.first.path : "m/48'/0'/0'/2'";
+    buffer.writeln("Derivation: $derivation");
+
+    buffer.writeln("Format: P2WSH\n");
+    for (var signer in signers) {
+      buffer.writeln("${signer.fingerprint}: ${signer.xpub}");
+    }
+    return buffer.toString();
+  }
+
+  String _generateSpecterFormat(MultisigWalletListItem wallet, String descriptor) {
+    final Map<String, dynamic> data = {"label": wallet.name, "blockheight": 0, "descriptor": descriptor};
+    const encoder = JsonEncoder.withIndent('  ');
+    return encoder.convert(data);
+  }
 }
 
-class _SignerSortWrapper {
-  final String xpub;
+// 추출된 서명자 정보를 담을 간단한 내부 클래스
+class _ParsedSignerInfo {
   final String fingerprint;
-  final String fullKeyString;
+  final String path;
+  final String xpub;
 
-  _SignerSortWrapper(this.xpub, this.fingerprint, this.fullKeyString);
+  _ParsedSignerInfo({required this.fingerprint, required this.path, required this.xpub});
 }

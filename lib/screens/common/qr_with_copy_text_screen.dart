@@ -34,7 +34,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.textDataMap,
     this.textRichText,
     this.footer,
-    this.showPulldownMenu = false,
+    required this.showPulldownMenu,
     this.qrcodeTopWidget,
     this.actionButton,
     this.isAddress = false,

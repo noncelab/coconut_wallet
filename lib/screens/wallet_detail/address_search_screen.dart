@@ -339,6 +339,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   qrData: addressList[index].address,
                   title: t.address_list_screen.address_index(index: index),
                   isBottom: true,
+                  showPulldownMenu: false,
                 ),
               );
             },

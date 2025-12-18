@@ -389,6 +389,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                 isAddress: true,
                                 title: t.address_list_screen.address_index(index: addressList[index].index),
                                 isBottom: true,
+                                showPulldownMenu: false,
                               ),
                             ).whenComplete(() => AppGuard.enablePrivacyScreen());
                           },
