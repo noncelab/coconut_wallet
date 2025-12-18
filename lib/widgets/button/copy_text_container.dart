@@ -52,7 +52,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     super.initState();
     _textColor = CoconutColors.white;
     _buttonColor = CoconutColors.gray800;
-    _iconColor = CoconutColors.black;
+    _iconColor = CoconutColors.white;
     _prefixLength = NetworkType.currentNetworkType == NetworkType.regtest ? 6 : 4;
   }
 
@@ -63,7 +63,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
         setState(() {
           _textColor = CoconutColors.white;
           _buttonColor = CoconutColors.gray800;
-          _iconColor = CoconutColors.black;
+          _iconColor = CoconutColors.white;
         });
 
         Clipboard.setData(ClipboardData(text: widget.copyText ?? widget.text)).then((value) => null);
