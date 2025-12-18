@@ -20,16 +20,19 @@ class _WalletDescriptorScreenState extends State<WalletDescriptorScreen> {
     return QrWithCopyTextScreen(
       qrData: widget.descriptor,
       title: t.wallet_info_screen.view_descriptor,
-      tooltipDescription: CoconutToolTip(
-        backgroundColor: CoconutColors.gray800,
-        borderColor: CoconutColors.gray800,
-        icon: SvgPicture.asset(
-          'assets/svg/circle-info.svg',
-          width: 20,
-          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+      tooltipDescription: Container(
+        margin: const EdgeInsets.only(top: 4, bottom: 16),
+        child: CoconutToolTip(
+          backgroundColor: CoconutColors.gray800,
+          borderColor: CoconutColors.gray800,
+          icon: SvgPicture.asset(
+            'assets/svg/circle-info.svg',
+            width: 20,
+            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+          ),
+          tooltipType: CoconutTooltipType.fixed,
+          richText: RichText(text: TextSpan(text: t.wallet_info_screen.tooltip.wallet_backup_data)),
         ),
-        tooltipType: CoconutTooltipType.fixed,
-        richText: RichText(text: TextSpan(text: t.wallet_info_screen.tooltip.wallet_backup_data)),
       ),
       showPulldownMenu: false,
     );

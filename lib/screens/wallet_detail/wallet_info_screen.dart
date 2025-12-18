@@ -190,19 +190,24 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     title: t.wallet_info_screen.view_wallet_backup_data,
                                     onPressed: () {
                                       _removeTooltip();
+                                      final bsmsViewModel = Provider.of<CoordinatorBsmsQrViewModel>(
+                                        innerContext,
+                                        listen: false,
+                                      );
+
+                                      final filteredQrMap = Map<String, String>.from(bsmsViewModel.walletQrDataMap);
+                                      filteredQrMap.remove('Output Descriptor');
+                                      final filteredTextMap = Map<String, String>.from(bsmsViewModel.walletTextDataMap);
+                                      filteredTextMap.remove('Output Descriptor');
+
                                       Navigator.pushNamed(
                                         context,
                                         '/wallet-backup-data',
                                         arguments: {
                                           'id': widget.id,
-                                          'backupData':
-                                              'BSMS 1.0 wsh(sortedmulti(2,[1cf0bf7e/48'
-                                              '/0'
-                                              '/0'
-                                              '/2'
-                                              ']xpub6FL8FhxNNUVnG64YurPd16AfGyvFLhh7S2uSsDqR3Qfcm6o9jtcMYwh6DvmcBF9qozxNQmTCVvWtxLpKTnhVLN3Pgnu2D3pAoXYFgVyd...',
-                                          // TODO: backupData 추가
                                           'walletName': viewModel.walletName,
+                                          'qrDataMap': filteredQrMap,
+                                          'textDataMap': filteredTextMap,
                                         },
                                       );
                                     },

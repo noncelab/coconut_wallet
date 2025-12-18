@@ -36,16 +36,8 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     String keystoneUr = _encodeToUrBytes(keystoneText);
     String coldcardQr = _encodeColdcardQr(coldcardText);
 
-    // Import Detail JSON 생성 (지갑 동기화용)
     Map<String, String> namesMap = {};
 
-    // 파싱된 Fingerprint와 기존 signers 리스트의 이름을 매핑
-    // (순서가 보장되지 않을 수 있으므로, 기존 로직이 Fingerprint를 알 수 없다면
-    //  단순히 인덱스 기반으로 매칭하거나 이름을 생략합니다.
-    //  여기서는 Fingerprint를 키로 사용해야 하므로, parsedSigners를 기준으로 합니다.)
-
-    // 만약 MultisigSigner 모델 안에 fingerprint 정보가 전혀 없다면 이름 매칭이 어렵지만,
-    // 보통 지갑 생성 순서대로 signers 리스트가 유지된다고 가정하고 인덱스로 매칭 시도합니다.
     for (int i = 0; i < parsedSigners.length; i++) {
       if (i < walletListItem.signers.length) {
         final signerName = walletListItem.signers[i].name;
@@ -64,7 +56,6 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     };
     qrData = jsonEncode(importDetailMap);
 
-    // 7. 데이터 맵 할당
     walletQrDataMap = {
       'BSMS': bsmsUr,
       'BlueWallet Vault Multisig': blueWalletText,
@@ -86,9 +77,8 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --- [핵심] Descriptor 파싱 로직 ---
+  // --- Descriptor 파싱 로직 ---
 
-  // Descriptor 문자열에서 [fingerprint/path]xpub 정보를 정규식으로 추출
   List<_ParsedSignerInfo> _parseSignersFromDescriptor(String descriptor) {
     List<_ParsedSignerInfo> results = [];
 
@@ -108,9 +98,6 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
         String rawPath = match.group(2) ?? "";
         String xpub = match.group(3) ?? "";
 
-        // Path 변환:
-        // 1. h -> ' 로 변경 (Display용)
-        // 2. m 접두사 확인
         String normalizedPath = rawPath.replaceAll('h', "'");
         if (!normalizedPath.startsWith('/') && !normalizedPath.startsWith('m')) {
           normalizedPath = "/$normalizedPath";
@@ -150,7 +137,6 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
   // --- Generators ---
 
   String _generateBsmsTextFormat(String descriptor) {
-    // 이미 BSMS 헤더가 있는지 확인
     if (descriptor.trim().startsWith("BSMS")) return descriptor;
 
     StringBuffer buffer = StringBuffer();
@@ -169,7 +155,6 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     buffer.writeln("Name: $safeName");
     buffer.writeln("Policy: ${wallet.requiredSignatureCount} of ${signers.length}");
 
-    // 첫 번째 서명자의 경로 사용 (없으면 기본값)
     String derivation = signers.isNotEmpty ? signers.first.path : "m/48'/0'/0'/2'";
     buffer.writeln("Derivation: $derivation");
     buffer.writeln("Format: P2WSH\n");
@@ -224,7 +209,6 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
   }
 }
 
-// 추출된 서명자 정보를 담을 간단한 내부 클래스
 class _ParsedSignerInfo {
   final String fingerprint;
   final String path;

@@ -130,12 +130,13 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     child: const SizedBox.expand(),
                   ),
                   Positioned(
-                    top: offset.dy + size.height,
+                    top: offset.dy + size.height + 8.0,
                     right: screenWidth - (offset.dx + size.width),
                     child: CoconutPulldownMenu(
                       entries:
                           _optionKeys.map((key) {
-                            final displayTitle = _displayNames[key] ?? key;
+                            final isSelected = key == _selectedKey;
+                            final displayTitle = isSelected ? (_displayNames[key] ?? key) : key;
                             return CoconutPulldownMenuItem(title: displayTitle);
                           }).toList(),
 
@@ -148,7 +149,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                         Navigator.pop(context);
                       },
 
-                      backgroundColor: CoconutColors.white,
+                      backgroundColor: CoconutColors.gray800,
                       borderRadius: 8,
                       shadowColor: CoconutColors.black.withOpacity(0.1),
                     ),
@@ -190,24 +191,25 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
               if (widget.tooltipDescription != null) ...[
                 Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: widget.tooltipDescription!),
               ],
-
               if (widget.showPulldownMenu && _optionKeys.isNotEmpty)
                 Align(
                   alignment: Alignment.centerRight,
-                  child: Container(
-                    key: _pulldownKey,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    margin: const EdgeInsets.only(bottom: 8, right: 16),
-                    decoration: BoxDecoration(color: CoconutColors.gray150, borderRadius: BorderRadius.circular(8)),
-                    child: CoconutPulldown(
-                      title: _displayTitle,
-                      isOpen: _isPulldownOpen,
-                      onChanged: (isOpen) {
-                        setState(() {
-                          _isPulldownOpen = true;
-                        });
-                        _showDropdownMenu();
-                      },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8, right: 16),
+                    child: Container(
+                      key: _pulldownKey,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(8)),
+                      child: CoconutPulldown(
+                        title: _displayTitle,
+                        isOpen: _isPulldownOpen,
+                        onChanged: (isOpen) {
+                          setState(() {
+                            _isPulldownOpen = true;
+                          });
+                          _showDropdownMenu();
+                        },
+                      ),
                     ),
                   ),
                 ),
