@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -253,7 +254,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         text: textData,
         isAddress: widget.isAddress,
         textStyle: CoconutTypography.body2_14_Number,
-        toastMsg: "클립보드에 복사",
+        toastMsg: t.copied,
         textRichText: widget.textRichText,
       ),
     );
