@@ -166,27 +166,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                 if (widget.isMultisig) ...{
                                   SingleButton(
                                     enableShrinkAnim: true,
-                                    title: t.wallet_info_screen.view_descriptor,
-                                    onPressed: () {
-                                      _removeTooltip();
-                                      final bsmsViewModel = Provider.of<CoordinatorBsmsQrViewModel>(
-                                        innerContext,
-                                        listen: false,
-                                      );
-                                      final descriptorData = bsmsViewModel.walletQrDataMap['Output Descriptor'] ?? '';
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/wallet-descriptor',
-                                        arguments: {
-                                          'id': widget.id,
-                                          'descriptor': descriptorData,
-                                          'walletName': viewModel.walletName,
-                                        },
-                                      );
-                                    },
-                                  ),
-                                  SingleButton(
-                                    enableShrinkAnim: true,
                                     title: t.wallet_info_screen.view_wallet_backup_data,
                                     onPressed: () {
                                       _removeTooltip();
@@ -195,19 +174,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                         listen: false,
                                       );
 
-                                      final filteredQrMap = Map<String, String>.from(bsmsViewModel.walletQrDataMap);
-                                      filteredQrMap.remove('Output Descriptor');
-                                      final filteredTextMap = Map<String, String>.from(bsmsViewModel.walletTextDataMap);
-                                      filteredTextMap.remove('Output Descriptor');
-
                                       Navigator.pushNamed(
                                         context,
                                         '/wallet-backup-data',
                                         arguments: {
                                           'id': widget.id,
                                           'walletName': viewModel.walletName,
-                                          'qrDataMap': filteredQrMap,
-                                          'textDataMap': filteredTextMap,
+                                          'qrDataMap': bsmsViewModel.walletQrDataMap,
+                                          'textDataMap': bsmsViewModel.walletTextDataMap,
                                         },
                                       );
                                     },
