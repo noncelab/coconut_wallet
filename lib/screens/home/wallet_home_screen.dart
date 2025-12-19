@@ -1197,39 +1197,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType) {
-    String svgPath;
-    String scanText;
-
-    switch (scanType) {
-      case WalletImportSource.coconutVault:
-        svgPath = 'assets/svg/coconut-vault-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg';
-        scanText = t.wallet_add_scanner_screen.vault;
-        break;
-      case WalletImportSource.keystone:
-        svgPath = kKeystoneIconPath;
-        scanText = t.wallet_add_scanner_screen.keystone;
-        break;
-      case WalletImportSource.jade:
-        svgPath = kJadeIconPath;
-        scanText = t.wallet_add_scanner_screen.jade;
-        break;
-      case WalletImportSource.seedSigner:
-        svgPath = kSeedSignerIconPath;
-        scanText = t.wallet_add_scanner_screen.seed_signer;
-        break;
-      case WalletImportSource.coldCard:
-        svgPath = kColdCardIconPath;
-        scanText = t.wallet_add_scanner_screen.cold_card;
-        break;
-      case WalletImportSource.krux:
-        svgPath = kKruxIconPath;
-        scanText = t.wallet_add_scanner_screen.krux;
-        break;
-      case WalletImportSource.extendedPublicKey:
-        svgPath = kZpubIconPath;
-        scanText = t.wallet_add_scanner_screen.self;
-        break;
-    }
     return ShrinkAnimationButton(
       defaultColor: CoconutColors.black,
       pressedColor: CoconutColors.gray750,
@@ -1240,7 +1207,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: Row(
                   children: [
-                    SvgPicture.asset(svgPath),
+                    SvgPicture.asset(scanType.externalWalletIconPath),
                     CoconutLayout.spacing_400w,
                     Expanded(
                       child: Column(
@@ -1248,7 +1215,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            scanText,
+                            scanType.displayName,
                             style: CoconutTypography.body2_14,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -1270,9 +1237,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: Column(
                   children: [
-                    SvgPicture.asset(svgPath),
+                    SvgPicture.asset(scanType.externalWalletIconPath),
                     CoconutLayout.spacing_100h,
-                    Text(scanText, style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+                    Text(scanType.displayName, style: CoconutTypography.body2_14, textAlign: TextAlign.center),
                   ],
                 ),
               ),

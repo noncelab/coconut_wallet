@@ -18,9 +18,9 @@ class MultisigSigner {
   @JsonKey()
   String? memo;
   @JsonKey()
-  String? derivationPath;
+  String? signerSource;
 
-  MultisigSigner({this.name, this.iconIndex, this.colorIndex, this.memo, this.derivationPath}) {
+  MultisigSigner({this.name, this.iconIndex, this.colorIndex, this.memo, this.signerSource}) {
     name = name?.replaceAll('\n', ' ');
   }
 

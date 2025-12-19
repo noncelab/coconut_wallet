@@ -123,6 +123,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     index: index,
                                     signer: viewModel.getSigner(index),
                                     masterFingerprint: viewModel.getSignerMasterFingerprint(index),
+                                    derivationPath: viewModel.getSignerBsms(index).derivationPath,
                                   );
                                 },
                               ),
