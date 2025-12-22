@@ -256,8 +256,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => WalletBackupDataScreen(
                         id: args['id'],
-                        backupData: args['backupData'],
                         walletName: args['walletName'],
+                        qrDataMap: (args['qrDataMap'] as Map).cast<String, String>(),
+                        textDataMap: (args['textDataMap'] as Map).cast<String, String>(),
                       ),
                     ),
                 '/confirm-backup-data':

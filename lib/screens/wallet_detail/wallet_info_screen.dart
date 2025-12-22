@@ -4,14 +4,13 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/coordinator_bsms_qr_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
@@ -47,17 +46,25 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<WalletInfoViewModel>(
-      create:
-          (_) => WalletInfoViewModel(
-            widget.id,
-            Provider.of<AuthProvider>(context, listen: false),
-            Provider.of<WalletProvider>(context, listen: false),
-            Provider.of<NodeProvider>(context, listen: false),
-            widget.isMultisig,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<WalletInfoViewModel>(
+          create:
+              (_) => WalletInfoViewModel(
+                widget.id,
+                Provider.of<AuthProvider>(context, listen: false),
+                Provider.of<WalletProvider>(context, listen: false),
+                Provider.of<NodeProvider>(context, listen: false),
+                widget.isMultisig,
+              ),
+        ),
+        if (widget.isMultisig)
+          ChangeNotifierProvider<CoordinatorBsmsQrViewModel>(
+            create: (_) => CoordinatorBsmsQrViewModel(Provider.of<WalletProvider>(context, listen: false), widget.id),
           ),
+      ],
       child: Consumer<WalletInfoViewModel>(
-        builder: (_, viewModel, child) {
+        builder: (innerContext, viewModel, child) {
           return Stack(
             children: [
               GestureDetector(
@@ -157,6 +164,30 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     },
                                   ),
                                 },
+                                if (widget.isMultisig) ...{
+                                  SingleButton(
+                                    enableShrinkAnim: true,
+                                    title: t.wallet_info_screen.view_wallet_backup_data,
+                                    onPressed: () {
+                                      _removeTooltip();
+                                      final bsmsViewModel = Provider.of<CoordinatorBsmsQrViewModel>(
+                                        innerContext,
+                                        listen: false,
+                                      );
+
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/wallet-backup-data',
+                                        arguments: {
+                                          'id': widget.id,
+                                          'walletName': viewModel.walletName,
+                                          'qrDataMap': bsmsViewModel.walletQrDataMap,
+                                          'textDataMap': bsmsViewModel.walletTextDataMap,
+                                        },
+                                      );
+                                    },
+                                  ),
+                                },
                                 SingleButton(
                                   enableShrinkAnim: true,
                                   title: t.tag_manage_label,
@@ -165,30 +196,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
                                   },
                                 ),
-                                if (widget.isMultisig) ...{
-                                  SingleButton(
-                                    enableShrinkAnim: true,
-                                    title: t.wallet_info_screen.view_wallet_backup_data,
-                                    onPressed: () {
-                                      _removeTooltip();
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/wallet-backup-data',
-                                        arguments: {
-                                          'id': widget.id,
-                                          'backupData':
-                                              'BSMS 1.0 wsh(sortedmulti(2,[1cf0bf7e/48'
-                                              '/0'
-                                              '/0'
-                                              '/2'
-                                              ']xpub6FL8FhxNNUVnG64YurPd16AfGyvFLhh7S2uSsDqR3Qfcm6o9jtcMYwh6DvmcBF9qozxNQmTCVvWtxLpKTnhVLN3Pgnu2D3pAoXYFgVyd...',
-                                          // TODO: backupData 추가
-                                          'walletName': viewModel.walletName,
-                                        },
-                                      );
-                                    },
-                                  ),
-                                },
                               ],
                             ),
                           ),
@@ -382,7 +389,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
       heightRatio: 0.9,
-      child: QrWithCopyTextScreen(qrData: extendedPublicKey, title: t.extended_public_key),
+      child: QrWithCopyTextScreen(qrData: extendedPublicKey, title: t.extended_public_key, showPulldownMenu: false),
     );
   }
 }

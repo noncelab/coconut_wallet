@@ -556,6 +556,7 @@ wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
+  view_descriptor: "디스크립터 보기"
   view_wallet_backup_data: "지갑 백업 데이터 보기"
   wallet_backup_data: "지갑 백업 데이터"
   confirm_backup_data: "백업 데이터 확인"

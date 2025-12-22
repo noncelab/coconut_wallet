@@ -79,7 +79,7 @@ class MultisigSignerCard extends StatelessWidget {
                     child: SvgPicture.asset(
                       finalIconPath,
                       colorFilter: ColorFilter.mode(finalIconColor, BlendMode.srcIn),
-                      width: isInnerWallet ? 18 : 15,
+                      width: 18, //isInnerWallet ? 18 : 15
                     ),
                   ),
                   CoconutLayout.spacing_300w,

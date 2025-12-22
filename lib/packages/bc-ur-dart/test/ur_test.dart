@@ -25,20 +25,28 @@ void main() {
 
     test('Bytewords 1', () {
       var input = Uint8List.fromList([0, 1, 2, 128, 255]);
-      expect(Bytewords.encodeStyle(Bytewords.Style.standard, input),
-          equals("able acid also lava zoom jade need echo taxi"));
+      expect(
+        Bytewords.encodeStyle(Bytewords.Style.standard, input),
+        equals("able acid also lava zoom jade need echo taxi"),
+      );
       expect(Bytewords.encodeStyle(Bytewords.Style.uri, input), equals("able-acid-also-lava-zoom-jade-need-echo-taxi"));
       expect(Bytewords.encodeStyle(Bytewords.Style.minimal, input), equals("aeadaolazmjendeoti"));
 
-      expect(Bytewords.decodeStyle(Bytewords.Style.standard, "able acid also lava zoom jade need echo taxi"),
-          equals(input));
+      expect(
+        Bytewords.decodeStyle(Bytewords.Style.standard, "able acid also lava zoom jade need echo taxi"),
+        equals(input),
+      );
       expect(Bytewords.decodeStyle(Bytewords.Style.uri, "able-acid-also-lava-zoom-jade-need-echo-taxi"), equals(input));
       expect(Bytewords.decodeStyle(Bytewords.Style.minimal, "aeadaolazmjendeoti"), equals(input));
 
-      expect(() => Bytewords.decodeStyle(Bytewords.Style.standard, "able acid also lava zoom jade need echo wolf"),
-          throwsA(isA<ArgumentError>()));
-      expect(() => Bytewords.decodeStyle(Bytewords.Style.uri, "able-acid-also-lava-zoom-jade-need-echo-wolf"),
-          throwsA(isA<ArgumentError>()));
+      expect(
+        () => Bytewords.decodeStyle(Bytewords.Style.standard, "able acid also lava zoom jade need echo wolf"),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => Bytewords.decodeStyle(Bytewords.Style.uri, "able-acid-also-lava-zoom-jade-need-echo-wolf"),
+        throwsA(isA<ArgumentError>()),
+      );
       expect(() => Bytewords.decodeStyle(Bytewords.Style.minimal, "aeadaolazmjendeowf"), throwsA(isA<ArgumentError>()));
 
       expect(() => Bytewords.decodeStyle(Bytewords.Style.standard, "wolf"), throwsA(isA<ArgumentError>()));
@@ -146,7 +154,7 @@ void main() {
         138,
         41,
         85,
-        24
+        24,
       ]);
 
       var encoded =
@@ -265,7 +273,7 @@ void main() {
         10,
         43,
         43,
-        52
+        52,
       ];
       expect(numbers, equals(expectedNumbers));
     });
@@ -375,7 +383,7 @@ void main() {
         81,
         3,
         1,
-        30
+        30,
       ];
       expect(numbers, equals(expectedNumbers));
     });
@@ -484,7 +492,7 @@ void main() {
         7,
         4,
         2,
-        5
+        5,
       ];
       expect(numbers, equals(expectedNumbers));
     });
@@ -999,7 +1007,7 @@ void main() {
         0,
         3,
         3,
-        2
+        2,
       ];
       expect(samples, equals(expectedSamples));
     });
@@ -1022,7 +1030,7 @@ void main() {
         [5, 1, 3, 9, 4, 6, 2, 10, 7, 8],
         [2, 1, 10, 8, 9, 4, 7, 6, 3, 5],
         [6, 7, 10, 4, 8, 9, 2, 3, 1, 5],
-        [10, 2, 1, 7, 9, 5, 6, 3, 4, 8]
+        [10, 2, 1, 7, 9, 5, 6, 3, 4, 8],
       ];
       expect(result, equals(expectedResult));
     });
@@ -1044,7 +1052,7 @@ void main() {
         "c7daaa14ae5152a067277b1b3902677d979f8e39cc2aafb3bc06fcf69160a853e6869dcc09a11b5009f91e6b89e5b927ab1527a735660faa6012b420dd926d940d742be6a64fb01cdc0cff9faa323f02ba41436871a0eab851e7f5782d10",
         "fbefde2a7e9ae9dc1e5c2c48f74f6c824ce9ef3c89f68800d44587bedc4ab417cfb3e7447d90e1e417e6e05d30e87239d3a5d1d45993d4461e60a0192831640aa32dedde185a371ded2ae15f8a93dba8809482ce49225daadfbb0fec629e",
         "23880789bdf9ed73be57fa84d555134630e8d0f7df48349f29869a477c13ccca9cd555ac42ad7f568416c3d61959d0ed568b2b81c7771e9088ad7fd55fd4386bafbf5a528c30f107139249357368ffa980de2c76ddd9ce4191376be0e6b5",
-        "170010067e2e75ebe2d2904aeb1f89d5dc98cd4a6f2faaa8be6d03354c990fd895a97feb54668473e9d942bb99e196d897e8f1b01625cf48a7b78d249bb4985c065aa8cd1402ed2ba1b6f908f63dcd84b66425df00000000000000000000"
+        "170010067e2e75ebe2d2904aeb1f89d5dc98cd4a6f2faaa8be6d03354c990fd895a97feb54668473e9d942bb99e196d897e8f1b01625cf48a7b78d249bb4985c065aa8cd1402ed2ba1b6f908f63dcd84b66425df00000000000000000000",
       ];
 
       expect(fragmentsHex, equals(expectedFragments));
@@ -1264,7 +1272,7 @@ void main() {
         1,
         3,
         4,
-        10
+        10,
       ];
       expect(degrees, equals(expectedDegrees));
     });
@@ -1311,7 +1319,7 @@ void main() {
         [0, 1, 3, 4, 5, 6, 7, 9, 10],
         [6],
         [5, 6],
-        [7]
+        [7],
       ];
       expect(fragmentIndexes, equals(expectedFragmentIndexes));
     });
@@ -1357,7 +1365,7 @@ void main() {
         "seqNum:17, seqLen:9, messageLen:256, checksum:23570951, data:23dedeea74e3a0fb052befabefa13e2f80e4315c9dceed4c8630612e64",
         "seqNum:18, seqLen:9, messageLen:256, checksum:23570951, data:d01a8daee769ce34b6b35d3ca0005302724abddae405bdb419c0a6b208",
         "seqNum:19, seqLen:9, messageLen:256, checksum:23570951, data:3171c5dc365766eff25ae47c6f10e7de48cfb8474e050e5fe997a6dc24",
-        "seqNum:20, seqLen:9, messageLen:256, checksum:23570951, data:e055c2433562184fa71b4be94f262e200f01c6f74c284b0dc6fae6673f"
+        "seqNum:20, seqLen:9, messageLen:256, checksum:23570951, data:e055c2433562184fa71b4be94f262e200f01c6f74c284b0dc6fae6673f",
       ];
       expect(parts, equals(expectedParts));
     });
@@ -1389,7 +1397,7 @@ void main() {
         "8511091901001a0167aa07581d23dedeea74e3a0fb052befabefa13e2f80e4315c9dceed4c8630612e64",
         "8512091901001a0167aa07581dd01a8daee769ce34b6b35d3ca0005302724abddae405bdb419c0a6b208",
         "8513091901001a0167aa07581d3171c5dc365766eff25ae47c6f10e7de48cfb8474e050e5fe997a6dc24",
-        "8514091901001a0167aa07581de055c2433562184fa71b4be94f262e200f01c6f74c284b0dc6fae6673f"
+        "8514091901001a0167aa07581de055c2433562184fa71b4be94f262e200f01c6f74c284b0dc6fae6673f",
       ];
       expect(parts, equals(expectedParts));
     });
@@ -1485,7 +1493,7 @@ void main() {
         "ur:bytes/17-9/lpbyascfadaxcywenbpljkhdcamklgftaxykpewyrtqzhydntpnytyisincxmhtbceaykolduortotiaiaiafhiaoyce",
         "ur:bytes/18-9/lpbgascfadaxcywenbpljkhdcahkadaemejtswhhylkepmykhhtsytsnoyoyaxaedsuttydmmhhpktpmsrjtntwkbkwy",
         "ur:bytes/19-9/lpbwascfadaxcywenbpljkhdcadekicpaajootjzpsdrbalpeywllbdsnbinaerkurspbncxgslgftvtsrjtksplcpeo",
-        "ur:bytes/20-9/lpbbascfadaxcywenbpljkhdcayapmrleeleaxpasfrtrdkncffwjyjzgyetdmlewtkpktgllepfrltataztksmhkbot"
+        "ur:bytes/20-9/lpbbascfadaxcywenbpljkhdcayapmrleeleaxpasfrtrdkncffwjyjzgyetdmlewtkpktgllepfrltataztksmhkbot",
       ];
       expect(parts, equals(expectedParts));
     });
@@ -1518,7 +1526,7 @@ void main() {
         "str": "hello",
         "list": [1, 2, 3],
         "map": {"a": 1, "b": 2},
-        "null": null
+        "null": null,
       };
       var sourceBytes = utf8.encode(json.encode(sourceJson));
       var cborEncoder = CBOREncoder();
@@ -1526,9 +1534,11 @@ void main() {
       var ur = UR("bytes", cborEncoder.getBytes());
       var encoded = UREncoder.encode(ur);
       expect(
-          encoded,
-          equals(
-              'ur:bytes/hdghkgcpinjtjycpfteheyeodwcpidjljljzcpftjyjpkpihdwcpjkjyjpcpftcpisihjzjzjlcpdwcpjzinjkjycpfthpehdweydweohldwcpjnhsjocpftkgcphscpftehdwcpidcpfteykidwcpjtkpjzjzcpftjtkpjzjzkidndrpmhe'));
+        encoded,
+        equals(
+          'ur:bytes/hdghkgcpinjtjycpfteheyeodwcpidjljljzcpftjyjpkpihdwcpjkjyjpcpftcpisihjzjzjlcpdwcpjzinjkjycpfthpehdweydweohldwcpjnhsjocpftkgcphscpftehdwcpidcpfteykidwcpjtkpjzjzcpftjtkpjzjzkidndrpmhe',
+        ),
+      );
     });
 
     test('UR Decode json', () {
@@ -1539,15 +1549,16 @@ void main() {
       var (bytes, length) = cborDecorder.decodeBytes();
       var decoded = utf8.decode(bytes);
       expect(
-          json.decode(decoded),
-          equals({
-            "int": 123,
-            "bool": true,
-            "str": "hello",
-            "list": [1, 2, 3],
-            "map": {"a": 1, "b": 2},
-            "null": null
-          }));
+        json.decode(decoded),
+        equals({
+          "int": 123,
+          "bool": true,
+          "str": "hello",
+          "list": [1, 2, 3],
+          "map": {"a": 1, "b": 2},
+          "null": null,
+        }),
+      );
     });
   });
 }
