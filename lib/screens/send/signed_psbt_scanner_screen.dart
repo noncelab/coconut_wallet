@@ -57,10 +57,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             CoconutQrScanner(
               key: ValueKey(_qrScannerKey),
               setMobileScannerController: _setQRViewController,
-              onComplete:
-                  _qrScanDataHandler is BcUrQrScanDataHandler
-                      ? _onCompletedScanningForBcUr
-                      : _onCompletedScanningForBbQr,
+              onComplete: _onCompletedScanning,
               onFailed: _onFailedScanning,
               qrDataHandler: _qrScanDataHandler,
             ),
@@ -124,6 +121,10 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       _qrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoPsbt, UrType.psbt]);
       _isHandlerInitialized = true;
     }
+  }
+
+  Future<void> _onCompletedScanning(dynamic signedPsbt) async {
+    _qrScanDataHandler is BcUrQrScanDataHandler ? _onCompletedScanningForBcUr : _onCompletedScanningForBbQr;
   }
 
   Future<void> _onCompletedScanningForBcUr(dynamic signedPsbt) async {
