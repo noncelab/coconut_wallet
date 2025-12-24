@@ -10,6 +10,7 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/app_icon_util.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -110,12 +111,6 @@ class _AppGuardState extends State<AppGuard> {
       case AppLifecycleState.detached:
         FileLogger.dispose();
       case AppLifecycleState.paused:
-        if (_isPaused) break;
-        setState(() {
-          _isPaused = true;
-        });
-        _priceProvider.disposeWebSocketService();
-        _handleDisconnect();
         break;
       case AppLifecycleState.inactive:
         setState(() {
