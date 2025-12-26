@@ -36,7 +36,6 @@ class CoconutQrScanner extends StatefulWidget {
 class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerProviderStateMixin {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
-  final double _borderWidth = 4;
   bool _isScanningExtraData = false;
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
@@ -59,7 +58,6 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   }
 
   void resetScanState() {
-    widget.qrDataHandler.reset();
     _isFirstScanData = true;
   }
 
@@ -75,6 +73,8 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
 
     try {
       if (_isFirstScanData) {
+        // 스캔 완료 후 이 위젯을 사용하는 화면에서 handler 내부의 데이터를 활용하는 경우가 생겨서 바로 reset 호출하지 않고 여기서 reset
+        handler.reset();
         if (!handler.validateFormat(scanData)) {
           widget.onFailed(CoconutQrScanner.qrFormatErrorMessage, scanData);
           setState(() {
