@@ -556,8 +556,22 @@ wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
+  view_descriptor: "디스크립터 보기"
+  view_wallet_backup_data: "지갑 백업 데이터 보기"
+  wallet_backup_data: "지갑 백업 데이터"
+  confirm_backup_data: "백업 데이터 확인"
+  no_info: "정보 없음"
   tooltip:
     mfp_placeholder_description: "확장공개키로 추가한 지갑이며\n마스터 핑거프린트를 입력하지 않아\n00000000으로 표기돼요."
+    wallet_backup_data: "이 지갑의 BSMS(BIP-129) 백업 정보입니다. 기기 분실 또는 교체 시, 이 데이터를 사용해 다중 서명 지갑을 재구성할 수 있습니다. 안전하게 보관하시고, 외부 공유 시 주의해 주세요."
+    confirm_backup_data:
+      step1_em: "코코넛 볼트에서 $name 지갑 상세 화면으로 이동한 후"
+      step2_preposition: ""
+      step2_em: "1. 지갑 내보내기 "
+      step3_preposition: ""
+      step3_em: "2. 지갑 데이터 백업하기 "
+      step4: "화면에 나타나는 QR 코드를 스캔해 주세요."
+      select: "선택"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

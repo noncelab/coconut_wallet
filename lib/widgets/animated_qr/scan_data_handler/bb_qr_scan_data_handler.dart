@@ -6,37 +6,26 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
   BbQrDecoder _bbqrDecoder;
   int? _sequenceLength;
   String? _dataType; // BBQR 데이터 타입 저장
-  dynamic _rawResult; // Tx Raw 데이터 저장 (hex)
 
   BbQrScanDataHandler() : _bbqrDecoder = BbQrDecoder();
 
   @override
   dynamic get result {
-    final result = _rawResult ?? _bbqrDecoder.result;
-    return result;
+    return _bbqrDecoder.result;
   }
 
   @override
   double get progress {
-    final progress = _rawResult != null ? 1.0 : _bbqrDecoder.progress;
-    return progress;
+    return _bbqrDecoder.progress;
   }
 
   @override
   bool isCompleted() {
-    final completed = _rawResult != null || _bbqrDecoder.isComplete;
-    return completed;
+    return _bbqrDecoder.isComplete;
   }
 
   @override
   bool joinData(String data) {
-    // 먼저 Raw Tx 데이터인지 확인 (BBQR 헤더가 없는 경우)
-    if (!data.startsWith('B\$')) {
-      _rawResult = data;
-      return true;
-    }
-
-    // BBQR 데이터 처리
     if (_sequenceLength == null) {
       final sequenceLength = parseSequenceLength(data);
       if (sequenceLength == null) return false;
@@ -83,12 +72,7 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
   @override
   bool validateFormat(String data) {
     try {
-      // Raw Tx 데이터인 경우 true 반환
-      if (data.startsWith('02000000')) {
-        return true;
-      }
-
-      // BBQR 형식만 검증 (parseJson 호출하지 않음)
+      // BBQR 형식만 검증
       if (!data.startsWith('B\$') || data.length < 8) return false;
 
       final header = data.substring(0, 8);
@@ -126,7 +110,6 @@ class BbQrScanDataHandler implements IFragmentedQrScanDataHandler {
   void reset() {
     _sequenceLength = null;
     _dataType = null;
-    _rawResult = null;
     _bbqrDecoder = BbQrDecoder();
   }
 

@@ -20,10 +20,7 @@ class FountainDecoderPart {
   FountainDecoderPart(this.indexes, this.data);
 
   factory FountainDecoderPart.fromEncoderPart(FountainEncoderPart p) {
-    return FountainDecoderPart(
-      chooseFragments(p.seqNum, p.seqLen, p.checksum),
-      Uint8List.fromList(p.data),
-    );
+    return FountainDecoderPart(chooseFragments(p.seqNum, p.seqLen, p.checksum), Uint8List.fromList(p.data));
   }
 
   bool get isSimple => indexes.length == 1;

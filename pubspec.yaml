@@ -16,12 +16,12 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.5.1+1
+version: 0.6.0+1
 app_versions:
-  ios_regtest: 3.4.1+1
-  ios_mainnet: 0.5.1+1
-  aos_regtest: 3.4.1+58
-  aos_mainnet: 0.5.1+42
+  ios_regtest: 3.5.0+0
+  ios_mainnet: 0.6.0+4
+  aos_regtest: 3.5.0+59
+  aos_mainnet: 0.6.0+45
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -82,8 +82,8 @@ dependencies:
   ur:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
-  coconut_design_system: ^0.9.5
-  coconut_lib: 1.0.1
+  coconut_design_system: ^0.9.9
+  coconut_lib: 1.0.4
   base32: ^2.1.3
   share_plus: ^10.0.0
   mobile_scanner: 7.0.1
@@ -230,6 +230,7 @@ flutter:
     - assets/files/LICENSE
     - assets/files/CONTRIBUTING.md
     - assets/svg/download.svg
+    - assets/svg/arrow-circle-down.svg
     - assets/svg/text-field-clear.svg
     - assets/svg/question-mark.svg
     - assets/svg/circle-arrow-right.svg
@@ -275,6 +276,7 @@ flutter:
     - assets/svg/fee-rate/medium.svg
     - assets/svg/fee-rate/high.svg
     - testnet.env
+    - assets/svg/puzzle-piece.svg
 
   fonts:
     - family: SpaceGrotesk

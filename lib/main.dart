@@ -12,8 +12,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/app_icon_util.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
@@ -92,6 +93,13 @@ void main() {
 
       // FileLogger 초기화
       await FileLogger.initialize();
+
+      // 앱 아이콘 변경
+      // - iOS: 앱 실행 시점에 한 번 실행
+      // - Android: 앱 아이콘 수정 후 재배포
+      if (Platform.isIOS && appFlavor == "mainnet") {
+        await changeAppIcon();
+      }
 
       runApp(const CoconutWalletApp());
     },

@@ -5,6 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_view_model.dart';
@@ -327,6 +328,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           context: context,
           builder: (BuildContext context) {
             return CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
               title: t.transaction_fee_bumping_screen.dialog.fee_alert_title,
               description: t.transaction_fee_bumping_screen.dialog.fee_alert_description,
               onTapRight: () {

@@ -6,7 +6,7 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_search_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/common/qrcode_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -331,13 +331,15 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
               CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
                 heightRatio: 0.9,
-                child: QrcodeBottomSheet(
+                child: QrWithCopyTextScreen(
                   qrcodeTopWidget: Text(
                     addressList[index].derivationPath,
                     style: CoconutTypography.body2_14.merge(TextStyle(color: CoconutColors.white.withOpacity(0.7))),
                   ),
                   qrData: addressList[index].address,
                   title: t.address_list_screen.address_index(index: index),
+                  isBottom: true,
+                  showPulldownMenu: false,
                 ),
               );
             },

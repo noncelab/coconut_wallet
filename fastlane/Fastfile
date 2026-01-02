@@ -7,6 +7,7 @@ lane :pre_deploy do
     update_app_info()
 
     Dir.chdir("..") do
+        sh "fvm flutter pub get"
         sh "fvm flutter pub run flutter_oss_licenses:generate"
         sh "fvm flutter pub run build_runner clean"
         sh "fvm flutter pub run build_runner build --delete-conflicting-outputs"
