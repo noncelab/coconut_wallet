@@ -226,6 +226,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         context: context,
         builder: (BuildContext context) {
           return CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
             title: t.alert.tutorial.title,
             description: t.alert.tutorial.description,
             onTapRight: () async {

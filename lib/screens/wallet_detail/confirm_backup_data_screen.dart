@@ -147,6 +147,7 @@ class _ConfirmBackupDataScreenState extends State<ConfirmBackupDataScreen> {
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: t.alert.scan_failed,
           description: errorMessage,
           rightButtonText: t.confirm,

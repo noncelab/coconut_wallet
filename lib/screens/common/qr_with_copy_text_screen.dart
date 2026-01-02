@@ -133,26 +133,29 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                   Positioned(
                     top: offset.dy + size.height + 8.0,
                     right: screenWidth - (offset.dx + size.width),
-                    child: CoconutPulldownMenu(
-                      entries:
-                          _optionKeys.map((key) {
-                            final isSelected = key == _selectedKey;
-                            final displayTitle = isSelected ? (_displayNames[key] ?? key) : key;
-                            return CoconutPulldownMenuItem(title: displayTitle);
-                          }).toList(),
+                    child: MediaQuery(
+                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                      child: CoconutPulldownMenu(
+                        entries:
+                            _optionKeys.map((key) {
+                              return CoconutPulldownMenuItem(title: key);
+                            }).toList(),
 
-                      selectedIndex: _selectedIndex,
+                        selectedIndex: _selectedIndex,
 
-                      onSelected: (index, title) {
-                        setState(() {
-                          _selectedKey = _optionKeys[index];
-                        });
-                        Navigator.pop(context);
-                      },
+                        onSelected: (index, title) {
+                          setState(() {
+                            _selectedKey = _optionKeys[index];
+                          });
+                          Navigator.pop(context);
+                        },
 
-                      backgroundColor: CoconutColors.gray800,
-                      borderRadius: 8,
-                      shadowColor: CoconutColors.black.withOpacity(0.1),
+                        backgroundColor: CoconutColors.gray800,
+                        borderRadius: 8,
+                        shadowColor: CoconutColors.black.withOpacity(0.1),
+                        isSelectedItemBold: true,
+                        buttonPadding: const EdgeInsets.only(right: 16, left: 16),
+                      ),
                     ),
                   ),
                 ],
@@ -201,15 +204,18 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                       key: _pulldownKey,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(8)),
-                      child: CoconutPulldown(
-                        title: _displayTitle,
-                        isOpen: _isPulldownOpen,
-                        onChanged: (isOpen) {
-                          setState(() {
-                            _isPulldownOpen = true;
-                          });
-                          _showDropdownMenu();
-                        },
+                      child: MediaQuery(
+                        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                        child: CoconutPulldown(
+                          title: _displayTitle,
+                          isOpen: _isPulldownOpen,
+                          onChanged: (isOpen) {
+                            setState(() {
+                              _isPulldownOpen = true;
+                            });
+                            _showDropdownMenu();
+                          },
+                        ),
                       ),
                     ),
                   ),
