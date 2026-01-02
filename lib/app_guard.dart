@@ -111,6 +111,12 @@ class _AppGuardState extends State<AppGuard> {
       case AppLifecycleState.detached:
         FileLogger.dispose();
       case AppLifecycleState.paused:
+        if (_isPaused) break;
+        setState(() {
+          _isPaused = true;
+        });
+        _priceProvider.disposeWebSocketService();
+        _handleDisconnect();
         break;
       case AppLifecycleState.inactive:
         setState(() {
