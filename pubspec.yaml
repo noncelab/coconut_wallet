@@ -19,9 +19,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 0.6.0+1
 app_versions:
   ios_regtest: 3.5.0+0
-  ios_mainnet: 0.6.0+1
-  aos_regtest: 3.5.0+58
-  aos_mainnet: 0.6.0+43
+  ios_mainnet: 0.6.0+4
+  aos_regtest: 3.5.0+59
+  aos_mainnet: 0.6.0+45
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -83,10 +83,7 @@ dependencies:
     path: lib/packages/bc-ur-dart
   shimmer: ^3.0.0
   coconut_design_system: ^0.9.9
-  coconut_lib:
-    git:
-      url: https://github.com/noncelab/coconut_lib.git
-      ref: develop
+  coconut_lib: 1.0.4
   base32: ^2.1.3
   share_plus: ^10.0.0
   mobile_scanner: 7.0.1
