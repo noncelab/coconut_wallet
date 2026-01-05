@@ -6,7 +6,6 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_m
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/multi_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:flutter/cupertino.dart';
@@ -249,7 +248,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                       title: t.wallet_home_screen.edit.fake_balance.fake_balance_display,
                                       subtitle: t.wallet_home_screen.edit.fake_balance.fake_balance_input_description,
                                       subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                                      customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                                      customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                                       betweenGap: 16,
                                       onPressed: () async {
                                         if (_textFieldFocusNode.hasFocus) {
@@ -274,6 +273,32 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                       ),
                                     ),
                                     _buildDelayedFakeBalanceInput(),
+                                    SingleButton(
+                                      isVerticalSubtitle: true,
+                                      title: t.wallet_home_screen.edit.hide_fiat_price,
+                                      subtitle: t.wallet_home_screen.edit.hide_fiat_price_on_home,
+                                      subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                      customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+                                      onPressed: () async {
+                                        if (_textFieldFocusNode.hasFocus) {
+                                          FocusScope.of(context).unfocus();
+                                          return;
+                                        }
+                                        viewModel.setTempIsFiatBalanceHidden(!viewModel.tempIsFiatBalanceHidden);
+                                      },
+                                      betweenGap: 16,
+                                      backgroundColor: CoconutColors.black,
+                                      rightElement: CoconutSwitch(
+                                        isOn: viewModel.tempIsFiatBalanceHidden,
+                                        scale: 0.7,
+                                        activeColor: CoconutColors.gray100,
+                                        trackColor: CoconutColors.gray600,
+                                        thumbColor: CoconutColors.gray800,
+                                        onChanged: (value) {
+                                          viewModel.setTempIsFiatBalanceHidden(value);
+                                        },
+                                      ),
+                                    ),
                                   ],
                                 );
                               },
@@ -354,6 +379,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
     final isToggleChanged =
         _viewModel.tempIsFakeBalanceActive != _viewModel.isFakeBalanceActive || // 가짜잔액표시 변동
         _viewModel.tempIsBalanceHidden != _viewModel.isBalanceHidden || // 잔액숨기기 변동
+        _viewModel.tempIsFiatBalanceHidden != _viewModel.isFiatBalanceHidden || // 법정화폐잔액숨기기 변동
         !_viewModel.tempHomeFeatures.every((tempFeature) {
           // 홈 화면 기능 변동
           final original = _viewModel.homeFeatures.firstWhere(
@@ -574,7 +600,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
         }
         return AnimatedCrossFade(
           duration: const Duration(milliseconds: 300),
-          firstChild: const SizedBox(height: 6),
+          firstChild: const SizedBox(height: 0),
           secondChild: Column(
             children: [
               Container(

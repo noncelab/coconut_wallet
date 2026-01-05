@@ -31,6 +31,9 @@ class PreferenceProvider extends ChangeNotifier {
   late bool _isFakeBalanceActive;
   bool get isFakeBalanceActive => _isFakeBalanceActive;
 
+  late bool _isFiatBalanceHidden;
+  bool get isFiatBalanceHidden => _isFiatBalanceHidden;
+
   /// 가짜 잔액 총량
   late int? _fakeBalanceTotalBtc;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalBtc;
@@ -98,6 +101,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   PreferenceProvider(this._walletPreferencesRepository) {
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
+    _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _isBtcUnit =
@@ -203,6 +207,14 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeIsBalanceHidden(bool isOn) async {
     _isBalanceHidden = isOn;
     await _sharedPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, isOn);
+
+    notifyListeners();
+  }
+
+  /// 홈 화면 법정화폐 잔액 숨기기
+  Future<void> changeIsFiatBalanceHidden(bool isOn) async {
+    _isFiatBalanceHidden = isOn;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsFiatBalanceHidden, isOn);
 
     notifyListeners();
   }

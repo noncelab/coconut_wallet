@@ -204,6 +204,8 @@ wallet_home_screen:
       fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
       fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
       fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
+    hide_fiat_price: "Hide Fiat Balance"
+    hide_fiat_price_on_home: "Fiat balance will not be displayed on the home screen."
     category:
       total_balance: "Total\nBalance"
       wallet_list: "Wallet\nList"

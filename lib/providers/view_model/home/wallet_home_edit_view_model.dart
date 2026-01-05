@@ -11,6 +11,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   WalletProvider _walletProvider;
   late final PreferenceProvider _preferenceProvider;
   late bool _isBalanceHidden;
+  late bool _isFiatBalanceHidden;
   late bool _isFakeBalanceActive;
 
   late int minimumSatoshi;
@@ -27,6 +28,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   // temp datas
   late List<HomeFeature> _tempHomeFeatures;
   late bool _tempIsBalanceHidden;
+  late bool _tempIsFiatBalanceHidden;
   late bool _tempIsFakeBalanceActive;
   late double? _tempFakeBalanceTotalBtc;
   late int? _tempFakeBalanceTotalAmount;
@@ -37,6 +39,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
     //     .map((key, balance) => MapEntry(key, AnimatedBalanceData(balance.total, balance.total)));
     minimumSatoshi = _walletProvider.walletItemList.length;
     _isBalanceHidden = _preferenceProvider.isBalanceHidden;
+    _isFiatBalanceHidden = _preferenceProvider.isFiatBalanceHidden;
     _isFakeBalanceActive = _preferenceProvider.isFakeBalanceActive;
     _fakeBalanceTotalAmount = _preferenceProvider.fakeBalanceTotalAmount;
     _fakeBalanceMap = _preferenceProvider.getFakeBalanceMap();
@@ -68,12 +71,14 @@ class WalletHomeEditViewModel extends ChangeNotifier {
             )
             .toList();
     _tempIsBalanceHidden = isBalanceHidden;
+    _tempIsFiatBalanceHidden = isFiatBalanceHidden;
     _tempIsFakeBalanceActive = isFakeBalanceActive;
     _tempFakeBalanceTotalBtc = fakeBalanceTotalBtc;
     _tempFakeBalanceTotalAmount = fakeBalanceTotalAmount;
   }
 
   bool get isBalanceHidden => _isBalanceHidden;
+  bool get isFiatBalanceHidden => _isFiatBalanceHidden;
   bool get isFakeBalanceActive => _isFakeBalanceActive;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   double? get fakeBalanceTotalBtc => _fakeBalanceTotalBtc;
@@ -85,6 +90,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
 
   List<HomeFeature> get tempHomeFeatures => _tempHomeFeatures;
   bool get tempIsBalanceHidden => _tempIsBalanceHidden;
+  bool get tempIsFiatBalanceHidden => _tempIsFiatBalanceHidden;
   bool get tempIsFakeBalanceActive => _tempIsFakeBalanceActive;
   double? get tempFakeBalanceTotalBtc => _tempFakeBalanceTotalBtc;
   int? get tempFakeBalanceTotalAmount => _tempFakeBalanceTotalAmount;
@@ -105,6 +111,11 @@ class WalletHomeEditViewModel extends ChangeNotifier {
       _setFakeBalanceTotalAmount(_preferenceProvider.fakeBalanceTotalAmount);
       _setFakeBlanceMap(_preferenceProvider.getFakeBalanceMap());
     }
+
+    /// 잔액 숨기기 변동 체크
+    if (_isFiatBalanceHidden != _preferenceProvider.isFiatBalanceHidden) {
+      setIsFiatBalanceHidden(_preferenceProvider.isFiatBalanceHidden);
+    }
     notifyListeners();
   }
 
@@ -121,6 +132,17 @@ class WalletHomeEditViewModel extends ChangeNotifier {
       _tempFakeBalanceTotalAmount = null;
       // _tempIsFakeBalanceActive = false;
     }
+    notifyListeners();
+  }
+
+  void setIsFiatBalanceHidden(bool value) {
+    _preferenceProvider.changeIsFiatBalanceHidden(value);
+    _isFiatBalanceHidden = value;
+    notifyListeners();
+  }
+
+  void setTempIsFiatBalanceHidden(bool value) {
+    _tempIsFiatBalanceHidden = value;
     notifyListeners();
   }
 
@@ -190,6 +212,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
 
   Future<void> onComplete() async {
     setIsBalanceHidden(_tempIsBalanceHidden);
+    setIsFiatBalanceHidden(_tempIsFiatBalanceHidden);
     _setHomeFeatureEnabled();
     await _setFakeBalance();
   }
