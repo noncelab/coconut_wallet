@@ -38,7 +38,9 @@ class WalletRepository extends BaseRepository {
             mapRealmToSingleSigWalletItem(
               walletBases[i],
               walletBases[i].descriptor,
-              WalletImportSourceExtension.fromString(externalWallets[externalWalletIndex++].walletImportSource),
+              WalletImportSourceExtension.fromStringDefaultCoconut(
+                externalWallets[externalWalletIndex++].walletImportSource,
+              ),
             ),
           );
         } else {

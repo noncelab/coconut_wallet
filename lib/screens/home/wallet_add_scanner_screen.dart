@@ -460,6 +460,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: title,
           backgroundColor: CoconutColors.black.withOpacity(0.7),
           description: description,
