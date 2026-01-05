@@ -79,14 +79,14 @@
 			<key>CFBundleIconName</key>
 			<string>AppIcon</string>
 		</dict>
-		<key>CFBundleAlternateIcons</key>
+		<!-- <key>CFBundleAlternateIcons</key>
 		<dict>
 			<key>birthday</key>
 			<dict>
 				<key>CFBundleIconName</key>
 				<string>AppIconBirthDay</string>
 			</dict>
-		</dict>
+		</dict> -->
 	</dict>
 </dict>
 </plist>
