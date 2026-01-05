@@ -37,6 +37,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
   bool _isScanningExtraData = false;
+  bool _hasBeenScanningExtraData = false;
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
 
@@ -106,12 +107,13 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         }
       }
 
-      if (!_showLoadingBar) {
-        setState(() {
-          _isScanningExtraData = handler.progress > 0.99;
-          _showLoadingBar = true;
-        });
-      }
+      setState(() {
+        _isScanningExtraData = handler.progress > 0.98;
+        if (_isScanningExtraData) {
+          _hasBeenScanningExtraData = true;
+        }
+        _showLoadingBar = true;
+      });
 
       if (handler.isCompleted()) {
         _resetLoadingBarState();
@@ -131,6 +133,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
     _progressNotifier.value = 0;
     setState(() {
       _isScanningExtraData = false;
+      _hasBeenScanningExtraData = false;
       if (_showLoadingBar) {
         _showLoadingBar = false;
       }
@@ -174,7 +177,11 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CoconutLayout.spacing_1300w,
-                if (!_isScanningExtraData) ...[_buildProgressBar(), CoconutLayout.spacing_300w, _buildProgressText()],
+                if (!_isScanningExtraData && !_hasBeenScanningExtraData) ...[
+                  _buildProgressBar(),
+                  CoconutLayout.spacing_300w,
+                  _buildProgressText(),
+                ],
                 if (_isScanningExtraData) _buildReadingExtraText(),
                 CoconutLayout.spacing_1300w,
               ],
