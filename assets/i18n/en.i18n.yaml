@@ -209,14 +209,14 @@ wallet_home_screen:
     category:
       total_balance: "Total\nBalance"
       wallet_list: "Wallet\nList"
-      recent_transactions: "Recent\nTransactions"
+      recent_transactions: "Recent\nTransactions (24 hours)"
       analysis: "Analysis"
     alert: 
           empty_fake_balance: "Enter Fake Balance"
           empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
           set_to_0: "Set balance to 0 BTC"
           enter_again: "Try again"
-  empty_recent_transaction: "No recent transactions"
+  empty_recent_transaction: "No recent 24 hours transactions"
   syncing_recent_transaction: "Syncing recent transactions"
   empty_analysis_result: "No transactions needed for analysis"
   analysis_period: "Recent ${days} days • ${transaction_type}"
