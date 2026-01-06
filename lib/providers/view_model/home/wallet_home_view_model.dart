@@ -428,14 +428,16 @@ class WalletHomeViewModel extends ChangeNotifier {
   void getPendingAndRecentDaysTransactions(int? blockHeight, int days) {
     if (blockHeight == null || _isFetchingLatestTx) return;
 
+    final recentTransactionFeature = _homeFeatures.firstWhereOrNull(
+      (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name,
+    );
+    if (recentTransactionFeature == null || !recentTransactionFeature.isEnabled) return;
     // 홈 화면에 표시한 지갑 목록 아이디
     _isFetchingLatestTx = true;
 
     final walletIds = walletItemList.map((w) => w.id).toList();
     final transactions = _walletProvider.getPendingAndDaysAgoTransactions(walletIds, blockHeight, days);
     _recentTransactions = transactions;
-
-    debugPrint('_recentTransactions = (${days}days) $_recentTransactions');
 
     // recentTransactions 로그 출력
     for (var entry in _recentTransactions.entries) {
@@ -449,6 +451,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     _isFetchingLatestTx = false;
+    notifyListeners();
   }
 
   // 필요한 경우 호출

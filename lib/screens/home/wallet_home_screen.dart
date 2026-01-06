@@ -262,6 +262,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         context: context,
         builder: (BuildContext context) {
           return CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
             title: t.alert.tutorial.title,
             description: t.alert.tutorial.description,
             onTapRight: () async {
@@ -761,14 +762,44 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           CoconutLayout.spacing_800h,
           CoconutUnderlinedButton(
             padding: const EdgeInsets.all(8),
-            onTap: () {
-              CommonBottomSheets.showDraggableBottomSheet(
+            onTap: () async {
+              await CommonBottomSheets.showDraggableBottomSheet(
                 minChildSize: 0.5,
                 maxChildSize: 0.9,
                 initialChildSize: 0.9,
                 context: context,
                 childBuilder: (controller) => WalletHomeEditBottomSheet(scrollController: controller),
               );
+              if (context.mounted) {
+                // PreferenceProvider의 변경사항을 ViewModel에 먼저 반영
+                await _viewModel.loadHomeFeatures();
+
+                final preferenceProvider = context.read<PreferenceProvider>();
+                final homeFeatures = preferenceProvider.homeFeatures;
+
+                // recentTransaction feature가 활성화되어 있으면 getPendingAndRecentDaysTransactions 실행
+                final recentTransactionFeature = homeFeatures.firstWhereOrNull(
+                  (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name,
+                );
+                if (recentTransactionFeature != null && recentTransactionFeature.isEnabled) {
+                  if (_viewModel.currentBlock?.height != null) {
+                    _viewModel.getPendingAndRecentDaysTransactions(
+                      _viewModel.currentBlock!.height,
+                      kRecenctTransactionDays,
+                    );
+                  }
+                }
+
+                // analysis feature가 활성화되어 있으면 getRecentTransactionAnalysis 실행
+                final analysisFeature = homeFeatures.firstWhereOrNull(
+                  (f) => f.homeFeatureTypeString == HomeFeatureType.analysis.name,
+                );
+                if (analysisFeature != null && analysisFeature.isEnabled) {
+                  setState(() {
+                    _viewModel.getRecentTransactionAnalysis(_viewModel.analysisPeriod);
+                  });
+                }
+              }
             },
             text: t.wallet_home_screen.edit_home_screen,
             textStyle: CoconutTypography.body3_12,
@@ -1370,7 +1401,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
-                      Text(t.fee, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                      Text(
+                        t.fee,
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray400).copyWith(height: 1.4),
+                      ),
                     ],
                   ),
                 ),
