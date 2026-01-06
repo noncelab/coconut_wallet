@@ -164,6 +164,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                   context: context,
                   builder: (BuildContext context) {
                     return CoconutPopup(
+                      languageCode: context.read<PreferenceProvider>().language,
                       title: t.wallet_list.edit.finish,
                       description: t.wallet_list.edit.unsaved_changes_confirm_exit,
                       leftButtonText: t.cancel,
@@ -332,6 +333,7 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                 context: context,
                                 builder: (BuildContext context) {
                                   return CoconutPopup(
+                                    languageCode: context.read<PreferenceProvider>().language,
                                     title: t.wallet_home_screen.edit.alert.empty_fake_balance,
                                     description: t.wallet_home_screen.edit.alert.empty_fake_balance_description,
                                     leftButtonText: t.wallet_home_screen.edit.alert.enter_again,
