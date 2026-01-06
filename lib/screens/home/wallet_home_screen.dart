@@ -67,6 +67,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   Size _dropdownButtonSize = const Size(0, 0);
   Offset _dropdownButtonPosition = Offset.zero;
   final ValueNotifier<bool> _isDropdownMenuVisible = ValueNotifier(false);
+  bool _showEmptyRecentTransactionWidget = true;
+  Timer? _recentTransactionBannerTimer;
   late ScrollController _scrollController;
   late CarouselSliderController _carouselController;
 
@@ -316,6 +318,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   @override
   void dispose() {
+    _recentTransactionBannerTimer?.cancel();
     _scrollController.dispose();
     _pageIndicatorController.dispose();
     super.dispose();
@@ -1172,24 +1175,48 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildEmptyRecentTransactions(bool isSyncing) {
-    return Container(
-      padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
-      decoration: const BoxDecoration(
-        color: CoconutColors.gray800,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
-      ),
-      child: Center(
-        child:
-            isSyncing
-                ? AnimatedDotsText(
-                  text: t.wallet_home_screen.syncing_recent_transaction,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                )
-                : Text(
-                  t.wallet_home_screen.empty_recent_transaction,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+    if (isSyncing) {
+      _recentTransactionBannerTimer?.cancel();
+      _recentTransactionBannerTimer = null;
+      _showEmptyRecentTransactionWidget = true;
+    } else if (_showEmptyRecentTransactionWidget && _recentTransactionBannerTimer == null) {
+      _recentTransactionBannerTimer = Timer(const Duration(seconds: 2), () {
+        if (!mounted) return;
+        setState(() {
+          _showEmptyRecentTransactionWidget = false;
+        });
+        _recentTransactionBannerTimer = null;
+      });
+    }
+
+    final shouldShow = isSyncing || _showEmptyRecentTransactionWidget;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: Alignment.topCenter,
+      child:
+          shouldShow
+              ? Container(
+                padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
+                decoration: const BoxDecoration(
+                  color: CoconutColors.gray800,
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
-      ),
+                child: Center(
+                  child:
+                      isSyncing
+                          ? AnimatedDotsText(
+                            text: t.wallet_home_screen.syncing_recent_transaction,
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          )
+                          : Text(
+                            t.wallet_home_screen.empty_recent_transaction,
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          ),
+                ),
+              )
+              : const SizedBox.shrink(),
     );
   }
 
@@ -1297,15 +1324,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                               child: FittedBox(
                                 fit: BoxFit.scaleDown,
                                 alignment: Alignment.centerLeft,
-                                child: Text(
-                                  _viewModel.recentTransactionAnalysis!.titleString,
-                                  style: CoconutTypography.body2_14_NumberBold,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      _viewModel.recentTransactionAnalysis!.titleString,
+                                      style: CoconutTypography.body2_14_NumberBold,
+                                    ),
+                                    Text(
+                                      _viewModel.recentTransactionAnalysis!.totalAmountResult,
+                                      style: CoconutTypography.body2_14,
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            Text(
-                              _viewModel.recentTransactionAnalysis!.totalAmountResult,
-                              style: CoconutTypography.body2_14,
                             ),
                           ],
                         ),
