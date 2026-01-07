@@ -2,7 +2,6 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/scanner_overlay.dart';
 import 'package:flutter/material.dart';
@@ -13,15 +12,30 @@ class AddressQrScannerBody extends StatefulWidget {
   final Key qrKey;
   final void Function(BarcodeCapture) onDetect;
   final String? address;
+  final Function(MobileScannerController)? setMobileScannerController;
 
-  const AddressQrScannerBody({super.key, required this.qrKey, required this.onDetect, this.address});
+  const AddressQrScannerBody({
+    super.key,
+    required this.qrKey,
+    required this.onDetect,
+    this.address,
+    this.setMobileScannerController,
+  });
 
   @override
   State<AddressQrScannerBody> createState() => _AddressQrScannerBodyState();
 }
 
 class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
+  late final MobileScannerController _controller;
   bool _isShowedCameraPermissionDialog = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MobileScannerController();
+    widget.setMobileScannerController?.call(_controller);
+  }
 
   Widget _buildQrView(BuildContext context) {
     // 스캔 영역을 상단으로 이동 (상단 여백 120px 추가)
@@ -32,6 +46,7 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
       children: [
         MobileScanner(
           key: widget.qrKey,
+          controller: _controller,
           onDetect: widget.onDetect,
           errorBuilder: (context, error) {
             if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {

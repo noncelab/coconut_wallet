@@ -11,6 +11,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/card/address_list_address_item_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -82,30 +83,32 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
           context: context,
           actionButtonList: [
             IconButton(
-              icon: SvgPicture.asset(
-                'assets/svg/arrow-reload.svg',
-                width: 20,
-                height: 20,
-                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-              ),
+              icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+              color: CoconutColors.white,
               onPressed: () {
                 _qrViewController?.switchCamera();
               },
             ),
           ],
           onBackPressed: () {
-            _disposeQrViewController();
+            _clearQrScanController();
             Navigator.of(context).pop<String>('');
           },
         ),
-        body: AddressQrScannerBody(qrKey: qrKey, onDetect: _onQRViewCreated),
+        body: AddressQrScannerBody(
+          qrKey: qrKey,
+          onDetect: _onQRViewCreated,
+          setMobileScannerController: (controller) {
+            _qrViewController = controller;
+          },
+        ),
       ),
     );
     if (scannedAddress != null) {
       _addressController.text = scannedAddress;
       _onAddressChanged();
     }
-    _disposeQrViewController();
+    _clearQrScanController();
   }
 
   void _onQRViewCreated(BarcodeCapture capture) {
@@ -141,8 +144,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
         });
   }
 
-  void _disposeQrViewController() {
-    _qrViewController?.dispose();
+  void _clearQrScanController() {
+    // dispose는 MobileScanner에서 함 (or error occurred)
+    //_qrViewController?.dispose();
     _qrViewController = null;
   }
 
