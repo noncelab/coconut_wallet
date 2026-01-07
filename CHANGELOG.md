@@ -1,6 +1,8 @@
 ## mainnet 0.6.1, regtest 3.5.1 
 ### Fixed
 * orphaned UTXO 정리 로직 추가
+* 카메라 권한 없을 때 안내 개선
+* 보내기 화면, 주소 찾기 화면 카메라 전환 버그 수정
 
 ## mainnet 0.6.0, regtest 3.5.0 - 2025-12-30
 ### Added
