@@ -7,10 +7,14 @@ import androidx.annotation.NonNull
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 
 class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "onl.coconut.wallet/os"
     private val CHANNEL_EVENT_ICON = "onl.coconut.wallet/app-event-icon"
+    private val CHANNEL_OPEN_APP_SETTINGS = "app-settings"
     
     // Activity Alias 이름 (AndroidManifest.xml과 일치해야 함)
     private val EVENT_ICON_ALIAS = "onl.coconut.wallet.MainActivityEventIcon"
@@ -70,6 +74,15 @@ class MainActivity : FlutterFragmentActivity() {
                 else -> {
                     result.notImplemented()
                 }
+            }
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_OPEN_APP_SETTINGS).setMethodCallHandler { call, result ->
+            if (call.method == "openAppSettings") {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                intent.data = Uri.parse("package:" + applicationContext.packageName)
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                result.success(null)
             }
         }
     }

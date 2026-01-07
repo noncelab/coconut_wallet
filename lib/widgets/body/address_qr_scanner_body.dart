@@ -1,17 +1,41 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/styles.dart';
-import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/utils/app_settings_util.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/scanner_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 
-class AddressQrScannerBody extends StatelessWidget {
+class AddressQrScannerBody extends StatefulWidget {
   final Key qrKey;
   final void Function(BarcodeCapture) onDetect;
   final String? address;
+  final Function(MobileScannerController)? setMobileScannerController;
 
-  const AddressQrScannerBody({super.key, required this.qrKey, required this.onDetect, this.address});
+  const AddressQrScannerBody({
+    super.key,
+    required this.qrKey,
+    required this.onDetect,
+    this.address,
+    this.setMobileScannerController,
+  });
+
+  @override
+  State<AddressQrScannerBody> createState() => _AddressQrScannerBodyState();
+}
+
+class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
+  late final MobileScannerController _controller;
+  bool _isShowedCameraPermissionDialog = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MobileScannerController();
+    widget.setMobileScannerController?.call(_controller);
+  }
 
   Widget _buildQrView(BuildContext context) {
     // 스캔 영역을 상단으로 이동 (상단 여백 120px 추가)
@@ -20,7 +44,23 @@ class AddressQrScannerBody extends StatelessWidget {
 
     return Stack(
       children: [
-        MobileScanner(key: qrKey, onDetect: onDetect),
+        MobileScanner(
+          key: widget.qrKey,
+          controller: _controller,
+          onDetect: widget.onDetect,
+          errorBuilder: (context, error) {
+            if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
+              _isShowedCameraPermissionDialog = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                if (!mounted) return;
+                await _showCameraPermissionDialog(context);
+                if (!mounted) return;
+                Navigator.pop(context);
+              });
+            }
+            return Center(child: Text(error.errorCode.message));
+          },
+        ),
         const ScannerOverlay(),
         Positioned(
           top: topMargin,
@@ -39,78 +79,21 @@ class AddressQrScannerBody extends StatelessWidget {
     );
   }
 
+  Future<void> _showCameraPermissionDialog(BuildContext context) async {
+    await showConfirmDialog(
+      context,
+      context.read<PreferenceProvider>().language,
+      t.coconut_qr_scanner.camera_error.title,
+      t.coconut_qr_scanner.camera_error.need_camera_permission,
+      rightButtonText: t.go_to_settings,
+      onTapRight: () {
+        openAppSettings();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return _buildQrView(context);
-    // return Stack(
-    //   children: [
-    //     Positioned(
-    //       left: 0,
-    //       right: 0,
-    //       // Adjust this value to move the QRView up or down
-    //       height:
-    //           MediaQuery.of(context).size.height +
-    //           MediaQuery.of(context).padding.top +
-    //           MediaQuery.of(context).padding.bottom,
-    //       child: _buildQrView(context),
-    //     ),
-    //     Positioned(
-    //       top: 0,
-    //       left: 0,
-    //       right: 0,
-    //       child: Container(
-    //         padding: const EdgeInsets.only(top: 32),
-    //         child: Text(
-    //           pasteAddress != null ? t.send_address_screen.text1 : t.send_address_screen.text2,
-    //           textAlign: TextAlign.center,
-    //           style: CoconutTypography.body1_16.setColor(CoconutColors.white),
-    //         ),
-    //       ),
-    //     ),
-    //     if (pasteAddress != null)
-    //       Align(
-    //         alignment: Alignment.bottomCenter,
-    //         child: Container(
-    //           padding: const EdgeInsets.fromLTRB(16, 0, 16, 60),
-    //           child: TextButton(
-    //             onPressed: pasteAddress,
-    //             style: OutlinedButton.styleFrom(
-    //               foregroundColor: address != null ? MyColors.darkgrey : CoconutColors.white,
-    //               backgroundColor:
-    //                   address != null ? CoconutColors.white : MyColors.transparentBlack_50,
-    //               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-    //               shape: const RoundedRectangleBorder(
-    //                 borderRadius: BorderRadius.all(Radius.circular(8)),
-    //               ),
-    //             ),
-    //             child:
-    //                 address != null
-    //                     ? Text.rich(
-    //                       TextSpan(
-    //                         text: '${t.address} ',
-    //                         style: Styles.label.merge(const TextStyle(color: MyColors.darkgrey)),
-    //                         children: [
-    //                           TextSpan(
-    //                             text: shortenAddress(address!),
-    //                             style: TextStyle(
-    //                               fontFamily: CustomFonts.number.getFontFamily,
-    //                               fontWeight: FontWeight.bold,
-    //                             ),
-    //                           ),
-    //                           TextSpan(text: ' ${t.paste}'),
-    //                         ],
-    //                       ),
-    //                     )
-    //                     : Text(
-    //                       t.paste,
-    //                       style: Styles.label.merge(
-    //                         const TextStyle(color: MyColors.transparentWhite_20),
-    //                       ),
-    //                     ),
-    //           ),
-    //         ),
-    //       ),
-    //   ],
-    // );
   }
 }

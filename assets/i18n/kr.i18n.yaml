@@ -35,6 +35,7 @@ complete: "완료"
 close: "닫기"
 next: "다음"
 modify: "변경"
+OK: "확인"
 confirm: "확인"
 cancel: "취소"
 security: "보안"
@@ -96,6 +97,7 @@ network: "네트워크"
 electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
+go_to_settings: "설정하러 가기"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sat/vB)"
@@ -197,7 +199,7 @@ wallet_add_scanner_screen:
   self: "직접 입력"
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
-  guide_vault: "코코넛 볼트 앱 - 지갑 선택 - 지갑 정보 내보내기"
+  guide_vault: "코코넛 볼트의 홈 화면에서\n\"보기 전용 앱으로 내보내기 - 지갑 선택\" 또는 \"지갑 선택 - 지갑 내보내기 - 보기 전용 앱으로 내보내기\" 화면의 QR 코드를 스캔해 주세요"
   guide_seedsigner:
     step1: "1. 홈 화면에서 "
     step1_em: "Seeds"
@@ -418,7 +420,10 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
-
+  camera_error:
+    title: "카메라 사용 불가"
+    need_camera_permission: "설정에서 카메라 권한을 허용해 주세요."
+    
 # lib/screens/settings
 app_info_screen:
   made_by_team_pow: "포우팀이 만듭니다."

@@ -186,4 +186,22 @@ class UtxoSyncService {
       Logger.error('Stack trace: $stackTrace');
     }
   }
+
+  /// orphaned UTXO를 정리합니다.
+  Future<void> cleanupOrphanedUtxos(WalletListItemBase walletItem) async {
+    final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
+
+    final orphanUtxoSet = <UtxoState>{};
+    for (final utxo in pendingUtxos) {
+      final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.transactionHash);
+      // tx가 null이거나 컨펌된 트랜잭션이면 orphan UTXO로 간주
+      if (tx == null || tx.blockHeight > 0) {
+        orphanUtxoSet.add(utxo);
+      }
+    }
+
+    if (orphanUtxoSet.isNotEmpty) {
+      await _utxoRepository.deleteUtxoList(walletItem.id, orphanUtxoSet.map((utxo) => utxo.utxoId).toList());
+    }
+  }
 }
