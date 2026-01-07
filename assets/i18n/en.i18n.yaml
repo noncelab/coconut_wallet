@@ -35,6 +35,7 @@ complete: "Complete"
 close: "Close"
 next: "Next"
 modify: "Modify"
+OK: "OK"
 confirm: "Confirm"
 cancel: "Cancel"
 security: "Security"
@@ -96,6 +97,7 @@ network: "Network"
 electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
+go_to_settings: "Go to Settings"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -418,6 +420,9 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "Reading additional data to collect\nPlease keep scanning"
+  camera_error:
+    title: "Camera Access Unavailable"
+    need_camera_permission: "Please allow camera access in Settings."
 
 # lib/screens/settings
 app_info_screen:
