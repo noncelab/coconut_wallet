@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
-  guide_vault: "Coconut Vault App - Select Wallet - Export Wallet Info"
+  guide_vault: "On the Coconut Vault home screen, go to: “Export to Watch-Only Wallet → Select Wallet” or “Select Wallet → Export Wallet → Export to Watch-Only Wallet”. Then scan the QR code."
   guide_seedsigner:
     step1: "1. On the home screen, "
     step1_em: " Seeds"

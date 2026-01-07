@@ -1,3 +1,7 @@
+## mainnet 0.6.1, regtest 3.5.1 
+### Fixed
+* orphaned UTXO 정리 로직 추가
+
 ## mainnet 0.6.0, regtest 3.5.0 - 2025-12-30
 ### Added
 * 다중 서명 지갑 - '백업 데이터 보기' 메뉴 추가
