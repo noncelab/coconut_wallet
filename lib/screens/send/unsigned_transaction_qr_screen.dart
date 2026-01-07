@@ -11,6 +11,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/bb_qr/bb_qr_encoder.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -134,42 +135,29 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final qrSize = _getQrSize(constraints);
             return Stack(
               children: [
                 SafeArea(
                   child: SingleChildScrollView(
-                    child: Container(
+                    child: SizedBox(
                       width: MediaQuery.of(context).size.width,
-                      padding: Paddings.container,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Padding(padding: const EdgeInsets.only(top: 8), child: _buildToolTip()),
-                          Container(
-                            margin: const EdgeInsets.only(top: 40),
-                            // width: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
-                            // height: qrSize, // 테스트용(갤폴드에서 보이는 QR사이즈)
-                            width: qrSize,
-                            height: qrSize,
-                            decoration: BoxDecoration(
-                              color: CoconutColors.white,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child:
-                                  _isBbQrType() && _bbqrParts.isNotEmpty
-                                      ? QrImageView(data: _bbqrParts[_currentBbqrIndex], version: QrVersions.auto)
-                                      : AnimatedQrView(
-                                        key: ValueKey(_qrScanDensity),
-                                        qrScanDensity: _qrScanDensity,
-                                        qrViewDataHandler: BcUrQrViewHandler(_psbtBase64, _qrScanDensity, {
-                                          'urType': 'crypto-psbt',
-                                        }),
-                                      ),
-                            ),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, bottom: 40, left: 16, right: 16),
+                            child: _buildToolTip(),
                           ),
+                          AdaptiveQrImage(
+                            qrData: _isBbQrType() && _bbqrParts.isNotEmpty ? _bbqrParts[_currentBbqrIndex] : null,
+                            qrDensity: _qrScanDensity,
+                            qrViewDataHandler:
+                                _isBbQrType() && _bbqrParts.isNotEmpty
+                                    ? null
+                                    : BcUrQrViewHandler(_psbtBase64, _qrScanDensity, {'urType': 'crypto-psbt'}),
+                          ),
+
                           if (!_isBbQrType()) ...[CoconutLayout.spacing_800h, _buildDensitySliderWidget(context)],
                           Container(height: 150),
                         ],
@@ -254,11 +242,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         ),
       ),
     );
-  }
-
-  double _getQrSize(BoxConstraints constraints) {
-    final shortestScreenWidth = Math.min(constraints.maxWidth, constraints.maxHeight);
-    return shortestScreenWidth.clamp(220, 360);
   }
 
   bool _isBbQrType() {
