@@ -35,6 +35,7 @@ complete: "完了"
 close: "閉じる"
 next: "次へ"
 modify: "変更"
+OK: "OK"
 confirm: "確認"
 cancel: "キャンセル"
 security: "セキュリティ"
@@ -96,6 +97,7 @@ network: "ネットワーク"
 electrum_server: "Electrum Server"
 block_explorer: "ブロックエクスプローラー"
 log_viewer: "ログビューアー"
+go_to_settings: "設定を開く"
 
 apply_item: "$count 項目"
 fee_sats: " ($value sat/vB)"
@@ -418,6 +420,9 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "追加データを読み取り中\nスキャンを続けてください"
+  camera_error:
+    title: "カメラを使用できません"
+    need_camera_permission: "設定でカメラの使用を許可してください。"
 
 # lib/screens/settings
 app_info_screen:
