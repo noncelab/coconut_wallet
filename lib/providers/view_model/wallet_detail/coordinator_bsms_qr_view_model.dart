@@ -149,10 +149,7 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
     StringBuffer buffer = StringBuffer();
     buffer.writeln("# Keystone Multisig setup file (created by Coconut Vault)");
     buffer.writeln("#\n");
-
-    String safeName = wallet.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '-');
-    if (safeName.isEmpty) safeName = "Multisig";
-    buffer.writeln("Name: $safeName");
+    buffer.writeln("Name: coconut wallet");
     buffer.writeln("Policy: ${wallet.requiredSignatureCount} of ${signers.length}");
 
     String derivation = signers.isNotEmpty ? signers.first.path : "m/48'/0'/0'/2'";
@@ -168,11 +165,7 @@ class CoordinatorBsmsQrViewModel extends ChangeNotifier {
 
   String _generateColdcardTextFormat(MultisigWalletListItem wallet, List<_ParsedSignerInfo> signers) {
     StringBuffer buffer = StringBuffer();
-    String safeName = wallet.name.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-    if (safeName.isEmpty) safeName = "Multisig";
-    if (safeName.length > 20) safeName = safeName.substring(0, 20);
-    buffer.writeln("Name: $safeName");
-
+    buffer.writeln("Name: coconut wallet");
     buffer.writeln("Policy: ${wallet.requiredSignatureCount} of ${signers.length}");
     buffer.writeln("Format: P2WSH");
 
