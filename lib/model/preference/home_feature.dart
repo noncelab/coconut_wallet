@@ -2,20 +2,12 @@
 class HomeFeature {
   final String homeFeatureTypeString;
   final bool isEnabled;
-  const HomeFeature({
-    required this.homeFeatureTypeString,
-    required this.isEnabled,
-  });
+  const HomeFeature({required this.homeFeatureTypeString, required this.isEnabled});
 
-  Map<String, dynamic> toJson() => {
-        'homeFeatureTypeString': homeFeatureTypeString,
-        'isEnabled': isEnabled,
-      };
+  Map<String, dynamic> toJson() => {'homeFeatureTypeString': homeFeatureTypeString, 'isEnabled': isEnabled};
 
-  factory HomeFeature.fromJson(Map<String, dynamic> json) => HomeFeature(
-        homeFeatureTypeString: json['homeFeatureTypeString'],
-        isEnabled: json['isEnabled'],
-      );
+  factory HomeFeature.fromJson(Map<String, dynamic> json) =>
+      HomeFeature(homeFeatureTypeString: json['homeFeatureTypeString'], isEnabled: json['isEnabled']);
 }
 
 // RealmHomeFeature 수정 불필요

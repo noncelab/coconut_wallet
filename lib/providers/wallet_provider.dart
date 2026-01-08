@@ -186,9 +186,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     // 새 지갑 추가
-    final sameNameIndex = _walletItemList.indexWhere(
-      (element) => element.name == watchOnlyWallet.name,
-    );
+    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
     if (sameNameIndex != -1) {
       // case 4: 동일 이름 존재
       return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
@@ -208,9 +206,7 @@ class WalletProvider extends ChangeNotifier {
 
   /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
-    final sameNameIndex = _walletItemList.indexWhere(
-      (element) => element.name == watchOnlyWallet.name,
-    );
+    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
     assert(sameNameIndex == -1);
 
     WalletSyncResult result = WalletSyncResult.newWalletAdded;
@@ -344,13 +340,7 @@ class WalletProvider extends ChangeNotifier {
     bool isChange,
     bool showOnlyUnusedAddresses,
   ) async {
-    return _addressRepository.getWalletAddressList(
-      wallet,
-      cursor,
-      count,
-      isChange,
-      showOnlyUnusedAddresses,
-    );
+    return _addressRepository.getWalletAddressList(wallet, cursor, count, isChange, showOnlyUnusedAddresses);
   }
 
   List<WalletAddress> searchWalletAddressList(WalletListItemBase wallet, String keyword) {
@@ -406,15 +396,11 @@ class WalletProvider extends ChangeNotifier {
     // 7일 전 블록 높이 (1008 blocks = 6 block/h * 24h * 7d)
     // N일 전 블록 높이 (144 * N blocks = 6 block/h * 24h * Nd)
 
-    final blockHeight =
-        currentBlockHeight - (144 * days) > 0 ? currentBlockHeight - (144 * days) : 0;
+    final blockHeight = currentBlockHeight - (144 * days) > 0 ? currentBlockHeight - (144 * days) : 0;
     for (int walletId in walletIds) {
       final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
       // 현재 트랜잭션 기준 N일 내 트랜잭션 조회
-      final recentTxs = _transactionRepository.getTransactionRecordListAfterBlockHeight(
-        walletId,
-        blockHeight,
-      );
+      final recentTxs = _transactionRepository.getTransactionRecordListAfterBlockHeight(walletId, blockHeight);
 
       if (pendingTxs.isNotEmpty || recentTxs.isNotEmpty) {
         result.addAll({
@@ -431,15 +417,11 @@ class WalletProvider extends ChangeNotifier {
     int currentBlockHeight,
     int daysAgo,
   ) {
-    final startBlockHeight =
-        currentBlockHeight - 6 * 24 * daysAgo > 0 ? currentBlockHeight - 6 * 24 * daysAgo : 0;
+    final startBlockHeight = currentBlockHeight - 6 * 24 * daysAgo > 0 ? currentBlockHeight - 6 * 24 * daysAgo : 0;
 
     List<TransactionRecord> result = [];
     for (int walletId in walletIds) {
-      final transactions = _transactionRepository.getTransactionRecordListAfterBlockHeight(
-        walletId,
-        startBlockHeight,
-      );
+      final transactions = _transactionRepository.getTransactionRecordListAfterBlockHeight(walletId, startBlockHeight);
       result.addAll(transactions);
     }
 
@@ -453,10 +435,7 @@ class WalletProvider extends ChangeNotifier {
   ) {
     List<TransactionRecord> result = [];
     for (int walletId in walletIds) {
-      final transactions = _transactionRepository.getTransactionRecordListWithDateRange(
-        walletId,
-        dateRange,
-      );
+      final transactions = _transactionRepository.getTransactionRecordListWithDateRange(walletId, dateRange);
       result.addAll(transactions);
     }
 

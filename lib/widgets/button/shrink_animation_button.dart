@@ -36,8 +36,7 @@ class ShrinkAnimationButton extends StatefulWidget {
   State<ShrinkAnimationButton> createState() => _ShrinkAnimationButtonState();
 }
 
-class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
-    with SingleTickerProviderStateMixin {
+class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   bool _isPressed = false;
@@ -105,18 +104,21 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius + 2),
-            gradient: widget.borderGradientColors != null
-                ? ColorUtil.getMultisigLinearGradient(widget.borderGradientColors!)
-                : null,
-            border: widget.borderGradientColors == null
-                ? Border.all(
-                    color: widget.isActive
-                        ? _isPressed
-                            ? widget.pressedColor
-                            : widget.defaultColor
-                        : widget.disabledColor,
-                  )
-                : null,
+            gradient:
+                widget.borderGradientColors != null
+                    ? ColorUtil.getMultisigLinearGradient(widget.borderGradientColors!)
+                    : null,
+            border:
+                widget.borderGradientColors == null
+                    ? Border.all(
+                      color:
+                          widget.isActive
+                              ? _isPressed
+                                  ? widget.pressedColor
+                                  : widget.defaultColor
+                              : widget.disabledColor,
+                    )
+                    : null,
           ),
           child: AnimatedContainer(
             margin: EdgeInsets.all(widget.borderGradientColors != null ? widget.borderWidth : 0),
@@ -124,11 +126,12 @@ class _ShrinkAnimationButtonState extends State<ShrinkAnimationButton>
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(widget.borderRadius)),
             child: Container(
               decoration: BoxDecoration(
-                color: widget.isActive
-                    ? _isPressed
-                        ? widget.pressedColor
-                        : widget.defaultColor
-                    : widget.disabledColor,
+                color:
+                    widget.isActive
+                        ? _isPressed
+                            ? widget.pressedColor
+                            : widget.defaultColor
+                        : widget.disabledColor,
                 borderRadius: BorderRadius.circular(widget.borderRadius),
               ),
               child: widget.child,
