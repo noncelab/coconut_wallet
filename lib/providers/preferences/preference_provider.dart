@@ -5,6 +5,7 @@ import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -17,12 +18,15 @@ import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
-import 'package:collection/collection.dart';
 import 'package:tuple/tuple.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final WalletPreferencesRepository _walletPreferencesRepository;
+
+  // FeatureSettingsProvider는 선택적으로 주입받을 수 있음 (Facade 패턴)
+  // 주입되지 않으면 내부에서 직접 관리 (하위 호환성)
+  FeatureSettingsProvider? _featureSettingsProvider;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -83,23 +87,26 @@ class PreferenceProvider extends ChangeNotifier {
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
 
   /// 홈 화면에 표시할 기능(최근 거래, 분석 ...)
-  late List<HomeFeature> _homeFeatures;
-  List<HomeFeature> get homeFeatures => _homeFeatures;
+  // FeatureSettingsProvider로 위임
+  List<HomeFeature> get homeFeatures => _featureSettingsProvider?.features ?? [];
 
-  // 분석 위젯의 기준이 되는 기간
-  late int _analysisPeriod;
-  int get analysisPeriod => _analysisPeriod;
+  /// 특정 기능이 활성화되어 있는지 확인
+  bool isHomeFeatureEnabled(HomeFeatureType type) {
+    return _featureSettingsProvider?.isEnabled(type) ?? false;
+  }
 
-  late Tuple2<DateTime?, DateTime?> _analysisPeriodRange;
-  Tuple2<DateTime?, DateTime?> get analysisPeriodRange => _analysisPeriodRange;
-
-  late AnalysisTransactionType _selectedAnalysisTransactionType;
-  AnalysisTransactionType get selectedAnalysisTransactionType => _selectedAnalysisTransactionType;
+  // 분석 위젯 설정 (FeatureSettingsProvider로 위임)
+  int get analysisPeriod => _featureSettingsProvider?.analysisPeriod ?? 30;
+  Tuple2<DateTime?, DateTime?> get analysisPeriodRange =>
+      _featureSettingsProvider?.analysisPeriodRange ?? const Tuple2(null, null);
+  AnalysisTransactionType get selectedAnalysisTransactionType =>
+      _featureSettingsProvider?.selectedAnalysisTransactionType ?? AnalysisTransactionType.all;
 
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
-  PreferenceProvider(this._walletPreferencesRepository) {
+  PreferenceProvider(this._walletPreferencesRepository, {FeatureSettingsProvider? featureSettingsProvider})
+    : _featureSettingsProvider = featureSettingsProvider {
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
@@ -110,10 +117,9 @@ class PreferenceProvider extends ChangeNotifier {
     _walletOrder = getWalletOrder();
     _favoriteWalletIds = getFavoriteWalletIds();
     _excludedFromTotalBalanceWalletIds = getExcludedFromTotalBalanceWalletIds();
-    _homeFeatures = getHomeFeatures();
-    _analysisPeriod = getAnalysisPeriod();
-    _analysisPeriodRange = getAnalysisPeriodRange();
-    _selectedAnalysisTransactionType = getAnalysisTransactionType();
+    // FeatureSettingsProvider가 없으면 내부에서 생성 (하위 호환성)
+    // 주입된 경우에는 이미 초기화되어 있음
+    _featureSettingsProvider ??= FeatureSettingsProvider();
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
@@ -428,33 +434,20 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 홈 화면에 표시할 기능
+  /// 홈 화면에 표시할 기능 (FeatureSettingsProvider로 위임)
   List<HomeFeature> getHomeFeatures() {
-    final encoded = _sharedPrefs.getString(SharedPrefKeys.kHomeFeatures);
-    if (encoded.isEmpty) return [];
-    final List<dynamic> decoded = jsonDecode(encoded);
-    return decoded.map((e) => HomeFeature.fromJson(e as Map<String, dynamic>)).toList();
+    return _featureSettingsProvider?.features ?? [];
   }
 
   Future<void> setHomeFeautres(List<HomeFeature> features) async {
-    // 잔액 합계, 지갑 목록은 고정이기 때문에 리스트에 포함되지 않습니다.
-    // 토글 가능한 항목('최근 거래', '분석'...)만 리스트에 포함됩니다.
-    // 추후 홈 화면 기능이 추가됨에 따라 kHomeFeatures를 수정할 필요가 있습니다.
-    _homeFeatures = List.from(features);
-    await _sharedPrefs.setString(SharedPrefKeys.kHomeFeatures, jsonEncode(features.map((e) => e.toJson()).toList()));
+    // FeatureSettingsProvider로 위임
+    await _featureSettingsProvider?.setFeatures(features);
     notifyListeners();
   }
 
   Future<void> setWalletPreferences(List<WalletListItemBase> walletItemList) async {
-    final initialHomeFeatures = [
-      // ** 추가시 homeFeatureTypeString 을 [HomeFeatureType]과 동일시해야함 **
-      HomeFeature(homeFeatureTypeString: HomeFeatureType.recentTransaction.name, isEnabled: true),
-      HomeFeature(homeFeatureTypeString: HomeFeatureType.analysis.name, isEnabled: true),
-    ];
-
     var walletOrder = _walletOrder;
     var favoriteWalletIds = _favoriteWalletIds;
-    var homeFeatures = _homeFeatures;
 
     if (walletOrder.isEmpty) {
       walletOrder = List.from(walletItemList.map((w) => w.id));
@@ -464,74 +457,38 @@ class PreferenceProvider extends ChangeNotifier {
       favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
       await setFavoriteWalletIds(favoriteWalletIds);
     }
-    if (homeFeatures.isEmpty) {
-      homeFeatures.addAll(List.from(initialHomeFeatures));
-      await setHomeFeautres(homeFeatures);
-    } else {
-      final isSame = const DeepCollectionEquality.unordered().equals(
-        homeFeatures.map((e) => e.homeFeatureTypeString).toList(),
-        initialHomeFeatures.map((e) => e.homeFeatureTypeString).toList(),
-      );
-      if (isSame) return;
 
-      // 홈 기능은 추후 추가/제거 등 달라질 여지가 있기 때문에 내용을 비교해서 추가/제거 합니다.(kHomeFeatures 기준)
-      final updatedHomeFeatures = <HomeFeature>[];
-      for (final defaultFeature in initialHomeFeatures) {
-        final existing = homeFeatures.firstWhereOrNull(
-          (e) => e.homeFeatureTypeString == defaultFeature.homeFeatureTypeString,
-        );
-        updatedHomeFeatures.add(existing ?? defaultFeature);
-      }
-      homeFeatures.removeWhere(
-        (e) => !initialHomeFeatures.any((k) => k.homeFeatureTypeString == e.homeFeatureTypeString),
-      );
-      homeFeatures.addAll(
-        updatedHomeFeatures.where((e) => !homeFeatures.any((h) => h.homeFeatureTypeString == e.homeFeatureTypeString)),
-      );
-      await setHomeFeautres(homeFeatures);
-    }
+    // FeatureSettingsProvider의 동기화 메서드 사용
+    await _featureSettingsProvider?.synchronizeWithDefaults(walletList: walletItemList);
 
     notifyListeners();
   }
 
+  /// 분석 설정 (FeatureSettingsProvider로 위임)
   Tuple2<DateTime?, DateTime?> getAnalysisPeriodRange() {
-    final start = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodStart);
-    final end = _sharedPrefs.getString(SharedPrefKeys.kAnalysisPeriodEnd);
-    debugPrint('Analysis period range: $start ~ $end');
-    return Tuple2(start.isEmpty ? null : DateTime.parse(start), end.isEmpty ? null : DateTime.parse(end));
+    return _featureSettingsProvider?.getAnalysisPeriodRange() ?? const Tuple2(null, null);
   }
 
   Future<void> setAnalysisPeriodRange(DateTime start, DateTime end) async {
-    _analysisPeriodRange = Tuple2(start, end);
-    await _sharedPrefs.setString(SharedPrefKeys.kAnalysisPeriodStart, start.toIso8601String());
-    await _sharedPrefs.setString(SharedPrefKeys.kAnalysisPeriodEnd, end.toIso8601String());
+    await _featureSettingsProvider?.setAnalysisPeriodRange(start, end);
     notifyListeners();
   }
 
   int getAnalysisPeriod() {
-    final period = _sharedPrefs.getIntOrNull(SharedPrefKeys.kAnalysisPeriod);
-    debugPrint('Analysis period: $period');
-    return period ?? 30; // 기본 기간 30일
+    return _featureSettingsProvider?.getAnalysisPeriod() ?? 30;
   }
 
   Future<void> setAnalysisPeriod(int days) async {
-    _analysisPeriod = days;
-    await _sharedPrefs.setInt(SharedPrefKeys.kAnalysisPeriod, days);
+    await _featureSettingsProvider?.setAnalysisPeriod(days);
     notifyListeners();
   }
 
   AnalysisTransactionType getAnalysisTransactionType() {
-    final encoded = _sharedPrefs.getString(SharedPrefKeys.kSelectedTransactionTypeIndices);
-    if (encoded.isEmpty) return AnalysisTransactionType.all; // [전체 = all]이 기본
-    return AnalysisTransactionType.values.firstWhere(
-      (type) => type.name == encoded,
-      orElse: () => AnalysisTransactionType.all,
-    );
+    return _featureSettingsProvider?.getAnalysisTransactionType() ?? AnalysisTransactionType.all;
   }
 
   Future<void> setAnalysisTransactionType(AnalysisTransactionType transactionType) async {
-    _selectedAnalysisTransactionType = transactionType;
-    await _sharedPrefs.setString(SharedPrefKeys.kSelectedTransactionTypeIndices, _selectedAnalysisTransactionType.name);
+    await _featureSettingsProvider?.setAnalysisTransactionType(transactionType);
     notifyListeners();
   }
 

@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_wallet/model/preference/home_feature.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -22,7 +22,6 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   int? _fakeBalanceTotalAmount;
   double? _fakeBalanceTotalBtc;
   String? _fakeBalanceText;
-  List<HomeFeature> _homeFeatures = [];
   FakeBalanceInputError _inputError = FakeBalanceInputError.none;
 
   // temp datas
@@ -61,10 +60,8 @@ class WalletHomeEditViewModel extends ChangeNotifier {
       }
     }
 
-    _homeFeatures = _preferenceProvider.homeFeatures;
-
     _tempHomeFeatures =
-        homeFeatures
+        _preferenceProvider.homeFeatures
             .map(
               (feature) =>
                   HomeFeature(homeFeatureTypeString: feature.homeFeatureTypeString, isEnabled: feature.isEnabled),
@@ -85,7 +82,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   String? get fakeBalanceText => _fakeBalanceText;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   int get walletItemLength => _walletProvider.walletItemList.length;
-  List<HomeFeature> get homeFeatures => _homeFeatures;
+  List<HomeFeature> get homeFeatures => _preferenceProvider.homeFeatures;
   FakeBalanceInputError get inputError => _inputError;
 
   List<HomeFeature> get tempHomeFeatures => _tempHomeFeatures;
@@ -218,7 +215,7 @@ class WalletHomeEditViewModel extends ChangeNotifier {
   }
 
   Future<void> _setHomeFeatureEnabled() async {
-    _preferenceProvider.setHomeFeautres(_tempHomeFeatures);
+    await _preferenceProvider.setHomeFeautres(_tempHomeFeatures);
   }
 
   Future<void> _setFakeBalance() async {

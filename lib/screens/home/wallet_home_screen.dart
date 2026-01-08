@@ -5,7 +5,6 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -18,20 +17,18 @@ import 'package:coconut_wallet/screens/home/analysis_period_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
-import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/animated_dots_text.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/card/donation_banner_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_list_add_guide_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
@@ -775,9 +772,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               );
               if (context.mounted) {
                 // PreferenceProvider의 변경사항을 ViewModel에 먼저 반영
-                await _viewModel.loadHomeFeatures();
-
                 final preferenceProvider = context.read<PreferenceProvider>();
+                // HomeFeatureProvider는 PreferenceProvider를 통해 접근 (Facade 패턴)
                 final homeFeatures = preferenceProvider.homeFeatures;
 
                 // recentTransaction feature가 활성화되어 있으면 getPendingAndRecentDaysTransactions 실행

@@ -4,7 +4,8 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -99,6 +100,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => FeatureSettingsProvider()),
 
         Provider.value(value: _realmManager),
 
@@ -120,9 +122,21 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
 
-        ChangeNotifierProvider(create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(
+          create:
+              (context) => PreferenceProvider(
+                context.read<WalletPreferencesRepository>(),
+                featureSettingsProvider: context.read<FeatureSettingsProvider>(),
+              ),
+        ),
 
-        ChangeNotifierProvider(create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(
+          create:
+              (context) => PreferenceProvider(
+                context.read<WalletPreferencesRepository>(),
+                featureSettingsProvider: context.read<FeatureSettingsProvider>(),
+              ),
+        ),
 
         ChangeNotifierProvider<PriceProvider>(
           create: (context) => PriceProvider(context.read<ConnectivityProvider>(), context.read<PreferenceProvider>()),

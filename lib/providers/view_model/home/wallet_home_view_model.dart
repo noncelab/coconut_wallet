@@ -10,14 +10,13 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:tuple/tuple.dart';
@@ -50,7 +49,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
   StreamSubscription<BlockTimestamp?>? _currentBlockSubscription;
   List<WalletListItemBase> _favoriteWallets = [];
-  final List<HomeFeature> _homeFeatures = [];
   late int _analysisPeriod;
   int get analysisPeriod => _analysisPeriod;
   late AnalysisTransactionType _selectedAnalysisTransactionType;
@@ -149,7 +147,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   List<WalletListItemBase> get favoriteWallets => _favoriteWallets;
-  List<HomeFeature> get homeFeatures => _homeFeatures;
+  List<HomeFeature> get homeFeatures => _preferenceProvider.homeFeatures;
 
   bool? get isNetworkOn => _isNetworkOn;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
@@ -289,7 +287,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     /// 홈 기능 설정(HomeFeatures) 변동 체크
-    loadHomeFeatures();
+    // HomeFeatureProvider가 직접 관리하므로 별도 로드 불필요
 
     /// 총 잔액에서 제외할 지갑 목록 변경 체크
     if (!const SetEquality().equals(
@@ -411,14 +409,6 @@ class WalletHomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadHomeFeatures() async {
-    final features = _preferenceProvider.homeFeatures;
-    _homeFeatures
-      ..clear()
-      ..addAll(features);
-    notifyListeners();
-  }
-
   void setReceiveAddress(int walletId) {
     _receiveAddress = _walletProvider.getReceiveAddress(walletId);
     Logger.log('--> 리시브주소: ${_receiveAddress.address}');
@@ -428,10 +418,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   void getPendingAndRecentDaysTransactions(int? blockHeight, int days) {
     if (blockHeight == null || _isFetchingLatestTx) return;
 
-    final recentTransactionFeature = _homeFeatures.firstWhereOrNull(
-      (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name,
-    );
-    if (recentTransactionFeature == null || !recentTransactionFeature.isEnabled) return;
+    if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
     // 홈 화면에 표시한 지갑 목록 아이디
     _isFetchingLatestTx = true;
 
