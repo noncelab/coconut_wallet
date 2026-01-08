@@ -10,9 +10,11 @@
         android:label="@string/app_name"
         android:name="${applicationName}"
         android:theme="@style/Theme.SplashEx"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher_event"
+        android:roundIcon="@mipmap/ic_launcher_event_round"
         android:allowBackup="false"
         android:fullBackupContent="false">
+        <!-- android:icon="@mipmap/ic_launcher" 이벤트 아이콘 원복 시 ic_launcher로 적용 -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

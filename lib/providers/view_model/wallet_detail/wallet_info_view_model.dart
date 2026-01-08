@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
@@ -65,6 +66,11 @@ class WalletInfoViewModel extends ChangeNotifier {
   String getSignerMasterFingerprint(int index) {
     final multisigWallet = walletItemBase.walletBase as MultisignatureWallet;
     return multisigWallet.keyStoreList[index].masterFingerprint;
+  }
+
+  SignerBsms getSignerBsms(int index) {
+    final multisigWallet = walletItemBase as MultisigWalletListItem;
+    return multisigWallet.signerBsmsList[index];
   }
 
   void updateWalletName(String updatedName) {

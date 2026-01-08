@@ -4,7 +4,6 @@ import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
@@ -16,7 +15,6 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -25,6 +23,7 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -46,6 +45,7 @@ class SendScreen extends StatefulWidget {
 }
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  final GlobalKey _viewMoreButtonKey = GlobalKey();
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
@@ -65,6 +65,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   final _recipientPageController = PageController();
   int _focusedPageIndex = 0;
 
+  final ScrollController _screenScrollController = ScrollController();
   final ScrollController _addressListScrollController = ScrollController();
 
   final List<TextEditingController> _addressControllerList = [];
@@ -245,6 +246,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             child: Stack(
               children: [
                 SingleChildScrollView(
+                  controller: _screenScrollController,
                   child: Selector<SendViewModel, bool>(
                     selector: (_, viewModel) => viewModel.showAddressBoard,
                     builder: (context, data, child) {
@@ -645,7 +647,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         borderColor: CoconutColors.gray800,
         borderRadius: 12,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        icon: SvgPicture.asset(iconPath, colorFilter: const ColorFilter.mode(CoconutColors.gray300, BlendMode.srcIn)),
+        icon: Transform.translate(
+          offset: const Offset(0, 3),
+          child: SvgPicture.asset(
+            iconPath,
+            colorFilter: const ColorFilter.mode(CoconutColors.gray300, BlendMode.srcIn),
+          ),
+        ),
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(
           text: TextSpan(text: text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300)),
@@ -1248,6 +1256,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         child: Padding(
                           padding: const EdgeInsets.only(left: 14, bottom: 14),
                           child: CoconutUnderlinedButton(
+                            key: _viewMoreButtonKey,
                             text: t.view_more,
                             onTap: () {
                               _clearFocus();
@@ -1498,23 +1507,25 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 context: sheetContext,
                 actionButtonList: [
                   IconButton(
-                    icon: SvgPicture.asset(
-                      'assets/svg/arrow-reload.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                    ),
+                    icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+                    color: CoconutColors.white,
                     onPressed: () {
                       _qrViewController?.switchCamera();
                     },
                   ),
                 ],
                 onBackPressed: () {
-                  _disposeQrViewController();
+                  _clearQrScanController();
                   Navigator.of(sheetContext).pop<String>('');
                 },
               ),
-              body: AddressQrScannerBody(qrKey: qrKey, onDetect: _onDetect),
+              body: AddressQrScannerBody(
+                qrKey: qrKey,
+                onDetect: _onDetect,
+                setMobileScannerController: (controller) {
+                  _qrViewController = controller;
+                },
+              ),
             ),
       ),
     );
@@ -1539,11 +1550,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _viewModel.setAddressText(normalized, index);
       }
     }
-    _disposeQrViewController();
+    _clearQrScanController();
   }
 
-  void _disposeQrViewController() {
-    _qrViewController?.dispose();
+  void _clearQrScanController() {
+    // dispose는 MobileScanner에서 함 (or error occurred)
+    //_qrViewController?.dispose();
     _qrViewController = null;
   }
 
@@ -1625,6 +1637,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         if (!focusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
         }
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
+          final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
+          final viewMoreButtonHeight = viewMoreButtonRect.size.height;
+          final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
+          bool isViewMoreButtonVisible =
+              viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
+          if (!isViewMoreButtonVisible) {
+            _screenScrollController.animateTo(
+              _screenScrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
       }),
     );
     _addressFocusNodeList.add(focusNode);

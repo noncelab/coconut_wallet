@@ -77,7 +77,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+        borderRadius: BorderRadius.circular(24), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
         border: isMultisig ? null : Border.all(color: CoconutColors.gray700, width: 1),
         gradient:
             isMultisig
@@ -96,7 +96,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             isMultisig
                 ? BoxDecoration(
                   color: CoconutColors.black,
-                  borderRadius: BorderRadius.circular(12), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
+                  borderRadius: BorderRadius.circular(22), // defaultRadius로 통일하면 border 넓이가 균일해보이지 않음
                 )
                 : null,
         child: Row(
