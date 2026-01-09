@@ -27,7 +27,7 @@ Future<void> changeAppIcon() async {
   debugPrint('🔄 changeAppIcon called at: $now (platform: ${Platform.operatingSystem})');
 
   final DateTime startDate = DateTime(2026, 1, 1);
-  final DateTime endDate = DateTime(2026, 1, 31);
+  final DateTime endDate = DateTime(2026, 1, 4);
 
   // 기간 내에 있는지 확인
   final bool isInPeriod =
