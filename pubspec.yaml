@@ -20,7 +20,7 @@ version: 0.6.1+1
 app_versions:
   ios_regtest: 3.5.1+1
   ios_mainnet: 0.6.1+0
-  aos_regtest: 3.5.1+59
+  aos_regtest: 3.5.1+61
   aos_mainnet: 0.6.1+45
 
 environment:
