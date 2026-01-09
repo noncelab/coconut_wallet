@@ -10470,13 +10470,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [],
 );
 
-/// tar 2.0.1
+/// tar 2.0.2
 const _tar = Package(
   name: 'tar',
   description: 'Memory-efficient, streaming implementation of the tar file format',
   repository: 'https://github.com/simolus3/tar/',
   authors: [],
-  version: '2.0.1',
+  version: '2.0.2',
   license: '''MIT License
 
 Copyright (c) 2021 Simon Binder
