@@ -36,46 +36,28 @@ Future<void> changeAppIcon() async {
   if (!isInPeriod) {
     // 기간이 지났으면 원래 아이콘으로 복구
     final savedDateStr = sharedPrefs.getString(SharedPrefKeys.kEventIconChangedDate);
-    debugPrint('🔄 savedDateStr: $savedDateStr');
+    debugPrint('🔄 (restore) savedDateStr: $savedDateStr');
 
-    // 저장된 날짜가 있거나, 현재 아이콘이 이벤트 아이콘으로 설정되어 있으면 기본 아이콘으로 복구
-    bool shouldRestore = false;
+    // TestFlight/배포 환경에서는 getCurrentIconName 채널 호출이 실패하거나,
+    // 저장된 날짜가 비어 있을 수 있어도 실제 아이콘은 이벤트 아이콘으로 남아있을 수 있음.
+    // 따라서 기간 밖이면 '복구 시도'를 항상 수행(이미 기본 아이콘이면 iOS가 no-op 처리).
+    debugPrint('🔄 기간이 지났으므로 기본 아이콘으로 복구 시도');
 
-    if (savedDateStr.isNotEmpty) {
-      // 저장된 날짜가 있으면 아이콘이 변경된 상태
-      shouldRestore = true;
-    } else {
-      // 저장된 날짜가 없어도 현재 아이콘이 이벤트 아이콘인지 확인
-      try {
-        const MethodChannel channel = MethodChannel(methodChannelIcon);
-        final String? currentIconName = await channel.invokeMethod<String>('getCurrentIconName');
-        if (currentIconName != null && currentIconName.isNotEmpty) {
-          // 현재 이벤트 아이콘이 설정되어 있으면 복구 필요
-          shouldRestore = true;
-          debugPrint('🔄 저장된 날짜는 없지만 현재 이벤트 아이콘($currentIconName)이 설정되어 있음');
-        }
-      } catch (e) {
-        debugPrint('⚠️ 현재 아이콘 확인 실패: $e');
-        // 확인 실패 시에는 저장된 날짜가 없으면 복구하지 않음
-      }
+    try {
+      const MethodChannel channel = MethodChannel(methodChannelIcon);
+      await channel.invokeMethod('changeAppEventIcon', {'app_event_icon_change': false, 'icon_name': null});
+      debugPrint('✅ 기본 아이콘으로 복구 완료');
+    } on PlatformException catch (e) {
+      debugPrint("❌ 기본 아이콘으로 복구 실패: '${e.message}'.");
+      debugPrint("❌ Error code: '${e.code}'.");
+      debugPrint("❌ Error details: '${e.details}'.");
+    } catch (e) {
+      debugPrint("❌ Unexpected error while restoring icon: $e");
+    } finally {
+      // 복구 시도 후에는 저장된 날짜를 항상 정리
+      await sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kEventIconChangedDate);
     }
 
-    if (shouldRestore) {
-      debugPrint('🔄 기간이 지났으므로 기본 아이콘으로 복구');
-      try {
-        const MethodChannel channel = MethodChannel(methodChannelIcon);
-        await channel.invokeMethod('changeAppEventIcon', {'app_event_icon_change': false, 'icon_name': null});
-        await sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kEventIconChangedDate);
-        debugPrint('✅ 기본 아이콘으로 복구 완료');
-      } on PlatformException catch (e) {
-        debugPrint("❌ 기본 아이콘으로 복구 실패: '${e.message}'.");
-        // 에러가 발생해도 저장된 날짜는 삭제
-        await sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kEventIconChangedDate);
-      } catch (e) {
-        debugPrint("❌ Unexpected error while restoring icon: $e");
-        await sharedPrefs.deleteSharedPrefsWithKey(SharedPrefKeys.kEventIconChangedDate);
-      }
-    }
     return;
   }
 
