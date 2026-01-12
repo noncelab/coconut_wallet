@@ -29,7 +29,7 @@ def getFlavor() {
     } else if (taskNames.any { it.toLowerCase().contains("mainnet")}) {
         return "mainnet"
     }
-    throw GradleException("❌ build flavor를 추론할 수 없습니다. taskNames: ${taskNames}")
+    throw new GradleException("❌ build flavor를 추론할 수 없습니다. taskNames: ${taskNames}")
 }
 def flavor = getFlavor()
 def keystoreProperties = new Properties()
@@ -39,7 +39,7 @@ if (keystorePropertiesFile.exists()) {
         keystoreProperties.load(reader)
     }
 } else {
-    throw GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
+    throw new GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
 }
 
 if (flavor == "mainnet") {
