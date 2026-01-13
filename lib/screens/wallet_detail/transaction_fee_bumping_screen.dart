@@ -85,120 +85,122 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               _removeTooltip();
               _feeTextFieldFocusNode.unfocus();
             },
-            child: Stack(
-              children: [
-                Scaffold(
-                  resizeToAvoidBottomInset: true,
-                  backgroundColor: CoconutColors.black,
-                  appBar: CoconutAppBar.build(
-                    title: _isRbf ? t.transaction_fee_bumping_screen.rbf : t.transaction_fee_bumping_screen.cpfp,
-                    context: context,
-                    actionButtonList: [
-                      IconButton(
-                        key: _tooltipIconKey,
-                        icon: SvgPicture.asset('assets/svg/question-mark.svg'),
-                        onPressed: _toggleTooltip,
-                      ),
-                    ],
-                  ),
-                  body: Stack(
-                    children: [
-                      Column(
-                        children: [
-                          Visibility(
-                            visible: !viewModel.isNetworkOn,
-                            maintainSize: false,
-                            maintainAnimation: false,
-                            maintainState: false,
-                            child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
-                          ),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-                                margin: const EdgeInsets.symmetric(vertical: 30),
-                                height:
-                                    MediaQuery.sizeOf(context).height -
-                                    kToolbarHeight -
-                                    MediaQuery.of(context).padding.top -
-                                    60,
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    children: [
-                                      _buildPendingTxFeeWidget(),
-                                      CoconutLayout.spacing_200h,
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 3),
-                                        child: Divider(color: CoconutColors.gray800, height: 1),
-                                      ),
-                                      CoconutLayout.spacing_500h,
-                                      _buildBumpingFeeTextFieldWidget(),
-                                      CoconutLayout.spacing_400h,
-                                      if (viewModel.isInitializedSuccess == true) ...[
-                                        _buildRecommendFeeWidget(),
-                                        CoconutLayout.spacing_300h,
-                                        _buildCurrentMempoolFeesWidget(
-                                          viewModel.feeInfos[0].satsPerVb?.toInt() ?? 0,
-                                          viewModel.feeInfos[1].satsPerVb?.toInt() ?? 0,
-                                          viewModel.feeInfos[2].satsPerVb?.toInt() ?? 0,
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  Scaffold(
+                    resizeToAvoidBottomInset: true,
+                    backgroundColor: CoconutColors.black,
+                    appBar: CoconutAppBar.build(
+                      title: _isRbf ? t.transaction_fee_bumping_screen.rbf : t.transaction_fee_bumping_screen.cpfp,
+                      context: context,
+                      actionButtonList: [
+                        IconButton(
+                          key: _tooltipIconKey,
+                          icon: SvgPicture.asset('assets/svg/question-mark.svg'),
+                          onPressed: _toggleTooltip,
+                        ),
+                      ],
+                    ),
+                    body: Stack(
+                      children: [
+                        Column(
+                          children: [
+                            Visibility(
+                              visible: !viewModel.isNetworkOn,
+                              maintainSize: false,
+                              maintainAnimation: false,
+                              maintainState: false,
+                              child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                            ),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                                  margin: const EdgeInsets.symmetric(vertical: 30),
+                                  height:
+                                      MediaQuery.sizeOf(context).height -
+                                      kToolbarHeight -
+                                      MediaQuery.of(context).padding.top -
+                                      60,
+                                  child: SingleChildScrollView(
+                                    child: Column(
+                                      children: [
+                                        _buildPendingTxFeeWidget(),
+                                        CoconutLayout.spacing_200h,
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 3),
+                                          child: Divider(color: CoconutColors.gray800, height: 1),
                                         ),
-                                      ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
-                                        _buildFetchFailedWidget(),
-                                    ],
+                                        CoconutLayout.spacing_500h,
+                                        _buildBumpingFeeTextFieldWidget(),
+                                        CoconutLayout.spacing_400h,
+                                        if (viewModel.isInitializedSuccess == true) ...[
+                                          _buildRecommendFeeWidget(),
+                                          CoconutLayout.spacing_300h,
+                                          _buildCurrentMempoolFeesWidget(
+                                            viewModel.feeInfos[0].satsPerVb?.toInt() ?? 0,
+                                            viewModel.feeInfos[1].satsPerVb?.toInt() ?? 0,
+                                            viewModel.feeInfos[2].satsPerVb?.toInt() ?? 0,
+                                          ),
+                                        ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
+                                          _buildFetchFailedWidget(),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      if (_isLoading) const CoconutLoadingOverlay(),
-                    ],
-                  ),
-                ),
-                FixedBottomButton(
-                  onButtonClicked: () async {
-                    _onCompleteButtonPressed(context, viewModel);
-                  },
-                  text: t.complete,
-                  backgroundColor: _getNewFeeTextColor(),
-                  showGradient: true,
-                  gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),
-                  isActive:
-                      !viewModel.insufficientUtxos &&
-                      !_isEstimatedFeeTooLow &&
-                      _textEditingController.text.isNotEmpty &&
-                      viewModel.isNetworkOn,
-                  subWidget:
-                      _textEditingController.text.isEmpty || _textEditingController.text == '0'
-                          ? Container()
-                          : Column(
-                            children: [
-                              if (_isEstimatedFeeTooHigh) ...[
-                                Text(
-                                  t.transaction_fee_bumping_screen.estimated_fee_too_high_error,
-                                  style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                  textScaler: const TextScaler.linear(1.0),
-                                ),
-                                CoconutLayout.spacing_100h,
-                              ],
-                              if (!_viewModel.insufficientUtxos)
-                                Text(
-                                  t.transaction_fee_bumping_screen.estimated_fee(
-                                    fee:
-                                        viewModel
-                                            .getTotalEstimatedFee(double.parse(_textEditingController.text))
-                                            .toThousandsSeparatedString(),
+                          ],
+                        ),
+                        FixedBottomButton(
+                          onButtonClicked: () async {
+                            _onCompleteButtonPressed(context, viewModel);
+                          },
+                          text: t.complete,
+                          backgroundColor: _getNewFeeTextColor(),
+                          showGradient: true,
+                          gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),
+                          isActive:
+                              !viewModel.insufficientUtxos &&
+                              !_isEstimatedFeeTooLow &&
+                              _textEditingController.text.isNotEmpty &&
+                              viewModel.isNetworkOn,
+                          subWidget:
+                              _textEditingController.text.isEmpty || _textEditingController.text == '0'
+                                  ? Container()
+                                  : Column(
+                                    children: [
+                                      if (_isEstimatedFeeTooHigh) ...[
+                                        Text(
+                                          t.transaction_fee_bumping_screen.estimated_fee_too_high_error,
+                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                          textScaler: const TextScaler.linear(1.0),
+                                        ),
+                                        CoconutLayout.spacing_100h,
+                                      ],
+                                      if (!_viewModel.insufficientUtxos)
+                                        Text(
+                                          t.transaction_fee_bumping_screen.estimated_fee(
+                                            fee:
+                                                viewModel
+                                                    .getTotalEstimatedFee(double.parse(_textEditingController.text))
+                                                    .toThousandsSeparatedString(),
+                                          ),
+                                          style: CoconutTypography.body2_14,
+                                          textScaler: const TextScaler.linear(1.0),
+                                        ),
+                                    ],
                                   ),
-                                  style: CoconutTypography.body2_14,
-                                  textScaler: const TextScaler.linear(1.0),
-                                ),
-                            ],
-                          ),
-                ),
-                if (_isTooltipVisible) _buildTooltip(context),
-              ],
+                        ),
+                        if (_isLoading) const CoconutLoadingOverlay(),
+                      ],
+                    ),
+                  ),
+                  if (_isTooltipVisible) _buildTooltip(context),
+                ],
+              ),
             ),
           );
         },
@@ -367,7 +369,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
   Widget _buildTooltip(BuildContext context) {
     return Positioned(
-      top: _tooltipIconPosition.dy + _tooltipIconSize.height - 10,
+      top: _tooltipIconPosition.dy + _tooltipIconSize.height - MediaQuery.of(context).padding.top - 10,
       right: 18,
       child: GestureDetector(
         onTap: _removeTooltip,
