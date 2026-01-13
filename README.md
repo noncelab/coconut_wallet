@@ -97,13 +97,37 @@
         * .vscode/launch.json 내부에 args 항목을 추가합니다.
           ```json
           {
-          "name": "coconut_wallet (debug)",
+            "name": "coconut_wallet (debug)",
             "request": "launch",
             "type": "dart",
             "args": ["--flavor", "regtest"]
           }
           ```
-6. 터미널 실행 가이드
+          
+6. 로컬 키스토어(Keystore) 설정
+
+   `android/app/build.gradle` 설정에 의해, 앱을 실행하려면 각 환경(flavor)에 맞는 속성 파일(`key_*.properties`)이 반드시 존재해야 합니다.
+   
+   로컬 개발 환경에서는 환경 설정을 위해 임의로 생성한 키스토어(`local.jks`)를 생성하여 설정합니다.
+
+   **키스토어 생성하기**
+   터미널에서 프로젝트 최상위 경로(root)로 이동 후 아래 명령어를 실행하여 `android/app/local.jks` 파일을 생성합니다.
+   
+   ```bash
+   keytool -genkey -v -keystore android/app/local.jks -storepass android -alias local -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Local Dev,O=Coconut,C=KR"
+   ```
+
+   **속성 파일(Properties) 생성하기**
+   android/ 폴더 아래에 key_regtest.properties와 key_mainnet.properties 파일을 각각 생성하고, 아래 내용을 똑같이 작성합니다.
+
+   ```key_*.properties
+   storePassword=android
+   keyPassword=android
+   keyAlias=local
+   storeFile=../app/local.jks
+   ```
+
+7. 터미널 실행 가이드
     ```bash
     # debug mode
     flutter run --flavor regtest
@@ -116,13 +140,15 @@
 
     **flavor 옵션은 왜 설정해야 하나요❓**
         
-    현재 코코넛 볼트와 코코넛 월렛 프로젝트는 저희 팀이 직접 구축한 **로컬 비트코인 테스트넷** (regtest)을 사용합니다. 
+    코코넛 월렛은 용도에 따라 두 가지 버전을 제공합니다.
 
-    그렇기 때문에 여러분이 코코넛 월렛에서 테스트용 비트코인을 바로 받아보고, 전송 연습을 하실 수 있는 것이죠.
+    mainnet: 실제 비트코인 메인넷을 사용하는 정식 출시 버전입니다. 스토어를 통해 유료로 제공되며, 실제 자산을 관리할 때 사용합니다.
 
-    만약 원하시는 분들이 많아진다면, 비트코인 mainnet 네트워크용 코코넛 볼트와 월렛도 지원할 예정이기 때문에 미리 flavor를 적용해서, 동일한 코드베이스에서 여러 환경에 맞는 앱을 빌드하고 배포할 준비를 해놓았습니다.
-        
-    현재는 regtest flavor만 설정해 놓은 상태입니다.
+    regtest: 로컬 테스트넷 환경을 사용하는 학습용 버전입니다. 코코넛 볼트와 연동하여 가상의 비트코인으로 전송 과정을 무료로 연습해볼 수 있습니다.
+
+     **⚠️ Mainnet 임의 빌드 시 주의사항**
+
+    공식 배포 채널(앱스토어/플레이스토어)이 아닌 방법으로 소스 코드를 직접 빌드하여 Mainnet 환경에서 사용하는 경우, 발생할 수 있는 자산 손실이나 오류에 대해 회사는 일체 책임을 지지 않습니다. 개발 및 학습 목적으로는 반드시 `regtest` 모드를 사용해 주세요.
 
 <br/>
 
