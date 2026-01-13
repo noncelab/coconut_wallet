@@ -52,10 +52,10 @@
 
     ```bash
     # 스토어에 배포된 버전입니다.
-    Flutter 3.24.3 • channel stable • https://github.com/flutter/flutter.git
-    Framework • revision 2663184aa7 (7 weeks ago) • 2024-09-11 16:27:48 -0500
-    Engine • revision 36335019a8
-    Tools • Dart 3.5.3 • DevTools 2.37.3
+    Flutter 3.29.1 • channel stable • https://github.com/flutter/flutter.git
+    Framework • revision 09de023485 (11 months ago) • 2025-02-28 13:44:05 -0800
+    Engine • revision 871f65ac1b
+    Tools • Dart 3.7.0 • DevTools 2.42.2
     ```
 
 4. 자동 생성 파일 준비
@@ -142,7 +142,7 @@
         
     코코넛 월렛은 용도에 따라 두 가지 버전을 제공합니다.
 
-    mainnet: 실제 비트코인 메인넷을 사용하는 정식 출시 버전입니다. 스토어를 통해 유료로 제공되며, 실제 자산을 관리할 때 사용합니다.
+    mainnet: 실제 비트코인 메인넷을 사용하는 정식 출시 버전입니다. 스토어를 통해 무료로 제공되며, 실제 자산을 관리할 때 사용합니다.
 
     regtest: 로컬 테스트넷 환경을 사용하는 학습용 버전입니다. 코코넛 볼트와 연동하여 가상의 비트코인으로 전송 과정을 무료로 연습해볼 수 있습니다.
 
