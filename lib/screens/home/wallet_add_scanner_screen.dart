@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
@@ -439,14 +440,24 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       FileLogger.error(className, methodName, 'Non-QR format error detected');
     }
 
-    await CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.scan_failed,
-      message: errorMessage,
-      onConfirm: () {
-        FileLogger.log(className, methodName, 'Error dialog confirmed');
-        _isProcessing = false;
-        Navigator.pop(context);
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.wallet_add.add_failed,
+          description: e.toString(),
+          onTapRight: () {
+            FileLogger.log(className, methodName, 'Error dialog confirmed');
+            _isProcessing = false;
+            Navigator.pop(context);
+          },
+          onTapLeft: () {
+            Navigator.pop(context);
+          },
+          rightButtonText: t.confirm,
+          leftButtonText: t.close,
+        );
       },
     );
   }

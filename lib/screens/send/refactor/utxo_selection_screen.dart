@@ -186,13 +186,23 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       });
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        CustomDialogs.showCustomAlertDialog(
-          context,
-          title: t.alert.error_occurs,
-          message: t.alert.contact_admin(error: e.toString()),
-          onConfirm: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pop();
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
+              title: t.alert.error_occurs,
+              description: t.alert.contact_admin(error: e.toString()),
+              onTapRight: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              onTapLeft: () {
+                Navigator.of(context).pop();
+              },
+              rightButtonText: t.confirm,
+              leftButtonText: t.close,
+            );
           },
         );
       });

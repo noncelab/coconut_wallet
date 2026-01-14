@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -245,14 +246,24 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _showErrorDialog(String errorMessage) async {
-    await CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.scan_failed,
-      message: errorMessage,
-      onConfirm: () {
-        _isProcessing = false;
-        controller?.start();
-        Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.scan_failed,
+          description: errorMessage,
+          onTapRight: () {
+            _isProcessing = false;
+            controller?.start();
+            Navigator.pop(context);
+          },
+          onTapLeft: () {
+            Navigator.pop(context);
+          },
+          rightButtonText: t.confirm,
+          leftButtonText: t.close,
+        );
       },
     );
   }

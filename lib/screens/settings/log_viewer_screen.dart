@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:provider/provider.dart';
 
 class LogViewerScreen extends StatefulWidget {
   const LogViewerScreen({super.key});
@@ -36,19 +38,26 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
   }
 
   Future<void> _clearLog() async {
-    CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.settings_screen.log_viewer_screen.clear_log,
-      message: t.settings_screen.log_viewer_screen.clear_log_description,
-      onConfirm: () async {
-        await FileLogger.clearLog();
-        await _loadLogContent();
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      },
-      onCancel: () {
-        Navigator.pop(context);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.settings_screen.log_viewer_screen.clear_log,
+          description: t.settings_screen.log_viewer_screen.clear_log_description,
+          onTapRight: () async {
+            await FileLogger.clearLog();
+            await _loadLogContent();
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          },
+          onTapLeft: () {
+            Navigator.of(context).pop();
+          },
+          rightButtonText: t.confirm,
+          leftButtonText: t.cancel,
+        );
       },
     );
   }

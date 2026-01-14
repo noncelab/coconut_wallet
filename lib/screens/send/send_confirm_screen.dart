@@ -164,12 +164,22 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         .catchError((error) async {
           if (mounted) {
             context.loaderOverlay.hide();
-            CustomDialogs.showCustomAlertDialog(
-              context,
-              title: t.alert.error_tx.created_failed,
-              message: t.alert.error_tx.not_created(error: error.toString()),
-              onConfirm: () {
-                Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
+                  title: t.alert.error_tx.created_failed,
+                  description: t.alert.error_tx.not_created(error: error.toString()),
+                  onTapRight: () {
+                    Navigator.pop(context);
+                  },
+                  onTapLeft: () {
+                    Navigator.pop(context);
+                  },
+                  rightButtonText: t.confirm,
+                  leftButtonText: t.close,
+                );
               },
             );
           }

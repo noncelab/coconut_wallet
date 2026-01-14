@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/coordinator_bsms_qr_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -229,22 +230,28 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               ),
                               onPressed: () {
                                 _removeTooltip();
-                                CustomDialogs.showCustomAlertDialog(
-                                  context,
-                                  title: t.alert.wallet_delete.confirm_delete,
-                                  message: t.alert.wallet_delete.confirm_delete_description,
-                                  onConfirm: () {
-                                    _handleAuthFlow(
-                                      onComplete: () async {
-                                        await _deleteWalletAndGoToEntryPoint(context, viewModel);
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return CoconutPopup(
+                                      languageCode: context.read<PreferenceProvider>().language,
+                                      title: t.alert.wallet_delete.confirm_delete,
+                                      description: t.alert.wallet_delete.confirm_delete_description,
+                                      onTapRight: () {
+                                        _handleAuthFlow(
+                                          onComplete: () async {
+                                            await _deleteWalletAndGoToEntryPoint(context, viewModel);
+                                          },
+                                        );
                                       },
+                                      onTapLeft: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      rightButtonText: t.delete,
+                                      rightButtonColor: CoconutColors.hotPink,
+                                      leftButtonText: t.cancel,
                                     );
                                   },
-                                  onCancel: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  confirmButtonText: t.delete,
-                                  confirmButtonColor: CoconutColors.hotPink,
                                 );
                               },
                             ),

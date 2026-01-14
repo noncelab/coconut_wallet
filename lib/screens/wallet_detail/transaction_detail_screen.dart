@@ -646,13 +646,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
   }
 
   void _showDialogListener() {
-    CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.tx_detail.fetch_failed,
-      message: t.alert.tx_detail.fetch_failed_description,
-      onConfirm: () {
-        Navigator.pop(context); // 팝업 닫기
-        Navigator.pop(context); // 지갑 상세 이동
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.tx_detail.fetch_failed,
+          description: t.alert.tx_detail.fetch_failed_description,
+          onTapRight: () {
+            Navigator.pop(context); // 팝업 닫기
+            Navigator.pop(context); // 지갑 상세 이동
+          },
+        );
       },
     );
   }
