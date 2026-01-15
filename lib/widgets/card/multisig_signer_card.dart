@@ -1,4 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
@@ -10,15 +13,41 @@ class MultisigSignerCard extends StatelessWidget {
   final int index;
   final MultisigSigner signer;
   final String masterFingerprint;
-  const MultisigSignerCard({super.key, required this.index, required this.signer, required this.masterFingerprint});
+  final String derivationPath;
+  const MultisigSignerCard({
+    super.key,
+    required this.index,
+    required this.signer,
+    required this.masterFingerprint,
+    required this.derivationPath,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isInnerWallet = signer.innerVaultId != null;
     final name = signer.name ?? '';
+    final memo = signer.memo ?? '';
+    final useMemoInsteadOfName = name.isEmpty && memo.isNotEmpty;
+    final String? finalName = name.isNotEmpty ? name : (useMemoInsteadOfName ? memo : null);
+    // icon
     final colorIndex = signer.colorIndex ?? 0;
     final iconIndex = signer.iconIndex ?? 0;
-    final memo = signer.memo ?? '';
+
+    String? importSourceIconPath;
+    if (!isInnerWallet && signer.signerSource?.isNotEmpty == true) {
+      final WalletImportSource? walletImportSource = WalletImportSourceExtension.fromString(signer.signerSource!);
+      if (walletImportSource != null) {
+        importSourceIconPath = walletImportSource.externalWalletIconPath;
+      }
+    }
+
+    final finalIconPath =
+        isInnerWallet ? CustomIcons.getPathByIndex(iconIndex) : (importSourceIconPath ?? 'assets/svg/puzzle-piece.svg');
+    final Color finalIconColor =
+        isInnerWallet
+            ? ColorUtil.getColor(colorIndex).color
+            : (importSourceIconPath != null ? CoconutColors.white : CoconutColors.gray600);
+
     return Container(
       color: Colors.transparent,
       child: Row(
@@ -26,11 +55,7 @@ class MultisigSignerCard extends StatelessWidget {
           // 왼쪽 인덱스 번호
           SizedBox(
             width: 24,
-            child: Text(
-              '${index + 1}',
-              textAlign: TextAlign.center,
-              style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.gray400),
-            ),
+            child: Text('${index + 1}', textAlign: TextAlign.center, style: CoconutTypography.body1_16_NumberBold),
           ),
           CoconutLayout.spacing_200w,
           // 카드 영역
@@ -39,8 +64,8 @@ class MultisigSignerCard extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: CoconutColors.black,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: CoconutColors.gray700),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: CoconutColors.gray500),
               ),
               child: Row(
                 children: [
@@ -48,16 +73,13 @@ class MultisigSignerCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(Sizes.size10),
                     decoration: BoxDecoration(
-                      color: ColorUtil.getColor(isInnerWallet ? colorIndex : 8).backgroundColor,
+                      color: isInnerWallet ? ColorUtil.getColor(8).backgroundColor : CoconutColors.gray800,
                       borderRadius: BorderRadius.circular(12.0),
                     ),
                     child: SvgPicture.asset(
-                      isInnerWallet ? CustomIcons.getPathByIndex(iconIndex) : 'assets/svg/download.svg',
-                      colorFilter: ColorFilter.mode(
-                        ColorUtil.getColor(isInnerWallet ? colorIndex : 8).color, // index 8 is gray
-                        BlendMode.srcIn,
-                      ),
-                      width: isInnerWallet ? 18 : 15,
+                      finalIconPath,
+                      colorFilter: ColorFilter.mode(finalIconColor, BlendMode.srcIn),
+                      width: 18, //isInnerWallet ? 18 : 15
                     ),
                   ),
                   CoconutLayout.spacing_300w,
@@ -68,16 +90,18 @@ class MultisigSignerCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          TextUtils.ellipsisIfLonger(name),
-                          style: CoconutTypography.body2_14,
+                          finalName != null ? TextUtils.ellipsisIfLonger(finalName) : t.wallet_info_screen.no_info,
+                          style: CoconutTypography.body2_14.setColor(
+                            finalName != null ? CoconutColors.white : CoconutColors.gray500,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Visibility(
-                          visible: memo.isNotEmpty,
+                          visible: !useMemoInsteadOfName && memo.isNotEmpty,
                           child: Text(
                             memo,
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -86,8 +110,14 @@ class MultisigSignerCard extends StatelessWidget {
                     ),
                   ),
 
-                  // MFP 텍스트
-                  Text(masterFingerprint, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+                  // MFP, Derivation Path
+                  Column(
+                    children: [
+                      Text(masterFingerprint, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+                      CoconutLayout.spacing_50h,
+                      Text(derivationPath, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+                    ],
+                  ),
                 ],
               ),
             ),

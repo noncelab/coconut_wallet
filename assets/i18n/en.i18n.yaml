@@ -35,6 +35,7 @@ complete: "Complete"
 close: "Close"
 next: "Next"
 modify: "Modify"
+OK: "OK"
 confirm: "Confirm"
 cancel: "Cancel"
 security: "Security"
@@ -96,6 +97,7 @@ network: "Network"
 electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
+go_to_settings: "Go to Settings"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -106,7 +108,7 @@ view_app_info: "App Info"
 view_tx_details: "Transaction"
 view_more: "More"
 view_less: "Less"
-view_mempool: "mempool.space"
+view_mempool: "View mempool"
 view_all_addresses: "All Addresses"
 select_utxo: "Select UTXO"
 select_all: "Select All"
@@ -230,7 +232,7 @@ wallet_add_scanner_screen:
   self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
-  guide_vault: "Coconut Vault App - Select Wallet - Export Wallet Info"
+  guide_vault: "On the Coconut Vault home screen, go to: “Export to Watch-Only Wallet → Select Wallet” or “Select Wallet → Export Wallet → Export to Watch-Only Wallet”. Then scan the QR code."
   guide_seedsigner:
     step1: "1. On the home screen, "
     step1_em: " Seeds"
@@ -329,7 +331,7 @@ wallet_add_input_screen:
     - "A unique value required to identify a watch-only wallet"
     - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
     - "Without fingerprint, you will not be able to use the send feature."
-  mfp_input_placeholder: "f75f7ab5"
+  mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
   mfp_skip: "Skip"
 
 # lib/screens/review
@@ -451,6 +453,9 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "Reading additional data to collect\nPlease keep scanning"
+  camera_error:
+    title: "Camera Access Unavailable"
+    need_camera_permission: "Please allow camera access in Settings."
 
 # lib/screens/settings
 app_info_screen:
@@ -544,7 +549,7 @@ settings_screen:
 # lib/screens/wallet_detail
 wallet_detail_screen:
   toast:
-    no_mfp_wallet_cant_send: "Wallets without master fingerprint cannot send"
+    no_mfp_wallet_cant_send: "Wallets without Master Fingerprint cannot send"
 address_list_screen:
   wallet_name: "$name's Address"
   address_index: "Address - $index"
@@ -589,8 +594,22 @@ wallet_info_screen:
   title: "$name Information"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  view_descriptor: "View Descriptor"
+  view_wallet_backup_data: "View Wallet Backup Data"
+  wallet_backup_data: "Wallet Backup Data"
+  confirm_backup_data: "Confirm Backup Data"
+  no_info: "No data"
   tooltip:
     mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
+    wallet_backup_data: "This is the BSMS(BIP-129) backup information for this wallet. You can use this data to reconstruct the multisig wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
+    confirm_backup_data:
+      step1_em: "Go to $name wallet detail screen"
+      step2_preposition: "1. "
+      step2_em: "Export Wallet"
+      step3_preposition: "2. "
+      step3_em: "Backup Wallet Data"
+      step4: "Please scan the QR code below with camera."
+      select: "Select"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
@@ -705,7 +724,7 @@ errors:
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"
-    not_for_regtest: "Not a regtest address"
+    not_for_regtest: "Please check the address format.\n(Native SegWit supported)"
     duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"

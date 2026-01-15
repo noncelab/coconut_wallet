@@ -167,7 +167,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
       decoration: const BoxDecoration(shape: BoxShape.circle, color: CoconutColors.gray700),
       padding: const EdgeInsets.all(10),
       child: SvgPicture.asset(
-        WalletImportSourceExtension.getExternalWalletIconPath(widget.walletImportSource),
+        widget.walletImportSource.externalWalletIconPath,
         colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
       ),
     );

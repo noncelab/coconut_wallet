@@ -35,6 +35,7 @@ complete: "완료"
 close: "닫기"
 next: "다음"
 modify: "변경"
+OK: "확인"
 confirm: "확인"
 cancel: "취소"
 security: "보안"
@@ -96,6 +97,7 @@ network: "네트워크"
 electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
+go_to_settings: "설정하러 가기"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sat/vB)"
@@ -106,7 +108,7 @@ view_app_info: "앱 정보 보기"
 view_tx_details: "거래 자세히 보기"
 view_more: "더보기"
 view_less: "간단히 보기"
-view_mempool: "mempool.space"
+view_mempool: "멤풀 보기"
 view_all_addresses: "전체 주소 보기"
 select_utxo: "UTXO 고르기"
 select_all: "모두 선택"
@@ -230,7 +232,7 @@ wallet_add_scanner_screen:
   self: "직접 입력"
   self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
-  guide_vault: "코코넛 볼트 앱 - 지갑 선택 - 지갑 정보 내보내기"
+  guide_vault: "코코넛 볼트의 홈 화면에서\n\"보기 전용 앱으로 내보내기 - 지갑 선택\" 또는 \"지갑 선택 - 지갑 내보내기 - 보기 전용 앱으로 내보내기\" 화면의 QR 코드를 스캔해 주세요"
   guide_seedsigner:
     step1: "1. 홈 화면에서 "
     step1_em: "Seeds"
@@ -329,7 +331,7 @@ wallet_add_input_screen:
     - "보기 전용 지갑을 식별할 때 필요한 고유 값이에요."
     - "입력한 정보만으로는 이 값을 자동으로 알 수 없기 때문에, 안전하고 정확한 지갑 연결을 위해 직접 입력해주셔야 해요."
     - "이 정보가 없으면 보내기 기능을 사용하실 수 없어요."
-  mfp_input_placeholder: "f75f7ab5"
+  mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
   mfp_skip: "건너뛰기"
 
 # lib/screens/review
@@ -451,7 +453,10 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
-
+  camera_error:
+    title: "카메라 사용 불가"
+    need_camera_permission: "설정에서 카메라 권한을 허용해 주세요."
+    
 # lib/screens/settings
 app_info_screen:
   made_by_team_pow: "포우팀이 만듭니다."
@@ -589,8 +594,22 @@ wallet_info_screen:
   title: "$name 정보"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
+  view_descriptor: "디스크립터 보기"
+  view_wallet_backup_data: "지갑 백업 데이터 보기"
+  wallet_backup_data: "지갑 백업 데이터"
+  confirm_backup_data: "백업 데이터 확인"
+  no_info: "정보 없음"
   tooltip:
     mfp_placeholder_description: "확장공개키로 추가한 지갑이며\n마스터 핑거프린트를 입력하지 않아\n00000000으로 표기돼요."
+    wallet_backup_data: "이 지갑의 BSMS(BIP-129) 백업 정보입니다. 기기 분실 또는 교체 시, 이 데이터를 사용해 다중 서명 지갑을 재구성할 수 있습니다. 안전하게 보관하시고, 외부 공유 시 주의해 주세요."
+    confirm_backup_data:
+      step1_em: "코코넛 볼트에서 $name 지갑 상세 화면으로 이동한 후"
+      step2_preposition: ""
+      step2_em: "1. 지갑 내보내기 "
+      step3_preposition: ""
+      step3_em: "2. 지갑 데이터 백업하기 "
+      step4: "화면에 나타나는 QR 코드를 스캔해 주세요."
+      select: "선택"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
@@ -705,7 +724,7 @@ errors:
     invalid: "올바른 주소가 아니에요."
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
-    not_for_regtest: "레그테스트넷 주소가 아니에요."
+    not_for_regtest: "주소 형식을 확인해 주세요.(Native Segwit 지원)"
     duplicated: "이미 입력한 주소예요"
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"

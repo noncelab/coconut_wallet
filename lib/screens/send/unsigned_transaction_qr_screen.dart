@@ -298,13 +298,12 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (!isEnglish) {
             return [
-              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
                 style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
               TextSpan(
-                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
+                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
                 style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(
@@ -318,19 +317,18 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
                 style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
               TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
               TextSpan(
-                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
+                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
                 style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
               TextSpan(
-                text: ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+                text: t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\''),
                 style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),

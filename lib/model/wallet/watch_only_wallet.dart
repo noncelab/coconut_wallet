@@ -22,7 +22,7 @@ class WatchOnlyWallet {
     String walletImportSource,
   ) {
     _descriptor = Descriptor.parse(descriptor);
-    _walletImportSource = WalletImportSourceExtension.fromString(walletImportSource);
+    _walletImportSource = WalletImportSourceExtension.fromStringDefaultCoconut(walletImportSource);
   }
 
   String get name => _name;

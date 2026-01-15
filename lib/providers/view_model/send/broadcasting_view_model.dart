@@ -72,7 +72,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isSendingToMyAddress => _isSendingToMyAddress;
   bool get isSendingDonation => _isSendingDonation;
   int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
-  String get signedTransaction => _sendInfoProvider.signedPsbt!;
+  String get signedTransaction => _sendInfoProvider.signedPsbt ?? _sendInfoProvider.rawSignedTransaction!;
   int? get totalAmount => _totalAmount;
   AddressType get walletAddressType => _walletBase.addressType;
   int get walletId => _walletId;

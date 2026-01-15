@@ -19,6 +19,7 @@ class SendInfoProvider {
   Transaction? _transaction;
   String? _txWaitingForSign;
   String? _signedPsbtBase64Encoded;
+  String? _rawSignedTransaction;
   // batch tx (주소, 수량)
   Map<String, double>? _recipientsForBatch;
   // null인 경우 RBF 또는 CPFP가 아닙니다.
@@ -38,6 +39,7 @@ class SendInfoProvider {
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
   String? get signedPsbt => _signedPsbtBase64Encoded;
+  String? get rawSignedTransaction => _rawSignedTransaction;
   Map<String, double>? get recipientsForBatch =>
       _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
   FeeBumpingType? get feeBumpingType => _feeBumpingType;
@@ -89,6 +91,10 @@ class SendInfoProvider {
     _signedPsbtBase64Encoded = signedPsbtBase64Encoded;
   }
 
+  void setRawSignedTransaction(String rawSignedTransaction) {
+    _rawSignedTransaction = rawSignedTransaction;
+  }
+
   void setRecipientsForBatch(Map<String, double>? recipients) {
     _recipientsForBatch = recipients;
   }
@@ -119,9 +125,10 @@ class SendInfoProvider {
                             _transaction =
                                 _txWaitingForSign =
                                     _signedPsbtBase64Encoded =
-                                        _isDonation =
-                                            _sendEntryPoint =
-                                                _recipientsForBatch =
+                                        _rawSignedTransaction =
+                                            _isDonation =
+                                                _sendEntryPoint =
+                                                    _recipientsForBatch =
                                                     _feeBumpingType = _walletImportSource = _transactionDraftId = null;
   }
 

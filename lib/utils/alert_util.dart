@@ -1,7 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/styles.dart';
+import 'package:provider/provider.dart';
 
 void showAlertDialog({
   required BuildContext context,
@@ -15,6 +17,7 @@ void showAlertDialog({
     barrierDismissible: dismissible,
     builder:
         (BuildContext context) => CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: title ?? '',
           description: content ?? '',
           backgroundColor: CoconutColors.gray800,

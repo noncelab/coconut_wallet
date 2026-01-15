@@ -6,8 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 part 'model/request/analytics_request_types.dart';
 
-/// Firebase Analytics를 래핑하는 공통 서비스 클래스
-/// 플랫폼 정보, 타임스탬프, 유료 사용자 비활성화 옵션을 제공
+/// Firebase Analytics
 class AnalyticsService {
   final FirebaseAnalytics? _analytics;
   final bool _isAnalyticsDisabled;

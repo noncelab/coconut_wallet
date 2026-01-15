@@ -1,9 +1,6 @@
 import 'dart:typed_data';
 
-enum Flag {
-  none,
-  requireMinimalEncoding,
-}
+enum Flag { none, requireMinimalEncoding }
 
 class CBORTag {
   static const int majorUnsignedInteger = 0;

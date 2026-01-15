@@ -29,6 +29,7 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -53,6 +54,9 @@ class SendScreen extends StatefulWidget {
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _viewMoreButtonKey = GlobalKey();
+  final GlobalKey _addressInputFieldKey = GlobalKey();
+  double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
+
   bool _isDropdownMenuVisible = false;
 
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
@@ -184,6 +188,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _previousKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+      final addressInputFieldRect = _addressInputFieldKey.currentContext?.findRenderObject() as RenderBox;
+      setState(() {
+        _addressInputFieldBottomDy =
+            addressInputFieldRect.localToGlobal(Offset.zero).dy +
+            addressInputFieldRect.size.height -
+            MediaQuery.of(context).padding.top -
+            kToolbarHeight;
+      });
     });
   }
 
@@ -926,7 +938,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         borderColor: CoconutColors.gray800,
         borderRadius: 12,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        icon: SvgPicture.asset(iconPath, colorFilter: const ColorFilter.mode(CoconutColors.gray300, BlendMode.srcIn)),
+        icon: Transform.translate(
+          offset: const Offset(0, 3),
+          child: SvgPicture.asset(
+            iconPath,
+            colorFilter: const ColorFilter.mode(CoconutColors.gray300, BlendMode.srcIn),
+          ),
+        ),
         tooltipType: CoconutTooltipType.fixed,
         richText: RichText(
           text: TextSpan(text: text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray300)),
@@ -1345,6 +1363,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   final isAddressError = data.item2.isError;
                   final controller = _addressControllerList[index];
                   return CoconutTextField(
+                    key: _addressInputFieldKey,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: CoconutColors.black,
@@ -1701,7 +1720,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         return Positioned(
           left: 16,
           right: 16,
-          top: !_viewModel.showAddressBoard ? kPageViewHeight : kAddressBoardPosition,
+          top: !_viewModel.showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
           child: !_viewModel.showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
         );
       },
@@ -1802,23 +1821,25 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 context: sheetContext,
                 actionButtonList: [
                   IconButton(
-                    icon: SvgPicture.asset(
-                      'assets/svg/arrow-reload.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                    ),
+                    icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+                    color: CoconutColors.white,
                     onPressed: () {
                       _qrViewController?.switchCamera();
                     },
                   ),
                 ],
                 onBackPressed: () {
-                  _disposeQrViewController();
+                  _clearQrScanController();
                   Navigator.of(sheetContext).pop<String>('');
                 },
               ),
-              body: AddressQrScannerBody(qrKey: qrKey, onDetect: _onDetect),
+              body: AddressQrScannerBody(
+                qrKey: qrKey,
+                onDetect: _onDetect,
+                setMobileScannerController: (controller) {
+                  _qrViewController = controller;
+                },
+              ),
             ),
       ),
     );
@@ -1843,11 +1864,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _viewModel.setAddressText(normalized, index);
       }
     }
-    _disposeQrViewController();
+    _clearQrScanController();
   }
 
-  void _disposeQrViewController() {
-    _qrViewController?.dispose();
+  void _clearQrScanController() {
+    // dispose는 MobileScanner에서 함 (or error occurred)
+    //_qrViewController?.dispose();
     _qrViewController = null;
   }
 
