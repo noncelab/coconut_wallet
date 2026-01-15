@@ -1648,22 +1648,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
+        } else {
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
+            final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
+            final viewMoreButtonHeight = viewMoreButtonRect.size.height;
+            final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
+            bool isViewMoreButtonVisible =
+                viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
+            if (!isViewMoreButtonVisible) {
+              _screenScrollController.animateTo(
+                _screenScrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
         }
-        Future.delayed(const Duration(milliseconds: 1000), () {
-          final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
-          final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
-          final viewMoreButtonHeight = viewMoreButtonRect.size.height;
-          final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
-          bool isViewMoreButtonVisible =
-              viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
-          if (!isViewMoreButtonVisible) {
-            _screenScrollController.animateTo(
-              _screenScrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-        });
       }),
     );
     _addressFocusNodeList.add(focusNode);
