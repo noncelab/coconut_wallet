@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -119,9 +120,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
 
-        ChangeNotifierProvider(create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(create: (_) => NetworkPreferenceProvider()),
 
-        ChangeNotifierProvider(create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(
+          create:
+              (context) => PreferenceProvider(
+                context.read<WalletPreferencesRepository>(),
+                context.read<NetworkPreferenceProvider>(),
+              ),
+        ),
 
         ChangeNotifierProvider<PriceProvider>(
           create: (context) => PriceProvider(context.read<ConnectivityProvider>(), context.read<PreferenceProvider>()),

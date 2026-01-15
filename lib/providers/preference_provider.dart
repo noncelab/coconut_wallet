@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -19,6 +19,8 @@ import 'package:flutter/material.dart';
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final WalletPreferencesRepository _walletPreferencesRepository;
+
+  final NetworkPreferenceProvider _networkPrefs;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -79,7 +81,8 @@ class PreferenceProvider extends ChangeNotifier {
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
-  PreferenceProvider(this._walletPreferencesRepository) {
+  PreferenceProvider(this._walletPreferencesRepository, this._networkPrefs) {
+    _networkPrefs.addListener(notifyListeners);
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
@@ -376,72 +379,34 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 커스텀 일렉트럼 서버 파라미터 검증
-  void _validateCustomElectrumServerParams(String host, int port, bool ssl) {
-    if (host.trim().isEmpty) {
-      throw ArgumentError('Host cannot be empty');
-    }
-
-    if (port <= 0 || port > 65535) {
-      throw ArgumentError('Port must be between 1 and 65535');
-    }
-  }
-
   /// 일렉트럼 서버 설정
   Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
-    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
+    await _networkPrefs.setDefaultElectrumServer(defaultElectrumServer);
   }
 
   /// 커스텀 일렉트럼 서버 설정
   Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
-    _validateCustomElectrumServerParams(host, port, ssl);
-    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, 'CUSTOM');
-    await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host);
-    await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port);
-    await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl);
+    await _networkPrefs.setCustomElectrumServer(host, port, ssl);
   }
 
   /// 일렉트럼 서버 설정 불러오기
   ElectrumServer getElectrumServer() {
-    final serverName = _sharedPrefs.getString(SharedPrefKeys.kElectrumServerName);
-    debugPrint('PREFERNECE_PROVIDER:: getElectrumServer() serverName: $serverName');
-
-    if (serverName.isEmpty) {
-      if (NetworkType.currentNetworkType == NetworkType.mainnet) {
-        setDefaultElectrumServer(DefaultElectrumServer.coconut);
-        return DefaultElectrumServer.coconut.server;
-      } else {
-        setDefaultElectrumServer(DefaultElectrumServer.regtest);
-        return DefaultElectrumServer.regtest.server;
-      }
-    }
-
-    if (serverName == 'CUSTOM') {
-      return ElectrumServer.custom(
-        _sharedPrefs.getString(SharedPrefKeys.kCustomElectrumHost),
-        _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumPort),
-        _sharedPrefs.getBool(SharedPrefKeys.kCustomElectrumIsSsl),
-      );
-    }
-
-    return DefaultElectrumServer.fromServerType(serverName).server;
+    return _networkPrefs.getElectrumServer();
   }
 
   /// 사용자 서버 정보 불러오기
   Future<List<ElectrumServer>> getUserServers() async {
-    return (await _sharedPrefs.getUserServers()) ?? [];
+    return _networkPrefs.getUserServers();
   }
 
   /// 사용자 서버 추가
   Future<void> addUserServer(String host, int port, bool ssl) async {
-    await _sharedPrefs.addUserServer(ElectrumServer.custom(host, port, ssl));
-    notifyListeners();
+    await _networkPrefs.addUserServer(host, port, ssl);
   }
 
   /// 사용자 서버 삭제
   Future<void> removeUserServer(ElectrumServer server) async {
-    await _sharedPrefs.removeUserServer(server);
-    notifyListeners();
+    await _networkPrefs.removeUserServer(server);
   }
 
   // 마지막으로 선택한 UTXO 정렬 방식 저장
