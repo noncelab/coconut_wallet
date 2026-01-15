@@ -39,6 +39,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   late QrScanDensity _qrScanDensity;
   late double _sliderValue;
   late bool? _isDonation;
+  bool _isBbqrType = false;
 
   int _currentBbqrIndex = 0;
   Timer? _bbqrTimer;
@@ -52,7 +53,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     _isMultisig = _sendInfoProvider.isMultisig!;
     _walletImportSource = _sendInfoProvider.walletImportSource!;
     _isDonation = _sendInfoProvider.isDonation;
-
+    _isBbqrType = _walletImportSource == WalletImportSource.coldCard;
     // [spacedHex] psbt파일로 저장해서 콜드카드 시뮬레이터에서 인식될 때 사용됨
     // [.psbt 파일 경로] firmware/unix/work/MicroSD/
     // 주의할 점: psbt 확장자여야 하며, 일반 txt파일을 psbt로 확장자명을 변환하면 인식이 안될 수도 있음
@@ -66,13 +67,9 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
     if (_walletImportSource == WalletImportSource.coldCard) {
       _bbqrParts = BbQrEncoder().encodeBase64(_psbtBase64);
-      _bbqrTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
-        if (mounted) {
-          setState(() {
-            _currentBbqrIndex = (_currentBbqrIndex + 1) % _bbqrParts.length;
-          });
-        }
-      });
+      if (_isBbqrType) {
+        _startBbqrTimer();
+      }
     }
   }
 
@@ -113,9 +110,25 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     _sliderValue = _qrScanDensity.index * 5;
   }
 
+  void _startBbqrTimer() {
+    _bbqrTimer?.cancel();
+    _bbqrTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
+      if (mounted) {
+        setState(() {
+          _currentBbqrIndex = (_currentBbqrIndex + 1) % _bbqrParts.length;
+        });
+      }
+    });
+  }
+
+  void _stopBbqrTimer() {
+    _bbqrTimer?.cancel();
+    _bbqrTimer = null;
+  }
+
   @override
   void dispose() {
-    _bbqrTimer?.cancel();
+    _stopBbqrTimer();
     super.dispose();
   }
 
@@ -152,7 +165,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                         decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(8)),
                         child: Center(
                           child:
-                              _isBbQrType() && _bbqrParts.isNotEmpty
+                              _isBbqrType && _bbqrParts.isNotEmpty
                                   ? QrImageView(data: _bbqrParts[_currentBbqrIndex], version: QrVersions.auto)
                                   : AnimatedQrView(
                                     key: ValueKey(_qrScanDensity),
@@ -163,7 +176,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                                   ),
                         ),
                       ),
-                      if (!_isBbQrType()) ...[CoconutLayout.spacing_800h, _buildDensitySliderWidget(context)],
+                      if (!_isBbqrType) ...[CoconutLayout.spacing_800h, _buildDensitySliderWidget(context)],
                       Container(height: 150),
                     ],
                   ),
@@ -174,6 +187,22 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
               onButtonClicked: () {
                 Navigator.pushNamed(context, '/signed-psbt-scanner');
               },
+              subWidget: CoconutUnderlinedButton(
+                text: _isBbqrType ? t.unsigned_tx_qr_screen.view_ur : t.unsigned_tx_qr_screen.view_bbqr,
+                onTap: () {
+                  if (_bbqrParts.isEmpty) {
+                    _bbqrParts = BbQrEncoder().encodeBase64(_psbtBase64);
+                  }
+                  setState(() {
+                    _isBbqrType = !_isBbqrType;
+                  });
+                  if (_isBbqrType) {
+                    _startBbqrTimer();
+                  } else {
+                    _stopBbqrTimer();
+                  }
+                },
+              ),
               text: t.next,
               backgroundColor: CoconutColors.gray100,
               pressedBackgroundColor: CoconutColors.gray500,
@@ -242,11 +271,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         ],
       ),
     );
-  }
-
-  bool _isBbQrType() {
-    // BbQR이 지원되면 추가 되어야 함
-    return _sendInfoProvider.walletImportSource == WalletImportSource.coldCard;
   }
 
   int _getSnappedValue(double value) {
