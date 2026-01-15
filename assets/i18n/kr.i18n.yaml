@@ -211,14 +211,14 @@ wallet_home_screen:
     category:
       total_balance: "잔액 합계"
       wallet_list: "지갑 목록"
-      recent_transactions: "최근 거래\n(24시간)"
+      recent_transactions: "최근 거래"
       analysis: "분석"
     alert: 
       empty_fake_balance: "가짜 잔액 입력"
       empty_fake_balance_description: "금액이 설정되지 않았어요.\n다시 입력하시거나 0 BTC로 설정할까요?"
       set_to_0: "0 BTC로 설정"
       enter_again: "다시 입력"
-  empty_recent_transaction: "최근 24시간 동안의 거래가 없어요"
+  empty_recent_transaction: "최근에 거래한 내역이 없어요"
   syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
   empty_analysis_result: "분석에 필요한 거래가 없어요"
   analysis_period: "최근 ${days}일 • ${transaction_type}"

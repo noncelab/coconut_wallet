@@ -205,14 +205,14 @@ wallet_home_screen:
     category:
       total_balance: "残高合計"
       wallet_list: "ウォレット\n一覧"
-      recent_transactions: "最近の\n取引(24時間)"
+      recent_transactions: "最近の\n取引"
       analysis: "分析"
     alert: 
       empty_fake_balance: "フェイク残高を入力"
       empty_fake_balance_description: "金額が設定されていません。\nもう一度入力するか、0 BTCに設定しますか？"
       set_to_0: "0 BTCに設定"
       enter_again: "再入力"
-  empty_recent_transaction: "最近24時間の取引がありません"
+  empty_recent_transaction: "最近の取引履歴がありません"
   syncing_recent_transaction: "最近の取引履歴を読み込んでいます"
   empty_analysis_result: "分析に必要な取引はありません"
   analysis_period: "直近${days}日 • ${transaction_type}"
