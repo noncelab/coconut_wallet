@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
-import 'package:coconut_wallet/services/block_explorer_service.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -24,6 +24,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   late final UtxoTagProvider _tagProvider;
   late final TransactionProvider _txProvider;
   late final WalletProvider _walletProvider;
+  late final PreferenceProvider _preferenceProvider;
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
@@ -35,8 +36,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int _utxoInputMaxCount = 0;
   int _utxoOutputMaxCount = 0;
 
-  String _mempoolHost = '';
-  String get mempoolHost => _mempoolHost;
+  String get mempoolHost => _preferenceProvider.explorerUrl;
 
   UtxoDetailViewModel(
     this._walletId,
@@ -45,6 +45,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     this._txProvider,
     this._walletProvider,
     this._syncWalletStateStream,
+    this._preferenceProvider,
   ) {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -55,11 +56,6 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
     _initUtxoInOutputList();
     _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdate);
-    _loadMempoolHost();
-  }
-
-  void _loadMempoolHost() async {
-    _mempoolHost = await BlockExplorerService.getExplorerUrl();
   }
 
   void _onWalletUpdate(WalletUpdateInfo info) {

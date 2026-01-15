@@ -70,6 +70,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           Provider.of<AddressRepository>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
           Provider.of<SendInfoProvider>(context, listen: false),
+          Provider.of<PreferenceProvider>(context, listen: false),
         );
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);

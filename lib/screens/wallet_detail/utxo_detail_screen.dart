@@ -123,6 +123,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           Provider.of<TransactionProvider>(context, listen: false),
           Provider.of<WalletProvider>(context, listen: false),
           Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
+          Provider.of<PreferenceProvider>(context, listen: false),
         );
         return _viewModel;
       },

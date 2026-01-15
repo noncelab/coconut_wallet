@@ -1,14 +1,55 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter/widgets.dart';
 
 class NetworkPreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
   NetworkPreferenceProvider();
+
+  bool get useDefaultExplorer {
+    if (_sharedPrefs.isContainsKey(SharedPrefKeys.kUseDefaultExplorer)) {
+      return _sharedPrefs.getBool(SharedPrefKeys.kUseDefaultExplorer);
+    }
+
+    return true;
+  }
+
+  String get customExplorerUrl => _sharedPrefs.getString(SharedPrefKeys.kCustomExplorerUrl);
+
+  String get blockExplorerUrl {
+    if (NetworkType.currentNetworkType == NetworkType.regtest) {
+      return BLOCK_EXPLORER_URL_REGTEST;
+    }
+
+    if (useDefaultExplorer) {
+      return _getDefaultMempoolUrl();
+    } else {
+      final customUrl = customExplorerUrl;
+      return customUrl.isNotEmpty ? customUrl : _getDefaultMempoolUrl();
+    }
+  }
+
+  String _getDefaultMempoolUrl() {
+    // 언어 설정은 SharedPrefs에서 직접 가져옴 (PreferenceProvider 의존성 방지)
+    final language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
+    final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
+
+    switch (effectiveLanguage) {
+      case 'kr':
+        return 'https://mempool.space/ko';
+      case 'jp':
+        return 'https://mempool.space/ja';
+      case 'en':
+      default:
+        return 'https://mempool.space';
+    }
+  }
 
   void _validateCustomElectrumServerParams(String host, int port, bool ssl) {
     if (host.trim().isEmpty) {
@@ -71,5 +112,31 @@ class NetworkPreferenceProvider extends ChangeNotifier {
   Future<void> removeUserServer(ElectrumServer server) async {
     await _sharedPrefs.removeUserServer(server);
     notifyListeners();
+  }
+
+  Future<void> setUseDefaultExplorer(bool useDefault) async {
+    await _sharedPrefs.setBool(SharedPrefKeys.kUseDefaultExplorer, useDefault);
+    notifyListeners();
+  }
+
+  Future<void> setCustomExplorerUrl(String url) async {
+    var formattedUrl = url.trim();
+
+    if (formattedUrl.isNotEmpty) {
+      if (!formattedUrl.startsWith('http') && !formattedUrl.startsWith('https')) {
+        formattedUrl = 'https://$formattedUrl';
+      }
+      if (formattedUrl.endsWith('/')) {
+        formattedUrl = formattedUrl.substring(0, formattedUrl.length - 1);
+      }
+    }
+
+    await _sharedPrefs.setString(SharedPrefKeys.kCustomExplorerUrl, formattedUrl);
+    notifyListeners();
+  }
+
+  Future<void> resetBlockExplorerToDefault() async {
+    await setUseDefaultExplorer(true);
+    await setCustomExplorerUrl('');
   }
 }

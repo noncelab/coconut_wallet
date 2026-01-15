@@ -81,6 +81,12 @@ class PreferenceProvider extends ChangeNotifier {
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
+  String get explorerUrl => _networkPrefs.blockExplorerUrl;
+
+  bool get useDefaultExplorer => _networkPrefs.useDefaultExplorer;
+
+  String get customExplorerUrl => _networkPrefs.customExplorerUrl;
+
   PreferenceProvider(this._walletPreferencesRepository, this._networkPrefs) {
     _networkPrefs.addListener(notifyListeners);
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
@@ -415,5 +421,17 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
     notifyListeners();
+  }
+
+  Future<void> setUseDefaultExplorer(bool useDefault) async {
+    await _networkPrefs.setUseDefaultExplorer(useDefault);
+  }
+
+  Future<void> setCustomExplorerUrl(String url) async {
+    await _networkPrefs.setCustomExplorerUrl(url);
+  }
+
+  Future<void> resetBlockExplorerToDefault() async {
+    await _networkPrefs.resetBlockExplorerToDefault();
   }
 }
