@@ -81,6 +81,7 @@ class TransactionRecordService {
         }
       }
       final txDetails = processTransactionDetails(tx, prevTxs, walletId);
+      mempoolApi.close();
 
       return TransactionRecord.fromTransactions(
         transactionHash: tx.transactionHash,

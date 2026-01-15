@@ -260,7 +260,9 @@ class ElectrumService {
       } catch (e) {
         Logger.error('Tx[$transactionHash] fetch failed: $e');
         // fallback to mempool api
-        txHex = await MempoolApi().fetchTxHex(transactionHash);
+        final mempoolApi = MempoolApi();
+        txHex = await mempoolApi.fetchTxHex(transactionHash);
+        mempoolApi.close();
       }
 
       return Transaction.parse(txHex);
