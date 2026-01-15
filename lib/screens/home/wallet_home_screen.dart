@@ -987,9 +987,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         options: CarouselOptions(
                           autoPlay: false,
                           height: 90,
-                          viewportFraction: 0.82,
+                          viewportFraction: 0.9,
                           enlargeCenterPage: true,
-                          enlargeFactor: 0.25,
+                          enlargeFactor: 0.2,
                           enableInfiniteScroll: false,
                           onPageChanged: (index, reason) {
                             setState(() {
@@ -1133,6 +1133,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
 
     return ShrinkAnimationButton(
+      borderRadius: CoconutStyles.radius_200,
       pressedColor: CoconutColors.gray750,
       onPressed:
           () => Navigator.pushNamed(
@@ -1141,8 +1142,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             arguments: {'id': walletId, 'txHash': transaction.transactionHash},
           ),
       child: Container(
-        padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
-        decoration: const BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(12))),
+        padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
         child: buildTxRow(transaction),
       ),
     );
