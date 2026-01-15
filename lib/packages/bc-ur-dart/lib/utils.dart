@@ -15,12 +15,7 @@ String dataToHex(Uint8List buf) {
 }
 
 Uint8List intToBytes(int n) {
-  return Uint8List.fromList([
-    (n >> 24) & 0xFF,
-    (n >> 16) & 0xFF,
-    (n >> 8) & 0xFF,
-    n & 0xFF,
-  ]);
+  return Uint8List.fromList([(n >> 24) & 0xFF, (n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF]);
 }
 
 int bytesToInt(Uint8List buf) {
@@ -37,7 +32,9 @@ bool isUrType(String type) {
 
 List<String> partition(String s, int n) {
   return List.generate(
-      (s.length / n).ceil(), (i) => s.substring(i * n, (i + 1) * n > s.length ? s.length : (i + 1) * n));
+    (s.length / n).ceil(),
+    (i) => s.substring(i * n, (i + 1) * n > s.length ? s.length : (i + 1) * n),
+  );
 }
 
 Tuple<Uint8List, Uint8List> split(Uint8List buf, int count) {

@@ -1,4 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/core/bip/129/multisig_normalizer.dart';
+import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -18,6 +20,7 @@ class MultisigWalletListItem extends WalletListItemBase {
   }) : super(walletType: WalletType.multiSignature, walletImportSource: WalletImportSource.coconutVault) {
     walletBase = MultisignatureWallet.fromDescriptor(descriptor);
     name = name.replaceAll('\n', ' ');
+    signerBsmsList = _getSignerBsmsList(descriptor);
   }
 
   @JsonKey(name: "signers")
@@ -25,4 +28,10 @@ class MultisigWalletListItem extends WalletListItemBase {
 
   @JsonKey(name: "requiredSignatureCount")
   late final int requiredSignatureCount;
+
+  late final List<SignerBsms> signerBsmsList;
+
+  List<SignerBsms> _getSignerBsmsList(String descriptor) {
+    return MultisigNormalizer.fromCoordinatorResult("BSMS 1.0\n00\n$descriptor").signerBsms;
+  }
 }

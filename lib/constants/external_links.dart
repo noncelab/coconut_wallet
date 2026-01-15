@@ -29,7 +29,6 @@ const X_POW = 'https://x.com/POWbitcoiner';
 const TUTORIAL_URL = 'https://tutorial.coconut.onl';
 
 /// Block explorer
-const BLOCK_EXPLORER_URL = 'https://mempool.space/ko';
 const BLOCK_EXPLORER_URL_REGTEST = 'https://regtest-mempool.coconut.onl';
 
 /// Fee Service

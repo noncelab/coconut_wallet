@@ -582,6 +582,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               context: context,
               builder: (BuildContext context) {
                 return CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
                   title: t.wallet_list.edit.finish,
                   description: t.wallet_list.edit.unsaved_changes_confirm_exit,
                   leftButtonText: t.no,

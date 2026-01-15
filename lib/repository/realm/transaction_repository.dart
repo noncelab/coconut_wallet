@@ -152,10 +152,10 @@ class TransactionRepository extends BaseRepository {
     // final existingTxs = realm.query<RealmTransaction>('walletId == $walletId');
     // final existingTxMap = {for (var tx in existingTxs) tx.transactionHash: tx};
     final existingTxHashes = txList.map((tx) => tx.transactionHash).toSet();
-    final existingTxs = realm.query<RealmTransaction>(
-      r'walletId == $0 AND transactionHash IN $1',
-      [walletId, existingTxHashes],
-    );
+    final existingTxs = realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash IN $1', [
+      walletId,
+      existingTxHashes,
+    ]);
     final existingTxMap = {for (var tx in existingTxs) tx.transactionHash: tx};
 
     // 새 트랜잭션과 업데이트할 트랜잭션을 분리

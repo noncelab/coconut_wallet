@@ -25,7 +25,7 @@ class WalletIcon extends StatelessWidget {
       child:
           isExternalWallet
               ? SvgPicture.asset(
-                WalletImportSourceExtension.getExternalWalletIconPath(walletImportSource),
+                walletImportSource.externalWalletIconPath,
                 colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
               )
               : SvgPicture.asset(

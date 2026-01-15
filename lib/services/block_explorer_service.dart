@@ -1,18 +1,38 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BlockExplorerService {
   static const String _useDefaultExplorerKey = SharedPrefKeys.kUseDefaultExplorer;
   static const String _customExplorerUrlKey = SharedPrefKeys.kCustomExplorerUrl;
-  final String _defaultMempoolUrl =
-      NetworkType.currentNetworkType == NetworkType.mainnet ? BLOCK_EXPLORER_URL : BLOCK_EXPLORER_URL_REGTEST;
 
   // 기본 익스플로러 사용 여부 가져오기
   static Future<bool> getUseDefaultExplorer() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_useDefaultExplorerKey) ?? true;
+  }
+
+  // 기본 mempool URL 가져오기
+  static Future<String> _getDefaultMempoolUrl() async {
+    if (NetworkType.currentNetworkType == NetworkType.regtest) {
+      return BLOCK_EXPLORER_URL_REGTEST;
+    }
+
+    // mainnet인 경우 언어에 따라 URL 분기
+    final prefs = await SharedPreferences.getInstance();
+    final language = prefs.getString(SharedPrefKeys.kLanguage) ?? getSystemLanguageCode();
+
+    switch (language) {
+      case 'kr':
+        return 'https://mempool.space/ko';
+      case 'jp':
+        return 'https://mempool.space/ja';
+      case 'en':
+      default:
+        return 'https://mempool.space';
+    }
   }
 
   // 기본 익스플로러 사용 여부 설정
@@ -29,10 +49,9 @@ class BlockExplorerService {
 
     final prefs = await SharedPreferences.getInstance();
     final useDefault = await getUseDefaultExplorer();
-    final service = BlockExplorerService();
     return useDefault
-        ? service._defaultMempoolUrl
-        : prefs.getString(_customExplorerUrlKey) ?? service._defaultMempoolUrl;
+        ? await _getDefaultMempoolUrl()
+        : prefs.getString(_customExplorerUrlKey) ?? await _getDefaultMempoolUrl();
   }
 
   // 커스텀 익스플로러 URL 설정

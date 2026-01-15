@@ -48,6 +48,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
@@ -248,6 +249,16 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     (context) => buildScreenWithArgs(
                       context,
                       (args) => WalletDetailScreen(id: args['id'], entryPoint: args['entryPoint']),
+                    ),
+                '/wallet-backup-data':
+                    (context) => buildScreenWithArgs(
+                      context,
+                      (args) => WalletBackupDataScreen(
+                        id: args['id'],
+                        walletName: args['walletName'],
+                        qrDataMap: (args['qrDataMap'] as Map).cast<String, String>(),
+                        textDataMap: (args['textDataMap'] as Map).cast<String, String>(),
+                      ),
                     ),
                 '/address-search':
                     (context) => buildScreenWithArgs(context, (args) => AddressSearchScreen(id: args['id'])),

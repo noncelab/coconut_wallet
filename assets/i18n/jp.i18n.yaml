@@ -18,8 +18,8 @@ testnet: "Testnet"
 address: "アドレス"
 fee: "手数料"
 fee_rate: "手数料率"
-send: "送信"
-receive: "受信"
+send: "送金"
+receive: "受取"
 show: "表示"
 hide: "非表示"
 paste: "貼り付け"
@@ -35,6 +35,7 @@ complete: "完了"
 close: "閉じる"
 next: "次へ"
 modify: "変更"
+OK: "OK"
 confirm: "確認"
 cancel: "キャンセル"
 security: "セキュリティ"
@@ -62,7 +63,7 @@ utxo_total: "金額"
 receiver: "送信先"
 estimated_fee: "推定手数料"
 total_cost: "合計費用"
-input_directly: "手数料率"
+input_directly: "手動入力"
 mnemonic_wordlist: "ニーモニック単語リスト"
 self_security_check: "セキュリティチェック"
 app_info: "アプリ情報"
@@ -96,6 +97,7 @@ network: "ネットワーク"
 electrum_server: "Electrum Server"
 block_explorer: "ブロックエクスプローラー"
 log_viewer: "ログビューアー"
+go_to_settings: "設定を開く"
 
 apply_item: "$count 項目"
 fee_sats: " ($value sat/vB)"
@@ -197,7 +199,7 @@ wallet_add_scanner_screen:
   self: "手動追加"
   self_description: "情報でウォレットを追加できます"
   select: "選択"
-  guide_vault: "Coconut Vault App - ウォレット選択 - ウォレット情報エクスポート"
+  guide_vault: "Coconut Vaultのホーム画面で、「ウォッチオンリーウォレットにエクスポート → ウォレット選択」 または 「ウォレット選択 → ウォレットエクスポート → ウォッチオンリーウォレットにエクスポート」 に進み、QRコードをスキャンしてください。"
   guide_seedsigner:
     step1: "1. ホーム画面で、"
     step1_em: " Seeds"
@@ -296,7 +298,7 @@ wallet_add_input_screen:
     - "ウォッチオンリーウォレットを識別するために必要な固有値"
     - "この値は入力した情報から自動的に決定できないため、安全で正確なウォレット接続のために直接入力する必要があります。"
     - "フィンガープリントがないと、送信機能を使用できません。"
-  mfp_input_placeholder: "f75f7ab5"
+  mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
   mfp_skip: "スキップ"
 
 # lib/screens/review
@@ -418,6 +420,9 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "追加データを読み取り中\nスキャンを続けてください"
+  camera_error:
+    title: "カメラを使用できません"
+    need_camera_permission: "設定でカメラの使用を許可してください。"
 
 # lib/screens/settings
 app_info_screen:
@@ -556,8 +561,22 @@ wallet_info_screen:
   title: "$name情報"
   view_xpub: "拡張公開鍵を表示"
   duplicated_name: "名前が既に使用されています"
+  view_descriptor: "ディスクリプタを表示"
+  view_wallet_backup_data: "ウォレットバックアップデータを表示"
+  wallet_backup_data: "ウォレットバックアップデータ"
+  confirm_backup_data: "バックアップデータを確認"
+  no_info: "データなし"
   tooltip:
     mfp_placeholder_description: "これは拡張公開鍵で追加されたウォレットで\nマスターフィンガープリントが入力されていないため\n00000000として表示されています。"
+    wallet_backup_data: "これはこのウォレットのBSMS(BIP-129)バックアップ情報です。デバイスの紛失や交換の場合に、このデータを使用してマルチシグウォレットを再構築できます。外部で共有する際は注意して保管してください。"
+    confirm_backup_data:
+      step1_em: "ココナッツボルトで$nameウォレットの詳細画面に移動した後"
+      step2_preposition: ""
+      step2_em: "1. ウォレットをエクスポート"
+      step3_preposition: ""
+      step3_em: "2. ウォレットデータをバックアップ"
+      step4: "下のQRコードをカメラでスキャンしてください。"
+      select: "選択"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
