@@ -46,6 +46,9 @@ class SendScreen extends StatefulWidget {
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _viewMoreButtonKey = GlobalKey();
+  final GlobalKey _addressInputFieldKey = GlobalKey();
+  double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
+
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
@@ -165,6 +168,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _previousKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+      final addressInputFieldRect = _addressInputFieldKey.currentContext?.findRenderObject() as RenderBox;
+      setState(() {
+        _addressInputFieldBottomDy =
+            addressInputFieldRect.localToGlobal(Offset.zero).dy +
+            addressInputFieldRect.size.height -
+            MediaQuery.of(context).padding.top -
+            kToolbarHeight;
+      });
     });
   }
 
@@ -1071,6 +1082,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   final isAddressError = data.item2.isError;
                   final controller = _addressControllerList[index];
                   return CoconutTextField(
+                    key: _addressInputFieldKey,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: CoconutColors.black,
@@ -1406,7 +1418,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         return Positioned(
           left: 16,
           right: 16,
-          top: !_viewModel.showAddressBoard ? kPageViewHeight : kAddressBoardPosition,
+          top: !_viewModel.showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
           child: !_viewModel.showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
         );
       },
