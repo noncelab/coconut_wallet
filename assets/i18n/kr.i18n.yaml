@@ -217,7 +217,7 @@ wallet_add_scanner_screen:
     step6_em: "I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step0: "키스톤 3 프로를 제외한 기기는 호환되지 않습니다."
+    step0: "키스톤 3 프로를 제외한 기기는 호환되지 않습니다. (Bitcoin-only 펌웨어 권장)"
     step1: "1. 홈 화면에서 "
     step1_em: "더보기(•••)"
     step2: "2. "

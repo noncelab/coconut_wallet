@@ -217,7 +217,7 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step0: "Keystone 3 Pro以外のデバイスはサポートされていません。"
+    step0: "Keystone 3 Pro以外のデバイスはサポートされていません。（Bitcoin専用FW推奨）"
     step1: "1. ホーム画面で、"
     step1_em: " More(•••)"
     step2: "2. "
