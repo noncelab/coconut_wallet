@@ -38,7 +38,7 @@ enum DefaultElectrumServer {
 
   // Regtest
   regtest(
-    ElectrumServer('regtest-electrum.coconut.onl', 60401, true),
+    ElectrumServer('regtest-electrum.coconut.onl', 443, true),
     'REGTEST',
     99,
     true, // isRegtest
