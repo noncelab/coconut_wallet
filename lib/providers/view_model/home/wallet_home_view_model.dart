@@ -122,7 +122,10 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void _onNodeProviderChanged() {
-    // NodeProvider의 hasConnectionError 등이 변경되었을 때 UI 업데이트
+    // 블록이 생성되어 트랜잭션이 confirmed 상태로 변경되었을 수 있으므로 트랜잭션 갱신
+    if (_nodeSyncState == NodeSyncState.completed) {
+      updateWalletBalancesAndRecentTxs();
+    }
     notifyListeners();
   }
 
@@ -190,28 +193,55 @@ class WalletHomeViewModel extends ChangeNotifier {
       _nodeSyncState = syncState;
       // Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
       notifyListeners();
-    } else if (_nodeSyncState == NodeSyncState.completed &&
-        syncState == NodeSyncState.completed &&
-        _isFirstLoaded == false) {
-      _isFirstLoaded = true;
+    } else if (_nodeSyncState == NodeSyncState.completed && syncState == NodeSyncState.completed) {
+      // 동기화가 완료된 상태에서 다시 완료 상태로 변경되면 트랜잭션 갱신
+      // (트랜잭션이 confirmed 상태로 변경되었을 수 있음)
+      if (_isFirstLoaded == false) {
+        _isFirstLoaded = true;
+      }
       _nodeSyncState = syncState;
+      // 트랜잭션 동기화 완료 시 블록이 변경되었을 수 있으므로 트랜잭션 갱신
+      updateWalletBalancesAndRecentTxs();
     }
   }
 
   void _handleCurrentBlockUpdate(BlockTimestamp? currentBlock) {
+    final previousHeight = _currentBlock?.height;
+    final currentHeight = currentBlock?.height;
     _currentBlock = currentBlock;
-    Logger.log('WalletHomeViewModel: 현재 블록 높이 업데이트 - ${currentBlock?.height}, 동기화 상태: $_nodeSyncState');
 
-    // 동기화가 완료되었고 블록 높이가 있으면 트랜잭션 조회
-    if (_nodeSyncState == NodeSyncState.completed && currentBlock?.height != null) {
-      Logger.log('WalletHomeViewModel: 동기화 완료 후 블록 높이 업데이트 - 트랜잭션 조회 실행 (블록 높이: ${currentBlock!.height})');
-      getPendingAndRecentDaysTransactions(currentBlock.height, kRecenctTransactionDays);
+    final bool isBlockHeightChanged =
+        previousHeight != null && currentHeight != null && previousHeight != currentHeight;
 
-      getRecentTransactionAnalysis(_analysisPeriod);
+    if (currentHeight != null) {
+      if (isBlockHeightChanged) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (_currentBlock?.height == currentHeight) {
+            if (_nodeSyncState == NodeSyncState.completed) {
+              Logger.log('WalletHomeViewModel: 블록 높이 변경 후 트랜잭션 조회 실행 (블록 높이: $currentHeight)');
+              getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
+            } else {
+              Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
+            }
+            // 동기화 상태와 무관하게 분석 데이터는 항상 조회
+            getRecentTransactionAnalysis(_analysisPeriod);
+          }
+        });
+      } else if (previousHeight == null) {
+        // 첫 번째 블록 높이 설정 시
+        if (_nodeSyncState == NodeSyncState.completed) {
+          getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
+          getRecentTransactionAnalysis(_analysisPeriod);
+        } else {
+          Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
+          getRecentTransactionAnalysis(_analysisPeriod);
+        }
+      }
     } else {
-      Logger.log(
-        'WalletHomeViewModel: _handleCurrentBlockUpdate - 트랜잭션 조회 건너뜀 (동기화 상태: $_nodeSyncState, 블록 높이: ${currentBlock?.height})',
-      );
+      // blockHeight가 없어도 DB 데이터는 조회 (날짜 기준)
+      Logger.log('WalletHomeViewModel: blockHeight 없지만 DB 데이터 조회');
+      getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
+      getRecentTransactionAnalysis(_analysisPeriod);
     }
 
     notifyListeners();
@@ -236,12 +266,14 @@ class WalletHomeViewModel extends ChangeNotifier {
   Future<void> updateWalletBalancesAndRecentTxs() async {
     final updatedWalletBalance = _updateBalanceMap(_walletProvider.fetchWalletBalanceMap());
     _walletBalance = updatedWalletBalance;
-    if (currentBlock?.height != null) {
-      getPendingAndRecentDaysTransactions(currentBlock!.height, kRecenctTransactionDays);
+
+    // 블록이 변경되었을 수 있으므로 블록을 체크하고 트랜잭션 갱신
+    if (_nodeSyncState == NodeSyncState.completed && _currentBlock?.height != null) {
+      // 블록이 변경되었을 수 있으므로 트랜잭션 갱신
+      getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
     }
-    if (currentBlock?.height != null) {
-      getRecentTransactionAnalysis(_analysisPeriod);
-    }
+    // 동기화 중이어도 DB 데이터는 가져옴 (날짜 기준)
+    getRecentTransactionAnalysis(_analysisPeriod);
     notifyListeners();
   }
 
@@ -414,16 +446,17 @@ class WalletHomeViewModel extends ChangeNotifier {
     Logger.log('--> 리시브주소: ${_receiveAddress.address}');
   }
 
-  // 필요한 경우 호출
-  void getPendingAndRecentDaysTransactions(int? blockHeight, int days) {
-    if (blockHeight == null || _isFetchingLatestTx) return;
+  // 필요한 경우 호출 (날짜 기반으로 조회)
+  void getPendingAndRecentDaysTransactions(int? analysisPeriod, int days, {bool forceRefresh = false}) {
+    if (!forceRefresh && _isFetchingLatestTx) return;
 
     if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
     // 홈 화면에 표시한 지갑 목록 아이디
     _isFetchingLatestTx = true;
 
     final walletIds = walletItemList.map((w) => w.id).toList();
-    final transactions = _walletProvider.getPendingAndDaysAgoTransactions(walletIds, blockHeight, days);
+    // blockHeight와 무관하게 날짜 기준으로 조회 (currentBlockHeight는 deprecated)
+    final transactions = _walletProvider.getPendingAndDaysAgoTransactions(walletIds, days);
     _recentTransactions = transactions;
 
     // recentTransactions 로그 출력
@@ -447,47 +480,17 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     _isLatestTxAnalysisRunning = true;
     debugPrint('DEBUG11 - getRecentTransactionAnalysis');
-    // 최근 n days 동안의 트랜잭션을 분석한 결과
+    // 최근 n days 동안의 트랜잭션을 분석한 결과 (DB의 timestamp 기준)
     // 조회 기간 내 트랜잭션 개수
     // 조회 기간 내 트랜잭션의 받은 총 금액
     // 조회 기간 내 트랜잭션의 보낸 총 금액
     final walletIds = walletItemList.map((w) => w.id).toList();
-    debugPrint('DEBUG11 - currentBlock?.height: ${currentBlock?.height}');
-    if (currentBlock?.height == null) return;
-    final currentBlockHeight = currentBlock!.height;
-    debugPrint('DEBUG11 - currentBlockHeight: $currentBlockHeight');
     debugPrint('DEBUG11 - analysisPeriod: $_analysisPeriod');
     debugPrint('analysisPeriodRange.item1: ${_preferenceProvider.analysisPeriodRange.item1}');
     debugPrint('analysisPeriodRange.item2: ${_preferenceProvider.analysisPeriodRange.item2}');
     debugPrint('days: $days');
-    final transactions =
-        _analysisPeriod == 0 &&
-                _preferenceProvider.analysisPeriodRange.item1 != null &&
-                _preferenceProvider.analysisPeriodRange.item2 != null
-            ? _walletProvider.getConfirmedTransactionRecordListWithinDateRange(
-              walletIds,
-              currentBlockHeight,
-              Tuple2<DateTime, DateTime>(
-                _preferenceProvider.analysisPeriodRange.item1!,
-                _preferenceProvider.analysisPeriodRange.item2!,
-              ),
-            )
-            : _walletProvider.getConfirmedTransactionRecordListWithin(walletIds, currentBlockHeight, days);
 
-    final receivedTxs = transactions.where((t) => t.transactionType == TransactionType.received).toList();
-    final sentTxs = transactions.where((t) => t.transactionType == TransactionType.sent).toList();
-    final selfTxs = transactions.where((t) => t.transactionType == TransactionType.self).toList();
-
-    final receivedAmount = receivedTxs.fold(0, (sum, t) => sum + t.amount);
-    final sentAmount = sentTxs.fold(0, (sum, t) => sum + t.amount);
-    final selfAmount = selfTxs.fold(0, (sum, t) => sum + t.amount);
-
-    final totalAmount = receivedAmount + sentAmount + selfAmount;
-    final totalTransactionCount = receivedTxs.length + sentTxs.length + selfTxs.length;
-
-    Logger.log('WalletHomeViewModel: 최근 $days일 동안의 트랜잭션 분석 결과');
-    Logger.log('WalletHomeViewModel: ${totalAmount.abs()}${totalAmount > 0 ? ' 증가했어요' : ' 감소했어요'}');
-    // UTC 기간 출력 : 30일 전 - 오늘 yy.mm.dd 형식으로 출력
+    // 날짜 범위 계산 (DB의 timestamp 기준)
     final startDate =
         _analysisPeriod == 0 &&
                 _preferenceProvider.analysisPeriodRange.item1 != null &&
@@ -500,6 +503,27 @@ class WalletHomeViewModel extends ChangeNotifier {
                 _preferenceProvider.analysisPeriodRange.item2 != null
             ? _preferenceProvider.analysisPeriodRange.item2!
             : DateTime.now().toUtc();
+
+    // DB의 timestamp로 직접 조회
+    final transactions = _walletProvider.getConfirmedTransactionRecordListWithinDateRange(
+      walletIds,
+      Tuple2<DateTime, DateTime>(startDate, endDate),
+    );
+
+    final receivedTxs = transactions.where((t) => t.transactionType == TransactionType.received).toList();
+    final sentTxs = transactions.where((t) => t.transactionType == TransactionType.sent).toList();
+    final selfTxs = transactions.where((t) => t.transactionType == TransactionType.self).toList();
+
+    final receivedAmount = receivedTxs.fold(0, (sum, t) => sum + t.amount);
+    final sentAmount = sentTxs.fold(0, (sum, t) => sum + t.amount);
+    final selfAmount = selfTxs.fold(0, (sum, t) => sum + t.amount);
+
+    final totalAmount = receivedAmount + sentAmount + selfAmount;
+    final totalTransactionCount = receivedTxs.length + sentTxs.length + selfTxs.length;
+
+    Logger.log('WalletHomeViewModel: 최근 $days일 동안의 트랜잭션 분석 결과 (DB timestamp 기준)');
+    Logger.log('WalletHomeViewModel: ${totalAmount.abs()}${totalAmount > 0 ? ' 증가했어요' : ' 감소했어요'}');
+    // UTC 기간 출력 : 30일 전 - 오늘 yy.mm.dd 형식으로 출력
 
     Logger.log(
       'WalletHomeViewModel: 기간: ${startDate.toLocal().toString().split(' ')[0]} ~ ${endDate.toLocal().toString().split(' ')[0]} | 트랜잭션 $totalTransactionCount 회',

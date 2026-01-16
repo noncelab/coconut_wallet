@@ -220,10 +220,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                       ? _buildRecentTransactionsSkeleton()
                                       : _buildRecentTransactions(),
                             ),
-                            // 분석 섹션: 로딩 중이면 스켈레톤, 아니면 컨텐츠
+                            // 분석 섹션: 로딩 중이면서 기존 데이터가 없으면 스켈레톤, 아니면 컨텐츠 (기존 데이터 있으면 보여줌)
                             buildFeatureSectionIfEnabled(
                               HomeFeatureType.analysis,
-                              () => viewModel.isLatestTxAnalysisRunning ? _buildAnalysisSkeleton() : _buildAnalysis(),
+                              () =>
+                                  viewModel.isLatestTxAnalysisRunning && viewModel.recentTransactionAnalysis == null
+                                      ? _buildAnalysisSkeleton()
+                                      : _buildAnalysis(),
                             ),
                           ],
                         ],
@@ -962,55 +965,60 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             margin: const EdgeInsets.only(top: 12),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.black),
             child: Center(
-              child: Selector<PreferenceProvider, bool>(
-                selector: (_, viewModel) => viewModel.isBtcUnit,
-                builder: (context, isBtcUnit, child) {
-                  // 정렬된 트랜잭션 플랫 리스트
-                  final ordered = _getOrderedRecentTransactions();
+              child:
+                  Selector2<PreferenceProvider, WalletHomeViewModel, Tuple2<bool, Map<int, List<TransactionRecord>>>>(
+                    selector:
+                        (_, prefProvider, homeViewModel) =>
+                            Tuple2(prefProvider.isBtcUnit, homeViewModel.recentTransactions),
+                    builder: (context, data, child) {
+                      final isBtcUnit = data.item1;
+                      // 정렬된 트랜잭션 플랫 리스트
+                      final ordered = _getOrderedRecentTransactions();
 
-                  if (ordered.isEmpty) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: _buildEmptyRecentTransactions(
-                        _viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty,
-                      ),
-                    );
-                  }
+                      if (ordered.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _buildEmptyRecentTransactions(
+                            _viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty,
+                          ),
+                        );
+                      }
 
-                  return ordered.length == 1
-                      ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, isBtcUnit),
-                      )
-                      : CarouselSlider(
-                        carouselController: _carouselController,
-                        options: CarouselOptions(
-                          autoPlay: false,
-                          height: 90,
-                          viewportFraction: 0.9,
-                          enlargeCenterPage: true,
-                          enlargeFactor: 0.2,
-                          enableInfiniteScroll: false,
-                          onPageChanged: (index, reason) {
-                            setState(() {
-                              _recentTransactionCurrentPage = index;
-                            });
-                            // 인디케이터 자동 스크롤
-                            _scrollToIndicator(index);
-                          },
-                        ),
-                        items:
-                            ordered.map((t) {
-                              return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
-                            }).toList(),
-                      );
-                },
-              ),
+                      return ordered.length == 1
+                          ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, isBtcUnit),
+                          )
+                          : CarouselSlider(
+                            carouselController: _carouselController,
+                            options: CarouselOptions(
+                              autoPlay: false,
+                              height: 90,
+                              viewportFraction: 0.9,
+                              enlargeCenterPage: true,
+                              enlargeFactor: 0.2,
+                              enableInfiniteScroll: false,
+                              onPageChanged: (index, reason) {
+                                setState(() {
+                                  _recentTransactionCurrentPage = index;
+                                });
+                                // 인디케이터 자동 스크롤
+                                _scrollToIndicator(index);
+                              },
+                            ),
+                            items:
+                                ordered.map((t) {
+                                  return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
+                                }).toList(),
+                          );
+                    },
+                  ),
             ),
           ),
           // 페이지 인디케이터 (트랜잭션 단위, 2개 이상일 때만 표시)
-          Builder(
-            builder: (context) {
+          Selector<WalletHomeViewModel, Map<int, List<TransactionRecord>>>(
+            selector: (_, viewModel) => viewModel.recentTransactions,
+            builder: (context, recentTransactions, child) {
               final totalCount = _getOrderedRecentTransactions().length;
 
               if (totalCount <= 1) return Container();

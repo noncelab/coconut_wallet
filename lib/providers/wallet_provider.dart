@@ -387,14 +387,9 @@ class WalletProvider extends ChangeNotifier {
     return _transactionRepository.getTransactionRecordList(walletId);
   }
 
-  Map<int, List<TransactionRecord>> getPendingAndDaysAgoTransactions(
-    List<int> walletIds,
-    int currentBlockHeight,
-    int days,
-  ) {
+  Map<int, List<TransactionRecord>> getPendingAndDaysAgoTransactions(List<int> walletIds, int days) {
     Map<int, List<TransactionRecord>> result = {};
 
-    // 블록 높이 기준이 아닌, 실제 날짜 기준으로 N일 전 ~ 오늘까지의 트랜잭션 조회
     // end = 지금, start = N일 전 (로컬 시간 기준)
     final DateTime end = DateTime.now();
     final DateTime start = end.subtract(Duration(days: days));
@@ -405,9 +400,13 @@ class WalletProvider extends ChangeNotifier {
       // 현재 날짜 기준 N일 내 트랜잭션 조회
       final recentTxs = _transactionRepository.getTransactionRecordListWithDateRange(walletId, dateRange);
 
-      if (pendingTxs.isNotEmpty || recentTxs.isNotEmpty) {
+      // 중복 제거: pending 트랜잭션과 recent 트랜잭션의 해시를 비교하여 중복 제거
+      final pendingTxHashes = pendingTxs.map((tx) => tx.transactionHash).toSet();
+      final uniqueRecentTxs = recentTxs.where((tx) => !pendingTxHashes.contains(tx.transactionHash)).toList();
+
+      if (pendingTxs.isNotEmpty || uniqueRecentTxs.isNotEmpty) {
         result.addAll({
-          walletId: [...pendingTxs, ...recentTxs],
+          walletId: [...pendingTxs, ...uniqueRecentTxs],
         });
       }
     }
@@ -420,7 +419,6 @@ class WalletProvider extends ChangeNotifier {
     int currentBlockHeight,
     int daysAgo,
   ) {
-    // 블록 높이 기준(6 block/h)을 사용하던 기존 로직을 실제 날짜 기준으로 변경
     // end = 지금, start = N일 전 (로컬 시간 기준)
     final DateTime end = DateTime.now();
     final DateTime start = end.subtract(Duration(days: daysAgo));
@@ -437,7 +435,6 @@ class WalletProvider extends ChangeNotifier {
 
   List<TransactionRecord> getConfirmedTransactionRecordListWithinDateRange(
     List<int> walletIds,
-    int currentBlockHeight,
     Tuple2<DateTime, DateTime> dateRange,
   ) {
     List<TransactionRecord> result = [];
