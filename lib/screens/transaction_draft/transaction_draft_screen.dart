@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/transaction_draft/transaction_draft_view_model.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -123,6 +124,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_draft.dialog.transaction_draft_delete_completed,
           description: t.transaction_draft.dialog.transaction_draft_delete_completed_description,
           rightButtonText: t.transaction_draft.dialog.confirm,
@@ -284,6 +286,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
               context: context,
               builder: (context) {
                 return CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
                   title: t.transaction_draft.dialog.transaction_draft_delete,
                   description: t.transaction_draft.dialog.transaction_draft_delete_description,
                   leftButtonText: t.cancel,
@@ -333,6 +336,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                           context: context,
                           builder: (context) {
                             return CoconutPopup(
+                              languageCode: context.read<PreferenceProvider>().language,
                               title: t.transaction_draft.dialog.transaction_draft_delete_failed,
                               description: result.error.message,
                               rightButtonText: t.confirm,
@@ -358,6 +362,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
               context: context,
               builder: (context) {
                 return CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
                   title: t.transaction_draft.dialog.transaction_draft_delete_failed,
                   description: e.toString(),
                   rightButtonText: t.confirm,

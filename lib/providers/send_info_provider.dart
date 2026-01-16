@@ -129,7 +129,8 @@ class SendInfoProvider {
                                             _isDonation =
                                                 _sendEntryPoint =
                                                     _recipientsForBatch =
-                                                    _feeBumpingType = _walletImportSource = _transactionDraftId = null;
+                                                        _feeBumpingType =
+                                                            _walletImportSource = _transactionDraftId = null;
   }
 
   Map<String, int>? getRecipientMap() {

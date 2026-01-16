@@ -243,6 +243,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_draft.dialog.transaction_draft_saved_broadcast_screen,
           description: t.transaction_draft.dialog.transaction_draft_saved_description_broadcast_screen,
           leftButtonText: t.transaction_draft.dialog.cancel,
@@ -263,6 +264,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_draft.dialog.transaction_draft_save_failed,
           description: errorMessage,
           rightButtonText: t.transaction_draft.dialog.confirm,

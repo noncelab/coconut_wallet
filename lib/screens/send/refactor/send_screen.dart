@@ -429,6 +429,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         context: context,
         builder: (BuildContext context) {
           return CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
             title: t.transaction_draft.dialog.transaction_unavailable_to_sign,
             description: description,
             rightButtonText: t.confirm,
@@ -487,6 +488,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_draft.dialog.transaction_draft_saved_send_screen,
           description: t.transaction_draft.dialog.transaction_draft_saved_send_screen_description,
           leftButtonText: t.transaction_draft.dialog.cancel,
@@ -507,6 +509,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_draft.dialog.transaction_draft_save_failed,
           description: errorMessage,
           rightButtonText: t.transaction_draft.dialog.confirm,
@@ -523,6 +526,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_draft.dialog.transaction_draft_delete_completed,
           description: t.transaction_draft.dialog.transaction_draft_delete_completed_description,
           rightButtonText: t.transaction_draft.dialog.confirm,
