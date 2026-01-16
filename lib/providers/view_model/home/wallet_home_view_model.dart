@@ -615,9 +615,9 @@ class RecentTransactionAnalysis {
               : totalAmount, withUnit: true)} ';
   String get totalAmountResult => totalTransactionResult;
   String get subtitleString =>
-      '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == TransactionType.received
+      '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
           ? receivedTxs.length.toString()
-          : selectedAnalysisTransactionType == TransactionType.sent
+          : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
           ? (sentTxs.length + selfTxs.length).toString()
           : totalTransactionCount.toString())}';
 
