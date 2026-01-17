@@ -225,8 +225,10 @@ class ElectrumService {
       }, timeout: const Duration(seconds: 5));
       return response.result;
     } catch (e) {
-      Logger.error(' fetch failed: $txHash');
-      rethrow;
+      final mempoolApi = MempoolApi();
+      final txHex = await mempoolApi.fetchTxHex(txHash);
+      mempoolApi.close();
+      return txHex;
     }
   }
 
@@ -255,15 +257,7 @@ class ElectrumService {
 
     var futures = toFetchTransactionHashes.map((transactionHash) async {
       var txHex = '';
-      try {
-        txHex = await getTransaction(transactionHash);
-      } catch (e) {
-        Logger.error('Tx[$transactionHash] fetch failed: $e');
-        // fallback to mempool api
-        final mempoolApi = MempoolApi();
-        txHex = await mempoolApi.fetchTxHex(transactionHash);
-        mempoolApi.close();
-      }
+      txHex = await getTransaction(transactionHash);
 
       return Transaction.parse(txHex);
     });

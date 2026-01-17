@@ -66,7 +66,6 @@ enum AppEntryFlow { splash, main, pinCheck }
 
 class CoconutWalletApp extends StatefulWidget {
   static late String kMempoolHost;
-  static late String kMempoolApi;
   static late String kFaucetHost;
   static late String kDonationAddress;
   static late NetworkType kNetworkType;

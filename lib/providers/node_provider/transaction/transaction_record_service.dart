@@ -5,7 +5,6 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/node/transaction_details.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_service.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
@@ -52,49 +51,20 @@ class TransactionRecordService {
   }) async {
     now ??= DateTime.now();
 
-    try {
-      final prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
-      final txDetails = processTransactionDetails(tx, prevTxs, walletId);
+    final prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
+    final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
-      return TransactionRecord.fromTransactions(
-        transactionHash: tx.transactionHash,
-        timestamp: blockTimestamp?.timestamp ?? now,
-        blockHeight: blockTimestamp?.height ?? 0,
-        inputAddressList: txDetails.inputAddressList,
-        outputAddressList: txDetails.outputAddressList,
-        transactionType: txDetails.txType,
-        amount: txDetails.amount,
-        fee: txDetails.fee,
-        vSize: tx.getVirtualByte(),
-      );
-    } catch (e) {
-      Logger.error('TransactionRecordService: electrum failed. fallback to HTTP. error=$e');
-      List<Transaction> prevTxs = [];
-      final mempoolApi = MempoolApi();
-      for (final prevTx in prevTxs) {
-        try {
-          final prevTxHex = await mempoolApi.fetchTxHex(prevTx.transactionHash);
-          final parsedPrevTx = Transaction.parse(prevTxHex);
-          prevTxs.add(parsedPrevTx);
-        } catch (e) {
-          Logger.error('TransactionRecordService: Failed to fetch previous transaction $prevTx.transactionHash: $e');
-        }
-      }
-      final txDetails = processTransactionDetails(tx, prevTxs, walletId);
-      mempoolApi.close();
-
-      return TransactionRecord.fromTransactions(
-        transactionHash: tx.transactionHash,
-        timestamp: blockTimestamp?.timestamp ?? now,
-        blockHeight: blockTimestamp?.height ?? 0,
-        inputAddressList: txDetails.inputAddressList,
-        outputAddressList: txDetails.outputAddressList,
-        transactionType: txDetails.txType,
-        amount: txDetails.amount,
-        fee: txDetails.fee,
-        vSize: tx.getVirtualByte(),
-      );
-    }
+    return TransactionRecord.fromTransactions(
+      transactionHash: tx.transactionHash,
+      timestamp: blockTimestamp?.timestamp ?? now,
+      blockHeight: blockTimestamp?.height ?? 0,
+      inputAddressList: txDetails.inputAddressList,
+      outputAddressList: txDetails.outputAddressList,
+      transactionType: txDetails.txType,
+      amount: txDetails.amount,
+      fee: txDetails.fee,
+      vSize: tx.getVirtualByte(),
+    );
   }
 
   /// 트랜잭션의 입출력 상세 정보를 처리합니다.

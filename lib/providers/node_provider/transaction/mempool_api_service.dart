@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:http/http.dart' as http;
 
 class MempoolApi {
@@ -11,9 +10,7 @@ class MempoolApi {
 
   static Uri _resolveBaseUrl() {
     final mempoolApi =
-        CoconutWalletApp.kMempoolApi.isNotEmpty
-            ? CoconutWalletApp.kMempoolApi
-            : NetworkType.currentNetworkType == NetworkType.mainnet
+        NetworkType.currentNetworkType == NetworkType.mainnet
             ? 'https://mempool.space'
             : 'https://regtest-mempool.coconut.onl';
     return Uri.parse(mempoolApi);

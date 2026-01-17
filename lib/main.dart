@@ -77,9 +77,6 @@ void main() {
       // Faucet - regtest-only
       CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
 
-      // Mempool API
-      CoconutWalletApp.kMempoolApi = dotenv.env[DotenvKeys.mempoolApi] ?? '';
-
       // Donation
       CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';
 
