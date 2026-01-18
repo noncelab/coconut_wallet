@@ -218,7 +218,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
               ),
             ),
           ),
-          _buildFee(widget.transaction.fee),
+          if (_inputAddressList.isNotEmpty) _buildFee(widget.transaction.fee),
           _buildAddressList(
             list: _canShowMoreOutputs ? _outputAddressList.sublist(0, _outputCountToShow) : _outputAddressList,
             rowType: InputOutputRowType.output,
