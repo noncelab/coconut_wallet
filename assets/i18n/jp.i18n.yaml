@@ -706,6 +706,7 @@ errors:
   data_not_found: "データが見つかりません。"
   utxo_lock_error: "一時的なエラーによりUTXOロックの設定に失敗"
   utxo_unlock_error: "一時的なエラーによりUTXOアンロックに失敗"
+  empty_input: "入力を取得できません。メンポールを確認してください。"
 
 text_field:
   enter_fee_with_two_decimal_places: "小数点以下2桁まで入力可能（sat/vB）"

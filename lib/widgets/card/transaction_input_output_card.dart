@@ -13,6 +13,7 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 class TransactionInputOutputCard extends StatefulWidget {
   final TransactionRecord transaction;
@@ -164,6 +165,27 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 인풋을 조회할 수 없는 경우, 경고 메시지 표시
+          if (_inputAddressList.isEmpty) ...[
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/svg/triangle-warning.svg',
+                  width: 16,
+                  colorFilter: const ColorFilter.mode(CoconutColors.warningYellow, BlendMode.srcIn),
+                ),
+                CoconutLayout.spacing_100w,
+                Expanded(
+                  child: Text(
+                    t.errors.empty_input,
+                    softWrap: true,
+                    style: CoconutTypography.body2_14.copyWith(color: CoconutColors.warningYellow),
+                  ),
+                ),
+              ],
+            ),
+            CoconutLayout.spacing_200h,
+          ],
           _buildAddressList(
             list: _canShowMoreInputs ? _inputAddressList.sublist(0, _inputCountToShow) : _inputAddressList,
             rowType: InputOutputRowType.input,
