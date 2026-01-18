@@ -706,6 +706,7 @@ errors:
   data_not_found: "No data found."
   utxo_lock_error: "Failed to set UTXO lock due to temporary error"
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
+  empty_input: "Could not fetch transaction inputs. Please check mempool."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
