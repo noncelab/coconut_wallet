@@ -706,7 +706,7 @@ errors:
   data_not_found: "데이터가 없습니다."
   utxo_lock_error: "일시적인 오류로 인해 UTXO 잠금 설정에 실패했어요"
   utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
-  empty_input: "인풋 조회 실패. 멤풀을 확인해 주세요."
+  empty_input: "트랜잭션 입력 정보를 불러올 수 없어요. 멤풀에서 확인해 주세요."
   
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sat/vB)"

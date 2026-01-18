@@ -168,11 +168,17 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
           // 인풋을 조회할 수 없는 경우, 경고 메시지 표시
           if (_inputAddressList.isEmpty) ...[
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SvgPicture.asset(
-                  'assets/svg/triangle-warning.svg',
-                  width: 16,
-                  colorFilter: const ColorFilter.mode(CoconutColors.warningYellow, BlendMode.srcIn),
+                Column(
+                  children: [
+                    CoconutLayout.spacing_100h,
+                    SvgPicture.asset(
+                      'assets/svg/triangle-warning.svg',
+                      width: 14,
+                      colorFilter: const ColorFilter.mode(CoconutColors.warningYellow, BlendMode.srcIn),
+                    ),
+                  ],
                 ),
                 CoconutLayout.spacing_100w,
                 Expanded(
