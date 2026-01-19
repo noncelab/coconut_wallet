@@ -359,11 +359,17 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   void _goToManualInputScreen() async {
-    controller?.pause();
+    await controller?.stop();
+
+    if (!mounted) return;
 
     final result = await Navigator.pushNamed(context, "/wallet-add-input");
 
-    if (Platform.isIOS) {
+    _isProcessing = false;
+    _viewModel.qrDataHandler.reset();
+
+    if (mounted) {
+      await Future.delayed(const Duration(milliseconds: 200));
       controller?.start();
     }
 

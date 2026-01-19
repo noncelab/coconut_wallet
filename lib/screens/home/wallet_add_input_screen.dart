@@ -226,6 +226,12 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                           horizontalPadding: 0,
                           isActive: _isButtonEnabled,
                           backgroundColor: CoconutColors.white,
+                          subWidget: CoconutUnderlinedButton(
+                            text: t.wallet_add_input_screen.back_scan,
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                          ),
                         ),
                       ],
                     ),
