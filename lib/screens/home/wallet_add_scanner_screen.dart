@@ -20,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -439,14 +438,20 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       FileLogger.error(className, methodName, 'Non-QR format error detected');
     }
 
-    await CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.scan_failed,
-      message: errorMessage,
-      onConfirm: () {
-        FileLogger.log(className, methodName, 'Error dialog confirmed');
-        _isProcessing = false;
-        Navigator.pop(context);
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.wallet_add.add_failed,
+          description: errorMessage,
+          onTapRight: () {
+            FileLogger.log(className, methodName, 'Error dialog confirmed');
+            _isProcessing = false;
+            Navigator.pop(context);
+          },
+          rightButtonText: t.OK,
+        );
       },
     );
   }

@@ -21,7 +21,6 @@ import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
 import 'package:flutter/material.dart';
@@ -647,13 +646,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
   }
 
   void _showDialogListener() {
-    CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.tx_detail.fetch_failed,
-      message: t.alert.tx_detail.fetch_failed_description,
-      onConfirm: () {
-        Navigator.pop(context); // 팝업 닫기
-        Navigator.pop(context); // 지갑 상세 이동
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.tx_detail.fetch_failed,
+          description: t.alert.tx_detail.fetch_failed_description,
+          onTapRight: () {
+            Navigator.pop(context); // 팝업 닫기
+            Navigator.pop(context); // 지갑 상세 이동
+          },
+          rightButtonText: t.OK,
+        );
       },
     );
   }

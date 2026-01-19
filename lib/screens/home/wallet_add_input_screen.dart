@@ -12,7 +12,6 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -66,15 +65,21 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
         case WalletSyncResult.existingWalletUpdateImpossible:
           vibrateLightDouble();
           if (mounted) {
-            CustomDialogs.showCustomAlertDialog(
-              context,
-              title: t.alert.wallet_add.already_exist,
-              message: t.alert.wallet_add.already_exist_description(
-                name: TextUtils.ellipsisIfLonger(viewModel.getWalletName(addResult.walletId!), maxLength: 15),
-              ),
-              onConfirm: () {
-                _isProcessing = false;
-                Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
+                  title: t.alert.wallet_add.already_exist,
+                  description: t.alert.wallet_add.already_exist_description(
+                    name: TextUtils.ellipsisIfLonger(viewModel.getWalletName(addResult.walletId!), maxLength: 15),
+                  ),
+                  onTapRight: () {
+                    _isProcessing = false;
+                    Navigator.pop(context);
+                  },
+                  rightButtonText: t.OK,
+                );
               },
             );
           }
@@ -84,13 +89,19 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
     } catch (e) {
       vibrateLightDouble();
       if (mounted) {
-        CustomDialogs.showCustomAlertDialog(
-          context,
-          title: t.alert.wallet_add.add_failed,
-          message: e.toString(),
-          onConfirm: () {
-            _isProcessing = false;
-            Navigator.pop(context);
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
+              title: t.alert.wallet_add.add_failed,
+              description: e.toString(),
+              onTapRight: () {
+                _isProcessing = false;
+                Navigator.pop(context);
+              },
+              rightButtonText: t.confirm,
+            );
           },
         );
       }
