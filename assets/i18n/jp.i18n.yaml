@@ -826,8 +826,10 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
-  krux: "Krux"  
-  zpub: "zpub"
+  krux: "Krux"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "Upbit"

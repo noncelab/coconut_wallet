@@ -827,7 +827,9 @@ third_party:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
-  zpub: "zpub"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "업비트"
