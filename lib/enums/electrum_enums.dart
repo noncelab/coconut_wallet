@@ -2,7 +2,7 @@ import 'package:coconut_wallet/model/node/electrum_server.dart';
 
 enum DefaultElectrumServer {
   coconut(
-    ElectrumServer('electrum.coconut.onl', 50001, true),
+    ElectrumServer('electrum.coconut.onl', 443, true),
     'COCONUT',
     1,
     false, // isRegtest
@@ -38,7 +38,7 @@ enum DefaultElectrumServer {
 
   // Regtest
   regtest(
-    ElectrumServer('regtest-electrum.coconut.onl', 60401, true),
+    ElectrumServer('regtest-electrum.coconut.onl', 443, true),
     'REGTEST',
     99,
     true, // isRegtest

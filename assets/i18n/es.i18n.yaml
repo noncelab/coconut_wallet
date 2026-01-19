@@ -1,0 +1,849 @@
+# flutter pub run slang
+
+# t.glossary
+# t.error.pcs_error1(count: kMaxNumberOfAttempts - attempt);
+
+# common
+coconut_wallet: "coconut_wallet"
+coconut_vault: "coconut_vault"
+coconut_lib: "coconut_lib"
+
+bitcoin_name: "Bitcoin"
+wallet: "Wallet"
+btc: "BTC"
+bitcoin: "Bitcoino"
+sats: "sats"
+satoshi: "Satoshi"
+testnet: "Red de prueba"
+address: "Dirección"
+fee: "Tarifa"
+fee_rate: "Tasa de tarifa"
+send: "Enviar"
+receive: "Recibir"
+show: "Mostrar"
+hide: "Ocultar"
+paste: "Pegar"
+export: "Exportar"
+edit: "Editar"
+max: "Máximo"
+all: "Todo"
+no: "No"
+yes: "Sí"
+delete: "Eliminar"
+delete_label: "Eliminar"
+complete: "Completar"
+close: "Cerrar"
+next: "Siguiente"
+modify: "Modificar"
+OK: "Aceptar"
+confirm: "Confirmar"
+cancel: "Cancelar"
+security: "Seguridad"
+general: "General"
+unit: "Unidad"
+utxo: "UTXO"
+tag: "Etiqueta"
+change: "Cambio"
+sign: "Firmar"
+glossary: "Glosario"
+tool: "Herramienta"
+tutorial: "Tutorial"
+settings: "Ajustes"
+tx_list: "Historial"
+utxo_list: "Lista UTXO"
+wallet_id: "ID de cartera"
+tag_manage: "Gestionar etiquetas"
+tag_manage_label: "Gestionar etiquetas"
+extended_public_key: "Clave pública extendida"
+tx_memo: "Memo de transacción"
+tx_id: "ID de transacción"
+block_num: "Número de bloque"
+inquiry_details: "Consulta"
+utxo_total: "Total UTXO"
+receiver: "Dirección destino"
+estimated_fee: "Tarifa estimada"
+total_cost: "Costo total"
+input_directly: "Introduce manualmente"
+mnemonic_wordlist: "Lista de palabras"
+self_security_check: "Chequeo de seguridad"
+app_info: "Info de la app"
+update_failed: "Actualización fallida"
+calculation_failed: "Cálculo fallido"
+contact_email: "hello@noncelab.com"
+email_subject: "[Coconut Wallet] Consulta"
+amount: "Cantidad"
+send_amount: "Cantidad a enviar"
+fetch_fee_failed: "Fallo al obtener tarifa"
+fetch_balance_failed: "Fallo al obtener saldo"
+status_used: "Usado"
+status_unused: "Sin usar"
+status_receiving: "Recibiendo"
+status_received: "Recibido"
+status_sending: "Enviando"
+status_sent: "Enviado"
+status_updating: "Actualizando"
+no_status: "Sin estado"
+quick_receive: "Recepción rápida"
+quick_send: "Envio rápido"
+copied: "Copiado"
+change_color: "Cambiar color"
+select: "Seleccionar"
+tap: "Tocar"
+hardware_wallet: "Cartera hardware"
+vault_app: "App Vault"
+view_balance: "Ver saldo"
+view: "Ver"
+network: "Red"
+electrum_server: "Servidor Electrum"
+block_explorer: "Explorador"
+log_viewer: "Visor de registros"
+go_to_settings: "Ir a ajustes"
+
+apply_item: "Aplicar a $count elementos"
+fee_sats: " ($value sat/vB)"
+utxo_count: "($count elementos)"
+total_item_count: "(Total $count elementos)"
+
+view_app_info: "Ver información"
+view_tx_details: "Ver transacción"
+view_more: "Ver más"
+view_less: "Ver menos"
+view_mempool: "Ver mempool"
+view_all_addresses: "Ver todas las direcciones"
+select_utxo: "Seleccionar UTXO"
+select_all: "Seleccionar todo"
+unselect_all: "Deseleccionar todo"
+delete_confirm: "Confirmar eliminación"
+sign_multisig: "Firmar multifirma"
+
+forgot_password: "Contraseña olvidada?"
+tx_not_found: "No hay transacciones"
+utxo_not_found: "UTXO no encontrado"
+utxo_loading: "UTXO cargando"
+faucet_request: "Solicitud de prueba de Bitcoin. Por favor, espere un momento."
+faucet_already_request: "Ya se ha solicitado. Puede tomar hasta 5 minutos para el depósito."
+faucet_failed: "Solicitud fallida. Por favor, inténtelo de nuevo más tarde."
+bio_auth_required: "Autenticación biométrica requerida"
+can_use_after_add_wallet: "Puede usarlo después de agregar la cartera."
+
+donation:
+  coconut: "코코넛 후원"
+  donate: "Donar"
+  supportImpactMessage: "Gracias a tu apoyo, podemos llevar el dinero libre a más personas."
+  encourageSupportMessage: "Ayúdanos a mantener el proyecto vivo."
+  coffee: "☕️ Un café"
+  late_meal: "🍜️ Una cena"
+  maintenance: "⚒️️ Mantenimiento"
+  support_heart: "🩷 Un corazón de apoyo"
+  onchain: "Donación onchain"
+  lightning: "Donación Lightning"
+  under_dust_error: "${dust}(dust) es mayor que el valor ingresado\n"
+  over_donation_max_value_error: "El máximo es de $value sats\n"
+  donation_wallet: "Cartera de donación"
+  total_donation_amount: "Total de donación"
+  donation_address: "Dirección de donación"
+  empty_enough_balance_wallet: "No hay una cartera con saldo suficiente"
+  unsigned_qr_tooltip: "Escanea el QR para firmar"
+  signed_qr_tooltip: "Escanea la transacción firmada"
+  user_messages: [
+    "Con cariño",
+    "Con apoyo sincero",
+    "Te animamos",
+    "Para que sigas adelante",
+    "Mantente fuerte",
+    "Con gratitud",
+    "Porque nos enorgulleces",
+  ]
+  user_messages_description_1: "Al equipo de desarrollo de Coconut"
+  user_messages_description_2: "${amount} sats"
+  donate_confirm: "Confirmar donación"
+  complete:
+    thank_you: "¡Gracias!"
+    description: "Tu donación es más que Bitcoin.\nPermite que Coconut avance hacia mejores wallets\ny llegue a más personas."
+
+# 후원하기 - 라이트닝
+  donation_amount: "Cantidad de donación"
+  ln_invoice: "Factura Lightning"
+  ln_address: "Dirección Lightning"
+  ln_address_pow: "powbitcoiner@speed.app"
+  ln_invoice_api_error: "Error al generar la factura Lightning."
+
+# lib/enums
+transaction_enums:
+  high_priority: "Rápido"
+  medium_priority: "Medio"
+  low_priority: "Lento"
+  expected_time_high_priority: "~10 minutos"
+  expected_time_medium_priority: "~30 minutos"
+  expected_time_low_priority: "~1 hora"
+utxo_order_enums:
+  amt_desc: "Alto"
+  amt_asc: "Bajo"
+  time_desc: "Nuevo"
+  time_asc: "Antiguo"
+
+# lib/screens/common
+pin_check_screen:
+  text: "Introduce tu contraseña"
+
+# lib/screens/home
+wallet_add_scanner_screen:
+  add_wallet: "Añadir Cartera"
+  add_watch_only_wallet: "Añadir Cartera de Vista"
+  vault: "Coconut Vault"
+  keystone: "Keystone 3 Pro"
+  jade: "Jade"
+  seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
+  krux: "Krux"
+  self: "Añadir Manualmente"
+  self_description: "Puedes añadir una cartera con información de otra app."
+  select: "Seleccionar"
+  guide_vault: "En la pantalla principal de Coconut Vault, ve a: “Exportar a Cartera de Vista → Seleccionar Cartera” o “Seleccionar Cartera → Exportar Cartera → Exportar a Cartera de Vista”. Luego escanea el código QR."
+  guide_seedsigner:
+    step1: "1. En la pantalla principal, "
+    step1_em: " Semillas"
+    step2: "2. "
+    step2_em: " Huella Digital del Maestro"
+    step3: "3. "
+    step3_em: " Exportar Xpub"
+    step4: "4. "
+    step4_em1: " Single Sig"
+    next: " > "
+    step4_em2: " Segwit Nativo"
+    step5: "5. "
+    step5_em: " BlueWallet"
+    step6: "6. Después de leer el mensaje, "
+    step6_em: " Entiendo"
+    step6_end: " > Exportar Xpub"
+  guide_keystone:
+    step0: "Los dispositivos que no sean el Keystone 3 Pro no son compatibles."
+    step1: "1. En la pantalla principal, "
+    step1_em: " More(•••)"
+    step2: "2. "
+    step2_em: " Connect Software Wallet"
+    step3: "3. Seleccionar cualquier cartera"
+  guide_jade:
+    step0_preposition: "En un " 
+    step0_em: "Estado "
+    step0: "Activo,"
+    step1: "1. "
+    step1_em: " Options"
+    step2: "2. "
+    step2_em: " Wallet"
+    step3: "3. "
+    step3_em: " Export Xpub"
+  guide_coldcard:
+    step1: "1. "
+    step1_em: " Advanced/Tools"
+    step2: "2. "
+    step2_em: " Export Wallet"
+    step3: "3. "
+    step3_em: " Sparrow"
+    step4: "4. "
+    step4_preposition: "Presiona el "
+    step4_em: "QR "
+    step4_end: "Botón"
+  guide_krux:
+    step0: "Guía basada en wonderMV"
+    step1: "1. "
+    step1_em: "XPUB Export"
+    step2: "2. "
+    step2_em: "XPUB - QR Code"
+    select: "Seleccionar"
+  paste: "Importar mediante pegado"
+# lib/screens/wallet_list
+wallet_list:
+  wallet_count: "$count Elementos"
+  view_all_wallets: "View All My Wallets"
+  primary_wallet: "Cartera Principal"
+  exclude_from_total_amount: "Excluido del Total"
+  home_balance: "Saldo en la Pantalla Principal"
+  excluded_balance: "Saldo Excluido"
+  settings:
+    primary_wallet: "Establecer como Cartera Principal"
+    primary_wallet_disabled_description: "Esta cartera se usa como predeterminada para Send/Receive en la pantalla principal."
+    primary_wallet_abled_description: "Establecer otra cartera como principal automáticamente deshabilitará esta configuración."
+    exclude_from_total_amount: "Excluir del Total"
+    exclude_from_total_amount_description: "Esta cartera será excluida del cálculo del saldo total en la pantalla principal."
+  edit:
+    wallet_list: "Editar Lista de Carteras"
+    star_description: "hasta 5 carteras para mostrar en la pantalla principal."
+    order_description: "para cambiar el orden de las carteras."
+    delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
+    finish: "Finalizar Edición"
+    unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
+  
+wallet_add_input_screen:
+  app_bar_title_text: "직접 입력"
+  placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
+  format_error_text: "확인할 수 없는 형식이에요"
+  invalid_character_error_text: "허용되지 않는 문자가 있어요"
+  mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
+  testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
+  unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
+  wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
+  blue_wallet_texts:
+    - "· BlueWallet"
+    - "· Hot Wallet - More(•••) - Show Wallet XPUB"
+    - "· Watch-only Wallet - More(•••) - Export/Backup"
+    - "zpub6rFR7y4Q2AijBEqt..."
+  nunchuck_wallet_texts:
+    - "· Nunchuck"
+    - "· Keys - Select Key - Key spec info"
+    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+  mfp_title: "Huella Digital del Maestro"
+  mfp_description_title: "Huella Digital del Maestro"
+  mfp_description_texts:
+    - "Un valor único requerido para identificar una cartera de vista"
+    - "Como este valor no puede determinarse automáticamente a partir de la información que ingresaste, necesitas ingresarlo directamente para una conexión segura y precisa de la cartera."
+    - "Sin huella digital, no podrás usar la función de envío."
+  mfp_input_placeholder: "Huella Digital del Maestro ex: f75f7ab5"
+  mfp_skip: "Omitir"
+  back_scan: "Volver al escaneo de QR"
+
+# lib/screens/review
+negative_feedback_screen:
+  text1: "Lo sentimos😭"
+  text2: "Please let us know\nif you have any inconvenience or suggestions!"
+  text3: "Enviar mensaje 1:1"
+  text4: "Próxima vez"
+positive_feedback_screen:
+  text1: "Gracias🥰"
+  text2: "¿Te gustaría dejar una reseña en la tienda?"
+  text3: "Claro"
+  text4: "Próxima vez"
+
+# lib/screens/send
+broadcasting_complete_screen:
+  complete: "Transacción Enviada"
+  memo_placeholder: "Agregar un memo"
+  memo_tags:
+    - "Pago"
+    - "Compra"
+    - "Donación"
+    - "Gastos de Vida"
+    - "Ahorro"
+    - "Permiso"
+    - "Regalo de Cumpleaños"
+
+# send screen start ----
+send_screen:
+  select_wallet: "Seleccionar Cartera"
+  n_utxos: " • ${count} UTXOs"
+  delete: "Eliminar"
+  fee_rate: "Tasa de Fee"
+  fee_rate_suffix: "sat/vB"
+  estimated_fee: "Fee Estimado"
+  fee_subtracted_from_send_amount: "Fee restado del monto enviado"
+  fee_subtracted_from_send_amount_disabled_description: "El recipiente recibe el monto exacto ingresado"
+  fee_subtracted_from_send_amount_enabled_description: "El fee se restará del monto del recipiente"
+  my_address: "Mis Direcciones"
+  add_recipient: "Agregar Recipiente"
+  use_btc_unit: "Usar Unidad BTC"
+  input_maximum_amount: "Enviar Todo"
+  address_placeholder: "Ingrese la dirección del recipiente"
+  recommended_fee_unavailable: "No se pudo obtener la tasa de fee recomendada"
+  recommended_fee_unavailable_description: "Por favor, ingrese la tasa de fee manualmente."
+  tooltip_text: "${count} direcciones • Total ${amount}"
+  tooltip_max_mode_text: "Enviar Todo Modo Habilitado"
+  max_mode_insufficient_balance: "Saldo Insuficiente"
+  unintended_dust_fee: "El cambio de ${unintendedDustFee} sat será usado como fee."
+  fee_rate_too_low: "El valor mínimo permitido es 0.1"
+  drag_to_add_address: "Arrastre para agregar una dirección"
+
+utxo_selection_screen:
+  title: "Seleccionar UTXOs"
+
+select_wallet_with_options_bottom_sheet:
+  select_utxo: "Seleccionar UTXO"
+  select_utxo_auto: "Selección automática"
+  select_utxo_auto_minimal_fee_description: "Selecciona automáticamente los UTXO para pagar la mínima tarifa"
+  select_utxo_auto_selected_utxo_description: "La transacción usará solo los UTXO que elijas"
+  n_utxos: " • ${count} UTXOs"
+
+# send screen end ----
+
+broadcasting_screen:
+  title: "Revisión Final"
+  description: "Listo para enviar usando los detalles a continuación"
+  self_sending: "Esta es una transacción enviada a mi propia cartera."
+  error_popup_title: "Envío Fallido"
+  btn_submit: "Enviar"
+send_address_screen:
+  text1: "Escanea QR o\npega la dirección copiada"
+  text2: "Escanea el código QR de la dirección"
+  add_recipient: "Agregar Recipiente"
+  address_placeholder: "Ingrese la dirección para enviar"
+  amount_placeholder: "Ingrese la cantidad para enviar"
+send_confirm_screen:
+  title: "Revisión de Detalles"
+signed_psbt_scanner_screen:
+  title: "Escanear Transacción Firmada"
+  bbqr_mode_switching: "Cambiando a modo BBQR.\nPor favor, espere un momento."
+  
+unsigned_tx_qr_screen:
+  hardware_wallet_screen_guide: "Guía"
+  guide_keystone:
+    step1: "1. En la pantalla principal, "
+    step1_em: "SCAN"
+    step1_end: "seleccionar"
+    step2: "2. Escanea el código QR a continuación con la cámara"
+  guide_seedsigner:
+    step1: "1. En la pantalla principal, "
+    step1_em: "Scan"
+    step1_end: "seleccionar"
+    step2: "2. Escanea el código QR a continuación con la cámara"
+  guide_jade:
+    step0: "En estado Activo"
+    step1: "1. "
+    step1_em: "Scan QR"
+    step1_end: "seleccionar"
+    step2: "2. Escanea el código QR a continuación con la cámara"
+  guide_coldcard:
+    step1_preposition: "Presiona el "
+    step1_em: "QR "
+    step1_end: "botón en la Coldcard."
+  guide_krux:
+    step1: "1. "
+    step1_em: "Sign"
+    select: "Seleccionar"
+    step2: "2. "
+    step2_em: "PSBT"
+    step3: "3. "
+    step3_em: "Escanea el código QR a continuación con la cámara"
+  fast_scan_mode: "Modo de Escaneo Rápido"
+  low_density_qr: "QR Simple"
+  high_density_qr: "QR Complejo"
+
+  guide_hardware_wallet:
+    step1: "Escanea el código QR a continuación con tu hardware wallet para iniciar el proceso de firma."
+
+coconut_qr_scanner:
+  reading_extra_data: "Leyendo datos adicionales para recopilar\nPor favor, sigue escaneando"
+  camera_error:
+    title: "Acceso a Cámara No Disponible"
+    need_camera_permission: "Por favor, permite el acceso a la cámara en Configuraciones."
+   
+# lib/screens/settings
+app_info_screen:
+  made_by_team_pow: "Hecho por Team POW."
+  coconut_crew_genesis_member: "Coconut Crew: Miembro Genesis"
+  coconut_crew: "Coconut Crew"
+  coconut_crew_thanks_msg: "Estos pioneros en custodia propia\nhan estado con nosotros desde beta.\nSin ellos, Coconut no existiría hoy."
+  category1_ask: "¿Tienes alguna pregunta?"
+  go_to_pow: "Ir a la Comunidad POW"
+  ask_to_discord: "Preguntar via Canal de Discord"
+  ask_to_x: "Preguntar via X"
+  ask_to_email: "Preguntar via Email"
+  category2_opensource: "Coconut Wallet es de código abierto"
+  contribution: "Participar en el Desarrollo de Código Abierto"
+  tos_and_policy: "Términos y Políticas"
+  terms_of_service: "Términos de Servicio"
+  privacy_policy: "Política de Privacidad"
+  license: "Licencia de Código Abierto"
+  data_collection: "Aviso de Recopilación de Datos"
+  version_and_date: "CoconutWallet ver. $version (lanzado el $releasedAt)"
+  inquiry: "Contenido de Consulta"
+bip39_list_screen:
+  result: "Resultados de búsqueda para '$text'"
+  no_result: "No se encontraron resultados"
+pin_setting_screen:
+  new_password: "Ingrese su nueva contraseña"
+  enter_again: "Por favor, confirme nuevamente"
+  set_to_6_digit: "Establecer contraseña de 6 dígitos"
+  set_to_4_digit: "Establecer contraseña de 4 dígitos"
+settings_screen:
+  set_password: "Establecer Contraseña"
+  use_biometric: "Usar Autenticación Biométrica"
+  change_password: "Cambiar Contraseña"
+  hide_balance: "Ocultar Balance"
+  fake_balance:
+    fake_balance_setting: "Establecer Balance Falso"
+    fake_balance_display: "Mostrar Balance Falso"
+    fake_balance_input_placeholder: "Por favor, establezca el total del balance falso (en unidades BTC)"
+    fake_balance_input_description: "Si tiene múltiples carteras, el balance de cada cartera se calculará automáticamente."
+    fake_balance_input_exceeds_error: "Puedes establecer hasta 21 millones de BTC"
+  language: "Idioma"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
+  electrum_server: 
+    server_address: "Dirección del Servidor"
+    port: "Puerto"
+    use_ssl: "Usar SSL"
+    ssl_port: "Puerto SSL: $port"
+    default_server: "Servidores Predeterminados"
+    user_servers: "Servidores Mixtos"
+    reset: "Reiniciar"
+    save: "Guardar"
+    error_msg:
+      invalid_domain_format: "No es un formato de dominio válido"
+      port_out_of_range: "Por favor, ingrese un número de puerto válido (1–65535)"
+    alert: 
+      connection_failed: "Cannot connect!"
+      connecting: "Conectando..."
+      connected: "Conectado"
+    popup:
+      delete_server_info: "Eliminar Información del Servidor"
+      delete_server_info_description: "¿Estás seguro de querer eliminar la información del servidor guardada?"
+  block_explorer:
+    default_explorer: "Explorador Predeterminado"
+    custom_explorer: "Explorador Personalizado"
+    custom_explorer_description: "Coconut usa la dirección que ingresaste. Sin embargo, dado que el formato de enlace de transacción/dirección varía según el explorador, algunos enlaces pueden no funcionar correctamente."
+    save: "Guardar"
+    custom_explorer_input_placeholder: "Ingrese la dirección"
+    connection_status:
+      connecting: "Verificando dirección..."
+      connected: "Dirección verificada"
+      failed: "Dirección no encontrada!"
+  log_viewer_screen:
+    log_description_1: "Si encuentras algún problema, presiona el botón [Compartir] y envíalo via email o contacta con nosotros en Discord o la comunidad POW."
+    log_description_2: "La información compartida solo se usará para la resolución de problemas y se descartará inmediatamente después de resolver el problema."
+    log_target: "[Objetivo de Registro]"
+    log_target_description_1: "Para la verificación de síntomas y resolución de problemas, estamos registrando información cuando agregamos la cartera Keystone 3 Pro. Algunos dispositivos pueden enfrentar problemas, por lo que el registro está en progreso para verificar esto."
+    clear_log: "Limpiar Registro"
+    clear_log_description: "¿Estás seguro de querer limpiar el registro?"
+    email_subject: "[Coconut Wallet] Registro de Depuración"
+    email_body: "Situación: (Por favor, describe brevemente la situación en la que ocurrió el problema)"
+    email_error_msg: "No se puede abrir la aplicación de correo electrónico. Por favor, copie el registro y publíquelo en el canal de Discord o la comunidad POW."
+    buttons:
+      discord: "Ir a Discord"
+      pow: "Ir a POW"
+      copy: "Copiar Registro"
+      toast:
+        copy_success: "Registro copiado correctamente."
+
+    
+# lib/screens/wallet_detail
+wallet_detail_screen:
+  toast:
+    no_mfp_wallet_cant_send: "Las carteras sin Master Fingerprint no pueden enviar"
+address_list_screen:
+  wallet_name: "$name's Dirección"
+  address_index: "Dirección - $index"
+  receiving: "Recibiendo"
+  change: "Cambio"
+  show_only_unused_address: "Mostrar Solo Direcciones Sin Usar"
+address_search_screen:
+  address_placeholder: "Por favor, ingrese la dirección"
+  address_not_found: "Dirección no encontrada"
+  search_result: "Resultados de Búsqueda"
+  address_n_found: "Encontradas $n direcciones"
+  search_range: "Rango de Búsqueda"
+  receiving_address_index: "Índice de Dirección de Recibimiento: $start ~ $end"
+  change_address_index: "Índice de Dirección de Cambio: $start ~ $end"
+  receiving_address: "Dirección de Recibimiento"
+  change_address: "Dirección de Cambio"
+utxo_list_screen:
+  total_balance: "Saldo Total"
+  utxo_locked_button: "Bloquear"
+  utxo_unlocked_button: "Desbloquear"
+
+transaction_detail_screen:
+  confirmation: "$height ($count confirmaciones)"
+  time_ago:
+    just_now: Ahora mismo
+    minutes: ${count} minutos atrás
+    hours: ${count} horas atrás
+    days: ${count} días atrás
+
+utxo_detail_screen:
+  pending: "Confirmación Pendiente"
+  address: "Dirección de Retención"
+  utxo_locked: "Bloqueado"
+  utxo_unlocked: "Disponible"
+  utxo_locked_toast_msg: "UTXO bloqueado completamente! Esta moneda ya no se usará automáticamente."
+  utxo_unlocked_toast_msg: "UTXO desbloqueado completamente! La moneda ha sido cambiada a estado disponible."
+
+utxo_tag_screen:
+  onboarding_title: "Puedes gestionar etiquetas UTXO"
+  add_tag: "Presiona el botón + para crear tu primera etiqueta"
+wallet_info_screen:
+  title: "Información de $name"
+  view_xpub: "Ver Clave Pública Extendida"
+  duplicated_name: "Nombre ya en uso"
+  view_descriptor: "Ver Descriptor"
+  view_wallet_backup_data: "Ver Datos de Respaldo de Cartera"
+  wallet_backup_data: "Datos de Respaldo de Cartera"
+  confirm_backup_data: "Confirmar Datos de Respaldo"
+  no_info: "No hay datos"
+  tooltip:
+    mfp_placeholder_description: "Esta es una cartera agregada con clave pública extendida\n y el master fingerprint no se ingresó\n por lo que se muestra como 00000000."
+    wallet_backup_data: "Este es la información de respaldo BSMS(BIP-129) para esta cartera. Puedes usar estos datos para reconstruir la cartera multifirma en caso de pérdida o reemplazo de dispositivo. Por favor, manténgalo seguro y ten cuidado al compartir externamente."
+    confirm_backup_data:
+      step1_em: "Ir a la pantalla de detalle de cartera $name"
+      step2_preposition: "1. "
+      step2_em: "Exportar Cartera"
+      step3_preposition: "2. "
+      step3_em: "Datos de Respaldo de Cartera"
+      step4: "Por favor, escanea el código QR a continuación con la cámara."
+      select: "Seleccionar"
+transaction_fee_bumping_screen:
+  rbf: "RBF"
+  cpfp: "CPFP"
+  existing_fee: "Tarifa Existente"
+  existing_fee_value: "${value} sat/vB"
+  total_fee: "Total $fee sats / ${vB} vB"
+  new_fee: "Nueva Tarifa"
+  sats_vb: "sat/vB"
+  recommend_fee: "Tarifa mínima: ${fee} sat/vB o superior"
+  recommend_fee_info_rbf: "Debe ser al menos 1 sat/vB superior a la tarifa existente.\nSin embargo, si (tarifa existente + 1) es menor que la tarifa de transferencia lenta, recomendamos la tarifa de transferencia lenta.\nNota: Si el tamaño de la nueva transacción aumenta, la diferencia entre la tarifa recomendada y la tarifa existente puede aparecer menos de 1 sat/vB."
+  recommend_fee_info_cpfp: "Necesitas complementar la tarifa insuficiente con una nueva transacción.\n • Tamaño de la nueva transacción = ${newTxSize} vB, Tarifa recomendada = ${recommendedFeeRate} sat/vB\n • Tarifa total requerida = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • Tarifa de la nueva transacción = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • Tarifa de la nueva transacción = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
+  current_fee: "Tarifa Recomendada"
+  estimated_fee: "Tarifa total estimada de ${fee} sats"
+  estimated_fee_too_high_error: "La tarifa total estimada es superior a 0.01 BTC!"
+  recommended_fees_fetch_error: "No se pueden obtener tarifas recomendadas!"
+  recommended_fees_is_null: "Obteniendo tarifas..."
+  recommended_fee_less_than_pending_tx_fee: "Por favor, especifique una tarifa superior a la tarifa existente"
+  recommended_fee_less_than_network_fee: "Por favor, especifique al menos la tarifa recomendada"
+  dialog:
+    fee_alert_title: "Aviso"
+    fee_alert_description: "La tarifa total que estableció es superior a 0.01 BTC. ¿Quieres continuar de todas formas?"
+    confirmed_alert_title: "Transacción Completada"
+    confirmed_alert_description: "La transacción que estaba pendiente ha sido completada."
+  toast:
+    insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
+
+
+# lib/widgets/card
+wallet_list_add_guide_card:
+  add_watch_only: "¡Intenta agregar una cartera de vista!"
+wallet_list_glossary_shortcut_card:
+  any_word_you_dont_know: "¿No conoces ningún término?"
+  top_right: "Arriba a la derecha "
+  kebab_button: "⋮ "
+  click_to_jump: "Hacer clic en el glosario o aquí para saltar"
+
+# lib/widgets/overlays
+faucet_request_bottom_sheet:
+  title: "Obtener Bitcoin de Prueba"
+  recipient: "Dirección de Recibimiento"
+  placeholder: "Por favor, ingrese la dirección.\nPuedes verificar la dirección presionando el botón [Recibir]."
+  my_address: "Mi cartera($name) dirección - $index"
+  requesting: "Solicitando..."
+  request_amount: "Solicitar $bitcoin BTC"
+license_bottom_sheet:
+  title: "Información de Licencia"
+  coconut_wallet: "Coconut Wallet"
+  copyright_text1: "Coconut Wallet sigue la licencia MIT y el copyright pertenece a NonceLab Inc. de la República de Corea. El texto completo de la licencia MIT se puede encontrar en "
+  copyright_text2: ".\n\nLos derechos de autor de software de terceros incluido en esta aplicación se establecen de la siguiente manera. Si tiene alguna pregunta sobre esto, por favor contáctenos en "
+  copyright_text3: "."
+  email_subject: "[Wallet] Consulta de Licencia"
+security_self_check_bottom_sheet:
+  check1: "Soy responsable de mis propias claves privadas."
+  check2: "No capturo ni fotografía la pantalla de la frase mnemónica."
+  check3: "No almaceno frases mnemónicas en entornos conectados a la red."
+  check4: "Verifico el orden y la ortografía de las frases mnemónicas."
+  check5: "Verifico doblemente que no se incluyan caracteres no deseados en la frase de contraseña."
+  check6: "Verifico frases mnemónicas y contraseñas en un lugar seguro donde no haya nadie presente."
+  check7: "No almaceno frases mnemónicas y contraseñas juntas."
+  check8: "Comienzo a usar la cartera después de probar con pequeñas cantidades."
+  check9: "Verificaré periódicamente los elementos anteriores y almacenaré la frase mnemónica de forma segura."
+  guidance: "Por favor, entiende los elementos de auto-verificación a continuación y asegúrate de almacenar la frase mnemónica de forma segura."
+tag_bottom_sheet:
+  title_new_tag: "Agregar Etiqueta"
+  title_edit_tag: "Editar Etiqueta"
+  tag_list: "Lista de Etiquetas"
+  add_new_tag: "Agregar Etiqueta"
+  delete_tag: "Eliminar Etiqueta"
+  exit_deletion: "Salir de la Eliminación de Etiqueta"
+  max_tag_count: "Puedes especificar hasta 5 etiquetas"
+glossary_bottom_sheet:
+  ask_to_pow: "Preguntar a POW"
+  ask_to_discord: "Preguntar a Discord"
+  synonym: "Término Similar"
+  related: "Términos Relacionados"
+user_experience_survey_bottom_sheet:
+  text1: "Has completado la transferencia de Bitcoin👍"
+  text2: "¿Fue útil Coconut Wallet?"
+  text3: "Sí, es bueno!"
+  text4: "Justo bien"
+unit_bottom_sheet:
+  basic_unit: "Unidad Básica"
+  header_text: "1 BTC = 100,000,000 sats"
+
+errors:
+  storage_read_error: "Fallo al cargar datos desde el almacenamiento."
+  storage_write_error: "Fallo al guardar datos en el almacenamiento."
+  network_error: "No se puede conectar a la red. Por favor, verifique su estado de conexión."
+  node_connection_error: "Fallo al conectar a la red Bitcoin."
+  fetch_wallet_error: "Fallo al obtener la cartera."
+  wallet_sync_failed_error: "Fallo al cargar la información de la cartera desde la red"
+  fetch_balance_error: "Fallo al obtener el saldo."
+  fetch_transaction_list_error: "Fallo al obtener el historial de transacciones."
+  fetch_transactions_error: "Fallo al obtener el historial de transacciones."
+  database_path_error: "No se puede encontrar la ruta de la base de datos."
+  fee_estimation_error: "Fallo al calcular la tarifa."
+  realm_unknown: "Se produjo un error desconocido."
+  realm_not_found: "Datos no encontrados."
+  realm_exception: "Se produjo un error durante la operación Realm."
+  node_unknown: "Se produjo un error desconocido al conectar con el nodo."
+  broadcast_error: "Fallo al enviar la transacción."
+  network_connect: "No hay conexión a la red."
+  network_disconnected: "Red desconectada"
+  network_not_found: "Red no conectada!"
+  electrum_connection_failed: "No se puede conectar al servidor Electrum"
+  insufficient_balance: "Saldo insuficiente."
+  fee_selection_error:
+    insufficient_balance: "Saldo insuficiente para pagar la tarifa"
+    recommended_fee_unavailable: "No se puede obtener la tarifa recomendada.\nPresione el botón 'Cambiar' para ingresar la tarifa directamente."
+    insufficient_utxo: "UTXO seleccionados son insuficientes"
+  address_error:
+    empty: "La dirección está vacía"
+    invalid: "No es una dirección válida"
+    not_for_testnet: "No es una dirección de red de prueba"
+    not_for_mainnet: "No es una dirección de red principal"
+    not_for_regtest: "No es una dirección de red de registro"
+    duplicated: "La dirección ya ha sido agregada"
+  pin_check_error:
+    trial_count: "Puedes intentar $count más veces"
+    failed: "No se permiten más intentos\nPor favor, cierra la aplicación"
+    incorrect: "La contraseña no coincide"
+  pin_setting_error:
+    already_in_use: "La contraseña ya está en uso"
+    process_failed: "Se produjo un error durante el procesamiento"
+    save_failed: "Se produjo un error durante la guardado"
+    incorrect: "La contraseña no coincide"
+  data_loading_failed: "Se produjo un error al cargar los datos."
+  data_not_found: "No se encontraron datos."
+  utxo_lock_error: "Fallo al establecer el bloqueo de UTXO debido a un error temporal"
+  utxo_unlock_error: "Fallo al desbloquear el UTXO debido a un error temporal"
+  empty_input: "No se pueden obtener entradas. Por favor, verifique el mempool."
+  
+text_field:
+  enter_fee_with_two_decimal_places: "Hasta dos decimales permitidos (sat/vB)"
+  enter_fee_directly: "Introducir manualmente"
+  search_mnemonic_word: "Buscar en inglés o números"
+
+tooltip:
+  recommended_fee1: "No se puede obtener la tarifa recomendada. Por favor, ingrese la tarifa manualmente."
+  recommended_fee2: "La tarifa que estableció es $bitcoin $unit o superior."
+  wallet_add1: "Agregar nueva cartera o actualizar carteras existentes."
+  wallet_add2: "Vault"
+  wallet_add3: "Selecciona la cartera que quieres usar en "
+  wallet_add4: "Exportar "
+  wallet_add5: "y escanea el código QR que aparece en la pantalla."
+  amount_to_be_sent: "Solo se puede enviar Bitcoin recibido.\nCantidad recibida: $bitcoin $unit"
+  scan_signed_psbt:
+    guide: "¿Has firmado con ${by_hardware_wallet}?\nEscanea el código QR en la pantalla de ${hardware_wallet}."
+    by_seed_signer: "SeedSigner"
+    by_jade: "Jade"
+    by_keystone: "Keystone"
+    by_coldcard: "Coldcard"
+    by_krux: "Krux"
+    by_hardware_wallet: "cartera hardware"
+    by_vault_app: "aplicación Vault"
+  unsigned_tx_qr:
+    open_vault: "Abrir Coconut Vault"
+    select_wallet: "seleccionar $name"
+    select_menu: "pulsar $menu"
+    scan_qr_below: "y escanea el código QR a continuación."
+  address_receiving: "Esta es la dirección usada cuando recibes Bitcoin. En inglés, se llama Receiving o External."
+  address_change: "Esta es la dirección donde recibes cambio cuando envías Bitcoin. En inglés, se llama Change."
+  utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu cartera es la suma de UTXOs."
+  faucet: "Prueba libremente con Bitcoin de prueba"
+  multisig_wallet: "Esta es una cartera multifirma que requiere\n$count firmas de $total claves."
+  mfp: "Esta es el valor único de la cartera.\nTambién llamado Master Fingerprint (MFP)."
+  rbf: "Una característica para reemplazar una transacción existente con una nueva aumentando la tarifa. (RBF, Replace-By-Fee)"
+  cpfp: "Una característica para aumentar la prioridad estableciendo una alta tarifa en una nueva transacción (Child) para hacer que la transacción existente (Parent) procese más rápido. (CPFP, Child-Pays-For-Parent)"
+  dont_show_again: "No mostrar de nuevo"
+
+toast:
+  back_exit: "Presiona el botón de retroceso una vez más para salir."
+  min_fee: "La tarifa mínima recomendada actual es $minimum sat/vB."
+  fetching_onchain_data: "Obteniendo los datos más recientes. Por favor, espera un momento."
+  screen_capture: "Captura de pantalla detectada."
+  no_balance: "No hay saldo."
+  memo_update_failed: "Fallo al actualizar el memo."
+  tag_add_failed: "Fallo al agregar la etiqueta."
+  tag_update_failed: "No se puede editar la etiqueta."
+  tag_delete_failed: "No se puede eliminar la etiqueta."
+  wallet_detail_refresh: "Arrastra la pantalla hacia abajo para obtener los datos más recientes."
+
+alert:
+  error_tx:
+    created_failed: "Fallo al crear la transacción"
+    not_parsed: "Fallo al analizar la transacción: $error"
+    not_created: "Fallo al crear la transacción $error"
+  error_send:
+    broadcasting_failed: "[Envío Fallido]\n$error"
+    insufficient_balance: "Saldo insuficiente"
+    minimum_amount: "Puedes enviar al menos $bitcoin $unit"
+    insufficient_fee: "[Envío Fallido]\nPor favor, intenta nuevamente aumentando la tarifa."
+  signed_psbt:
+    wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."
+    need_more_sign: "Necesitas $count más firmas"
+    invalid_signature: "Información de firma inválida. Por favor, intenta nuevamente."
+  scan_failed: "Fallo al escanear el código QR"
+  scan_failed_description: "Fallo al escanear el código QR. Por favor, intenta nuevamente.\n$error"
+  invalid_qr: "Código QR inválido.\nPor favor, verifica nuevamente."
+  tutorial:
+    title: "¿Necesitas ayuda?"
+    description: "Te guiaremos al tutorial."
+    btn_view: "Ir al Tutorial"
+  forgot_password:
+    title: "¿Olvidaste tu contraseña?"
+    description: "Puedes restablecer tu contraseña pulsando [Reset]. Cambiar la contraseña restablecerá la lista de carteras sincronizadas."
+    btn_reset: "Restablecer"
+  wallet_add:
+    update_failed: "Fallo al actualizar"
+    update_failed_description: "No hay información para actualizar para $name"
+    duplicate_name: "Nombre duplicado"
+    duplicate_name_description: "Hay una cartera con el mismo nombre.\nPor favor, cambia el nombre y sincroniza."
+    add_failed: "Fallo al agregar la cartera de vista"
+    add_failed_description: "Información de cartera inválida."
+    already_exist: "Cartera duplicada"
+    already_exist_description: "Cartera ya agregada. ($name)"
+  wallet_delete:
+    confirm_delete: "Eliminar Cartera"
+    confirm_delete_description: "¿Estás seguro de querer eliminar la cartera?"
+  update:
+    title: "Notificación de Actualización"
+    description: "Para un servicio estable,\npor favor, actualiza a la última versión."
+    btn_update: "Actualizar Ahora"
+    btn_do_later: "Más tarde"
+  error_occurs: "Error Occurrido"
+  contact_admin: "Por favor, contacta al administrador. $error"
+  tag_apply:
+    title: "Aplicar Etiqueta"
+    description: "¿Quieres aplicar la etiqueta de UTXO existente a la nueva UTXO?"
+    btn_apply: "Aplicar"
+  tx_detail:
+    fetch_failed: "Fallo al obtener la transacción"
+    fetch_failed_description: "Por favor, intenta nuevamente más tarde"
+  tag_delete:
+    title: "Eliminar Etiqueta"
+    description: "¿Estás seguro de querer eliminar #$name?\n"
+    description_utxo_tag: "¿Estás seguro de querer eliminar $name?\nEstá aplicado a $count UTXOs."
+  recipient_delete:
+    description: "La información que ingresaste se eliminará.\n¿Aún quieres eliminarla?"
+  faucet:
+    no_test_bitcoin: "Faucet está fuera de servicio. Por favor, intenta nuevamente más tarde."
+    check_address: "Por favor, verifica si la dirección es correcta"
+    try_again: "Por favor, intenta nuevamente después de $count"
+  fee_bumping:
+    not_enough_amount: "Saldo insuficiente para ejecutar $bumpingType.\nPor favor, verifica tu saldo disponible actual."
+
+third_party:
+  keystone: "Keystone"
+  jade: "Jade"
+  seed_signer: "SeedSigner"
+  cold_card: "ColdCard"
+  krux: "Krux"  
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
+
+trade_exchange:
+  upbit: "Upbit"
+  binance: "Binance"
+
+fiat:
+  fiat: "Fiat"
+  krw_price: "Precio Upbit"
+  usd_price: "Precio Binance"
+  jpy_price: "Precio Bitflyer"

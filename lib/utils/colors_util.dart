@@ -20,7 +20,7 @@ class ColorSet {
   const ColorSet({required this.color, required this.backgroundColor});
 
   ColorSet withOpacity(double opacity) {
-    return ColorSet(color: color, backgroundColor: backgroundColor.withOpacity(opacity));
+    return ColorSet(color: color, backgroundColor: backgroundColor.withValues(alpha: opacity));
   }
 }
 
@@ -40,16 +40,16 @@ const List<Color> colorPalette = [
 ];
 
 final List<Color> backgroundColorPalette = [
-  CoconutColors.purple.withOpacity(0.18),
-  CoconutColors.tangerine.withOpacity(0.18),
-  CoconutColors.yellow.withOpacity(0.18),
-  CoconutColors.green.withOpacity(0.18),
-  CoconutColors.sky.withOpacity(0.18),
-  CoconutColors.pink.withOpacity(0.18),
-  CoconutColors.red.withOpacity(0.18),
-  CoconutColors.orange.withOpacity(0.18),
-  CoconutColors.gray600.withOpacity(0.18),
-  CoconutColors.mint.withOpacity(0.18),
+  CoconutColors.purple.withValues(alpha: 0.18),
+  CoconutColors.tangerine.withValues(alpha: 0.18),
+  CoconutColors.yellow.withValues(alpha: 0.18),
+  CoconutColors.green.withValues(alpha: 0.18),
+  CoconutColors.sky.withValues(alpha: 0.18),
+  CoconutColors.pink.withValues(alpha: 0.18),
+  CoconutColors.red.withValues(alpha: 0.18),
+  CoconutColors.orange.withValues(alpha: 0.18),
+  CoconutColors.gray600.withValues(alpha: 0.18),
+  CoconutColors.mint.withValues(alpha: 0.18),
 ];
 
 const List<Color> tagColorPalette = [

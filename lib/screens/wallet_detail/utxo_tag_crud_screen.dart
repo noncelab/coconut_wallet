@@ -1,10 +1,10 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -109,28 +109,34 @@ class UtxoTagCrudScreen extends StatelessWidget {
   }
 
   void _handeDeleteTagPressed(BuildContext context, UtxoTagCrudViewModel model) {
-    CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.tag_delete.title,
-      message:
-          model.selectedUtxoTag?.utxoIdList?.isNotEmpty == true
-              ? t.alert.tag_delete.description_utxo_tag(
-                name: model.selectedUtxoTag!.name,
-                count: model.selectedUtxoTag?.utxoIdList!.length ?? 0,
-              )
-              : t.alert.tag_delete.description(name: model.selectedUtxoTag!.name),
-      onConfirm: () {
-        if (model.deleteUtxoTag()) {
-          Navigator.of(context).pop();
-        } else {
-          CoconutToast.showWarningToast(context: context, text: t.toast.tag_delete_failed);
-        }
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.tag_delete.title,
+          description:
+              model.selectedUtxoTag?.utxoIdList?.isNotEmpty == true
+                  ? t.alert.tag_delete.description_utxo_tag(
+                    name: model.selectedUtxoTag!.name,
+                    count: model.selectedUtxoTag?.utxoIdList!.length ?? 0,
+                  )
+                  : t.alert.tag_delete.description(name: model.selectedUtxoTag!.name),
+          onTapRight: () {
+            if (model.deleteUtxoTag()) {
+              Navigator.of(context).pop();
+            } else {
+              CoconutToast.showWarningToast(context: context, text: t.toast.tag_delete_failed);
+            }
+          },
+          onTapLeft: () {
+            Navigator.of(context).pop();
+          },
+          rightButtonText: t.delete,
+          rightButtonColor: CoconutColors.hotPink,
+          leftButtonText: t.cancel,
+        );
       },
-      onCancel: () {
-        Navigator.of(context).pop();
-      },
-      confirmButtonText: t.delete,
-      confirmButtonColor: CoconutColors.hotPink,
     );
   }
 

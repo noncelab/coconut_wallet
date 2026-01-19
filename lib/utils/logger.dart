@@ -12,6 +12,7 @@ class Logger {
   static void network(Object? message) => _log('NETWORK', message);
   static void database(Object? message) => _log('DATABASE', message);
   static void log(Object? message) => _log('LOG', message);
+  static void logLine(String message) => _logLine(message);
 
   static void _log(String level, Object? message) {
     if (_isReleaseMode) return;
@@ -29,6 +30,12 @@ class Logger {
       // ignore: avoid_print
       print(logMsg);
     }
+  }
+
+  static void _logLine(String message) {
+    if (_isReleaseMode) return;
+
+    print(message);
   }
 
   static String _getTimestamp() {

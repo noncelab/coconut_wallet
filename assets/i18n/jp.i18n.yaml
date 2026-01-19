@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "ウォレット"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "Bitcoin"
+bitcoin: "ビットコイン"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   cold_card: "ColdCard"
   krux: "Krux"
   self: "手動追加"
-  self_description: "情報でウォレットを追加できます"
+  self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
   guide_vault: "Coconut Vaultのホーム画面で、「ウォッチオンリーウォレットにエクスポート → ウォレット選択」 または 「ウォレット選択 → ウォレットエクスポート → ウォッチオンリーウォレットにエクスポート」 に進み、QRコードをスキャンしてください。"
   guide_seedsigner:
@@ -251,6 +251,7 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "選択"
+  paste: "ペーストからインポート"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
@@ -300,6 +301,7 @@ wallet_add_input_screen:
     - "フィンガープリントがないと、送信機能を使用できません。"
   mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
   mfp_skip: "スキップ"
+  back_scan: "QRスキャンに戻る"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -464,9 +466,11 @@ settings_screen:
     fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
     fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます"
   language: "言語"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "サーバーアドレス"
     port: "ポート"
@@ -691,7 +695,7 @@ errors:
     invalid: "有効なアドレスではありません"
     not_for_testnet: "テストネットアドレスではありません"
     not_for_mainnet: "メインネットアドレスではありません"
-    not_for_regtest: "regtestアドレスではありません"
+    not_for_regtest: "アドレス形式を確認してください。\n（Native SegWit 対応）"
     duplicated: "アドレスは既に追加されています"
   pin_check_error:
     trial_count: "あと$count回試行できます"
@@ -706,6 +710,7 @@ errors:
   data_not_found: "データが見つかりません。"
   utxo_lock_error: "一時的なエラーによりUTXOロックの設定に失敗"
   utxo_unlock_error: "一時的なエラーによりUTXOアンロックに失敗"
+  empty_input: "トランザクション入力情報を取得できません。メンポールを確認してください。"
 
 text_field:
   enter_fee_with_two_decimal_places: "小数点以下2桁まで入力可能（sat/vB）"
@@ -826,8 +831,10 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
-  krux: "Krux"  
-  zpub: "zpub"
+  krux: "Krux"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "Upbit"
