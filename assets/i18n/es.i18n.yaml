@@ -711,6 +711,7 @@ errors:
   data_not_found: "No se encontraron datos."
   utxo_lock_error: "Fallo al establecer el bloqueo de UTXO debido a un error temporal"
   utxo_unlock_error: "Fallo al desbloquear el UTXO debido a un error temporal"
+  empty_input: "No se pueden obtener entradas. Por favor, verifique el mempool."
   
 text_field:
   enter_fee_with_two_decimal_places: "Hasta dos decimales permitidos (sat/vB)"
