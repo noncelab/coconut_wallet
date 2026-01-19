@@ -256,6 +256,10 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   Widget _buildAddressList({required List<TransactionAddress> list, required InputOutputRowType rowType}) {
     final filteredEntries = list.asMap().entries.where((entry) => entry.value.address.isNotEmpty).toList();
 
+    if (filteredEntries.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
