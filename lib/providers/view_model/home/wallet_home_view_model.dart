@@ -450,6 +450,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   void getPendingAndRecentDaysTransactions(int? analysisPeriod, int days, {bool forceRefresh = false}) {
     if (!forceRefresh && _isFetchingLatestTx) return;
 
+    // 최근 트랜잭션 홈 기능이 비활성화된 경우에는 조회하지 않음
     if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
     _isFetchingLatestTx = true;
 
@@ -477,6 +478,12 @@ class WalletHomeViewModel extends ChangeNotifier {
   // 필요한 경우 호출
   void getRecentTransactionAnalysis(int days) {
     // if (_isLatestTxAnalysisRunning) return;
+
+    // 분석 기능이 비활성화된 경우에는 조회하지 않음
+    if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.analysis)) {
+      _isLatestTxAnalysisRunning = false;
+      return;
+    }
 
     _isLatestTxAnalysisRunning = true;
     debugPrint('DEBUG11 - getRecentTransactionAnalysis');
