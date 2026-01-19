@@ -452,11 +452,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             _isProcessing = false;
             Navigator.pop(context);
           },
-          onTapLeft: () {
-            Navigator.pop(context);
-          },
           rightButtonText: t.confirm,
-          leftButtonText: t.close,
         );
       },
     );

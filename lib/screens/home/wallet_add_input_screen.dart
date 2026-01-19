@@ -79,11 +79,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                     _isProcessing = false;
                     Navigator.pop(context);
                   },
-                  onTapLeft: () {
-                    Navigator.pop(context);
-                  },
                   rightButtonText: t.confirm,
-                  leftButtonText: t.close,
                 );
               },
             );
@@ -105,11 +101,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                 _isProcessing = false;
                 Navigator.pop(context);
               },
-              onTapLeft: () {
-                Navigator.pop(context);
-              },
               rightButtonText: t.confirm,
-              leftButtonText: t.close,
             );
           },
         );

@@ -174,11 +174,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                   onTapRight: () {
                     Navigator.pop(context);
                   },
-                  onTapLeft: () {
-                    Navigator.pop(context);
-                  },
                   rightButtonText: t.confirm,
-                  leftButtonText: t.close,
                 );
               },
             );

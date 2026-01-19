@@ -197,11 +197,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
               },
-              onTapLeft: () {
-                Navigator.of(context).pop();
-              },
               rightButtonText: t.confirm,
-              leftButtonText: t.close,
             );
           },
         );

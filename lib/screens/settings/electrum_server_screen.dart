@@ -380,6 +380,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                     vibrateLight();
                                     navigator.pop();
                                   },
+                                  onTapLeft: () {
+                                    Navigator.of(context).pop();
+                                  },
                                   leftButtonText: t.close,
                                   rightButtonText: t.delete,
                                 );

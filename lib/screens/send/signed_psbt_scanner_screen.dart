@@ -258,11 +258,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             controller?.start();
             Navigator.pop(context);
           },
-          onTapLeft: () {
-            Navigator.pop(context);
-          },
           rightButtonText: t.confirm,
-          leftButtonText: t.close,
         );
       },
     );
