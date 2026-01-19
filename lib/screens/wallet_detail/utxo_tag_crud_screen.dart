@@ -5,7 +5,6 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_tag_crud_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_vertical_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

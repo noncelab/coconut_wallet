@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
@@ -21,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -452,7 +450,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
             _isProcessing = false;
             Navigator.pop(context);
           },
-          rightButtonText: t.confirm,
+          rightButtonText: t.OK,
         );
       },
     );

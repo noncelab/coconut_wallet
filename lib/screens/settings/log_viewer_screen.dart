@@ -2,7 +2,6 @@ import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';

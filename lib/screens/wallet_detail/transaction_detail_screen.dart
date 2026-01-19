@@ -21,7 +21,6 @@ import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
 import 'package:flutter/material.dart';
@@ -657,6 +656,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             Navigator.pop(context); // 팝업 닫기
             Navigator.pop(context); // 지갑 상세 이동
           },
+          rightButtonText: t.OK,
         );
       },
     );

@@ -6,7 +6,6 @@ import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
@@ -170,7 +169,7 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           },
           rightButtonText: t.alert.forgot_password.btn_reset,
           rightButtonColor: CoconutColors.hotPink,
-          leftButtonText: t.close,
+          leftButtonText: t.cancel,
         );
       },
     );

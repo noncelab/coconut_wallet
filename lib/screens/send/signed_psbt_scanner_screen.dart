@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_vie
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/signed_psbt_scan_data_handler.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -258,7 +257,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             controller?.start();
             Navigator.pop(context);
           },
-          rightButtonText: t.confirm,
+          rightButtonText: t.OK,
         );
       },
     );

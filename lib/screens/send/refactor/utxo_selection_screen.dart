@@ -13,7 +13,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
@@ -197,7 +196,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
               },
-              rightButtonText: t.confirm,
+              rightButtonText: t.OK,
             );
           },
         );

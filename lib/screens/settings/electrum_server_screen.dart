@@ -9,7 +9,6 @@ import 'package:coconut_wallet/providers/view_model/settings/electrum_server_vie
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -383,7 +382,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                                   onTapLeft: () {
                                     Navigator.of(context).pop();
                                   },
-                                  leftButtonText: t.close,
+                                  leftButtonText: t.cancel,
                                   rightButtonText: t.delete,
                                 );
                               },

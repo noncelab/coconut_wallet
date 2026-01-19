@@ -14,7 +14,6 @@ import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';

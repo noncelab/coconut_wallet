@@ -16,7 +16,6 @@ import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
@@ -231,6 +230,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();
                     },
+                    rightButtonText: t.OK,
                   );
                 },
               );

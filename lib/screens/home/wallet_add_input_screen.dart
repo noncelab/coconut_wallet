@@ -12,7 +12,6 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -79,7 +78,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                     _isProcessing = false;
                     Navigator.pop(context);
                   },
-                  rightButtonText: t.confirm,
+                  rightButtonText: t.OK,
                 );
               },
             );
