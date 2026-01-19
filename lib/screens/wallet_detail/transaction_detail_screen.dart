@@ -214,7 +214,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           underlineButtonLabel: '',
                           onTapUnderlineButton: () {},
                           child: Text(
-                            '${tx.feeRate.toStringAsFixed(2)} sats/vb',
+                            // 인풋을 조회할 수 없는 경우, 수수료 표시 안 함.
+                            tx.inputAddressList.isNotEmpty ? '${tx.feeRate.toStringAsFixed(2)} sats/vb' : '-',
                             style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                           ),
                         ),

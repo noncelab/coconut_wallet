@@ -62,7 +62,7 @@ class WalletIconSmall extends StatelessWidget {
               child:
                   isExternalWallet
                       ? SvgPicture.asset(
-                        walletImportSource.externalWalletIconPath!,
+                        walletImportSource.externalWalletIconPath,
                         colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
                       )
                       : SvgPicture.asset(

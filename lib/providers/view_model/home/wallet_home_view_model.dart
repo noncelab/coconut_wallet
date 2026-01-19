@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/app_review_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 
@@ -119,16 +118,13 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
-    // Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
+    updateWalletBalances();
+    Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
       if (syncState == NodeSyncState.completed) {
         if (!_isFirstLoaded) {
           _isFirstLoaded = true;
-          // vibrateLight(); 네트워크 동기화 완료시 진동 - 제거 요청됨
         }
-        updateWalletBalances();
-      } else if (syncState == NodeSyncState.failed) {
-        // vibrateLightDouble(); 네트워크 동기화 실패시 진동 - 제거 요청됨
       }
       _nodeSyncState = syncState;
       // Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
