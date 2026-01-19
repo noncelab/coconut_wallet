@@ -259,7 +259,7 @@ class SendViewModel extends ChangeNotifier {
 
   bool get isSelectedWalletNull => _selectedWalletItem == null;
 
-  bool isMaxModeIndex(int index) {
+  bool isMaxModeLastIndex(int index) {
     return _isMaxMode && index == lastIndex;
   }
 
@@ -402,9 +402,9 @@ class SendViewModel extends ChangeNotifier {
 
     // 지갑 선택
     final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == draft.walletId);
-    if (walletIndex != -1) {
-      _initializeWithSelectedWallet(walletIndex);
-    }
+    if (walletIndex == -1) return;
+
+    _initializeWithSelectedWallet(walletIndex);
 
     // recipientList 설정
     final recipientListJson = draft.recipientListJson.toList();
@@ -446,6 +446,7 @@ class SendViewModel extends ChangeNotifier {
 
     // maxMode 설정 (amount 설정 전에 먼저 설정, skipAmountReset으로 amount 초기화 방지)
     if (draft.isMaxMode == true) {
+      // FIXME: 이미 maxmode일 때 maxmode인 draft를 불러오면 마지막 recipient의 amount가 draft에 저장된 값으로 설정되어 모두 보내기가 되지 않음
       setMaxMode(true);
     } else {
       setMaxMode(false, skipAmountReset: true);
@@ -454,13 +455,14 @@ class SendViewModel extends ChangeNotifier {
     // amount 설정 (maxMode 설정 후에 설정하여 덮어쓰기 방지)
     if (_recipientList.isNotEmpty) {
       for (int i = 0; i < _recipientList.length; i++) {
-        if (draft.currentUnit == t.btc) {
-          if (_recipientList[i].amount.isNotEmpty) {
+        if (_recipientList[i].amount.isNotEmpty) {
+          if (draft.currentUnit == t.btc) {
             setAmountText(UnitUtil.convertBitcoinToSatoshi(double.parse(_recipientList[i].amount)), i);
-          }
-        } else {
-          if (_recipientList[i].amount.isNotEmpty) {
+          } else if (draft.currentUnit == 'sats') {
+            // FIXME: symbol로 저장 안되고 있음 (satoshi)
             setAmountText(int.parse(_recipientList[i].amount), i);
+          } else {
+            throw ArgumentError('Invalid unit: ${draft.currentUnit}');
           }
         }
       }
@@ -931,6 +933,7 @@ class SendViewModel extends ChangeNotifier {
     _updateFinalErrorMessage();
     notifyListeners();
   }
+
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;

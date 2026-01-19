@@ -408,16 +408,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Future<void> _onDraftSelected(BuildContext context, StateSetter setSheetState, Function(int, int) removeItem) async {
     if (_selectedDraftId == null) return;
+    // REFACTOR: viewModel로 draft 조회 로직 옮기기 getDraft(int draftId)
     final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
     final draft = transactionDraftRepository.getUnsignedTransactionDraft(_selectedDraftId!);
     debugPrint('draft: ${draft?.recipientListJson[0].toString()}');
 
     // selectedUtxo 상태 확인
+    // REFACTOR: getDraft 함수 내부에 아래 확인 로직 넣고 Exception 반환
     final selectedUtxoStatus = transactionDraftRepository.getSelectedUtxoStatus(
       _viewModel.selectedWalletItem?.id ?? 0,
       draft?.selectedUtxoListJson ?? [],
     );
-
     if (selectedUtxoStatus == SelectedUtxoStatus.locked || selectedUtxoStatus == SelectedUtxoStatus.used) {
       // 이미 사용되거나 [UTXO 잠금] 설정된 경우
       final description =
@@ -463,7 +464,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           );
         },
       );
-
+      // REFACTOR: shouldDelete가 true or false 일 때 로직 차이가 없어서 확인할 이유가 없음
       if (shouldDelete == true) {
         return;
       }
@@ -1271,7 +1272,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       isMinimumAmount ||
                       hasInsufficientBalanceErrorOfLastRecipient) {
                     amountTextColor = CoconutColors.hotPink;
-                  } else if (_viewModel.isMaxModeIndex(index)) {
+                  } else if (_viewModel.isMaxModeLastIndex(index)) {
                     amountTextColor = CoconutColors.gray600;
                   } else if (amountText.isEmpty) {
                     amountTextColor = MyColors.transparentWhite_20;
@@ -2069,6 +2070,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       }
     });
 
+    // REFACTOR: amountController listener 설정도 addPostFrameCallback 내부에서 해야하는건 아닌지 확인
     // amount 컨트롤러도 업데이트
     if (recipientListLength > 0) {
       final currentIndex = _viewModel.currentIndex;
