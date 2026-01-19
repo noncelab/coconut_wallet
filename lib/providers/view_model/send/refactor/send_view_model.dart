@@ -470,22 +470,26 @@ class SendViewModel extends ChangeNotifier {
       setFeeRateText(draft.feeRate.toString());
     }
 
-    // maxMode 설정 (amount 설정 전에 먼저 설정, skipAmountReset으로 amount 초기화 방지)
-    if (draft.isMaxMode == true) {
-      // FIXME: 이미 maxmode일 때 maxmode인 draft를 불러오면 마지막 recipient의 amount가 draft에 저장된 값으로 설정되어 모두 보내기가 되지 않음
+    final bool isMaxModeDraft = draft.isMaxMode == true;
+
+    if (isMaxModeDraft) {
+      // 항상 재계산하도록 일단 false로 만들고 setMaxMode(true) 호출
+      _isMaxMode = false;
       setMaxMode(true);
     } else {
       setMaxMode(false, skipAmountReset: true);
     }
 
-    // amount 설정 (maxMode 설정 후에 설정하여 덮어쓰기 방지)
     if (_recipientList.isNotEmpty) {
       for (int i = 0; i < _recipientList.length; i++) {
+        // maxMode draft에서는 마지막 수신자의 amount는 setMaxMode에서 다시 계산하므로
+        // draft에 저장된 값을 덮어쓰지 않도록 건너뜀
+        if (isMaxModeDraft && i == lastIndex) continue;
+
         if (_recipientList[i].amount.isNotEmpty) {
           if (draft.currentUnit == t.btc) {
             setAmountText(UnitUtil.convertBitcoinToSatoshi(double.parse(_recipientList[i].amount)), i);
-          } else if (draft.currentUnit == 'sats') {
-            // FIXME: symbol로 저장 안되고 있음 (satoshi)
+          } else if (draft.currentUnit == t.sats) {
             setAmountText(int.parse(_recipientList[i].amount), i);
           } else {
             throw ArgumentError('Invalid unit: ${draft.currentUnit}');
