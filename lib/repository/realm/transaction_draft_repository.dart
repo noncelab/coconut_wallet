@@ -20,6 +20,12 @@ enum SelectedUtxoStatus {
   locked, // 일부 UTXO가 잠금됨
 }
 
+class SelectedUtxoStatusException implements Exception {
+  final SelectedUtxoStatus status;
+
+  SelectedUtxoStatusException(this.status);
+}
+
 /// RecipientInfo 리스트를 JSON 문자열 리스트로 변환
 List<String> _recipientListToJson(List<RecipientInfo> recipients) {
   return recipients.map((recipient) {

@@ -11,7 +11,7 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart'
-    show TransactionDraftRepository, SelectedUtxoStatus;
+    show TransactionDraftRepository, SelectedUtxoStatus, SelectedUtxoStatusException;
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -121,6 +121,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context.read<WalletProvider>(),
       context.read<SendInfoProvider>(),
       context.read<PreferenceProvider>(),
+      context.read<TransactionDraftRepository>(),
       context.read<ConnectivityProvider>().isNetworkOn,
       _onAmountTextUpdate,
       _onFeeRateTextUpdate,
@@ -408,70 +409,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Future<void> _onDraftSelected(BuildContext context, StateSetter setSheetState, Function(int, int) removeItem) async {
     if (_selectedDraftId == null) return;
-    // REFACTOR: viewModel로 draft 조회 로직 옮기기 getDraft(int draftId)
-    final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-    final draft = transactionDraftRepository.getUnsignedTransactionDraft(_selectedDraftId!);
-    debugPrint('draft: ${draft?.recipientListJson[0].toString()}');
 
-    // selectedUtxo 상태 확인
-    // REFACTOR: getDraft 함수 내부에 아래 확인 로직 넣고 Exception 반환
-    final selectedUtxoStatus = transactionDraftRepository.getSelectedUtxoStatus(
-      _viewModel.selectedWalletItem?.id ?? 0,
-      draft?.selectedUtxoListJson ?? [],
-    );
-    if (selectedUtxoStatus == SelectedUtxoStatus.locked || selectedUtxoStatus == SelectedUtxoStatus.used) {
-      // 이미 사용되거나 [UTXO 잠금] 설정된 경우
-      final description =
-          selectedUtxoStatus == SelectedUtxoStatus.locked
-              ? t.transaction_draft.dialog.transaction_has_been_locked_utxo_included
-              : t.transaction_draft.dialog.transaction_already_used_utxo_included;
-
-      final shouldDelete = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return CoconutPopup(
-            languageCode: context.read<PreferenceProvider>().language,
-            title: t.transaction_draft.dialog.transaction_unavailable_to_sign,
-            description: description,
-            rightButtonText: t.confirm,
-            onTapLeft: () {
-              Navigator.pop(context, false);
-            },
-            onTapRight: () async {
-              final deletedDraftId = _selectedDraftId!;
-              final result = await transactionDraftRepository.deleteUnsignedTransactionDraft(deletedDraftId);
-              if (result.isSuccess) {
-                await _showDeleteCompletedDialog();
-                final sortedDrafts = getSortedUnsignedTransactionDrafts(transactionDraftRepository);
-                final index = sortedDrafts.indexWhere((d) {
-                  try {
-                    return d.id == deletedDraftId;
-                  } catch (e) {
-                    return false;
-                  }
-                });
-
-                if (index != -1) {
-                  removeItem(index, deletedDraftId);
-                }
-
-                setSheetState(() {
-                  _selectedDraftId = null;
-                });
-              }
-              Navigator.pop(context, true);
-            },
-          );
-        },
-      );
-      // REFACTOR: shouldDelete가 true or false 일 때 로직 차이가 없어서 확인할 이유가 없음
-      if (shouldDelete == true) {
-        return;
-      }
+    try {
+      final draft = _viewModel.getDraft(_selectedDraftId!);
+      debugPrint('draft: ${draft.recipientListJson[0].toString()}');
+      _viewModel.loadTransactionDraft(draft);
+    } on SelectedUtxoStatusException catch (e) {
+      // UTXO 상태 문제가 있는 경우 삭제 확인 다이얼로그 표시
+      await _showDeleteDraftDialog(context, setSheetState, removeItem, e.status);
       return;
     }
-
-    _viewModel.loadTransactionDraft(draft);
 
     // recipientList와 _addressControllerList 동기화
     // WidgetsBinding.instance.addPostFrameCallback을 사용하여 다음 프레임에 실행
@@ -516,6 +463,58 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           rightButtonText: t.transaction_draft.dialog.confirm,
           onTapRight: () {
             Navigator.pop(context);
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showDeleteDraftDialog(
+    BuildContext context,
+    StateSetter setSheetState,
+    Function(int, int) removeItem,
+    SelectedUtxoStatus status,
+  ) async {
+    final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
+    final description =
+        status == SelectedUtxoStatus.locked
+            ? t.transaction_draft.dialog.transaction_has_been_locked_utxo_included
+            : t.transaction_draft.dialog.transaction_already_used_utxo_included;
+
+    await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.transaction_draft.dialog.transaction_unavailable_to_sign,
+          description: description,
+          rightButtonText: t.confirm,
+          onTapLeft: () {
+            Navigator.pop(context, false);
+          },
+          onTapRight: () async {
+            final deletedDraftId = _selectedDraftId!;
+            final result = await transactionDraftRepository.deleteUnsignedTransactionDraft(deletedDraftId);
+            if (result.isSuccess) {
+              await _showDeleteCompletedDialog();
+              final sortedDrafts = getSortedUnsignedTransactionDrafts(transactionDraftRepository);
+              final index = sortedDrafts.indexWhere((d) {
+                try {
+                  return d.id == deletedDraftId;
+                } catch (e) {
+                  return false;
+                }
+              });
+
+              if (index != -1) {
+                removeItem(index, deletedDraftId);
+              }
+
+              setSheetState(() {
+                _selectedDraftId = null;
+              });
+            }
+            Navigator.pop(context, true);
           },
         );
       },

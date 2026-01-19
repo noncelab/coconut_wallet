@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -92,6 +93,7 @@ class SendViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
+  final TransactionDraftRepository _transactionDraftRepository;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
   final Function(String) _onAmountTextUpdate;
@@ -272,6 +274,7 @@ class SendViewModel extends ChangeNotifier {
     this._walletProvider,
     this._sendInfoProvider,
     this._preferenceProvider,
+    this._transactionDraftRepository,
     this._isNetworkOn,
     this._onAmountTextUpdate,
     this._onFeeRateTextUpdate,
@@ -391,6 +394,29 @@ class SendViewModel extends ChangeNotifier {
     _updateFeeBoardVisibility();
     _buildTransaction();
     notifyListeners();
+  }
+
+  /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
+  /// UTXO 상태 문제가 있으면 SelectedUtxoStatusException 발생
+  RealmTransactionDraft getDraft(int draftId) {
+    final draft = _transactionDraftRepository.getUnsignedTransactionDraft(draftId);
+    if (draft == null) {
+      throw StateError('Transaction draft not found: $draftId');
+    }
+
+    // UTXO 상태 확인
+    final selectedUtxoStatus = _transactionDraftRepository.getSelectedUtxoStatus(
+      _selectedWalletItem?.id ?? 0,
+      draft.selectedUtxoListJson.toList(),
+    );
+
+    debugPrint('selectedUtxoStatus: $selectedUtxoStatus');
+
+    if (selectedUtxoStatus == SelectedUtxoStatus.locked || selectedUtxoStatus == SelectedUtxoStatus.used) {
+      throw SelectedUtxoStatusException(selectedUtxoStatus);
+    }
+
+    return draft;
   }
 
   /// TransactionDraft를 로드하여 SendViewModel 상태에 반영
@@ -933,7 +959,6 @@ class SendViewModel extends ChangeNotifier {
     _updateFinalErrorMessage();
     notifyListeners();
   }
-
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
