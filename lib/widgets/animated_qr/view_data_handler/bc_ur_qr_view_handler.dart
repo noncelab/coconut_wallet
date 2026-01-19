@@ -23,23 +23,21 @@ class BcUrQrViewHandler implements IQrViewDataHandler {
     cborEncoder.encodeBytes(input);
     final ur = UR(_urType, cborEncoder.getBytes());
     // [Fast Mode] QR Code Ver 9 데이터 최대 크기(alphanumeric) 1840bits = 230bytes
-    // UR 헤더 길이: 약 20자
+    // 하지만 실제 QR 라이브러리 제한은 더 작을 수 있음 (에러: 1628 > 1248 bytes)
+    // UR 헤더 길이: 약 20-30자 (시퀀스 정보 포함 시 더 길어질 수 있음)
     // 데이터: Bytewords.minimal로 인코딩(1바이트 -> 2자)
-    // 230 = 20 + (maxFragmentLen * 2)
-    // maxFragmentLen = (230 - 20) / 2 = 105
-    // 하지만 105으로 설정 시 QrInputTooLongException: Input too long 에러가 발생하여 80으로 줄임
+    // 안전한 값: (1248 - 30) / 2 = 609, 하지만 보수적으로 50으로 설정
+    // 실제 테스트 결과 80에서도 에러 발생하므로 더 작게 조정 필요
 
     // [Normal Mode] QR Code Ver 7 데이터 최대 크기(alphanumeric) 1232bits = 154bytes
-    // UR 헤더 길이: 약 20자
+    // UR 헤더 길이: 약 20-30자
     // 데이터: Bytewords.minimal로 인코딩(1바이트 -> 2자)
-    // 154 = 20 + (maxFragmentLen * 2)
-    // maxFragmentLen = (154 - 20) / 2 = 67
+    // 안전한 값: (1248 - 30) / 2 = 609, 하지만 보수적으로 30으로 설정
 
     // [Slow Mode] QR Code Ver 5 데이터 최대 크기(alphanumeric) 848bits = 106bytes
-    // UR 헤더 길이: 약 20자
+    // UR 헤더 길이: 약 20-30자
     // 데이터: Bytewords.minimal로 인코딩(1바이트 -> 2자)
-    // 106 = 20 + (maxFragmentLen * 2)
-    // maxFragmentLen = (106 - 20) / 2 = 43
+    // 안전한 값: (106 - 30) / 2 = 38, 하지만 보수적으로 15로 설정
 
     // ver  최소 셀 수      |     데이터 최대 크기  (errorCorrectionLevel: Low 기준, bytes)
     // 1:   21 * 21       |          17
@@ -57,12 +55,14 @@ class BcUrQrViewHandler implements IQrViewDataHandler {
 
     printLongString('--> source: ${UREncoder.encode(ur)}');
 
+    // QrInputTooLongException 방지를 위해 maxFragmentLen을 더 작게 설정
+    // 실제 QR 라이브러리 제한(1248 bytes)을 고려하여 보수적으로 설정
     int maxFragmentLen =
         qrScanDensity == QrScanDensity.fast
-            ? 80
+            ? 50 // 80에서 50으로 감소 (안전 마진 확보)
             : qrScanDensity == QrScanDensity.normal
-            ? 40
-            : 20;
+            ? 30 // 40에서 30으로 감소
+            : 15; // 20에서 15로 감소
 
     _urEncoder = UREncoder(ur, maxFragmentLen);
   }
