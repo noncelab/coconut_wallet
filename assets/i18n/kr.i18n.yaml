@@ -251,6 +251,7 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR 코드"
     select: "선택"
+  paste: "붙여넣기로 가져오기"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"

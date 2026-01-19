@@ -15,9 +15,11 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/wallet_expandable_info_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -36,20 +38,40 @@ class WalletAddScannerScreen extends StatefulWidget {
   State<WalletAddScannerScreen> createState() => _WalletAddScannerScreenState();
 }
 
-class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
+class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   MobileScannerController? controller;
   bool _isProcessing = false;
+  bool _clipboardContentAvailable = false;
   late WalletAddScannerViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkClipboard();
+
     _viewModel = WalletAddScannerViewModel(
       widget.importSource,
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboard();
+    }
+  }
+
+  Future<void> _checkClipboard() async {
+    final isContentAvailable = await Clipboard.hasStrings();
+    if (mounted && _clipboardContentAvailable != isContentAvailable) {
+      setState(() {
+        _clipboardContentAvailable = isContentAvailable;
+      });
+    }
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform
@@ -276,6 +298,13 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    controller?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CoconutAppBar.build(
@@ -316,9 +345,40 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                     ? const WalletExpandableInfoCard()
                     : _buildDefaultToolTip(),
           ),
+          if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
+            FixedBottomButton(
+              onButtonClicked: _goToManualInputScreen,
+              text: t.wallet_add_scanner_screen.paste,
+              showGradient: false,
+              backgroundColor: CoconutColors.white,
+              textColor: CoconutColors.black,
+            ),
         ],
       ),
     );
+  }
+
+  void _goToManualInputScreen() async {
+    controller?.pause();
+
+    final result = await Navigator.pushNamed(context, "/wallet-add-input");
+
+    if (Platform.isIOS) {
+      controller?.start();
+    }
+
+    if (result != null && result is ResultOfSyncFromVault) {
+      if (widget.onNewWalletAdded != null) {
+        widget.onNewWalletAdded!(result);
+      }
+      if (mounted) {
+        Navigator.pushReplacementNamed(
+          context,
+          '/wallet-detail',
+          arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+        );
+      }
+    }
   }
 
   Widget _buildDefaultToolTip() {
@@ -498,10 +558,4 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     WalletImportSource.extendedPublicKey => t.wallet_add_scanner_screen.self,
     _ => '',
   };
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
 }

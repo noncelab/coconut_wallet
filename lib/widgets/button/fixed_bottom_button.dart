@@ -19,6 +19,7 @@ class FixedBottomButton extends StatefulWidget {
     this.subWidget,
     this.backgroundColor = CoconutColors.primary,
     this.pressedBackgroundColor,
+    this.textColor = CoconutColors.black,
   });
 
   final Function onButtonClicked;
@@ -33,6 +34,7 @@ class FixedBottomButton extends StatefulWidget {
   final Widget? subWidget;
   final Color backgroundColor;
   final Color? pressedBackgroundColor;
+  final Color textColor;
 
   @override
   State<FixedBottomButton> createState() => _FixedBottomButtonState();
