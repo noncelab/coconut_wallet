@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "Wallet"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "Bitcoin"
+bitcoin: "Bitcoin"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -35,6 +35,7 @@ complete: "Complete"
 close: "Close"
 next: "Next"
 modify: "Modify"
+OK: "OK"
 confirm: "Confirm"
 cancel: "Cancel"
 security: "Security"
@@ -96,6 +97,7 @@ network: "Network"
 electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
+go_to_settings: "Go to Settings"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -197,7 +199,7 @@ wallet_add_scanner_screen:
   self: "Add Manually"
   self_description: "You can add a wallet with information"
   select: "Select"
-  guide_vault: "Coconut Vault App - Select Wallet - Export Wallet Info"
+  guide_vault: "On the Coconut Vault home screen, go to: “Export to Watch-Only Wallet → Select Wallet” or “Select Wallet → Export Wallet → Export to Watch-Only Wallet”. Then scan the QR code."
   guide_seedsigner:
     step1: "1. On the home screen, "
     step1_em: " Seeds"
@@ -418,6 +420,9 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "Reading additional data to collect\nPlease keep scanning"
+  camera_error:
+    title: "Camera Access Unavailable"
+    need_camera_permission: "Please allow camera access in Settings."
 
 # lib/screens/settings
 app_info_screen:
@@ -459,9 +464,11 @@ settings_screen:
     fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
     fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
   language: "Language"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -556,8 +563,22 @@ wallet_info_screen:
   title: "$name Information"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
+  view_descriptor: "View Descriptor"
+  view_wallet_backup_data: "View Wallet Backup Data"
+  wallet_backup_data: "Wallet Backup Data"
+  confirm_backup_data: "Confirm Backup Data"
+  no_info: "No data"
   tooltip:
-    mfp_placeholder_description: "This is a wallet added with extended public key\nand the Master Fingerprint was not entered\nso it is displayed as 00000000."
+    mfp_placeholder_description: "This is a wallet added with extended public key\nand the master fingerprint was not entered\nso it is displayed as 00000000."
+    wallet_backup_data: "This is the BSMS(BIP-129) backup information for this wallet. You can use this data to reconstruct the multisig wallet in case of device loss or replacement. Please keep it safe and be careful when sharing externally."
+    confirm_backup_data:
+      step1_em: "Go to $name wallet detail screen"
+      step2_preposition: "1. "
+      step2_em: "Export Wallet"
+      step3_preposition: "2. "
+      step3_em: "Backup Wallet Data"
+      step4: "Please scan the QR code below with camera."
+      select: "Select"
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
@@ -672,7 +693,7 @@ errors:
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"
-    not_for_regtest: "Not a regtest address"
+    not_for_regtest: "Please check the address format.\n(Native SegWit supported)"
     duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"
@@ -687,6 +708,7 @@ errors:
   data_not_found: "No data found."
   utxo_lock_error: "Failed to set UTXO lock due to temporary error"
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
+  empty_input: "Could not fetch transaction inputs. Please check mempool."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"

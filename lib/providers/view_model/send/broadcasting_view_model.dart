@@ -2,7 +2,6 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -64,7 +63,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isSendingToMyAddress => _isSendingToMyAddress;
   bool get isSendingDonation => _isSendingDonation;
   int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
-  String get signedTransaction => _sendInfoProvider.signedPsbt!;
+  String get signedTransaction => _sendInfoProvider.signedPsbt ?? _sendInfoProvider.rawSignedTransaction!;
   int? get totalAmount => _totalAmount;
   AddressType get walletAddressType => _walletBase.addressType;
   int get walletId => _walletId;

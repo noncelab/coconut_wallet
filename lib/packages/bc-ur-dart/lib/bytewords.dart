@@ -7,11 +7,7 @@ const String BYTEWORDS =
 
 List<int>? _wordArray;
 
-enum Style {
-  standard,
-  uri,
-  minimal,
-}
+enum Style { standard, uri, minimal }
 
 int decodeWord(String word, int wordLen) {
   if (word.length != wordLen) {

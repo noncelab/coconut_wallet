@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -226,6 +225,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         context: context,
         builder: (BuildContext context) {
           return CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
             title: t.alert.tutorial.title,
             description: t.alert.tutorial.description,
             onTapRight: () async {
@@ -614,7 +614,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         child: Center(
                           child: Text(
                             t.receive,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withOpacity(0.3)),
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withValues(alpha: 0.3)),
                           ),
                         ),
                       ),
@@ -646,7 +646,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         child: Center(
                           child: Text(
                             t.send,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withOpacity(0.3)),
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withValues(alpha: 0.3)),
                           ),
                         ),
                       ),
@@ -880,7 +880,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss",
-      barrierColor: CoconutColors.black.withOpacity(0.5),
+      barrierColor: CoconutColors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         final offsetTween = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero);
@@ -1197,39 +1197,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType) {
-    String svgPath;
-    String scanText;
-
-    switch (scanType) {
-      case WalletImportSource.coconutVault:
-        svgPath = 'assets/svg/coconut-vault-${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.svg';
-        scanText = t.wallet_add_scanner_screen.vault;
-        break;
-      case WalletImportSource.keystone:
-        svgPath = kKeystoneIconPath;
-        scanText = t.wallet_add_scanner_screen.keystone;
-        break;
-      case WalletImportSource.jade:
-        svgPath = kJadeIconPath;
-        scanText = t.wallet_add_scanner_screen.jade;
-        break;
-      case WalletImportSource.seedSigner:
-        svgPath = kSeedSignerIconPath;
-        scanText = t.wallet_add_scanner_screen.seed_signer;
-        break;
-      case WalletImportSource.coldCard:
-        svgPath = kColdCardIconPath;
-        scanText = t.wallet_add_scanner_screen.cold_card;
-        break;
-      case WalletImportSource.krux:
-        svgPath = kKruxIconPath;
-        scanText = t.wallet_add_scanner_screen.krux;
-        break;
-      case WalletImportSource.extendedPublicKey:
-        svgPath = kZpubIconPath;
-        scanText = t.wallet_add_scanner_screen.self;
-        break;
-    }
     return ShrinkAnimationButton(
       defaultColor: CoconutColors.black,
       pressedColor: CoconutColors.gray750,
@@ -1240,7 +1207,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: Row(
                   children: [
-                    SvgPicture.asset(svgPath),
+                    SvgPicture.asset(scanType.externalWalletIconPath),
                     CoconutLayout.spacing_400w,
                     Expanded(
                       child: Column(
@@ -1248,7 +1215,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            scanText,
+                            scanType.displayName,
                             style: CoconutTypography.body2_14,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -1270,9 +1237,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: Column(
                   children: [
-                    SvgPicture.asset(svgPath),
+                    SvgPicture.asset(scanType.externalWalletIconPath),
                     CoconutLayout.spacing_100h,
-                    Text(scanText, style: CoconutTypography.body2_14, textAlign: TextAlign.center),
+                    Text(scanType.displayName, style: CoconutTypography.body2_14, textAlign: TextAlign.center),
                   ],
                 ),
               ),

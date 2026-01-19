@@ -8,9 +8,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
-import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
-import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
-import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/signed_psbt_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -32,7 +30,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   MobileScannerController? controller;
 
   late SignedPsbtScannerViewModel _viewModel;
-  late IQrScanDataHandler _qrScanDataHandler;
+  late SignedPsbtScanDataHandler _qrScanDataHandler;
   bool _isHandlerInitialized = false;
   final int _qrScannerKey = 0; // QR 스캐너 재생성을 위한 key
 
@@ -57,10 +55,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
             CoconutQrScanner(
               key: ValueKey(_qrScannerKey),
               setMobileScannerController: _setQRViewController,
-              onComplete:
-                  _qrScanDataHandler is BcUrQrScanDataHandler
-                      ? _onCompletedScanningForBcUr
-                      : _onCompletedScanningForBbQr,
+              onComplete: _onCompletedScanning,
               onFailed: _onFailedScanning,
               qrDataHandler: _qrScanDataHandler,
             ),
@@ -115,14 +110,33 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   void _initializeQrScanDataHandler() {
+    // 통합 핸들러로 변경
+    _qrScanDataHandler = SignedPsbtScanDataHandler();
+    _isHandlerInitialized = true;
+
     // ColdCard는 BBQR 핸들러로 시작 (Raw 데이터와 BBQR 모두 처리 가능)
-    if (_viewModel.walletImportSource == WalletImportSource.coldCard) {
-      _qrScanDataHandler = BbQrScanDataHandler();
-      _isHandlerInitialized = true;
-    } else {
-      // 다른 하드웨어 지갑은 BcUr 핸들러 사용
-      _qrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoPsbt, UrType.psbt]);
-      _isHandlerInitialized = true;
+    // if (_viewModel.walletImportSource == WalletImportSource.coldCard) {
+    //   _qrScanDataHandler = BbQrScanDataHandler();
+    //   _isHandlerInitialized = true;
+    // } else {
+    //   // 다른 하드웨어 지갑은 BcUr 핸들러 사용
+    //   _qrScanDataHandler = BcUrQrScanDataHandler(expectedUrType: [UrType.cryptoPsbt, UrType.psbt]);
+    //   _isHandlerInitialized = true;
+    // }
+  }
+
+  Future<void> _onCompletedScanning(dynamic signedPsbt) async {
+    assert(_qrScanDataHandler.isCompleted() && _qrScanDataHandler.scanDataType != null);
+
+    switch (_qrScanDataHandler.scanDataType) {
+      case SignedPsbtScanDataType.ur:
+        await _onCompletedScanningForBcUr(signedPsbt);
+      case SignedPsbtScanDataType.bbqr:
+        await _onCompletedScanningForBbQr(signedPsbt);
+      case SignedPsbtScanDataType.raw:
+        _onCompleteScanningRawSignedTx(signedPsbt);
+      default:
+        throw ArgumentError('Invalid scan data type');
     }
   }
 
@@ -153,15 +167,12 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         int missingCount = _viewModel.getMissingSignaturesCount(psbt);
         if (missingCount > 0) {
           await _showErrorDialog(t.alert.signed_psbt.need_more_sign(count: missingCount));
-          controller?.pause();
-          await _stopCamera();
           return;
         }
       }
 
       _viewModel.setSignedPsbt(psbt.serialize());
 
-      controller?.pause();
       await _stopCamera();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/broadcasting');
@@ -172,6 +183,9 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Future<void> _onCompletedScanningForBbQr(dynamic signedPsbt) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
     String? encodedSignedPsbt;
     if (signedPsbt is Map) {
       final String jsonString = jsonEncode(signedPsbt);
@@ -183,14 +197,24 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
     assert(encodedSignedPsbt != null);
 
+    try {
+      _viewModel.setSignedPsbt(encodedSignedPsbt!);
+      await _stopCamera();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/broadcasting');
+      }
+    } catch (e) {
+      await _showErrorDialog(t.alert.scan_failed_description(error: e));
+    }
+  }
+
+  Future<void> _onCompleteScanningRawSignedTx(String rawSignedTx) async {
     if (_isProcessing) return;
     _isProcessing = true;
 
     try {
-      // raw transaction 데이터 저장
-      _viewModel.setSignedPsbt(encodedSignedPsbt!);
+      _viewModel.setRawSignedTransaction(rawSignedTx);
 
-      controller?.pause();
       await _stopCamera();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/broadcasting');
@@ -227,6 +251,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       message: errorMessage,
       onConfirm: () {
         _isProcessing = false;
+        controller?.start();
         Navigator.pop(context);
       },
     );
@@ -234,7 +259,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
 
   Future<void> _stopCamera() async {
     if (controller != null) {
-      await controller?.stop();
+      await controller!.stop();
     }
   }
 

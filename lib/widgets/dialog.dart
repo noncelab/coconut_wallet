@@ -1,34 +1,76 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:flutter/material.dart';
 
-// TODO: cds로 교체 후 삭제
-class CustomDialog extends StatelessWidget {
-  final String title;
-  final String content;
-  final VoidCallback? onConfirmPressed;
+Future<void> showInfoDialog(
+  BuildContext context,
+  String languageCode,
+  String title,
+  String description, {
+  String? buttonText,
+  Function? onTapButton,
+  bool barrierDismissible = true,
+}) async {
+  await showDialog(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (BuildContext context) {
+      return CoconutPopup(
+        languageCode: languageCode,
+        title: title,
+        backgroundColor: CoconutColors.black.withOpacity(0.7),
+        description: description,
+        descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 50),
+        rightButtonText: buttonText ?? t.OK,
+        rightButtonColor: CoconutColors.white,
+        onTapRight:
+            onTapButton ??
+            () {
+              Navigator.pop(context);
+            },
+      );
+    },
+  );
+}
 
-  const CustomDialog({required this.title, required this.content, this.onConfirmPressed, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoAlertDialog(
-      title: Text(title),
-      content: Text(content),
-      actions: <CupertinoDialogAction>[
-        CupertinoDialogAction(
-          isDefaultAction: true,
-          onPressed: () {
-            Navigator.of(context).pop;
-          },
-          child: Text('아니요', style: Styles.label.merge(const TextStyle(color: MyColors.defaultIcon))),
-        ),
-        CupertinoDialogAction(
-          isDestructiveAction: true,
-          onPressed: onConfirmPressed,
-          child: Text('네', style: Styles.subLabel.merge(const TextStyle(color: CoconutColors.primary))),
-        ),
-      ],
-    );
-  }
+Future<void> showConfirmDialog(
+  BuildContext context,
+  String languageCode,
+  String title,
+  String description, {
+  String? leftButtonText,
+  String? rightButtonText,
+  Function? onTapLeft,
+  Function? onTapRight,
+  bool barrierDismissible = true,
+}) async {
+  await showDialog(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (BuildContext context) {
+      return CoconutPopup(
+        languageCode: languageCode,
+        title: title,
+        backgroundColor: CoconutColors.black.withOpacity(0.7),
+        description: description,
+        descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 50),
+        leftButtonText: leftButtonText ?? t.cancel,
+        leftButtonColor: CoconutColors.white,
+        rightButtonText: rightButtonText ?? t.OK,
+        rightButtonColor: CoconutColors.white,
+        onTapLeft:
+            onTapLeft ??
+            () {
+              Navigator.pop(context);
+            },
+        onTapRight:
+            onTapRight ??
+            () {
+              Navigator.pop(context);
+            },
+      );
+    },
+  );
 }

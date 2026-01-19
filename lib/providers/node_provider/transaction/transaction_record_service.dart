@@ -51,8 +51,7 @@ class TransactionRecordService {
   }) async {
     now ??= DateTime.now();
 
-    List<Transaction> prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
-
+    final prevTxs = await _electrumService.getPreviousTransactions(tx, existingTxList: previousTxs);
     final txDetails = processTransactionDetails(tx, prevTxs, walletId);
 
     return TransactionRecord.fromTransactions(

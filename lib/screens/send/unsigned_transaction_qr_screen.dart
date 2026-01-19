@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/bb_qr/bb_qr_encoder.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/bc_ur_qr_view_handler.dart';
@@ -205,7 +204,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                 inactiveTrackColor: CoconutColors.gray700,
                 trackHeight: 8,
                 thumbColor: CoconutColors.gray400,
-                overlayColor: CoconutColors.gray700.withOpacity(0.2),
+                overlayColor: CoconutColors.gray700.withValues(alpha: 0.2),
                 trackShape: const RoundedRectSliderTrackShape(),
               ),
               child: Slider(
@@ -299,13 +298,12 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         {
           if (!isEnglish) {
             return [
-              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
                 style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
               TextSpan(
-                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
+                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
                 style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(
@@ -319,19 +317,18 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           } else {
             return [
-              TextSpan(text: '[1] ', style: CoconutTypography.body1_16_Bold.copyWith(height: 1.2)),
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
                 style: CoconutTypography.body2_14.copyWith(height: 1.2),
               ),
               TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
               TextSpan(
-                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)} ',
+                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
                 style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),
               TextSpan(
-                text: ' ${t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\'')}',
+                text: t.tooltip.unsigned_tx_qr.select_menu(menu: '\'${_isMultisig ? t.sign_multisig : t.sign}\''),
                 style: CoconutTypography.body2_14_Bold.copyWith(height: 1.2),
               ),
               TextSpan(text: ', ', style: CoconutTypography.body2_14.copyWith(height: 1.2)),

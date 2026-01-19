@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:core';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'multisig_signer.g.dart'; // 생성될 파일 이름 $ dart run build_runner build
 
 @JsonSerializable(ignoreUnannotated: true)
 class MultisigSigner {
+  static const String fieldSignerBsms = 'signerBsms';
+
   @JsonKey()
   int? innerVaultId; // 내부 지갑이 Key로 사용된 경우 앱 내 id
   @JsonKey()
@@ -15,10 +18,14 @@ class MultisigSigner {
   int? iconIndex;
   @JsonKey()
   int? colorIndex;
+  @JsonKey(name: fieldSignerBsms)
+  String? signerBsms;
   @JsonKey()
   String? memo;
+  @JsonKey()
+  String? signerSource;
 
-  MultisigSigner({this.name, this.iconIndex, this.colorIndex, this.memo}) {
+  MultisigSigner({this.name, this.iconIndex, this.colorIndex, this.memo, this.signerSource}) {
     name = name?.replaceAll('\n', ' ');
   }
 
@@ -33,5 +40,10 @@ class MultisigSigner {
   static List<MultisigSigner> fromJsonList(String jsonString) {
     final List<dynamic> jsonList = jsonDecode(jsonString);
     return jsonList.map((json) => MultisigSigner.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  String getSignerDerivationPath() {
+    assert(signerBsms != null && signerBsms!.isNotEmpty);
+    return Bsms.parseSigner(signerBsms!).signer!.path;
   }
 }

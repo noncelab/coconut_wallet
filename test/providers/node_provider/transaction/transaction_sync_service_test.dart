@@ -298,7 +298,7 @@ void main() {
       final originalTx = TransactionMock.createMockTransaction(
         toAddress: testWalletItem.walletBase.getAddress(0),
         amount: 1000000,
-        inputTransactionHash: Hash.sha256('original_tx_hash_input'),
+        inputTransactionHash: Hash.sha256('original_tx_hash_input').toString(),
       );
 
       // 대체될 트랜잭션
