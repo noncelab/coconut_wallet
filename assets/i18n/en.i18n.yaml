@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "Wallet"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "Bitcoin"
+bitcoin: "Bitcoin"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -466,9 +466,11 @@ settings_screen:
     fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
     fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
   language: "Language"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -708,6 +710,7 @@ errors:
   data_not_found: "No data found."
   utxo_lock_error: "Failed to set UTXO lock due to temporary error"
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
+  empty_input: "Could not fetch transaction inputs. Please check mempool."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"

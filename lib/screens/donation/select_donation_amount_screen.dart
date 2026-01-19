@@ -172,7 +172,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
                     child: Container(
                       width: MediaQuery.sizeOf(context).width,
                       height: MediaQuery.sizeOf(context).height,
-                      color: CoconutColors.black.withOpacity(0.3),
+                      color: CoconutColors.black.withValues(alpha: 0.3),
                       child: const Center(child: CoconutCircularIndicator()),
                     ),
                   ),

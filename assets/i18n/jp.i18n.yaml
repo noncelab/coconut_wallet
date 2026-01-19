@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "ウォレット"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "Bitcoin"
+bitcoin: "ビットコイン"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -466,9 +466,11 @@ settings_screen:
     fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
     fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます"
   language: "言語"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "サーバーアドレス"
     port: "ポート"
@@ -708,6 +710,7 @@ errors:
   data_not_found: "データが見つかりません。"
   utxo_lock_error: "一時的なエラーによりUTXOロックの設定に失敗"
   utxo_unlock_error: "一時的なエラーによりUTXOアンロックに失敗"
+  empty_input: "トランザクション入力情報を取得できません。メンポールを確認してください。"
 
 text_field:
   enter_fee_with_two_decimal_places: "小数点以下2桁まで入力可能（sat/vB）"

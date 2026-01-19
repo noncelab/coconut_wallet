@@ -311,7 +311,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         title: _getAppBarTitle(),
         context: context,
         isBottom: true,
-        backgroundColor: CoconutColors.black.withOpacity(0.95),
+        backgroundColor: CoconutColors.black.withValues(alpha: 0.95),
         actionButtonList: [
           IconButton(
             onPressed: () {
@@ -537,12 +537,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: title,
-          backgroundColor: CoconutColors.black.withOpacity(0.7),
+          backgroundColor: CoconutColors.black.withValues(alpha: 0.7),
           description: description,
           descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           leftButtonText: t.cancel,
-          leftButtonColor: CoconutColors.black.withOpacity(0.7),
+          leftButtonColor: CoconutColors.black.withValues(alpha: 0.7),
           rightButtonText: t.confirm,
           rightButtonColor: CoconutColors.white,
           onTapRight: () {

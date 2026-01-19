@@ -188,7 +188,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       _balance = _getBalance();
       _setReceiveAddress();
       notifyListeners();
-      Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.');
+      Logger.log('--> 지갑$_walletId의 balance를 업데이트했습니다.: $_balance');
     }
     // transaction
     if (_prevWalletUpdateInfo.transaction != WalletSyncState.completed &&
@@ -196,7 +196,7 @@ class WalletDetailViewModel extends ChangeNotifier {
       _txProvider.initTxList(_walletId);
       _setReceiveAddress();
       notifyListeners();
-      Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.');
+      Logger.log('--> 지갑$_walletId의 TX를 업데이트했습니다.: ${_txProvider.txList.length}');
     }
 
     bool isSyncing = !_allElementUpdateCompleted(newInfo);

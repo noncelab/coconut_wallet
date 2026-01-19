@@ -59,6 +59,7 @@ class NodeProviderState {
 
     // 등록된 지갑의 키 목록 얻기
     final walletKeys = registeredWallets.keys.toList();
+    Logger.performance('NodeProviderState: printStatus start: ${walletKeys.length} wallets');
 
     // 테이블 헤더 출력 (connectionState 포함)
     final logBuffer = StringBuffer();
@@ -67,6 +68,7 @@ class NodeProviderState {
     logBuffer.writeln('├─────────┬─────────┬─────────┬─────────┬─────────┤');
     logBuffer.writeln('│ 지갑 ID  │  구독    │   잔액   │   거래    │  UTXO   │');
     logBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
+    Logger.log(logBuffer.toString());
 
     // 각 지갑 상태를 개별적으로 출력 (긴 로그 방지)
     for (int i = 0; i < walletKeys.length; i++) {
@@ -78,20 +80,19 @@ class NodeProviderState {
       final transactionSymbol = statusToSymbol(value.transaction);
       final utxoSymbol = statusToSymbol(value.utxo);
 
-      // final rowBuffer = StringBuffer();
-      logBuffer.writeln(
+      final rowBuffer = StringBuffer();
+      rowBuffer.writeln(
         '│ ${key.toString().padRight(7)} │   $subscriptionSymbol     │   $balanceSymbol    │   $transactionSymbol    │   $utxoSymbol    │',
       );
 
       // 마지막 행이 아니면 행 구분선 추가
       if (i < walletKeys.length - 1) {
-        logBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
+        rowBuffer.writeln('├─────────┼─────────┼─────────┼─────────┼─────────┤');
       }
+      Logger.logLine(rowBuffer.toString());
     }
 
     // 테이블 하단 테두리 출력
-    logBuffer.writeln('└─────────┴─────────┴─────────┴─────────┴─────────┘\n');
-
-    Logger.logLongString(logBuffer.toString());
+    Logger.logLine('└─────────┴─────────┴─────────┴─────────┴─────────┘\n');
   }
 }

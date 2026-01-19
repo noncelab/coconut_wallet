@@ -85,7 +85,7 @@ class TransactionMock {
         TransactionInput.forPayment('0000000000000000000000000000000000000000000000000000000000000000', 4294967295),
       );
     } else {
-      inputs.add(TransactionInput.forPayment(inputTransactionHash ?? Hash.sha256('$toAddress$amount'), 0));
+      inputs.add(TransactionInput.forPayment(inputTransactionHash ?? Hash.sha256('$toAddress$amount').toString(), 0));
     }
 
     outputs.add(TransactionOutput.forPayment(amount, toAddress));
