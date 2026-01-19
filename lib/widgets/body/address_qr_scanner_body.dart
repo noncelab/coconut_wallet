@@ -47,7 +47,7 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
         final Size layoutSize = constraints.biggest;
 
         // ScannerOverlay와 동일한 크기의 정사각형 스캔 영역 계산
-        final scanAreaSize = (layoutSize.width < 400 || layoutSize.height < 400) ? 320.0 : layoutSize.width * 0.85;
+        final scanAreaSize = ScannerOverlay.calculateScanAreaSize(context);
 
         final Rect scanWindow = Rect.fromCenter(
           center: layoutSize.center(Offset.zero),

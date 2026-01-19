@@ -49,25 +49,27 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           context: context,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
         ),
-        body: Stack(
-          children: [
-            // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
-            CoconutQrScanner(
-              key: ValueKey(_qrScannerKey),
-              setMobileScannerController: _setQRViewController,
-              onComplete: _onCompletedScanning,
-              onFailed: _onFailedScanning,
-              qrDataHandler: _qrScanDataHandler,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(
-                top: 20,
-                left: CoconutLayout.defaultPadding,
-                right: CoconutLayout.defaultPadding,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // TODO: CoconutQrScanner -> AnimatedQrScanner로 Rename
+              CoconutQrScanner(
+                key: ValueKey(_qrScannerKey),
+                setMobileScannerController: _setQRViewController,
+                onComplete: _onCompletedScanning,
+                onFailed: _onFailedScanning,
+                qrDataHandler: _qrScanDataHandler,
               ),
-              child: _buildToolTip(),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 20,
+                  left: CoconutLayout.defaultPadding,
+                  right: CoconutLayout.defaultPadding,
+                ),
+                child: _buildToolTip(),
+              ),
+            ],
+          ),
         ),
       ),
     );
