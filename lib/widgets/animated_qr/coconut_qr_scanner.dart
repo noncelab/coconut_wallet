@@ -1,15 +1,16 @@
-import 'dart:io';
-import 'dart:ui';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/utils/app_settings_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/scan_data_handler_exceptions.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/scanner_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:provider/provider.dart';
 
 class CoconutQrScanner extends StatefulWidget {
   static String qrFormatErrorMessage = 'Invalid QR format.';
@@ -39,6 +40,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   bool _isScanningExtraData = false;
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
+  bool _isShowedCameraPermissionDialog = false;
 
   MobileScannerController? _controller;
 
@@ -143,7 +145,22 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
       builder: (BuildContext context, BoxConstraints constraints) {
         return Stack(
           children: [
-            MobileScanner(controller: _controller!, onDetect: _onDetect),
+            MobileScanner(
+              controller: _controller!,
+              onDetect: _onDetect,
+              errorBuilder: (context, error) {
+                if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
+                  _isShowedCameraPermissionDialog = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (!mounted) return;
+                    await _showCameraPermissionDialog();
+                    if (!mounted) return;
+                    Navigator.pop(context);
+                  });
+                }
+                return Center(child: Text(error.errorCode.message));
+              },
+            ),
             const ScannerOverlay(),
             _buildProgressOverlay(context),
           ],
@@ -153,11 +170,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   }
 
   Widget _buildProgressOverlay(BuildContext context) {
-    final scanAreaSize =
-        (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-            ? 320.0
-            : MediaQuery.of(context).size.width * 0.85;
-
+    final scanAreaSize = ScannerOverlay.calculateScanAreaSize(context);
     final scanAreaTop = (MediaQuery.of(context).size.height - scanAreaSize) / 2;
     final scanAreaBottom = scanAreaTop + scanAreaSize;
 
@@ -260,6 +273,19 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
           );
         },
       ),
+    );
+  }
+
+  Future<void> _showCameraPermissionDialog() async {
+    await showConfirmDialog(
+      context,
+      context.read<PreferenceProvider>().language,
+      t.coconut_qr_scanner.camera_error.title,
+      t.coconut_qr_scanner.camera_error.need_camera_permission,
+      rightButtonText: t.go_to_settings,
+      onTapRight: () {
+        openAppSettings();
+      },
     );
   }
 }

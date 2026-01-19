@@ -16,12 +16,12 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.6.0+1
+version: 0.6.2+1
 app_versions:
-  ios_regtest: 3.5.0+0
-  ios_mainnet: 0.6.0+4
-  aos_regtest: 3.5.0+59
-  aos_mainnet: 0.6.0+45
+  ios_regtest: 3.5.2+0
+  ios_mainnet: 0.6.2+1
+  aos_regtest: 3.5.2+61
+  aos_mainnet: 0.6.2+47
 
 environment:
   sdk: ">=3.7.0 <4.0.0"

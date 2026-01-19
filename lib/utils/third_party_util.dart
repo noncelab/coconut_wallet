@@ -1,3 +1,4 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
@@ -45,9 +46,10 @@ String _getThirdPartyDefaultName(WalletImportSource walletImportSource) {
     case WalletImportSource.krux:
       return t.third_party.krux;
     case WalletImportSource.extendedPublicKey:
-      return t.third_party.zpub;
+      return NetworkType.currentNetworkType == NetworkType.mainnet
+          ? t.third_party.extended_public_keys.zpub
+          : t.third_party.extended_public_keys.vpub;
     case WalletImportSource.coconutVault:
-    default:
       throw 'Coconut Vault is not third party';
   }
 }

@@ -16,7 +16,6 @@ import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
@@ -220,13 +219,19 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         .onError((e, _) {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (mounted) {
-              CustomDialogs.showCustomAlertDialog(
-                context,
-                title: t.alert.error_occurs,
-                message: t.alert.contact_admin(error: e.toString()),
-                onConfirm: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return CoconutPopup(
+                    languageCode: context.read<PreferenceProvider>().language,
+                    title: t.alert.error_occurs,
+                    description: t.alert.contact_admin(error: e.toString()),
+                    onTapRight: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop();
+                    },
+                    rightButtonText: t.OK,
+                  );
                 },
               );
             }

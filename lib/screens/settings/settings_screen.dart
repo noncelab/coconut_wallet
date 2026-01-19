@@ -165,7 +165,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                         selector: (_, viewModel) => viewModel.isBtcUnit,
                         builder: (context, isBtcUnit, child) {
                           return _buildAnimatedButton(
-                            title: t.bitcoin_kr,
+                            title: t.bitcoin,
                             subtitle: isBtcUnit ? t.btc : t.sats,
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
@@ -222,7 +222,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                           CommonBottomSheets.showCustomHeightBottomSheet(
                             context: context,
                             heightRatio: 0.5,
-                            child: const LanguageBottomSheet(),
+                            child: LanguageBottomSheet(),
                           );
                         },
                       );
@@ -341,13 +341,14 @@ class _SettingsScreen extends State<SettingsScreen> {
   String _getCurrentLanguageDisplayName(String language) {
     switch (language) {
       case 'kr':
-        return t.settings_screen.korean;
-      case 'en':
-        return t.settings_screen.english;
+        return t.settings_screen.locales.korean;
       case 'jp':
-        return t.settings_screen.japanese;
+        return t.settings_screen.locales.japanese;
+      case 'es':
+        return t.settings_screen.locales.spanish;
+      case 'en':
       default:
-        return t.settings_screen.korean;
+        return t.settings_screen.locales.english;
     }
   }
 }

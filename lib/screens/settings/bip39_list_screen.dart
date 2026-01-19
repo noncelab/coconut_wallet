@@ -71,7 +71,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   bool _isFabShown = false;
 
   Color _searchbarBackgroundColor = CoconutColors.white;
-  Color _searchbarFillColor = CoconutColors.black.withOpacity(0.06);
+  Color _searchbarFillColor = CoconutColors.black.withValues(alpha: 0.06);
 
   @override
   void initState() {

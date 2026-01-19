@@ -66,39 +66,41 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               Scaffold(
                 backgroundColor: CoconutColors.black,
                 appBar: _buildAppBar(context),
-                body: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  controller: _scrollController,
-                  slivers: [
-                    CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
-                    SliverToBoxAdapter(
-                      child: Selector<WalletDetailViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
-                        selector:
-                            (_, viewModel) => Tuple4(
-                              AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                              viewModel.bitcoinPriceKrwInString,
-                              viewModel.sendingAmount,
-                              viewModel.receivingAmount,
-                            ),
-                        builder: (_, data, __) {
-                          return WalletDetailHeader(
-                            key: _headerWidgetKey,
-                            animatedBalanceData: data.item1,
-                            currentUnit: _currentUnit,
-                            btcPriceInKrw: data.item2,
-                            sendingAmount: data.item3,
-                            receivingAmount: data.item4,
-                            onPressedUnitToggle: _toggleUnit,
-                            onTapReceive: _onTapReceive,
-                            onTapSend: _onTapSend,
-                          );
-                        },
+                body: SafeArea(
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    slivers: [
+                      CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
+                      SliverToBoxAdapter(
+                        child: Selector<WalletDetailViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
+                          selector:
+                              (_, viewModel) => Tuple4(
+                                AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                                viewModel.bitcoinPriceKrwInString,
+                                viewModel.sendingAmount,
+                                viewModel.receivingAmount,
+                              ),
+                          builder: (_, data, __) {
+                            return WalletDetailHeader(
+                              key: _headerWidgetKey,
+                              animatedBalanceData: data.item1,
+                              currentUnit: _currentUnit,
+                              btcPriceInKrw: data.item2,
+                              sendingAmount: data.item3,
+                              receivingAmount: data.item4,
+                              onPressedUnitToggle: _toggleUnit,
+                              onTapReceive: _onTapReceive,
+                              onTapSend: _onTapSend,
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    _buildLoadingWidget(),
-                    _buildTxListLabel(),
-                    TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
-                  ],
+                      _buildLoadingWidget(),
+                      _buildTxListLabel(),
+                      TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
+                    ],
+                  ),
                 ),
               ),
               _buildStickyHeader(),

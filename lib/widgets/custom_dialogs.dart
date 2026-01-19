@@ -1,46 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CustomDialogs {
-  static Future<void> showCustomAlertDialog(
-    BuildContext context, {
-    required String title,
-    required String message,
-    required VoidCallback onConfirm,
-    VoidCallback? onCancel,
-    String? confirmButtonText,
-    String? cancelButtonText,
-    Color confirmButtonColor = CoconutColors.white,
-  }) async {
-    final confirmText = confirmButtonText ?? t.confirm;
-    final cancelText = cancelButtonText ?? t.cancel;
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(title, style: Styles.body1Bold)),
-          content: Text(message, style: Styles.body2, textAlign: TextAlign.center),
-          actions: [
-            if (onCancel != null)
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                onPressed: onCancel,
-                child: Text(cancelText, style: Styles.label),
-              ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: onConfirm,
-              child: Text(confirmText, style: Styles.label.merge(TextStyle(color: confirmButtonColor))),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   static Future<bool?> showFutureCustomAlertDialog(
     BuildContext context, {
     required String title,

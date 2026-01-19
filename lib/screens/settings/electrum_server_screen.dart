@@ -9,7 +9,6 @@ import 'package:coconut_wallet/providers/view_model/settings/electrum_server_vie
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -366,21 +365,27 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
 
                           // 현재 구동 중인 서버인 경우 삭제 불가
                           if (!isCurrentServer) {
-                            CustomDialogs.showCustomAlertDialog(
-                              context,
-                              title: t.settings_screen.electrum_server.popup.delete_server_info,
-                              message: t.settings_screen.electrum_server.popup.delete_server_info_description,
-                              onConfirm: () async {
-                                final navigator = Navigator.of(context);
-                                await _viewModel.removeUserServer(serverList[i]);
-                                if (!mounted) return;
-                                vibrateLight();
-                                navigator.pop();
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return CoconutPopup(
+                                  languageCode: context.read<PreferenceProvider>().language,
+                                  title: t.settings_screen.electrum_server.popup.delete_server_info,
+                                  description: t.settings_screen.electrum_server.popup.delete_server_info_description,
+                                  onTapRight: () async {
+                                    final navigator = Navigator.of(context);
+                                    await _viewModel.removeUserServer(serverList[i]);
+                                    if (!mounted) return;
+                                    vibrateLight();
+                                    navigator.pop();
+                                  },
+                                  onTapLeft: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  leftButtonText: t.cancel,
+                                  rightButtonText: t.delete,
+                                );
                               },
-                              onCancel: () {
-                                Navigator.of(context).pop();
-                              },
-                              confirmButtonText: t.delete,
                             );
                           }
                         }

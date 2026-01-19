@@ -51,7 +51,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
 
     _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash);
-    _dateString = DateTimeUtil.formatTimestamp(_transaction!.timestamp);
+    _dateString = _transaction != null ? DateTimeUtil.formatTimestamp(_transaction.timestamp) : ['-', '-'];
 
     _initUtxoInOutputList();
     _syncWalletStateSubscription = _syncWalletStateStream.listen(_onWalletUpdate);

@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "Wallet"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "비트코인"
+bitcoin: "비트코인"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "테스트넷"
@@ -35,6 +35,7 @@ complete: "완료"
 close: "닫기"
 next: "다음"
 modify: "변경"
+OK: "확인"
 confirm: "확인"
 cancel: "취소"
 security: "보안"
@@ -96,6 +97,7 @@ network: "네트워크"
 electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
+go_to_settings: "설정하러 가기"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sat/vB)"
@@ -195,9 +197,9 @@ wallet_add_scanner_screen:
   cold_card: "콜드카드"
   krux: "크럭스"
   self: "직접 입력"
-  self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
+  self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
-  guide_vault: "코코넛 볼트 앱 - 지갑 선택 - 지갑 정보 내보내기"
+  guide_vault: "코코넛 볼트의 홈 화면에서\n\"보기 전용 앱으로 내보내기 - 지갑 선택\" 또는 \"지갑 선택 - 지갑 내보내기 - 보기 전용 앱으로 내보내기\" 화면의 QR 코드를 스캔해 주세요"
   guide_seedsigner:
     step1: "1. 홈 화면에서 "
     step1_em: "Seeds"
@@ -249,6 +251,7 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR 코드"
     select: "선택"
+  paste: "붙여넣기로 가져오기"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
@@ -298,6 +301,7 @@ wallet_add_input_screen:
     - "이 정보가 없으면 보내기 기능을 사용하실 수 없어요."
   mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
   mfp_skip: "건너뛰기"
+  back_scan: "QR 스캔으로 돌아가기"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -418,7 +422,10 @@ unsigned_tx_qr_screen:
 
 coconut_qr_scanner:
   reading_extra_data: "거의 다 읽었어요\n남은 데이터를 마저 스캔해 주세요"
-
+  camera_error:
+    title: "카메라 사용 불가"
+    need_camera_permission: "설정에서 카메라 권한을 허용해 주세요."
+    
 # lib/screens/settings
 app_info_screen:
   made_by_team_pow: "포우팀이 만듭니다."
@@ -459,9 +466,11 @@ settings_screen:
     fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
     fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
   language: "언어"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "서버 주소"
     port: "포트"
@@ -686,7 +695,7 @@ errors:
     invalid: "올바른 주소가 아니에요."
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
-    not_for_regtest: "레그테스트넷 주소가 아니에요."
+    not_for_regtest: "주소 형식을 확인해 주세요.(Native Segwit 지원)"
     duplicated: "이미 입력한 주소예요"
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"
@@ -701,7 +710,8 @@ errors:
   data_not_found: "데이터가 없습니다."
   utxo_lock_error: "일시적인 오류로 인해 UTXO 잠금 설정에 실패했어요"
   utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
-
+  empty_input: "트랜잭션 입력 정보를 불러올 수 없어요. 멤풀에서 확인해 주세요."
+  
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sat/vB)"
   enter_fee_directly: "직접 입력하기"
@@ -822,7 +832,9 @@ third_party:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
-  zpub: "zpub"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "업비트"
