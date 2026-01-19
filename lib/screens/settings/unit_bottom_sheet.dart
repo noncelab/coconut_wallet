@@ -18,7 +18,7 @@ class UnitBottomSheet extends StatelessWidget {
           selectedValue: isBtcUnit,
           items: [
             SelectionItem<bool>(
-              title: t.bitcoin_en,
+              title: t.bitcoin_name,
               subtitle: t.btc,
               value: true,
               onTap: () {
