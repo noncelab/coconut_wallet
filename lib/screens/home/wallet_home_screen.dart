@@ -954,7 +954,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         SizedBox(
                           width: MediaQuery.sizeOf(context).width,
                           child: _buildWalletIconShrinkButton(
-                            () => _goToManualInputScreen(),
+                            // () => _goToManualInputScreen(),
+                            () => _goToScannerScreen(WalletImportSource.extendedPublicKey),
                             WalletImportSource.extendedPublicKey,
                           ),
                         ),

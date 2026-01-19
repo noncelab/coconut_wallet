@@ -15,6 +15,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/card/wallet_expandable_info_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -245,7 +246,6 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.krux:
         {
-          const prefix = 't.wallet_add_scanner_screen.guide_krux';
           if (!isEnglish) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
@@ -311,20 +311,29 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               left: CoconutLayout.defaultPadding,
               right: CoconutLayout.defaultPadding,
             ),
-            child: CoconutToolTip(
-              backgroundColor: CoconutColors.gray900,
-              borderColor: CoconutColors.gray900,
-              icon: SvgPicture.asset(
-                'assets/svg/circle-info.svg',
-                width: 20,
-                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-              ),
-              tooltipType: CoconutTooltipType.fixed,
-              richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
-            ),
+            child:
+                widget.importSource == WalletImportSource.extendedPublicKey
+                    ? const WalletExpandableInfoCard()
+                    : _buildDefaultToolTip(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDefaultToolTip() {
+    if (_getGuideTextSpan().isEmpty) return const SizedBox.shrink();
+
+    return CoconutToolTip(
+      backgroundColor: CoconutColors.gray900,
+      borderColor: CoconutColors.gray900,
+      icon: SvgPicture.asset(
+        'assets/svg/circle-info.svg',
+        width: 20,
+        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+      ),
+      tooltipType: CoconutTooltipType.fixed,
+      richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
     );
   }
 
@@ -486,6 +495,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
     WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
     WalletImportSource.krux => t.wallet_add_scanner_screen.krux,
+    WalletImportSource.extendedPublicKey => t.wallet_add_scanner_screen.self,
     _ => '',
   };
 
