@@ -451,9 +451,9 @@ class WalletHomeViewModel extends ChangeNotifier {
     if (!forceRefresh && _isFetchingLatestTx) return;
 
     if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
-    // 홈 화면에 표시한 지갑 목록 아이디
     _isFetchingLatestTx = true;
 
+    // 홈 화면에 표시한 지갑 목록 아이디
     final walletIds = walletItemList.map((w) => w.id).toList();
     // blockHeight와 무관하게 날짜 기준으로 조회 (currentBlockHeight는 deprecated)
     final transactions = _walletProvider.getPendingAndDaysAgoTransactions(walletIds, days);
