@@ -444,7 +444,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: t.alert.wallet_add.add_failed,
-          description: e.toString(),
+          description: errorMessage,
           onTapRight: () {
             FileLogger.log(className, methodName, 'Error dialog confirmed');
             _isProcessing = false;
