@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   cold_card: "ColdCard"
   krux: "Krux"
   self: "手動追加"
-  self_description: "情報でウォレットを追加できます"
+  self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
   guide_vault: "Coconut Vaultのホーム画面で、「ウォッチオンリーウォレットにエクスポート → ウォレット選択」 または 「ウォレット選択 → ウォレットエクスポート → ウォッチオンリーウォレットにエクスポート」 に進み、QRコードをスキャンしてください。"
   guide_seedsigner:

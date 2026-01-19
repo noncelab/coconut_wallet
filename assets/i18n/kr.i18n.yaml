@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   cold_card: "콜드카드"
   krux: "크럭스"
   self: "직접 입력"
-  self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
+  self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
   guide_vault: "코코넛 볼트의 홈 화면에서\n\"보기 전용 앱으로 내보내기 - 지갑 선택\" 또는 \"지갑 선택 - 지갑 내보내기 - 보기 전용 앱으로 내보내기\" 화면의 QR 코드를 스캔해 주세요"
   guide_seedsigner:
