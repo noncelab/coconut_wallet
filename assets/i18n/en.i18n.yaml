@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   cold_card: "ColdCard"
   krux: "Krux"
   self: "Add Manually"
-  self_description: "You can add a wallet with information"
+  self_description: "You can add a wallet using info from another app."
   select: "Select"
   guide_vault: "On the Coconut Vault home screen, go to: “Export to Watch-Only Wallet → Select Wallet” or “Select Wallet → Export Wallet → Export to Watch-Only Wallet”. Then scan the QR code."
   guide_seedsigner:
@@ -251,6 +251,7 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Select"
+  paste: "Import from paste"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
@@ -300,6 +301,7 @@ wallet_add_input_screen:
     - "Without fingerprint, you will not be able to use the send feature."
   mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
   mfp_skip: "Skip"
+  back_scan: "Go back to QR scan"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -829,8 +831,10 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
-  krux: "Krux"  
-  zpub: "zpub"
+  krux: "Krux"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "Upbit"

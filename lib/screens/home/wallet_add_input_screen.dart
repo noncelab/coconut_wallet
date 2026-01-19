@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
@@ -12,6 +10,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/card/wallet_expandable_info_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -30,7 +29,6 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
   final TextEditingController _inputController = TextEditingController();
   final _inputFocusNode = FocusNode();
   bool _isError = false;
-  bool _isWalletInfoExpanded = false;
   bool _isButtonEnabled = false;
   bool _hasAddedListener = false;
   bool _isProcessing = false;
@@ -217,68 +215,7 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                                 ),
                               ),
                               CoconutLayout.spacing_900h,
-                              Container(
-                                padding: const EdgeInsets.all(CoconutStyles.radius_200),
-                                decoration: const BoxDecoration(
-                                  color: CoconutColors.gray800,
-                                  borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _isWalletInfoExpanded = !_isWalletInfoExpanded;
-                                        });
-                                      },
-                                      child: Container(
-                                        color: Colors.transparent, // touch event
-                                        child: Row(
-                                          children: [
-                                            SvgPicture.asset(
-                                              _isWalletInfoExpanded
-                                                  ? 'assets/svg/circle-warning.svg'
-                                                  : 'assets/svg/circle-help.svg',
-                                              width: 18,
-                                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                                            ),
-                                            CoconutLayout.spacing_100w,
-                                            Expanded(
-                                              child: Text(
-                                                t.wallet_add_input_screen.wallet_description_text,
-                                                style: CoconutTypography.body2_14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    if (_isWalletInfoExpanded) ...[
-                                      CoconutLayout.spacing_200h,
-                                      _buildWalletInfo(
-                                        titleText: t.wallet_add_input_screen.blue_wallet_texts[0],
-                                        descriptionList: [
-                                          ...t.wallet_add_input_screen.blue_wallet_texts.getRange(1, 3),
-                                        ],
-                                        addressText: t.wallet_add_input_screen.blue_wallet_texts[3],
-                                      ),
-                                      CoconutLayout.spacing_200h,
-                                      _buildWalletInfo(
-                                        titleText: t.wallet_add_input_screen.nunchuck_wallet_texts[0],
-                                        descriptionList: [
-                                          ...t.wallet_add_input_screen.nunchuck_wallet_texts.getRange(1, 2),
-                                        ],
-                                        addressText:
-                                            Platform.isAndroid
-                                                ? t.wallet_add_input_screen.nunchuck_wallet_texts[2]
-                                                : t.wallet_add_input_screen.nunchuck_wallet_texts[3],
-                                      ),
-                                      CoconutLayout.spacing_200h,
-                                    ],
-                                  ],
-                                ),
-                              ),
+                              const WalletExpandableInfoCard(),
                               CoconutLayout.spacing_2500h,
                             ],
                           ),
@@ -298,6 +235,12 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
                           horizontalPadding: 0,
                           isActive: _isButtonEnabled,
                           backgroundColor: CoconutColors.white,
+                          subWidget: CoconutUnderlinedButton(
+                            text: t.wallet_add_input_screen.back_scan,
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -337,50 +280,6 @@ class _WalletAddInputScreenState extends State<WalletAddInputScreen> {
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
-    );
-  }
-
-  Widget _buildWalletInfo({
-    required String titleText,
-    required List<String> descriptionList,
-    required String addressText,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(titleText, style: CoconutTypography.body3_12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Sizes.size12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ...descriptionList.map((desc) => Text(desc, style: CoconutTypography.body3_12)),
-              CoconutLayout.spacing_200h,
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
-                child: Container(
-                  width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: CoconutColors.black,
-                    borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
-                  child: RichText(
-                    text: TextSpan(
-                      text: addressText.substring(0, 4),
-                      style:
-                          addressText.startsWith("zpub")
-                              ? CoconutTypography.body3_12_NumberBold
-                              : CoconutTypography.body3_12_Number,
-                      children: [TextSpan(text: addressText.substring(4), style: CoconutTypography.body3_12_Number)],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

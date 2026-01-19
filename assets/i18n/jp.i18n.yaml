@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   cold_card: "ColdCard"
   krux: "Krux"
   self: "手動追加"
-  self_description: "情報でウォレットを追加できます"
+  self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
   guide_vault: "Coconut Vaultのホーム画面で、「ウォッチオンリーウォレットにエクスポート → ウォレット選択」 または 「ウォレット選択 → ウォレットエクスポート → ウォッチオンリーウォレットにエクスポート」 に進み、QRコードをスキャンしてください。"
   guide_seedsigner:
@@ -251,6 +251,7 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "選択"
+  paste: "ペーストからインポート"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
@@ -300,6 +301,7 @@ wallet_add_input_screen:
     - "フィンガープリントがないと、送信機能を使用できません。"
   mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
   mfp_skip: "スキップ"
+  back_scan: "QRスキャンに戻る"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -829,8 +831,10 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
-  krux: "Krux"  
-  zpub: "zpub"
+  krux: "Krux"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "Upbit"

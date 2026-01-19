@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   cold_card: "ColdCard"
   krux: "Krux"
   self: "Añadir Manualmente"
-  self_description: "Puedes añadir una cartera con información"
+  self_description: "Puedes añadir una cartera con información de otra app."
   select: "Seleccionar"
   guide_vault: "En la pantalla principal de Coconut Vault, ve a: “Exportar a Cartera de Vista → Seleccionar Cartera” o “Seleccionar Cartera → Exportar Cartera → Exportar a Cartera de Vista”. Luego escanea el código QR."
   guide_seedsigner:
@@ -251,6 +251,7 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Seleccionar"
+  paste: "Importar mediante pegado"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
@@ -300,7 +301,7 @@ wallet_add_input_screen:
     - "Sin huella digital, no podrás usar la función de envío."
   mfp_input_placeholder: "Huella Digital del Maestro ex: f75f7ab5"
   mfp_skip: "Omitir"
-
+  back_scan: "Volver al escaneo de QR"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -833,7 +834,9 @@ third_party:
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
   krux: "Krux"  
-  zpub: "zpub"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "Upbit"
