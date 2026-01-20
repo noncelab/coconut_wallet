@@ -228,10 +228,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               TextSpan(text: '${t.select} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
               const TextSpan(text: ' '),
+            ] else if (_viewModel.isSpanish) ...[
+              TextSpan(text: '${t.wallet_list.edit.select} '),
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
+              const TextSpan(text: ' '),
             ] else ...[
               WidgetSpan(alignment: PlaceholderAlignment.top, child: starIcon),
-              TextSpan(text: t.wallet_list.edit.star_description),
             ],
+            TextSpan(text: t.wallet_list.edit.star_description),
           ]),
           CoconutLayout.spacing_100h,
           _buildEditModeHeaderLine([
@@ -239,10 +243,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
               TextSpan(text: '${t.tap} '),
               WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
               const TextSpan(text: ' '),
+            ] else if (_viewModel.isSpanish) ...[
+              TextSpan(text: '${t.wallet_list.edit.use} '),
+              WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
+              const TextSpan(text: ' '),
             ] else ...[
               WidgetSpan(alignment: PlaceholderAlignment.top, child: hamburgerIcon),
-              TextSpan(text: t.wallet_list.edit.order_description),
             ],
+            TextSpan(text: t.wallet_list.edit.order_description),
           ]),
           CoconutLayout.spacing_100h,
           _buildEditModeHeaderLine([TextSpan(text: t.wallet_list.edit.delete_description)]),

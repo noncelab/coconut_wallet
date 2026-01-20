@@ -267,6 +267,8 @@ wallet_list:
     exclude_from_total_amount: "총액에서 제외"
     exclude_from_total_amount_description: "홈 화면 총 잔액 계산에서 제외돼요."
   edit:
+    select: "선택 "
+    use: "사용 "
     wallet_list: "지갑 목록 편집"
     star_description: "을 최대 5개 선택하여 홈 화면에 보이는 지갑을 선택할 수 있어요."
     order_description: "을 눌러 지갑 순서를 변경할 수 있어요."

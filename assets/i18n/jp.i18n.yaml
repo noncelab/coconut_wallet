@@ -267,6 +267,8 @@ wallet_list:
     exclude_from_total_amount: "合計から除外"
     exclude_from_total_amount_description: "このウォレットはホーム画面の合計残高計算から除外されます。"
   edit:
+    select: "選択 "
+    use: "使う "
     wallet_list: "ウォレット一覧編集"
     star_description: "ホーム画面に表示するウォレットを最大5つまで選択できます。"
     order_description: "タップしてウォレットの順序を変更できます。"

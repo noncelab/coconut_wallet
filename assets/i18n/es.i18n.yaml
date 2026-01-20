@@ -202,19 +202,19 @@ wallet_add_scanner_screen:
   guide_vault: "En la pantalla principal de Coconut Vault, ve a: “Exportar a Cartera de Vista → Seleccionar Cartera” o “Seleccionar Cartera → Exportar Cartera → Exportar a Cartera de Vista”. Luego escanea el código QR."
   guide_seedsigner:
     step1: "1. En la pantalla principal, "
-    step1_em: " Semillas"
+    step1_em: " Semillas."
     step2: "2. "
     step2_em: " Huella Digital del Maestro"
     step3: "3. "
     step3_em: " Exportar Xpub"
-    step4: "4. "
-    step4_em1: " Single Sig"
+    step4: "4. Elige"
+    step4_em1: " Monofirma"
     next: " > "
-    step4_em2: " Segwit Nativo"
+    step4_em2: " Native Segwit"
     step5: "5. "
     step5_em: " BlueWallet"
     step6: "6. Después de leer el mensaje, "
-    step6_em: " Entiendo"
+    step6_em: " Entendido"
     step6_end: " > Exportar Xpub"
   guide_keystone:
     step0: "Los dispositivos que no sean el Keystone 3 Pro no son compatibles."
@@ -224,9 +224,9 @@ wallet_add_scanner_screen:
     step2_em: " Connect Software Wallet"
     step3: "3. Seleccionar cualquier cartera"
   guide_jade:
-    step0_preposition: "En un " 
-    step0_em: "Estado "
-    step0: "Activo,"
+    step0_preposition: "En " 
+    step0: "estado "
+    step0_em: "Activo,"
     step1: "1. "
     step1_em: " Options"
     step2: "2. "
@@ -247,10 +247,10 @@ wallet_add_scanner_screen:
   guide_krux:
     step0: "Guía basada en wonderMV"
     step1: "1. "
-    step1_em: "XPUB Export"
+    step1_em: "Clave pública extendida"
     step2: "2. "
-    step2_em: "XPUB - QR Code"
-    select: "Seleccionar"
+    step2_em: "XPUB - Código QR"
+    select: "Seleccionar "
   paste: "Importar mediante pegado"
 # lib/screens/wallet_list
 wallet_list:
@@ -267,12 +267,14 @@ wallet_list:
     exclude_from_total_amount: "Excluir del Total"
     exclude_from_total_amount_description: "Esta cartera será excluida del cálculo del saldo total en la pantalla principal."
   edit:
+    select: "Marque con "
+    use: "Use "
     wallet_list: "Editar Lista de Carteras"
-    star_description: "hasta 5 carteras para mostrar en la pantalla principal."
-    order_description: "para cambiar el orden de las carteras."
-    delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
+    star_description: " hasta 5 carteras para mostrarlas en la pantalla principal."
+    order_description: " para cambiar el orden de las carteras."
+    delete_description: "Puede eliminarlo si desliza su billetera hacia la izquierda."
     finish: "Finalizar Edición"
-    unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
+    unsaved_changes_confirm_exit: "Hay cambios que no se han guardado.\n¿Aún quiere salir?``"
   
 wallet_add_input_screen:
   app_bar_title_text: "직접 입력"
@@ -384,22 +386,22 @@ signed_psbt_scanner_screen:
   bbqr_mode_switching: "Cambiando a modo BBQR.\nPor favor, espere un momento."
   
 unsigned_tx_qr_screen:
-  hardware_wallet_screen_guide: "Guía"
+  hardware_wallet_screen_guide: "Guía de"
   guide_keystone:
-    step1: "1. En la pantalla principal, "
-    step1_em: "SCAN"
-    step1_end: "seleccionar"
+    step1: "1. En la pantalla principal,"
+    step1_em: "Scan"
+    step1_end: "seleccione"
     step2: "2. Escanea el código QR a continuación con la cámara"
   guide_seedsigner:
-    step1: "1. En la pantalla principal, "
-    step1_em: "Scan"
-    step1_end: "seleccionar"
-    step2: "2. Escanea el código QR a continuación con la cámara"
+    step1: "1. En la pantalla principal,"
+    step1_em: "Escanear"
+    step1_end: "seleccione"
+    step2: "2. Escanee el código QR a continuación con la cámara."
   guide_jade:
     step0: "En estado Activo"
     step1: "1. "
     step1_em: "Scan QR"
-    step1_end: "seleccionar"
+    step1_end: "Seleccione "
     step2: "2. Escanea el código QR a continuación con la cámara"
   guide_coldcard:
     step1_preposition: "Presiona el "
@@ -408,7 +410,7 @@ unsigned_tx_qr_screen:
   guide_krux:
     step1: "1. "
     step1_em: "Sign"
-    select: "Seleccionar"
+    select: "Seleccione"
     step2: "2. "
     step2_em: "PSBT"
     step3: "3. "

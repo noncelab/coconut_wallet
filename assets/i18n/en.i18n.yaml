@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
-bitcoin_name: "Bitcoin"
 wallet: "Wallet"
 btc: "BTC"
-bitcoin: "Bitcoin"
+bitcoin_en: "Bitcoin"
+bitcoin_kr: "Bitcoin"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -197,7 +197,7 @@ wallet_add_scanner_screen:
   cold_card: "ColdCard"
   krux: "Krux"
   self: "Add Manually"
-  self_description: "You can add a wallet using info from another app."
+  self_description: "You can add a wallet with information"
   select: "Select"
   guide_vault: "On the Coconut Vault home screen, go to: “Export to Watch-Only Wallet → Select Wallet” or “Select Wallet → Export Wallet → Export to Watch-Only Wallet”. Then scan the QR code."
   guide_seedsigner:
@@ -251,7 +251,6 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Select"
-  paste: "Import from paste"
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
@@ -267,6 +266,8 @@ wallet_list:
     exclude_from_total_amount: "Exclude from Total"
     exclude_from_total_amount_description: "This wallet will be excluded from the total balance calculation on the home screen."
   edit:
+    select: "Select "
+    use: "Use "
     wallet_list: "Edit Wallet List"
     star_description: "up to 5 wallets to display on the home screen."
     order_description: "to change the order of wallets."
@@ -301,7 +302,6 @@ wallet_add_input_screen:
     - "Without fingerprint, you will not be able to use the send feature."
   mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
   mfp_skip: "Skip"
-  back_scan: "Go back to QR scan"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -466,11 +466,9 @@ settings_screen:
     fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
     fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
   language: "Language"
-  locales:
-    korean: "한국어"
-    english: "English"
-    japanese: "日本語"
-    spanish: "Español"
+  korean: "한국어"
+  english: "English"
+  japanese: "日本語"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -695,7 +693,7 @@ errors:
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"
-    not_for_regtest: "Please check the address format.\n(Native SegWit supported)"
+    not_for_regtest: "Not a regtest address"
     duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"
@@ -710,7 +708,6 @@ errors:
   data_not_found: "No data found."
   utxo_lock_error: "Failed to set UTXO lock due to temporary error"
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
-  empty_input: "Could not fetch transaction inputs. Please check mempool."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
@@ -831,10 +828,8 @@ third_party:
   jade: "Jade"
   seed_signer: "SeedSigner"
   cold_card: "ColdCard"
-  krux: "Krux"
-  extended_public_keys:
-    zpub: "zpub"
-    vpub: "vpub"
+  krux: "Krux"  
+  zpub: "zpub"
 
 trade_exchange:
   upbit: "Upbit"

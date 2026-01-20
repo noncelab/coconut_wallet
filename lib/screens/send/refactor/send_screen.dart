@@ -995,10 +995,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   }
 
                   final isEnglish = context.read<PreferenceProvider>().isEnglish;
+                  final isSpanish = context.read<PreferenceProvider>().isSpanish;
                   final maxButtonBaseText = t.send_screen.input_maximum_amount;
                   final maxButtonText =
                       _viewModel.isMaxMode
-                          ? (!isEnglish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
+                          ? (!isEnglish && !isSpanish
+                              ? '$maxButtonBaseText ${t.cancel}'
+                              : '${t.cancel} $maxButtonBaseText')
                           : maxButtonBaseText;
 
                   return Column(
