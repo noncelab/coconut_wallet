@@ -8,8 +8,10 @@ import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
@@ -346,7 +348,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           ),
           if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
             FixedBottomButton(
-              onButtonClicked: _goToManualInputScreen,
+              onButtonClicked: _handleClipboardImport,
               text: t.wallet_add_scanner_screen.paste,
               showGradient: false,
               backgroundColor: CoconutColors.white,
@@ -357,33 +359,134 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     );
   }
 
-  void _goToManualInputScreen() async {
+  void _handleClipboardImport() async {
     await controller?.stop();
-
     if (!mounted) return;
 
-    final result = await Navigator.pushNamed(context, "/wallet-add-input");
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = clipboardData?.text?.trim();
 
-    _isProcessing = false;
-    _viewModel.qrDataHandler.reset();
-
-    if (mounted) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      controller?.start();
+    if (text == null || text.isEmpty) {
+      _showErrorDialog(t.alert.wallet_add.add_failed, t.alert.invalid_qr);
+      await controller?.start();
+      return;
     }
 
-    if (result != null && result is ResultOfSyncFromVault) {
-      if (widget.onNewWalletAdded != null) {
-        widget.onNewWalletAdded!(result);
-      }
+    final inputViewModel = WalletAddInputViewModel(context.read<WalletProvider>(), context.read<PreferenceProvider>());
+
+    final bool isDescriptor = text.contains('[');
+    final bool isValid =
+        isDescriptor ? inputViewModel.normalizeDescriptor(text) : inputViewModel.isExtendedPublicKey(text);
+
+    if (!isValid) {
       if (mounted) {
-        Navigator.pushReplacementNamed(
-          context,
-          '/wallet-detail',
-          arguments: {'id': result.walletId, 'entryPoint': kEntryPointWalletHome},
+        _showErrorDialog(
+          t.alert.wallet_add.add_failed,
+          inputViewModel.errorMessage ?? t.alert.scan_failed_description(error: "Invalid Format"),
         );
+        await controller?.start();
+      }
+      return;
+    }
+
+    if (isDescriptor) {
+      await _executeAddWallet(inputViewModel);
+    } else {
+      if (mounted) {
+        _showMfpInputBottomSheet(inputViewModel);
       }
     }
+  }
+
+  Future<void> _executeAddWallet(WalletAddInputViewModel viewModel) async {
+    if (_isProcessing) return;
+
+    _isProcessing = true;
+    context.loaderOverlay.show();
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    try {
+      if (!mounted) return;
+      ResultOfSyncFromVault addResult = await viewModel.addWallet();
+
+      if (!mounted) return;
+
+      switch (addResult.result) {
+        case WalletSyncResult.newWalletAdded:
+          {
+            context.read<AnalyticsService>().logEvent(
+              eventName: AnalyticsEventNames.walletAddCompleted,
+              parameters: {AnalyticsParameterNames.walletAddImportSource: WalletImportSource.extendedPublicKey.name},
+            );
+
+            if (widget.onNewWalletAdded != null) {
+              widget.onNewWalletAdded!(addResult);
+            }
+            if (mounted) {
+              Navigator.pushReplacementNamed(
+                context,
+                '/wallet-detail',
+                arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
+              );
+            }
+            break;
+          }
+        case WalletSyncResult.existingWalletUpdateImpossible:
+          vibrateLightDouble();
+          if (mounted) {
+            _showErrorDialog(
+              t.alert.wallet_add.already_exist,
+              t.alert.wallet_add.already_exist_description(
+                name: TextUtils.ellipsisIfLonger(viewModel.getWalletName(addResult.walletId!), maxLength: 15),
+              ),
+            );
+          }
+          break;
+        default:
+          throw 'No Support Result: ${addResult.result.name}';
+      }
+    } catch (e) {
+      vibrateLightDouble();
+      if (mounted) {
+        _showErrorDialog(t.alert.wallet_add.add_failed, e.toString());
+      }
+    } finally {
+      vibrateMedium();
+      _isProcessing = false;
+      if (mounted) {
+        context.loaderOverlay.hide();
+      }
+    }
+  }
+
+  void _showMfpInputBottomSheet(WalletAddInputViewModel viewModel) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: WalletAddMfpInputBottomSheet(
+            onSkip: () {
+              viewModel.masterFingerPrint = null;
+              _executeAddWallet(viewModel);
+            },
+            onComplete: (text) {
+              viewModel.masterFingerPrint = text;
+              _executeAddWallet(viewModel);
+            },
+          ),
+        );
+      },
+      backgroundColor: CoconutColors.black,
+      isScrollControlled: true,
+      enableDrag: true,
+      useSafeArea: true,
+    ).then((_) {
+      if (mounted && !_isProcessing) {
+        controller?.start();
+      }
+    });
   }
 
   Widget _buildDefaultToolTip() {

@@ -345,25 +345,35 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
+
+    final navigator = Navigator.of(context);
+
     _setOverlayLoading(true);
-    await viewModel.deleteWallet();
-    _setOverlayLoading(false);
-    if (context.mounted) {
-      widget.entryPoint == kEntryPointWalletHome
-          ? Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (BuildContext context) => const WalletHomeScreen()),
+
+    try {
+      await viewModel.deleteWallet();
+    } catch (e) {
+      debugPrint('Delete wallet failed: $e');
+    } finally {
+      _setOverlayLoading(false);
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (mounted) {
+        if (widget.entryPoint == kEntryPointWalletHome) {
+          navigator.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const WalletHomeScreen()),
             (route) => false,
-          )
-          : Navigator.pushNamedAndRemoveUntil(
-            context,
-            kEntryPointWalletList,
-            (Route<dynamic> route) => route.settings.name == '/',
           );
+        } else {
+          navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
+        }
+      }
     }
   }
 
   void _setOverlayLoading(bool value) {
+    if (!mounted) return;
     if (value) {
       context.loaderOverlay.show();
     } else {
