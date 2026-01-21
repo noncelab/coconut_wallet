@@ -219,29 +219,29 @@ class WalletHomeViewModel extends ChangeNotifier {
           if (_currentBlock?.height == currentHeight) {
             if (_nodeSyncState == NodeSyncState.completed) {
               Logger.log('WalletHomeViewModel: 블록 높이 변경 후 트랜잭션 조회 실행 (블록 높이: $currentHeight)');
-              getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
+              fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
             } else {
               Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
             }
             // 동기화 상태와 무관하게 분석 데이터는 항상 조회
-            getRecentTransactionAnalysis(_analysisPeriod);
+            fetchRecentTransactionAnalysis(_analysisPeriod);
           }
         });
       } else if (previousHeight == null) {
         // 첫 번째 블록 높이 설정 시
         if (_nodeSyncState == NodeSyncState.completed) {
-          getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
-          getRecentTransactionAnalysis(_analysisPeriod);
+          fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
+          fetchRecentTransactionAnalysis(_analysisPeriod);
         } else {
           Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
-          getRecentTransactionAnalysis(_analysisPeriod);
+          fetchRecentTransactionAnalysis(_analysisPeriod);
         }
       }
     } else {
       // blockHeight가 없어도 DB 데이터는 조회 (날짜 기준)
       Logger.log('WalletHomeViewModel: blockHeight 없지만 DB 데이터 조회');
-      getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
-      getRecentTransactionAnalysis(_analysisPeriod);
+      fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
+      fetchRecentTransactionAnalysis(_analysisPeriod);
     }
 
     notifyListeners();
@@ -270,10 +270,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     // 블록이 변경되었을 수 있으므로 블록을 체크하고 트랜잭션 갱신
     if (_nodeSyncState == NodeSyncState.completed && _currentBlock?.height != null) {
       // 블록이 변경되었을 수 있으므로 트랜잭션 갱신
-      getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
+      fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
     }
     // 동기화 중이어도 DB 데이터는 가져옴 (날짜 기준)
-    getRecentTransactionAnalysis(_analysisPeriod);
+    fetchRecentTransactionAnalysis(_analysisPeriod);
     notifyListeners();
   }
 
@@ -335,7 +335,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     if (_preferenceProvider.isBtcUnit != _isBtcUnit) {
       _isBtcUnit = _preferenceProvider.isBtcUnit;
-      getRecentTransactionAnalysis(_analysisPeriod);
+      fetchRecentTransactionAnalysis(_analysisPeriod);
     }
     notifyListeners();
   }
@@ -447,7 +447,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   // 필요한 경우 호출 (날짜 기반으로 조회)
-  void getPendingAndRecentDaysTransactions(int? analysisPeriod, int days, {bool forceRefresh = false}) {
+  void fetchPendingAndRecentDaysTransactions(int? analysisPeriod, int days, {bool forceRefresh = false}) {
     if (!forceRefresh && _isFetchingLatestTx) return;
 
     // 최근 트랜잭션 홈 기능이 비활성화된 경우에는 조회하지 않음
@@ -476,7 +476,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   // 필요한 경우 호출
-  void getRecentTransactionAnalysis(int days) {
+  void fetchRecentTransactionAnalysis(int days) {
     // if (_isLatestTxAnalysisRunning) return;
 
     // 분석 기능이 비활성화된 경우에는 조회하지 않음
@@ -560,7 +560,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   void setAnalysisPeriod(int value) {
     _analysisPeriod = value;
     _preferenceProvider.setAnalysisPeriod(value);
-    getRecentTransactionAnalysis(value);
+    fetchRecentTransactionAnalysis(value);
     notifyListeners();
   }
 
@@ -568,7 +568,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     _selectedAnalysisTransactionType = value;
     _preferenceProvider.setAnalysisTransactionType(value);
 
-    getRecentTransactionAnalysis(_analysisPeriod);
+    fetchRecentTransactionAnalysis(_analysisPeriod);
     notifyListeners();
   }
 

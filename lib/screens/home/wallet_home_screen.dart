@@ -779,13 +779,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 // HomeFeatureProvider는 PreferenceProvider를 통해 접근 (Facade 패턴)
                 final homeFeatures = preferenceProvider.homeFeatures;
 
-                // recentTransaction feature가 활성화되어 있으면 getPendingAndRecentDaysTransactions 실행
+                // recentTransaction feature가 활성화되어 있으면 fetchPendingAndRecentDaysTransactions 실행
                 final recentTransactionFeature = homeFeatures.firstWhereOrNull(
                   (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name,
                 );
                 if (recentTransactionFeature != null && recentTransactionFeature.isEnabled) {
                   if (_viewModel.currentBlock?.height != null) {
-                    _viewModel.getPendingAndRecentDaysTransactions(
+                    _viewModel.fetchPendingAndRecentDaysTransactions(
                       _viewModel.currentBlock!.height,
                       kRecenctTransactionDays,
                     );
@@ -798,7 +798,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 );
                 if (analysisFeature != null && analysisFeature.isEnabled) {
                   setState(() {
-                    _viewModel.getRecentTransactionAnalysis(_viewModel.analysisPeriod);
+                    _viewModel.fetchRecentTransactionAnalysis(_viewModel.analysisPeriod);
                   });
                 }
               }
