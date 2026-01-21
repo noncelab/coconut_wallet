@@ -766,6 +766,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           CoconutUnderlinedButton(
             padding: const EdgeInsets.all(8),
             onTap: () async {
+              _viewModel.captureEnabledFeaturesSnapshot();
               await CommonBottomSheets.showDraggableBottomSheet(
                 minChildSize: 0.5,
                 maxChildSize: 0.9,
@@ -774,33 +775,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 childBuilder: (controller) => WalletHomeEditBottomSheet(scrollController: controller),
               );
               if (context.mounted) {
-                // PreferenceProvider의 변경사항을 ViewModel에 먼저 반영
-                final preferenceProvider = context.read<PreferenceProvider>();
-                // HomeFeatureProvider는 PreferenceProvider를 통해 접근 (Facade 패턴)
-                final homeFeatures = preferenceProvider.homeFeatures;
-
-                // recentTransaction feature가 활성화되어 있으면 fetchPendingAndRecentDaysTransactions 실행
-                final recentTransactionFeature = homeFeatures.firstWhereOrNull(
-                  (f) => f.homeFeatureTypeString == HomeFeatureType.recentTransaction.name,
-                );
-                if (recentTransactionFeature != null && recentTransactionFeature.isEnabled) {
-                  if (_viewModel.currentBlock?.height != null) {
-                    _viewModel.fetchPendingAndRecentDaysTransactions(
-                      _viewModel.currentBlock!.height,
-                      kRecenctTransactionDays,
-                    );
-                  }
-                }
-
-                // analysis feature가 활성화되어 있으면 getRecentTransactionAnalysis 실행
-                final analysisFeature = homeFeatures.firstWhereOrNull(
-                  (f) => f.homeFeatureTypeString == HomeFeatureType.analysis.name,
-                );
-                if (analysisFeature != null && analysisFeature.isEnabled) {
-                  setState(() {
-                    _viewModel.fetchRecentTransactionAnalysis(_viewModel.analysisPeriod);
-                  });
-                }
+                _viewModel.refreshEnabledFeaturesData();
               }
             },
             text: t.wallet_home_screen.edit_home_screen,
@@ -965,54 +940,62 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             margin: const EdgeInsets.only(top: 12),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.black),
             child: Center(
-              child:
-                  Selector2<PreferenceProvider, WalletHomeViewModel, Tuple2<bool, Map<int, List<TransactionRecord>>>>(
-                    selector:
-                        (_, prefProvider, homeViewModel) =>
-                            Tuple2(prefProvider.isBtcUnit, homeViewModel.recentTransactions),
-                    builder: (context, data, child) {
-                      final isBtcUnit = data.item1;
-                      // 정렬된 트랜잭션 플랫 리스트
-                      final ordered = _getOrderedRecentTransactions();
+              child: Selector2<
+                PreferenceProvider,
+                WalletHomeViewModel,
+                Tuple3<bool, Map<int, List<TransactionRecord>>, bool>
+              >(
+                selector:
+                    (_, prefProvider, homeViewModel) => Tuple3(
+                      prefProvider.isBtcUnit,
+                      homeViewModel.recentTransactions,
+                      homeViewModel.showRecentFeatureInitialLoading,
+                    ),
+                builder: (context, data, child) {
+                  final isBtcUnit = data.item1;
+                  final showRecentInitialLoading = data.item3;
+                  // 정렬된 트랜잭션 플랫 리스트
+                  final ordered = _getOrderedRecentTransactions();
 
-                      if (ordered.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _buildEmptyRecentTransactions(
-                            _viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty,
-                          ),
-                        );
-                      }
+                  if (ordered.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _buildEmptyRecentTransactions(
+                        (_viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty) ||
+                            showRecentInitialLoading,
+                      ),
+                    );
+                  }
 
-                      return ordered.length == 1
-                          ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, isBtcUnit),
-                          )
-                          : CarouselSlider(
-                            carouselController: _carouselController,
-                            options: CarouselOptions(
-                              autoPlay: false,
-                              height: 90,
-                              viewportFraction: 0.9,
-                              enlargeCenterPage: true,
-                              enlargeFactor: 0.2,
-                              enableInfiniteScroll: false,
-                              onPageChanged: (index, reason) {
-                                setState(() {
-                                  _recentTransactionCurrentPage = index;
-                                });
-                                // 인디케이터 자동 스크롤
-                                _scrollToIndicator(index);
-                              },
-                            ),
-                            items:
-                                ordered.map((t) {
-                                  return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
-                                }).toList(),
-                          );
-                    },
-                  ),
+                  return ordered.length == 1
+                      ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, isBtcUnit),
+                      )
+                      : CarouselSlider(
+                        carouselController: _carouselController,
+                        options: CarouselOptions(
+                          autoPlay: false,
+                          height: 90,
+                          viewportFraction: 0.9,
+                          enlargeCenterPage: true,
+                          enlargeFactor: 0.2,
+                          enableInfiniteScroll: false,
+                          onPageChanged: (index, reason) {
+                            setState(() {
+                              _recentTransactionCurrentPage = index;
+                            });
+                            // 인디케이터 자동 스크롤
+                            _scrollToIndicator(index);
+                          },
+                        ),
+                        items:
+                            ordered.map((t) {
+                              return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
+                            }).toList(),
+                      );
+                },
+              ),
             ),
           ),
           // 페이지 인디케이터 (트랜잭션 단위, 2개 이상일 때만 표시)
