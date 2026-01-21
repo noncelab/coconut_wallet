@@ -210,41 +210,59 @@ class WalletHomeViewModel extends ChangeNotifier {
     final currentHeight = currentBlock?.height;
     _currentBlock = currentBlock;
 
-    final bool isBlockHeightChanged =
-        previousHeight != null && currentHeight != null && previousHeight != currentHeight;
+    final bool hasCurrentHeight = currentHeight != null;
+    final bool isBlockHeightChanged = hasCurrentHeight && previousHeight != null && previousHeight != currentHeight;
 
-    if (currentHeight != null) {
+    if (hasCurrentHeight) {
       if (isBlockHeightChanged) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (_currentBlock?.height == currentHeight) {
-            if (_nodeSyncState == NodeSyncState.completed) {
-              Logger.log('WalletHomeViewModel: 블록 높이 변경 후 트랜잭션 조회 실행 (블록 높이: $currentHeight)');
-              fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
-            } else {
-              Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
-            }
-            // 동기화 상태와 무관하게 분석 데이터는 항상 조회
-            fetchRecentTransactionAnalysis(_analysisPeriod);
-          }
-        });
+        _handleBlockHeightChanged(currentHeight);
       } else if (previousHeight == null) {
-        // 첫 번째 블록 높이 설정 시
-        if (_nodeSyncState == NodeSyncState.completed) {
-          fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
-          fetchRecentTransactionAnalysis(_analysisPeriod);
-        } else {
-          Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
-          fetchRecentTransactionAnalysis(_analysisPeriod);
-        }
+        _handleInitialBlockHeight(currentHeight);
       }
     } else {
-      // blockHeight가 없어도 DB 데이터는 조회 (날짜 기준)
-      Logger.log('WalletHomeViewModel: blockHeight 없지만 DB 데이터 조회');
-      fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
-      fetchRecentTransactionAnalysis(_analysisPeriod);
+      _handleNoBlockHeight();
     }
 
     notifyListeners();
+  }
+
+  /// 블록 높이가 변경되었을 때, 잠시 대기 후 여전히 동일한 블록이면 처리
+  void _handleBlockHeightChanged(int currentHeight) {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (_currentBlock?.height != currentHeight) return;
+      _processBlockHeightChange(currentHeight);
+    });
+  }
+
+  /// 블록 높이 변경에 따른 트랜잭션/분석 데이터 갱신
+  void _processBlockHeightChange(int currentHeight) {
+    if (_nodeSyncState == NodeSyncState.completed) {
+      Logger.log('WalletHomeViewModel: 블록 높이 변경 후 트랜잭션 조회 실행 (블록 높이: $currentHeight)');
+      fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
+    } else {
+      Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
+    }
+    // 동기화 상태와 무관하게 분석 데이터는 항상 조회
+    fetchRecentTransactionAnalysis(_analysisPeriod);
+  }
+
+  /// 첫 번째 블록 높이가 설정될 때 처리
+  void _handleInitialBlockHeight(int currentHeight) {
+    // 첫 번째 블록 높이 설정 시
+    if (_nodeSyncState == NodeSyncState.completed) {
+      fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
+      fetchRecentTransactionAnalysis(_analysisPeriod);
+    } else {
+      Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
+      fetchRecentTransactionAnalysis(_analysisPeriod);
+    }
+  }
+
+  /// blockHeight가 없을 때도 날짜 기준으로 DB 데이터를 조회
+  void _handleNoBlockHeight() {
+    Logger.log('WalletHomeViewModel: blockHeight 없지만 DB 데이터 조회');
+    fetchPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
+    fetchRecentTransactionAnalysis(_analysisPeriod);
   }
 
   void hideTermsShortcut() {
