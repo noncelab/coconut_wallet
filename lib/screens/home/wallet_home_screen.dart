@@ -1048,15 +1048,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               : BitcoinUnit.sats.displayBitcoinAmount(transaction.amount, withUnit: true);
       final String prefix = isReceived ? '+' : '';
       final status = TransactionUtil.getStatus(transaction);
-      final String iconSource = switch (status) {
-        TransactionStatus.received => 'assets/svg/tx-received.svg',
-        TransactionStatus.receiving => 'assets/svg/tx-receiving.svg',
-        TransactionStatus.sent => 'assets/svg/tx-sent.svg',
-        TransactionStatus.sending => 'assets/svg/tx-sending.svg',
-        TransactionStatus.self => 'assets/svg/tx-self.svg',
-        TransactionStatus.selfsending => 'assets/svg/tx-self-sending.svg',
-        _ => 'assets/svg/tx-receiving.svg',
-      };
+      final String iconSource = TransactionUtil.getStatusIconAsset(status);
 
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

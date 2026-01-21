@@ -35,6 +35,26 @@ class TransactionUtil {
     return null;
   }
 
+  /// 트랜잭션 상태에 따른 아이콘 asset path 반환
+  static String getStatusIconAsset(TransactionStatus? status) {
+    switch (status) {
+      case TransactionStatus.received:
+        return 'assets/svg/tx-received.svg';
+      case TransactionStatus.receiving:
+        return 'assets/svg/tx-receiving.svg';
+      case TransactionStatus.sent:
+        return 'assets/svg/tx-sent.svg';
+      case TransactionStatus.sending:
+        return 'assets/svg/tx-sending.svg';
+      case TransactionStatus.self:
+        return 'assets/svg/tx-self.svg';
+      case TransactionStatus.selfsending:
+        return 'assets/svg/tx-self-sending.svg';
+      default:
+        return 'assets/svg/tx-receiving.svg';
+    }
+  }
+
   static TransactionDirection getDirection(TransactionRecord tx) {
     switch (tx.transactionType) {
       case TransactionType.received:
