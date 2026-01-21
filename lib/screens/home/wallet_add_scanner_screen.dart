@@ -349,7 +349,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
             FixedBottomButton(
               onButtonClicked: _handleClipboardImport,
-              text: t.wallet_add_scanner_screen.paste,
+              text: t.wallet_add_scanner_screen.paste.paste_button,
               showGradient: false,
               backgroundColor: CoconutColors.white,
               textColor: CoconutColors.black,
@@ -576,12 +576,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       FileLogger.error(className, methodName, '_onCompletedScanning failed: $e', stackTrace);
       vibrateLightDouble();
       if (mounted) {
-        String errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
+        String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
         if (e.toString().contains("network type")) {
           errorMessage =
               NetworkType.currentNetworkType == NetworkType.mainnet
-                  ? t.wallet_add_input_screen.mainnet_wallet_error_text
-                  : t.wallet_add_input_screen.testnet_wallet_error_text;
+                  ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text
+                  : t.wallet_add_scanner_screen.paste.testnet_wallet_error_text;
         }
         _showErrorDialog(t.alert.wallet_add.add_failed, errorMessage);
       }
