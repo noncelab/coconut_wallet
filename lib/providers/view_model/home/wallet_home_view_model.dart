@@ -97,6 +97,10 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isBtcUnit = false;
   bool get isBtcUnit => _isBtcUnit;
 
+  bool isHomeFeatureEnabled(HomeFeatureType type) {
+    return _preferenceProvider.isHomeFeatureEnabled(type);
+  }
+
   WalletHomeViewModel(
     this._walletProvider,
     this._preferenceProvider,
@@ -476,7 +480,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     if (!forceRefresh && _isFetchingLatestTx) return;
 
     // 최근 트랜잭션 홈 기능이 비활성화된 경우에는 조회하지 않음
-    if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
+    if (!isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
     _isFetchingLatestTx = true;
 
     // 홈 화면에 표시한 지갑 목록 아이디
@@ -505,7 +509,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     // if (_isLatestTxAnalysisRunning) return;
 
     // 분석 기능이 비활성화된 경우에는 조회하지 않음
-    if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.analysis)) {
+    if (!isHomeFeatureEnabled(HomeFeatureType.analysis)) {
       _isLatestTxAnalysisRunning = false;
       return;
     }
@@ -599,15 +603,13 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   /// 홈 편집 바텀시트를 열기 직전, 현재 홈 기능 활성화 상태를 스냅샷으로 저장
   void captureEnabledFeaturesSnapshot() {
-    _prevRecentTransactionFeatureEnabled = _preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.recentTransaction);
-    _prevAnalysisFeatureEnabled = _preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.analysis);
+    _prevRecentTransactionFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.recentTransaction);
+    _prevAnalysisFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.analysis);
   }
 
   void refreshEnabledFeaturesData() {
-    final bool currentRecentFeatureEnabled = _preferenceProvider.isHomeFeatureEnabled(
-      HomeFeatureType.recentTransaction,
-    );
-    final bool currentAnalysisFeatureEnabled = _preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.analysis);
+    final bool currentRecentFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.recentTransaction);
+    final bool currentAnalysisFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.analysis);
 
     // recentTransaction 기능이 false → true 로 바뀐 경우, 초기 로딩 상태 활성화(2초 동안만)
     final bool recentJustEnabled = (_prevRecentTransactionFeatureEnabled == false) && currentRecentFeatureEnabled;
