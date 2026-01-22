@@ -382,7 +382,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       if (mounted) {
         _showErrorDialog(
           t.alert.wallet_add.add_failed,
-          inputViewModel.errorMessage ?? t.alert.scan_failed_description(error: "Invalid Format"),
+          inputViewModel.errorMessage ?? t.wallet_add_scanner_screen.paste.format_error_text,
         );
         await controller?.start();
       }
