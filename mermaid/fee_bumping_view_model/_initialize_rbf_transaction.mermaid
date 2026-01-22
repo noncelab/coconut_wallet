@@ -1,0 +1,70 @@
+flowchart TD
+  A(["Start"]) --> B["type = _getPaymentType()"]
+  B -->|null| Z(["return"])
+  B -->|not null| C["externalOutputs = _getExternalOutputs()"]
+  C --> D["externalSendingAmount = sum(externalOutputs.amount)"]
+  D --> E["find changeOutputIndex in _pendingTx.outputAddressList (isChange)"]
+  E --> F["derive changeAddress / changeAmount / hasChange"]
+  F --> G["utxoList = await _getUtxoListForRbf()"]
+  G --> H["inputSum = sum(utxoList.amount)"]
+  H --> I["estimatedVSize = pendingTx.vSize OR estimate(bumpingTx)"]
+  I --> J["selfOutputs = outputs where containsAddress(...)\ncontainsSelfOutputs = selfOutputs.isNotEmpty"]
+  J --> K["newOutputList = pending output list minus change output (if exists)"]
+  K --> L["outputSum = sum(newOutputList.amount)"]
+  L --> M["requiredFee = estimatedVSize * newFeeRate"]
+
+  M --> N{"inputSum < outputSum + requiredFee?"}
+
+  %% -------------------------
+  %% Insufficient input branch
+  %% -------------------------
+  N -->|Yes| N1{"hasChange?"}
+
+  N1 -->|Yes| N2{"changeAmount >= requiredFee?"}
+
+  %% changeAmount >= requiredFee
+  N2 -->|Yes| N3{"type == batchPayment?"}
+  N3 -->|Yes| BA["_generateBatchTransation(utxos, paymentMap, changeAddress, newFeeRate)"] --> R(["return"])
+
+  N3 -->|No| N4{"changeAmount == requiredFee?"}
+  N4 -->|Yes| SWP1["_generateSweepPayment(utxos, externalAddr0, newFeeRate)"] --> R
+
+  N4 -->|No| N5{"makeDust(...)?"}
+  N5 -->|Yes| SWT1["_generateSweepTransaction(..., changeAddress)"] --> R
+  N5 -->|No| SP1["_generateSinglePayment(utxos, externalAddr0, changeAddress, newFeeRate, externalSendingAmount)"] --> R
+
+  %% changeAmount < requiredFee
+  N2 -->|No| N6{"containsSelfOutputs?"}
+  N6 -->|Yes| HS1["_handleTransactionWithSelfOutputs(...)\n(if fail -> log)"] --> R
+  N6 -->|No| ENS1{"_ensureSufficientUtxos(...)?"}
+  ENS1 -->|No| R
+  ENS1 -->|Yes| P1["Proceed (utxos sufficient now)"] --> P2["Continue to post-check flow"] --> POST
+
+  %% no change
+  N1 -->|No| N7{"containsSelfOutputs?"}
+  N7 -->|Yes| HS2["_handleTransactionWithSelfOutputs(...)\n(if fail -> log)"] --> R
+  N7 -->|No| ENS2{"_ensureSufficientUtxos(...)?"}
+  ENS2 -->|No| R
+  ENS2 -->|Yes| CA1["changeAddress = getChangeAddress()"] --> POST
+
+  %% -------------------------
+  %% Sufficient input branch
+  %% -------------------------
+  N -->|No| POST
+
+  %% -------------------------
+  %% Post-check flow (common)
+  %% -------------------------
+  POST --> Q{"makeDust(...)?"}
+  Q -->|Yes| SWT2["_generateSweepTransaction(..., changeAddress)"] --> R
+  Q -->|No| S1{"type == sweep && changeAddress is empty?"}
+  S1 -->|Yes| SWP2["_generateSweepPayment(utxos, externalAddr0, newFeeRate)"] --> R
+  S1 -->|No| S2{"changeAddress is empty?"}
+  S2 -->|Yes| CA2["changeAddress = getChangeAddress()"]
+  S2 -->|No| T["type switch"]
+
+  CA2 --> T
+
+  T -->|sweep or singlePayment| SP2["_generateSinglePayment(utxos, externalAddr0, changeAddress, newFeeRate, externalSendingAmount)"] --> R
+  T -->|batchPayment| BA2["_generateBatchTransation(utxos, paymentMap, changeAddress, newFeeRate)"] --> R
+  T -->|default| R
