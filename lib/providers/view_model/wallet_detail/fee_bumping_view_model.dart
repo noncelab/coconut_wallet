@@ -275,6 +275,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
     double outputSum = newOutputList.fold(0, (sum, utxo) => sum + utxo.amount);
 
+    //-------------
+
     double requiredFee = estimatedVSize * newFeeRate;
     debugPrint('RBF:: inputSum ($inputSum) outputSum ($outputSum) requiredFee ($requiredFee) newFeeRate ($newFeeRate)');
     if (inputSum < outputSum + requiredFee) {
@@ -701,6 +703,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   Future<List<Utxo>> _getUtxoListForRbf() async {
+    // electrum에서 트랜잭션 정보 조회
     final txResult = await _nodeProvider.getTransaction(_pendingTx.transactionHash);
     if (txResult.isFailure) {
       debugPrint('❌ 트랜잭션 조회 실패');
