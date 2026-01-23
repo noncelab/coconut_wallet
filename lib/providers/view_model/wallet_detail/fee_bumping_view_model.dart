@@ -24,7 +24,7 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-enum PaymentType { sweep, singlePayment, batchPayment }
+enum PaymentType { singleSweep, singlePayment, batchPayment }
 
 class FeeBumpingViewModel extends ChangeNotifier {
   final FeeBumpingType _type;
@@ -173,7 +173,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     switch (outputCount) {
       case 1:
-        return PaymentType.sweep;
+        return PaymentType.singleSweep;
       case 2:
         if (externalOutputs.length == 1) {
           return PaymentType.singlePayment;
@@ -268,6 +268,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
         externalOutputs.where((output) => _walletProvider.containsAddress(_walletId, output.address)).toList();
     final containsSelfOutputs = selfOutputs.isNotEmpty;
 
+    // output 중 내 change 주소가 있는 경우 제외하고 저장
     List<TransactionAddress> newOutputList = List.from(_pendingTx.outputAddressList);
     if (changeOutputIndex != -1) {
       newOutputList.removeAt(changeOutputIndex);
@@ -385,7 +386,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return;
     }
 
-    if (type == PaymentType.sweep && changeAddress.isEmpty) {
+    if (type == PaymentType.singleSweep && changeAddress.isEmpty) {
       _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
       return;
     }
@@ -395,7 +396,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     switch (type) {
-      case PaymentType.sweep:
+      case PaymentType.singleSweep:
       case PaymentType.singlePayment:
         _generateSinglePayment(utxoList, externalOutputs[0].address, changeAddress, newFeeRate, externalSendingAmount);
         break;
@@ -419,7 +420,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     String changeAddress,
   ) {
     switch (type) {
-      case PaymentType.sweep:
+      case PaymentType.singleSweep:
       case PaymentType.singlePayment:
         _generateSweepPayment(utxoList, externalOutputs[0].address, newFeeRate);
         break;
@@ -524,6 +525,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return true;
   }
 
+  // 매개변수 타입 수정 (Single인데 outputList가 1개여야함, selfOutputs가 즉 sendAddress)
   bool _handleSingleOrSweepWithSelfOutputs(
     List<Utxo> utxoList,
     List<TransactionAddress> outputList,
