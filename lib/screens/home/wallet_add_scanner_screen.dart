@@ -88,7 +88,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isEnglish = Provider.of<PreferenceProvider>(context, listen: false).isEnglish;
+    final isEnglishOrSpanish =
+        Provider.of<PreferenceProvider>(context, listen: false).isEnglish ||
+        Provider.of<PreferenceProvider>(context, listen: false).isSpanish;
 
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:
@@ -97,7 +99,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.seedSigner:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
@@ -156,7 +158,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.keystone:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
@@ -189,7 +191,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.jade:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
@@ -228,7 +230,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.coldCard:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
@@ -269,7 +271,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
         }
       case WalletImportSource.krux:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),

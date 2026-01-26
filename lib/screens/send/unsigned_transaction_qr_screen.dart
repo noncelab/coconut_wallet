@@ -286,12 +286,13 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isEnglish = context.read<PreferenceProvider>().isEnglish;
+    final isEnglishOrSpanish =
+        context.read<PreferenceProvider>().isEnglish || context.read<PreferenceProvider>().isSpanish;
 
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(
                 text: t.tooltip.unsigned_tx_qr.open_vault,
@@ -336,7 +337,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.seedSigner:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: '${t.third_party.seed_signer} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_seedsigner.step1} '),
@@ -356,7 +357,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.keystone:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: '${t.third_party.keystone} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_keystone.step1} '),
@@ -376,7 +377,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.jade:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: '${t.third_party.jade} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_jade.step0}\n'),
@@ -407,7 +408,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
         }
       case WalletImportSource.krux:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: '${t.third_party.krux} ${t.unsigned_tx_qr_screen.hardware_wallet_screen_guide}\n'),
               TextSpan(text: ' ${t.unsigned_tx_qr_screen.guide_krux.step1} '),
