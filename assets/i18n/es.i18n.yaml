@@ -252,14 +252,14 @@ wallet_add_scanner_screen:
     select: "Seleccionar"
   paste:
     paste_button: "Importar mediante pegado"
-    app_bar_title_text: "직접 입력"
-    placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
-    format_error_text: "확인할 수 없는 형식이에요"
-    invalid_character_error_text: "허용되지 않는 문자가 있어요"
-    mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
-    testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
-    unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
-    wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
+    app_bar_title_text: "Entrada manual" 
+    placeholder_text: "Ingresa la clave pública extendida (zpub) o el descriptor"  
+    format_error_text: "Formato no reconocido"  
+    invalid_character_error_text: "Contiene caracteres no permitidos"  
+    mainnet_wallet_error_text: "No es una billetera de red principal (Mainnet)"  
+    testnet_wallet_error_text: "No es una billetera de red de prueba (Testnet)"  
+    unsupported_wallet_error_text: "Billetera no compatible" 
+    wallet_description_text: "¿Dónde puedo encontrar la información adicional de la billetera?" 
     blue_wallet_texts:
       - "· BlueWallet"
       - "· Hot Wallet - More(•••) - Show Wallet XPUB"
@@ -270,13 +270,13 @@ wallet_add_scanner_screen:
       - "· Keys - Select Key - Key spec info"
       - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
       - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
-    mfp_title: "Huella Digital del Maestro"
-    mfp_description_title: "Huella Digital del Maestro"
+    mfp_title: "Huella digital maestra"
+    mfp_description_title: "Huella digital maestra"
     mfp_description_texts:
-      - "Un valor único requerido para identificar una cartera de vista"
-      - "Como este valor no puede determinarse automáticamente a partir de la información que ingresaste, necesitas ingresarlo directamente para una conexión segura y precisa de la cartera."
+      - "Un valor único requerido para identificar una billetera de solo lectura" 
+      - "Como este valor no puede determinarse automáticamente a partir de la información que ingresaste, necesitas ingresarlo directamente para una conexión segura y precisa de la billetera." 
       - "Sin huella digital, no podrás usar la función de envío."
-    mfp_input_placeholder: "Huella Digital del Maestro ex: f75f7ab5"
+    mfp_input_placeholder: "Huella digital maestra ej: f75f7ab5"
     mfp_skip: "Omitir"
     back_scan: "Volver al escaneo de QR"
   
@@ -301,58 +301,6 @@ wallet_list:
     delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
     finish: "Finalizar Edición"
     unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
-  paste: "Importar mediante pegado"
-
-#lib/screens/wallet_list
-wallet_list:
-  wallet_count: "$count Elementos"
-  view_all_wallets: "Ver todas mis billeteras"
-  primary_wallet: "Billetera principal"
-  exclude_from_total_amount: "Excluido del total"
-  home_balance: "Saldo en la pantalla principal"
-  excluded_balance: "Saldo excluido"
-  settings:
-    primary_wallet: "Establecer como billetera principal"
-    primary_wallet_disabled_description: "Esta billetera se usa como predeterminada para enviar/recibir en la pantalla principal."  
-    primary_wallet_abled_description: "Establecer otra billetera como principal automáticamente deshabilitará esta configuración."  
-    exclude_from_total_amount: "Excluir del total"
-    exclude_from_total_amount_description: "Esta billetera será excluida del cálculo del saldo total en la pantalla principal."  
-  edit:
-    wallet_list: "Editar lista de billeteras" 
-    star_description: "hasta 5 billeteras para mostrar en la pantalla principal." 
-    order_description: "para cambiar el orden de las billeteras." 
-    delete_description: "Desliza hacia la izquierda en una billetera para eliminarla."
-    finish: "Finalizar edición"
-    unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
-  
-wallet_add_input_screen:
-  app_bar_title_text: "Entrada manual" 
-  placeholder_text: "Ingresa la clave pública extendida (zpub) o el descriptor"  
-  format_error_text: "Formato no reconocido"  
-  invalid_character_error_text: "Contiene caracteres no permitidos"  
-  mainnet_wallet_error_text: "No es una billetera de red principal (Mainnet)"  
-  testnet_wallet_error_text: "No es una billetera de red de prueba (Testnet)"  
-  unsupported_wallet_error_text: "Billetera no compatible" 
-  wallet_description_text: "¿Dónde puedo encontrar la información adicional de la billetera?" 
-  blue_wallet_texts:
-    - "· BlueWallet"
-    - "· Hot Wallet - More(•••) - Show Wallet XPUB"
-    - "· Watch-only Wallet - More(•••) - Export/Backup"
-    - "zpub6rFR7y4Q2AijBEqt..."
-  nunchuck_wallet_texts:
-    - "· Nunchuck"
-    - "· Keys - Select Key - Key spec info"
-    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
-    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
-  mfp_title: "Huella digital maestra"
-  mfp_description_title: "Huella digital maestra"
-  mfp_description_texts:
-    - "Un valor único requerido para identificar una billetera de solo lectura" 
-    - "Como este valor no puede determinarse automáticamente a partir de la información que ingresaste, necesitas ingresarlo directamente para una conexión segura y precisa de la billetera." 
-    - "Sin huella digital, no podrás usar la función de envío."
-  mfp_input_placeholder: "Huella digital maestra ej: f75f7ab5"
-  mfp_skip: "Omitir"
-  back_scan: "Volver al escaneo de QR"
 
 # lib/screens/review
 negative_feedback_screen:
