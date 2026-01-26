@@ -211,7 +211,7 @@ wallet_home_screen:
     category:
       total_balance: "잔액 합계"
       wallet_list: "지갑 목록"
-      recent_transactions: "최근 거래"
+      recent_transactions: "24시간 내\n거래"
       analysis: "분석"
     alert: 
       empty_fake_balance: "가짜 잔액 입력"

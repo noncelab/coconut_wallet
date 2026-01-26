@@ -205,7 +205,7 @@ wallet_home_screen:
     category:
       total_balance: "残高合計"
       wallet_list: "ウォレット\n一覧"
-      recent_transactions: "最近の\n取引"
+      recent_transactions: "最近の\n取引 (24時間)"
       analysis: "分析"
     alert: 
       empty_fake_balance: "フェイク残高を入力"
