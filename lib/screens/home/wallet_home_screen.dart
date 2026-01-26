@@ -20,7 +20,6 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
-import 'package:coconut_wallet/screens/home/wallet_home_edit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_user_experience_survey_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -767,12 +766,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             padding: const EdgeInsets.all(8),
             onTap: () async {
               _viewModel.captureEnabledFeaturesSnapshot();
-              await CommonBottomSheets.showDraggableBottomSheet(
-                minChildSize: 0.5,
-                maxChildSize: 0.9,
-                initialChildSize: 0.9,
-                context: context,
-                childBuilder: (controller) => WalletHomeEditBottomSheet(scrollController: controller),
+              await Navigator.pushNamed(
+                context,
+                '/wallet-home-edit',
+                arguments: {'scrollController': _scrollController},
               );
               if (context.mounted) {
                 _viewModel.refreshEnabledFeaturesData();

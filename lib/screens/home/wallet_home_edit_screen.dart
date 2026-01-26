@@ -8,7 +8,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -20,15 +19,15 @@ enum FakeBalanceInputError {
   exceedsTotalSupply, // 2100만 BTC를 초과하는 경우
 }
 
-class WalletHomeEditBottomSheet extends StatefulWidget {
-  const WalletHomeEditBottomSheet({super.key, required this.scrollController});
+class WalletHomeEditScreen extends StatefulWidget {
+  const WalletHomeEditScreen({super.key, required this.scrollController});
   final ScrollController scrollController;
 
   @override
-  State<WalletHomeEditBottomSheet> createState() => _WalletHomeEditBottomSheetState();
+  State<WalletHomeEditScreen> createState() => _WalletHomeEditScreenState();
 }
 
-class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> with TickerProviderStateMixin {
+class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with TickerProviderStateMixin {
   final TextEditingController _textEditingController = TextEditingController();
   late WalletHomeEditViewModel _viewModel;
 
