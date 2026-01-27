@@ -1129,7 +1129,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildDropdownMenu() {
-    final bool showGlossary = !context.read<PreferenceProvider>().isEnglish;
+    final bool showGlossary =
+        context.read<PreferenceProvider>().isKorean || context.read<PreferenceProvider>().isJapanese;
     return Positioned(
       top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
       right: 20,

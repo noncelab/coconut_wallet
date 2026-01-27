@@ -194,7 +194,7 @@ wallet_add_scanner_screen:
   keystone: "Keystone 3 Pro"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  cold_card: "ColdCard"
+  cold_card: "Coldcard"
   krux: "Krux"
   self: "Add Manually"
   self_description: "You can add a wallet using info from another app."
@@ -830,7 +830,7 @@ third_party:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  cold_card: "ColdCard"
+  cold_card: "Coldcard"
   krux: "Krux"
   extended_public_keys:
     zpub: "zpub"
