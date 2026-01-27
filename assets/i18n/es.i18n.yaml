@@ -582,6 +582,9 @@ wallet_info_screen:
       step3_em: "Datos de respaldo de billetera" 
       step4: "Por favor, escanea el código QR a continuación con la cámara."
       select: "Seleccionar"
+  error:
+    delete: "No se pudo eliminar la billetera"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

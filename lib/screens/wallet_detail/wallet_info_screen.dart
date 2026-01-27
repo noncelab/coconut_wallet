@@ -15,6 +15,7 @@ import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
@@ -347,14 +348,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     Navigator.of(context).pop();
 
     final navigator = Navigator.of(context);
+    final languageCode = context.read<PreferenceProvider>().language;
 
     _setOverlayLoading(true);
 
     try {
       await viewModel.deleteWallet();
-    } catch (e) {
-      debugPrint('Delete wallet failed: $e');
-    } finally {
+
       _setOverlayLoading(false);
 
       await Future.delayed(const Duration(milliseconds: 200));
@@ -368,6 +368,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         } else {
           navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
         }
+      }
+    } catch (e) {
+      debugPrint('Delete wallet failed: $e');
+      _setOverlayLoading(false);
+      if (mounted) {
+        await showInfoDialog(context, languageCode, t.wallet_info_screen.error.delete, e.toString());
       }
     }
   }

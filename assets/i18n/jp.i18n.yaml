@@ -581,6 +581,9 @@ wallet_info_screen:
       step3_em: "2. ウォレットデータをバックアップ"
       step4: "下のQRコードをカメラでスキャンしてください。"
       select: "選択"
+  error:
+    delete: "ウォレットの削除に失敗しました"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

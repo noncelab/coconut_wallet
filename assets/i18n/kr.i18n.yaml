@@ -581,6 +581,9 @@ wallet_info_screen:
       step3_em: "2. 지갑 데이터 백업하기 "
       step4: "화면에 나타나는 QR 코드를 스캔해 주세요."
       select: "선택"
+  error:
+    delete: "지갑 삭제 실패"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

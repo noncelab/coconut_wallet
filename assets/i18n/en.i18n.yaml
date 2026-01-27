@@ -581,6 +581,9 @@ wallet_info_screen:
       step3_em: "Backup Wallet Data"
       step4: "Please scan the QR code below with camera."
       select: "Select"
+  error:
+    delete: "Failed to delete wallet"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
