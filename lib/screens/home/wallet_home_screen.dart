@@ -229,7 +229,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             ),
                           ],
                         ],
-                        if (walletItem.isNotEmpty) _buildHomeEditButton(),
+                        if (walletItem.isNotEmpty) ...[
+                          // _buildHomeEditButton(), // 홈 화면 편집 버튼 dropdown menu로 이동
+                          const SliverToBoxAdapter(child: CoconutLayout.spacing_2500h),
+                        ],
                       ],
                     ),
                     _buildDropdownBackdrop(),
@@ -279,12 +282,19 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           );
         },
       ),
+      () async {
+        _viewModel.captureEnabledFeaturesSnapshot();
+        await Navigator.pushNamed(context, '/wallet-home-edit', arguments: {'scrollController': _scrollController});
+        if (context.mounted) {
+          _viewModel.refreshEnabledFeaturesData();
+        }
+        return null;
+      },
       () => CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
         child: const SettingsScreen(),
         heightRatio: 0.9,
       ),
-      () => Navigator.pushNamed(context, '/app-info'),
     ];
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -1784,8 +1794,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     if (NetworkType.currentNetworkType.isTestnet) CoconutPulldownMenuItem(title: t.tutorial),
                   ],
                 ),
-                CoconutPulldownMenuItem(title: t.settings),
-                CoconutPulldownMenuItem(title: t.view_app_info),
+                CoconutPulldownMenuItem(title: t.home_screen_settings),
+                CoconutPulldownMenuItem(title: t.app_settings),
+                // CoconutPulldownMenuItem(title: t.view_app_info),
               ],
               dividerHeight: 1,
               thickDividerHeight: 3,

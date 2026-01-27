@@ -156,7 +156,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
           appBar: CoconutAppBar.build(
             backgroundColor: CoconutColors.black,
             context: context,
-            isBottom: true,
             onBackPressed: () {
               if (_shouldEnableCompleteButton()) {
                 showDialog(
