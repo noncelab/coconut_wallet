@@ -251,7 +251,36 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "選択"
-  paste: "ペーストからインポート"
+  paste:
+    paste_button: "ペーストからインポート"
+    app_bar_title_text: "手動追加"
+    placeholder_text: "拡張公開鍵（zpub）またはディスクリプターを入力"
+    format_error_text: "フォーマットを確認できません"
+    invalid_character_error_text: "無効な文字"
+    mainnet_wallet_error_text: "メインネットウォレットではありません"
+    testnet_wallet_error_text: "テストネットウォレットではありません"
+    unsupported_wallet_error_text: "サポートされていないウォレット"
+    wallet_description_text: "ウォレット情報はどこで見つけられますか？"
+    blue_wallet_texts:
+      - "・BlueWallet"
+      - "・Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "・Watch-only Wallet - More(•••) - Export/Backup"
+      - "zpub6rFR7y4Q2AijBEqt..."
+    nunchuck_wallet_texts:
+      - "・Nunchuck"
+      - "・Keys - Select Key - Key spec info"
+      - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+      - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+    mfp_title: "マスターフィンガープリント"
+    mfp_description_title: "マスターフィンガープリント"
+    mfp_description_texts:
+      - "ウォッチオンリーウォレットを識別するために必要な固有値"
+      - "この値は入力した情報から自動的に決定できないため、安全で正確なウォレット接続のために直接入力する必要があります。"
+      - "フィンガープリントがないと、送信機能を使用できません。"
+    mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
+    mfp_skip: "スキップ"
+    back_scan: "QRスキャンに戻る"
+  
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
@@ -273,35 +302,6 @@ wallet_list:
     delete_description: "ウォレットを左にスワイプして削除できます。"
     finish: "編集完了"
     unsaved_changes_confirm_exit: "未保存の変更があります。\n本当に終了しますか？"
-
-wallet_add_input_screen:
-  app_bar_title_text: "手動追加"
-  placeholder_text: "拡張公開鍵（zpub）またはディスクリプターを入力"
-  format_error_text: "フォーマットを確認できません"
-  invalid_character_error_text: "無効な文字"
-  mainnet_wallet_error_text: "メインネットウォレットではありません"
-  testnet_wallet_error_text: "テストネットウォレットではありません"
-  unsupported_wallet_error_text: "サポートされていないウォレット"
-  wallet_description_text: "ウォレット情報はどこで見つけられますか？"
-  blue_wallet_texts:
-    - "・BlueWallet"
-    - "・Hot Wallet - More(•••) - Show Wallet XPUB"
-    - "・Watch-only Wallet - More(•••) - Export/Backup"
-    - "zpub6rFR7y4Q2AijBEqt..."
-  nunchuck_wallet_texts:
-    - "・Nunchuck"
-    - "・Keys - Select Key - Key spec info"
-    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
-    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
-  mfp_title: "マスターフィンガープリント"
-  mfp_description_title: "マスターフィンガープリント"
-  mfp_description_texts:
-    - "ウォッチオンリーウォレットを識別するために必要な固有値"
-    - "この値は入力した情報から自動的に決定できないため、安全で正確なウォレット接続のために直接入力する必要があります。"
-    - "フィンガープリントがないと、送信機能を使用できません。"
-  mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
-  mfp_skip: "スキップ"
-  back_scan: "QRスキャンに戻る"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -581,6 +581,9 @@ wallet_info_screen:
       step3_em: "2. ウォレットデータをバックアップ"
       step4: "下のQRコードをカメラでスキャンしてください。"
       select: "選択"
+  error:
+    delete: "ウォレットの削除に失敗しました"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"

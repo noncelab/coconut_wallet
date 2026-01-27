@@ -250,58 +250,57 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Seleccionar"
-  paste: "Importar mediante pegado"
-
-#lib/screens/wallet_list
+  paste:
+    paste_button: "Importar mediante pegado"
+    app_bar_title_text: "Entrada manual" 
+    placeholder_text: "Ingresa la clave pública extendida (zpub) o el descriptor"  
+    format_error_text: "Formato no reconocido"  
+    invalid_character_error_text: "Contiene caracteres no permitidos"  
+    mainnet_wallet_error_text: "No es una billetera de red principal (Mainnet)"  
+    testnet_wallet_error_text: "No es una billetera de red de prueba (Testnet)"  
+    unsupported_wallet_error_text: "Billetera no compatible" 
+    wallet_description_text: "¿Dónde puedo encontrar la información adicional de la billetera?" 
+    blue_wallet_texts:
+      - "· BlueWallet"
+      - "· Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "· Watch-only Wallet - More(•••) - Export/Backup"
+      - "zpub6rFR7y4Q2AijBEqt..."
+    nunchuck_wallet_texts:
+      - "· Nunchuck"
+      - "· Keys - Select Key - Key spec info"
+      - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+      - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+    mfp_title: "Huella digital maestra"
+    mfp_description_title: "Huella digital maestra"
+    mfp_description_texts:
+      - "Un valor único requerido para identificar una billetera de solo lectura" 
+      - "Como este valor no puede determinarse automáticamente a partir de la información que ingresaste, necesitas ingresarlo directamente para una conexión segura y precisa de la billetera." 
+      - "Sin huella digital, no podrás usar la función de envío."
+    mfp_input_placeholder: "Huella digital maestra ej: f75f7ab5"
+    mfp_skip: "Omitir"
+    back_scan: "Volver al escaneo de QR"
+  
+# lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Elementos"
-  view_all_wallets: "Ver todas mis billeteras"
-  primary_wallet: "Billetera principal"
-  exclude_from_total_amount: "Excluido del total"
-  home_balance: "Saldo en la pantalla principal"
-  excluded_balance: "Saldo excluido"
+  view_all_wallets: "View All My Wallets"
+  primary_wallet: "Cartera Principal"
+  exclude_from_total_amount: "Excluido del Total"
+  home_balance: "Saldo en la Pantalla Principal"
+  excluded_balance: "Saldo Excluido"
   settings:
-    primary_wallet: "Establecer como billetera principal"
-    primary_wallet_disabled_description: "Esta billetera se usa como predeterminada para enviar/recibir en la pantalla principal."  
-    primary_wallet_abled_description: "Establecer otra billetera como principal automáticamente deshabilitará esta configuración."  
-    exclude_from_total_amount: "Excluir del total"
-    exclude_from_total_amount_description: "Esta billetera será excluida del cálculo del saldo total en la pantalla principal."  
+    primary_wallet: "Establecer como Cartera Principal"
+    primary_wallet_disabled_description: "Esta cartera se usa como predeterminada para Send/Receive en la pantalla principal."
+    primary_wallet_abled_description: "Establecer otra cartera como principal automáticamente deshabilitará esta configuración."
+    exclude_from_total_amount: "Excluir del Total"
+    exclude_from_total_amount_description: "Esta cartera será excluida del cálculo del saldo total en la pantalla principal."
   edit:
-    wallet_list: "Editar lista de billeteras" 
-    star_description: "hasta 5 billeteras para mostrar en la pantalla principal." 
-    order_description: "para cambiar el orden de las billeteras." 
-    delete_description: "Desliza hacia la izquierda en una billetera para eliminarla."
-    finish: "Finalizar edición"
+    wallet_list: "Editar Lista de Carteras"
+    star_description: "hasta 5 carteras para mostrar en la pantalla principal."
+    order_description: "para cambiar el orden de las carteras."
+    delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
+    finish: "Finalizar Edición"
     unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
-  
-wallet_add_input_screen:
-  app_bar_title_text: "Entrada manual" 
-  placeholder_text: "Ingresa la clave pública extendida (zpub) o el descriptor"  
-  format_error_text: "Formato no reconocido"  
-  invalid_character_error_text: "Contiene caracteres no permitidos"  
-  mainnet_wallet_error_text: "No es una billetera de red principal (Mainnet)"  
-  testnet_wallet_error_text: "No es una billetera de red de prueba (Testnet)"  
-  unsupported_wallet_error_text: "Billetera no compatible" 
-  wallet_description_text: "¿Dónde puedo encontrar la información adicional de la billetera?" 
-  blue_wallet_texts:
-    - "· BlueWallet"
-    - "· Hot Wallet - More(•••) - Show Wallet XPUB"
-    - "· Watch-only Wallet - More(•••) - Export/Backup"
-    - "zpub6rFR7y4Q2AijBEqt..."
-  nunchuck_wallet_texts:
-    - "· Nunchuck"
-    - "· Keys - Select Key - Key spec info"
-    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
-    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
-  mfp_title: "Huella digital maestra"
-  mfp_description_title: "Huella digital maestra"
-  mfp_description_texts:
-    - "Un valor único requerido para identificar una billetera de solo lectura" 
-    - "Como este valor no puede determinarse automáticamente a partir de la información que ingresaste, necesitas ingresarlo directamente para una conexión segura y precisa de la billetera." 
-    - "Sin huella digital, no podrás usar la función de envío."
-  mfp_input_placeholder: "Huella digital maestra ej: f75f7ab5"
-  mfp_skip: "Omitir"
-  back_scan: "Volver al escaneo de QR"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -583,6 +582,9 @@ wallet_info_screen:
       step3_em: "Datos de respaldo de billetera" 
       step4: "Por favor, escanea el código QR a continuación con la cámara."
       select: "Seleccionar"
+  error:
+    delete: "No se pudo eliminar la billetera"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
