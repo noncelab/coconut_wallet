@@ -1,0 +1,38 @@
+flowchart TD
+  A(["Start"]) --> B["myAddressList = _getMyOutputs()"]
+  B --> C["amount = sum(myAddressList.amount)"]
+  C --> D["utxoStateList = _utxoRepository.getUtxosByStatus(incoming)"]
+  
+  D --> E["find matching UTXOs in myAddressList\n(match: address, amount, txHash, index)"]
+  E --> F["utxoList = matches"]
+  F --> G["assert(utxoList.isNotEmpty)"]
+  
+  G --> H["recipient = _walletProvider.getReceiveAddress().address"]
+  
+  %% -------------------------
+  %% First Attempt (Try Block)
+  %% -------------------------
+  H --> I["Try: _bumpingTransaction = Transaction.forSweep(utxoList, recipient, newFeeRate)"]
+  I --> J["estimatedVSize = _estimateVirtualByte(_bumpingTransaction)"]
+  J --> SUCCESS
+
+  %% -------------------------
+  %% Exception Handling (Catch Block)
+  %% -------------------------
+  I -- "catch (e)" --> K["inputSum = sum(utxoList.amount)"]
+  K --> L["estimatedVSize = _pendingTx.vSize"]
+  L --> M{"_ensureSufficientUtxos(utxoList, amount, vSize, newFeeRate)?"}
+  
+  M -->|No| N(["debugPrint: 사용할 수 있는 추가 UTXO 없음 & return"])
+  
+  M -->|Yes| O["_bumpingTransaction = Transaction.forSweep(utxoList, recipient, newFeeRate)"]
+  O --> SUCCESS
+
+  %% -------------------------
+  %% Post-generation flow
+  %% -------------------------
+  SUCCESS --> P["_sendInfoProvider.setRecipientAddress(recipient)"]
+  P --> Q["_sendInfoProvider.setIsMaxMode(true)"]
+  Q --> R["_sendInfoProvider.setAmount(_bumpingTransaction.outputs[0].amount)"]
+  R --> S["_setInsufficientUtxo(false)"]
+  S --> Z(["End"])
