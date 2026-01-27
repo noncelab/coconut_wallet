@@ -359,27 +359,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           onSelected: ((index, selectedText) async {
             _setDropdownMenuVisiblility(false);
             if (index == 0) {
-              final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-              final result = await transactionDraftRepository.saveUnsignedTransactionDraft(
-                walletId: _viewModel.selectedWalletItem?.id ?? 0,
-                recipientList: _viewModel.recipientList,
-                feeRateText: _feeRateController.text,
-                isMaxMode: _viewModel.isMaxMode,
-                isMultisig: _viewModel.selectedWalletItem?.walletType == WalletType.multiSignature,
-                isFeeSubtractedFromSendAmount: _viewModel.isFeeSubtractedFromSendAmount,
-                transaction: null, // 서명된 트랜잭션이 있는 경우
-                txWaitingForSign: null,
-                signedPsbtBase64Encoded: null,
-                currentUnit: _viewModel.currentUnit.symbol,
-                selectedUtxoList: _viewModel.isUtxoSelectionAuto ? null : _viewModel.selectedUtxoList,
-              );
-
-              if (result.isSuccess) {
+              // 임시 저장
+              try {
+                await _viewModel.saveDraft();
                 _showTransactionDraftSavedDialog();
-              } else {
-                // 저장 실패
-                debugPrint('저장 실패 ${result.error.message}');
-                _showTransactionDraftSaveFailedDialog(result.error.message);
+              } catch (e) {
+                _showTransactionDraftSaveFailedDialog(e.toString());
               }
             } else {
               _selectedDraftId = null;
@@ -2106,6 +2091,7 @@ class FinalButtonMessage {
 
 enum RecommendedFeeFetchStatus { fetching, succeed, failed }
 
+// REFACTOR: 공통 사용 가능한 widget으로 분리하기
 class _TransactionDraftBottomSheet extends StatefulWidget {
   final ScrollController scrollController;
   final TransactionDraftRepository transactionDraftRepository;

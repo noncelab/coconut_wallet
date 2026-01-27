@@ -399,6 +399,8 @@ class SendViewModel extends ChangeNotifier {
   /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
   /// UTXO 상태 문제가 있으면 SelectedUtxoStatusException 발생
   RealmTransactionDraft getDraft(int draftId) {
+    assert(_selectedWalletItem != null);
+
     final draft = _transactionDraftRepository.getUnsignedTransactionDraft(draftId);
     if (draft == null) {
       throw StateError('Transaction draft not found: $draftId');
@@ -406,7 +408,7 @@ class SendViewModel extends ChangeNotifier {
 
     // UTXO 상태 확인
     final selectedUtxoStatus = _transactionDraftRepository.getSelectedUtxoStatus(
-      _selectedWalletItem?.id ?? 0,
+      _selectedWalletItem!.id,
       draft.selectedUtxoListJson.toList(),
     );
 
@@ -1145,6 +1147,31 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
+  }
+
+  /// --------------- 임시 저장 / 불러오기 --------------- ///
+  Future<RealmTransactionDraft> saveDraft() async {
+    assert(_selectedWalletItem != null);
+
+    final result = await _transactionDraftRepository.saveTransactionDraft(
+      walletId: selectedWalletItem!.id,
+      recipientList: _recipientList,
+      feeRateText: _feeRateText,
+      isMaxMode: _isMaxMode,
+      isMultisig: _selectedWalletItem!.walletType == WalletType.multiSignature,
+      isFeeSubtractedFromSendAmount: _isFeeSubtractedFromSendAmount,
+      transaction: null, // 서명된 트랜잭션이 있는 경우
+      txWaitingForSign: null,
+      signedPsbtBase64Encoded: null,
+      currentUnit: _currentUnit.symbol,
+      selectedUtxoList: _isUtxoSelectionAuto ? null : _selectedUtxoList,
+    );
+
+    if (result.isSuccess) {
+      return result.value;
+    } else {
+      throw Exception(result.error.message);
+    }
   }
 }
 
