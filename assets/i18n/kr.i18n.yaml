@@ -884,3 +884,7 @@ fiat:
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
   jpy_price: "비트플라이어 기준"
+
+long_pressed_menu:
+  hide: "숨기기"
+  home_screen_settings: "홈 화면 편집"

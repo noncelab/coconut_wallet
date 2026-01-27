@@ -884,3 +884,7 @@ fiat:
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
+
+long_pressed_menu:
+  hide: "Hide"
+  home_screen_settings: "Home Screen Settings"

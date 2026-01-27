@@ -880,3 +880,7 @@ fiat:
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"
+
+long_pressed_menu:
+  hide: "非表示"
+  home_screen_settings: "ホーム画面編集"
