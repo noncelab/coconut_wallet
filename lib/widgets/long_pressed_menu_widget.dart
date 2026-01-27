@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -75,6 +76,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Sing
   }
 
   void _showMenu() {
+    vibrateExtraLight();
     widget.onMenuOpen?.call();
     // 이미 떠 있으면 제거
     if (_overlayEntry != null) {
