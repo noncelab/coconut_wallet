@@ -13,11 +13,11 @@ const methodChannelIcon = 'onl.coconut.wallet/app-event-icon';
 /// > 이후 AppDelegate.swift 에서 iconName 수정
 /// [Android]
 /// app/src/main/res/ 해상도 별 파일 추가 (ic_launcher_event, ic_launcher_event_round)
-/// AndroidManifest에서 android:icon="@mipmap/ic_launcher_event" 설정
+/// android/app/src/main/AndroidManifest에서 android:icon="@mipmap/ic_launcher_event", "android:roundIcon="@mipmap/ic_launcher_event_round" 설정
 /// 안드로이드는 앱 재배포가 필요함
 
 /// History
-/// 26.1.1 ~ 26.1.31 : birthday, 비트코인 생일 아이콘
+/// 26.1.1 ~ 26.1.4 : birthday, 비트코인 생일 아이콘
 Future<void> changeAppIcon() async {
   // iOS에서만 동작
   if (!Platform.isIOS) return;
@@ -27,7 +27,7 @@ Future<void> changeAppIcon() async {
   debugPrint('🔄 changeAppIcon called at: $now (platform: ${Platform.operatingSystem})');
 
   final DateTime startDate = DateTime(2026, 1, 1);
-  final DateTime endDate = DateTime(2026, 1, 31);
+  final DateTime endDate = DateTime(2026, 1, 4);
 
   // 기간 내에 있는지 확인
   final bool isInPeriod =

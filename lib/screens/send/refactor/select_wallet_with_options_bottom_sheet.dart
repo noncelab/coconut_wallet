@@ -10,10 +10,8 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon_small.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -181,7 +179,7 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
             child: CoconutSwitch(
               scale: 0.7,
               isOn: _isUtxoSelectionAuto,
-              activeColor: CoconutColors.gray100.withOpacity(isNonMpfWallet ? 0.3 : 1.0),
+              activeColor: CoconutColors.gray100.withValues(alpha: isNonMpfWallet ? 0.3 : 1.0),
               trackColor: CoconutColors.gray600,
               thumbColor: CoconutColors.gray800,
               onChanged: (isOn) {

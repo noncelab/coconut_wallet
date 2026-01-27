@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_service.dart';
 import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
@@ -72,8 +73,9 @@ class ElectrumService {
 
   Future<ElectrumResponse<T>> _call<T>(
     _ElectrumRequest request,
-    ElectrumResponse<T> Function(dynamic json, {int? id}) fromJson,
-  ) async {
+    ElectrumResponse<T> Function(dynamic json, {int? id}) fromJson, {
+    Duration? timeout,
+  }) async {
     if (connectionStatus != SocketConnectionStatus.connected) {
       throw 'Can not connect to the server. Please connect and try again.';
     }
@@ -85,7 +87,7 @@ class ElectrumService {
     final completer = Completer<Map>();
     _socketManager.setCompleter(requestId, completer);
 
-    Map res = await completer.future.timeout(kElectrumResponseTimeout);
+    Map res = await completer.future.timeout(timeout ?? kElectrumResponseTimeout);
 
     if (res['error'] != null) {
       throw res['error'];
@@ -213,15 +215,21 @@ class ElectrumService {
   }
 
   Future<String> getTransaction(String txHash, {bool? verbose}) async {
-    var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
-      // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
-      if (json is Map) {
-        return ElectrumResponse(result: jsonEncode(json));
-      }
-      return ElectrumResponse(result: json as String);
-    });
-
-    return response.result;
+    try {
+      var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
+        // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
+        if (json is Map) {
+          return ElectrumResponse(result: jsonEncode(json));
+        }
+        return ElectrumResponse(result: json as String);
+      }, timeout: const Duration(seconds: 5));
+      return response.result;
+    } catch (e) {
+      final mempoolApi = MempoolApi();
+      final txHex = await mempoolApi.fetchTxHex(txHash);
+      mempoolApi.close();
+      return txHex;
+    }
   }
 
   /// 이전 트랜잭션을 조회합니다.
@@ -248,12 +256,10 @@ class ElectrumService {
             .toSet();
 
     var futures = toFetchTransactionHashes.map((transactionHash) async {
-      try {
-        var inputTx = await getTransaction(transactionHash);
-        return Transaction.parse(inputTx);
-      } catch (e) {
-        return null;
-      }
+      var txHex = '';
+      txHex = await getTransaction(transactionHash);
+
+      return Transaction.parse(txHex);
     });
 
     try {

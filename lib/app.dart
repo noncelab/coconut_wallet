@@ -22,7 +22,6 @@ import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
@@ -236,7 +235,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/block-explorer': (context) => const BlockExplorerScreen(),
 
                 // 로딩이 필요한 화면들
-                '/wallet-add-input': (context) => const CustomLoadingOverlay(child: WalletAddInputScreen()),
                 '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
 
                 // 인자가 있는 기본 화면들 (Privacy Screen 사용 ❌ - 각 화면 내부에서 설정/해제 합니다)

@@ -6,12 +6,20 @@ class ScannerOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scanAreaSize =
-        (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-            ? 320.0
-            : MediaQuery.of(context).size.width * 0.85;
+    final scanAreaSize = calculateScanAreaSize(context);
 
     return CustomPaint(size: MediaQuery.of(context).size, painter: _ScannerOverlayPainter(scanAreaSize));
+  }
+
+  static double calculateScanAreaSize(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isWideScreen = size.width > 600;
+
+    return (size.width < 400 || size.height < 400)
+        ? 320.0
+        : isWideScreen
+        ? 500.0
+        : size.width * 0.85;
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/coordinator_bsms_qr_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -13,8 +14,8 @@ import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
@@ -229,22 +230,28 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               ),
                               onPressed: () {
                                 _removeTooltip();
-                                CustomDialogs.showCustomAlertDialog(
-                                  context,
-                                  title: t.alert.wallet_delete.confirm_delete,
-                                  message: t.alert.wallet_delete.confirm_delete_description,
-                                  onConfirm: () {
-                                    _handleAuthFlow(
-                                      onComplete: () async {
-                                        await _deleteWalletAndGoToEntryPoint(context, viewModel);
+                                showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return CoconutPopup(
+                                      languageCode: context.read<PreferenceProvider>().language,
+                                      title: t.alert.wallet_delete.confirm_delete,
+                                      description: t.alert.wallet_delete.confirm_delete_description,
+                                      onTapRight: () {
+                                        _handleAuthFlow(
+                                          onComplete: () async {
+                                            await _deleteWalletAndGoToEntryPoint(context, viewModel);
+                                          },
+                                        );
                                       },
+                                      onTapLeft: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      rightButtonText: t.delete,
+                                      rightButtonColor: CoconutColors.hotPink,
+                                      leftButtonText: t.cancel,
                                     );
                                   },
-                                  onCancel: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  confirmButtonText: t.delete,
-                                  confirmButtonColor: CoconutColors.hotPink,
                                 );
                               },
                             ),
@@ -339,25 +346,40 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
+
+    final navigator = Navigator.of(context);
+    final languageCode = context.read<PreferenceProvider>().language;
+
     _setOverlayLoading(true);
-    await viewModel.deleteWallet();
-    _setOverlayLoading(false);
-    if (context.mounted) {
-      widget.entryPoint == kEntryPointWalletHome
-          ? Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (BuildContext context) => const WalletHomeScreen()),
+
+    try {
+      await viewModel.deleteWallet();
+
+      _setOverlayLoading(false);
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (mounted) {
+        if (widget.entryPoint == kEntryPointWalletHome) {
+          navigator.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const WalletHomeScreen()),
             (route) => false,
-          )
-          : Navigator.pushNamedAndRemoveUntil(
-            context,
-            kEntryPointWalletList,
-            (Route<dynamic> route) => route.settings.name == '/',
           );
+        } else {
+          navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
+        }
+      }
+    } catch (e) {
+      debugPrint('Delete wallet failed: $e');
+      _setOverlayLoading(false);
+      if (mounted) {
+        await showInfoDialog(context, languageCode, t.wallet_info_screen.error.delete, e.toString());
+      }
     }
   }
 
   void _setOverlayLoading(bool value) {
+    if (!mounted) return;
     if (value) {
       context.loaderOverlay.show();
     } else {

@@ -40,42 +40,58 @@ class _AddressQrScannerBodyState extends State<AddressQrScannerBody> {
   Widget _buildQrView(BuildContext context) {
     // 스캔 영역을 상단으로 이동 (상단 여백 120px 추가)
     final statusBarHeight = MediaQuery.of(context).padding.top;
-    final topMargin = statusBarHeight + 120.0;
+    final isFoldScreen = MediaQuery.of(context).size.width > 600;
+    final topMargin = statusBarHeight + (isFoldScreen ? 0 : 120.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final Size layoutSize = constraints.biggest;
 
-    return Stack(
-      children: [
-        MobileScanner(
-          key: widget.qrKey,
-          controller: _controller,
-          onDetect: widget.onDetect,
-          errorBuilder: (context, error) {
-            if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
-              _isShowedCameraPermissionDialog = true;
-              WidgetsBinding.instance.addPostFrameCallback((_) async {
-                if (!mounted) return;
-                await _showCameraPermissionDialog(context);
-                if (!mounted) return;
-                Navigator.pop(context);
-              });
-            }
-            return Center(child: Text(error.errorCode.message));
-          },
-        ),
-        const ScannerOverlay(),
-        Positioned(
-          top: topMargin,
-          left: 0,
-          right: 0,
-          child: Container(
-            padding: const EdgeInsets.only(top: 32),
-            child: Text(
-              t.send_address_screen.text2,
-              textAlign: TextAlign.center,
-              style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+        // ScannerOverlay와 동일한 크기의 정사각형 스캔 영역 계산
+        final scanAreaSize = ScannerOverlay.calculateScanAreaSize(context);
+
+        final Rect scanWindow = Rect.fromCenter(
+          center: layoutSize.center(Offset.zero),
+          width: scanAreaSize,
+          height: scanAreaSize,
+        );
+
+        return Stack(
+          children: [
+            MobileScanner(
+              key: widget.qrKey,
+              controller: _controller,
+              onDetect: widget.onDetect,
+              scanWindow: scanWindow,
+              errorBuilder: (context, error) {
+                if (error.errorCode == MobileScannerErrorCode.permissionDenied && !_isShowedCameraPermissionDialog) {
+                  _isShowedCameraPermissionDialog = true;
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (!mounted) return;
+                    await _showCameraPermissionDialog(context);
+                    if (!mounted) return;
+                    Navigator.pop(context);
+                  });
+                }
+                return Center(child: Text(error.errorCode.message));
+              },
             ),
-          ),
-        ),
-      ],
+            const ScannerOverlay(),
+            Positioned(
+              top: topMargin,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.only(top: 32),
+                child: Text(
+                  t.send_address_screen.text2,
+                  textAlign: TextAlign.center,
+                  style: CoconutTypography.body1_16.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

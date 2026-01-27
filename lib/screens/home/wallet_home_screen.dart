@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
-import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -615,7 +614,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         child: Center(
                           child: Text(
                             t.receive,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withOpacity(0.3)),
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withValues(alpha: 0.3)),
                           ),
                         ),
                       ),
@@ -647,7 +646,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         child: Center(
                           child: Text(
                             t.send,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withOpacity(0.3)),
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.white.withValues(alpha: 0.3)),
                           ),
                         ),
                       ),
@@ -881,7 +880,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       context: context,
       barrierDismissible: true,
       barrierLabel: "Dismiss",
-      barrierColor: CoconutColors.black.withOpacity(0.5),
+      barrierColor: CoconutColors.black.withValues(alpha: 0.5),
       transitionDuration: const Duration(milliseconds: 300),
       pageBuilder: (context, animation, secondaryAnimation) {
         final offsetTween = Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero);
@@ -954,7 +953,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         SizedBox(
                           width: MediaQuery.sizeOf(context).width,
                           child: _buildWalletIconShrinkButton(
-                            () => _goToManualInputScreen(),
+                            // () => _goToManualInputScreen(),
+                            () => _goToScannerScreen(WalletImportSource.extendedPublicKey),
                             WalletImportSource.extendedPublicKey,
                           ),
                         ),
@@ -1129,7 +1129,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildDropdownMenu() {
-    final bool showGlossary = !context.read<PreferenceProvider>().isEnglish;
+    final bool showGlossary =
+        context.read<PreferenceProvider>().isKorean || context.read<PreferenceProvider>().isJapanese;
     return Positioned(
       top: _dropdownButtonPosition.dy + _dropdownButtonSize.height,
       right: 20,

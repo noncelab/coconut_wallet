@@ -46,6 +46,9 @@ class SendScreen extends StatefulWidget {
 
 class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _viewMoreButtonKey = GlobalKey();
+  final GlobalKey _addressInputFieldKey = GlobalKey();
+  double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
+
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
   // 스크롤 범위 연산에 사용하는 값들
@@ -165,6 +168,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _previousKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+      final addressInputFieldRect = _addressInputFieldKey.currentContext?.findRenderObject() as RenderBox;
+      setState(() {
+        _addressInputFieldBottomDy =
+            addressInputFieldRect.localToGlobal(Offset.zero).dy +
+            addressInputFieldRect.size.height -
+            MediaQuery.of(context).padding.top -
+            kToolbarHeight;
+      });
     });
   }
 
@@ -983,11 +994,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     amountTextColor = CoconutColors.white;
                   }
 
-                  final isEnglish = context.read<PreferenceProvider>().isEnglish;
+                  final isEnglishOrSpanish =
+                      context.read<PreferenceProvider>().isEnglish || context.read<PreferenceProvider>().isSpanish;
                   final maxButtonBaseText = t.send_screen.input_maximum_amount;
                   final maxButtonText =
                       _viewModel.isMaxMode
-                          ? (!isEnglish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
+                          ? (!isEnglishOrSpanish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
                           : maxButtonBaseText;
 
                   return Column(
@@ -1071,6 +1083,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   final isAddressError = data.item2.isError;
                   final controller = _addressControllerList[index];
                   return CoconutTextField(
+                    key: _addressInputFieldKey,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: CoconutColors.black,
@@ -1406,7 +1419,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         return Positioned(
           left: 16,
           right: 16,
-          top: !_viewModel.showAddressBoard ? kPageViewHeight : kAddressBoardPosition,
+          top: !_viewModel.showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
           child: !_viewModel.showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
         );
       },
@@ -1636,22 +1649,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
+        } else {
+          Future.delayed(const Duration(milliseconds: 1000), () {
+            final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
+            final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
+            final viewMoreButtonHeight = viewMoreButtonRect.size.height;
+            final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
+            bool isViewMoreButtonVisible =
+                viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
+            if (!isViewMoreButtonVisible) {
+              _screenScrollController.animateTo(
+                _screenScrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+          });
         }
-        Future.delayed(const Duration(milliseconds: 1000), () {
-          final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
-          final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
-          final viewMoreButtonHeight = viewMoreButtonRect.size.height;
-          final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
-          bool isViewMoreButtonVisible =
-              viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
-          if (!isViewMoreButtonVisible) {
-            _screenScrollController.animateTo(
-              _screenScrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-        });
       }),
     );
     _addressFocusNodeList.add(focusNode);

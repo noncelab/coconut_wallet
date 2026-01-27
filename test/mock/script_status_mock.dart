@@ -12,7 +12,7 @@ class ScriptStatusMock {
     final address = walletItem.walletBase.getAddress(index, isChange: isChange);
     return ScriptStatus(
       scriptPubKey: address,
-      status: status ?? Hash.sha256(address),
+      status: status ?? Hash.sha256(address).toString(),
       timestamp: DateTime.now(),
       derivationPath: '${walletItem.walletBase.derivationPath}/${isChange ? '1' : '0'}/$index',
       address: address,
