@@ -168,7 +168,7 @@ class TransactionDraftRepository extends BaseRepository {
   TransactionDraftRepository(super._realmManager, this._utxoRepository);
 
   /// Unsigned TransactionDraft 저장
-  Future<Result<RealmTransactionDraft>> saveUnsignedTransactionDraft({
+  Future<Result<RealmTransactionDraft>> saveTransactionDraft({
     required int walletId,
     List<RecipientInfo>? recipientList,
     required String? feeRateText,
@@ -226,53 +226,6 @@ class TransactionDraftRepository extends BaseRepository {
       });
 
       saveLastId(realm, (RealmTransactionDraft).toString(), newId);
-
-      return draft;
-    });
-  }
-
-  /// TransactionDraft 업데이트
-  Future<Result<RealmTransactionDraft>> updateUnsignedTransactionDraft({
-    required int id,
-    int? walletId,
-    List<RecipientInfo>? recipientList,
-    String? feeRateText,
-    bool? isMaxMode,
-    bool? isMultisig,
-    bool? isFeeSubtractedFromSendAmount,
-    lib.Transaction? transaction,
-    String? txWaitingForSign,
-    String? signedPsbtBase64Encoded,
-    String? currentUnit,
-    List<UtxoState>? selectedUtxoList,
-  }) async {
-    return handleAsyncRealm<RealmTransactionDraft>(() async {
-      final draft = realm.find<RealmTransactionDraft>(id);
-      if (draft == null) {
-        throw StateError('[updateTransactionDraft] Draft not found: $id');
-      }
-
-      await realm.writeAsync(() {
-        if (walletId != null) draft.walletId = walletId;
-        if (feeRateText != null) {
-          draft.feeRate = feeRateText.isNotEmpty ? double.tryParse(feeRateText) : null;
-        }
-        if (isMaxMode != null) draft.isMaxMode = isMaxMode;
-        if (isMultisig != null) draft.isMultisig = isMultisig;
-        if (isFeeSubtractedFromSendAmount != null) draft.isFeeSubtractedFromSendAmount = isFeeSubtractedFromSendAmount;
-        if (transaction != null) draft.transactionHex = transaction.serialize();
-        if (txWaitingForSign != null) draft.txWaitingForSign = txWaitingForSign;
-        if (signedPsbtBase64Encoded != null) draft.signedPsbtBase64Encoded = signedPsbtBase64Encoded;
-        if (recipientList != null) {
-          draft.recipientListJson.clear();
-          draft.recipientListJson.addAll(_recipientListToJson(recipientList));
-        }
-        if (currentUnit != null) draft.currentUnit = currentUnit;
-        if (selectedUtxoList != null) {
-          draft.selectedUtxoListJson.clear();
-          draft.selectedUtxoListJson.addAll(_utxoListToJson(selectedUtxoList));
-        }
-      });
 
       return draft;
     });

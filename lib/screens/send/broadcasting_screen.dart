@@ -190,7 +190,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                               context,
                               listen: false,
                             );
-                            final result = await transactionDraftRepository.saveUnsignedTransactionDraft(
+                            final result = await transactionDraftRepository.saveTransactionDraft(
                               walletId: viewModel.walletId,
                               feeRateText: viewModel.feeRate?.toString() ?? '',
                               isMaxMode: viewModel.isMaxMode ?? false,
