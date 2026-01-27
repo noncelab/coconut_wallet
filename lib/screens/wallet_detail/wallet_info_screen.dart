@@ -15,6 +15,7 @@ import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:flutter/material.dart';
@@ -345,25 +346,40 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
+
+    final navigator = Navigator.of(context);
+    final languageCode = context.read<PreferenceProvider>().language;
+
     _setOverlayLoading(true);
-    await viewModel.deleteWallet();
-    _setOverlayLoading(false);
-    if (context.mounted) {
-      widget.entryPoint == kEntryPointWalletHome
-          ? Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (BuildContext context) => const WalletHomeScreen()),
+
+    try {
+      await viewModel.deleteWallet();
+
+      _setOverlayLoading(false);
+
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      if (mounted) {
+        if (widget.entryPoint == kEntryPointWalletHome) {
+          navigator.pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const WalletHomeScreen()),
             (route) => false,
-          )
-          : Navigator.pushNamedAndRemoveUntil(
-            context,
-            kEntryPointWalletList,
-            (Route<dynamic> route) => route.settings.name == '/',
           );
+        } else {
+          navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
+        }
+      }
+    } catch (e) {
+      debugPrint('Delete wallet failed: $e');
+      _setOverlayLoading(false);
+      if (mounted) {
+        await showInfoDialog(context, languageCode, t.wallet_info_screen.error.delete, e.toString());
+      }
     }
   }
 
   void _setOverlayLoading(bool value) {
+    if (!mounted) return;
     if (value) {
       context.loaderOverlay.show();
     } else {

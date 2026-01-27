@@ -67,7 +67,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                         Navigator.pop(context);
                       },
                     ),
-                    Text(t.wallet_add_input_screen.mfp_title, style: CoconutTypography.body1_16),
+                    Text(t.wallet_add_scanner_screen.paste.mfp_title, style: CoconutTypography.body1_16),
                     Visibility(
                       visible: false,
                       maintainSize: true,
@@ -107,7 +107,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                               ),
                               CoconutLayout.spacing_100w,
                               Text(
-                                t.wallet_add_input_screen.mfp_description_title,
+                                t.wallet_add_scanner_screen.paste.mfp_description_title,
                                 style: CoconutTypography.body2_14_Bold,
                               ),
                             ],
@@ -120,15 +120,15 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                               children: [
                                 RichText(
                                   text: TextSpan(
-                                    text: t.wallet_add_input_screen.mfp_description_texts[0],
+                                    text: t.wallet_add_scanner_screen.paste.mfp_description_texts[0],
                                     style: CoconutTypography.body3_12,
                                     children: [
                                       TextSpan(
-                                        text: "\n${t.wallet_add_input_screen.mfp_description_texts[1]}",
+                                        text: "\n${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
                                         style: CoconutTypography.body3_12,
                                       ),
                                       TextSpan(
-                                        text: " ${t.wallet_add_input_screen.mfp_description_texts[2]}",
+                                        text: " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[2]}",
                                         style: CoconutTypography.body3_12_Bold,
                                       ),
                                     ],
@@ -159,8 +159,8 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                       onChanged: (text) {},
                       isError: _isError,
                       isLengthVisible: true,
-                      errorText: t.wallet_add_input_screen.format_error_text,
-                      placeholderText: t.wallet_add_input_screen.mfp_input_placeholder,
+                      errorText: t.wallet_add_scanner_screen.paste.format_error_text,
+                      placeholderText: t.wallet_add_scanner_screen.paste.mfp_input_placeholder,
                       suffix: IconButton(
                         iconSize: 14,
                         padding: EdgeInsets.zero,
@@ -202,7 +202,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                             backgroundColor: CoconutColors.gray350,
                             foregroundColor: CoconutColors.black,
                             pressedTextColor: CoconutColors.black,
-                            text: t.wallet_add_input_screen.mfp_skip,
+                            text: t.wallet_add_scanner_screen.paste.mfp_skip,
                           ),
                         ),
                         CoconutLayout.spacing_200w,
