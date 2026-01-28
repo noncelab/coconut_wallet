@@ -343,6 +343,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
             return;
           }
           debugPrint('RBF:: 2.2 내 아웃풋 없음');
+          // FIXME: outputSum이 매개변수로 넘어가서 additionalFee 계산하는데 쓰이는데
+          // outputSum - inputSum으로 잘못 계산되고 있음.
           if (!_ensureSufficientUtxos(utxoList, outputSum, estimatedVSize, newFeeRate)) {
             return;
           }
