@@ -1367,7 +1367,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         heightRatio: 0.55,
                         child: AnalysisPeriodBottomSheet(
                           onSelected: (days) {
-                            _viewModel.setAnalysisPeriod(days);
+                            _viewModel.updateAnalysisPeriod(days);
                           },
                           onTransactionTypeSelected: (analysisTransactionType) {
                             _viewModel.setAnalysisTransactionType(analysisTransactionType);
