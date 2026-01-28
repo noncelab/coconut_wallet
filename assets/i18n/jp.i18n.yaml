@@ -49,6 +49,8 @@ glossary: "用語集"
 tool: "ツール"
 tutorial: "チュートリアル"
 settings: "設定"
+app_settings: "アプリ設定"
+home_screen_settings: "ホーム画面設定"
 tx_list: "トランザクション履歴"
 utxo_list: "UTXO一覧"
 wallet_id: "ウォレットID"
@@ -98,6 +100,16 @@ electrum_server: "Electrum Server"
 block_explorer: "ブロックエクスプローラー"
 log_viewer: "ログビューアー"
 go_to_settings: "設定を開く"
+
+relative_time:
+  days_ago(cardinal):
+    zero: "今日"
+    one: "1日前"
+    other: "${n}日前"
+  hours_ago(cardinal):
+    zero: "たった今"
+    one: "1時間前"
+    other: "${n}時間前"
 
 apply_item: "$count 項目"
 fee_sats: " ($value sat/vB)"
@@ -205,7 +217,7 @@ wallet_home_screen:
     category:
       total_balance: "残高合計"
       wallet_list: "ウォレット\n一覧"
-      recent_transactions: "最近の\n取引"
+      recent_transactions: "最近の\n取引 (24時間)"
       analysis: "分析"
     alert: 
       empty_fake_balance: "フェイク残高を入力"
@@ -878,3 +890,8 @@ fiat:
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"
+
+long_pressed_menu:
+  hide: "非表示"
+  edit_home_widget: "ホームウィジェット編集"
+  go_to_home_screen_settings: "ホーム画面設定に移動"

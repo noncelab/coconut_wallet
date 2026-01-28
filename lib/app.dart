@@ -24,6 +24,7 @@ import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.d
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
@@ -364,6 +365,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
+                    ),
+                '/wallet-home-edit':
+                    (context) => buildLoadingScreenWithArgs(
+                      context,
+                      (args) => WalletHomeEditScreen(scrollController: args['scrollController']),
                     ),
               },
             );

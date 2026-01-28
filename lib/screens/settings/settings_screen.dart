@@ -261,7 +261,16 @@ class _SettingsScreen extends State<SettingsScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: Sizes.size32),
+                  CoconutLayout.spacing_400h,
+
+                  // 앱 정보 보기
+                  _category(t.app_info),
+                  _buildAnimatedButton(
+                    title: t.view_app_info,
+                    onPressed: () => Navigator.pushNamed(context, '/app-info'),
+                  ),
+
+                  const SizedBox(height: 100),
                 ],
               ),
             ),

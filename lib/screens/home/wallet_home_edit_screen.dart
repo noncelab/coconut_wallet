@@ -8,7 +8,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -20,15 +19,15 @@ enum FakeBalanceInputError {
   exceedsTotalSupply, // 2100만 BTC를 초과하는 경우
 }
 
-class WalletHomeEditBottomSheet extends StatefulWidget {
-  const WalletHomeEditBottomSheet({super.key, required this.scrollController});
+class WalletHomeEditScreen extends StatefulWidget {
+  const WalletHomeEditScreen({super.key, required this.scrollController});
   final ScrollController scrollController;
 
   @override
-  State<WalletHomeEditBottomSheet> createState() => _WalletHomeEditBottomSheetState();
+  State<WalletHomeEditScreen> createState() => _WalletHomeEditScreenState();
 }
 
-class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> with TickerProviderStateMixin {
+class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with TickerProviderStateMixin {
   final TextEditingController _textEditingController = TextEditingController();
   late WalletHomeEditViewModel _viewModel;
 
@@ -157,7 +156,6 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
           appBar: CoconutAppBar.build(
             backgroundColor: CoconutColors.black,
             context: context,
-            isBottom: true,
             onBackPressed: () {
               if (_shouldEnableCompleteButton()) {
                 showDialog(
@@ -469,95 +467,98 @@ class _WalletHomeEditBottomSheetState extends State<WalletHomeEditBottomSheet> w
                                 },
                                 defaultColor: CoconutColors.gray800,
                                 pressedColor: CoconutColors.gray750,
-                                child: Container(
-                                  height: 100,
-                                  width: 100,
-                                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Stack(
-                                          children: [
-                                            Align(
-                                              alignment: Alignment.topLeft,
-                                              child: MediaQuery(
-                                                data: MediaQuery.of(
-                                                  context,
-                                                ).copyWith(textScaler: const TextScaler.linear(1.0)),
-                                                child: FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                                                  alignment: Alignment.centerLeft,
-                                                  child: Text(
-                                                    _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
-                                                    maxLines: 2,
-                                                    style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                                child: MediaQuery(
+                                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                  child: Container(
+                                    height: 100,
+                                    width: 100,
+                                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Stack(
+                                            children: [
+                                              Align(
+                                                alignment: Alignment.topLeft,
+                                                child: MediaQuery(
+                                                  data: MediaQuery.of(
+                                                    context,
+                                                  ).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                                  child: FittedBox(
+                                                    fit: BoxFit.scaleDown,
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Text(
+                                                      _getHomeFeatureLabel(widget['homeFeatureTypeString'].toString()),
+                                                      maxLines: 2,
+                                                      style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                                                    ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
-                                            Align(
-                                              alignment: Alignment.topRight,
-                                              child:
-                                                  (widget['homeFeatureTypeString'] ==
-                                                              HomeFeatureType.totalBalance.name ||
-                                                          widget['homeFeatureTypeString'] ==
-                                                              HomeFeatureType.walletList.name)
-                                                      ? Container(
-                                                        width: 16,
-                                                        height: 16,
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          color: CoconutColors.gray700.withValues(alpha: 0.5),
-                                                        ),
-                                                        child: Center(
-                                                          child: SvgPicture.asset(
-                                                            'assets/svg/check.svg',
-                                                            width: 6,
-                                                            height: 6,
-                                                            colorFilter: const ColorFilter.mode(
-                                                              CoconutColors.gray800,
-                                                              BlendMode.srcIn,
+                                              Align(
+                                                alignment: Alignment.topRight,
+                                                child:
+                                                    (widget['homeFeatureTypeString'] ==
+                                                                HomeFeatureType.totalBalance.name ||
+                                                            widget['homeFeatureTypeString'] ==
+                                                                HomeFeatureType.walletList.name)
+                                                        ? Container(
+                                                          width: 16,
+                                                          height: 16,
+                                                          decoration: BoxDecoration(
+                                                            shape: BoxShape.circle,
+                                                            color: CoconutColors.gray100.withValues(alpha: 0.5),
+                                                          ),
+                                                          child: Center(
+                                                            child: SvgPicture.asset(
+                                                              'assets/svg/check.svg',
+                                                              width: 6,
+                                                              height: 6,
+                                                              colorFilter: const ColorFilter.mode(
+                                                                CoconutColors.gray800,
+                                                                BlendMode.srcIn,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        )
+                                                        : AnimatedContainer(
+                                                          duration: const Duration(milliseconds: 100),
+                                                          width: 16,
+                                                          height: 16,
+                                                          decoration: BoxDecoration(
+                                                            shape: BoxShape.circle,
+                                                            color:
+                                                                (widget['isEnabled'] as bool)
+                                                                    ? CoconutColors.white
+                                                                    : CoconutColors.gray800,
+                                                            border: Border.all(
+                                                              width: (widget['isEnabled'] as bool) ? 0 : 1.5,
+                                                              color: CoconutColors.gray600,
+                                                            ),
+                                                          ),
+                                                          child: Center(
+                                                            child: SvgPicture.asset(
+                                                              'assets/svg/check.svg',
+                                                              width: 6,
+                                                              height: 6,
+                                                              colorFilter: ColorFilter.mode(
+                                                                (widget['isEnabled'] as bool)
+                                                                    ? CoconutColors.gray800
+                                                                    : CoconutColors.gray600,
+                                                                BlendMode.srcIn,
+                                                              ),
                                                             ),
                                                           ),
                                                         ),
-                                                      )
-                                                      : AnimatedContainer(
-                                                        duration: const Duration(milliseconds: 100),
-                                                        width: 16,
-                                                        height: 16,
-                                                        decoration: BoxDecoration(
-                                                          shape: BoxShape.circle,
-                                                          color:
-                                                              (widget['isEnabled'] as bool)
-                                                                  ? CoconutColors.white
-                                                                  : CoconutColors.gray800,
-                                                          border: Border.all(
-                                                            width: (widget['isEnabled'] as bool) ? 0 : 1.5,
-                                                            color: CoconutColors.gray600,
-                                                          ),
-                                                        ),
-                                                        child: Center(
-                                                          child: SvgPicture.asset(
-                                                            'assets/svg/check.svg',
-                                                            width: 6,
-                                                            height: 6,
-                                                            colorFilter: ColorFilter.mode(
-                                                              (widget['isEnabled'] as bool)
-                                                                  ? CoconutColors.gray800
-                                                                  : CoconutColors.gray600,
-                                                              BlendMode.srcIn,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ),
-                                            ),
-                                          ],
-                                        ),
-                                        const Spacer(),
-                                        SvgPicture.asset(widget['icon']!.toString(), width: 32),
-                                      ],
+                                              ),
+                                            ],
+                                          ),
+                                          const Spacer(),
+                                          SvgPicture.asset(widget['icon']!.toString(), width: 32),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

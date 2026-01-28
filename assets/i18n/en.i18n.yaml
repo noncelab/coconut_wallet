@@ -49,6 +49,8 @@ glossary: "Glossary"
 tool: "Tool"
 tutorial: "Tutorial"
 settings: "Settings"
+app_settings: "App Settings"
+home_screen_settings: "Home Settings"
 tx_list: "Transaction History"
 utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
@@ -104,6 +106,10 @@ relative_time:
     zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
     one: "1 day ago"   # 1일
     other: "${n} days ago"  # 2일 이상
+  hours_ago(cardinal):
+    zero: "Just now"
+    one: "1 hour ago"
+    other: "${n} hours ago"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -211,12 +217,12 @@ wallet_home_screen:
     category:
       total_balance: "Total\nBalance"
       wallet_list: "Wallet\nList"
-      recent_transactions: "Recent\nTransactions"
+      recent_transactions: "Recent\nTransactions\n(24hours)"
       analysis: "Analysis"
     alert: 
           empty_fake_balance: "Enter Fake Balance"
           empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
-          set_to_0: "Set balance to 0 BTC"
+          set_to_0: "Set balance to 0 BTC" 
           enter_again: "Try again"
   empty_recent_transaction: "Empty recent transactions"
   syncing_recent_transaction: "Syncing recent transactions"
@@ -882,3 +888,8 @@ fiat:
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
+
+long_pressed_menu:
+  hide: "Hide"
+  edit_home_widget: "Edit Home Widget"
+  go_to_home_screen_settings: "Go to Home Screen Settings"

@@ -81,6 +81,13 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isLatestTxAnalysisRunning = false;
   bool get isLatestTxAnalysisRunning => _isLatestTxAnalysisRunning;
 
+  bool? _prevRecentTransactionFeatureEnabled;
+  bool? _prevAnalysisFeatureEnabled;
+
+  /// recentTransaction 기능이 방금 꺼짐→켜짐으로 변경되어 초기 로딩 상태를 보여줘야 하는지 여부
+  bool _showRecentFeatureInitialLoading = false;
+  bool get showRecentFeatureInitialLoading => _showRecentFeatureInitialLoading;
+
   Map<int, List<TransactionRecord>> _recentTransactions = {};
   Map<int, List<TransactionRecord>> get recentTransactions => _recentTransactions;
 
@@ -89,6 +96,10 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   bool _isBtcUnit = false;
   bool get isBtcUnit => _isBtcUnit;
+
+  bool isHomeFeatureEnabled(HomeFeatureType type) {
+    return _preferenceProvider.isHomeFeatureEnabled(type);
+  }
 
   WalletHomeViewModel(
     this._walletProvider,
@@ -210,41 +221,59 @@ class WalletHomeViewModel extends ChangeNotifier {
     final currentHeight = currentBlock?.height;
     _currentBlock = currentBlock;
 
-    final bool isBlockHeightChanged =
-        previousHeight != null && currentHeight != null && previousHeight != currentHeight;
+    final bool hasCurrentHeight = currentHeight != null;
+    final bool isBlockHeightChanged = hasCurrentHeight && previousHeight != null && previousHeight != currentHeight;
 
-    if (currentHeight != null) {
+    if (hasCurrentHeight) {
       if (isBlockHeightChanged) {
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (_currentBlock?.height == currentHeight) {
-            if (_nodeSyncState == NodeSyncState.completed) {
-              Logger.log('WalletHomeViewModel: 블록 높이 변경 후 트랜잭션 조회 실행 (블록 높이: $currentHeight)');
-              getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
-            } else {
-              Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
-            }
-            // 동기화 상태와 무관하게 분석 데이터는 항상 조회
-            getRecentTransactionAnalysis(_analysisPeriod);
-          }
-        });
+        _handleBlockHeightChanged(currentHeight);
       } else if (previousHeight == null) {
-        // 첫 번째 블록 높이 설정 시
-        if (_nodeSyncState == NodeSyncState.completed) {
-          getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
-          getRecentTransactionAnalysis(_analysisPeriod);
-        } else {
-          Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
-          getRecentTransactionAnalysis(_analysisPeriod);
-        }
+        _handleInitialBlockHeight(currentHeight);
       }
     } else {
-      // blockHeight가 없어도 DB 데이터는 조회 (날짜 기준)
-      Logger.log('WalletHomeViewModel: blockHeight 없지만 DB 데이터 조회');
-      getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays);
-      getRecentTransactionAnalysis(_analysisPeriod);
+      _handleNoBlockHeight();
     }
 
     notifyListeners();
+  }
+
+  /// 블록 높이가 변경되었을 때, 잠시 대기 후 여전히 동일한 블록이면 처리
+  void _handleBlockHeightChanged(int currentHeight) {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (_currentBlock?.height != currentHeight) return;
+      _processBlockHeightChange(currentHeight);
+    });
+  }
+
+  /// 블록 높이 변경에 따른 트랜잭션/분석 데이터 갱신
+  void _processBlockHeightChange(int currentHeight) {
+    if (_nodeSyncState == NodeSyncState.completed) {
+      Logger.log('WalletHomeViewModel: 블록 높이 변경 후 트랜잭션 조회 실행 (블록 높이: $currentHeight)');
+      fetchPendingAndRecentDaysTransactions(kRecenctTransactionDays, forceRefresh: true);
+    } else {
+      Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
+    }
+    // 동기화 상태와 무관하게 분석 데이터는 항상 조회
+    fetchRecentTransactionAnalysis(_analysisPeriod);
+  }
+
+  /// 첫 번째 블록 높이가 설정될 때 처리
+  void _handleInitialBlockHeight(int currentHeight) {
+    // 첫 번째 블록 높이 설정 시
+    if (_nodeSyncState == NodeSyncState.completed) {
+      fetchPendingAndRecentDaysTransactions(kRecenctTransactionDays);
+      fetchRecentTransactionAnalysis(_analysisPeriod);
+    } else {
+      Logger.log('WalletHomeViewModel: 동기화 중이지만 DB 데이터 조회 (블록 높이: $currentHeight)');
+      fetchRecentTransactionAnalysis(_analysisPeriod);
+    }
+  }
+
+  /// blockHeight가 없을 때도 날짜 기준으로 DB 데이터를 조회
+  void _handleNoBlockHeight() {
+    Logger.log('WalletHomeViewModel: blockHeight 없지만 DB 데이터 조회');
+    fetchPendingAndRecentDaysTransactions(kRecenctTransactionDays);
+    fetchRecentTransactionAnalysis(_analysisPeriod);
   }
 
   void hideTermsShortcut() {
@@ -270,10 +299,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     // 블록이 변경되었을 수 있으므로 블록을 체크하고 트랜잭션 갱신
     if (_nodeSyncState == NodeSyncState.completed && _currentBlock?.height != null) {
       // 블록이 변경되었을 수 있으므로 트랜잭션 갱신
-      getPendingAndRecentDaysTransactions(_analysisPeriod, kRecenctTransactionDays, forceRefresh: true);
+      fetchPendingAndRecentDaysTransactions(kRecenctTransactionDays, forceRefresh: true);
     }
     // 동기화 중이어도 DB 데이터는 가져옴 (날짜 기준)
-    getRecentTransactionAnalysis(_analysisPeriod);
+    fetchRecentTransactionAnalysis(_analysisPeriod);
     notifyListeners();
   }
 
@@ -335,7 +364,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     if (_preferenceProvider.isBtcUnit != _isBtcUnit) {
       _isBtcUnit = _preferenceProvider.isBtcUnit;
-      getRecentTransactionAnalysis(_analysisPeriod);
+      fetchRecentTransactionAnalysis(_analysisPeriod);
     }
     notifyListeners();
   }
@@ -447,11 +476,11 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   // 필요한 경우 호출 (날짜 기반으로 조회)
-  void getPendingAndRecentDaysTransactions(int? analysisPeriod, int days, {bool forceRefresh = false}) {
+  void fetchPendingAndRecentDaysTransactions(int days, {bool forceRefresh = false}) {
     if (!forceRefresh && _isFetchingLatestTx) return;
 
     // 최근 트랜잭션 홈 기능이 비활성화된 경우에는 조회하지 않음
-    if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
+    if (!isHomeFeatureEnabled(HomeFeatureType.recentTransaction)) return;
     _isFetchingLatestTx = true;
 
     // 홈 화면에 표시한 지갑 목록 아이디
@@ -476,11 +505,11 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   // 필요한 경우 호출
-  void getRecentTransactionAnalysis(int days) {
+  void fetchRecentTransactionAnalysis(int days) {
     // if (_isLatestTxAnalysisRunning) return;
 
     // 분석 기능이 비활성화된 경우에는 조회하지 않음
-    if (!_preferenceProvider.isHomeFeatureEnabled(HomeFeatureType.analysis)) {
+    if (!isHomeFeatureEnabled(HomeFeatureType.analysis)) {
       _isLatestTxAnalysisRunning = false;
       return;
     }
@@ -560,7 +589,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   void setAnalysisPeriod(int value) {
     _analysisPeriod = value;
     _preferenceProvider.setAnalysisPeriod(value);
-    getRecentTransactionAnalysis(value);
+    fetchRecentTransactionAnalysis(value);
     notifyListeners();
   }
 
@@ -568,8 +597,47 @@ class WalletHomeViewModel extends ChangeNotifier {
     _selectedAnalysisTransactionType = value;
     _preferenceProvider.setAnalysisTransactionType(value);
 
-    getRecentTransactionAnalysis(_analysisPeriod);
+    fetchRecentTransactionAnalysis(_analysisPeriod);
     notifyListeners();
+  }
+
+  /// 홈 편집 바텀시트를 열기 직전, 현재 홈 기능 활성화 상태를 스냅샷으로 저장
+  void captureEnabledFeaturesSnapshot() {
+    _prevRecentTransactionFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.recentTransaction);
+    _prevAnalysisFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.analysis);
+  }
+
+  void refreshEnabledFeaturesData() {
+    final bool currentRecentFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.recentTransaction);
+    final bool currentAnalysisFeatureEnabled = isHomeFeatureEnabled(HomeFeatureType.analysis);
+
+    // recentTransaction 기능이 false → true 로 바뀐 경우, 초기 로딩 상태 활성화(2초 동안만)
+    final bool recentJustEnabled = (_prevRecentTransactionFeatureEnabled == false) && currentRecentFeatureEnabled;
+    if (recentJustEnabled) {
+      _showRecentFeatureInitialLoading = true;
+      notifyListeners();
+      // 2초 동안만 초기 로딩 상태(true) 유지 후 자동으로 false로 변경
+      Future.delayed(const Duration(seconds: 2), () {
+        if (_showRecentFeatureInitialLoading) {
+          _showRecentFeatureInitialLoading = false;
+          notifyListeners();
+        }
+      });
+    }
+
+    if (currentRecentFeatureEnabled != _prevRecentTransactionFeatureEnabled) {
+      if (currentRecentFeatureEnabled) {
+        fetchPendingAndRecentDaysTransactions(kRecenctTransactionDays);
+      }
+      _prevRecentTransactionFeatureEnabled = currentRecentFeatureEnabled;
+    }
+
+    if (currentAnalysisFeatureEnabled != _prevAnalysisFeatureEnabled) {
+      if (currentAnalysisFeatureEnabled) {
+        fetchRecentTransactionAnalysis(_analysisPeriod);
+      }
+      _prevAnalysisFeatureEnabled = currentAnalysisFeatureEnabled;
+    }
   }
 
   @override
