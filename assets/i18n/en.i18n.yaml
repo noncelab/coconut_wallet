@@ -217,12 +217,12 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step0: "Devices other than the Keystone 3 Pro are not supported."
+    step0: "Devices other than the Keystone 3 Pro are not supported. (Bitcoin-only firmware recommended)"
     step1: "1. On the home screen, "
     step1_em: " More(•••)"
     step2: "2. "
     step2_em: " Connect Software Wallet"
-    step3: "3. Select any wallet"
+    step3: "3. Select one of BlueWallet, Sparrow, or Zeus wallets"
   guide_jade:
     step0_preposition: "In an " 
     step0_em: "Active "
