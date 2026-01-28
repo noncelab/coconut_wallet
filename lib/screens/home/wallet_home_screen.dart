@@ -802,32 +802,32 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
   }
 
-  Widget _buildHomeEditButton() {
-    return SliverToBoxAdapter(
-      child: Column(
-        children: [
-          CoconutLayout.spacing_800h,
-          CoconutUnderlinedButton(
-            padding: const EdgeInsets.all(8),
-            onTap: () async {
-              _viewModel.captureEnabledFeaturesSnapshot();
-              await Navigator.pushNamed(
-                context,
-                '/wallet-home-edit',
-                arguments: {'scrollController': _scrollController},
-              );
-              if (context.mounted) {
-                _viewModel.refreshEnabledFeaturesData();
-              }
-            },
-            text: t.wallet_home_screen.edit_home_screen,
-            textStyle: CoconutTypography.body3_12,
-          ),
-          CoconutLayout.spacing_2500h,
-        ],
-      ),
-    );
-  }
+  // Widget _buildHomeEditButton() {
+  //   return SliverToBoxAdapter(
+  //     child: Column(
+  //       children: [
+  //         CoconutLayout.spacing_800h,
+  //         CoconutUnderlinedButton(
+  //           padding: const EdgeInsets.all(8),
+  //           onTap: () async {
+  //             _viewModel.captureEnabledFeaturesSnapshot();
+  //             await Navigator.pushNamed(
+  //               context,
+  //               '/wallet-home-edit',
+  //               arguments: {'scrollController': _scrollController},
+  //             );
+  //             if (context.mounted) {
+  //               _viewModel.refreshEnabledFeaturesData();
+  //             }
+  //           },
+  //           text: t.wallet_home_screen.edit_home_screen,
+  //           textStyle: CoconutTypography.body3_12,
+  //         ),
+  //         CoconutLayout.spacing_2500h,
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildViewAll(int walletCount) {
     return SliverToBoxAdapter(
@@ -980,20 +980,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       },
       menuItems: [
         LongPressedMenuItem(
-          title: t.long_pressed_menu.hide,
-          iconPath: 'assets/svg/eye-crossed.svg',
-          onSelected: () {
-            _hideHomeFeature(HomeFeatureType.recentTransaction);
-          },
-          child: Container(width: 200, height: 200, color: CoconutColors.gray900),
+          title: t.long_pressed_menu.go_to_home_screen_settings,
+          iconPath: 'assets/svg/settings.svg',
+          onSelected: _navigateToWalletHomeEdit,
         ),
         LongPressedMenuItem(
-          title: t.long_pressed_menu.home_screen_settings,
-          iconPath: 'assets/svg/edit-outlined.svg',
+          title: t.long_pressed_menu.edit_home_widget,
+          iconPath: 'assets/svg/widget.svg',
           onSelected: () {
             _navigateToWalletHomeEdit();
           },
-          child: Container(width: 200, height: 200, color: CoconutColors.gray900),
         ),
       ],
       child: Column(
@@ -1286,18 +1282,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     return LongPressedMenuWidget(
       menuItems: [
         LongPressedMenuItem(
-          title: t.long_pressed_menu.hide,
-          iconPath: 'assets/svg/eye-crossed.svg',
-          onSelected: () {
-            _hideHomeFeature(HomeFeatureType.analysis);
-          },
-          child: Container(width: 200, height: 200, color: CoconutColors.gray900),
+          title: t.long_pressed_menu.go_to_home_screen_settings,
+          iconPath: 'assets/svg/settings.svg',
+          onSelected: _navigateToWalletHomeEdit,
         ),
         LongPressedMenuItem(
-          title: t.long_pressed_menu.home_screen_settings,
-          iconPath: 'assets/svg/edit-outlined.svg',
+          title: t.long_pressed_menu.edit_home_widget,
+          iconPath: 'assets/svg/widget.svg',
           onSelected: _navigateToWalletHomeEdit,
-          child: Container(width: 200, height: 200, color: CoconutColors.gray900),
         ),
       ],
       child: Container(

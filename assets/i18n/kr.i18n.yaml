@@ -891,4 +891,5 @@ fiat:
 
 long_pressed_menu:
   hide: "숨기기"
-  home_screen_settings: "홈 화면 편집"
+  edit_home_widget: "홈 위젯 편집"
+  go_to_home_screen_settings: "홈 화면 설정으로 이동"

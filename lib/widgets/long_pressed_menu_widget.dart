@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -125,7 +126,7 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Sing
                 builder: (context, constraints) {
                   // 메뉴의 예상 크기를 계산 (실제 RenderBox에 의존하지 않음)
                   const double minMenuWidth = 200;
-                  const double maxMenuWidth = 320;
+                  const double maxMenuWidth = 250;
                   const double itemHeight = 44;
 
                   final double menuWidth = math.min(maxMenuWidth, math.max(minMenuWidth, childSize.width));
@@ -171,38 +172,61 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Sing
                             final alignment = isAboveChild ? Alignment.bottomCenter : Alignment.topCenter;
                             return Transform.scale(scale: scale, alignment: alignment, child: child);
                           },
-                          child: Material(
-                            elevation: 4,
-                            color: Colors.transparent,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: CoconutColors.gray800,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                children: List.generate(
-                                  widget.menuItems.length,
-                                  (index) => ShrinkAnimationButton(
-                                    onPressed: () {
-                                      _startHideAnimation();
-                                      widget.menuItems[index].onSelected();
-                                    },
-                                    borderRadius: 12,
-                                    pressedColor: CoconutColors.gray700,
-                                    child: Container(
-                                      constraints: const BoxConstraints(minWidth: minMenuWidth),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                      child: Row(
-                                        children: [
-                                          SvgPicture.asset(
-                                            widget.menuItems[index].iconPath,
-                                            width: 16,
-                                            height: 16,
-                                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Material(
+                              elevation: 4,
+                              color: Colors.transparent,
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: CoconutColors.white.withValues(alpha: 0.1),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                  child: IntrinsicWidth(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: List.generate(
+                                        widget.menuItems.length,
+                                        (index) => ShrinkAnimationButton(
+                                          defaultColor: Colors.transparent,
+                                          pressedColor: CoconutColors.white.withValues(alpha: 0.1),
+                                          onPressed: () {
+                                            _startHideAnimation();
+                                            widget.menuItems[index].onSelected();
+                                          },
+                                          borderRadius: 12,
+                                          child: Container(
+                                            constraints: const BoxConstraints(minWidth: minMenuWidth),
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                SvgPicture.asset(
+                                                  widget.menuItems[index].iconPath,
+                                                  width: 16,
+                                                  height: 16,
+                                                  colorFilter: const ColorFilter.mode(
+                                                    CoconutColors.white,
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                ),
+                                                CoconutLayout.spacing_200w,
+                                                Flexible(
+                                                  child: Text(
+                                                    widget.menuItems[index].title,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                          CoconutLayout.spacing_400w,
-                                          Text(widget.menuItems[index].title),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -319,15 +343,10 @@ class _DimExceptRectPainter extends CustomPainter {
 class LongPressedMenuItem {
   final String title;
   final String iconPath;
-  final Widget child;
   final VoidCallback _onSelected;
 
-  LongPressedMenuItem({
-    required this.title,
-    required this.iconPath,
-    required this.child,
-    required VoidCallback onSelected,
-  }) : _onSelected = onSelected;
+  LongPressedMenuItem({required this.title, required this.iconPath, required VoidCallback onSelected})
+    : _onSelected = onSelected;
 
   void onSelected() => _onSelected();
 }

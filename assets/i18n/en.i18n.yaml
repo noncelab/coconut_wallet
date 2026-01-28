@@ -891,4 +891,5 @@ fiat:
 
 long_pressed_menu:
   hide: "Hide"
-  home_screen_settings: "Home Screen Settings"
+  edit_home_widget: "Edit Home Widget"
+  go_to_home_screen_settings: "Go to Home Screen Settings"
