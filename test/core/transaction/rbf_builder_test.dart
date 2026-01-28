@@ -171,6 +171,8 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
+      // TODO: 새로 생성한 트랜잭션의 feeRate이 2로 증가했는지 확인
+      // TODO: changeOutput의 amount가 99000 - 141 = 98859로 변경되었는지 확인
       expect(result.isChangeOutputUsed, isTrue);
       expect(result.isSelfOutputsUsed, isFalse);
       expect(result.addedUtxos, isNull);
