@@ -895,3 +895,5 @@ long_pressed_menu:
   hide: "非表示"
   edit_home_widget: "ホームウィジェット編集"
   go_to_home_screen_settings: "ホーム画面設定に移動"
+  hide_home_widget_title: "ホーム画面から '${widgetName}' ウィジェットを非表示にしますか？"
+  hide_home_widget_description: "後で右上のメニューボタン > 'ホーム画面設定' メニューから再表示できます。"

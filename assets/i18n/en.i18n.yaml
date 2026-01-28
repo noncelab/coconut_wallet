@@ -893,3 +893,5 @@ long_pressed_menu:
   hide: "Hide"
   edit_home_widget: "Edit Home Widget"
   go_to_home_screen_settings: "Go to Home Screen Settings"
+  hide_home_widget_title: "Hide '${widgetName}' widget on the home screen?"
+  hide_home_widget_description: "You can show it again later by going to the 'Home Screen Settings' menu in the top right menu button."

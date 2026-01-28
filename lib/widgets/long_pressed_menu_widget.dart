@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -24,6 +25,12 @@ class LongPressedMenuWidget extends StatefulWidget {
   /// dropdown과 child 사이의 기본 간격
   final double spacing;
 
+  /// 편집 모드일 때 표시 여부
+  final bool isEditMode;
+
+  /// X 버튼 클릭 시 호출되는 콜백
+  final VoidCallback? onRemove;
+
   const LongPressedMenuWidget({
     super.key,
     required this.child,
@@ -31,22 +38,51 @@ class LongPressedMenuWidget extends StatefulWidget {
     this.onMenuOpen,
     this.dismissOnTapOutside = true,
     this.spacing = 8.0,
+    this.isEditMode = false,
+    this.onRemove,
   });
 
   @override
   State<LongPressedMenuWidget> createState() => _LongPressedMenuWidgetState();
 }
 
-class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with SingleTickerProviderStateMixin {
+class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with TickerProviderStateMixin {
   final GlobalKey _childKey = GlobalKey();
   OverlayEntry? _overlayEntry;
   late AnimationController _menuAnimationController;
+  late AnimationController _shakeController;
+  late AnimationController _closeButtonController;
+  late Animation<double> _shakeAnimation;
+  final math.Random _random = math.Random();
   bool _isClosing = false;
 
   @override
   void initState() {
     super.initState();
     _menuAnimationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
+
+    _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+
+    _closeButtonController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+
+    // 0.0 ~ 1.0 구간에서: 0 -> -max -> 0 -> +max -> 0 로 한 사이클을 도는 애니메이션
+    const maxAngle = 0.02;
+    _shakeAnimation = TweenSequence<double>([
+      // 0 -> -max
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: -maxAngle), weight: 1),
+      // -max -> 0
+      TweenSequenceItem(tween: Tween(begin: -maxAngle, end: 0.0), weight: 1),
+      // 0 -> +max
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: maxAngle), weight: 1),
+      // +max -> 0
+      TweenSequenceItem(tween: Tween(begin: maxAngle, end: 0.0), weight: 1),
+    ]).animate(_shakeController);
+
+    // 각기 다른 쉐이킹(동시에 동일한 방향이 아닌)을 하기 위해 랜덤 딜레이 설정
+    if (widget.isEditMode) {
+      _startShakeWithRandomDelay();
+      _closeButtonController.forward();
+    }
 
     _menuAnimationController.addStatusListener((status) {
       if (status == AnimationStatus.completed && _isClosing) {
@@ -55,10 +91,42 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Sing
     });
   }
 
+  void _startShakeWithRandomDelay() {
+    final delayMs = _random.nextInt(100); // 0 ~ 199ms
+
+    Future.delayed(Duration(milliseconds: delayMs), () {
+      if (!mounted) return;
+      if (!widget.isEditMode) return;
+      if (_shakeController.isAnimating) return;
+
+      _shakeController.repeat();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant LongPressedMenuWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.isEditMode != widget.isEditMode) {
+      if (widget.isEditMode) {
+        // 편집 모드 진입 → 쉐이킹 시작 및 닫기 버튼 표시
+        _startShakeWithRandomDelay();
+        _closeButtonController.forward();
+      } else {
+        // 편집 모드 해제 → 쉐이킹 정지 및 닫기 버튼 숨김
+        _shakeController.stop();
+        _shakeController.reset();
+        _closeButtonController.reverse();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _removeOverlay();
     _menuAnimationController.dispose();
+    _shakeController.dispose();
+    _closeButtonController.dispose();
     super.dispose();
   }
 
@@ -77,6 +145,9 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Sing
   }
 
   void _showMenu() {
+    if (widget.isEditMode) {
+      return;
+    }
     vibrateExtraLight();
     widget.onMenuOpen?.call();
     // 이미 떠 있으면 제거
@@ -283,10 +354,63 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Sing
       behavior: HitTestBehavior.opaque,
       onLongPress: _showMenu,
       child: AnimatedBuilder(
-        animation: _menuAnimationController,
+        animation: Listenable.merge([_menuAnimationController, _shakeController, _closeButtonController]),
         builder: (context, child) {
           final scale = _computeChildScale();
-          return Transform.scale(scale: scale, child: child);
+
+          // 전체 카드(메뉴+child)가 살짝 기울어지는 애니메이션
+          double angle = 0;
+          if (widget.isEditMode) {
+            angle = _shakeAnimation.value;
+          }
+
+          final menuButtonScale = _closeButtonController.value;
+
+          return Transform.rotate(
+            angle: angle,
+            child: Transform.scale(
+              scale: scale,
+              child: Stack(
+                children: [
+                  child!,
+                  if ((widget.isEditMode || _closeButtonController.value > 0.0) && widget.onRemove != null)
+                    Positioned(
+                      top: -4,
+                      left: 12,
+                      child: Transform.scale(
+                        scale: menuButtonScale,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: widget.onRemove,
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(60),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: SvgPicture.asset(
+                                    'assets/svg/close.svg',
+                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
         },
         child: widget.child,
       ),
