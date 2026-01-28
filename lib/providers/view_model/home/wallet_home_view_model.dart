@@ -97,6 +97,16 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isBtcUnit = false;
   bool get isBtcUnit => _isBtcUnit;
 
+  bool _isEditWidgetMode = false;
+  bool get isEditWidgetMode => _isEditWidgetMode;
+
+  void setEditWidgetMode(bool value) {
+    if (_isEditWidgetMode != value) {
+      _isEditWidgetMode = value;
+      notifyListeners();
+    }
+  }
+
   bool isHomeFeatureEnabled(HomeFeatureType type) {
     return _preferenceProvider.isHomeFeatureEnabled(type);
   }
@@ -167,6 +177,23 @@ class WalletHomeViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
+
+  Future<void> hideHomeFeature(HomeFeatureType type) async {
+    final currentFeatures = _preferenceProvider.homeFeatures;
+
+    final updatedFeatures =
+        currentFeatures
+            .map(
+              (feature) =>
+                  feature.homeFeatureTypeString == type.name
+                      ? HomeFeature(homeFeatureTypeString: feature.homeFeatureTypeString, isEnabled: false)
+                      : feature,
+            )
+            .toList();
+
+    await _preferenceProvider.setHomeFeautres(updatedFeatures);
+    notifyListeners();
+  }
 
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {

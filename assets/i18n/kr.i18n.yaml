@@ -893,3 +893,5 @@ long_pressed_menu:
   hide: "숨기기"
   edit_home_widget: "홈 위젯 편집"
   go_to_home_screen_settings: "홈 화면 설정으로 이동"
+  hide_home_widget_title: "홈 화면에서 '${widgetName}' 위젯을 숨기시겠어요?"
+  hide_home_widget_description: "나중에 우측 상단 메뉴 버튼 > '홈 화면 설정' 메뉴에서 다시 표시할 수 있어요."

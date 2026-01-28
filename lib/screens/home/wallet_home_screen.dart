@@ -79,25 +79,39 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   double? itemCardWidth;
   double? itemCardHeight;
 
-  Future<void> _hideHomeFeature(HomeFeatureType type) async {
-    final preferenceProvider = context.read<PreferenceProvider>();
-    final currentFeatures = preferenceProvider.homeFeatures;
+  Future<void> _hideHomeFeature(HomeFeatureType type, {bool keepEditMode = false}) async {
+    bool? result = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => CoconutPopup(
+            languageCode: context.read<PreferenceProvider>().language,
+            backgroundColor: CoconutColors.gray900,
+            title: t.long_pressed_menu.hide_home_widget_title(widgetName: _getWidgetName(type)),
+            description: t.long_pressed_menu.hide_home_widget_description,
+            rightButtonText: t.OK,
+            onTapRight: () => Navigator.pop(context, true),
+            onTapLeft: () => Navigator.pop(context, false),
+            leftButtonText: t.cancel,
+            titlePadding: const EdgeInsets.only(top: 24, bottom: 12, left: 16, right: 16),
+          ),
+    );
 
-    final updatedFeatures =
-        currentFeatures
-            .map(
-              (feature) =>
-                  feature.homeFeatureTypeString == type.name
-                      ? HomeFeature(homeFeatureTypeString: feature.homeFeatureTypeString, isEnabled: false)
-                      : feature,
-            )
-            .toList();
+    if (result == true) {
+      await _viewModel.hideHomeFeature(type);
+    }
+    if (keepEditMode) {
+      _viewModel.setEditWidgetMode(true);
+    }
+  }
 
-    await preferenceProvider.setHomeFeautres(updatedFeatures);
-
-    // 홈 기능 설정 변경 후 UI를 다시 그리기 위해 재빌드
-    if (mounted) {
-      setState(() {});
+  String _getWidgetName(HomeFeatureType type) {
+    switch (type) {
+      case HomeFeatureType.recentTransaction:
+        return t.wallet_home_screen.edit.category.recent_transactions;
+      case HomeFeatureType.analysis:
+        return t.wallet_home_screen.edit.category.analysis;
+      default:
+        return '';
     }
   }
 
@@ -187,91 +201,99 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               body: SafeArea(
                 top: false,
                 bottom: false,
-                child: Stack(
-                  children: [
-                    CustomScrollView(
-                      controller: _scrollController,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      semanticChildCount: walletItem.length,
-                      slivers: <Widget>[
-                        _buildAppBar(networkStatus),
-                        // pull to refresh시 로딩 인디케이터를 보이기 위함
-                        CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
-                        _buildLoadingIndicator(viewModel),
-                        _buildHeader(
-                          balnaceVisibilityData.item1,
-                          balnaceVisibilityData.item2,
-                          fakeBalanceData.item1,
-                          shouldShowLoadingIndicator,
-                          walletItem.isEmpty,
-                        ),
-                        if (!shouldShowLoadingIndicator)
-                          SliverToBoxAdapter(
-                            child: Column(
-                              children: [
-                                if (walletItem.isEmpty) ...[
-                                  CoconutLayout.spacing_600h,
-                                  WalletAdditionGuideCard(onPressed: _onAddWalletPressed),
-                                ],
-                              ],
-                            ),
+                child: Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerDown: (_) {
+                    if (_viewModel.isEditWidgetMode) {
+                      _viewModel.setEditWidgetMode(false);
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      CustomScrollView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        semanticChildCount: walletItem.length,
+                        slivers: <Widget>[
+                          _buildAppBar(networkStatus),
+                          // pull to refresh시 로딩 인디케이터를 보이기 위함
+                          CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
+                          _buildLoadingIndicator(viewModel),
+                          _buildHeader(
+                            balnaceVisibilityData.item1,
+                            balnaceVisibilityData.item2,
+                            fakeBalanceData.item1,
+                            shouldShowLoadingIndicator,
+                            walletItem.isEmpty,
                           ),
-                        if (shouldShowLoadingIndicator && walletItem.isEmpty) ...[
-                          // 처음 로딩시 스켈레톤
-                          _buildBodySkeleton(),
-                        ],
-                        if (walletItem.isNotEmpty) ...[
-                          // 지갑 리스트가 비어있지 않을 때
-
-                          // 전체보기 위젯
-                          _buildViewAll(walletItem.length),
-
-                          if (favoriteWallets.isNotEmpty)
-                            // 즐겨찾기된 지갑 목록
-                            _buildWalletList(
-                              walletItem,
-                              favoriteWallets,
-                              walletBalanceMap,
-                              balnaceVisibilityData.item1,
-                              (id) => viewModel.getFakeBalance(id),
-                            ),
-                          if (hasEnabledHomeFeature) ...[
-                            const SliverToBoxAdapter(
+                          if (!shouldShowLoadingIndicator)
+                            SliverToBoxAdapter(
                               child: Column(
                                 children: [
-                                  CoconutLayout.spacing_600h,
-                                  Divider(thickness: 12, color: CoconutColors.gray900),
-                                  CoconutLayout.spacing_600h,
+                                  if (walletItem.isEmpty) ...[
+                                    CoconutLayout.spacing_600h,
+                                    WalletAdditionGuideCard(onPressed: _onAddWalletPressed),
+                                  ],
                                 ],
                               ),
                             ),
-                            // 최근 트랜잭션 섹션: 로딩 중이면 스켈레톤, 아니면 컨텐츠
-                            buildFeatureSectionIfEnabled(
-                              HomeFeatureType.recentTransaction,
-                              () =>
-                                  viewModel.isFetchingLatestTx
-                                      ? _buildRecentTransactionsSkeleton()
-                                      : _buildRecentTransactions(),
-                            ),
-                            // 분석 섹션: 로딩 중이면서 기존 데이터가 없으면 스켈레톤, 아니면 컨텐츠 (기존 데이터 있으면 보여줌)
-                            buildFeatureSectionIfEnabled(
-                              HomeFeatureType.analysis,
-                              () =>
-                                  viewModel.isLatestTxAnalysisRunning && viewModel.recentTransactionAnalysis == null
-                                      ? _buildAnalysisSkeleton()
-                                      : _buildAnalysis(),
-                            ),
+                          if (shouldShowLoadingIndicator && walletItem.isEmpty) ...[
+                            // 처음 로딩시 스켈레톤
+                            _buildBodySkeleton(),
+                          ],
+                          if (walletItem.isNotEmpty) ...[
+                            // 지갑 리스트가 비어있지 않을 때
+
+                            // 전체보기 위젯
+                            _buildViewAll(walletItem.length),
+
+                            if (favoriteWallets.isNotEmpty)
+                              // 즐겨찾기된 지갑 목록
+                              _buildWalletList(
+                                walletItem,
+                                favoriteWallets,
+                                walletBalanceMap,
+                                balnaceVisibilityData.item1,
+                                (id) => viewModel.getFakeBalance(id),
+                              ),
+                            if (hasEnabledHomeFeature) ...[
+                              const SliverToBoxAdapter(
+                                child: Column(
+                                  children: [
+                                    CoconutLayout.spacing_600h,
+                                    Divider(thickness: 12, color: CoconutColors.gray900),
+                                    CoconutLayout.spacing_600h,
+                                  ],
+                                ),
+                              ),
+                              // 최근 트랜잭션 섹션: 로딩 중이면 스켈레톤, 아니면 컨텐츠
+                              buildFeatureSectionIfEnabled(
+                                HomeFeatureType.recentTransaction,
+                                () =>
+                                    viewModel.isFetchingLatestTx
+                                        ? _buildRecentTransactionsSkeleton()
+                                        : _buildRecentTransactions(),
+                              ),
+                              // 분석 섹션: 로딩 중이면서 기존 데이터가 없으면 스켈레톤, 아니면 컨텐츠 (기존 데이터 있으면 보여줌)
+                              buildFeatureSectionIfEnabled(
+                                HomeFeatureType.analysis,
+                                () =>
+                                    viewModel.isLatestTxAnalysisRunning && viewModel.recentTransactionAnalysis == null
+                                        ? _buildAnalysisSkeleton()
+                                        : _buildAnalysis(),
+                              ),
+                            ],
+                          ],
+                          if (walletItem.isNotEmpty) ...[
+                            // _buildHomeEditButton(), // 홈 화면 편집 버튼 dropdown menu로 이동
+                            const SliverToBoxAdapter(child: CoconutLayout.spacing_2500h),
                           ],
                         ],
-                        if (walletItem.isNotEmpty) ...[
-                          // _buildHomeEditButton(), // 홈 화면 편집 버튼 dropdown menu로 이동
-                          const SliverToBoxAdapter(child: CoconutLayout.spacing_2500h),
-                        ],
-                      ],
-                    ),
-                    _buildDropdownBackdrop(),
-                    _buildDropdownMenu(),
-                  ],
+                      ),
+                      _buildDropdownBackdrop(),
+                      _buildDropdownMenu(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -974,121 +996,133 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildRecentTransactions() {
-    return LongPressedMenuWidget(
-      onMenuOpen: () {
-        _setPulldownMenuVisiblility(false);
-      },
-      menuItems: [
-        LongPressedMenuItem(
-          title: t.long_pressed_menu.go_to_home_screen_settings,
-          iconPath: 'assets/svg/settings.svg',
-          onSelected: _navigateToWalletHomeEdit,
-        ),
-        LongPressedMenuItem(
-          title: t.long_pressed_menu.edit_home_widget,
-          iconPath: 'assets/svg/widget.svg',
-          onSelected: () {
-            _navigateToWalletHomeEdit();
+    return Selector<WalletHomeViewModel, bool>(
+      selector: (_, viewModel) => viewModel.isEditWidgetMode,
+      builder: (context, isEditMode, child) {
+        return LongPressedMenuWidget(
+          onMenuOpen: () {
+            _setPulldownMenuVisiblility(false);
           },
-        ),
-      ],
-      child: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.black),
-            child: Center(
-              child: Selector2<
-                PreferenceProvider,
-                WalletHomeViewModel,
-                Tuple3<bool, Map<int, List<TransactionRecord>>, bool>
-              >(
-                selector:
-                    (_, prefProvider, homeViewModel) => Tuple3(
-                      prefProvider.isBtcUnit,
-                      homeViewModel.recentTransactions,
-                      homeViewModel.showRecentFeatureInitialLoading,
-                    ),
-                builder: (context, data, child) {
-                  final isBtcUnit = data.item1;
-                  final showRecentInitialLoading = data.item3;
-                  // 정렬된 트랜잭션 플랫 리스트
-                  final ordered = _getOrderedRecentTransactions();
-
-                  if (ordered.isEmpty) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: _buildEmptyRecentTransactions(
-                        (_viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty) ||
-                            showRecentInitialLoading,
-                      ),
-                    );
-                  }
-
-                  return ordered.length == 1
-                      ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, isBtcUnit),
-                      )
-                      : CarouselSlider(
-                        carouselController: _carouselController,
-                        options: CarouselOptions(
-                          autoPlay: false,
-                          height: 90,
-                          viewportFraction: 0.9,
-                          enlargeCenterPage: true,
-                          enlargeFactor: 0.2,
-                          enableInfiniteScroll: false,
-                          onPageChanged: (index, reason) {
-                            setState(() {
-                              _recentTransactionCurrentPage = index;
-                            });
-                            _scrollToIndicator(index);
-                          },
-                        ),
-                        items:
-                            ordered.map((t) {
-                              return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
-                            }).toList(),
-                      );
-                },
-              ),
+          isEditMode: isEditMode,
+          onRemove: () {
+            _hideHomeFeature(HomeFeatureType.recentTransaction, keepEditMode: true);
+          },
+          menuItems: [
+            LongPressedMenuItem(
+              title: t.long_pressed_menu.go_to_home_screen_settings,
+              iconPath: 'assets/svg/settings.svg',
+              onSelected: _navigateToWalletHomeEdit,
             ),
-          ),
-          // 페이지 인디케이터 (트랜잭션 단위, 2개 이상일 때만 표시)
-          Selector<WalletHomeViewModel, Map<int, List<TransactionRecord>>>(
-            selector: (_, viewModel) => viewModel.recentTransactions,
-            builder: (context, recentTransactions, child) {
-              final totalCount = _getOrderedRecentTransactions().length;
-
-              if (totalCount <= 1) return Container();
-
-              return Container(
-                margin: const EdgeInsets.only(top: 16, left: 50, right: 50),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  controller: _pageIndicatorController,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(totalCount, (index) {
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        margin: EdgeInsets.symmetric(horizontal: _recentTransactionCurrentPage == index ? 2 : 4),
-                        width: _recentTransactionCurrentPage == index ? 12 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _recentTransactionCurrentPage == index ? CoconutColors.gray400 : CoconutColors.gray800,
+            LongPressedMenuItem(
+              title: t.long_pressed_menu.edit_home_widget,
+              iconPath: 'assets/svg/widget.svg',
+              onSelected: () {
+                _viewModel.setEditWidgetMode(true);
+              },
+            ),
+          ],
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.black),
+                child: Center(
+                  child: Selector2<
+                    PreferenceProvider,
+                    WalletHomeViewModel,
+                    Tuple3<bool, Map<int, List<TransactionRecord>>, bool>
+                  >(
+                    selector:
+                        (_, prefProvider, homeViewModel) => Tuple3(
+                          prefProvider.isBtcUnit,
+                          homeViewModel.recentTransactions,
+                          homeViewModel.showRecentFeatureInitialLoading,
                         ),
-                      );
-                    }),
+                    builder: (context, data, child) {
+                      final isBtcUnit = data.item1;
+                      final showRecentInitialLoading = data.item3;
+                      // 정렬된 트랜잭션 플랫 리스트
+                      final ordered = _getOrderedRecentTransactions();
+
+                      if (ordered.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: _buildEmptyRecentTransactions(
+                            (_viewModel.shouldShowLoadingIndicator && _viewModel.walletItemList.isNotEmpty) ||
+                                showRecentInitialLoading,
+                          ),
+                        );
+                      }
+
+                      return ordered.length == 1
+                          ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, isBtcUnit),
+                          )
+                          : CarouselSlider(
+                            carouselController: _carouselController,
+                            options: CarouselOptions(
+                              autoPlay: false,
+                              height: 90,
+                              viewportFraction: 0.9,
+                              enlargeCenterPage: true,
+                              enlargeFactor: 0.2,
+                              enableInfiniteScroll: false,
+                              onPageChanged: (index, reason) {
+                                setState(() {
+                                  _recentTransactionCurrentPage = index;
+                                });
+                                _scrollToIndicator(index);
+                              },
+                            ),
+                            items:
+                                ordered.map((t) {
+                                  return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
+                                }).toList(),
+                          );
+                    },
                   ),
                 ),
-              );
-            },
+              ),
+              // 페이지 인디케이터 (트랜잭션 단위, 2개 이상일 때만 표시)
+              Selector<WalletHomeViewModel, Map<int, List<TransactionRecord>>>(
+                selector: (_, viewModel) => viewModel.recentTransactions,
+                builder: (context, recentTransactions, child) {
+                  final totalCount = _getOrderedRecentTransactions().length;
+
+                  if (totalCount <= 1) return Container();
+
+                  return Container(
+                    margin: const EdgeInsets.only(top: 16, left: 50, right: 50),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _pageIndicatorController,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(totalCount, (index) {
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            margin: EdgeInsets.symmetric(horizontal: _recentTransactionCurrentPage == index ? 2 : 4),
+                            width: _recentTransactionCurrentPage == index ? 12 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color:
+                                  _recentTransactionCurrentPage == index
+                                      ? CoconutColors.gray400
+                                      : CoconutColors.gray800,
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1177,15 +1211,28 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       );
     }
 
+    if (_viewModel.isEditWidgetMode) {
+      return Container(
+        padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: CoconutColors.gray800),
+          color: CoconutColors.gray800,
+        ),
+        child: buildTxRow(transaction),
+      );
+    }
+
     return ShrinkAnimationButton(
       borderRadius: CoconutStyles.radius_200,
       pressedColor: CoconutColors.gray750,
-      onPressed:
-          () => Navigator.pushNamed(
-            context,
-            '/transaction-detail',
-            arguments: {'id': walletId, 'txHash': transaction.transactionHash},
-          ),
+      onPressed: () {
+        Navigator.pushNamed(
+          context,
+          '/transaction-detail',
+          arguments: {'id': walletId, 'txHash': transaction.transactionHash},
+        );
+      },
       child: Container(
         padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 20),
         child: buildTxRow(transaction),
@@ -1279,160 +1326,189 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildAnalysis() {
-    return LongPressedMenuWidget(
-      menuItems: [
-        LongPressedMenuItem(
-          title: t.long_pressed_menu.go_to_home_screen_settings,
-          iconPath: 'assets/svg/settings.svg',
-          onSelected: _navigateToWalletHomeEdit,
-        ),
-        LongPressedMenuItem(
-          title: t.long_pressed_menu.edit_home_widget,
-          iconPath: 'assets/svg/widget.svg',
-          onSelected: _navigateToWalletHomeEdit,
-        ),
-      ],
-      child: Container(
-        margin: const EdgeInsets.only(top: 0, left: 20, right: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ShrinkAnimationButton(
-              defaultColor: CoconutColors.black,
-              onPressed: () {
-                CommonBottomSheets.showCustomHeightBottomSheet(
-                  context: context,
-                  heightRatio: 0.55,
-                  child: AnalysisPeriodBottomSheet(
-                    onSelected: (days) {
-                      _viewModel.setAnalysisPeriod(days);
-                    },
-                    onTransactionTypeSelected: (analysisTransactionType) {
-                      _viewModel.setAnalysisTransactionType(analysisTransactionType);
-                    },
-                    initialPeriodPreset: _viewModel.analysisPeriod,
-                    initialAnalysisTransactionType: _viewModel.selectedAnalysisTransactionType,
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _viewModel.analysisPeriod != 0
-                          ? t.wallet_home_screen.analysis_period(
-                            days: _viewModel.analysisPeriod.toString(),
-                            transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
-                          )
-                          : t.wallet_home_screen.analysis_period_cutsom(
-                            transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
-                          ),
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                    ),
-                    CoconutLayout.spacing_100w,
-                    SvgPicture.asset(
-                      'assets/svg/caret-down.svg',
-                      colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
-                    ),
-                  ],
-                ),
-              ),
+    return Selector<WalletHomeViewModel, bool>(
+      selector: (_, viewModel) => viewModel.isEditWidgetMode,
+      builder: (context, isEditMode, child) {
+        return LongPressedMenuWidget(
+          isEditMode: isEditMode,
+          onRemove: () {
+            _hideHomeFeature(HomeFeatureType.analysis, keepEditMode: true);
+          },
+          menuItems: [
+            LongPressedMenuItem(
+              title: t.long_pressed_menu.go_to_home_screen_settings,
+              iconPath: 'assets/svg/settings.svg',
+              onSelected: _navigateToWalletHomeEdit,
             ),
-            if (_viewModel.recentTransactionAnalysis?.isEmpty == true ||
-                _viewModel.recentTransactionAnalysis == null) ...[
-              // 분석에 필요한 거래가 없을 때
-              Container(
-                padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
-                decoration: const BoxDecoration(
-                  color: CoconutColors.gray800,
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                ),
-                child: Center(
-                  child: Text(
-                    t.wallet_home_screen.empty_analysis_result,
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+            LongPressedMenuItem(
+              title: t.long_pressed_menu.edit_home_widget,
+              iconPath: 'assets/svg/widget.svg',
+              onSelected: () {
+                _viewModel.setEditWidgetMode(true);
+              },
+            ),
+          ],
+          child: Container(
+            margin: const EdgeInsets.only(top: 0, left: 20, right: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_viewModel.isEditWidgetMode) ...[
+                  Container(
+                    decoration: BoxDecoration(border: Border.all(color: Colors.transparent)),
+                    child: _buildAnalysisFilterButton(),
                   ),
-                ),
-              ),
-            ] else if (_viewModel.recentTransactionAnalysis?.isEmpty == false) ...[
-              Selector<PreferenceProvider, bool>(
-                selector: (_, viewModel) => viewModel.isBtcUnit,
-                builder: (context, isBtcUnit, child) {
-                  return Container(
-                    width: MediaQuery.sizeOf(context).width,
-                    padding: const EdgeInsets.only(top: 24, left: 16, right: 20, bottom: 20),
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                ] else ...[
+                  ShrinkAnimationButton(
+                    defaultColor: CoconutColors.black,
+                    onPressed: () {
+                      CommonBottomSheets.showCustomHeightBottomSheet(
+                        context: context,
+                        heightRatio: 0.55,
+                        child: AnalysisPeriodBottomSheet(
+                          onSelected: (days) {
+                            _viewModel.setAnalysisPeriod(days);
+                          },
+                          onTransactionTypeSelected: (analysisTransactionType) {
+                            _viewModel.setAnalysisTransactionType(analysisTransactionType);
+                          },
+                          initialPeriodPreset: _viewModel.analysisPeriod,
+                          initialAnalysisTransactionType: _viewModel.selectedAnalysisTransactionType,
+                        ),
+                      );
+                    },
+                    child: _buildAnalysisFilterButton(),
+                  ),
+                ],
+                if (_viewModel.recentTransactionAnalysis?.isEmpty == true ||
+                    _viewModel.recentTransactionAnalysis == null) ...[
+                  // 분석에 필요한 거래가 없을 때
+                  Container(
+                    padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
+                    decoration: const BoxDecoration(
+                      color: CoconutColors.gray800,
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        t.wallet_home_screen.empty_analysis_result,
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                      ),
+                    ),
+                  ),
+                ] else if (_viewModel.recentTransactionAnalysis?.isEmpty == false) ...[
+                  Selector<PreferenceProvider, bool>(
+                    selector: (_, viewModel) => viewModel.isBtcUnit,
+                    builder: (context, isBtcUnit, child) {
+                      return Container(
+                        width: MediaQuery.sizeOf(context).width,
+                        padding: const EdgeInsets.only(top: 24, left: 16, right: 20, bottom: 20),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: CoconutColors.gray800,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      _viewModel.recentTransactionAnalysis!.titleString,
-                                      style: CoconutTypography.body2_14_NumberBold,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          _viewModel.recentTransactionAnalysis!.titleString,
+                                          style: CoconutTypography.body2_14_NumberBold,
+                                        ),
+                                        Text(
+                                          _viewModel.recentTransactionAnalysis!.totalAmountResult,
+                                          style: CoconutTypography.body2_14,
+                                        ),
+                                      ],
                                     ),
-                                    Text(
-                                      _viewModel.recentTransactionAnalysis!.totalAmountResult,
-                                      style: CoconutTypography.body2_14,
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
+                            CoconutLayout.spacing_300h,
+                            Text(
+                              _viewModel.recentTransactionAnalysis!.subtitleString,
+                              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                            ),
+                            if (_viewModel.recentTransactionAnalysis!.receivedTxs.isNotEmpty &&
+                                _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlySent) ...[
+                              _buildAnalysisTransactionRow(
+                                'assets/svg/tx-received.svg',
+                                _viewModel.recentTransactionAnalysis!.receivedTxs.length,
+                                _viewModel.recentTransactionAnalysis!.receivedAmount,
+                                TransactionType.received,
+                                isBtcUnit,
+                              ),
+                            ],
+                            if (_viewModel.recentTransactionAnalysis!.sentTxs.isNotEmpty &&
+                                _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlyReceived) ...[
+                              _buildAnalysisTransactionRow(
+                                'assets/svg/tx-sent.svg',
+                                _viewModel.recentTransactionAnalysis!.sentTxs.length,
+                                _viewModel.recentTransactionAnalysis!.sentAmount,
+                                TransactionType.sent,
+                                isBtcUnit,
+                              ),
+                            ],
+                            if (_viewModel.recentTransactionAnalysis!.selfTxs.isNotEmpty &&
+                                _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlyReceived) ...[
+                              _buildAnalysisTransactionRow(
+                                'assets/svg/tx-self.svg',
+                                _viewModel.recentTransactionAnalysis!.selfTxs.length,
+                                _viewModel.recentTransactionAnalysis!.selfAmount,
+                                TransactionType.self,
+                                isBtcUnit,
+                              ),
+                            ],
                           ],
                         ),
-                        CoconutLayout.spacing_300h,
-                        Text(
-                          _viewModel.recentTransactionAnalysis!.subtitleString,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                        ),
-                        if (_viewModel.recentTransactionAnalysis!.receivedTxs.isNotEmpty &&
-                            _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlySent) ...[
-                          _buildAnalysisTransactionRow(
-                            'assets/svg/tx-received.svg',
-                            _viewModel.recentTransactionAnalysis!.receivedTxs.length,
-                            _viewModel.recentTransactionAnalysis!.receivedAmount,
-                            TransactionType.received,
-                            isBtcUnit,
-                          ),
-                        ],
-                        if (_viewModel.recentTransactionAnalysis!.sentTxs.isNotEmpty &&
-                            _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlyReceived) ...[
-                          _buildAnalysisTransactionRow(
-                            'assets/svg/tx-sent.svg',
-                            _viewModel.recentTransactionAnalysis!.sentTxs.length,
-                            _viewModel.recentTransactionAnalysis!.sentAmount,
-                            TransactionType.sent,
-                            isBtcUnit,
-                          ),
-                        ],
-                        if (_viewModel.recentTransactionAnalysis!.selfTxs.isNotEmpty &&
-                            _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlyReceived) ...[
-                          _buildAnalysisTransactionRow(
-                            'assets/svg/tx-self.svg',
-                            _viewModel.recentTransactionAnalysis!.selfTxs.length,
-                            _viewModel.recentTransactionAnalysis!.selfAmount,
-                            TransactionType.self,
-                            isBtcUnit,
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          ],
-        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAnalysisFilterButton() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            _viewModel.analysisPeriod != 0
+                ? t.wallet_home_screen.analysis_period(
+                  days: _viewModel.analysisPeriod.toString(),
+                  transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
+                )
+                : t.wallet_home_screen.analysis_period_cutsom(
+                  transaction_type: _viewModel.selectedAnalysisTransactionTypeName,
+                ),
+            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+          ),
+          CoconutLayout.spacing_150w,
+          Padding(
+            padding: const EdgeInsets.only(top: 2.0),
+            child: SvgPicture.asset(
+              'assets/svg/caret-down.svg',
+              colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+            ),
+          ),
+        ],
       ),
     );
   }
