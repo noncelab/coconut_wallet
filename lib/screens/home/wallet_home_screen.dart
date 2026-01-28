@@ -1046,7 +1046,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             setState(() {
                               _recentTransactionCurrentPage = index;
                             });
-                            // 인디케이터 자동 스크롤
                             _scrollToIndicator(index);
                           },
                         ),
@@ -1162,9 +1161,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   Text(
                     (() {
                       final now = DateTime.now();
-                      final today = DateTime(now.year, now.month, now.day);
-                      final txDay = DateTime(txDate.year, txDate.month, txDate.day);
-                      final diffDays = today.difference(txDay).inDays;
+                      final diff = now.difference(txDate);
+                      final diffHours = diff.inHours;
+                      final diffDays = diff.inDays;
+
+                      if (diffHours < 24) {
+                        return t.relative_time.hours_ago(n: diffHours);
+                      }
                       return t.relative_time.days_ago(n: diffDays);
                     })(),
                     style: CoconutTypography.body3_12,
@@ -1276,7 +1279,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     final confirmed =
         flatTxs.where((t) => confirmedStatuses.contains(TransactionUtil.getStatus(t.item2))).toList()
           ..sort((a, b) => b.item2.timestamp.compareTo(a.item2.timestamp));
-
     return [...pending, ...confirmed];
   }
 

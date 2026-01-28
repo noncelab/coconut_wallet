@@ -106,6 +106,10 @@ relative_time:
     zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
     one: "1 day ago"   # 1일
     other: "${n} days ago"  # 2일 이상
+  hours_ago(cardinal):
+    zero: "Just now"
+    one: "1 hour ago"
+    other: "${n} hours ago"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
