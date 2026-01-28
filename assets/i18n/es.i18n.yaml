@@ -216,12 +216,12 @@ wallet_add_scanner_screen:
     step6_em: " Entiendo"
     step6_end: " > Exportar Xpub"
   guide_keystone:
-    step0: "Los dispositivos que no sean el Keystone 3 Pro no son compatibles."
+    step0: "Los dispositivos que no sean el Keystone 3 Pro no son compatibles. (Se recomienda firmware solo para Bitcoin)"
     step1: "1. En la pantalla principal, "
     step1_em: " More(•••)"
     step2: "2. "
     step2_em: " Connect Software Wallet"
-    step3: "3. Seleccionar cualquier billetera"
+    step3: "3. Selecciona una de las billeteras BlueWallet, Sparrow o Zeus"
   guide_jade:
     step0_preposition: "En un " 
     step0_em: "Estado "
