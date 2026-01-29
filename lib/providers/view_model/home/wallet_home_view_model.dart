@@ -217,7 +217,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void _handleNodeSyncState(NodeSyncState syncState) {
-    updateWalletBalances();
     Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
       if (syncState == NodeSyncState.completed) {
