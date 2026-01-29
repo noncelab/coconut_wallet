@@ -4,7 +4,8 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -22,6 +23,8 @@ import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
@@ -57,6 +60,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
@@ -97,6 +101,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => FeatureSettingsProvider()),
 
         Provider.value(value: _realmManager),
 
@@ -118,9 +123,21 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
 
-        ChangeNotifierProvider(create: (_) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(
+          create:
+              (context) => PreferenceProvider(
+                context.read<WalletPreferencesRepository>(),
+                featureSettingsProvider: context.read<FeatureSettingsProvider>(),
+              ),
+        ),
 
-        ChangeNotifierProvider(create: (context) => PreferenceProvider(context.read<WalletPreferencesRepository>())),
+        ChangeNotifierProvider(
+          create:
+              (context) => PreferenceProvider(
+                context.read<WalletPreferencesRepository>(),
+                featureSettingsProvider: context.read<FeatureSettingsProvider>(),
+              ),
+        ),
 
         ChangeNotifierProvider<PriceProvider>(
           create: (context) => PriceProvider(context.read<ConnectivityProvider>(), context.read<PreferenceProvider>()),
@@ -347,6 +364,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
+                    ),
+                '/wallet-home-edit':
+                    (context) => buildLoadingScreenWithArgs(
+                      context,
+                      (args) => WalletHomeEditScreen(scrollController: args['scrollController']),
                     ),
               },
             );

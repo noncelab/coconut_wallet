@@ -1,5 +1,5 @@
 import 'package:coconut_wallet/providers/auth_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:flutter/material.dart';
 
 class SettingsViewModel extends ChangeNotifier {

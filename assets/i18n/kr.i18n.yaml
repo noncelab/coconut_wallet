@@ -49,6 +49,8 @@ glossary: "용어집"
 tool: "도구"
 tutorial: "튜토리얼"
 settings: "설정"
+app_settings: "앱 설정"
+home_screen_settings: "홈 화면 설정"
 tx_list: "거래 내역"
 utxo_list: "UTXO 목록"
 wallet_id: "지갑 ID"
@@ -98,6 +100,16 @@ electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
+
+relative_time:
+  days_ago(cardinal):
+    zero: "오늘"        # 0일이면 Today로 처리(원하면 생략 가능)
+    one: "1일 전"   # 1일
+    other: "${n}일 전"  # 2일 이상
+  hours_ago(cardinal):
+    zero: "방금 전"
+    one: "1시간 전"
+    other: "${n}시간 전"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sat/vB)"
@@ -187,6 +199,52 @@ pin_check_screen:
   text: "비밀번호를 눌러주세요"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "내 지갑 전체보기"
+  edit_home_screen: "홈 화면 편집하기"
+  edit:
+    title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
+    hide_balance: "잔액 숨기기"
+    hide_balance_on_home: "홈 화면에 잔액을 표시하지 않아요."
+    fake_balance:
+      fake_balance_setting: "가짜 잔액 설정"
+      fake_balance_display: "가짜 잔액 표시"
+      fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
+      fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
+      fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
+    hide_fiat_price: "법정 화폐 잔액 숨기기"
+    hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요."
+    category:
+      total_balance: "잔액 합계"
+      wallet_list: "지갑 목록"
+      recent_transactions: "24시간 내\n거래"
+      analysis: "분석"
+    alert: 
+      empty_fake_balance: "가짜 잔액 입력"
+      empty_fake_balance_description: "금액이 설정되지 않았어요.\n다시 입력하시거나 0 BTC로 설정할까요?"
+      set_to_0: "0 BTC로 설정"
+      enter_again: "다시 입력"
+  empty_recent_transaction: "최근에 거래한 내역이 없어요"
+  syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
+  empty_analysis_result: "분석에 필요한 거래가 없어요"
+  analysis_period: "최근 ${days}일 • ${transaction_type}"
+  analysis_period_cutsom: "직접 설정 • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "조회 기간"
+    days_15: "15일"
+    days_30: "30일"
+    days_60: "60일"
+    days_90: "90일"
+    custom: "직접 설정"
+    transaction_type: "거래 유형"
+
+  transaction_count: "트랜잭션 $count회"
+  count: "$count회"
+  increase: "증가했어요"
+  decrease: "감소했어요"
+  sent: "보냈어요"
+  received: "받았어요"
+
 wallet_add_scanner_screen:
   add_wallet: "지갑 추가"
   add_watch_only_wallet: "보기 전용 지갑 추가"
@@ -284,7 +342,6 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
-  view_all_wallets: "내 지갑 전체보기"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   home_balance: "홈 화면 총액"
@@ -458,13 +515,6 @@ settings_screen:
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"
   change_password: "비밀번호 바꾸기"
-  hide_balance: "홈 화면 잔액 숨기기"
-  fake_balance:
-    fake_balance_setting: "가짜 잔액 설정"
-    fake_balance_display: "가짜 잔액 표시"
-    fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
-    fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
-    fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
   language: "언어"
   locales:
     korean: "한국어"
@@ -844,7 +894,14 @@ trade_exchange:
   binance: "바이낸스"
 
 fiat:
-  fiat: "법정화폐"
+  fiat: "법정 화폐"
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
   jpy_price: "비트플라이어 기준"
+
+long_pressed_menu:
+  hide: "숨기기"
+  edit_home_widget: "홈 위젯 편집"
+  go_to_home_screen_settings: "홈 화면 설정으로 이동"
+  hide_home_widget_title: "홈 화면에서 '${widgetName}' 위젯을 숨기시겠어요?"
+  hide_home_widget_description: "나중에 우측 상단 메뉴 버튼 > '홈 화면 설정' 메뉴에서 다시 표시할 수 있어요."

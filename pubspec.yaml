@@ -35,7 +35,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_localizations:
+    sdk: flutter
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
@@ -49,7 +50,7 @@ dependencies:
   flutter_svg: ^2.0.10+1
   fluttertoast: ^8.2.12
   loader_overlay: ^4.0.0
-  carousel_slider: ^4.2.1
+  carousel_slider: ^5.1.1
   modal_bottom_sheet: ^3.0.0
   connectivity_plus: ^6.1.3
   url_launcher: ^6.2.6
@@ -270,6 +271,10 @@ flutter:
     - assets/svg/plus.svg
     - assets/svg/broom.svg
     - assets/svg/receipt.svg
+    - assets/svg/piggy-bank.svg
+    - assets/svg/wallet.svg
+    - assets/svg/transaction.svg
+    - assets/svg/analysis.svg
     - assets/svg/clip.svg
     - assets/svg/edit-outlined.svg
     - assets/svg/fee-rate/low.svg
@@ -277,6 +282,7 @@ flutter:
     - assets/svg/fee-rate/high.svg
     - testnet.env
     - assets/svg/puzzle-piece.svg
+    - assets/svg/widget.svg
 
   fonts:
     - family: SpaceGrotesk
