@@ -293,7 +293,39 @@ void main() {
 
   group('예외 상황', () {
     test('newFeeRate가 pendingTx.feeRate보다 작으면 FeeRateTooLowException 발생', () async {
-      // TODO:
+      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
+      final List<TransactionAddress> outputAddressList = [
+        TransactionAddress(externalWalletAddressList[0], 50000),
+        TransactionAddress(changeAddressList[0], 49000),
+      ];
+
+      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
+        inputAddressList: inputAddressList,
+        outputAddressList: outputAddressList,
+        amount: 50000,
+        fee: 1000,
+        vSize: 100,
+      );
+
+      final rbfBuilder = RbfBuilder(
+        pendingTx: pendingTx,
+        walletListItemBase: singleWallet,
+        vSizeIncreasePerInput: 56,
+        isMyAddress: isMyAddress,
+        inputUtxos: [singleWalletInputUtxos[0]],
+        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+        getDerivationPath: getDerivationPath,
+        dustLimit: dustLimit,
+      );
+
+      expect(
+        () => rbfBuilder.buildRbfTransaction(
+          newFeeRate: 5.0,
+          additionalSpendable: [],
+          getChangeAddress: () => changeAddressList[1],
+        ),
+        throwsA(isA<FeeRateTooLowException>()),
+      );
     });
   });
 }
