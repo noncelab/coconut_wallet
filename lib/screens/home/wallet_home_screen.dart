@@ -1043,13 +1043,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   child: Selector2<
                     PreferenceProvider,
                     WalletHomeViewModel,
-                    Tuple3<bool, Map<int, List<TransactionRecord>>, bool>
+                    Tuple4<bool, Map<int, List<TransactionRecord>>, bool, int?>
                   >(
                     selector:
-                        (_, prefProvider, homeViewModel) => Tuple3(
+                        (_, prefProvider, homeViewModel) => Tuple4(
                           prefProvider.isBtcUnit,
                           homeViewModel.recentTransactions,
                           homeViewModel.showRecentFeatureInitialLoading,
+                          homeViewModel.currentBlockHeight,
                         ),
                     builder: (context, data, child) {
                       final isBtcUnit = data.item1;
