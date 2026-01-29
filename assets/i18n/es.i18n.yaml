@@ -514,12 +514,6 @@ settings_screen:
   use_biometric: "Usar autenticación biométrica"
   change_password: "Cambiar contraseña"
   hide_balance: "Ocultar saldo"
-  fake_balance:
-    fake_balance_setting: "Establecer saldo falso"
-    fake_balance_display: "Mostrar saldo falso"
-    fake_balance_input_placeholder: "Por favor, establezca el total del saldo falso (en unidades BTC)"
-    fake_balance_input_description: "Si tiene múltiples billeteras, el saldo de cada billetera se calculará automáticamente." 
-    fake_balance_input_exceeds_error: "Puedes establecer hasta 21 millones de BTC"
   language: "Idioma"
   locales:
     korean: "한국어"
