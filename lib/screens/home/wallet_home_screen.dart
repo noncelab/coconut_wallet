@@ -68,6 +68,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   Timer? _recentTransactionBannerTimer;
   late ScrollController _scrollController;
   late CarouselSliderController _carouselController;
+  Offset? _lastPointerDownPosition;
+  bool _didDragSincePointerDown = false;
 
   DateTime? _lastPressedAt;
   ResultOfSyncFromVault? _resultOfSyncFromVault;
@@ -203,8 +205,20 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 bottom: false,
                 child: Listener(
                   behavior: HitTestBehavior.translucent,
-                  onPointerDown: (_) {
-                    if (_viewModel.isEditWidgetMode) {
+                  onPointerDown: (event) {
+                    _lastPointerDownPosition = event.position;
+                    _didDragSincePointerDown = false;
+                  },
+                  onPointerMove: (event) {
+                    if (_lastPointerDownPosition != null && !_didDragSincePointerDown) {
+                      final delta = (event.position - _lastPointerDownPosition!).distance;
+                      if (delta > 5.0) {
+                        _didDragSincePointerDown = true;
+                      }
+                    }
+                  },
+                  onPointerUp: (_) {
+                    if (!_didDragSincePointerDown && _viewModel.isEditWidgetMode) {
                       _viewModel.setEditWidgetMode(false);
                     }
                   },
