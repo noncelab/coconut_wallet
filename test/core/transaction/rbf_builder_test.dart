@@ -1,10 +1,8 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
-import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
+import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/rbf_builder.dart';
-import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -110,31 +108,136 @@ void main() {
       expect(rbfBuilder.nonChangeOutputsSum, 1000);
       expect(rbfBuilder.recipientMap.length, 1);
       expect(rbfBuilder.recipientMap[externalWalletAddressList[0]], 1000);
+      expect(rbfBuilder.externalOutputs, isNotNull);
+      expect(rbfBuilder.externalOutputs!.length, 1);
+      expect(rbfBuilder.externalOutputs![0].address, externalWalletAddressList[0]);
+      expect(rbfBuilder.externalOutputs![0].amount, 1000);
+      expect(rbfBuilder.selfOutputs, isNull);
       expect(rbfBuilder.changeOutput, isNotNull);
       expect(rbfBuilder.changeOutput!.address, changeAddressList[0]);
       expect(rbfBuilder.changeOutput!.amount, 99000);
       expect(rbfBuilder.changeOutputDerivationPath, isNotNull);
       expect(rbfBuilder.changeOutputDerivationPath, "m/84'/1'/0'/1/0");
-      expect(rbfBuilder.selfOutputs, isNull);
-      expect(rbfBuilder.selfOutputs, isNull);
-      expect(rbfBuilder.externalOutputs, isNotNull);
-      expect(rbfBuilder.externalOutputs!.length, 1);
-      expect(rbfBuilder.externalOutputs![0].address, externalWalletAddressList[0]);
-      expect(rbfBuilder.externalOutputs![0].amount, 1000);
       expect(rbfBuilder.sendAmount, 1000);
       expect(rbfBuilder.inputSum, 100000);
     });
 
-    test('External 1 / 그 중 1개가 selfOutputs / 모든 getter들 정합성 확인', () {
-      // TODO:
+    test('selfOutputs 1 / 모든 getter들 정합성 확인', () {
+      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
+      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
+      final List<TransactionAddress> outputAddressList = [
+        TransactionAddress(receiveAddressList[1], 5000),
+        TransactionAddress(changeAddressList[0], 95000),
+      ];
+      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
+        inputAddressList: inputAddressList,
+        outputAddressList: outputAddressList,
+        amount: 5000,
+      );
+
+      final rbfBuilder = RbfBuilder(
+        pendingTx: pendingTx,
+        walletListItemBase: singleWallet,
+        vSizeIncreasePerInput: 56,
+        isMyAddress: isMyAddress,
+        inputUtxos: inputUtxos,
+        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+        getDerivationPath: getDerivationPath,
+        dustLimit: dustLimit,
+      );
+
+      expect(rbfBuilder.nonChangeOutputs.length, 1);
+      expect(rbfBuilder.nonChangeOutputsSum, 5000);
+      expect(rbfBuilder.recipientMap.length, 1);
+      expect(rbfBuilder.recipientMap[receiveAddressList[1]], 5000);
+      expect(rbfBuilder.externalOutputs, isNull);
+      expect(rbfBuilder.selfOutputs, isNotNull);
+      expect(rbfBuilder.selfOutputs!.length, 1);
+      expect(rbfBuilder.selfOutputs![0].address, receiveAddressList[1]);
+      expect(rbfBuilder.selfOutputs![0].amount, 5000);
+      expect(rbfBuilder.changeOutput, isNotNull);
+      expect(rbfBuilder.changeOutput!.address, changeAddressList[0]);
+      expect(rbfBuilder.changeOutput!.amount, 95000);
+      expect(rbfBuilder.sendAmount, 5000);
+      expect(rbfBuilder.inputSum, 100000);
     });
 
-    test('External 3 / 그 중 2개가 selfOutputs / 모든 getter들 정합성 확인', () {
-      // TODO:
-    });
+    test('External 1 / selfOutputs 2 / 모든 getter들 정합성 확인', () {
+      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 200000)];
+      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[1]];
+      final List<TransactionAddress> outputAddressList = [
+        TransactionAddress(externalWalletAddressList[0], 1000),
+        TransactionAddress(receiveAddressList[1], 2000),
+        TransactionAddress(receiveAddressList[2], 3000),
+        TransactionAddress(changeAddressList[0], 194000),
+      ];
+      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
+        inputAddressList: inputAddressList,
+        outputAddressList: outputAddressList,
+        amount: 6000,
+      );
 
+      final rbfBuilder = RbfBuilder(
+        pendingTx: pendingTx,
+        walletListItemBase: singleWallet,
+        vSizeIncreasePerInput: 56,
+        isMyAddress: isMyAddress,
+        inputUtxos: inputUtxos,
+        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+        getDerivationPath: getDerivationPath,
+        dustLimit: dustLimit,
+      );
+
+      expect(rbfBuilder.nonChangeOutputs.length, 3);
+      expect(rbfBuilder.nonChangeOutputsSum, 6000);
+      expect(rbfBuilder.recipientMap.length, 3);
+      expect(rbfBuilder.recipientMap[externalWalletAddressList[0]], 1000);
+      expect(rbfBuilder.recipientMap[receiveAddressList[1]], 2000);
+      expect(rbfBuilder.recipientMap[receiveAddressList[2]], 3000);
+      expect(rbfBuilder.externalOutputs, isNotNull);
+      expect(rbfBuilder.externalOutputs!.length, 1);
+      expect(rbfBuilder.externalOutputs![0].address, externalWalletAddressList[0]);
+      expect(rbfBuilder.externalOutputs![0].amount, 1000);
+      expect(rbfBuilder.selfOutputs, isNotNull);
+      expect(rbfBuilder.selfOutputs!.length, 2);
+      expect(rbfBuilder.selfOutputs!.any((e) => e.address == receiveAddressList[1]), isTrue);
+      expect(rbfBuilder.selfOutputs!.any((e) => e.address == receiveAddressList[2]), isTrue);
+      expect(rbfBuilder.selfOutputs![0].amount + rbfBuilder.selfOutputs![1].amount, 5000);
+      expect(rbfBuilder.changeOutput, isNotNull);
+      expect(rbfBuilder.changeOutput!.address, changeAddressList[0]);
+      expect(rbfBuilder.changeOutput!.amount, 194000);
+      expect(rbfBuilder.sendAmount, 6000);
+      expect(rbfBuilder.inputSum, 200000);
+    });
     test('Invalid getDerivationPath 함수 전달 시 InvalidChangeOutputException 발생', () {
-      // TODO:
+      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
+      final List<TransactionAddress> outputAddressList = [
+        TransactionAddress(externalWalletAddressList[0], 1000),
+        TransactionAddress(changeAddressList[0], 99000),
+      ];
+      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
+        inputAddressList: inputAddressList,
+        outputAddressList: outputAddressList,
+        amount: 1000,
+      );
+
+      String invalidDerivationPath(int walletId, String address) {
+        return '';
+      }
+
+      expect(
+        () => RbfBuilder(
+          pendingTx: pendingTx,
+          walletListItemBase: singleWallet,
+          vSizeIncreasePerInput: 56,
+          isMyAddress: isMyAddress,
+          inputUtxos: [singleWalletInputUtxos[0]],
+          nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+          getDerivationPath: invalidDerivationPath,
+          dustLimit: dustLimit,
+        ),
+        throwsA(isA<InvalidChangeOutputException>()),
+      );
     });
   });
 
