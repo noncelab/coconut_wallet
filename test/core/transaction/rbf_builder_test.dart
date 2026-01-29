@@ -221,20 +221,24 @@ void main() {
         amount: 1000,
       );
 
-      String invalidDerivationPath(int walletId, String address) {
-        return '';
-      }
+      final rbfBuilder = RbfBuilder(
+        pendingTx: pendingTx,
+        walletListItemBase: singleWallet,
+        vSizeIncreasePerInput: 56,
+        isMyAddress: isMyAddress,
+        inputUtxos: [],
+        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+        getDerivationPath: (int walletId, String address) {
+          return '';
+        },
+        dustLimit: dustLimit,
+      );
 
       expect(
-        () => RbfBuilder(
-          pendingTx: pendingTx,
-          walletListItemBase: singleWallet,
-          vSizeIncreasePerInput: 56,
-          isMyAddress: isMyAddress,
-          inputUtxos: [singleWalletInputUtxos[0]],
-          nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
-          getDerivationPath: invalidDerivationPath,
-          dustLimit: dustLimit,
+        () => rbfBuilder.buildRbfTransaction(
+          newFeeRate: 2.0,
+          additionalSpendable: [],
+          getChangeAddress: () => 'some_address',
         ),
         throwsA(isA<InvalidChangeOutputException>()),
       );
@@ -287,7 +291,7 @@ void main() {
     test('External 2 / InputSum enough', () async {});
   });
 
-  group('예외 상황', () async {
+  group('예외 상황', () {
     test('newFeeRate가 pendingTx.feeRate보다 작으면 FeeRateTooLowException 발생', () async {
       // TODO:
     });
