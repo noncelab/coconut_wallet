@@ -9,8 +9,8 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../../mock/transaction_record_mock.dart';
-import '../../mock/wallet_mock.dart';
+import '../../../mock/transaction_record_mock.dart';
+import '../../../mock/wallet_mock.dart';
 
 void main() {
   SinglesigWalletListItem singleWallet = WalletMock.createSingleSigWalletItem();
@@ -287,9 +287,9 @@ void main() {
       expect(changeAmount, equals(98718)); // 98859 - 141
     });
 
-    test('External 2 / InputSum enough', () async {});
-
-    test('External 2 / InputSum enough', () async {});
+    test('External 3 / InputSum enough', () async {
+      // TODO: 구현
+    });
   });
 
   group('예외 상황', () {
