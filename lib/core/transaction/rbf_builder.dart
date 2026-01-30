@@ -138,12 +138,10 @@ class RbfBuilder {
 
   /// - [newFeeRate]: 새로 적용할 fee rate (sats/vB)
   /// - [additionalSpendable]: 추가로 사용할 수 있는 UTXO 풀
-  /// - [getChangeAddress]: UTXO 추가로 change를 새로 만들어야 할 때 사용할 주소 제공 콜백
   /// - [getDerivationPath]: 특정 주소의 derivation path를 반환하는 콜백
   Future<RbfBuildResult> buildRbfTransaction({
     required double newFeeRate,
     required List<UtxoState> additionalSpendable,
-    required String Function() getChangeAddress,
   }) async {
     if (newFeeRate <= pendingTx.feeRate) {
       throw const FeeRateTooLowException();

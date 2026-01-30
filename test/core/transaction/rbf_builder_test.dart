@@ -235,7 +235,7 @@ void main() {
       );
 
       expect(
-        () => rbfBuilder.buildRbfTransaction(newFeeRate: 2.0, additionalSpendable: [], getChangeAddress: () => ''),
+        () => rbfBuilder.buildRbfTransaction(newFeeRate: 2.0, additionalSpendable: []),
         throwsA(isA<InvalidChangeOutputException>()),
       );
     });
@@ -266,11 +266,7 @@ void main() {
         dustLimit: dustLimit,
       );
 
-      final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(
-        newFeeRate: 2.0,
-        additionalSpendable: [],
-        getChangeAddress: () => changeAddressList[1],
-      );
+      final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(newFeeRate: 2.0, additionalSpendable: []);
 
       final tx = result.transaction!;
       final int totalInput = tx.totalInputAmount;
@@ -323,11 +319,7 @@ void main() {
       );
 
       expect(
-        () => rbfBuilder.buildRbfTransaction(
-          newFeeRate: 5.0,
-          additionalSpendable: [],
-          getChangeAddress: () => changeAddressList[1],
-        ),
+        () => rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []),
         throwsA(isA<FeeRateTooLowException>()),
       );
     });
