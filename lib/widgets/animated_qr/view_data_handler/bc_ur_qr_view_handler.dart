@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
+import 'package:coconut_wallet/providers/view_model/send/unsigned_transaction_view_model.dart';
 import 'package:coconut_wallet/utils/print_util.dart';
 import 'package:ur/ur.dart';
 import 'package:ur/ur_encoder.dart';
