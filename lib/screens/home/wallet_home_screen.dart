@@ -1038,6 +1038,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           child: Column(
             children: [
               Container(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                width: MediaQuery.sizeOf(context).width,
+                child: Text(
+                  t.wallet_home_screen.last_24_hours_transactions,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                ),
+              ),
+              CoconutLayout.spacing_200h,
+              Container(
                 decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.black),
                 child: Center(
                   child: Selector2<
@@ -1290,34 +1299,28 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       });
     }
 
-    final shouldShow = isSyncing || _showEmptyRecentTransactionWidget;
-
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      alignment: Alignment.topCenter,
-      child:
-          shouldShow
-              ? Container(
-                padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
-                decoration: const BoxDecoration(
-                  color: CoconutColors.gray800,
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
+    return Container(
+      padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
+      decoration: const BoxDecoration(
+        color: CoconutColors.gray800,
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+      ),
+      child: Center(
+        child:
+            isSyncing
+                ? AnimatedDotsText(
+                  text: t.wallet_home_screen.syncing_recent_transaction,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                )
+                : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset('assets/svg/search-not-found.svg', width: 16, height: 16),
+                    CoconutLayout.spacing_200w,
+                    Text(t.tx_not_found, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                  ],
                 ),
-                child: Center(
-                  child:
-                      isSyncing
-                          ? AnimatedDotsText(
-                            text: t.wallet_home_screen.syncing_recent_transaction,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                          )
-                          : Text(
-                            t.wallet_home_screen.empty_recent_transaction,
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                          ),
-                ),
-              )
-              : const SizedBox.shrink(),
+      ),
     );
   }
 
@@ -1341,6 +1344,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   Widget _buildAnalysis() {
+    String stayHumbleStackSats = "Stay humble, stack sats!";
     return Selector<WalletHomeViewModel, bool>(
       selector: (_, viewModel) => viewModel.isEditWidgetMode,
       builder: (context, isEditMode, child) {
@@ -1399,16 +1403,23 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     _viewModel.recentTransactionAnalysis == null) ...[
                   // 분석에 필요한 거래가 없을 때
                   Container(
-                    padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
-                    decoration: const BoxDecoration(
-                      color: CoconutColors.gray800,
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    child: Center(
-                      child: Text(
-                        t.wallet_home_screen.empty_analysis_result,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                      ),
+                    width: MediaQuery.sizeOf(context).width,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t.wallet_home_screen.no_change_in_amount, style: CoconutTypography.body2_14),
+                        CoconutLayout.spacing_1500h,
+                        Center(
+                          child: Text(
+                            stayHumbleStackSats,
+                            style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.gray600),
+                          ),
+                        ),
+
+                        CoconutLayout.spacing_2200h,
+                      ],
                     ),
                   ),
                 ] else if (_viewModel.recentTransactionAnalysis?.isEmpty == false) ...[

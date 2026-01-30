@@ -733,11 +733,11 @@ class RecentTransactionAnalysis {
               ? receivedAmount
               : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
               ? (sentAmount + selfAmount).abs()
-              : totalAmount, withUnit: true) : BitcoinUnit.sats.displayBitcoinAmount(selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
+              : totalAmount.abs(), withUnit: true) : BitcoinUnit.sats.displayBitcoinAmount(selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
               ? receivedAmount
               : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
               ? sentAmount + selfAmount
-              : totalAmount, withUnit: true)} ';
+              : totalAmount.abs(), withUnit: true)} ';
   String get totalAmountResult => totalTransactionResult;
   String get subtitleString =>
       '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived

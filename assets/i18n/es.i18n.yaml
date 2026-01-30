@@ -221,9 +221,9 @@ wallet_home_screen:
       empty_fake_balance_description: "No se ha establecido un monto.\n¿Quieres reingresarlo o establecerlo en 0 BTC?"
       set_to_0: "Establecer en 0 BTC"
       enter_again: "Ingresar de nuevo"
-  empty_recent_transaction: "No hay transacciones recientes"
+  last_24_hours_transactions: "Transacciones de las últimas 24 h"
   syncing_recent_transaction: "Cargando transacciones recientes"
-  empty_analysis_result: "No hay transacciones suficientes para el análisis"
+  no_change_in_amount: "No hay cambio en la cantidad!"
   analysis_period: "Últimos ${days} días • ${transaction_type}"
   analysis_period_cutsom: "Personalizado • ${transaction_type}"
   analysis_period_bottom_sheet:

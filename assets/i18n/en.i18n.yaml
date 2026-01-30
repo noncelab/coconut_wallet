@@ -224,9 +224,9 @@ wallet_home_screen:
           empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
           set_to_0: "Set balance to 0 BTC" 
           enter_again: "Try again"
-  empty_recent_transaction: "Empty recent transactions"
+  last_24_hours_transactions: "Last 24 hours transactions"
   syncing_recent_transaction: "Syncing recent transactions"
-  empty_analysis_result: "No transactions needed for analysis"
+  no_change_in_amount: "No change in amount!"
   analysis_period: "Recent ${days} days • ${transaction_type}"
   analysis_period_custom: "Custom • ${transaction_type}"
   analysis_period_bottom_sheet:

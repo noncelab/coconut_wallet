@@ -224,9 +224,9 @@ wallet_home_screen:
       empty_fake_balance_description: "금액이 설정되지 않았어요.\n다시 입력하시거나 0 BTC로 설정할까요?"
       set_to_0: "0 BTC로 설정"
       enter_again: "다시 입력"
-  empty_recent_transaction: "최근에 거래한 내역이 없어요"
+  last_24_hours_transactions: "지난 24시간 거래"
   syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
-  empty_analysis_result: "분석에 필요한 거래가 없어요"
+  no_change_in_amount: "수량 변화가 없어요!"
   analysis_period: "최근 ${days}일 • ${transaction_type}"
   analysis_period_cutsom: "직접 설정 • ${transaction_type}"
   analysis_period_bottom_sheet:
