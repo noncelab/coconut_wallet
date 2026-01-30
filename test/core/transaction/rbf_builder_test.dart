@@ -85,7 +85,7 @@ void main() {
       final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
       final List<TransactionAddress> outputAddressList = [
         TransactionAddress(externalWalletAddressList[0], 1000),
-        TransactionAddress(changeAddressList[0], 99000),
+        TransactionAddress(changeAddressList[0], 98859),
       ];
       final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
         inputAddressList: inputAddressList,
@@ -115,7 +115,7 @@ void main() {
       expect(rbfBuilder.selfOutputs, isNull);
       expect(rbfBuilder.changeOutput, isNotNull);
       expect(rbfBuilder.changeOutput!.address, changeAddressList[0]);
-      expect(rbfBuilder.changeOutput!.amount, 99000);
+      expect(rbfBuilder.changeOutput!.amount, 98859);
       expect(rbfBuilder.changeOutputDerivationPath, isNotNull);
       expect(rbfBuilder.changeOutputDerivationPath, "m/84'/1'/0'/1/0");
       expect(rbfBuilder.sendAmount, 1000);
@@ -127,7 +127,7 @@ void main() {
       final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
       final List<TransactionAddress> outputAddressList = [
         TransactionAddress(receiveAddressList[1], 5000),
-        TransactionAddress(changeAddressList[0], 95000),
+        TransactionAddress(changeAddressList[0], 94859),
       ];
       final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
         inputAddressList: inputAddressList,
@@ -157,7 +157,7 @@ void main() {
       expect(rbfBuilder.selfOutputs![0].amount, 5000);
       expect(rbfBuilder.changeOutput, isNotNull);
       expect(rbfBuilder.changeOutput!.address, changeAddressList[0]);
-      expect(rbfBuilder.changeOutput!.amount, 95000);
+      expect(rbfBuilder.changeOutput!.amount, 94859);
       expect(rbfBuilder.sendAmount, 5000);
       expect(rbfBuilder.inputSum, 100000);
     });
@@ -169,7 +169,7 @@ void main() {
         TransactionAddress(externalWalletAddressList[0], 1000),
         TransactionAddress(receiveAddressList[1], 2000),
         TransactionAddress(receiveAddressList[2], 3000),
-        TransactionAddress(changeAddressList[0], 194000),
+        TransactionAddress(changeAddressList[0], 193859),
       ];
       final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
         inputAddressList: inputAddressList,
@@ -205,7 +205,7 @@ void main() {
       expect(rbfBuilder.selfOutputs![0].amount + rbfBuilder.selfOutputs![1].amount, 5000);
       expect(rbfBuilder.changeOutput, isNotNull);
       expect(rbfBuilder.changeOutput!.address, changeAddressList[0]);
-      expect(rbfBuilder.changeOutput!.amount, 194000);
+      expect(rbfBuilder.changeOutput!.amount, 193859);
       expect(rbfBuilder.sendAmount, 6000);
       expect(rbfBuilder.inputSum, 200000);
     });
@@ -213,7 +213,7 @@ void main() {
       final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
       final List<TransactionAddress> outputAddressList = [
         TransactionAddress(externalWalletAddressList[0], 1000),
-        TransactionAddress(changeAddressList[0], 99000),
+        TransactionAddress(changeAddressList[0], 98859),
       ];
       final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
         inputAddressList: inputAddressList,
@@ -235,11 +235,7 @@ void main() {
       );
 
       expect(
-        () => rbfBuilder.buildRbfTransaction(
-          newFeeRate: 2.0,
-          additionalSpendable: [],
-          getChangeAddress: () => 'some_address',
-        ),
+        () => rbfBuilder.buildRbfTransaction(newFeeRate: 2.0, additionalSpendable: [], getChangeAddress: () => ''),
         throwsA(isA<InvalidChangeOutputException>()),
       );
     });
@@ -251,7 +247,7 @@ void main() {
       final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
       final List<TransactionAddress> outputAddressList = [
         TransactionAddress(externalWalletAddressList[0], 1000),
-        TransactionAddress(changeAddressList[0], 99000),
+        TransactionAddress(changeAddressList[0], 98859),
       ];
       final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
         inputAddressList: inputAddressList,
@@ -276,10 +272,18 @@ void main() {
         getChangeAddress: () => changeAddressList[1],
       );
 
+      final tx = result.transaction!;
+      final int totalInput = tx.totalInputAmount;
+      final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
+      final int actualFee = totalInput - totalOutput;
+      final double vByte = tx.estimateVirtualByte(AddressType.p2wpkh).ceil().toDouble();
+      final double calculatedFeeRate = actualFee / vByte;
+      final int expectedChangeAmount = totalInput - 1000 - actualFee;
+
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
-      // TODO: 새로 생성한 트랜잭션의 feeRate이 2로 증가했는지 확인
-      // TODO: changeOutput의 amount가 99000 - 141 = 98859로 변경되었는지 확인
+      expect(calculatedFeeRate, 2.0);
+      expect(expectedChangeAmount, equals(98718));
       expect(result.isChangeOutputUsed, isTrue);
       expect(result.isSelfOutputsUsed, isFalse);
       expect(result.addedUtxos, isNull);
