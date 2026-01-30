@@ -329,7 +329,7 @@ void main() {
       final tx = result.transaction!;
       final int totalInput = tx.totalInputAmount;
       final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
-      final int actualFee = tx.totalInputAmount - totalOutput;
+      final int actualFee = totalInput - totalOutput;
       final double vByte = tx.estimateVirtualByte(AddressType.p2wpkh).ceil().toDouble();
       final double calculatedFeeRate = actualFee / vByte;
       final int changeAmount = totalInput - 60000 - actualFee;
