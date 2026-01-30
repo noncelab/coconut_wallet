@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter/widgets.dart';
+import 'package:coconut_wallet/utils/url_normalize_util.dart';
 
 class NetworkPreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
@@ -120,16 +121,7 @@ class NetworkPreferenceProvider extends ChangeNotifier {
   }
 
   Future<void> setCustomExplorerUrl(String url) async {
-    var formattedUrl = url.trim();
-
-    if (formattedUrl.isNotEmpty) {
-      if (!formattedUrl.startsWith('http') && !formattedUrl.startsWith('https')) {
-        formattedUrl = 'https://$formattedUrl';
-      }
-      if (formattedUrl.endsWith('/')) {
-        formattedUrl = formattedUrl.substring(0, formattedUrl.length - 1);
-      }
-    }
+    final formattedUrl = UrlNormalizeUtil.normalize(url);
 
     await _sharedPrefs.setString(SharedPrefKeys.kCustomExplorerUrl, formattedUrl);
     notifyListeners();

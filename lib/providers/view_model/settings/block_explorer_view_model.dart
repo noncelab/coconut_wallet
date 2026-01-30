@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/utils/url_normalize_util.dart';
 
 enum ExplorerConnectionStatus { none, connecting, connected, failed }
 
@@ -108,15 +109,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
     _setConnectionStatus(ExplorerConnectionStatus.connecting);
     _showAlertBox = false;
 
-    String urlToTest = _customExplorerUrl.trim();
-    if (urlToTest.isNotEmpty) {
-      if (!urlToTest.startsWith('http') && !urlToTest.startsWith('https')) {
-        urlToTest = 'https://$urlToTest';
-      }
-      if (urlToTest.endsWith('/')) {
-        urlToTest = urlToTest.substring(0, urlToTest.length - 1);
-      }
-    }
+    final String urlToTest = UrlNormalizeUtil.normalize(_customExplorerUrl);
 
     final Dio dio = Dio();
     try {
