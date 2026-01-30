@@ -288,7 +288,54 @@ void main() {
     });
 
     test('External 3 / InputSum enough', () async {
-      // TODO: 구현
+      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[1], 200000)];
+      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[1]];
+
+      final List<TransactionAddress> outputAddressList = [
+        TransactionAddress(externalWalletAddressList[0], 10000),
+        TransactionAddress(externalWalletAddressList[1], 20000),
+        TransactionAddress(externalWalletAddressList[2], 30000),
+        TransactionAddress(changeAddressList[0], 139859),
+      ];
+
+      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
+        inputAddressList: inputAddressList,
+        outputAddressList: outputAddressList,
+        amount: 60000,
+      );
+
+      final rbfBuilder = RbfBuilder(
+        pendingTx: pendingTx,
+        walletListItemBase: singleWallet,
+        vSizeIncreasePerInput: 56,
+        isMyAddress: isMyAddress,
+        inputUtxos: inputUtxos,
+        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+        getDerivationPath: getDerivationPath,
+        dustLimit: dustLimit,
+      );
+
+      final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(newFeeRate: 3.0, additionalSpendable: []);
+
+      expect(result.isSuccess, isTrue);
+      expect(result.transaction, isNotNull);
+      expect(result.isChangeOutputUsed, isTrue);
+      expect(result.isSelfOutputsUsed, isFalse);
+      expect(result.addedUtxos, isNull);
+      expect(result.deficitAmount, isNull);
+      expect(rbfBuilder.nonChangeOutputs.length, 3);
+      expect(rbfBuilder.nonChangeOutputsSum, 60000);
+
+      final tx = result.transaction!;
+      final int totalInput = tx.totalInputAmount;
+      final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
+      final int actualFee = tx.totalInputAmount - totalOutput;
+      final double vByte = tx.estimateVirtualByte(AddressType.p2wpkh).ceil().toDouble();
+      final double calculatedFeeRate = actualFee / vByte;
+      final int changeAmount = totalInput - 60000 - actualFee;
+
+      expect(calculatedFeeRate, 3.0);
+      expect(changeAmount, equals(139391));
     });
   });
 
