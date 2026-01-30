@@ -268,22 +268,23 @@ void main() {
 
       final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(newFeeRate: 2.0, additionalSpendable: []);
 
+      expect(result.isSuccess, isTrue);
+      expect(result.transaction, isNotNull);
+      expect(result.isChangeOutputUsed, isTrue);
+      expect(result.isSelfOutputsUsed, isFalse);
+      expect(result.addedUtxos, isNull);
+      expect(result.deficitAmount, isNull);
+
       final tx = result.transaction!;
       final int totalInput = tx.totalInputAmount;
       final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
       final int actualFee = totalInput - totalOutput;
       final double vByte = tx.estimateVirtualByte(AddressType.p2wpkh).ceil().toDouble();
       final double calculatedFeeRate = actualFee / vByte;
-      final int expectedChangeAmount = totalInput - 1000 - actualFee;
+      final int changeAmount = totalInput - 1000 - actualFee;
 
-      expect(result.isSuccess, isTrue);
-      expect(result.transaction, isNotNull);
       expect(calculatedFeeRate, 2.0);
-      expect(expectedChangeAmount, equals(98718));
-      expect(result.isChangeOutputUsed, isTrue);
-      expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos, isNull);
-      expect(result.deficitAmount, isNull);
+      expect(changeAmount, equals(98718)); // 98859 - 141
     });
 
     test('External 2 / InputSum enough', () async {});
