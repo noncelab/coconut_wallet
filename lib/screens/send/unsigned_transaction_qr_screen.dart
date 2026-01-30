@@ -61,10 +61,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     // -> [ColdCard Q1] Ready To Sign -> (Enter) -> Sending Amount, fee 등 정보 맞는지 확인
     // -> (Enter) -> (QR 버튼)
 
-    final hexStr = hex.encode(base64.decode(_psbtBase64));
-    final spacedHex = hexStr.replaceAllMapped(RegExp(r'.{4}'), (match) => '${match.group(0)} ');
-    // Logger.logLongString('[Hex]:: $spacedHex');
-
     if (_walletImportSource == WalletImportSource.coldCard) {
       _bbqrParts = BbQrEncoder().encodeBase64(_psbtBase64);
       if (_isBbqrType) {
@@ -112,6 +108,9 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
 
   void _startBbqrTimer() {
     _bbqrTimer?.cancel();
+    if (_bbqrParts.isEmpty) {
+      return;
+    }
     _bbqrTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
       if (mounted) {
         setState(() {
@@ -462,7 +461,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
             ];
           }
         }
-      // case WalletImportSource.coconutVault: TODO: 추후 BC_UR QR로 변경합니다.
       default:
         return [TextSpan(text: t.unsigned_tx_qr_screen.guide_hardware_wallet.step1)];
     }
