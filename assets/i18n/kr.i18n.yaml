@@ -226,6 +226,7 @@ wallet_home_screen:
       enter_again: "다시 입력"
   last_24_hours_transactions: "지난 24시간 거래"
   syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
+  cannot_modify_fixed_widget: "고정 위젯은 수정할 수 없어요"
   no_change_in_amount: "수량 변화가 없어요!"
   analysis_period: "최근 ${days}일 • ${transaction_type}"
   analysis_period_cutsom: "직접 설정 • ${transaction_type}"

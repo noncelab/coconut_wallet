@@ -415,8 +415,16 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
     return Consumer<WalletHomeEditViewModel>(
       builder: (context, viewModel, _) {
         final fixedWidgets = [
-          {'homeFeatureTypeString': HomeFeatureType.totalBalance.name, 'icon': HomeFeatureType.totalBalance.assetPath},
-          {'homeFeatureTypeString': HomeFeatureType.walletList.name, 'icon': HomeFeatureType.walletList.assetPath},
+          {
+            'homeFeatureTypeString': HomeFeatureType.totalBalance.name,
+            'icon': HomeFeatureType.totalBalance.assetPath,
+            'isEnabled': true,
+          },
+          {
+            'homeFeatureTypeString': HomeFeatureType.walletList.name,
+            'icon': HomeFeatureType.walletList.assetPath,
+            'isEnabled': true,
+          },
         ];
         final displayHomeWidgets = [
           ...fixedWidgets,
@@ -458,12 +466,19 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                               width: itemWidth,
                               height: itemWidth,
                               child: ShrinkAnimationButton(
-                                isActive:
-                                    !fixedWidgets.any(
-                                      (fixed) => fixed['homeFeatureTypeString'] == widget['homeFeatureTypeString'],
-                                    ),
                                 onPressed: () {
                                   FocusScope.of(context).unfocus();
+                                  if (fixedWidgets.any(
+                                    (fixed) => fixed['homeFeatureTypeString'] == widget['homeFeatureTypeString'],
+                                  )) {
+                                    // 고정 위젯인 경우 토글 불가
+                                    CoconutToast.showToast(
+                                      context: context,
+                                      text: t.wallet_home_screen.cannot_modify_fixed_widget,
+                                      isVisibleIcon: true,
+                                    );
+                                    return;
+                                  }
                                   // homeFeatureTypeString을 통해 토글
                                   _viewModel.toggleTempHomeFeatureEnabled(widget['homeFeatureTypeString'].toString());
                                 },
@@ -501,59 +516,35 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                               ),
                                               Align(
                                                 alignment: Alignment.topRight,
-                                                child:
-                                                    (widget['homeFeatureTypeString'] ==
-                                                                HomeFeatureType.totalBalance.name ||
-                                                            widget['homeFeatureTypeString'] ==
-                                                                HomeFeatureType.walletList.name)
-                                                        ? Container(
-                                                          width: 16,
-                                                          height: 16,
-                                                          decoration: BoxDecoration(
-                                                            shape: BoxShape.circle,
-                                                            color: CoconutColors.gray100.withValues(alpha: 0.5),
-                                                          ),
-                                                          child: Center(
-                                                            child: SvgPicture.asset(
-                                                              'assets/svg/check.svg',
-                                                              width: 6,
-                                                              height: 6,
-                                                              colorFilter: const ColorFilter.mode(
-                                                                CoconutColors.gray800,
-                                                                BlendMode.srcIn,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        )
-                                                        : AnimatedContainer(
-                                                          duration: const Duration(milliseconds: 100),
-                                                          width: 16,
-                                                          height: 16,
-                                                          decoration: BoxDecoration(
-                                                            shape: BoxShape.circle,
-                                                            color:
-                                                                (widget['isEnabled'] as bool)
-                                                                    ? CoconutColors.white
-                                                                    : CoconutColors.gray800,
-                                                            border: Border.all(
-                                                              width: (widget['isEnabled'] as bool) ? 0 : 1.5,
-                                                              color: CoconutColors.gray600,
-                                                            ),
-                                                          ),
-                                                          child: Center(
-                                                            child: SvgPicture.asset(
-                                                              'assets/svg/check.svg',
-                                                              width: 6,
-                                                              height: 6,
-                                                              colorFilter: ColorFilter.mode(
-                                                                (widget['isEnabled'] as bool)
-                                                                    ? CoconutColors.gray800
-                                                                    : CoconutColors.gray600,
-                                                                BlendMode.srcIn,
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(milliseconds: 100),
+                                                  width: 16,
+                                                  height: 16,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color:
+                                                        (widget['isEnabled'] as bool)
+                                                            ? CoconutColors.white
+                                                            : CoconutColors.gray800,
+                                                    border: Border.all(
+                                                      width: (widget['isEnabled'] as bool) ? 0 : 1.5,
+                                                      color: CoconutColors.gray600,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: SvgPicture.asset(
+                                                      'assets/svg/check.svg',
+                                                      width: 6,
+                                                      height: 6,
+                                                      colorFilter: ColorFilter.mode(
+                                                        (widget['isEnabled'] as bool)
+                                                            ? CoconutColors.gray800
+                                                            : CoconutColors.gray600,
+                                                        BlendMode.srcIn,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),

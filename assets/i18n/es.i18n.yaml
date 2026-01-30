@@ -223,6 +223,7 @@ wallet_home_screen:
       enter_again: "Ingresar de nuevo"
   last_24_hours_transactions: "Transacciones de las últimas 24 h"
   syncing_recent_transaction: "Cargando transacciones recientes"
+  cannot_modify_fixed_widget: "No se puede modificar el widget fijo"
   no_change_in_amount: "No hay cambio en la cantidad!"
   analysis_period: "Últimos ${days} días • ${transaction_type}"
   analysis_period_cutsom: "Personalizado • ${transaction_type}"
