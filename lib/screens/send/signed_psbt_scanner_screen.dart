@@ -51,7 +51,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           backgroundColor: CoconutColors.black.withOpacity(0.95),
           actionButtonList: [
             IconButton(
-              icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+              icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
               color: CoconutColors.white,
               onPressed: () {
                 controller?.switchCamera();

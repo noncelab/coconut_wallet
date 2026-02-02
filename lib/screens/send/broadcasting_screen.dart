@@ -245,7 +245,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           Text(t.donation.user_messages[userMessageIndex!], style: CoconutTypography.heading3_21_Bold),
                           Padding(
                             padding: const EdgeInsets.only(left: 4.0),
-                            child: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 18, height: 18),
+                            child: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
                           ),
                         ],
                       ),

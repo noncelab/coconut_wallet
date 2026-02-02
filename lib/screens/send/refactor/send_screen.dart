@@ -1520,7 +1520,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 context: sheetContext,
                 actionButtonList: [
                   IconButton(
-                    icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
                     color: CoconutColors.white,
                     onPressed: () {
                       _qrViewController?.switchCamera();
