@@ -125,17 +125,6 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
         scrolledUnderElevation: 0,
         backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
         toolbarHeight: kToolbarHeight,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: SvgPicture.asset(
-            'assets/svg/close.svg',
-            colorFilter: ColorFilter.mode(CoconutColors.onPrimary(Brightness.dark), BlendMode.srcIn),
-            width: 24,
-            height: 24,
-          ),
-        ),
         flexibleSpace:
             _isScrollOverTitleHeight
                 ? ClipRect(

@@ -3,7 +3,7 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
@@ -95,7 +95,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                       children: [
                         QrCodeInfo(
                           qrcodeTopWidget: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
