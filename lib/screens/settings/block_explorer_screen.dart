@@ -2,211 +2,68 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/services/block_explorer_service.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/settings/block_explorer_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 class BlockExplorerScreen extends StatefulWidget {
   const BlockExplorerScreen({super.key});
 
   @override
-  State<BlockExplorerScreen> createState() => _BlockExplorerScreen();
+  State<BlockExplorerScreen> createState() => _BlockExplorerScreenState();
 }
 
-class _BlockExplorerScreen extends State<BlockExplorerScreen> {
-  bool _isDefaultExplorerEnabled = true; // 현재 기본 익스플로러 사용 여부
-  bool _showCustomUrlTextField = false;
-  bool _hasChanges = false;
+class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
+  late final BlockExplorerViewModel _viewModel;
 
-  bool _initialDefaultExplorerEnabled = true;
-  String _initialExplorerUrl = '';
-
-  bool _showConnectionStatus = false;
-  bool _showAlertBox = false;
-  bool _isConnectionSuccessful = false;
-  bool _isConnecting = false;
-  Timer? _connectionTimer;
-
-  final GlobalKey _explorerGlobalKey = GlobalKey();
   final TextEditingController _customExplorerController = TextEditingController();
   final FocusNode _customExplorerFocusNode = FocusNode();
-
-  bool get _hasUrlChanged =>
-      _customExplorerController.text.isNotEmpty && _customExplorerController.text != _initialExplorerUrl;
+  final GlobalKey _explorerGlobalKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _customExplorerFocusNode.addListener(_onFocusChange);
+
+    context.read<PreferenceProvider>();
+    final networkPreferenceProvider = context.read<NetworkPreferenceProvider>();
+    _viewModel = BlockExplorerViewModel(networkPreferenceProvider);
+
+    _viewModel.addListener(_onViewModelChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_viewModel.customExplorerUrl.isNotEmpty) {
+        _customExplorerController.text = _viewModel.customExplorerUrl;
+      }
+    });
+
     _customExplorerController.addListener(_onTextChanged);
-    _loadSettings();
+    _customExplorerFocusNode.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _customExplorerController.removeListener(_onTextChanged);
+    _viewModel.removeListener(_onViewModelChanged);
+    _viewModel.dispose();
     _customExplorerController.dispose();
     _customExplorerFocusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _loadSettings() async {
-    final useDefault = await BlockExplorerService.getUseDefaultExplorer();
-    final explorerUrl = await BlockExplorerService.getExplorerUrl();
-
-    setState(() {
-      _isDefaultExplorerEnabled = useDefault;
-      _showCustomUrlTextField = !useDefault;
-      if (!useDefault) {
-        _customExplorerController.text = explorerUrl;
-        _showAlertBox = true;
+  void _onViewModelChanged() {
+    if (!_viewModel.isDefaultExplorerEnabled && _customExplorerController.text != _viewModel.customExplorerUrl) {
+      if (!_viewModel.hasChanges) {
+        _customExplorerController.text = _viewModel.customExplorerUrl;
       }
-
-      _initialDefaultExplorerEnabled = useDefault;
-      _initialExplorerUrl = explorerUrl;
-
-      _hasChanges = false;
-    });
-  }
-
-  void _onFocusChange() {
-    setState(() {});
+    }
   }
 
   void _onTextChanged() {
-    _checkForChanges();
-  }
-
-  void _checkForChanges() {
-    // default > custom 변경 시 또는 커스텀 url이 변경되었는지 확인
-    if (!_isDefaultExplorerEnabled) {
-      setState(() {
-        _hasChanges = _hasUrlChanged;
-      });
-    }
-    // custom > default 변경 시
-    else if (!_initialDefaultExplorerEnabled && _isDefaultExplorerEnabled) {
-      setState(() {
-        _hasChanges = true;
-      });
-    } else {
-      setState(() {
-        _hasChanges = false;
-      });
-    }
-  }
-
-  Future<void> _onDefaultExplorerToggle(bool value) async {
-    setState(() {
-      _isDefaultExplorerEnabled = value;
-      if (value) {
-        _showCustomUrlTextField = false;
-        _showConnectionStatus = false;
-        _showAlertBox = false;
-        _customExplorerFocusNode.unfocus();
-      } else {
-        _showCustomUrlTextField = true;
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            _customExplorerFocusNode.requestFocus();
-          }
-        });
-      }
-    });
-
-    _checkForChanges();
-  }
-
-  Future<bool> _testConnection(String url) async {
-    final Dio dio = Dio();
-
-    if (!url.startsWith('http') && !url.startsWith('https')) {
-      url = 'https://$url';
-    }
-
-    try {
-      final response = await dio.get(url);
-      if (response.statusCode == 200) {
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  Future<void> _saveChanges() async {
-    if (_isDefaultExplorerEnabled && !_initialDefaultExplorerEnabled) {
-      // custom > default 변경시
-      await BlockExplorerService.resetToDefault();
-      setState(() {
-        _hasChanges = false;
-        _showConnectionStatus = false;
-        _showAlertBox = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _isConnecting = true;
-      _showConnectionStatus = true;
-      _isConnectionSuccessful = false;
-      _showAlertBox = false;
-    });
-
-    try {
-      if (_hasUrlChanged) {
-        // 저장할 데이터
-        final explorerUrl = _customExplorerController.text;
-        // 연결 테스트
-        final isConnected = await _testConnection(explorerUrl);
-
-        if (isConnected) {
-          await BlockExplorerService.setUseDefaultExplorer(_isDefaultExplorerEnabled);
-          if (!_isDefaultExplorerEnabled) {
-            await BlockExplorerService.setCustomExplorerUrl(explorerUrl);
-          }
-
-          _initialDefaultExplorerEnabled = _isDefaultExplorerEnabled;
-          _initialExplorerUrl = explorerUrl;
-
-          setState(() {
-            _hasChanges = false;
-            _isConnectionSuccessful = true;
-            _isConnecting = false;
-            _showAlertBox = true;
-          });
-
-          _clearFocus();
-
-          // 연결 성공 시 상태 표시, 5초 후 연결 상태 숨김
-          _connectionTimer?.cancel();
-          _connectionTimer = Timer(const Duration(seconds: 5), () {
-            if (mounted) {
-              setState(() {
-                _showConnectionStatus = false;
-              });
-            }
-          });
-        } else {
-          setState(() {
-            _hasChanges = false;
-            _isConnectionSuccessful = false;
-            _isConnecting = false;
-            _showAlertBox = false;
-          });
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _isConnectionSuccessful = false;
-        _isConnecting = false;
-        _showAlertBox = false;
-      });
-    }
+    _viewModel.onCustomUrlChanged(_customExplorerController.text);
   }
 
   void _clearFocus() {
@@ -215,33 +72,41 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CoconutAppBar.build(title: t.block_explorer, context: context),
-      body: Stack(
-        children: [
-          GestureDetector(
-            onTap: _clearFocus,
-            behavior: HitTestBehavior.translucent,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                children: [
-                  _buildDefaultExplorerToggle(),
-                  _buildExplorerAddressTextField(),
-                  _buildConnectionStatus(),
-                  _buildCustomExplorerAlertBox(),
-                ],
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, child) {
+        return Scaffold(
+          appBar: CoconutAppBar.build(title: t.block_explorer, context: context),
+          body: Stack(
+            children: [
+              GestureDetector(
+                onTap: _clearFocus,
+                behavior: HitTestBehavior.translucent,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    children: [
+                      _buildDefaultExplorerToggle(),
+                      _buildExplorerAddressTextField(),
+                      _buildConnectionStatus(),
+                      _buildCustomExplorerAlertBox(),
+                    ],
+                  ),
+                ),
               ),
-            ),
+              FixedBottomButton(
+                isActive: _viewModel.hasChanges,
+                onButtonClicked: () async {
+                  _clearFocus();
+                  await _viewModel.saveChanges();
+                },
+                text: t.settings_screen.block_explorer.save,
+                backgroundColor: CoconutColors.white,
+              ),
+            ],
           ),
-          FixedBottomButton(
-            isActive: _hasChanges,
-            onButtonClicked: _saveChanges,
-            text: t.settings_screen.block_explorer.save,
-            backgroundColor: CoconutColors.white,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -261,7 +126,22 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
               Text('Mempool.space', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
             ],
           ),
-          CoconutSwitch(isOn: _isDefaultExplorerEnabled, onChanged: _onDefaultExplorerToggle),
+          CoconutSwitch(
+            isOn: _viewModel.isDefaultExplorerEnabled,
+            onChanged: (value) {
+              _viewModel.toggleDefaultExplorer(value);
+
+              if (!value) {
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    _customExplorerFocusNode.requestFocus();
+                  }
+                });
+              } else {
+                _clearFocus();
+              }
+            },
+          ),
         ],
       ),
     );
@@ -272,10 +152,10 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       child:
-          _showCustomUrlTextField
+          _viewModel.showCustomUrlTextField
               ? AnimatedSlide(
                 duration: const Duration(milliseconds: 300),
-                offset: _showCustomUrlTextField ? Offset.zero : const Offset(0, -0.5),
+                offset: _viewModel.showCustomUrlTextField ? Offset.zero : const Offset(0, -0.5),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 36),
                   child: Column(
@@ -302,10 +182,8 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
                           iconSize: 14,
                           padding: EdgeInsets.zero,
                           onPressed: () {
-                            setState(() {
-                              _customExplorerController.text = '';
-                              _showConnectionStatus = false;
-                            });
+                            _customExplorerController.clear();
+                            _viewModel.clearCustomUrl();
                           },
                           icon:
                               _customExplorerController.text.isNotEmpty
@@ -335,7 +213,7 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
   }
 
   Widget _buildConnectionStatus() {
-    if (!_showConnectionStatus) {
+    if (!_viewModel.showConnectionStatus) {
       return const SizedBox.shrink();
     }
 
@@ -345,7 +223,7 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
       child: Row(
         children: [
-          if (_isConnecting)
+          if (_viewModel.isConnecting)
             const SizedBox(
               height: 20,
               width: 20,
@@ -354,7 +232,7 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
                 valueColor: AlwaysStoppedAnimation<Color>(CoconutColors.white),
               ),
             )
-          else if (_isConnectionSuccessful)
+          else if (_viewModel.isConnectionSuccessful)
             SvgPicture.asset(
               'assets/svg/circle-check.svg',
               height: 24,
@@ -369,9 +247,9 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
           CoconutLayout.spacing_300w,
           Expanded(
             child: Text(
-              _isConnecting
+              _viewModel.isConnecting
                   ? t.settings_screen.block_explorer.connection_status.connecting
-                  : _isConnectionSuccessful
+                  : _viewModel.isConnectionSuccessful
                   ? t.settings_screen.block_explorer.connection_status.connected
                   : t.settings_screen.block_explorer.connection_status.failed,
               style: CoconutTypography.body2_14_Bold,
@@ -383,7 +261,7 @@ class _BlockExplorerScreen extends State<BlockExplorerScreen> {
   }
 
   Widget _buildCustomExplorerAlertBox() {
-    if (!_showAlertBox) {
+    if (!_viewModel.showAlertBox) {
       return const SizedBox.shrink();
     }
 

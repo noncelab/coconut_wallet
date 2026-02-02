@@ -3,6 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -121,19 +122,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<WalletPreferencesRepository>(
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
-
+        ChangeNotifierProvider(create: (_) => NetworkPreferenceProvider()),
         ChangeNotifierProvider(
           create:
               (context) => PreferenceProvider(
                 context.read<WalletPreferencesRepository>(),
-                featureSettingsProvider: context.read<FeatureSettingsProvider>(),
-              ),
-        ),
+                context.read<NetworkPreferenceProvider>(),
 
-        ChangeNotifierProvider(
-          create:
-              (context) => PreferenceProvider(
-                context.read<WalletPreferencesRepository>(),
                 featureSettingsProvider: context.read<FeatureSettingsProvider>(),
               ),
         ),
@@ -166,7 +161,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             create: (context) {
               final walletProvider = context.read<WalletProvider>();
               return NodeProvider(
-                context.read<PreferenceProvider>().getElectrumServer(),
+                context.read<NetworkPreferenceProvider>().getElectrumServer(),
                 CoconutWalletApp.kNetworkType,
                 context.read<ConnectivityProvider>(),
                 walletProvider.walletLoadStateNotifier,
