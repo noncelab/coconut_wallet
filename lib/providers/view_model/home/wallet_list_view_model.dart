@@ -6,7 +6,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -55,7 +55,7 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isEditMode => _isEditMode;
 
   bool get isKorean => _preferenceProvider.language == 'kr';
-  bool get isEnglish => _preferenceProvider.language == 'en';
+  bool get isEnglishOrSpanish => _preferenceProvider.language == 'en' || _preferenceProvider.language == 'es';
 
   WalletListViewModel(
     this._walletProvider,

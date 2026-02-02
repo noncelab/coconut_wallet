@@ -13,6 +13,7 @@ import 'package:coconut_wallet/services/model/response/fetch_transaction_respons
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:tuple/tuple.dart';
 
 class TransactionRepository extends BaseRepository {
   TransactionRepository(super._realmManager);
@@ -63,6 +64,39 @@ class TransactionRepository extends BaseRepository {
       walletId,
       transactionHashes,
     ]).toList();
+  }
+
+  List<TransactionRecord> getTransactionRecordListAfterBlockHeight(int walletId, int blockHeight) {
+    final realmTxs = realm.query<RealmTransaction>(
+      'walletId == $walletId AND blockHeight >= $blockHeight SORT(createdAt DESC)',
+    );
+    if (realmTxs.isEmpty) return [];
+    List<TransactionRecord> result = [];
+
+    for (var t in realmTxs) {
+      result.add(mapRealmTransactionToTransaction(t));
+    }
+
+    return result;
+  }
+
+  List<TransactionRecord> getTransactionRecordListWithDateRange(int walletId, Tuple2<DateTime, DateTime> dateRange) {
+    final rawStart = dateRange.item1.isBefore(dateRange.item2) ? dateRange.item1 : dateRange.item2;
+    final rawEnd = dateRange.item2.isAfter(dateRange.item1) ? dateRange.item2 : dateRange.item1;
+    // 시간 정보를 포함하여 정확한 범위로 필터링
+
+    final realmTxs = realm.query<RealmTransaction>(
+      r'walletId == $0 AND timestamp >= $1 AND timestamp <= $2 SORT(createdAt DESC)',
+      [walletId, rawStart, rawEnd],
+    );
+    if (realmTxs.isEmpty) return [];
+    List<TransactionRecord> result = [];
+
+    for (var t in realmTxs) {
+      result.add(mapRealmTransactionToTransaction(t));
+    }
+
+    return result;
   }
 
   /// walletId, transactionHash 로 조회된 transaction 의 메모 변경

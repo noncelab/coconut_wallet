@@ -43,7 +43,10 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                   ),
                   CoconutLayout.spacing_100w,
                   Expanded(
-                    child: Text(t.wallet_add_input_screen.wallet_description_text, style: CoconutTypography.body2_14),
+                    child: Text(
+                      t.wallet_add_scanner_screen.paste.wallet_description_text,
+                      style: CoconutTypography.body2_14,
+                    ),
                   ),
                 ],
               ),
@@ -52,18 +55,18 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
           if (_isExpanded) ...[
             CoconutLayout.spacing_200h,
             _buildWalletInfoSection(
-              titleText: t.wallet_add_input_screen.blue_wallet_texts[0],
-              descriptionList: [...t.wallet_add_input_screen.blue_wallet_texts.getRange(1, 3)],
-              addressText: t.wallet_add_input_screen.blue_wallet_texts[3],
+              titleText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[0],
+              descriptionList: [...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(1, 3)],
+              addressText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
             ),
             CoconutLayout.spacing_200h,
             _buildWalletInfoSection(
-              titleText: t.wallet_add_input_screen.nunchuck_wallet_texts[0],
-              descriptionList: [...t.wallet_add_input_screen.nunchuck_wallet_texts.getRange(1, 2)],
+              titleText: t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
+              descriptionList: [...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts.getRange(1, 2)],
               addressText:
                   Platform.isAndroid
-                      ? t.wallet_add_input_screen.nunchuck_wallet_texts[2]
-                      : t.wallet_add_input_screen.nunchuck_wallet_texts[3],
+                      ? t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[2]
+                      : t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[3],
             ),
             CoconutLayout.spacing_200h,
           ],

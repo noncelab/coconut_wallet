@@ -193,10 +193,16 @@ class UtxoSyncService {
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
-      final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.transactionHash);
-      // tx가 null이거나 컨펌된 트랜잭션이면 orphan UTXO로 간주
-      if (tx == null || tx.blockHeight > 0) {
-        orphanUtxoSet.add(utxo);
+      if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
+        final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
+        if (tx == null || tx.blockHeight > 0) {
+          orphanUtxoSet.add(utxo);
+        }
+      } else if (utxo.status == UtxoStatus.incoming) {
+        final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.transactionHash);
+        if (tx == null || tx.blockHeight > 0) {
+          orphanUtxoSet.add(utxo);
+        }
       }
     }
 

@@ -29,22 +29,31 @@ class TransactionItemCard extends StatelessWidget {
   }
 
   Widget _buildStatus() {
+    final iconPath = TransactionUtil.getStatusIconAsset(status);
+    String statusText;
     switch (status) {
       case TransactionStatus.received:
-        return _buildIconStatus('assets/svg/tx-received.svg', t.status_received);
+        statusText = t.status_received;
+        break;
       case TransactionStatus.receiving:
-        return _buildIconStatus('assets/svg/tx-receiving.svg', t.status_receiving);
+        statusText = t.status_receiving;
+        break;
       case TransactionStatus.sent:
-        return _buildIconStatus('assets/svg/tx-sent.svg', t.status_sent);
+        statusText = t.status_sent;
+        break;
       case TransactionStatus.sending:
-        return _buildIconStatus('assets/svg/tx-sending.svg', t.status_sending);
+        statusText = t.status_sending;
+        break;
       case TransactionStatus.self:
-        return _buildIconStatus('assets/svg/tx-self.svg', t.status_sent);
+        statusText = t.status_sent;
+        break;
       case TransactionStatus.selfsending:
-        return _buildIconStatus('assets/svg/tx-self-sending.svg', t.status_sending);
+        statusText = t.status_sending;
+        break;
       default:
         return const SizedBox.shrink(); // fallback
     }
+    return _buildIconStatus(iconPath, statusText);
   }
 
   Widget _buildIconStatus(String assetPath, String statusString) {
