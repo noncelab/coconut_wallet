@@ -391,14 +391,14 @@ class _LongPressedMenuWidgetState extends State<LongPressedMenuWidget> with Tick
                                 child: Container(
                                   width: 24,
                                   height: 24,
-                                  padding: const EdgeInsets.all(4),
+                                  padding: const EdgeInsets.all(2),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: SvgPicture.asset(
-                                    'assets/svg/close.svg',
-                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                    'assets/svg/remove-minus.svg',
+                                    colorFilter: const ColorFilter.mode(CoconutColors.gray850, BlendMode.srcIn),
                                   ),
                                 ),
                               ),

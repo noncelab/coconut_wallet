@@ -288,6 +288,7 @@ flutter:
     - assets/svg/puzzle-piece.svg
     - assets/svg/widget.svg
     - assets/svg/search-not-found.svg
+    - assets/svg/remove-minus.svg
 
   fonts:
     - family: SpaceGrotesk
