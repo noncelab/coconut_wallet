@@ -23,6 +23,18 @@ class NetworkPreferenceProvider extends ChangeNotifier {
 
   NetworkPreferenceProvider();
 
+  Future<void> ensureInitialized() async {
+    final serverName = _sharedPrefs.getString(SharedPrefKeys.kElectrumServerName);
+
+    if (serverName.isEmpty) {
+      if (NetworkType.currentNetworkType == NetworkType.mainnet) {
+        await setDefaultElectrumServer(DefaultElectrumServer.coconut);
+      } else {
+        await setDefaultElectrumServer(DefaultElectrumServer.regtest);
+      }
+    }
+  }
+
   bool get useDefaultExplorer {
     if (_sharedPrefs.isContainsKey(SharedPrefKeys.kUseDefaultExplorer)) {
       return _sharedPrefs.getBool(SharedPrefKeys.kUseDefaultExplorer);
@@ -92,10 +104,8 @@ class NetworkPreferenceProvider extends ChangeNotifier {
 
     if (serverName.isEmpty) {
       if (NetworkType.currentNetworkType == NetworkType.mainnet) {
-        setDefaultElectrumServer(DefaultElectrumServer.coconut);
         return DefaultElectrumServer.coconut.server;
       } else {
-        setDefaultElectrumServer(DefaultElectrumServer.regtest);
         return DefaultElectrumServer.regtest.server;
       }
     }
