@@ -79,8 +79,6 @@ class PreferenceProvider extends ChangeNotifier {
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
-  String get explorerUrl => _networkPrefs.blockExplorerUrl;
-
   PreferenceProvider(this._walletPreferencesRepository, this._networkPrefs) {
     _networkPrefs.addListener(notifyListeners);
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
