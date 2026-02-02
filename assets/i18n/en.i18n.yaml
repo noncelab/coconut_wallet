@@ -49,6 +49,8 @@ glossary: "Glossary"
 tool: "Tool"
 tutorial: "Tutorial"
 settings: "Settings"
+app_settings: "App Settings"
+home_screen_settings: "Home Settings"
 tx_list: "Transaction History"
 utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
@@ -98,6 +100,16 @@ electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
+
+relative_time:
+  days_ago(cardinal):
+    zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
+    one: "1 day ago"   # 1일
+    other: "${n} days ago"  # 2일 이상
+  hours_ago(cardinal):
+    zero: "Just now"
+    one: "1 hour ago"
+    other: "${n} hours ago"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -187,6 +199,53 @@ pin_check_screen:
   text: "Enter your password"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "View All My Wallets"
+  edit_home_screen: "Edit Home Screen"
+  edit:
+    title: "You can hide or add features\non the home screen"
+    hide_balance: "Hide Balance"
+    hide_balance_on_home: "Balance will not be displayed on the home screen."
+    fake_balance:
+      fake_balance_setting: "Set Fake Balance"
+      fake_balance_display: "Show Fake Balance"
+      fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
+      fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
+      fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
+    hide_fiat_price: "Hide Fiat Balance"
+    hide_fiat_price_on_home: "Fiat balance will not be displayed on the home screen."
+    category:
+      total_balance: "Total\nBalance"
+      wallet_list: "Wallet\nList"
+      recent_transactions: "Recent\nTransactions\n(24hours)"
+      analysis: "Analysis"
+    alert: 
+          empty_fake_balance: "Enter Fake Balance"
+          empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
+          set_to_0: "Set balance to 0 BTC" 
+          enter_again: "Try again"
+  last_24_hours_transactions: "Last 24 hours transactions"
+  syncing_recent_transaction: "Syncing recent transactions"
+  cannot_modify_fixed_widget: "Cannot modify fixed widget"
+  no_change_in_amount: "No change in amount!"
+  analysis_period: "Recent ${days} days • ${transaction_type}"
+  analysis_period_custom: "Custom • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "Analysis Period"
+    days_15: "15 days"
+    days_30: "30 days"
+    days_60: "60 days"
+    days_90: "90 days"
+    custom: "Custom"
+    transaction_type: "Transaction Type"
+
+  transaction_count: "Transaction $count times"
+  count: "$count times"
+  increase: "Increased"
+  decrease: "Decreased"
+  sent: "Sent"
+  received: "Received"
+
 wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"
@@ -217,12 +276,12 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step0: "Devices other than the Keystone 3 Pro are not supported."
+    step0: "Devices other than the Keystone 3 Pro are not supported. (Bitcoin-only firmware recommended)"
     step1: "1. On the home screen, "
     step1_em: " More(•••)"
     step2: "2. "
     step2_em: " Connect Software Wallet"
-    step3: "3. Select any wallet"
+    step3: "3. Select one of BlueWallet, Sparrow, or Zeus wallets"
   guide_jade:
     step0_preposition: "In an " 
     step0_em: "Active "
@@ -284,7 +343,6 @@ wallet_add_scanner_screen:
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
-  view_all_wallets: "View All My Wallets"
   primary_wallet: "Primary Wallet"
   exclude_from_total_amount: "Excluded from Home Total"
   home_balance: "Home Balance"
@@ -458,13 +516,6 @@ settings_screen:
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
   change_password: "Change Password"
-  hide_balance: "Hide Balance"
-  fake_balance:
-    fake_balance_setting: "Set Fake Balance"
-    fake_balance_display: "Show Fake Balance"
-    fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
-    fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
-    fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
   language: "Language"
   locales:
     korean: "한국어"
@@ -848,3 +899,10 @@ fiat:
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
+
+long_pressed_menu:
+  hide: "Hide"
+  edit_home_widget: "Edit Home Widget"
+  go_to_home_screen_settings: "Go to Home Screen Settings"
+  hide_home_widget_title: "Hide '${widgetName}' widget on the home screen?"
+  hide_home_widget_description: "You can show it again later by going to the 'Home Screen Settings' menu in the top right menu button."

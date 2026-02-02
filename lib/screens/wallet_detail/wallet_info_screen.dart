@@ -4,7 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/coordinator_bsms_qr_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -47,23 +47,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<WalletInfoViewModel>(
-          create:
-              (_) => WalletInfoViewModel(
-                widget.id,
-                Provider.of<AuthProvider>(context, listen: false),
-                Provider.of<WalletProvider>(context, listen: false),
-                Provider.of<NodeProvider>(context, listen: false),
-                widget.isMultisig,
-              ),
-        ),
-        if (widget.isMultisig)
-          ChangeNotifierProvider<CoordinatorBsmsQrViewModel>(
-            create: (_) => CoordinatorBsmsQrViewModel(Provider.of<WalletProvider>(context, listen: false), widget.id),
+    return ChangeNotifierProvider<WalletInfoViewModel>(
+      create:
+          (_) => WalletInfoViewModel(
+            widget.id,
+            Provider.of<AuthProvider>(context, listen: false),
+            Provider.of<WalletProvider>(context, listen: false),
+            Provider.of<NodeProvider>(context, listen: false),
+            widget.isMultisig,
           ),
-      ],
       child: Consumer<WalletInfoViewModel>(
         builder: (innerContext, viewModel, child) {
           return Stack(
@@ -171,20 +163,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     title: t.wallet_info_screen.view_wallet_backup_data,
                                     onPressed: () {
                                       _removeTooltip();
-                                      final bsmsViewModel = Provider.of<CoordinatorBsmsQrViewModel>(
-                                        innerContext,
-                                        listen: false,
-                                      );
 
                                       Navigator.pushNamed(
                                         context,
                                         '/wallet-backup-data',
-                                        arguments: {
-                                          'id': widget.id,
-                                          'walletName': viewModel.walletName,
-                                          'qrDataMap': bsmsViewModel.walletQrDataMap,
-                                          'textDataMap': bsmsViewModel.walletTextDataMap,
-                                        },
+                                        arguments: {'id': widget.id, 'walletName': viewModel.walletName},
                                       );
                                     },
                                   ),

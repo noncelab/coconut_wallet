@@ -4,12 +4,13 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/signed_psbt_scan_data_handler.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -48,6 +49,15 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
           title: _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
           context: context,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
+          actionButtonList: [
+            IconButton(
+              icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+              color: CoconutColors.white,
+              onPressed: () {
+                controller?.switchCamera();
+              },
+            ),
+          ],
         ),
         body: SafeArea(
           child: Stack(

@@ -99,6 +99,16 @@ block_explorer: "Explorador"
 log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
 
+relative_time:
+  days_ago(cardinal):
+    zero: "Hoy"
+    one: "Hace 1 día"
+    other: "Hace ${n} días"
+  hours_ago(cardinal):
+    zero: "Justo ahora"
+    one: "Hace 1 hora"
+    other: "Hace ${n} horas"
+
 apply_item: "Aplicar a $count elementos"
 fee_sats: " ($value sat/vB)"
 utxo_count: "($count elementos)"
@@ -186,6 +196,53 @@ pin_check_screen:
   text: "Introduce tu contraseña"
 
 #lib/screens/home
+wallet_home_screen:
+  view_all_wallets: "Ver todas mis billeteras"
+  edit_home_screen: "Editar pantalla de inicio"
+  edit:
+    title: "Puedes ocultar o añadir funciones\nen la pantalla de inicio"
+    hide_balance: "Ocultar saldo"
+    hide_balance_on_home: "No mostrar el saldo en la pantalla de inicio."
+    fake_balance:
+      fake_balance_setting: "Configurar saldo falso"
+      fake_balance_display: "Mostrar saldo falso"
+      fake_balance_input_placeholder: "Establece el saldo falso total (en BTC)"
+      fake_balance_input_description: "Si tienes varias billeteras, el saldo de cada una se calculará automáticamente."
+      fake_balance_input_exceeds_error: "Puedes establecer hasta 21 millones de BTC"
+    hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
+    hide_fiat_price_on_home: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio."
+    category:
+      total_balance: "Saldo total"
+      wallet_list: "Lista de billeteras"
+      recent_transactions: "Transacciones de las últimas 24 h"
+      analysis: "Análisis"
+    alert:
+      empty_fake_balance: "Ingresar saldo falso"
+      empty_fake_balance_description: "No se ha establecido un monto.\n¿Quieres reingresarlo o establecerlo en 0 BTC?"
+      set_to_0: "Establecer en 0 BTC"
+      enter_again: "Ingresar de nuevo"
+  last_24_hours_transactions: "Transacciones de las últimas 24 h"
+  syncing_recent_transaction: "Cargando transacciones recientes"
+  cannot_modify_fixed_widget: "No se puede modificar el widget fijo"
+  no_change_in_amount: "No hay cambio en la cantidad!"
+  analysis_period: "Últimos ${days} días • ${transaction_type}"
+  analysis_period_cutsom: "Personalizado • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "Periodo de análisis"
+    days_15: "15 días"
+    days_30: "30 días"
+    days_60: "60 días"
+    days_90: "90 días"
+    custom: "Personalizado"
+    transaction_type: "Tipo de transacción"
+
+  transaction_count: "${count} transacciones"
+  count: "${count} veces"
+  increase: "Ha aumentado"
+  decrease: "Ha disminuido"
+  sent: "Enviado"
+  received: "Recibido"
+
 wallet_add_scanner_screen:
   add_wallet: "Añadir billetera" 
   add_watch_only_wallet: "Añadir billetera de solo lectura (watch-only)"
@@ -216,12 +273,12 @@ wallet_add_scanner_screen:
     step6_em: " Entiendo"
     step6_end: " > Exportar Xpub"
   guide_keystone:
-    step0: "Los dispositivos que no sean el Keystone 3 Pro no son compatibles."
+    step0: "Los dispositivos que no sean el Keystone 3 Pro no son compatibles. (Se recomienda firmware solo para Bitcoin)"
     step1: "1. En la pantalla principal, "
     step1_em: " More(•••)"
     step2: "2. "
     step2_em: " Connect Software Wallet"
-    step3: "3. Seleccionar cualquier billetera"
+    step3: "3. Selecciona una de las billeteras BlueWallet, Sparrow o Zeus"
   guide_jade:
     step0_preposition: "En un " 
     step0_em: "Estado "
@@ -458,12 +515,6 @@ settings_screen:
   use_biometric: "Usar autenticación biométrica"
   change_password: "Cambiar contraseña"
   hide_balance: "Ocultar saldo"
-  fake_balance:
-    fake_balance_setting: "Establecer saldo falso"
-    fake_balance_display: "Mostrar saldo falso"
-    fake_balance_input_placeholder: "Por favor, establezca el total del saldo falso (en unidades BTC)"
-    fake_balance_input_description: "Si tiene múltiples billeteras, el saldo de cada billetera se calculará automáticamente." 
-    fake_balance_input_exceeds_error: "Puedes establecer hasta 21 millones de BTC"
   language: "Idioma"
   locales:
     korean: "한국어"
