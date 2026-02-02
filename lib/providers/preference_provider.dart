@@ -1,13 +1,11 @@
 import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
-import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
-import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -82,10 +80,6 @@ class PreferenceProvider extends ChangeNotifier {
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
   String get explorerUrl => _networkPrefs.blockExplorerUrl;
-
-  bool get useDefaultExplorer => _networkPrefs.useDefaultExplorer;
-
-  String get customExplorerUrl => _networkPrefs.customExplorerUrl;
 
   PreferenceProvider(this._walletPreferencesRepository, this._networkPrefs) {
     _networkPrefs.addListener(notifyListeners);
@@ -385,53 +379,11 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 일렉트럼 서버 설정
-  Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
-    await _networkPrefs.setDefaultElectrumServer(defaultElectrumServer);
-  }
-
-  /// 커스텀 일렉트럼 서버 설정
-  Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
-    await _networkPrefs.setCustomElectrumServer(host, port, ssl);
-  }
-
-  /// 일렉트럼 서버 설정 불러오기
-  ElectrumServer getElectrumServer() {
-    return _networkPrefs.getElectrumServer();
-  }
-
-  /// 사용자 서버 정보 불러오기
-  Future<List<ElectrumServer>> getUserServers() async {
-    return _networkPrefs.getUserServers();
-  }
-
-  /// 사용자 서버 추가
-  Future<void> addUserServer(String host, int port, bool ssl) async {
-    await _networkPrefs.addUserServer(host, port, ssl);
-  }
-
-  /// 사용자 서버 삭제
-  Future<void> removeUserServer(ElectrumServer server) async {
-    await _networkPrefs.removeUserServer(server);
-  }
-
   // 마지막으로 선택한 UTXO 정렬 방식 저장
   Future<void> setLastUtxoOrder(UtxoOrder utxoOrder) async {
     _utxoSortOrder = utxoOrder;
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
     notifyListeners();
-  }
-
-  Future<void> setUseDefaultExplorer(bool useDefault) async {
-    await _networkPrefs.setUseDefaultExplorer(useDefault);
-  }
-
-  Future<void> setCustomExplorerUrl(String url) async {
-    await _networkPrefs.setCustomExplorerUrl(url);
-  }
-
-  Future<void> resetBlockExplorerToDefault() async {
-    await _networkPrefs.resetBlockExplorerToDefault();
   }
 }

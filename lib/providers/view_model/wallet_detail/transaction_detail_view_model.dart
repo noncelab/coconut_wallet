@@ -5,7 +5,7 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -25,7 +25,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final AddressRepository _addressRepository;
   final ConnectivityProvider _connectivityProvider;
   final SendInfoProvider _sendInfoProvider;
-  final PreferenceProvider _preferenceProvider;
+  final NetworkPreferenceProvider _networkPrefs;
 
   BlockTimestamp? _currentBlock;
 
@@ -47,7 +47,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool _disposed = false;
   bool get isDisposed => _disposed;
 
-  String get mempoolHost => _preferenceProvider.explorerUrl;
+  String get mempoolHost => _networkPrefs.blockExplorerUrl;
 
   @override
   void dispose() {
@@ -64,7 +64,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
     this._addressRepository,
     this._connectivityProvider,
     this._sendInfoProvider,
-    this._preferenceProvider,
+    this._networkPrefs,
   ) {
     _setCanBumpingTx();
     _initTransactionList();

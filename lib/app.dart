@@ -158,7 +158,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             create: (context) {
               final walletProvider = context.read<WalletProvider>();
               return NodeProvider(
-                context.read<PreferenceProvider>().getElectrumServer(),
+                context.read<NetworkPreferenceProvider>().getElectrumServer(),
                 CoconutWalletApp.kNetworkType,
                 context.read<ConnectivityProvider>(),
                 walletProvider.walletLoadStateNotifier,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/block_explorer_view_model.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -28,8 +29,9 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
   void initState() {
     super.initState();
 
-    final preferenceProvider = context.read<PreferenceProvider>();
-    _viewModel = BlockExplorerViewModel(preferenceProvider);
+    context.read<PreferenceProvider>();
+    final networkPreferenceProvider = context.read<NetworkPreferenceProvider>();
+    _viewModel = BlockExplorerViewModel(networkPreferenceProvider);
 
     _viewModel.addListener(_onViewModelChanged);
 

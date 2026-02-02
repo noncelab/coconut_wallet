@@ -3,14 +3,14 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class ElectrumServerViewModel extends ChangeNotifier {
   final NodeProvider _nodeProvider;
-  final PreferenceProvider _preferenceProvider;
+  final NetworkPreferenceProvider _networkPrefs;
 
   late ElectrumServer _initialServer;
   late ElectrumServer _currentServer;
@@ -34,9 +34,9 @@ class ElectrumServerViewModel extends ChangeNotifier {
   bool get isPortOutOfRangeError => _isPortOutOfRangeError;
   bool get isDefaultServerMenuVisible => _isDefaultServerMenuVisible;
 
-  ElectrumServerViewModel(this._nodeProvider, this._preferenceProvider) {
+  ElectrumServerViewModel(this._nodeProvider, this._networkPrefs) {
     // 현재 설정된 서버 정보 가져오기
-    _initialServer = _preferenceProvider.getElectrumServer();
+    _initialServer = _networkPrefs.getElectrumServer();
 
     // 초기 서버 정보 설정
     _setCurrentServer(_initialServer);
@@ -53,7 +53,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
   /// 초기 NodeProvider 상태 확인
   void _checkInitialNodeProviderStatus() {
-    final currentServer = _preferenceProvider.getElectrumServer();
+    final currentServer = _networkPrefs.getElectrumServer();
     _performServerConnectionTest(currentServer);
   }
 
@@ -85,7 +85,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
   /// 사용자 서버 목록 로드
   Future<void> _loadUserServers() async {
     try {
-      _userServers = (await _preferenceProvider.getUserServers());
+      _userServers = (await _networkPrefs.getUserServers());
       notifyListeners();
     } catch (e) {
       Logger.error('Failed to load user servers: $e');
@@ -185,11 +185,11 @@ class ElectrumServerViewModel extends ChangeNotifier {
 
     // 서버 연결 상태 상관없이 서버 정보 업데이트
     _setCurrentServer(newServer);
-    _preferenceProvider.setCustomElectrumServer(newServer.host, newServer.port, newServer.ssl);
+    _networkPrefs.setCustomElectrumServer(newServer.host, newServer.port, newServer.ssl);
 
     // 연결된 서버가 default 서버에도 없고, 사용자 서버에도 없으면 사용자 서버 추가
     if (!_isDefaultServer(newServer) && !_isUserServer(newServer)) {
-      await _preferenceProvider.addUserServer(newServer.host, newServer.port, newServer.ssl);
+      await _networkPrefs.addUserServer(newServer.host, newServer.port, newServer.ssl);
       await _loadUserServers();
     }
 
@@ -205,7 +205,7 @@ class ElectrumServerViewModel extends ChangeNotifier {
   }
 
   Future<void> removeUserServer(ElectrumServer server) async {
-    await _preferenceProvider.removeUserServer(server);
+    await _networkPrefs.removeUserServer(server);
     await _loadUserServers();
   }
 
