@@ -107,7 +107,7 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
-      expect(result.isChangeOutputUsed, isTrue);
+      expect(result.isOnlyChangeOutputUsed, isTrue);
       expect(result.isSelfOutputsUsed, isFalse);
 
       final tx = result.transaction!;
@@ -155,7 +155,7 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
-      expect(result.isChangeOutputUsed, isTrue);
+      expect(result.isOnlyChangeOutputUsed, isTrue);
 
       final tx = result.transaction!;
       final int totalInput = tx.totalInputAmount;

@@ -247,6 +247,8 @@ class TransactionBuilder {
           );
         }
         return tx;
+      } on TransactionCreationException catch (_) {
+        rethrow;
       } on Exception catch (e) {
         /// 보내는 수량 합 + 예상 수수료 > 잔액
         final int? estimatedFee = extractEstimatedFeeFromException(e);

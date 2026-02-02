@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
+import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../mock/transaction_record_mock.dart';
@@ -70,6 +71,11 @@ void main() {
     ),
   ];
 
+  List<String> transactionHashes = [
+    'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
+    '577a101d9bddd1ddee0d72a0853a8ca2d8b13d92c63f9a84277152ba791e426a',
+  ];
+
   List<String> externalWalletAddressList = [
     'bcrt1qxa3vg30kvqsd73knsv0dj8z26jx223chv8fzcx',
     'bcrt1q390yhj79g5elvhazvp3kc8p5srnnfxjwhnltwh',
@@ -78,6 +84,64 @@ void main() {
     'bcrt1q02q4m5venfhucsvym5fadkftph0szumuuwdcf9',
   ];
   NetworkType.setNetworkType(NetworkType.regtest);
+
+  RbfBuilder createRbfBuilder({
+    required List<int> inputAmounts,
+    required List<Tuple<bool, int>> recipients,
+    required int changeAmount,
+    required int fee,
+    required double vSize,
+    List<UtxoState>? additionalSpendable,
+  }) {
+    final List<TransactionAddress> inputAddressList = [];
+    final List<UtxoState> inputUtxos = [];
+    for (int i = 0; i < inputAmounts.length; i++) {
+      inputAddressList.add(TransactionAddress(receiveAddressList[i], inputAmounts[i]));
+      inputUtxos.add(
+        UtxoState(
+          transactionHash: transactionHashes[i],
+          index: i,
+          amount: inputAmounts[i],
+          blockHeight: 100 + i,
+          to: receiveAddressList[i],
+          derivationPath: "m/84'/1'/0'/0/$i",
+          timestamp: DateTime.now(),
+        ),
+      );
+    }
+
+    final List<TransactionAddress> outputAddressList = [];
+    for (int i = 0; i < recipients.length; i++) {
+      if (recipients[i].item1) {
+        outputAddressList.add(TransactionAddress(receiveAddressList[inputAmounts.length + i], recipients[i].item2));
+      } else {
+        outputAddressList.add(TransactionAddress(externalWalletAddressList[i], recipients[i].item2));
+      }
+    }
+
+    if (changeAmount != 0) {
+      outputAddressList.add(TransactionAddress(changeAddressList[0], changeAmount));
+    }
+
+    final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
+      inputAddressList: inputAddressList,
+      outputAddressList: outputAddressList,
+      amount: recipients.fold(0, (sum, recipient) => sum + recipient.item2),
+      fee: fee,
+      vSize: vSize,
+    );
+
+    return RbfBuilder(
+      pendingTx: pendingTx,
+      walletListItemBase: singleWallet,
+      vSizeIncreasePerInput: 56,
+      isMyAddress: isMyAddress,
+      inputUtxos: inputUtxos,
+      nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+      getDerivationPath: getDerivationPath,
+      dustLimit: dustLimit,
+    );
+  }
 
   group('변수 생성 테스트', () {
     test('External 1 / 모든 getter들 정합성 확인', () {
@@ -242,7 +306,7 @@ void main() {
   });
 
   group('싱글시그지갑 - InputSum enough', () {
-    test('External 1 / InputSum enough', () async {
+    test('External 1 / change / InputSum enough', () async {
       final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
       final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
       final List<TransactionAddress> outputAddressList = [
@@ -270,7 +334,7 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
-      expect(result.isChangeOutputUsed, isTrue);
+      expect(result.isOnlyChangeOutputUsed, isTrue);
       expect(result.isSelfOutputsUsed, isFalse);
       expect(result.addedUtxos, isNull);
       expect(result.deficitAmount, isNull);
@@ -319,7 +383,7 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
-      expect(result.isChangeOutputUsed, isTrue);
+      expect(result.isOnlyChangeOutputUsed, isTrue);
       expect(result.isSelfOutputsUsed, isFalse);
       expect(result.addedUtxos, isNull);
       expect(result.deficitAmount, isNull);
@@ -337,6 +401,9 @@ void main() {
       expect(calculatedFeeRate, 3.0);
       expect(changeAmount, equals(139391));
     });
+
+    // TODO: sweep tx 테스트 코드
+    // TODO: batch sweep 테스트 코드
   });
 
   group('예외 상황', () {
@@ -371,5 +438,93 @@ void main() {
         throwsA(isA<FeeRateTooLowException>()),
       );
     });
+  });
+
+  group('싱글시그지갑 - InputSum not enough / selfOutput 사용', () {
+    test('selfOutput 1 / no change / selfOutput 1개의 amount를 차감하여 성공🟢', () async {
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [50000],
+        recipients: [Tuple(true, 50000 - 110)],
+        changeAmount: 0,
+        fee: 110,
+        vSize: 110,
+      );
+      final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+
+      expect(result.isSuccess, isTrue);
+      expect(result.transaction, isNotNull);
+      expect(result.isOnlyChangeOutputUsed, isFalse);
+      expect(result.isSelfOutputsUsed, isTrue);
+      expect(result.addedUtxos, isNull);
+      expect(result.deficitAmount, isNull);
+      expect(result.transaction!.estimateFee(5, AddressType.p2wpkh), greaterThan(110));
+    });
+
+    // test('selfOutput 1 / no change / selfOutput 1개의 amount를 차감하여 시도했지만 Input 부족🔴', () async {
+    //   final rbfBuilder = createRbfBuilder(
+    //     inputAmounts: [1000],
+    //     recipients: [Tuple(true, 1000 - 110)],
+    //     changeAmount: 0,
+    //     fee: 110,
+    //     vSize: 110,
+    //   );
+    //   final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+
+    //   expect(result.isSuccess, isFalse);
+    //   expect(result.transaction, isNull);
+    //   expect(result.isOnlyChangeOutputUsed, isFalse);
+    //   expect(result.isSelfOutputsUsed, isFalse);
+    //   expect(result.addedUtxos, isNull);
+    //   expect(result.deficitAmount, isNotNull);
+    //   print(result.deficitAmount);
+    // });
+
+    test('selfOutput 1개의 amount를 차감하여 성공 / leftOutput > dustLimit', () async {
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [50000],
+        recipients: [Tuple(true, 50000 - 110)],
+        changeAmount: 0,
+        fee: 110,
+        vSize: 110,
+      );
+      final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+
+      expect(result.isSuccess, isTrue);
+      expect(result.transaction, isNotNull);
+      expect(result.isOnlyChangeOutputUsed, isFalse);
+      expect(result.isSelfOutputsUsed, isTrue);
+      expect(result.addedUtxos, isNull);
+      expect(result.deficitAmount, isNull);
+      expect(result.transaction!.estimateFee(5, AddressType.p2wpkh), greaterThan(110));
+    });
+
+    test('selfOutput 1개를 제거하여 성공 / 0 < leftOutput <= dustLimit', () async {
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [50000],
+        recipients: [Tuple(true, 50000 - 110)],
+        changeAmount: 0,
+        fee: 110,
+        vSize: 110,
+      );
+      final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+
+      expect(result.isSuccess, isTrue);
+      expect(result.transaction, isNotNull);
+      expect(result.isOnlyChangeOutputUsed, isFalse);
+      expect(result.isSelfOutputsUsed, isTrue);
+      expect(result.addedUtxos, isNull);
+      expect(result.deficitAmount, isNull);
+      expect(result.transaction!.estimateFee(5, AddressType.p2wpkh), greaterThan(110));
+    });
+
+    test('selfOutput 1개를 제거하여 성공 / leftOutput == 0', () async {});
+
+    test('selfOutput 1 제거 + selfOutput 2에서 amount 차감하여 성공 / leftOutput > dustLimit', () async {});
+
+    test('selfOutput 2 제거하여 성공 / 0 < leftOutput <= dustLimit', () async {});
+
+    test('selfOutput 2 제거하여 성공 / leftOutput == 0', () async {});
+
+    test('selfOutput 1개를 제거하여 성공 / 기존 수수료보다 새로운 수수료가 적어짐 / 수수료 조정하여 성공', () async {});
   });
 }

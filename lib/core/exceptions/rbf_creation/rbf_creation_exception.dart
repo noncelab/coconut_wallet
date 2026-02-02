@@ -17,10 +17,6 @@ class InsufficientBalanceException extends RbfCreationException {
   const InsufficientBalanceException({super.message = 'Not enough balance for sending.'});
 }
 
-class SendAmountTooLowException extends RbfCreationException {
-  const SendAmountTooLowException({super.message = 'Send amount is too low.'});
-}
-
 class InvalidChangeOutputException extends RbfCreationException {
   const InvalidChangeOutputException({super.message = 'Invalid change output or derivation path finder.'});
 }
