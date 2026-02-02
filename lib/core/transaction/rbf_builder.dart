@@ -1,7 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart'
-    as TxCreationException;
+    as tx_creation_exception;
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
@@ -262,8 +262,8 @@ class RbfBuilder {
         newRecipients: newRecipients,
       );
     } else {
-      if (txBuildResult.exception is TxCreationException.SendAmountTooLowException) {
-        final estimatedFee = (txBuildResult.exception as TxCreationException.SendAmountTooLowException).estimatedFee;
+      if (txBuildResult.exception is tx_creation_exception.SendAmountTooLowException) {
+        final estimatedFee = (txBuildResult.exception as tx_creation_exception.SendAmountTooLowException).estimatedFee;
         final deficitAmount = (dustLimit + 1) + estimatedFee - inputSum;
         return _SweepResult(
           rbfBuildResult: RbfBuildResult(
