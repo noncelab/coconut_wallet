@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/url_normalize_util.dart';

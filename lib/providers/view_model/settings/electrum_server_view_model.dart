@@ -3,7 +3,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';

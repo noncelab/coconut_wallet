@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
-import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
