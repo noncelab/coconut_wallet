@@ -474,6 +474,8 @@ unsigned_tx_qr_screen:
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
+  view_bbqr: "BBQR 보기"
+  view_ur: "UR 보기"
 
   guide_hardware_wallet:
     step1: "하드웨어 월렛으로 아래 QR 코드를 스캔하여 서명 과정을 시작해 주세요."

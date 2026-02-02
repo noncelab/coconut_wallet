@@ -475,6 +475,8 @@ unsigned_tx_qr_screen:
   fast_scan_mode: "高速スキャンモード"
   low_density_qr: "シンプルQR"
   high_density_qr: "高密度QR"
+  view_bbqr: "BBQR表示"
+  view_ur: "UR表示"
 
   guide_hardware_wallet:
     step1: "署名を開始するために、ハードウェアウォレットで下のQRコードをスキャンしてください。"
