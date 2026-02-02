@@ -24,6 +24,7 @@ class UnsignedTransactionQrScreen extends StatefulWidget {
 }
 
 class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScreen> {
+  late final UnsignedTransactionQrViewModel _viewModel;
   late final SendInfoProvider _sendInfoProvider;
   late final String _psbtBase64;
   late final bool _isMultisig;
@@ -38,26 +39,20 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     _isMultisig = _sendInfoProvider.isMultisig!;
     _walletImportSource = _sendInfoProvider.walletImportSource!;
     _isDonation = _sendInfoProvider.isDonation;
+    _viewModel = UnsignedTransactionQrViewModel()..initializeBbqr(_psbtBase64, _walletImportSource);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // ViewModel 초기화
-    final viewModel = UnsignedTransactionQrViewModel();
     final screenWidth = MediaQuery.of(context).size.width;
-    viewModel.initializeQrScanDensity(_walletImportSource, screenWidth);
+    _viewModel.initializeQrScanDensity(_walletImportSource, screenWidth);
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) {
-        final viewModel = UnsignedTransactionQrViewModel();
-        // BBQR 초기화 (QR 스캔 밀도는 didChangeDependencies에서 초기화)
-        viewModel.initializeBbqr(_psbtBase64, _walletImportSource);
-        return viewModel;
-      },
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
       child: Consumer<UnsignedTransactionQrViewModel>(
         builder: (context, viewModel, child) {
           return Scaffold(
