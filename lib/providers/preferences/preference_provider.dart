@@ -115,9 +115,9 @@ class PreferenceProvider extends ChangeNotifier {
     _isBtcUnit =
         _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit) ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit) : true;
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
-    _walletOrder = getWalletOrder();
-    _favoriteWalletIds = getFavoriteWalletIds();
-    _excludedFromTotalBalanceWalletIds = getExcludedFromTotalBalanceWalletIds();
+    _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
+    _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
+    _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
     // FeatureSettingsProvider가 없으면 내부에서 생성 (하위 호환성)
     // 주입된 경우에는 이미 초기화되어 있음
     _featureSettingsProvider ??= FeatureSettingsProvider();
@@ -133,15 +133,15 @@ class PreferenceProvider extends ChangeNotifier {
             : UtxoOrder.byAmountDesc;
 
     // 통화 설정 초기화
-    initializeFiat();
-    initializeLanguageFromSystem();
+    _initializeFiat();
+    _initializeLanguageFromSystem();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      applyLanguageSettingSync();
+      _applyLanguageSettingSync();
     });
   }
 
   /// 통화 설정 초기화
-  void initializeFiat() {
+  void _initializeFiat() {
     final fiatCode = _sharedPrefs.getString(SharedPrefKeys.kSelectedFiat);
     if (fiatCode.isNotEmpty) {
       _selectedFiat = FiatCode.values.firstWhere((fiat) => fiat.code == fiatCode, orElse: () => FiatCode.KRW);
@@ -152,7 +152,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// OS 설정에 따라 언어 설정 초기화
-  void initializeLanguageFromSystem() {
+  void _initializeLanguageFromSystem() {
     bool changed = false;
     if (_sharedPrefs.isContainsKey(SharedPrefKeys.kLanguage)) {
       _language = _sharedPrefs.getString(SharedPrefKeys.kLanguage);
@@ -162,14 +162,14 @@ class PreferenceProvider extends ChangeNotifier {
       changed = true;
     }
 
-    applyLanguageSettingSync();
+    _applyLanguageSettingSync();
     if (changed) {
       notifyListeners();
     }
   }
 
   /// 언어 설정 적용 (동기 버전)
-  void applyLanguageSettingSync() {
+  void _applyLanguageSettingSync() {
     try {
       Logger.log('Applying language setting: $_language');
       if (isKorean) {
@@ -195,7 +195,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 언어 설정 적용
-  Future<void> applyLanguageSetting() async {
+  Future<void> _applyLanguageSetting() async {
     try {
       if (isKorean) {
         await LocaleSettings.setLocale(AppLocale.kr);
@@ -274,7 +274,7 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kLanguage, languageCode);
 
     // 언어 설정 적용
-    await applyLanguageSetting();
+    await _applyLanguageSetting();
 
     // 언어 설정 후 상태 업데이트
     notifyListeners();
@@ -375,68 +375,45 @@ class PreferenceProvider extends ChangeNotifier {
     await _sharedPrefs.setString(SharedPrefKeys.kFakeBalanceMap, encoded);
   }
 
-  /// 지갑 순서 불러오기
-  List<int> getWalletOrder() {
-    final encoded = _walletPreferencesRepository.getWalletOrder().toList();
-    if (encoded.isEmpty) return [];
-    return encoded;
-  }
-
   /// 지갑 순서 설정
   Future<void> setWalletOrder(List<int> walletOrder) async {
     _walletOrder = walletOrder;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletOrder, jsonEncode(walletOrder));
+    await _walletPreferencesRepository.setWalletOrder(walletOrder);
     notifyListeners();
   }
 
   /// 지갑 순서 단일 제거
   Future<void> removeWalletOrder(int walletId) async {
     _walletOrder.remove(walletId);
-    await setWalletOrder(_walletOrder);
+    await _walletPreferencesRepository.setWalletOrder(_walletOrder);
     notifyListeners();
   }
 
-  /// 지갑 즐겨찾기 목록 불러오기
-  List<int> getFavoriteWalletIds() {
-    final encoded = _sharedPrefs.getString(SharedPrefKeys.kFavoriteWalletIds);
-    if (encoded.isEmpty) return [];
-    final List<dynamic> decoded = jsonDecode(encoded);
-    return decoded.cast<int>();
-  }
-
   /// 지갑 즐겨찾기 목록 설정
-  Future<void> setFavoriteWalletIds(List<int> favoriteWalletIds) async {
-    _favoriteWalletIds = favoriteWalletIds;
-    await _sharedPrefs.setString(SharedPrefKeys.kFavoriteWalletIds, jsonEncode(favoriteWalletIds));
+  Future<void> setFavoriteWalletIds(List<int> ids) async {
+    _favoriteWalletIds = ids;
+    await _walletPreferencesRepository.setFavoriteWalletIds(ids);
     notifyListeners();
   }
 
   /// 지갑 즐겨찾기 단일 제거
   Future<void> removeFavoriteWalletId(int walletId) async {
     _favoriteWalletIds.remove(walletId);
-    await setFavoriteWalletIds(_favoriteWalletIds);
+    await _walletPreferencesRepository.setFavoriteWalletIds(_favoriteWalletIds);
     notifyListeners();
-  }
-
-  /// 총 잔액에서 제외할 지갑 목록 불러오기
-  List<int> getExcludedFromTotalBalanceWalletIds() {
-    final encoded = _sharedPrefs.getString(SharedPrefKeys.kExcludedFromTotalBalanceWalletIds);
-    if (encoded.isEmpty) return [];
-    final List<dynamic> decoded = jsonDecode(encoded);
-    return decoded.cast<int>();
   }
 
   /// 총 잔액에서 제외할 지갑 설정
   Future<void> setExcludedFromTotalBalanceWalletIds(List<int> ids) async {
     _excludedFromTotalBalanceWalletIds = ids;
-    await _sharedPrefs.setString(SharedPrefKeys.kExcludedFromTotalBalanceWalletIds, jsonEncode(ids));
+    await _walletPreferencesRepository.setExcludedWalletIds(ids);
     notifyListeners();
   }
 
   /// 총 잔액에서 제외할 지갑 단일 제거
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
-    await setExcludedFromTotalBalanceWalletIds(_excludedFromTotalBalanceWalletIds);
+    await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
     notifyListeners();
   }
 
@@ -506,7 +483,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 커스텀 일렉트럼 서버 파라미터 검증
-  void validateCustomElectrumServerParams(String host, int port, bool ssl) {
+  void _validateCustomElectrumServerParams(String host, int port, bool ssl) {
     if (host.trim().isEmpty) {
       throw ArgumentError('Host cannot be empty');
     }
@@ -523,7 +500,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// 커스텀 일렉트럼 서버 설정
   Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
-    validateCustomElectrumServerParams(host, port, ssl);
+    _validateCustomElectrumServerParams(host, port, ssl);
     await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, 'CUSTOM');
     await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host);
     await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port);
