@@ -11,15 +11,17 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
+import 'package:tuple/tuple.dart';
 
 typedef WalletUpdateListener = void Function(WalletUpdateInfo walletUpdateInfo);
 
@@ -43,6 +45,7 @@ class WalletProvider extends ChangeNotifier {
 
   late final ValueNotifier<WalletLoadState> walletLoadStateNotifier;
   late final ValueNotifier<List<WalletListItemBase>> walletItemListNotifier;
+  late final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier;
 
   void _setWalletItemList(List<WalletListItemBase> value) {
     _walletItemList = value;
@@ -60,9 +63,10 @@ class WalletProvider extends ChangeNotifier {
     // ValueNotifier들 초기화
     walletLoadStateNotifier = ValueNotifier(_walletLoadState);
     walletItemListNotifier = ValueNotifier(_walletItemList);
+    currentBlockHeightNotifier = ValueNotifier(null);
 
     _loadWalletListFromDB().then((_) {
-      _fetchWalletPreferences(); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
+      _preferenceProvider.setWalletPreferences(walletItemList); // 이전 버전에서의 지갑목록과 충돌을 없애기 위한 초기화
       notifyListeners();
     });
   }
@@ -383,6 +387,43 @@ class WalletProvider extends ChangeNotifier {
     return _transactionRepository.getTransactionRecordList(walletId);
   }
 
+  Map<int, List<TransactionRecord>> getPendingAndDaysAgoTransactions(List<int> walletIds, int days) {
+    Map<int, List<TransactionRecord>> result = {};
+
+    // end = 지금, start = N일 전 (로컬 시간 기준)
+    final DateTime end = DateTime.now();
+    final DateTime start = end.subtract(Duration(days: days));
+    final dateRange = Tuple2<DateTime, DateTime>(start, end);
+
+    for (int walletId in walletIds) {
+      final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
+      final confirmedTxs = getConfirmedTransactionRecordListWithinDateRange([walletId], dateRange);
+
+      if (pendingTxs.isNotEmpty || confirmedTxs.isNotEmpty) {
+        result.addAll({
+          walletId: [...pendingTxs, ...confirmedTxs],
+        });
+      }
+    }
+
+    return result;
+  }
+
+  List<TransactionRecord> getConfirmedTransactionRecordListWithinDateRange(
+    List<int> walletIds,
+    Tuple2<DateTime, DateTime> dateRange,
+  ) {
+    List<TransactionRecord> result = [];
+    for (int walletId in walletIds) {
+      final transactions = _transactionRepository.getTransactionRecordListWithDateRange(walletId, dateRange);
+      // confirmed 트랜잭션만 필터링 (blockHeight > 0)
+      final confirmedTransactions = transactions.where((tx) => tx.blockHeight > 0).toList();
+      result.addAll(confirmedTransactions);
+    }
+
+    return result;
+  }
+
   UtxoState? getUtxoState(int walletId, String utxoId) {
     return _utxoRepository.getUtxoState(walletId, utxoId);
   }
@@ -415,18 +456,8 @@ class WalletProvider extends ChangeNotifier {
     );
   }
 
-  /// DB에서 지갑 로드(_loadWalletListFromDB) 완료 후 수행
-  Future<void> _fetchWalletPreferences() async {
-    var walletOrder = _preferenceProvider.walletOrder;
-    var favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
-    if (walletOrder.isEmpty) {
-      walletOrder = List.from(walletItemList.map((w) => w.id));
-      await _preferenceProvider.setWalletOrder(walletOrder);
-    }
-    if (favoriteWalletIds.isEmpty) {
-      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
-      await _preferenceProvider.setFavoriteWalletIds(favoriteWalletIds);
-    }
+  void setCurrentBlockHeight(BlockTimestamp? blockHeight) {
+    currentBlockHeightNotifier.value = blockHeight;
   }
 
   /// 새 지갑이 추가되었을 때 처리하는 함수(가짜 잔액 재분배, 즐겨찾기, 지갑 순서 추가)
@@ -453,6 +484,7 @@ class WalletProvider extends ChangeNotifier {
     // ValueNotifier들 해제
     walletLoadStateNotifier.dispose();
     walletItemListNotifier.dispose();
+    currentBlockHeightNotifier.dispose();
     super.dispose();
   }
 }

@@ -5,7 +5,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
@@ -310,11 +310,17 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   // 전체 총액
                   Row(
                     children: [
-                      AnimatedBalance(
-                        prevValue: prevTotalBalance,
-                        value: totalBalance,
-                        currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                        textStyle: CoconutTypography.heading4_18_NumberBold,
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: AnimatedBalance(
+                            prevValue: prevTotalBalance,
+                            value: totalBalance,
+                            currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                            textStyle: CoconutTypography.heading4_18_NumberBold,
+                          ),
+                        ),
                       ),
                       CoconutLayout.spacing_100w,
                       Text(isBtcUnit ? t.btc : t.sats, style: CoconutTypography.heading4_18_NumberBold),

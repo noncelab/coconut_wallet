@@ -6,12 +6,14 @@ class MultiButton extends StatefulWidget {
   final List<SingleButton> children;
   final int animationDuration;
   final Color backgroundColor;
+  final bool showDivider;
 
   const MultiButton({
     super.key,
     required this.children,
     this.animationDuration = 100,
     this.backgroundColor = CoconutColors.gray800,
+    this.showDivider = true,
   });
 
   @override
