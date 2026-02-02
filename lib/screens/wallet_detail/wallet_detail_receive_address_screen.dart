@@ -95,7 +95,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                       children: [
                         QrCodeInfo(
                           qrcodeTopWidget: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,

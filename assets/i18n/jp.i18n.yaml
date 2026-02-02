@@ -226,7 +226,7 @@ wallet_home_screen:
       enter_again: "再入力"
   last_24_hours_transactions: "直近24時間の取引"
   syncing_recent_transaction: "最近の取引履歴を読み込んでいます"
-  cannot_modify_fixed_widget: "固定ウィジェットは変更できません"
+  cannot_modify_fixed_widget: "この項目は表示／非表示を変更できません。"
   no_change_in_amount: "金額に変化がありません！"
   analysis_period: "直近${days}日 • ${transaction_type}"
   analysis_period_cutsom: "直接設定 • ${transaction_type}"
@@ -410,7 +410,7 @@ send_screen:
   max_mode_insufficient_balance: "残高不足"
   unintended_dust_fee: "${unintendedDustFee} satのおつりが手数料として使用されます。"
   fee_rate_too_low: "最小値は0.1です"
-  drag_to_add_address: "送信先アドレスを追加するには、左にスワイプしてください"
+  swipe_to_add_address: "受取人を追加するには、左にスワイプしてください"
 
 utxo_selection_screen:
   title: "UTXO選択"
