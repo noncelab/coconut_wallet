@@ -45,6 +45,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     this._txProvider,
     this._walletProvider,
     this._syncWalletStateStream,
+    this._networkPrefs,
   ) {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);

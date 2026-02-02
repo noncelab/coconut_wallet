@@ -9,6 +9,7 @@ import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
@@ -123,7 +124,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           Provider.of<TransactionProvider>(context, listen: false),
           Provider.of<WalletProvider>(context, listen: false),
           Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
-          Provider.of<PreferenceProvider>(context, listen: false),
+          Provider.of<NetworkPreferenceProvider>(context, listen: false),
         );
         return _viewModel;
       },
