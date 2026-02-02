@@ -226,7 +226,7 @@ wallet_home_screen:
           enter_again: "Try again"
   last_24_hours_transactions: "Last 24 hours transactions"
   syncing_recent_transaction: "Syncing recent transactions"
-  cannot_modify_fixed_widget: "Cannot modify fixed widget"
+  cannot_modify_fixed_widget: "You can’t show or hide this item."
   no_change_in_amount: "No change in amount!"
   analysis_period: "Recent ${days} days • ${transaction_type}"
   analysis_period_custom: "Custom • ${transaction_type}"
