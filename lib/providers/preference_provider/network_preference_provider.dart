@@ -11,6 +11,16 @@ import 'package:coconut_wallet/utils/url_normalize_util.dart';
 class NetworkPreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
+  static const String _serverNameCustom = 'CUSTOM';
+
+  static const String _langKr = 'kr';
+  static const String _langJp = 'jp';
+  static const String _langEn = 'en';
+
+  static const String _mempoolUrlMain = 'https://mempool.space';
+  static const String _mempoolUrlKr = 'https://mempool.space/ko';
+  static const String _mempoolUrlJp = 'https://mempool.space/ja';
+
   NetworkPreferenceProvider();
 
   bool get useDefaultExplorer {
@@ -42,13 +52,13 @@ class NetworkPreferenceProvider extends ChangeNotifier {
     final effectiveLanguage = language.isNotEmpty ? language : getSystemLanguageCode();
 
     switch (effectiveLanguage) {
-      case 'kr':
-        return 'https://mempool.space/ko';
-      case 'jp':
-        return 'https://mempool.space/ja';
-      case 'en':
+      case _langKr:
+        return _mempoolUrlKr;
+      case _langJp:
+        return _mempoolUrlJp;
+      case _langEn:
       default:
-        return 'https://mempool.space';
+        return _mempoolUrlMain;
     }
   }
 
@@ -69,7 +79,7 @@ class NetworkPreferenceProvider extends ChangeNotifier {
 
   Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
     _validateCustomElectrumServerParams(host, port, ssl);
-    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, 'CUSTOM');
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, _serverNameCustom);
     await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host);
     await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port);
     await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl);
@@ -90,7 +100,7 @@ class NetworkPreferenceProvider extends ChangeNotifier {
       }
     }
 
-    if (serverName == 'CUSTOM') {
+    if (serverName == _serverNameCustom) {
       return ElectrumServer.custom(
         _sharedPrefs.getString(SharedPrefKeys.kCustomElectrumHost),
         _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumPort),
