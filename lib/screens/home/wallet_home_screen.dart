@@ -1067,7 +1067,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       // 정렬된 트랜잭션 플랫 리스트
                       final ordered = _getOrderedRecentTransactions();
 
-                      if (ordered.isEmpty) {
+                      if (ordered.isEmpty || _viewModel.isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: _buildEmptyRecentTransactions(
@@ -1113,7 +1113,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 builder: (context, recentTransactions, child) {
                   final totalCount = _getOrderedRecentTransactions().length;
 
-                  if (totalCount <= 1) return Container();
+                  if (totalCount <= 1 || _viewModel.isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) {
+                    return Container();
+                  }
 
                   return Container(
                     margin: const EdgeInsets.only(top: 16, left: 50, right: 50),
@@ -1400,8 +1402,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   ),
                 ],
                 if (_viewModel.recentTransactionAnalysis?.isEmpty == true ||
-                    _viewModel.recentTransactionAnalysis == null) ...[
-                  // 분석에 필요한 거래가 없을 때
+                    _viewModel.recentTransactionAnalysis == null ||
+                    _viewModel.isBalanceHidden ||
+                    _viewModel.fakeBalanceTotalAmount != null) ...[
+                  // 분석에 필요한 거래가 없거나 잔액 숨기기/가짜잔액 설정되었을 때
                   Container(
                     width: MediaQuery.sizeOf(context).width,
                     padding: const EdgeInsets.all(20),
