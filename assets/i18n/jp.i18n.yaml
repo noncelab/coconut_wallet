@@ -410,7 +410,7 @@ send_screen:
   max_mode_insufficient_balance: "残高不足"
   unintended_dust_fee: "${unintendedDustFee} satのおつりが手数料として使用されます。"
   fee_rate_too_low: "最小値は0.1です"
-  drag_to_add_address: "送信先アドレスを追加するには、左にスワイプしてください"
+  swipe_to_add_address: "受取人を追加するには、左にスワイプしてください"
 
 utxo_selection_screen:
   title: "UTXO選択"

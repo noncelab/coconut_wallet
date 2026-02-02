@@ -407,7 +407,7 @@ send_screen:
   max_mode_insufficient_balance: "Saldo insuficiente"
   unintended_dust_fee: "El cambio de ${unintendedDustFee} sat será usado como comisión." 
   fee_rate_too_low: "El valor mínimo permitido es 0.1"
-  drag_to_add_address: "Arrastra para agregar una dirección"
+  swipe_to_add_address: "Desliza para agregar un destinatario"
 
 utxo_selection_screen:
   title: "Seleccionar UTXOs"
