@@ -2,7 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
@@ -266,7 +266,7 @@ class _P2PCalculatorState extends State<P2PCalculator> {
                       const SizedBox(height: 24),
                       _transactionBillRowWidget(
                         t.utility.p2p_calculator.reference_price,
-                        '${selectedFiat.symbol} ${_fiatAmountController.text} / ${isBtcUnit ? t.btc : t.sats}',
+                        '${selectedFiat.symbol} ${_fixedBtcPrice?.toThousandsSeparatedString() ?? '-'} / ${isBtcUnit ? t.btc : t.sats}',
                         rightTextStyle: CoconutTypography.body2_14_Number.copyWith(height: 1.4, letterSpacing: -0.28),
                       ),
                       const SizedBox(height: 20),
