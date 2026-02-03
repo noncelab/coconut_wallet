@@ -1172,38 +1172,40 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SvgPicture.asset(iconSource, fit: BoxFit.fill, width: 24, height: 24),
-                  CoconutLayout.spacing_300w,
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            transactionTimeStamp[0],
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                          ),
-                          CoconutLayout.spacing_50w,
-                          Text('|', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                          CoconutLayout.spacing_50w,
-                          Text(
-                            transactionTimeStamp[1],
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                          ),
-                        ],
-                      ),
-                      Text(walletName, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                    ],
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SvgPicture.asset(iconSource, fit: BoxFit.fill, width: 28, height: 28),
+                CoconutLayout.spacing_300w,
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              transactionTimeStamp[0],
+                              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+                            ),
+                            CoconutLayout.spacing_50w,
+                            Text('|', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                            CoconutLayout.spacing_50w,
+                            Text(
+                              transactionTimeStamp[1],
+                              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
+                            ),
+                          ],
+                        ),
+                        Text(walletName, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           Expanded(
