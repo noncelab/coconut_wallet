@@ -1003,7 +1003,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Widget buildFeatureSectionIfEnabled(HomeFeatureType type, Widget Function() builder) {
     if (_viewModel.isHomeFeatureEnabled(type)) {
-      return SliverToBoxAdapter(child: Column(children: [builder(), CoconutLayout.spacing_900h]));
+      return SliverToBoxAdapter(child: Column(children: [builder(), CoconutLayout.spacing_400h]));
     }
 
     return SliverToBoxAdapter(child: Container());
@@ -1434,7 +1434,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     builder: (context, isBtcUnit, child) {
                       return Container(
                         width: MediaQuery.sizeOf(context).width,
-                        padding: const EdgeInsets.only(top: 24, left: 16, right: 20, bottom: 20),
+                        padding: const EdgeInsets.only(top: 17, left: 16, right: 20, bottom: 20),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: CoconutColors.gray800,
@@ -1464,7 +1464,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 ),
                               ],
                             ),
-                            CoconutLayout.spacing_300h,
+                            CoconutLayout.spacing_500h,
                             Text(
                               _viewModel.recentTransactionAnalysis!.subtitleString,
                               style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
@@ -1567,14 +1567,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     final String prefix = isReceived ? '+' : '';
     return Column(
       children: [
-        if (type != TransactionType.self) ...[CoconutLayout.spacing_400h] else ...[CoconutLayout.spacing_200h],
+        if (type != TransactionType.self) ...[CoconutLayout.spacing_400h] else ...[CoconutLayout.spacing_300h],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
                 SvgPicture.asset(getIconPath(), fit: BoxFit.fill, width: 24, height: 24),
-                CoconutLayout.spacing_100w,
+                CoconutLayout.spacing_200w,
                 Text(
                   t.wallet_home_screen.count(count: count.toString()),
                   style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
@@ -1592,7 +1592,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
                       Text(
                         t.fee,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray400).copyWith(height: 1.4),
+                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400).copyWith(height: 1.4),
                       ),
                     ],
                   ),
