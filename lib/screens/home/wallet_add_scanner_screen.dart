@@ -322,7 +322,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
                 controller!.switchCamera();
               }
             },
-            icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+            icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
             color: CoconutColors.white,
           ),
         ],

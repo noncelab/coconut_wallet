@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/providers/view_model/send/unsigned_transaction_view_model.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/widgets/animated_qr/animated_qr_view.dart';
 import 'package:coconut_wallet/widgets/animated_qr/view_data_handler/i_qr_view_data_handler.dart';
