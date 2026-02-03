@@ -168,6 +168,21 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "Error al generar la factura Lightning."
 
+utility:
+  p2p_calculator:
+    calculator: "Calculadora"
+    one_btc: "1 BTC"
+    upbit_price: "Precio Upbit"
+    binance_price: "Precio Binance"
+    offline_price_unavailable: "Precio no disponible"
+    fee: "Tarifa"
+    transaction_bill: "Factura de Transacción"
+    reference_price: "Precio de Referencia"
+    reference_datetime: "Fecha y Hora de Referencia"
+    transaction_fee: "Tarifa de Transacción"
+    copy_all: "Copiar Todo"
+    share: "Compartir"
+
 # lib/enums
 transaction_enums:
   high_priority: "Rápido"

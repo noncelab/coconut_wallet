@@ -277,6 +277,11 @@ flutter:
     - assets/svg/fee-rate/high.svg
     - testnet.env
     - assets/svg/puzzle-piece.svg
+    - assets/svg/offline-mode.svg
+    - assets/svg/online-mode.svg
+    - assets/svg/arrow-top-down.svg
+    - assets/svg/hand-shake.svg
+    - assets/svg/export.svg
 
   fonts:
     - family: SpaceGrotesk

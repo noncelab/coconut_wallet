@@ -220,6 +220,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         child: const GlossaryBottomSheet(),
         heightRatio: 0.9,
       ),
+      () => Navigator.pushNamed(context, '/p2p-calculator'),
       () => Navigator.pushNamed(context, '/mnemonic-word-list'),
       () => showDialog(
         context: context,
@@ -1146,6 +1147,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   groupTitle: t.tool,
                   items: [
                     if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
+                    CoconutPulldownMenuItem(title: t.utility.p2p_calculator.calculator),
                     CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
                     if (NetworkType.currentNetworkType.isTestnet) CoconutPulldownMenuItem(title: t.tutorial),
                   ],

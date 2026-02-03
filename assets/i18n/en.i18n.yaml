@@ -168,6 +168,21 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "Failed to generate Lightning invoice."
 
+utility:
+  p2p_calculator:
+    calculator: "Calculator"
+    one_btc: "1 BTC"
+    upbit_price: "Upbit Price"
+    binance_price: "Binance Price"
+    offline_price_unavailable: "Price unavailable"
+    fee: "Fee"
+    transaction_bill: "Transaction Bill"
+    reference_price: "Reference Price"
+    reference_datetime: "Reference Datetime"
+    transaction_fee: "Transaction Fee"
+    copy_all: "Copy All"
+    share: "Share"
+
 # lib/enums
 transaction_enums:
   high_priority: "Fast"
