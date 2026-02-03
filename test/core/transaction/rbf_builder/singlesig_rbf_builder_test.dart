@@ -9,7 +9,6 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import '../../../mock/transaction_record_mock.dart';
 import '../../../mock/wallet_mock.dart';
 
@@ -49,28 +48,6 @@ void main() {
     }
   }
 
-  /// utxo_selector에서 amount순으로 정렬됨
-  late List<UtxoState> singleWalletInputUtxos = [
-    UtxoState(
-      transactionHash: 'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
-      index: 0,
-      amount: 100000, // 0.001 BTC
-      blockHeight: 100,
-      to: receiveAddressList[0],
-      derivationPath: "m/84'/1'/0'/0/0",
-      timestamp: DateTime.now(),
-    ),
-    UtxoState(
-      transactionHash: '577a101d9bddd1ddee0d72a0853a8ca2d8b13d92c63f9a84277152ba791e426a',
-      index: 1,
-      amount: 200000, // 0.002 BTC
-      blockHeight: 101,
-      to: receiveAddressList[1],
-      derivationPath: "m/84'/1'/0'/0/1",
-      timestamp: DateTime.now(),
-    ),
-  ];
-
   List<String> transactionHashes = [
     'd77dc64d3eb3454e9c65e5e36989af0eef349d824593dfe2a086fb9dadf7dfc4',
     '577a101d9bddd1ddee0d72a0853a8ca2d8b13d92c63f9a84277152ba791e426a',
@@ -92,9 +69,11 @@ void main() {
     required int fee,
     required double vSize,
     List<UtxoState>? additionalSpendable,
+    required bool isMultiSig,
   }) {
     final List<TransactionAddress> inputAddressList = [];
     final List<UtxoState> inputUtxos = [];
+    final derivationPathPrefix = isMultiSig ? "m/48'/1'/0'/2'" : "m/84'/1'/0'";
     for (int i = 0; i < inputAmounts.length; i++) {
       inputAddressList.add(TransactionAddress(receiveAddressList[i], inputAmounts[i]));
       inputUtxos.add(
@@ -104,16 +83,17 @@ void main() {
           amount: inputAmounts[i],
           blockHeight: 100 + i,
           to: receiveAddressList[i],
-          derivationPath: "m/84'/1'/0'/0/$i",
+          derivationPath: "$derivationPathPrefix/0/$i",
           timestamp: DateTime.now(),
         ),
       );
     }
 
     final List<TransactionAddress> outputAddressList = [];
+    int internalAddressIndex = inputAmounts.length;
     for (int i = 0; i < recipients.length; i++) {
       if (recipients[i].item1) {
-        outputAddressList.add(TransactionAddress(receiveAddressList[inputAmounts.length + i], recipients[i].item2));
+        outputAddressList.add(TransactionAddress(receiveAddressList[internalAddressIndex++], recipients[i].item2));
       } else {
         outputAddressList.add(TransactionAddress(externalWalletAddressList[i], recipients[i].item2));
       }
@@ -134,10 +114,10 @@ void main() {
     return RbfBuilder(
       pendingTx: pendingTx,
       walletListItemBase: singleWallet,
-      vSizeIncreasePerInput: 56,
+      vSizeIncreasePerInput: isMultiSig ? 91 : 56,
       isMyAddress: isMyAddress,
       inputUtxos: inputUtxos,
-      nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
+      nextChangeAddress: WalletAddress(changeAddressList[1], "$derivationPathPrefix/1/1", 1, true, false, 0, 0, 0),
       getDerivationPath: getDerivationPath,
       dustLimit: dustLimit,
     );
@@ -145,27 +125,13 @@ void main() {
 
   group('변수 생성 테스트', () {
     test('External 1 / 모든 getter들 정합성 확인', () {
-      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
-      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
-      final List<TransactionAddress> outputAddressList = [
-        TransactionAddress(externalWalletAddressList[0], 1000),
-        TransactionAddress(changeAddressList[0], 98859),
-      ];
-      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
-        inputAddressList: inputAddressList,
-        outputAddressList: outputAddressList,
-        amount: 1000,
-      );
-
-      final rbfBuilder = RbfBuilder(
-        pendingTx: pendingTx,
-        walletListItemBase: singleWallet,
-        vSizeIncreasePerInput: 56,
-        isMyAddress: isMyAddress,
-        inputUtxos: inputUtxos,
-        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
-        getDerivationPath: getDerivationPath,
-        dustLimit: dustLimit,
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(false, 1000)],
+        changeAmount: 98859,
+        fee: 141,
+        vSize: 141,
+        isMultiSig: false,
       );
 
       expect(rbfBuilder.nonChangeOutputs.length, 1);
@@ -187,27 +153,13 @@ void main() {
     });
 
     test('selfOutputs 1 / 모든 getter들 정합성 확인', () {
-      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
-      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
-      final List<TransactionAddress> outputAddressList = [
-        TransactionAddress(receiveAddressList[1], 5000),
-        TransactionAddress(changeAddressList[0], 94859),
-      ];
-      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
-        inputAddressList: inputAddressList,
-        outputAddressList: outputAddressList,
-        amount: 5000,
-      );
-
-      final rbfBuilder = RbfBuilder(
-        pendingTx: pendingTx,
-        walletListItemBase: singleWallet,
-        vSizeIncreasePerInput: 56,
-        isMyAddress: isMyAddress,
-        inputUtxos: inputUtxos,
-        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
-        getDerivationPath: getDerivationPath,
-        dustLimit: dustLimit,
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(true, 5000)],
+        changeAmount: 94859,
+        fee: 141,
+        vSize: 141,
+        isMultiSig: false,
       );
 
       expect(rbfBuilder.nonChangeOutputs.length, 1);
@@ -227,29 +179,13 @@ void main() {
     });
 
     test('External 1 / selfOutputs 2 / 모든 getter들 정합성 확인', () {
-      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 200000)];
-      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[1]];
-      final List<TransactionAddress> outputAddressList = [
-        TransactionAddress(externalWalletAddressList[0], 1000),
-        TransactionAddress(receiveAddressList[1], 2000),
-        TransactionAddress(receiveAddressList[2], 3000),
-        TransactionAddress(changeAddressList[0], 193859),
-      ];
-      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
-        inputAddressList: inputAddressList,
-        outputAddressList: outputAddressList,
-        amount: 6000,
-      );
-
-      final rbfBuilder = RbfBuilder(
-        pendingTx: pendingTx,
-        walletListItemBase: singleWallet,
-        vSizeIncreasePerInput: 56,
-        isMyAddress: isMyAddress,
-        inputUtxos: inputUtxos,
-        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
-        getDerivationPath: getDerivationPath,
-        dustLimit: dustLimit,
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [200000],
+        recipients: [Tuple(false, 1000), Tuple(true, 2000), Tuple(true, 3000)],
+        changeAmount: 193859,
+        fee: 141,
+        vSize: 141,
+        isMultiSig: false,
       );
 
       expect(rbfBuilder.nonChangeOutputs.length, 3);
@@ -307,27 +243,13 @@ void main() {
 
   group('싱글시그지갑 - InputSum enough', () {
     test('External 1 / change / InputSum enough', () async {
-      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
-      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[0]];
-      final List<TransactionAddress> outputAddressList = [
-        TransactionAddress(externalWalletAddressList[0], 1000),
-        TransactionAddress(changeAddressList[0], 98859),
-      ];
-      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
-        inputAddressList: inputAddressList,
-        outputAddressList: outputAddressList,
-        amount: 1000,
-      );
-
-      final rbfBuilder = RbfBuilder(
-        pendingTx: pendingTx,
-        walletListItemBase: singleWallet,
-        vSizeIncreasePerInput: 56,
-        isMyAddress: isMyAddress,
-        inputUtxos: inputUtxos,
-        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
-        getDerivationPath: getDerivationPath,
-        dustLimit: dustLimit,
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(false, 1000)],
+        changeAmount: 98859,
+        fee: 141,
+        vSize: 141,
+        isMultiSig: false,
       );
 
       final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(newFeeRate: 2.0, additionalSpendable: []);
@@ -352,31 +274,13 @@ void main() {
     });
 
     test('External 3 / InputSum enough', () async {
-      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[1], 200000)];
-      final List<UtxoState> inputUtxos = [singleWalletInputUtxos[1]];
-
-      final List<TransactionAddress> outputAddressList = [
-        TransactionAddress(externalWalletAddressList[0], 10000),
-        TransactionAddress(externalWalletAddressList[1], 20000),
-        TransactionAddress(externalWalletAddressList[2], 30000),
-        TransactionAddress(changeAddressList[0], 139859),
-      ];
-
-      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
-        inputAddressList: inputAddressList,
-        outputAddressList: outputAddressList,
-        amount: 60000,
-      );
-
-      final rbfBuilder = RbfBuilder(
-        pendingTx: pendingTx,
-        walletListItemBase: singleWallet,
-        vSizeIncreasePerInput: 56,
-        isMyAddress: isMyAddress,
-        inputUtxos: inputUtxos,
-        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
-        getDerivationPath: getDerivationPath,
-        dustLimit: dustLimit,
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [200000],
+        recipients: [Tuple(false, 10000), Tuple(false, 20000), Tuple(false, 30000)],
+        changeAmount: 139859,
+        fee: 141,
+        vSize: 141,
+        isMultiSig: false,
       );
 
       final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(newFeeRate: 3.0, additionalSpendable: []);
@@ -408,29 +312,13 @@ void main() {
 
   group('예외 상황', () {
     test('newFeeRate가 pendingTx.feeRate보다 작으면 FeeRateTooLowException 발생', () async {
-      final List<TransactionAddress> inputAddressList = [TransactionAddress(receiveAddressList[0], 100000)];
-      final List<TransactionAddress> outputAddressList = [
-        TransactionAddress(externalWalletAddressList[0], 50000),
-        TransactionAddress(changeAddressList[0], 49000),
-      ];
-
-      final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
-        inputAddressList: inputAddressList,
-        outputAddressList: outputAddressList,
-        amount: 50000,
+      final rbfBuilder = createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(false, 50000)],
+        changeAmount: 49000,
         fee: 1000,
         vSize: 100,
-      );
-
-      final rbfBuilder = RbfBuilder(
-        pendingTx: pendingTx,
-        walletListItemBase: singleWallet,
-        vSizeIncreasePerInput: 56,
-        isMyAddress: isMyAddress,
-        inputUtxos: [singleWalletInputUtxos[0]],
-        nextChangeAddress: WalletAddress(changeAddressList[1], "m/84'/1'/0'/0/1", 1, true, false, 0, 0, 0),
-        getDerivationPath: getDerivationPath,
-        dustLimit: dustLimit,
+        isMultiSig: false,
       );
 
       expect(
@@ -448,6 +336,7 @@ void main() {
         changeAmount: 0,
         fee: 110,
         vSize: 110,
+        isMultiSig: false,
       );
       final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
 
@@ -457,7 +346,15 @@ void main() {
       expect(result.isSelfOutputsUsed, isTrue);
       expect(result.addedUtxos, isNull);
       expect(result.deficitAmount, isNull);
-      expect(result.transaction!.estimateFee(5, AddressType.p2wpkh), greaterThan(110));
+
+      final tx = result.transaction!;
+      final int totalInput = tx.totalInputAmount;
+      final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
+      final int actualFee = totalInput - totalOutput;
+
+      expect(totalInput, 50000);
+      expect(totalOutput, greaterThanOrEqualTo(49450));
+      expect(actualFee, lessThanOrEqualTo(550));
     });
 
     // test('selfOutput 1 / no change / selfOutput 1개의 amount를 차감하여 시도했지만 Input 부족🔴', () async {
@@ -486,6 +383,7 @@ void main() {
         changeAmount: 0,
         fee: 110,
         vSize: 110,
+        isMultiSig: false,
       );
       final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
 
@@ -505,6 +403,7 @@ void main() {
         changeAmount: 0,
         fee: 110,
         vSize: 110,
+        isMultiSig: false,
       );
       final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
 
