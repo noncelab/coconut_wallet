@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "Wallet"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "Bitcoin"
+bitcoin: "Bitcoin"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -49,6 +49,8 @@ glossary: "Glossary"
 tool: "Tool"
 tutorial: "Tutorial"
 settings: "Settings"
+app_settings: "App Settings"
+home_screen_settings: "Home Settings"
 tx_list: "Transaction History"
 utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
@@ -98,6 +100,16 @@ electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
+
+relative_time:
+  days_ago(cardinal):
+    zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
+    one: "1 day ago"   # 1일
+    other: "${n} days ago"  # 2일 이상
+  hours_ago(cardinal):
+    zero: "Just now"
+    one: "1 hour ago"
+    other: "${n} hours ago"
 
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
@@ -187,6 +199,53 @@ pin_check_screen:
   text: "Enter your password"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "View All My Wallets"
+  edit_home_screen: "Edit Home Screen"
+  edit:
+    title: "You can hide or add features\non the home screen"
+    hide_balance: "Hide Balance"
+    hide_balance_on_home: "Balance will not be displayed on the home screen."
+    fake_balance:
+      fake_balance_setting: "Set Fake Balance"
+      fake_balance_display: "Show Fake Balance"
+      fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
+      fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
+      fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
+    hide_fiat_price: "Hide Fiat Balance"
+    hide_fiat_price_on_home: "Fiat balance will not be displayed on the home screen."
+    category:
+      total_balance: "Total\nBalance"
+      wallet_list: "Wallet\nList"
+      recent_transactions: "Recent\nTransactions\n(24hours)"
+      analysis: "Analysis"
+    alert: 
+          empty_fake_balance: "Enter Fake Balance"
+          empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
+          set_to_0: "Set balance to 0 BTC" 
+          enter_again: "Try again"
+  last_24_hours_transactions: "Last 24 hours transactions"
+  syncing_recent_transaction: "Syncing recent transactions"
+  cannot_modify_fixed_widget: "Cannot modify fixed widget"
+  no_change_in_amount: "No change in amount!"
+  analysis_period: "Recent ${days} days • ${transaction_type}"
+  analysis_period_custom: "Custom • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "Analysis Period"
+    days_15: "15 days"
+    days_30: "30 days"
+    days_60: "60 days"
+    days_90: "90 days"
+    custom: "Custom"
+    transaction_type: "Transaction Type"
+
+  transaction_count: "Transaction $count times"
+  count: "$count times"
+  increase: "Increased"
+  decrease: "Decreased"
+  sent: "Sent"
+  received: "Received"
+
 wallet_add_scanner_screen:
   add_wallet: "Add Wallet"
   add_watch_only_wallet: "Add Watch-only Wallet"
@@ -194,10 +253,10 @@ wallet_add_scanner_screen:
   keystone: "Keystone 3 Pro"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  cold_card: "ColdCard"
+  cold_card: "Coldcard"
   krux: "Krux"
   self: "Add Manually"
-  self_description: "You can add a wallet with information"
+  self_description: "You can add a wallet using info from another app."
   select: "Select"
   guide_vault: "On the Coconut Vault home screen, go to: “Export to Watch-Only Wallet → Select Wallet” or “Select Wallet → Export Wallet → Export to Watch-Only Wallet”. Then scan the QR code."
   guide_seedsigner:
@@ -217,12 +276,12 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step0: "Devices other than the Keystone 3 Pro are not supported."
+    step0: "Devices other than the Keystone 3 Pro are not supported. (Bitcoin-only firmware recommended)"
     step1: "1. On the home screen, "
     step1_em: " More(•••)"
     step2: "2. "
     step2_em: " Connect Software Wallet"
-    step3: "3. Select any wallet"
+    step3: "3. Select one of BlueWallet, Sparrow, or Zeus wallets"
   guide_jade:
     step0_preposition: "In an " 
     step0_em: "Active "
@@ -251,10 +310,39 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "Select"
+  paste:
+    paste_button: "Import from paste"
+    app_bar_title_text: "Add Manually"
+    placeholder_text: "Enter the extended public key (zpub) or descriptor"
+    format_error_text: "Unable to verify format"
+    invalid_character_error_text: "Invalid character"
+    mainnet_wallet_error_text: "Not a mainnet wallet"
+    testnet_wallet_error_text: "Not a testnet wallet"
+    unsupported_wallet_error_text: "Unsupported wallet"
+    wallet_description_text: "Where can I find the wallet information?"
+    blue_wallet_texts:
+      - "· BlueWallet"
+      - "· Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "· Watch-only Wallet - More(•••) - Export/Backup"
+      - "zpub6rFR7y4Q2AijBEqt..."
+    nunchuck_wallet_texts:
+      - "· Nunchuck"
+      - "· Keys - Select Key - Key spec info"
+      - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+      - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+    mfp_title: "Master Fingerprint"
+    mfp_description_title: "Master Fingerprint"
+    mfp_description_texts:
+      - "A unique value required to identify a watch-only wallet"
+      - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
+      - "Without fingerprint, you will not be able to use the send feature."
+    mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
+    mfp_skip: "Skip"
+    back_scan: "Go back to QR scan"
+  
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count Items"
-  view_all_wallets: "View All My Wallets"
   primary_wallet: "Primary Wallet"
   exclude_from_total_amount: "Excluded from Home Total"
   home_balance: "Home Balance"
@@ -272,34 +360,6 @@ wallet_list:
     delete_description: "Swipe left on a wallet to delete it."
     finish: "Finish Editing"
     unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
-
-wallet_add_input_screen:
-  app_bar_title_text: "Add Manually"
-  placeholder_text: "Enter the extended public key (zpub) or descriptor"
-  format_error_text: "Unable to verify format"
-  invalid_character_error_text: "Invalid character"
-  mainnet_wallet_error_text: "Not a mainnet wallet"
-  testnet_wallet_error_text: "Not a testnet wallet"
-  unsupported_wallet_error_text: "Unsupported wallet"
-  wallet_description_text: "Where can I find the wallet information?"
-  blue_wallet_texts:
-    - "· BlueWallet"
-    - "· Hot Wallet - More(•••) - Show Wallet XPUB"
-    - "· Watch-only Wallet - More(•••) - Export/Backup"
-    - "zpub6rFR7y4Q2AijBEqt..."
-  nunchuck_wallet_texts:
-    - "· Nunchuck"
-    - "· Keys - Select Key - Key spec info"
-    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
-    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
-  mfp_title: "Master Fingerprint"
-  mfp_description_title: "Master Fingerprint"
-  mfp_description_texts:
-    - "A unique value required to identify a watch-only wallet"
-    - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
-    - "Without fingerprint, you will not be able to use the send feature."
-  mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
-  mfp_skip: "Skip"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -456,17 +516,12 @@ settings_screen:
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
   change_password: "Change Password"
-  hide_balance: "Hide Balance"
-  fake_balance:
-    fake_balance_setting: "Set Fake Balance"
-    fake_balance_display: "Show Fake Balance"
-    fake_balance_input_placeholder: "Please set the total fake balance (in BTC units)"
-    fake_balance_input_description: "If you have multiple wallets, each wallet's balance will be calculated automatically."
-    fake_balance_input_exceeds_error: "You can set up to 21 million BTC"
   language: "Language"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -577,6 +632,9 @@ wallet_info_screen:
       step3_em: "Backup Wallet Data"
       step4: "Please scan the QR code below with camera."
       select: "Select"
+  error:
+    delete: "Failed to delete wallet"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
@@ -691,7 +749,7 @@ errors:
     invalid: "Not a valid address"
     not_for_testnet: "Not a testnet address"
     not_for_mainnet: "Not a mainnet address"
-    not_for_regtest: "Not a regtest address"
+    not_for_regtest: "Please check the address format.\n(Native SegWit supported)"
     duplicated: "Address has already been added"
   pin_check_error:
     trial_count: "You can try $count more times"
@@ -706,6 +764,7 @@ errors:
   data_not_found: "No data found."
   utxo_lock_error: "Failed to set UTXO lock due to temporary error"
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
+  empty_input: "Could not fetch transaction inputs. Please check mempool."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
@@ -825,9 +884,11 @@ third_party:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  cold_card: "ColdCard"
-  krux: "Krux"  
-  zpub: "zpub"
+  cold_card: "Coldcard"
+  krux: "Krux"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "Upbit"
@@ -838,3 +899,10 @@ fiat:
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
+
+long_pressed_menu:
+  hide: "Hide"
+  edit_home_widget: "Edit Home Widget"
+  go_to_home_screen_settings: "Go to Home Screen Settings"
+  hide_home_widget_title: "Hide '${widgetName}' widget on the home screen?"
+  hide_home_widget_description: "You can show it again later by going to the 'Home Screen Settings' menu in the top right menu button."

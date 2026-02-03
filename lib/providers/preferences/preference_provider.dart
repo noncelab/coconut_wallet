@@ -2,9 +2,13 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
+import 'package:coconut_wallet/model/node/electrum_server.dart';
+import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -13,10 +17,15 @@ import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
+import 'package:tuple/tuple.dart';
 
 class PreferenceProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   final WalletPreferencesRepository _walletPreferencesRepository;
+
+  // FeatureSettingsProvider는 선택적으로 주입받을 수 있음 (Facade 패턴)
+  // 주입되지 않으면 내부에서 직접 관리 (하위 호환성)
+  FeatureSettingsProvider? _featureSettingsProvider;
 
   final NetworkPreferenceProvider _networkPrefs;
 
@@ -26,6 +35,9 @@ class PreferenceProvider extends ChangeNotifier {
 
   late bool _isFakeBalanceActive;
   bool get isFakeBalanceActive => _isFakeBalanceActive;
+
+  late bool _isFiatBalanceHidden;
+  bool get isFiatBalanceHidden => _isFiatBalanceHidden;
 
   /// 가짜 잔액 총량
   late int? _fakeBalanceTotalBtc;
@@ -58,6 +70,7 @@ class PreferenceProvider extends ChangeNotifier {
   bool get isKorean => _language == "kr";
   bool get isEnglish => _language == "en";
   bool get isJapanese => _language == "jp";
+  bool get isSpanish => _language == "es";
 
   /// 선택된 통화
   late FiatCode _selectedFiat;
@@ -75,13 +88,33 @@ class PreferenceProvider extends ChangeNotifier {
   late List<int> _excludedFromTotalBalanceWalletIds;
   List<int> get excludedFromTotalBalanceWalletIds => _excludedFromTotalBalanceWalletIds;
 
-  /// 마지막으로 선택한 UTXO 정렬 기준(default - 큰 금액순)
+  /// 홈 화면에 표시할 기능(최근 거래, 분석 ...)
+  // FeatureSettingsProvider로 위임
+  List<HomeFeature> get homeFeatures => _featureSettingsProvider?.features ?? [];
+
+  /// 특정 기능이 활성화되어 있는지 확인
+  bool isHomeFeatureEnabled(HomeFeatureType type) {
+    return _featureSettingsProvider?.isEnabled(type) ?? false;
+  }
+
+  // 분석 위젯 설정 (FeatureSettingsProvider로 위임)
+  int get analysisPeriod => _featureSettingsProvider?.analysisPeriod ?? 30;
+  Tuple2<DateTime?, DateTime?> get analysisPeriodRange =>
+      _featureSettingsProvider?.analysisPeriodRange ?? const Tuple2(null, null);
+  AnalysisTransactionType get selectedAnalysisTransactionType =>
+      _featureSettingsProvider?.selectedAnalysisTransactionType ?? AnalysisTransactionType.all;
+
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
-  PreferenceProvider(this._walletPreferencesRepository, this._networkPrefs) {
+  PreferenceProvider(
+    this._walletPreferencesRepository,
+    this._networkPrefs, {
+    FeatureSettingsProvider? featureSettingsProvider,
+  }) : _featureSettingsProvider = featureSettingsProvider {
     _networkPrefs.addListener(notifyListeners);
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
+    _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
     _isBtcUnit =
@@ -90,6 +123,9 @@ class PreferenceProvider extends ChangeNotifier {
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
     _excludedFromTotalBalanceWalletIds = _walletPreferencesRepository.getExcludedWalletIds().toList();
+    // FeatureSettingsProvider가 없으면 내부에서 생성 (하위 호환성)
+    // 주입된 경우에는 이미 초기화되어 있음
+    _featureSettingsProvider ??= FeatureSettingsProvider();
     _isReceivingTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsReceivingTooltipDisabled);
     _isChangeTooltipDisabled = _sharedPrefs.getBool(SharedPrefKeys.kIsChangeTooltipDisabled);
     _hasSeenAddRecipientCard = _sharedPrefs.getBool(SharedPrefKeys.kHasSeenAddRecipientCard);
@@ -150,6 +186,9 @@ class PreferenceProvider extends ChangeNotifier {
       } else if (isEnglish) {
         LocaleSettings.setLocaleSync(AppLocale.en);
         Logger.log('English locale applied successfully');
+      } else if (isSpanish) {
+        LocaleSettings.setLocaleSync(AppLocale.es);
+        Logger.log('Spanish locale applied successfully');
       }
 
       // 언어 설정 후 상태 업데이트를 위해 notifyListeners 호출
@@ -169,6 +208,8 @@ class PreferenceProvider extends ChangeNotifier {
         await LocaleSettings.setLocale(AppLocale.jp);
       } else if (isEnglish) {
         await LocaleSettings.setLocale(AppLocale.en);
+      } else if (isSpanish) {
+        await LocaleSettings.setLocale(AppLocale.es);
       } else {
         // 기본값은 영어로 설정
         await LocaleSettings.setLocale(AppLocale.en);
@@ -183,6 +224,14 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeIsBalanceHidden(bool isOn) async {
     _isBalanceHidden = isOn;
     await _sharedPrefs.setBool(SharedPrefKeys.kIsBalanceHidden, isOn);
+
+    notifyListeners();
+  }
+
+  /// 홈 화면 법정화폐 잔액 숨기기
+  Future<void> changeIsFiatBalanceHidden(bool isOn) async {
+    _isFiatBalanceHidden = isOn;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsFiatBalanceHidden, isOn);
 
     notifyListeners();
   }
@@ -338,19 +387,21 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 지갑 순서 단일 제거
   Future<void> removeWalletOrder(int walletId) async {
     _walletOrder.remove(walletId);
     await _walletPreferencesRepository.setWalletOrder(_walletOrder);
     notifyListeners();
   }
 
-  /// 지갑 즐겨찾기 설정
+  /// 지갑 즐겨찾기 목록 설정
   Future<void> setFavoriteWalletIds(List<int> ids) async {
     _favoriteWalletIds = ids;
     await _walletPreferencesRepository.setFavoriteWalletIds(ids);
     notifyListeners();
   }
 
+  /// 지갑 즐겨찾기 단일 제거
   Future<void> removeFavoriteWalletId(int walletId) async {
     _favoriteWalletIds.remove(walletId);
     await _walletPreferencesRepository.setFavoriteWalletIds(_favoriteWalletIds);
@@ -364,9 +415,68 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 총 잔액에서 제외할 지갑 단일 제거
   Future<void> removeExcludedFromTotalBalanceWalletId(int walletId) async {
     _excludedFromTotalBalanceWalletIds.remove(walletId);
     await _walletPreferencesRepository.setExcludedWalletIds(_excludedFromTotalBalanceWalletIds);
+    notifyListeners();
+  }
+
+  /// 홈 화면에 표시할 기능 (FeatureSettingsProvider로 위임)
+  List<HomeFeature> getHomeFeatures() {
+    return _featureSettingsProvider?.features ?? [];
+  }
+
+  Future<void> setHomeFeautres(List<HomeFeature> features) async {
+    // FeatureSettingsProvider로 위임
+    await _featureSettingsProvider?.setFeatures(features);
+    notifyListeners();
+  }
+
+  Future<void> setWalletPreferences(List<WalletListItemBase> walletItemList) async {
+    var walletOrder = _walletOrder;
+    var favoriteWalletIds = _favoriteWalletIds;
+
+    if (walletOrder.isEmpty) {
+      walletOrder = List.from(walletItemList.map((w) => w.id));
+      await setWalletOrder(walletOrder);
+    }
+    if (favoriteWalletIds.isEmpty) {
+      favoriteWalletIds = List.from(walletItemList.take(5).map((w) => w.id));
+      await setFavoriteWalletIds(favoriteWalletIds);
+    }
+
+    // FeatureSettingsProvider의 동기화 메서드 사용
+    await _featureSettingsProvider?.synchronizeWithDefaults(walletList: walletItemList);
+
+    notifyListeners();
+  }
+
+  /// 분석 설정 (FeatureSettingsProvider로 위임)
+  Tuple2<DateTime?, DateTime?> getAnalysisPeriodRange() {
+    return _featureSettingsProvider?.getAnalysisPeriodRange() ?? const Tuple2(null, null);
+  }
+
+  Future<void> setAnalysisPeriodRange(DateTime start, DateTime end) async {
+    await _featureSettingsProvider?.setAnalysisPeriodRange(start, end);
+    notifyListeners();
+  }
+
+  int getAnalysisPeriod() {
+    return _featureSettingsProvider?.getAnalysisPeriod() ?? 30;
+  }
+
+  Future<void> setAnalysisPeriod(int days) async {
+    await _featureSettingsProvider?.setAnalysisPeriod(days);
+    notifyListeners();
+  }
+
+  AnalysisTransactionType getAnalysisTransactionType() {
+    return _featureSettingsProvider?.getAnalysisTransactionType() ?? AnalysisTransactionType.all;
+  }
+
+  Future<void> setAnalysisTransactionType(AnalysisTransactionType transactionType) async {
+    await _featureSettingsProvider?.setAnalysisTransactionType(transactionType);
     notifyListeners();
   }
 

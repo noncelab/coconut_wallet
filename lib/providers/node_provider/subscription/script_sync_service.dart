@@ -87,7 +87,6 @@ class ScriptSyncService {
 
       // Transaction 동기화, 이벤트를 수신한 시점의 시간을 사용하기 위해 now 파라미터 전달
       final txHashes = await _transactionSyncService.fetchScriptTransaction(dto.walletItem, dto.scriptStatus, now: now);
-
       await _scriptCallbackService.registerTransactionDependency(dto.walletItem, dto.scriptStatus, txHashes);
 
       // 새 스크립트 구독 여부 확인 및 처리
@@ -134,31 +133,25 @@ class ScriptSyncService {
       _stateManager.addWalletSyncState(walletItem.id, UpdateElement.transaction);
       final transactionStartTime = DateTime.now();
 
-      // final transactionFutures = scriptStatuses.map(
-      //   (status) => _transactionSyncService.fetchScriptTransaction(
-      //     walletItem,
-      //     status,
-      //     inBatchProcess: true,
-      //     now: now,
-      //   ),
-      // );
-      // await Future.wait(transactionFutures);
+      const chunkSize = 20;
+      for (int i = 0; i < scriptStatuses.length; i += chunkSize) {
+        final endIndex = (i + chunkSize < scriptStatuses.length) ? i + chunkSize : scriptStatuses.length;
+        final batch = scriptStatuses.sublist(i, endIndex);
+        final transactionFutures = batch.map(
+          (status) =>
+              _transactionSyncService.fetchScriptTransaction(walletItem, status, inBatchProcess: true, now: now),
+        );
+        await Future.wait(transactionFutures);
 
-      final transactionResults = await _transactionSyncService.fetchScriptTransactionBatch(
-        walletItem,
-        scriptStatuses,
-        inBatchProcess: true,
-        now: now,
-      );
-
+        if (i + chunkSize < scriptStatuses.length) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+      }
       _stateManager.addWalletCompletedState(walletItem.id, UpdateElement.transaction);
 
       final transactionEndTime = DateTime.now();
       final transactionDuration = transactionEndTime.difference(transactionStartTime);
-      // 배치 결과 요약 로깅
-      // final totalTransactions = transactionResults.values
-      //     .map((txHashes) => txHashes.length)
-      //     .fold(0, (sum, count) => sum + count);
+
       Logger.performance(
         'Transaction sync completed in ${transactionDuration.inMilliseconds}ms for ${walletItem.name} (${scriptStatuses.length} scripts)',
       );

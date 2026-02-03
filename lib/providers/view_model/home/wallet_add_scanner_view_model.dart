@@ -1,12 +1,13 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/composed_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/extended_pub_key_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bc_ur_qr_scan_data_handler.dart';
@@ -46,10 +47,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         _qrDataHandler = BbQrScanDataHandler();
         break;
       case WalletImportSource.extendedPublicKey:
-        throw 'No Support extendedPublicKey';
-      default:
-        FileLogger.error(className, methodName, 'No Support extendedPublicKey');
-        throw 'wrong wallet import source: $_walletImportSource';
+        _qrDataHandler = ExtendedPublicKeyQrScanDataHandler();
+        break;
     }
   }
 
@@ -57,8 +56,6 @@ class WalletAddScannerViewModel extends ChangeNotifier {
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
   Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
-    assert(_walletImportSource != WalletImportSource.extendedPublicKey, '확장공개키 지갑 추가는 wallet_add_scanner에서 지원 안함');
-
     const methodName = 'addWallet';
 
     FileLogger.log(
@@ -73,6 +70,9 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       } else if (additionInfo is UR) {
         return _addBcUrWallet(_walletImportSource, additionInfo);
       } else if (additionInfo is String) {
+        if (_walletImportSource == WalletImportSource.extendedPublicKey) {
+          return _addExtendedPublicKeyWallet(additionInfo);
+        }
         return _addDescriptorWallet(_walletImportSource, additionInfo);
       } else if (additionInfo is Map<String, dynamic>) {
         return _addBbQrWallet(_walletImportSource, additionInfo);
@@ -107,6 +107,17 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       descriptor: descriptor,
       name: name,
     );
+    return await _walletProvider.syncFromThirdParty(wallet);
+  }
+
+  Future<ResultOfSyncFromVault> _addExtendedPublicKeyWallet(String xPub) async {
+    final name = getNextThirdPartyWalletName(
+      _walletImportSource,
+      _walletProvider.walletItemList.map((e) => e.name).toList(),
+    );
+
+    final wallet = _walletAddService.createExtendedPublicKeyWallet(xPub, name, null);
+
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 

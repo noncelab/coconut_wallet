@@ -1,11 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/pin/pin_input_pad.dart';
 import 'package:provider/provider.dart';
 
@@ -149,23 +149,28 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
   void _showResetConfirmDialog() async {
     vibrateMedium();
 
-    await CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.forgot_password.title,
-      message: t.alert.forgot_password.description,
-      confirmButtonText: t.alert.forgot_password.btn_reset,
-      confirmButtonColor: CoconutColors.hotPink,
-      cancelButtonText: t.close,
-      onConfirm: () async {
-        await _authProvider.resetPassword();
-        Provider.of<RealmManager>(context, listen: false).reset();
-        widget.onComplete?.call();
-        if (mounted) {
-          Navigator.of(context).pop();
-        }
-      },
-      onCancel: () {
-        Navigator.of(context).pop();
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.forgot_password.title,
+          description: t.alert.forgot_password.description,
+          onTapRight: () async {
+            await _authProvider.resetPassword();
+            Provider.of<RealmManager>(context, listen: false).reset();
+            widget.onComplete?.call();
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+          onTapLeft: () {
+            Navigator.of(context).pop();
+          },
+          rightButtonText: t.alert.forgot_password.btn_reset,
+          rightButtonColor: CoconutColors.hotPink,
+          leftButtonText: t.cancel,
+        );
       },
     );
   }

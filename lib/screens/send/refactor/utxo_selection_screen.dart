@@ -4,7 +4,7 @@ import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/utxo_selection_view_model.dart';
@@ -13,7 +13,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
@@ -186,13 +185,19 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       });
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        CustomDialogs.showCustomAlertDialog(
-          context,
-          title: t.alert.error_occurs,
-          message: t.alert.contact_admin(error: e.toString()),
-          onConfirm: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pop();
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return CoconutPopup(
+              languageCode: context.read<PreferenceProvider>().language,
+              title: t.alert.error_occurs,
+              description: t.alert.contact_admin(error: e.toString()),
+              onTapRight: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              rightButtonText: t.OK,
+            );
           },
         );
       });

@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "Wallet"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "비트코인"
+bitcoin: "비트코인"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "테스트넷"
@@ -49,6 +49,8 @@ glossary: "용어집"
 tool: "도구"
 tutorial: "튜토리얼"
 settings: "설정"
+app_settings: "앱 설정"
+home_screen_settings: "홈 화면 설정"
 tx_list: "거래 내역"
 utxo_list: "UTXO 목록"
 wallet_id: "지갑 ID"
@@ -98,6 +100,16 @@ electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
+
+relative_time:
+  days_ago(cardinal):
+    zero: "오늘"        # 0일이면 Today로 처리(원하면 생략 가능)
+    one: "1일 전"   # 1일
+    other: "${n}일 전"  # 2일 이상
+  hours_ago(cardinal):
+    zero: "방금 전"
+    one: "1시간 전"
+    other: "${n}시간 전"
 
 apply_item: "$count개에 적용"
 fee_sats: " ($value sat/vB)"
@@ -187,6 +199,53 @@ pin_check_screen:
   text: "비밀번호를 눌러주세요"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "내 지갑 전체보기"
+  edit_home_screen: "홈 화면 편집하기"
+  edit:
+    title: "홈 화면에 기능을\n숨기거나 추가할 수 있어요"
+    hide_balance: "잔액 숨기기"
+    hide_balance_on_home: "홈 화면에 잔액을 표시하지 않아요."
+    fake_balance:
+      fake_balance_setting: "가짜 잔액 설정"
+      fake_balance_display: "가짜 잔액 표시"
+      fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
+      fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
+      fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
+    hide_fiat_price: "법정 화폐 잔액 숨기기"
+    hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요."
+    category:
+      total_balance: "잔액 합계"
+      wallet_list: "지갑 목록"
+      recent_transactions: "24시간 내\n거래"
+      analysis: "분석"
+    alert: 
+      empty_fake_balance: "가짜 잔액 입력"
+      empty_fake_balance_description: "금액이 설정되지 않았어요.\n다시 입력하시거나 0 BTC로 설정할까요?"
+      set_to_0: "0 BTC로 설정"
+      enter_again: "다시 입력"
+  last_24_hours_transactions: "지난 24시간 거래"
+  syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
+  cannot_modify_fixed_widget: "고정 위젯은 수정할 수 없어요"
+  no_change_in_amount: "수량 변화가 없어요!"
+  analysis_period: "최근 ${days}일 • ${transaction_type}"
+  analysis_period_cutsom: "직접 설정 • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "조회 기간"
+    days_15: "15일"
+    days_30: "30일"
+    days_60: "60일"
+    days_90: "90일"
+    custom: "직접 설정"
+    transaction_type: "거래 유형"
+
+  transaction_count: "트랜잭션 $count회"
+  count: "$count회"
+  increase: "증가했어요"
+  decrease: "감소했어요"
+  sent: "보냈어요"
+  received: "받았어요"
+
 wallet_add_scanner_screen:
   add_wallet: "지갑 추가"
   add_watch_only_wallet: "보기 전용 지갑 추가"
@@ -197,7 +256,7 @@ wallet_add_scanner_screen:
   cold_card: "콜드카드"
   krux: "크럭스"
   self: "직접 입력"
-  self_description: "다른 앱에서 복사한 정보로 지갑을 추가할 수 있어요"
+  self_description: "다른 앱에서 생성한 정보로 지갑을 추가할 수 있어요"
   select: " 선택"
   guide_vault: "코코넛 볼트의 홈 화면에서\n\"보기 전용 앱으로 내보내기 - 지갑 선택\" 또는 \"지갑 선택 - 지갑 내보내기 - 보기 전용 앱으로 내보내기\" 화면의 QR 코드를 스캔해 주세요"
   guide_seedsigner:
@@ -217,12 +276,12 @@ wallet_add_scanner_screen:
     step6_em: "I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step0: "키스톤 3 프로를 제외한 기기는 호환되지 않습니다."
+    step0: "키스톤 3 프로를 제외한 기기는 호환되지 않습니다. (Bitcoin-only 펌웨어 권장)"
     step1: "1. 홈 화면에서 "
     step1_em: "더보기(•••)"
     step2: "2. "
     step2_em: "Connect Software Wallet"
-    step3: "3. 어떤 지갑이든 선택"
+    step3: "3. BlueWallet, Sparrow, Zeus 지갑 중 하나 선택"
   guide_jade:
     step0_preposition: ""
     step0_em: "Active "
@@ -251,10 +310,39 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR 코드"
     select: "선택"
+  paste:
+    paste_button: "붙여넣기로 가져오기"
+    app_bar_title_text: "직접 입력"
+    placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
+    format_error_text: "확인할 수 없는 형식이에요"
+    invalid_character_error_text: "허용되지 않는 문자가 있어요"
+    mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
+    testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
+    unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
+    wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
+    blue_wallet_texts:
+      - "· 블루월렛"
+      - "· 핫월렛 - 더보기(•••) - Show Wallet XPUB 버튼 클릭"
+      - "· 보기 전용 지갑 - 더보기(•••) - Export/Backup 버튼 클릭"
+      - "zpub6rFR7y4Q2AijBEqt..."
+    nunchuck_wallet_texts:
+      - "· 넌척"
+      - "· Keys 탭 - 키 선택 - Key spec 정보"
+      - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+      - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+    mfp_title: "마스터 핑거프린트 입력"
+    mfp_description_title: "마스터 핑거프린트(Master Fingerprint)"
+    mfp_description_texts:
+      - "보기 전용 지갑을 식별할 때 필요한 고유 값이에요."
+      - "입력한 정보만으로는 이 값을 자동으로 알 수 없기 때문에, 안전하고 정확한 지갑 연결을 위해 직접 입력해주셔야 해요."
+      - "이 정보가 없으면 보내기 기능을 사용하실 수 없어요."
+    mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
+    mfp_skip: "건너뛰기"
+    back_scan: "QR 스캔으로 돌아가기"
+
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count개"
-  view_all_wallets: "내 지갑 전체보기"
   primary_wallet: "대표 지갑"
   exclude_from_total_amount: "홈 화면 총액에서 제외"
   home_balance: "홈 화면 총액"
@@ -272,34 +360,6 @@ wallet_list:
     delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
-    
-wallet_add_input_screen:
-  app_bar_title_text: "직접 입력"
-  placeholder_text: "확장공개키(zpub) 또는 디스크립터를 입력해 주세요"
-  format_error_text: "확인할 수 없는 형식이에요"
-  invalid_character_error_text: "허용되지 않는 문자가 있어요"
-  mainnet_wallet_error_text: "메인넷 지갑이 아니에요"
-  testnet_wallet_error_text: "테스트넷 지갑이 아니에요"
-  unsupported_wallet_error_text: "지원하지 않는 지갑이에요"
-  wallet_description_text: "지갑 추가 정보를 어디서 찾을 수 있나요?"
-  blue_wallet_texts:
-    - "· 블루월렛"
-    - "· 핫월렛 - 더보기(•••) - Show Wallet XPUB 버튼 클릭"
-    - "· 보기 전용 지갑 - 더보기(•••) - Export/Backup 버튼 클릭"
-    - "zpub6rFR7y4Q2AijBEqt..."
-  nunchuck_wallet_texts:
-    - "· 넌척"
-    - "· Keys 탭 - 키 선택 - Key spec 정보"
-    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
-    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
-  mfp_title: "마스터 핑거프린트 입력"
-  mfp_description_title: "마스터 핑거프린트(Master Fingerprint)"
-  mfp_description_texts:
-    - "보기 전용 지갑을 식별할 때 필요한 고유 값이에요."
-    - "입력한 정보만으로는 이 값을 자동으로 알 수 없기 때문에, 안전하고 정확한 지갑 연결을 위해 직접 입력해주셔야 해요."
-    - "이 정보가 없으면 보내기 기능을 사용하실 수 없어요."
-  mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
-  mfp_skip: "건너뛰기"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -456,17 +516,12 @@ settings_screen:
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"
   change_password: "비밀번호 바꾸기"
-  hide_balance: "홈 화면 잔액 숨기기"
-  fake_balance:
-    fake_balance_setting: "가짜 잔액 설정"
-    fake_balance_display: "가짜 잔액 표시"
-    fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
-    fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
-    fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
   language: "언어"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "서버 주소"
     port: "포트"
@@ -577,6 +632,9 @@ wallet_info_screen:
       step3_em: "2. 지갑 데이터 백업하기 "
       step4: "화면에 나타나는 QR 코드를 스캔해 주세요."
       select: "선택"
+  error:
+    delete: "지갑 삭제 실패"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
@@ -691,7 +749,7 @@ errors:
     invalid: "올바른 주소가 아니에요."
     not_for_testnet: "테스트넷 주소가 아니에요."
     not_for_mainnet: "메인넷 주소가 아니에요."
-    not_for_regtest: "레그테스트넷 주소가 아니에요."
+    not_for_regtest: "주소 형식을 확인해 주세요.(Native Segwit 지원)"
     duplicated: "이미 입력한 주소예요"
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"
@@ -706,7 +764,8 @@ errors:
   data_not_found: "데이터가 없습니다."
   utxo_lock_error: "일시적인 오류로 인해 UTXO 잠금 설정에 실패했어요"
   utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
-
+  empty_input: "트랜잭션 입력 정보를 불러올 수 없어요. 멤풀에서 확인해 주세요."
+  
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sat/vB)"
   enter_fee_directly: "직접 입력하기"
@@ -827,14 +886,23 @@ third_party:
   seed_signer: "시드사이너"
   cold_card: "콜드카드"
   krux: "크럭스"
-  zpub: "zpub"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "업비트"
   binance: "바이낸스"
 
 fiat:
-  fiat: "법정화폐"
+  fiat: "법정 화폐"
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
   jpy_price: "비트플라이어 기준"
+
+long_pressed_menu:
+  hide: "숨기기"
+  edit_home_widget: "홈 위젯 편집"
+  go_to_home_screen_settings: "홈 화면 설정으로 이동"
+  hide_home_widget_title: "홈 화면에서 '${widgetName}' 위젯을 숨기시겠어요?"
+  hide_home_widget_description: "나중에 우측 상단 메뉴 버튼 > '홈 화면 설정' 메뉴에서 다시 표시할 수 있어요."

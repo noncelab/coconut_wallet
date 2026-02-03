@@ -8,10 +8,10 @@ coconut_wallet: "coconut_wallet"
 coconut_vault: "coconut_vault"
 coconut_lib: "coconut_lib"
 
+bitcoin_name: "Bitcoin"
 wallet: "ウォレット"
 btc: "BTC"
-bitcoin_en: "Bitcoin"
-bitcoin_kr: "Bitcoin"
+bitcoin: "ビットコイン"
 sats: "sats"
 satoshi: "Satoshi"
 testnet: "Testnet"
@@ -49,6 +49,8 @@ glossary: "用語集"
 tool: "ツール"
 tutorial: "チュートリアル"
 settings: "設定"
+app_settings: "アプリ設定"
+home_screen_settings: "ホーム画面設定"
 tx_list: "トランザクション履歴"
 utxo_list: "UTXO一覧"
 wallet_id: "ウォレットID"
@@ -98,6 +100,16 @@ electrum_server: "Electrum Server"
 block_explorer: "ブロックエクスプローラー"
 log_viewer: "ログビューアー"
 go_to_settings: "設定を開く"
+
+relative_time:
+  days_ago(cardinal):
+    zero: "今日"
+    one: "1日前"
+    other: "${n}日前"
+  hours_ago(cardinal):
+    zero: "たった今"
+    one: "1時間前"
+    other: "${n}時間前"
 
 apply_item: "$count 項目"
 fee_sats: " ($value sat/vB)"
@@ -187,6 +199,53 @@ pin_check_screen:
   text: "パスワードを入力してください"
 
 # lib/screens/home
+wallet_home_screen: 
+  view_all_wallets: "マイウォレット一覧"
+  edit_home_screen: "ホーム画面を編集"
+  edit:
+    title: "ホーム画面で機能を\n非表示にしたり、追加したりできます"
+    hide_balance: "残高を非表示"
+    hide_balance_on_home: "ホーム画面に残高を表示しません。"
+    fake_balance:
+      fake_balance_setting: "フェイク残高設定"
+      fake_balance_display: "フェイク残高表示"
+      fake_balance_input_placeholder: "偽の総残高を設定してください（BTC単位）"
+      fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
+      fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます。"
+    hide_fiat_price: "フィアット残高を非表示"
+    hide_fiat_price_on_home: "ホーム画面にフィアット残高を表示しません。"
+    category:
+      total_balance: "残高合計"
+      wallet_list: "ウォレット\n一覧"
+      recent_transactions: "最近の\n取引 (24時間)"
+      analysis: "分析"
+    alert: 
+      empty_fake_balance: "フェイク残高を入力"
+      empty_fake_balance_description: "金額が設定されていません。\nもう一度入力するか、0 BTCに設定しますか？"
+      set_to_0: "0 BTCに設定"
+      enter_again: "再入力"
+  last_24_hours_transactions: "直近24時間の取引"
+  syncing_recent_transaction: "最近の取引履歴を読み込んでいます"
+  cannot_modify_fixed_widget: "固定ウィジェットは変更できません"
+  no_change_in_amount: "金額に変化がありません！"
+  analysis_period: "直近${days}日 • ${transaction_type}"
+  analysis_period_cutsom: "直接設定 • ${transaction_type}"
+  analysis_period_bottom_sheet:
+    period_for_analysis: "照会期間"
+    days_15: "15日"
+    days_30: "30日"
+    days_60: "60日"
+    days_90: "90日"
+    custom: "直接設定"
+    transaction_type: "取引タイプ"
+
+  transaction_count: "取引 $count回"
+  count: "$count回"
+  increase: "増加しました"
+  decrease: "減少しました"
+  sent: "送りました"
+  received: "いただきました"
+
 wallet_add_scanner_screen:
   add_wallet: "ウォレット追加"
   add_watch_only_wallet: "ウォッチオンリー\nウォレット追加"
@@ -194,10 +253,10 @@ wallet_add_scanner_screen:
   keystone: "Keystone 3 Pro"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  cold_card: "ColdCard"
+  cold_card: "Coldcard"
   krux: "Krux"
   self: "手動追加"
-  self_description: "情報でウォレットを追加できます"
+  self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
   guide_vault: "Coconut Vaultのホーム画面で、「ウォッチオンリーウォレットにエクスポート → ウォレット選択」 または 「ウォレット選択 → ウォレットエクスポート → ウォッチオンリーウォレットにエクスポート」 に進み、QRコードをスキャンしてください。"
   guide_seedsigner:
@@ -217,12 +276,12 @@ wallet_add_scanner_screen:
     step6_em: " I understand"
     step6_end: " > Export Xpub"
   guide_keystone:
-    step0: "Keystone 3 Pro以外のデバイスはサポートされていません。"
+    step0: "Keystone 3 Pro以外のデバイスはサポートされていません。（Bitcoin専用FW推奨）"
     step1: "1. ホーム画面で、"
     step1_em: " More(•••)"
     step2: "2. "
     step2_em: " Connect Software Wallet"
-    step3: "3. 任意のウォレットを選択"
+    step3: "3. BlueWallet、Sparrow、Zeus のいずれかを選択"
   guide_jade:
     step0_preposition: "アクティブ状態で、"
     step0_em: "Active "
@@ -251,6 +310,36 @@ wallet_add_scanner_screen:
     step2: "2. "
     step2_em: "XPUB - QR Code"
     select: "選択"
+  paste:
+    paste_button: "ペーストからインポート"
+    app_bar_title_text: "手動追加"
+    placeholder_text: "拡張公開鍵（zpub）またはディスクリプターを入力"
+    format_error_text: "フォーマットを確認できません"
+    invalid_character_error_text: "無効な文字"
+    mainnet_wallet_error_text: "メインネットウォレットではありません"
+    testnet_wallet_error_text: "テストネットウォレットではありません"
+    unsupported_wallet_error_text: "サポートされていないウォレット"
+    wallet_description_text: "ウォレット情報はどこで見つけられますか？"
+    blue_wallet_texts:
+      - "・BlueWallet"
+      - "・Hot Wallet - More(•••) - Show Wallet XPUB"
+      - "・Watch-only Wallet - More(•••) - Export/Backup"
+      - "zpub6rFR7y4Q2AijBEqt..."
+    nunchuck_wallet_texts:
+      - "・Nunchuck"
+      - "・Keys - Select Key - Key spec info"
+      - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
+      - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
+    mfp_title: "マスターフィンガープリント"
+    mfp_description_title: "マスターフィンガープリント"
+    mfp_description_texts:
+      - "ウォッチオンリーウォレットを識別するために必要な固有値"
+      - "この値は入力した情報から自動的に決定できないため、安全で正確なウォレット接続のために直接入力する必要があります。"
+      - "フィンガープリントがないと、送信機能を使用できません。"
+    mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
+    mfp_skip: "スキップ"
+    back_scan: "QRスキャンに戻る"
+  
 # lib/screens/wallet_list
 wallet_list:
   wallet_count: "$count 項目"
@@ -272,34 +361,6 @@ wallet_list:
     delete_description: "ウォレットを左にスワイプして削除できます。"
     finish: "編集完了"
     unsaved_changes_confirm_exit: "未保存の変更があります。\n本当に終了しますか？"
-
-wallet_add_input_screen:
-  app_bar_title_text: "手動追加"
-  placeholder_text: "拡張公開鍵（zpub）またはディスクリプターを入力"
-  format_error_text: "フォーマットを確認できません"
-  invalid_character_error_text: "無効な文字"
-  mainnet_wallet_error_text: "メインネットウォレットではありません"
-  testnet_wallet_error_text: "テストネットウォレットではありません"
-  unsupported_wallet_error_text: "サポートされていないウォレット"
-  wallet_description_text: "ウォレット情報はどこで見つけられますか？"
-  blue_wallet_texts:
-    - "・BlueWallet"
-    - "・Hot Wallet - More(•••) - Show Wallet XPUB"
-    - "・Watch-only Wallet - More(•••) - Export/Backup"
-    - "zpub6rFR7y4Q2AijBEqt..."
-  nunchuck_wallet_texts:
-    - "・Nunchuck"
-    - "・Keys - Select Key - Key spec info"
-    - "[ddde01df/84'/0'/0']xpubSbsnWbx.." #AOS
-    - "[ddde01df/84h/0h/0h]xpubSbsnWbx..." #iOS
-  mfp_title: "マスターフィンガープリント"
-  mfp_description_title: "マスターフィンガープリント"
-  mfp_description_texts:
-    - "ウォッチオンリーウォレットを識別するために必要な固有値"
-    - "この値は入力した情報から自動的に決定できないため、安全で正確なウォレット接続のために直接入力する必要があります。"
-    - "フィンガープリントがないと、送信機能を使用できません。"
-  mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
-  mfp_skip: "スキップ"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -457,16 +518,12 @@ settings_screen:
   use_biometric: "生体認証を使用"
   change_password: "パスワード変更"
   hide_balance: "残高を非表示"
-  fake_balance:
-    fake_balance_setting: "偽残高設定"
-    fake_balance_display: "偽残高を表示"
-    fake_balance_input_placeholder: "偽の総残高を設定してください（BTC単位）"
-    fake_balance_input_description: "複数のウォレットがある場合、各ウォレットの残高は自動的に計算されます。"
-    fake_balance_input_exceeds_error: "最大2100万BTCまで設定できます"
   language: "言語"
-  korean: "한국어"
-  english: "English"
-  japanese: "日本語"
+  locales:
+    korean: "한국어"
+    english: "English"
+    japanese: "日本語"
+    spanish: "Español"
   electrum_server: 
     server_address: "サーバーアドレス"
     port: "ポート"
@@ -577,6 +634,9 @@ wallet_info_screen:
       step3_em: "2. ウォレットデータをバックアップ"
       step4: "下のQRコードをカメラでスキャンしてください。"
       select: "選択"
+  error:
+    delete: "ウォレットの削除に失敗しました"
+
 transaction_fee_bumping_screen:
   rbf: "RBF"
   cpfp: "CPFP"
@@ -691,7 +751,7 @@ errors:
     invalid: "有効なアドレスではありません"
     not_for_testnet: "テストネットアドレスではありません"
     not_for_mainnet: "メインネットアドレスではありません"
-    not_for_regtest: "regtestアドレスではありません"
+    not_for_regtest: "アドレス形式を確認してください。\n（Native SegWit 対応）"
     duplicated: "アドレスは既に追加されています"
   pin_check_error:
     trial_count: "あと$count回試行できます"
@@ -706,6 +766,7 @@ errors:
   data_not_found: "データが見つかりません。"
   utxo_lock_error: "一時的なエラーによりUTXOロックの設定に失敗"
   utxo_unlock_error: "一時的なエラーによりUTXOアンロックに失敗"
+  empty_input: "トランザクション入力情報を取得できません。メンポールを確認してください。"
 
 text_field:
   enter_fee_with_two_decimal_places: "小数点以下2桁まで入力可能（sat/vB）"
@@ -825,9 +886,11 @@ third_party:
   keystone: "Keystone"
   jade: "Jade"
   seed_signer: "SeedSigner"
-  cold_card: "ColdCard"
-  krux: "Krux"  
-  zpub: "zpub"
+  cold_card: "Coldcard"
+  krux: "Krux"
+  extended_public_keys:
+    zpub: "zpub"
+    vpub: "vpub"
 
 trade_exchange:
   upbit: "Upbit"
@@ -838,3 +901,10 @@ fiat:
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"
+
+long_pressed_menu:
+  hide: "非表示"
+  edit_home_widget: "ホームウィジェット編集"
+  go_to_home_screen_settings: "ホーム画面設定に移動"
+  hide_home_widget_title: "ホーム画面から '${widgetName}' ウィジェットを非表示にしますか？"
+  hide_home_widget_description: "後で右上のメニューボタン > 'ホーム画面設定' メニューから再表示できます。"

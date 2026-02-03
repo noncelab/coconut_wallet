@@ -19,9 +19,21 @@ class SharedPrefKeys {
   static const String kIsReceivingTooltipDisabled = "IS_RECEIVING_TOOLTIP_DISABLED";
   static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
+  static const String kIsFiatBalanceHidden = "IS_FIAT_BALANCE_HIDDEN";
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
+
+  /// Home Features
+  static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
+  static const String kFavoriteWalletIds = "FAVORITE_WALLET_IDS"; // 즐겨찾기된 지갑 목록
+  static const String kExcludedFromTotalBalanceWalletIds =
+      "EXCLUDED_FROM_TOTAL_BALANCE_WALLET_IDS"; // 홈화면 총 잔액에서 제외할 지갑 목록
+  static const String kHomeFeatures = "HOME_FEATURES"; // 홈 화면에 표시할 기능(최근 거래, 분석, ...)
+  static const String kAnalysisPeriod = "ANALYSIS_PERIOD"; // 분석 위젯에 사용되는 조회 기간
+  static const String kAnalysisPeriodStart = "ANALYSIS_PERIOD_START"; // 분석 위젯에 사용되는 조회 기간 시작 날짜
+  static const String kAnalysisPeriodEnd = "ANALYSIS_PERIOD_END"; // 분석 위젯에 사용되는 조회 기간 종료 날짜
+  static const String kSelectedTransactionTypeIndices = "SELECTED_TRANSACTION_TYPE_INDICES"; // 분석 위젯에 사용되는 거래 유형
 
   /// 리뷰 요청 관련
   static const String kHaveSent = 'HAVE_SENT';

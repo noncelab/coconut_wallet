@@ -3,9 +3,10 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -23,7 +24,7 @@ import 'package:coconut_wallet/routes/route_observer.dart';
 import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
 import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_add_input_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
@@ -99,6 +100,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ChangeNotifierProvider(create: (_) => VisibilityProvider()),
         ChangeNotifierProvider(create: (_) => ConnectivityProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => FeatureSettingsProvider()),
 
         Provider.value(value: _realmManager),
 
@@ -119,14 +121,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<WalletPreferencesRepository>(
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
-
         ChangeNotifierProvider(create: (_) => NetworkPreferenceProvider()),
-
         ChangeNotifierProvider(
           create:
               (context) => PreferenceProvider(
                 context.read<WalletPreferencesRepository>(),
                 context.read<NetworkPreferenceProvider>(),
+                featureSettingsProvider: context.read<FeatureSettingsProvider>(),
               ),
         ),
 
@@ -243,7 +244,6 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/block-explorer': (context) => const BlockExplorerScreen(),
 
                 // 로딩이 필요한 화면들
-                '/wallet-add-input': (context) => const CustomLoadingOverlay(child: WalletAddInputScreen()),
                 '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
 
                 // 인자가 있는 기본 화면들 (Privacy Screen 사용 ❌ - 각 화면 내부에서 설정/해제 합니다)
@@ -260,12 +260,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/wallet-backup-data':
                     (context) => buildScreenWithArgs(
                       context,
-                      (args) => WalletBackupDataScreen(
-                        id: args['id'],
-                        walletName: args['walletName'],
-                        qrDataMap: (args['qrDataMap'] as Map).cast<String, String>(),
-                        textDataMap: (args['textDataMap'] as Map).cast<String, String>(),
-                      ),
+                      (args) => WalletBackupDataScreen(id: args['id'], walletName: args['walletName']),
                     ),
                 '/address-search':
                     (context) => buildScreenWithArgs(context, (args) => AddressSearchScreen(id: args['id'])),
@@ -356,6 +351,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
+                    ),
+                '/wallet-home-edit':
+                    (context) => buildLoadingScreenWithArgs(
+                      context,
+                      (args) => WalletHomeEditScreen(scrollController: args['scrollController']),
                     ),
               },
             );
