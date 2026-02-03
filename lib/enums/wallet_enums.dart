@@ -29,17 +29,24 @@ enum WalletLoadState { never, loadingFromDB, loadCompleted }
 enum WalletImportSource { coconutVault, keystone, jade, seedSigner, coldCard, krux, extendedPublicKey }
 
 extension WalletImportSourceExtension on WalletImportSource {
-  static final Map<WalletImportSource, String> _names = {
-    WalletImportSource.coconutVault: t.wallet_add_scanner_screen.vault,
-    WalletImportSource.keystone: t.wallet_add_scanner_screen.keystone,
-    WalletImportSource.jade: t.wallet_add_scanner_screen.jade,
-    WalletImportSource.seedSigner: t.wallet_add_scanner_screen.seed_signer,
-    WalletImportSource.coldCard: t.wallet_add_scanner_screen.cold_card,
-    WalletImportSource.krux: t.wallet_add_scanner_screen.krux,
-    WalletImportSource.extendedPublicKey: t.wallet_add_scanner_screen.self,
-  };
-
-  String get displayName => _names[this]!;
+  String get displayName {
+    switch (this) {
+      case WalletImportSource.coconutVault:
+        return t.wallet_add_scanner_screen.vault;
+      case WalletImportSource.keystone:
+        return t.wallet_add_scanner_screen.keystone;
+      case WalletImportSource.jade:
+        return t.wallet_add_scanner_screen.jade;
+      case WalletImportSource.seedSigner:
+        return t.wallet_add_scanner_screen.seed_signer;
+      case WalletImportSource.coldCard:
+        return t.wallet_add_scanner_screen.cold_card;
+      case WalletImportSource.krux:
+        return t.wallet_add_scanner_screen.krux;
+      case WalletImportSource.extendedPublicKey:
+        return t.wallet_add_scanner_screen.self;
+    }
+  }
 
   static WalletImportSource fromStringDefaultCoconut(String name) {
     return WalletImportSource.values.firstWhere(

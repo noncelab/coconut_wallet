@@ -758,15 +758,40 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     double cpfpTxSize = _estimateVirtualByte(transaction);
+
+    // cpfpTxSize가 0이거나 매우 작은 값인 경우 처리
+    if (cpfpTxSize <= 0) {
+      debugPrint('⚠️ _getRecommendedFeeRateForCpfp: cpfpTxSize가 0 이하입니다: $cpfpTxSize');
+      throw Exception('cpfpTxSize가 0 이하입니다: recommendedFeeRate($recommendedFeeRate), cpfpTxSize($cpfpTxSize)');
+    }
+
     double totalFee = (_pendingTx.vSize + cpfpTxSize) * recommendedFeeRate;
     double cpfpTxFee = totalFee - _pendingTx.fee.toDouble();
     double cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
+
+    // NaN 또는 Infinity 체크
+    if (cpfpTxFeeRate.isNaN || cpfpTxFeeRate.isInfinite) {
+      debugPrint('⚠️ _getRecommendedFeeRateForCpfp: cpfpTxFeeRate가 유효하지 않습니다: $cpfpTxFeeRate');
+      throw Exception(
+        'cpfpTxFeeRate가 유효하지 않습니다: recommendedFeeRate($recommendedFeeRate), cpfpTxSize($cpfpTxSize),cpfpTxFee($cpfpTxFee), cpfpTxFeeRate($cpfpTxFeeRate), totalRequiredFee($totalFee)',
+      );
+    }
 
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
       return (recommendedFeeRate * 100).ceilToDouble() / 100;
     }
 
-    return (cpfpTxFeeRate * 100).ceilToDouble() / 100;
+    double roundedFee = (cpfpTxFeeRate * 100).ceilToDouble() / 100;
+
+    // roundedFee도 NaN/Infinity 체크
+    if (roundedFee.isNaN || roundedFee.isInfinite) {
+      debugPrint('⚠️ _getRecommendedFeeRateForCpfp: roundedFee가 유효하지 않습니다: $roundedFee');
+      throw Exception(
+        'roundedFee가 유효하지 않습니다: recommendedFeeRate($recommendedFeeRate), cpfpTxSize($cpfpTxSize),cpfpTxFee($cpfpTxFee), cpfpTxFeeRate($cpfpTxFeeRate), totalRequiredFee($totalFee)',
+      );
+    }
+
+    return roundedFee;
   }
 
   /// 새로운 트랜잭션이 기존 트랜잭션보다 추가 지불하는 수수료양이 "새로운 트랜잭션 크기"이상이어야 합니다.
@@ -779,6 +804,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     double estimatedVirtualByte = _estimateVirtualByte(transaction);
+
+    // estimatedVirtualByte가 0이거나 매우 작은 값인 경우 처리
+    if (estimatedVirtualByte <= 0) {
+      debugPrint('⚠️ _getRecommendedFeeRateForRbf: estimatedVirtualByte가 0 이하입니다: $estimatedVirtualByte');
+      throw Exception('estimatedVirtualByte가 0 이하입니다: $estimatedVirtualByte');
+    }
+
     double minimumRequiredFee = _pendingTx.fee.toDouble() + estimatedVirtualByte;
     // double mempoolRecommendedFee = estimatedVirtualByte * recommendedFeeRate;
 
@@ -786,12 +818,27 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double feePerVByte = minimumRequiredFee / estimatedVirtualByte;
     double roundedFee = (feePerVByte * 100).ceilToDouble() / 100;
 
+    // NaN 또는 Infinity 체크
+    if (roundedFee.isNaN || roundedFee.isInfinite) {
+      debugPrint(
+        '⚠️ _getRecommendedFeeRateForRbf: roundedFee가 유효하지 않습니다: $roundedFee (feePerVByte: $feePerVByte, estimatedVirtualByte: $estimatedVirtualByte)',
+      );
+      throw Exception(
+        'roundedFee가 유효하지 않습니다: roundedFee($roundedFee), feePerVByte($feePerVByte), estimatedVirtualByte($estimatedVirtualByte)',
+      );
+    }
+
     // 계산된 추천 수수료가 현재 멤풀 수수료보다 작은 경우, 기존 수수료보다 1s/vb 높은 수수료로 설정
     // FYI, 이 조건에서 트랜잭션이 이미 처리되었을 것이므로 메인넷에서는 거의 발생 확률이 낮음
     // if (feePerVByte < _pendingTx.feeRate) {
     // roundedFee = ((_pendingTx.feeRate + 1) * 100).ceilToDouble() / 100;
     // }
-    return double.parse((roundedFee).toStringAsFixed(2));
+    try {
+      return double.parse((roundedFee).toStringAsFixed(2));
+    } catch (e) {
+      debugPrint('⚠️ _getRecommendedFeeRateForRbf: double.parse 실패: $e (roundedFee: $roundedFee)');
+      throw Exception('_getRecommendedFeeRateForRbf: double.parse 실패: $e (roundedFee: $roundedFee)');
+    }
     // }
 
     // return recommendedFeeRate.toDouble();
@@ -815,9 +862,24 @@ class FeeBumpingViewModel extends ChangeNotifier {
     }
 
     final cpfpTxSize = _estimateVirtualByte(_bumpingTransaction!);
+
+    // cpfpTxSize가 0이거나 매우 작은 값인 경우 처리
+    if (cpfpTxSize <= 0) {
+      debugPrint('⚠️ _getRecommendedFeeRateDescriptionForCpfp: cpfpTxSize가 0 이하입니다: $cpfpTxSize');
+      throw Exception('cpfpTxSize가 0 이하입니다: $cpfpTxSize');
+    }
+
     final cpfpTxFee = cpfpTxSize * recommendedFeeRate;
     final cpfpTxFeeRate = cpfpTxFee / cpfpTxSize;
     final totalRequiredFee = _pendingTx.vSize * _pendingTx.feeRate + cpfpTxSize * recommendedFeeRate;
+
+    // NaN 또는 Infinity 체크
+    if (cpfpTxFeeRate.isNaN || cpfpTxFeeRate.isInfinite) {
+      debugPrint('⚠️ _getRecommendedFeeRateDescriptionForCpfp: cpfpTxFeeRate가 유효하지 않습니다: $cpfpTxFeeRate');
+      throw Exception(
+        'cpfpTxFeeRate가 유효하지 않습니다: recommendedFeeRate($recommendedFeeRate), cpfpTxSize($cpfpTxSize),cpfpTxFee($cpfpTxFee), cpfpTxFeeRate($cpfpTxFeeRate), totalRequiredFee($totalRequiredFee)',
+      );
+    }
 
     if (cpfpTxFeeRate < recommendedFeeRate || cpfpTxFeeRate < 0) {
       return t.transaction_fee_bumping_screen.recommended_fee_less_than_network_fee;

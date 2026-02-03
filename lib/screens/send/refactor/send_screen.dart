@@ -4,7 +4,7 @@ import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -250,7 +250,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         onTap: _clearFocus,
         child: Scaffold(
           resizeToAvoidBottomInset: false,
-          backgroundColor: Colors.black,
+          backgroundColor: CoconutColors.black,
           appBar: _buildAppBar(context),
           body: SizedBox(
             height: usableHeight,
@@ -895,7 +895,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               child: Container(
                 height: kPageViewHeight,
                 width: MediaQuery.of(context).size.width,
-                color: CoconutColors.gray900.withValues(alpha: 0.5),
+                color: CoconutColors.black.withValues(alpha: 0.6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -903,7 +903,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     Lottie.asset('assets/lottie/swipe-left.json', width: 60, height: 60),
                     CoconutLayout.spacing_200h,
                     Text(
-                      t.send_screen.drag_to_add_address,
+                      t.send_screen.swipe_to_add_address,
                       style: CoconutTypography.body2_14.setColor(CoconutColors.white),
                     ),
                   ],
@@ -994,11 +994,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     amountTextColor = CoconutColors.white;
                   }
 
-                  final isEnglish = context.read<PreferenceProvider>().isEnglish;
+                  final isEnglishOrSpanish =
+                      context.read<PreferenceProvider>().isEnglish || context.read<PreferenceProvider>().isSpanish;
                   final maxButtonBaseText = t.send_screen.input_maximum_amount;
                   final maxButtonText =
                       _viewModel.isMaxMode
-                          ? (!isEnglish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
+                          ? (!isEnglishOrSpanish ? '$maxButtonBaseText ${t.cancel}' : '${t.cancel} $maxButtonBaseText')
                           : maxButtonBaseText;
 
                   return Column(
@@ -1519,7 +1520,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 context: sheetContext,
                 actionButtonList: [
                   IconButton(
-                    icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
                     color: CoconutColors.white,
                     onPressed: () {
                       _qrViewController?.switchCamera();

@@ -950,13 +950,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// build_runner 2.4.15
+/// build_runner 2.4.14
 const _build_runner = Package(
   name: 'build_runner',
   description: 'A build system for Dart code generation and modular compilation.',
   repository: 'https://github.com/dart-lang/build/tree/master/build_runner',
   authors: [],
-  version: '2.4.15',
+  version: '2.4.14',
   license: '''Copyright 2016, the Dart project authors. 
 
 Redistribution and use in source and binary forms, with or without
@@ -1002,7 +1002,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('frontend_server_client'),
     PackageRef('glob'),
     PackageRef('graphs'),
-    PackageRef('http'),
     PackageRef('http_multi_server'),
     PackageRef('io'),
     PackageRef('js'),
@@ -1020,7 +1019,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
     PackageRef('stream_transform'),
     PackageRef('timing'),
     PackageRef('watcher'),
-    PackageRef('web'),
     PackageRef('web_socket_channel'),
     PackageRef('yaml'),
   ],
@@ -1232,14 +1230,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('meta'), PackageRef('collection')],
 );
 
-/// carousel_slider 4.2.1
+/// carousel_slider 5.1.1
 const _carousel_slider = Package(
   name: 'carousel_slider',
   description: 'A carousel slider widget, support infinite scroll and custom child widget.',
   homepage: 'https://github.com/serenader2014/flutter_carousel_slider',
   repository: 'https://github.com/serenader2014/flutter_carousel_slider',
   authors: [],
-  version: '4.2.1',
+  version: '5.1.1',
   license: '''MIT License
 
 Copyright (c) 2017 serenader
@@ -1638,7 +1636,7 @@ const _clock = Package(
   dependencies: [],
 );
 
-/// coconut_design_system 0.9.9
+/// coconut_design_system 0.9.10
 const _coconut_design_system = Package(
   name: 'coconut_design_system',
   description:
@@ -1646,7 +1644,7 @@ const _coconut_design_system = Package(
   homepage: 'https://www.noncelab.com',
   repository: 'https://github.com/noncelab/coconut_design_system',
   authors: [],
-  version: '0.9.9',
+  version: '0.9.10',
   license: '''MIT License
 
 Copyright 2025 Nonce Lab
@@ -1992,14 +1990,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// cross_file 0.3.4+2
+/// cross_file 0.3.5
 const _cross_file = Package(
   name: 'cross_file',
   description: 'An abstraction to allow working with files across multiple platforms.',
   repository: 'https://github.com/flutter/packages/tree/main/packages/cross_file',
   authors: [],
-  version: '0.3.4+2',
-  license: '''Copyright 2013 The Flutter Authors. All rights reserved.
+  version: '0.3.5',
+  license: '''Copyright 2013 The Flutter Authors
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -9709,13 +9707,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// shelf_web_socket 3.0.0
+/// shelf_web_socket 2.0.1
 const _shelf_web_socket = Package(
   name: 'shelf_web_socket',
   description: 'A shelf handler that wires up a listener for every connection.',
   repository: 'https://github.com/dart-lang/shelf/tree/master/pkgs/shelf_web_socket',
   authors: [],
-  version: '3.0.0',
+  version: '2.0.1',
   license: '''Copyright 2014, the Dart project authors.
 
 Redistribution and use in source and binary forms, with or without
@@ -11603,13 +11601,13 @@ freely, subject to the following restrictions:
   dependencies: [],
 );
 
-/// vibration 3.1.4
+/// vibration 3.1.5
 const _vibration = Package(
   name: 'vibration',
   description: 'A plugin for handling Vibration API on iOS, Android, web and OpenHarmony.',
   homepage: 'https://github.com/benjamindean/flutter_vibration',
   authors: [],
-  version: '3.1.4',
+  version: '3.1.5',
   license: '''BSD 2-Clause License
 
 Copyright (c) 2018, Benjamin Dean

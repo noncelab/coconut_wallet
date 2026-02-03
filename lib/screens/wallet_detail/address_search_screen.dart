@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/address_search_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
@@ -83,7 +83,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
           context: context,
           actionButtonList: [
             IconButton(
-              icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+              icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
               color: CoconutColors.white,
               onPressed: () {
                 _qrViewController?.switchCamera();
