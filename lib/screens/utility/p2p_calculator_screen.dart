@@ -7,6 +7,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,6 +48,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   late final TextEditingController _btcAmountController;
   late final DateTime _referenceDateTime;
 
+  late FiatCode _currentFiatUnit;
+
   double get keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
 
   @override
@@ -54,6 +57,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     super.initState();
     _referenceDateTime = DateTime.now();
     isBtcUnit = context.read<PreferenceProvider>().isBtcUnit; // TODO: vm으로 이동
+    _currentFiatUnit = context.read<PreferenceProvider>().selectedFiat;
 
     // 화면 진입 시점에 한 번만 BTC 가격 가져오기
     final priceProvider = context.read<PriceProvider>();
@@ -798,6 +802,23 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     }
   }
 
+  void _onFiatUnitChange() {
+    vibrateExtraLight();
+    setState(() {
+      switch (_currentFiatUnit) {
+        case FiatCode.KRW:
+          _currentFiatUnit = FiatCode.USD;
+          break;
+        case FiatCode.USD:
+          _currentFiatUnit = FiatCode.JPY;
+          break;
+        default:
+          _currentFiatUnit = FiatCode.KRW;
+          break;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // build 시점에 controller 텍스트 동기화 (입력 중이 아닐 때만)
@@ -873,7 +894,28 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CoconutLayout.spacing_400h,
-                          currentBtcPriceWidget(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              currentBtcPriceWidget(),
+                              ShrinkAnimationButton(
+                                onPressed: () {
+                                  _onFiatUnitChange();
+                                },
+                                defaultColor: CoconutColors.gray800,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  constraints: const BoxConstraints(minWidth: 65),
+                                  child: Center(
+                                    child: Text(
+                                      _currentFiatUnit.name,
+                                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                           Stack(
                             alignment: Alignment.center,
                             children: [
