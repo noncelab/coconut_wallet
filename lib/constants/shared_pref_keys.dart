@@ -20,6 +20,7 @@ class SharedPrefKeys {
   static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";
   static const String kIsBalanceHidden = "IS_BALANCE_HIDDEN";
   static const String kIsFiatBalanceHidden = "IS_FIAT_BALANCE_HIDDEN";
+  // deprecated
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
