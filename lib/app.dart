@@ -3,7 +3,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
+import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -121,12 +122,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<WalletPreferencesRepository>(
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
-        ChangeNotifierProvider(create: (_) => NetworkPreferenceProvider()),
+        ChangeNotifierProvider(create: (_) => ElectrumServerProvider()),
+        ChangeNotifierProvider(create: (_) => BlockExplorerProvider()),
         ChangeNotifierProvider(
           create:
               (context) => PreferenceProvider(
                 context.read<WalletPreferencesRepository>(),
-                context.read<NetworkPreferenceProvider>(),
+                context.read<ElectrumServerProvider>(),
+                context.read<BlockExplorerProvider>(),
                 featureSettingsProvider: context.read<FeatureSettingsProvider>(),
               ),
         ),
@@ -159,7 +162,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             create: (context) {
               final walletProvider = context.read<WalletProvider>();
               return NodeProvider(
-                context.read<NetworkPreferenceProvider>().getElectrumServer(),
+                context.read<ElectrumServerProvider>().getElectrumServer(),
                 CoconutWalletApp.kNetworkType,
                 context.read<ConnectivityProvider>(),
                 walletProvider.walletLoadStateNotifier,

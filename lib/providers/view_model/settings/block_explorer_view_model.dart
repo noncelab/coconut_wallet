@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/utils/url_normalize_util.dart';
@@ -8,7 +8,7 @@ import 'package:coconut_wallet/utils/url_normalize_util.dart';
 enum ExplorerConnectionStatus { none, connecting, connected, failed }
 
 class BlockExplorerViewModel extends ChangeNotifier {
-  final NetworkPreferenceProvider _networkPrefs;
+  final BlockExplorerProvider _blockExplorerProvider;
 
   late bool _initialUseDefault;
   late String _initialCustomUrl;
@@ -22,7 +22,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
   Timer? _connectionTimer;
   bool _disposed = false;
 
-  BlockExplorerViewModel(this._networkPrefs) {
+  BlockExplorerViewModel(this._blockExplorerProvider) {
     _loadSettings();
   }
 
@@ -45,8 +45,8 @@ class BlockExplorerViewModel extends ChangeNotifier {
   }
 
   void _loadSettings() {
-    _isDefaultExplorerEnabled = _networkPrefs.useDefaultExplorer;
-    _customExplorerUrl = _networkPrefs.customExplorerUrl;
+    _isDefaultExplorerEnabled = _blockExplorerProvider.useDefaultExplorer;
+    _customExplorerUrl = _blockExplorerProvider.customExplorerUrl;
 
     _initialUseDefault = _isDefaultExplorerEnabled;
     _initialCustomUrl = _customExplorerUrl;
@@ -97,7 +97,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
 
   Future<void> saveChanges() async {
     if (_isDefaultExplorerEnabled) {
-      await _networkPrefs.setUseDefaultExplorer(true);
+      await _blockExplorerProvider.setUseDefaultExplorer(true);
 
       _resetStateAfterSave();
     } else {
@@ -115,8 +115,8 @@ class BlockExplorerViewModel extends ChangeNotifier {
     try {
       final response = await dio.get(urlToTest);
       if (response.statusCode == 200) {
-        await _networkPrefs.setUseDefaultExplorer(false);
-        await _networkPrefs.setCustomExplorerUrl(urlToTest);
+        await _blockExplorerProvider.setUseDefaultExplorer(false);
+        await _blockExplorerProvider.setCustomExplorerUrl(urlToTest);
 
         _customExplorerUrl = urlToTest;
 

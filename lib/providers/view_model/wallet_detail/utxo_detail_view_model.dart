@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -24,7 +24,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   late final UtxoTagProvider _tagProvider;
   late final TransactionProvider _txProvider;
   late final WalletProvider _walletProvider;
-  late final NetworkPreferenceProvider _networkPrefs;
+  late final BlockExplorerProvider _blockExplorerProvider;
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
@@ -36,7 +36,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   int _utxoInputMaxCount = 0;
   int _utxoOutputMaxCount = 0;
 
-  String get mempoolHost => _networkPrefs.blockExplorerUrl;
+  String get mempoolHost => _blockExplorerProvider.blockExplorerUrl;
 
   UtxoDetailViewModel(
     this._walletId,
@@ -45,7 +45,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     this._txProvider,
     this._walletProvider,
     this._syncWalletStateStream,
-    this._networkPrefs,
+    this._blockExplorerProvider,
   ) {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);

@@ -3,12 +3,12 @@ import 'dart:convert';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
+import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_view_model.dart';
 import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/model/node/electrum_server.dart';
-import 'package:coconut_wallet/providers/preferences/network_preference_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -27,7 +27,8 @@ class PreferenceProvider extends ChangeNotifier {
   // 주입되지 않으면 내부에서 직접 관리 (하위 호환성)
   FeatureSettingsProvider? _featureSettingsProvider;
 
-  final NetworkPreferenceProvider _networkPrefs;
+  final ElectrumServerProvider _electrumServerProvider;
+  final BlockExplorerProvider _blockExplorerProvider;
 
   /// 홈 화면 잔액 숨기기 on/off 여부
   late bool _isBalanceHidden;
@@ -109,10 +110,12 @@ class PreferenceProvider extends ChangeNotifier {
 
   PreferenceProvider(
     this._walletPreferencesRepository,
-    this._networkPrefs, {
+    this._electrumServerProvider,
+    this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
   }) : _featureSettingsProvider = featureSettingsProvider {
-    _networkPrefs.addListener(notifyListeners);
+    _electrumServerProvider.addListener(notifyListeners);
+    _blockExplorerProvider.addListener(notifyListeners);
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
     _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
