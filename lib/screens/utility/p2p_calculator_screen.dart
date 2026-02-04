@@ -728,23 +728,40 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   }
 
   String _getPlaceholderText(bool isFiat, FiatCode selectedFiat) {
-    // isFiat일 때: 선택한 법정화폐에 따라 고정값 반환
-    if (isFiat) {
-      switch (selectedFiat) {
-        case FiatCode.KRW:
+    // 위쪽 위젯인지 확인
+    final isUpsideWidget = (isFiat && !isSwitched) || (!isFiat && isSwitched);
+
+    // 위쪽 위젯은 고정 placeholder
+    if (isUpsideWidget) {
+      if (isFiat) {
+        // Fiat 고정값
+        switch (selectedFiat) {
+          case FiatCode.KRW:
+            return '50,000';
+          case FiatCode.USD:
+            return '50';
+          case FiatCode.JPY:
+            return '5000';
+        }
+      } else {
+        // BTC/Sats 고정값
+        if (isBtcUnit) {
+          return '0.00050000';
+        } else {
           return '50,000';
-        case FiatCode.USD:
-          return '50';
-        case FiatCode.JPY:
-          return '5000';
+        }
       }
     }
 
-    // isFiat이 아닐 때: 네트워크 연결 상태에 따라 계산
+    // 아래쪽 위젯은 위쪽 기준으로 계산
     final isNetworkOn = context.read<ConnectivityProvider>().isNetworkOn;
+    final feeValue = double.tryParse(_feeController.text) ?? 1.0;
+    final feeRate = feeValue / 100.0;
 
-    // baseFiatPrice: 선택한 법정화폐에 따른 기본값
-    var baseFiatPrice = 0;
+    // 위쪽 위젯의 기본값
+    int baseFiatPrice = 0;
+    double baseBtcAmount = 0;
+
     switch (selectedFiat) {
       case FiatCode.KRW:
         baseFiatPrice = 50000;
@@ -754,51 +771,43 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         baseFiatPrice = 5000;
     }
 
-    final feeValue = double.tryParse(_feeController.text) ?? 1.0;
-    final feeRate = feeValue / 100.0;
-    final discountMultiplier = 1.0 - feeRate;
-
-    // BTC 가격 결정 및 계산
-    double btcAmount = 0;
-    if (isNetworkOn) {
-      // 네트워크 ON: 기준시세(_fixedBtcPrice) 사용
-      if (_fixedBtcPrice == null || _fixedBtcPrice == 0) {
-        return isBtcUnit ? '0.00000000' : '0';
-      }
-
-      // sats = (fiat / price) * (1 - fee)
-      // btc  = (fiat / price) * (1 - fee)
-      btcAmount = (baseFiatPrice * discountMultiplier) / _fixedBtcPrice!;
+    if (isBtcUnit) {
+      baseBtcAmount = 0.0005;
     } else {
-      // 네트워크 OFF: 20K BTC 가격 사용
-      // 20,000 USD per BTC를 기준으로 선택한 법정화폐에 맞게 변환
-      int btcPriceInFiat;
-      switch (selectedFiat) {
-        case FiatCode.KRW:
-          // 20,000 USD ≈ 26,000,000 KRW (1 USD ≈ 1,300 KRW 가정)
-          btcPriceInFiat = 26000000;
-          break;
-        case FiatCode.USD:
-          btcPriceInFiat = 20000;
-          break;
-        case FiatCode.JPY:
-          // 20,000 USD ≈ 3,000,000 JPY (1 USD ≈ 150 JPY 가정)
-          btcPriceInFiat = 3000000;
-          break;
-      }
-      // 네트워크 OFF에서도 동일하게 (1 - fee)를 곱해줌
-      btcAmount = (baseFiatPrice * discountMultiplier) / btcPriceInFiat;
+      baseBtcAmount = 50000 / 100000000; // 50,000 sats
     }
 
-    // 단위에 따라 반환
-    if (isBtcUnit) {
-      debugPrint('btcAmount: ${btcAmount.toStringAsFixed(8)}');
-
-      return btcAmount.toStringAsFixed(8);
+    // BTC 가격 결정
+    int btcPriceInFiat;
+    if (isNetworkOn && _fixedBtcPrice != null && _fixedBtcPrice != 0) {
+      btcPriceInFiat = _fixedBtcPrice!;
     } else {
-      final satsAmount = (btcAmount * 100000000).round();
-      debugPrint('satsAmount: $satsAmount');
-      return satsAmount.toString();
+      switch (selectedFiat) {
+        case FiatCode.KRW:
+          btcPriceInFiat = 26000000;
+        case FiatCode.USD:
+          btcPriceInFiat = 20000;
+        case FiatCode.JPY:
+          btcPriceInFiat = 3000000;
+      }
+    }
+
+    if (isFiat) {
+      // 아래쪽이 Fiat: BTC/Sats 기준으로 Fiat 계산 (× (1 + fee))
+      final premiumMultiplier = 1.0 + feeRate;
+      final fiatAmount = (baseBtcAmount * btcPriceInFiat * premiumMultiplier).round();
+      return fiatAmount.toThousandsSeparatedString();
+    } else {
+      // 아래쪽이 BTC/Sats: Fiat 기준으로 BTC/Sats 계산 (× (1 - fee))
+      final discountMultiplier = 1.0 - feeRate;
+      final btcAmount = (baseFiatPrice * discountMultiplier) / btcPriceInFiat;
+
+      if (isBtcUnit) {
+        return btcAmount.toStringAsFixed(8);
+      } else {
+        final satsAmount = (btcAmount * 100000000).floor();
+        return satsAmount.toThousandsSeparatedString();
+      }
     }
   }
 
