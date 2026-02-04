@@ -51,7 +51,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: CoconutColors.gray900,
+      backgroundColor: CoconutColors.black,
       appBar: CoconutAppBar.build(
         title: t.send_screen.select_wallet,
         context: context,

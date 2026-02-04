@@ -226,7 +226,7 @@ wallet_home_screen:
       enter_again: "다시 입력"
   last_24_hours_transactions: "지난 24시간 거래"
   syncing_recent_transaction: "최근 거래 내역을 불러오는 중이에요"
-  cannot_modify_fixed_widget: "고정 위젯은 수정할 수 없어요"
+  cannot_modify_fixed_widget: "이 요소는 표시/숨김을 변경할 수 없어요."
   no_change_in_amount: "수량 변화가 없어요!"
   analysis_period: "최근 ${days}일 • ${transaction_type}"
   analysis_period_cutsom: "직접 설정 • ${transaction_type}"
@@ -409,7 +409,7 @@ send_screen:
   max_mode_insufficient_balance: "잔액 부족"
   unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
   fee_rate_too_low: "0.1 미만으로는 설정할 수 없어요"
-  drag_to_add_address: "받을 주소를 추가하려면 왼쪽으로 드래그 해주세요"
+  swipe_to_add_address: "수신자를 추가하려면 왼쪽으로 스와이프 해주세요"
 
 utxo_selection_screen:
   title: "UTXO 고르기"
@@ -474,6 +474,8 @@ unsigned_tx_qr_screen:
   fast_scan_mode: "빠른 스캔 모드"
   low_density_qr: "단순한 QR"
   high_density_qr: "복잡한 QR"
+  view_bbqr: "BBQR 보기"
+  view_ur: "UR 보기"
 
   guide_hardware_wallet:
     step1: "하드웨어 월렛으로 아래 QR 코드를 스캔하여 서명 과정을 시작해 주세요."

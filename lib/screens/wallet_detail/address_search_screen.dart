@@ -83,7 +83,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
           context: context,
           actionButtonList: [
             IconButton(
-              icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+              icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
               color: CoconutColors.white,
               onPressed: () {
                 _qrViewController?.switchCamera();
