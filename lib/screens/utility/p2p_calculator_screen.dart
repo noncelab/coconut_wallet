@@ -935,11 +935,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                 },
                                 defaultColor: CoconutColors.gray900,
                                 pressedColor: CoconutColors.gray850,
-                                child: Container(
+                                child: SizedBox(
                                   width: 52,
                                   height: 52,
-                                  decoration: const BoxDecoration(shape: BoxShape.circle),
-                                  child: SvgPicture.asset('assets/svg/arrow-top-down.svg'),
+                                  child: Center(
+                                    child: SvgPicture.asset(
+                                      'assets/svg/arrow-top-down.svg',
+                                      width: 32,
+                                      height: 32,
+                                      colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ],
