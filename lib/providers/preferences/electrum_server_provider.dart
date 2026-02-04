@@ -12,19 +12,6 @@ class ElectrumServerProvider extends ChangeNotifier {
 
   ElectrumServerProvider();
 
-  /// 초기화 로직: 설정된 서버가 없으면 네트워크 타입에 따라 기본값 설정
-  Future<void> ensureInitialized() async {
-    final serverName = _sharedPrefs.getString(SharedPrefKeys.kElectrumServerName);
-
-    if (serverName.isEmpty) {
-      if (NetworkType.currentNetworkType == NetworkType.mainnet) {
-        await setDefaultElectrumServer(DefaultElectrumServer.coconut);
-      } else {
-        await setDefaultElectrumServer(DefaultElectrumServer.regtest);
-      }
-    }
-  }
-
   void _validateCustomElectrumServerParams(String host, int port, bool ssl) {
     if (host.trim().isEmpty) {
       throw ArgumentError('Host cannot be empty');
@@ -33,11 +20,6 @@ class ElectrumServerProvider extends ChangeNotifier {
     if (port <= 0 || port > 65535) {
       throw ArgumentError('Port must be between 1 and 65535');
     }
-  }
-
-  Future<void> setDefaultElectrumServer(DefaultElectrumServer defaultElectrumServer) async {
-    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, defaultElectrumServer.serverName);
-    notifyListeners();
   }
 
   Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
