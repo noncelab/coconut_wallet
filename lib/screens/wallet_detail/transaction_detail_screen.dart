@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -69,6 +70,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           Provider.of<AddressRepository>(context, listen: false),
           Provider.of<ConnectivityProvider>(context, listen: false),
           Provider.of<SendInfoProvider>(context, listen: false),
+          Provider.of<BlockExplorerProvider>(context, listen: false),
         );
 
         _viewModel.showDialogNotifier.addListener(_showDialogListener);
