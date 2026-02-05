@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -91,82 +92,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         setState(() {});
       }
     });
-
-    _feeController.addListener(() {
-      if (_viewModel.isValidatingFee) return;
-
-      var text = _feeController.text;
-
-      if (text == '.') {
-        _viewModel.setIsValidatingFee(true);
-        const newText = '0.';
-        _feeController.value = const TextEditingValue(
-          text: newText,
-          selection: TextSelection.collapsed(offset: newText.length),
-        );
-        _viewModel.setPreviousFeeValue(newText);
-        _viewModel.setIsValidatingFee(false);
-        return;
-      }
-
-      // 정수 2자리, 소수점 이하 1자리만 허용하는 검증
-      final regex = RegExp(r'^\d{0,2}(\.\d{0,1})?$');
-      if (!regex.hasMatch(text)) {
-        // 유효하지 않은 입력이면 이전 값으로 되돌림
-        _viewModel.setIsValidatingFee(true);
-        _feeController.value = TextEditingValue(
-          text: _viewModel.previousFeeValue,
-          selection: TextSelection.collapsed(offset: _viewModel.previousFeeValue.length),
-        );
-        _viewModel.setIsValidatingFee(false);
-        return;
-      }
-
-      // 정수 부분이 두 자리 이상이고 0으로 시작하면 앞의 0 제거
-      if (text.contains('.')) {
-        // 소수점이 있는 경우
-        final parts = text.split('.');
-        final integerPart = parts[0];
-        final decimalPart = parts[1];
-
-        // 정수 부분이 두 자리 이상이고 0으로 시작하면 앞의 0 제거
-        if (integerPart.length >= 2 && integerPart.startsWith('0')) {
-          final cleanedInteger = integerPart.replaceFirst(RegExp(r'^0+'), '');
-          text = cleanedInteger.isEmpty ? '0.$decimalPart' : '$cleanedInteger.$decimalPart';
-        }
-      } else {
-        // 소수점이 없는 경우
-        // 정수 부분이 두 자리 이상이고 0으로 시작하면 앞의 0 제거
-        if (text.length >= 2 && text.startsWith('0')) {
-          final cleaned = text.replaceFirst(RegExp(r'^0+'), '');
-          text = cleaned.isEmpty ? '0' : cleaned;
-        }
-      }
-
-      // 값이 변경되었으면 업데이트
-      if (text != _feeController.text) {
-        _viewModel.setIsValidatingFee(true);
-        final newLength = text.length;
-        _feeController.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: newLength));
-        _viewModel.setIsValidatingFee(false);
-      }
-
-      // 유효한 값이면 이전 값 업데이트
-      _viewModel.setPreviousFeeValue(text);
-
-      // 커서를 마지막으로 이동
-      if (text.isNotEmpty) {
-        _feeController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
-      }
-
-      // fee가 변경되면 위쪽 위젯 기준으로 아래쪽 위젯 값 업데이트
-      if (mounted) {
-        debugPrint('feeController.text: ${_feeController.text}');
-        _updateAmountsOnFeeChange();
-        // placeholder 갱신을 위해 rebuild
-        setState(() {});
-      }
-    });
   }
 
   @override
@@ -180,21 +105,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     super.dispose();
   }
 
-  /// 위쪽 위젯(기준값)은 유지하고, 아래쪽 위젯만 업데이트
-  void _updateAmountControllers() {
-    _viewModel.setIsUpdatingAmounts(true);
-    if (_viewModel.isSwitched) {
-      // 위쪽: BTC/Sats 유지, 아래쪽: Fiat 업데이트
-      _fiatAmountController.text = _viewModel.getAmountString(double.tryParse(_feeController.text) ?? 0, isFiat: true);
-    } else {
-      // 위쪽: Fiat 유지, 아래쪽: BTC/Sats 업데이트
-      _btcAmountController.text = _viewModel.getAmountString(double.tryParse(_feeController.text) ?? 0, isFiat: false);
-    }
-    _viewModel.setIsUpdatingAmounts(false);
-  }
-
-  /// 스위치 토글, 단위 변경 시: 위쪽 위젯 기준으로 아래쪽 위젯 값을 새로 계산
-  void _updateBothAmountControllers() {
+  /// 스위치 토글, 단위 변경 시: 위쪽 위젯 기준으로 fiatPrice 재계산 후 아래쪽 업데이트
+  void _recalculateAndUpdateAmount() {
     if (!_viewModel.isInputChanged || _viewModel.fiatPrice == null || _viewModel.fiatPrice == 0) {
       _viewModel.setIsUpdatingAmounts(true);
       _fiatAmountController.text = '';
@@ -203,12 +115,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       return;
     }
 
-    _viewModel.setIsUpdatingAmounts(true);
-
-    final feeValue = double.tryParse(_feeController.text) ?? 0;
+    // isSwitched가 true면 위쪽이 BTC/Sats → fiatPrice 재계산 필요
     if (_viewModel.isSwitched) {
-      // 위쪽: BTC/Sats, 아래쪽: Fiat
-      // BTC/Sats 값 기준으로 fiatPrice 새로 계산 (× (1 + fee))
+      final feeValue = double.tryParse(_feeController.text) ?? 0;
       final btcText = _btcAmountController.text.replaceAll(RegExp(r'[^0-9.]'), '');
       if (btcText.isNotEmpty) {
         double btc;
@@ -220,29 +129,79 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         }
         _viewModel.setFiatPrice(_viewModel.calculateFiatFromBtc(feeValue, btc));
       }
-      _fiatAmountController.text = _viewModel.getAmountString(feeValue, isFiat: true);
-    } else {
-      // 위쪽: Fiat, 아래쪽: BTC/Sats
-      // fiatPrice 유지, BTC/Sats만 새로 계산 (× (1 - fee))
-      _btcAmountController.text = _viewModel.getAmountString(feeValue, isFiat: false);
     }
 
-    _viewModel.setIsUpdatingAmounts(false);
+    // 아래쪽 필드 업데이트
+    _updateAmountController(!_viewModel.isSwitched);
   }
 
-  /// 현재 입력 중인 필드를 제외한 반대쪽 필드만 업데이트
+  /// 반대쪽 필드만 업데이트 (fiatPrice는 이미 설정된 상태)
   void _updateAmountController(bool isFiatInput) {
     final feeValue = double.tryParse(_feeController.text) ?? 0;
 
     _viewModel.setIsUpdatingAmounts(true);
     if (isFiatInput) {
-      // fiat 입력 중이면 BTC 필드만 업데이트
       _btcAmountController.text = _viewModel.getAmountString(feeValue, isFiat: false);
     } else {
-      // BTC/sats 입력 중이면 fiat 필드만 업데이트
       _fiatAmountController.text = _viewModel.getAmountString(feeValue, isFiat: true);
     }
     _viewModel.setIsUpdatingAmounts(false);
+  }
+
+  /// Fee 입력 변경 처리 핸들러
+  void _handleFeeInputChanged(String value) {
+    var text = value;
+
+    // '.'만 입력하면 '0.'으로 변환
+    if (text == '.') {
+      const newText = '0.';
+      _feeController.value = const TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: newText.length),
+      );
+      _viewModel.setPreviousFeeValue(newText);
+      return;
+    }
+
+    // 정수 2자리, 소수점 이하 1자리만 허용하는 검증
+    final regex = RegExp(r'^\d{0,2}(\.\d{0,1})?$');
+    if (!regex.hasMatch(text)) {
+      // 유효하지 않은 입력이면 이전 값으로 되돌림
+      _feeController.value = TextEditingValue(
+        text: _viewModel.previousFeeValue,
+        selection: TextSelection.collapsed(offset: _viewModel.previousFeeValue.length),
+      );
+      return;
+    }
+
+    // 정수 부분이 두 자리 이상이고 0으로 시작하면 앞의 0 제거
+    if (text.contains('.')) {
+      final parts = text.split('.');
+      final integerPart = parts[0];
+      final decimalPart = parts[1];
+
+      if (integerPart.length >= 2 && integerPart.startsWith('0')) {
+        final cleanedInteger = integerPart.replaceFirst(RegExp(r'^0+'), '');
+        text = cleanedInteger.isEmpty ? '0.$decimalPart' : '$cleanedInteger.$decimalPart';
+      }
+    } else {
+      if (text.length >= 2 && text.startsWith('0')) {
+        final cleaned = text.replaceFirst(RegExp(r'^0+'), '');
+        text = cleaned.isEmpty ? '0' : cleaned;
+      }
+    }
+
+    // 값이 변경되었으면 업데이트
+    if (text != _feeController.text) {
+      _feeController.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    }
+
+    // 유효한 값이면 이전 값 업데이트
+    _viewModel.setPreviousFeeValue(text);
+
+    // fee가 변경되면 위쪽 위젯 기준으로 아래쪽 위젯 값 업데이트
+    _updateAmountsOnFeeChange();
+    setState(() {});
   }
 
   /// Amount 입력 변경 처리 메인 핸들러
@@ -657,7 +616,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           !_feeFocusNode.hasFocus &&
           _viewModel.isInputChanged &&
           !_viewModel.isUpdatingOnFeeChange) {
-        _updateAmountControllers();
+        // isSwitched가 true면 아래쪽이 fiat이므로 isFiatInput=false로 fiat 업데이트
+        // isSwitched가 false면 아래쪽이 btc이므로 isFiatInput=true로 btc 업데이트
+        _updateAmountController(!_viewModel.isSwitched);
       }
     });
 
@@ -721,22 +682,24 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     currentBtcPriceWidget(),
-                                    ShrinkAnimationButton(
-                                      onPressed: () {
-                                        viewModel.onFiatUnitChange();
-                                      },
-                                      defaultColor: CoconutColors.gray800,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        constraints: const BoxConstraints(minWidth: 65),
-                                        child: Center(
-                                          child: Text(
-                                            viewModel.currentFiatUnit.name,
-                                            style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                                    if (_viewModel.isNetworkOn) ...[
+                                      ShrinkAnimationButton(
+                                        onPressed: () {
+                                          viewModel.onFiatUnitChange();
+                                        },
+                                        defaultColor: CoconutColors.gray800,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                          constraints: const BoxConstraints(minWidth: 65),
+                                          child: Center(
+                                            child: Text(
+                                              viewModel.currentFiatUnit.name,
+                                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                                 ),
                                 Stack(
@@ -758,7 +721,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                     ShrinkAnimationButton(
                                       onPressed: () {
                                         viewModel.toggleSwitch();
-                                        _updateBothAmountControllers();
+                                        _recalculateAndUpdateAmount();
                                       },
                                       defaultColor: CoconutColors.gray900,
                                       pressedColor: CoconutColors.gray850,
@@ -878,13 +841,25 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     }
   }
 
+  /// 통화에 따른 거래소 이름 반환
+  String _getExchangePriceLabel() {
+    switch (_viewModel.currentFiatUnit) {
+      case FiatCode.KRW:
+        return t.utility.p2p_calculator.upbit_price;
+      case FiatCode.USD:
+        return t.utility.p2p_calculator.binance_price;
+      case FiatCode.JPY:
+        return t.utility.p2p_calculator.bitflyer_price;
+    }
+  }
+
   /// 거래소 시세 위젯
   Widget currentBtcPriceWidget() {
     // 화면 진입 시점의 시세로 고정 (매번 갱신하지 않음)
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      alignment: Alignment.topCenter,
+      alignment: Alignment.centerLeft,
       child:
           _viewModel.isOfflineMode
               ? const SizedBox.shrink()
@@ -900,24 +875,25 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                           '${t.utility.p2p_calculator.one_btc} = ',
                           style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
-                        if (_viewModel.fixedBtcPrice != null) ...[
+                        if (_viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn) ...[
                           Text(
                             '${_viewModel.currentFiatUnit.symbol} ${FiatUtil.calculateFiatAmount(100000000, _viewModel.fixedBtcPrice!).toThousandsSeparatedString()}',
                             style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                           ),
                         ] else ...[
-                          // TODO: 1BTC = 1BTC
-                          Text('-', style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+                          Text('1BTC', style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
                         ],
                       ],
                     ),
-                    // TODO: 언어별 거래소 변경
-                    // TODO: 네트워크 연결 상태에 따라 다른 텍스트 표시 + TS/TC에 나와있는 기대결과 확인
-                    // Online: (거래소) 기준 시세, offline: 시세를 가져올 수 없어요
-                    Text(
-                      t.utility.p2p_calculator.upbit_price,
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                    ),
+                    _viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn
+                        ? Text(
+                          _getExchangePriceLabel(),
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                        )
+                        : Text(
+                          t.utility.p2p_calculator.offline_price_unavailable,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                        ),
                   ],
                 ),
               ),
@@ -951,7 +927,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
 
               setState(() {
                 _viewModel.toggleBtcUnit();
-                _updateBothAmountControllers();
+                _recalculateAndUpdateAmount();
               });
             }
           }
@@ -1070,7 +1046,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                 height: 22,
                                 textInputAction: TextInputAction.done,
                                 textInputType: TextInputType.number,
-                                onChanged: (value) {},
+                                onChanged: _handleFeeInputChanged,
                                 textAlign: TextAlign.end,
                                 isVisibleBorder: false,
                               ),
