@@ -113,6 +113,7 @@ class NodeProvider extends ChangeNotifier {
 
   Future<void> _updateCurrentBlock() async {
     if (!isInitialized) return;
+    if (_walletItemListNotifier.value.isEmpty) return;
     if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted) return;
 
     final Result<BlockTimestamp> result = await getLatestBlock();
@@ -127,7 +128,6 @@ class NodeProvider extends ChangeNotifier {
     } else {
       Logger.error('NodeProvider: 블록 높이 업데이트 실패 - ${result.error}');
       if (_isWalletLoaded && isInitialized && _isFirstInitialization) {
-        // _setNodeSyncStateToFailedOrVpnDetected();
         _stateManager?.setNodeSyncStateToFailed();
       }
     }
@@ -146,6 +146,7 @@ class NodeProvider extends ChangeNotifier {
   bool get isServerChanging => _isServerChanging;
   bool get hasConnectionError => _hasConnectionError;
   int get currentBlockHeight => _currentBlockNotifier.value?.height ?? 0;
+  bool get isInitializing => _isInitializing;
 
   NodeProvider(
     this._electrumServer,
@@ -209,6 +210,7 @@ class NodeProvider extends ChangeNotifier {
       // 네트워크가 이미 초기화되어 있고 최초 실행인 경우 구독 시작
       if (_isNetworkInitialized && _isFirstInitialization) {
         _subscribeInitialWallets();
+      } else if (_walletItemListNotifier.value.isNotEmpty) {
         _startBlockUpdates();
       }
     }
@@ -216,13 +218,15 @@ class NodeProvider extends ChangeNotifier {
 
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
-    subscribeWallets().then((result) {
+    subscribeWallets().then((result) async {
       if (result.isFailure) {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
-        // _setNodeSyncStateToFailedOrVpnDetected();
         _stateManager?.setNodeSyncStateToFailed();
       } else {
         _setConnectionError(false);
+
+        await Future.delayed(const Duration(seconds: 1));
+        await _startBlockUpdates();
       }
     });
   }
@@ -336,7 +340,6 @@ class NodeProvider extends ChangeNotifier {
 
       // 초기화 실패 시 노드 동기화 상태를 실패로 설정
       if (_stateManager != null) {
-        // _setNodeSyncStateToFailedOrVpnDetected();
         _stateManager!.setNodeSyncStateToFailed();
       }
 
@@ -426,6 +429,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> reconnect() async {
+    _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
     // 네트워크 연결 상태 확인
     if (_connectivityProvider.isInternetOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
@@ -441,11 +445,11 @@ class NodeProvider extends ChangeNotifier {
 
     try {
       Logger.log('NodeProvider: Starting reconnect');
-      _setConnectionError(false); // 재연결 시작 시 에러 상태 리셋
-      await closeConnection();
+      if (isInitialized) {
+        await closeConnection();
+      }
       await initialize();
-
-      _setConnectionError(false); // initializa 완료 후 에러 상태 명시적 리셋
+      _setConnectionError(false);
 
       final walletLoadState = _walletLoadStateNotifier.value;
       final walletItems = _walletItemListNotifier.value;

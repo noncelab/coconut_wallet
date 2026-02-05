@@ -134,7 +134,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._connectivityProvider, this._nodeProvider)
     : _syncNodeStateStream = _nodeProvider.syncStateStream {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    // _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _nodeProvider.currentBlockNotifier.addListener(_onCurrentBlockChanged);
 
@@ -213,7 +212,7 @@ class WalletHomeViewModel extends ChangeNotifier {
       return NetworkStatus.offline;
     }
 
-    if (_nodeSyncState == NodeSyncState.completed) {
+    if (_nodeSyncState == NodeSyncState.completed || _nodeProvider.isInitializing) {
       return NetworkStatus.online;
     }
 
