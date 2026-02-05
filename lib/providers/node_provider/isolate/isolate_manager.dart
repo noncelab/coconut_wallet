@@ -395,7 +395,7 @@ class IsolateManager {
 
       _mainToIsolateSendPort!.send([messageType, mainFromIsolateReceivePort.sendPort, params]);
 
-      Result<T> result;
+      Result<dynamic> result;
       try {
         final timeLimit = _getTimeoutForCommand(messageType);
         final isSocketConnectionStatusMessage = messageType == IsolateControllerCommand.getSocketConnectionStatus;
@@ -420,7 +420,7 @@ class IsolateManager {
         return Result.failure(ErrorCodes.nodeUnknown);
       }
 
-      return result;
+      return result as Result<T>;
     } catch (e) {
       Logger.error('IsolateManager: Error in _send: $e');
       if (e is TimeoutException) {

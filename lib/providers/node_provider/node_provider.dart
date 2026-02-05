@@ -89,25 +89,53 @@ class NodeProvider extends ChangeNotifier {
     });
   }
 
+  // 블록 업데이트가 실행 중인지 확인 후, 필요 시 시작
+  Future<void> _startBlockUpdates() async {
+    if (!isInitialized) return;
+    if (_blockUpdateTimer?.isActive ?? false) return;
+
+    if (_blockUpdateTimer != null && _blockUpdateTimer!.isActive) {
+      Logger.log('NodeProvider: Block updates already running');
+      return;
+    }
+
+    await _updateCurrentBlock();
+    _blockUpdateTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!isInitialized) return;
+      _updateCurrentBlock();
+    });
+  }
+
+  Future<void> _restartBlockUpdates() async {
+    _stopBlockUpdates();
+    _startBlockUpdates();
+  }
+
   Future<void> _updateCurrentBlock() async {
-    final result = await getLatestBlock();
-    if (result.isSuccess) {
-      Logger.log('NodeProvider: 현재 블록 높이 업데이트 시작 - ${result.value.height}');
-      // 블록 높이가 변경되었을 때만 업데이트
+    if (!isInitialized) return;
+    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted) return;
+
+    final Result<BlockTimestamp> result = await getLatestBlock();
+    if (result.isSuccess && result.value.height > 0) {
+      if (_hasConnectionError) {
+        _setConnectionError(false);
+      }
       if (_currentBlockNotifier.value?.height != result.value.height) {
         _currentBlockNotifier.value = result.value;
         _currentBlockController.add(result.value);
-        Logger.log('NodeProvider: 현재 블록 높이 업데이트 - ${_currentBlockNotifier.value?.height}');
       }
     } else {
       Logger.error('NodeProvider: 블록 높이 업데이트 실패 - ${result.error}');
+      if (_isWalletLoaded && isInitialized && _isFirstInitialization) {
+        // _setNodeSyncStateToFailedOrVpnDetected();
+        _stateManager?.setNodeSyncStateToFailed();
+      }
     }
   }
 
-  void _startBlockUpdates() {
-    _blockUpdateTimer = Timer.periodic(const Duration(minutes: 10), (timer) {
-      _updateCurrentBlock();
-    });
+  void _stopBlockUpdates() {
+    _blockUpdateTimer?.cancel();
+    _blockUpdateTimer = null;
   }
 
   NodeProviderState get state => _stateManager?.state ?? NodeProviderState.initial();
@@ -145,7 +173,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _checkInitialNetworkState() {
-    if (_connectivityProvider.isNetworkOn) {
+    if (_connectivityProvider.isInternetOn) {
       initialize();
     } else {
       _isPendingInitialization = true;
@@ -154,7 +182,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   void _onConnectivityChanged() {
-    if (_connectivityProvider.isNetworkOn) {
+    if (_connectivityProvider.isInternetOn) {
       if (_isPendingInitialization || !isInitialized) {
         Logger.log('NodeProvider: 네트워크 연결됨 - 초기화 시작');
         _isPendingInitialization = false;
@@ -181,20 +209,20 @@ class NodeProvider extends ChangeNotifier {
       // 네트워크가 이미 초기화되어 있고 최초 실행인 경우 구독 시작
       if (_isNetworkInitialized && _isFirstInitialization) {
         _subscribeInitialWallets();
+        _startBlockUpdates();
       }
-
-      _updateCurrentBlock();
-      _startBlockUpdates();
     }
   }
 
   void _subscribeInitialWallets() {
     _isFirstInitialization = false;
     subscribeWallets().then((result) {
-      _updateCurrentBlock();
       if (result.isFailure) {
         Logger.error('NodeProvider: 초기 지갑 구독 실패: ${result.error}');
+        // _setNodeSyncStateToFailedOrVpnDetected();
         _stateManager?.setNodeSyncStateToFailed();
+      } else {
+        _setConnectionError(false);
       }
     });
   }
@@ -255,7 +283,9 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    if (_connectivityProvider.isNetworkOff) {
+    final hasInternet = _connectivityProvider.isInternetOn;
+
+    if (!hasInternet) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 초기화를 보류합니다.');
       _isPendingInitialization = true;
       return;
@@ -296,12 +326,8 @@ class NodeProvider extends ChangeNotifier {
 
       if (_isWalletLoaded && _isFirstInitialization) {
         _subscribeInitialWallets();
+        _startBlockUpdates();
       }
-
-      // 초기화 완료 후 블록 높이 업데이트 시작
-      Logger.log('NodeProvider: 초기화 완료 후 블록 높이 업데이트 시작');
-      _updateCurrentBlock();
-      _startBlockUpdates();
     } catch (e) {
       Logger.error('NodeProvider: 초기화 중 오류 발생: $e');
 
@@ -310,6 +336,7 @@ class NodeProvider extends ChangeNotifier {
 
       // 초기화 실패 시 노드 동기화 상태를 실패로 설정
       if (_stateManager != null) {
+        // _setNodeSyncStateToFailedOrVpnDetected();
         _stateManager!.setNodeSyncStateToFailed();
       }
 
@@ -323,6 +350,7 @@ class NodeProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isInitializing = false;
+      notifyListeners();
     }
   }
 
@@ -348,7 +376,7 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<bool>> subscribeWallets() async {
-    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isNetworkOff) {
+    if (_walletLoadStateNotifier.value != WalletLoadState.loadCompleted || _connectivityProvider.isInternetOff) {
       return Result.success(false);
     }
     final walletItems = _walletItemListNotifier.value;
@@ -399,7 +427,7 @@ class NodeProvider extends ChangeNotifier {
 
   Future<void> reconnect() async {
     // 네트워크 연결 상태 확인
-    if (_connectivityProvider.isNetworkOff) {
+    if (_connectivityProvider.isInternetOff) {
       Logger.log('NodeProvider: 네트워크가 연결되지 않아 재연결을 보류합니다.');
       _isPendingInitialization = true;
       return;
@@ -430,8 +458,7 @@ class NodeProvider extends ChangeNotifier {
         if (result.isSuccess) {
           Logger.log('NodeProvider: Reconnect completed successfully');
           _setConnectionError(false);
-          _updateCurrentBlock();
-          _startBlockUpdates();
+          _restartBlockUpdates();
         } else {
           Logger.error('NodeProvider: subscribeWallets failed: ${result.error}');
           _stateManager?.setNodeSyncStateToFailed();
@@ -466,6 +493,9 @@ class NodeProvider extends ChangeNotifier {
 
     try {
       Logger.log('NodeProvider: Closing connection');
+
+      // 블록 업데이트 중단
+      _stopBlockUpdates();
 
       // 스트림 구독 취소
       _stateSubscription?.cancel();

@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -41,13 +40,11 @@ class AppGuard extends StatefulWidget {
 }
 
 class _AppGuardState extends State<AppGuard> {
-  final Connectivity _connectivity = Connectivity();
-  bool? _isNetworkOn;
   late PriceProvider _priceProvider;
   late AuthProvider _authProvider;
   late NodeProvider _nodeProvider;
-  final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   late ConnectivityProvider _connectivityProvider;
+  final ScreenCaptureEvent _screenListener = ScreenCaptureEvent();
   bool _isPaused = false;
   late final AppLifecycleListener _lifecycleListener;
 
@@ -62,7 +59,6 @@ class _AppGuardState extends State<AppGuard> {
     _nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     _connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
-    _connectivity.onConnectivityChanged.listen(_checkConnectivity);
 
     _lifecycleListener = AppLifecycleListener(onStateChange: _handleAppLifecycleState);
 
@@ -77,15 +73,6 @@ class _AppGuardState extends State<AppGuard> {
       );
     });
     _screenListener.watch();
-  }
-
-  void _checkConnectivity(List<ConnectivityResult> result) {
-    bool isNetworkOn = !result.contains(ConnectivityResult.none);
-
-    if (_isNetworkOn != isNetworkOn) {
-      _connectivityProvider.setIsNetworkOn(isNetworkOn);
-      _isNetworkOn = isNetworkOn;
-    }
   }
 
   void _handleAppLifecycleState(AppLifecycleState state) {
@@ -143,7 +130,7 @@ class _AppGuardState extends State<AppGuard> {
 
   void _handleDisconnect() {
     // 1. 네트워크가 끊어진 경우 연결 해제
-    if (!_connectivityProvider.isNetworkOn) {
+    if (!_connectivityProvider.isInternetOn) {
       Logger.log('AppGuard: Network disconnected, closing connection');
       unawaited(_nodeProvider.closeConnection());
       return;
