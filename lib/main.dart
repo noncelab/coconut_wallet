@@ -5,6 +5,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dotenv_keys.dart';
 import 'package:coconut_wallet/firebase_options.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -101,11 +102,42 @@ void main() {
         await changeAppIcon();
       }
 
+      _setupPluralResolvers();
+
       runApp(const CoconutWalletApp());
     },
     (error, stackTrace) {
       Logger.error(">>>>> runZoneGuarded error: $error");
       Logger.log('>>>>> runZoneGuarded StackTrace: $stackTrace');
+    },
+  );
+}
+
+void _setupPluralResolvers() {
+  LocaleSettings.setPluralResolverSync(
+    language: 'kr',
+    cardinalResolver: (n, {zero, one, two, few, many, other}) => other ?? '',
+  );
+
+  LocaleSettings.setPluralResolverSync(
+    language: 'jp',
+    cardinalResolver: (n, {zero, one, two, few, many, other}) => other ?? '',
+  );
+
+  LocaleSettings.setPluralResolverSync(
+    language: 'en',
+    cardinalResolver: (n, {zero, one, two, few, many, other}) {
+      if (n == 0 && zero != null) return zero;
+      if (n == 1 && one != null) return one;
+      return other ?? '';
+    },
+  );
+
+  LocaleSettings.setPluralResolverSync(
+    language: 'es',
+    cardinalResolver: (n, {zero, one, two, few, many, other}) {
+      if (n == 1 && one != null) return one;
+      return other ?? '';
     },
   );
 }

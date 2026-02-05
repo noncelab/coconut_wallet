@@ -741,6 +741,7 @@ errors:
   network_disconnected: "Network disconnected"
   network_not_found: "Network is not connected!"
   electrum_connection_failed: "Unable to connect to Electrum server"
+  vpn_connected: "Please check your VPN connection status"
   insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"

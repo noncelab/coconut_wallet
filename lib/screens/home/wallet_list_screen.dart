@@ -61,8 +61,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       ) {
         previous ??= _createViewModel();
 
-        if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
-          previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
+        if (previous.isNetworkOn != connectivityProvider.isInternetOn) {
+          previous.updateIsNetworkOn(connectivityProvider.isInternetOn);
         }
 
         previous.onPreferenceProviderUpdated();

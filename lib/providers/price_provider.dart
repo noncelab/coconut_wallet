@@ -55,7 +55,7 @@ class PriceProvider extends ChangeNotifier {
   }
 
   void _checkInitialNetworkState() {
-    if (_connectivityProvider.isNetworkOn == true) {
+    if (_connectivityProvider.isInternetOn == true) {
       initWebSocketService();
     } else {
       _isPendingConnection = true;
@@ -64,7 +64,7 @@ class PriceProvider extends ChangeNotifier {
   }
 
   void _onConnectivityChanged() {
-    final isNetworkOn = _connectivityProvider.isNetworkOn;
+    final isNetworkOn = _connectivityProvider.isInternetOn;
 
     if (isNetworkOn == true) {
       if (_isPendingConnection || _currentWebSocketService == null) {
@@ -81,7 +81,7 @@ class PriceProvider extends ChangeNotifier {
 
   void _onPreferenceChanged() {
     // 통화가 변경되었을 때 웹소켓 재연결
-    if (_connectivityProvider.isNetworkOn == true) {
+    if (_connectivityProvider.isInternetOn == true) {
       if (_fiatCode != _preferenceProvider.selectedFiat) {
         _fiatCode = _preferenceProvider.selectedFiat;
         initWebSocketService(force: true);
@@ -91,7 +91,7 @@ class PriceProvider extends ChangeNotifier {
 
   void initWebSocketService({bool force = false}) {
     // 네트워크 연결 상태 확인
-    if (_connectivityProvider.isNetworkOn != true) {
+    if (_connectivityProvider.isInternetOn != true) {
       Logger.log('PriceProvider: 네트워크가 연결되지 않아 WebSocket 연결을 보류합니다.');
       _isPendingConnection = true;
       return;

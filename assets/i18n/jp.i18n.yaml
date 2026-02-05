@@ -743,6 +743,7 @@ errors:
   network_disconnected: "ネットワークが切断されました"
   network_not_found: "ネットワークが接続されていません！"
   electrum_connection_failed: "Electrumサーバーに接続できません"
+  vpn_connected: "VPN接続状態を確認してください"
   insufficient_balance: "残高が不足しています。"
   fee_selection_error:
     insufficient_balance: "手数料を支払うための残高が不足"
