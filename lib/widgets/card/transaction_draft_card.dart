@@ -167,6 +167,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     return SizedBox(
       width: screenWidth - 32,
       child: ShrinkAnimationButton(
+        borderRadius: 12,
         onPressed: () async {
           if (_dragOffset != 0) {
             // 스와이프된 상태면 닫기
