@@ -1,7 +1,7 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/web_socket_service.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 class PriceProvider extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final PreferenceProvider _preferenceProvider;
+  late FiatCode _fiatCode;
 
   /// 현재 통화별 웹소켓 서비스
   WebSocketService? _currentWebSocketService;
@@ -42,6 +43,7 @@ class PriceProvider extends ChangeNotifier {
 
   PriceProvider(this._connectivityProvider, this._preferenceProvider) {
     Logger.log('PriceProvider: Initialized with connectivity provider');
+    _fiatCode = _preferenceProvider.selectedFiat;
 
     _connectivityListener = _onConnectivityChanged;
     _preferenceListener = _onPreferenceChanged;
@@ -80,7 +82,10 @@ class PriceProvider extends ChangeNotifier {
   void _onPreferenceChanged() {
     // 통화가 변경되었을 때 웹소켓 재연결
     if (_connectivityProvider.isNetworkOn == true) {
-      initWebSocketService(force: true);
+      if (_fiatCode != _preferenceProvider.selectedFiat) {
+        _fiatCode = _preferenceProvider.selectedFiat;
+        initWebSocketService(force: true);
+      }
     }
   }
 
@@ -118,6 +123,10 @@ class PriceProvider extends ChangeNotifier {
           disposeWebSocketService();
         },
       );
+      // Network off 상태에서 preferenceProvider.selectedFiat이 변경된 경우 업데이트가 안되어있음
+      if (selectedFiat != _fiatCode) {
+        _fiatCode = selectedFiat;
+      }
     } catch (e) {
       Logger.error('PriceProvider: WebSocket 서비스 초기화 실패: $e');
       _isPendingConnection = true;

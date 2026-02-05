@@ -3,9 +3,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
-import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/settings/pin_setting_screen.dart';
@@ -15,8 +14,6 @@ import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:coconut_wallet/screens/settings/fake_balance_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/multi_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -110,51 +107,32 @@ class _SettingsScreen extends State<SettingsScreen> {
                     ],
                   ),
 
-                  // 홈 잔액 숨기기 + 가짜 잔액 설정
-                  // TODO: ButtonGroup과 MultiButton 통합 혹은 usage 구별이 필요함
-                  if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
-                    CoconutLayout.spacing_200h,
-                    MultiButton(
-                      children: [
-                        SingleButton(
-                          title: t.settings_screen.hide_balance,
-                          rightElement: _buildSwitch(
-                            isOn: viewModel.isBalanceHidden,
-                            onChanged: (value) {
-                              viewModel.changeIsBalanceHidden(value);
-                            },
-                          ),
-                        ),
-                        SingleButton(
-                          enableShrinkAnim: true,
-                          title: t.settings_screen.fake_balance.fake_balance_setting,
-                          onPressed: () async {
-                            CommonBottomSheets.showCustomHeightBottomSheet(
-                              context: context,
-                              heightRatio: 0.5,
-                              child: const FakeBalanceBottomSheet(),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    // ButtonGroup(buttons: [
-                    //   SingleButton(
-                    //       title: t.settings_screen.hide_balance,
-                    //       rightElement: _buildSwitch(
-                    //           isOn: viewModel.isBalanceHidden,
-                    //           onChanged: (value) {
-                    //             viewModel.changeIsBalanceHidden(value);
-                    //           })),
-                    //   _buildAnimatedButton(
-                    //     title: t.settings_screen.fake_balance.fake_balance_setting,
-                    //     onPressed: () async {
-                    //       CommonBottomSheets.showBottomSheet_50(
-                    //           context: context, child: const FakeBalanceBottomSheet());
-                    //     },
-                    //   ),
-                    // ]),
-                  ],
+                  // if (context.read<WalletProvider>().walletItemList.isNotEmpty) ...[
+                  //   CoconutLayout.spacing_200h,
+                  //   MultiButton(
+                  //     children: [
+                  //       SingleButton(
+                  //         title: t.settings_screen.hide_balance,
+                  //         rightElement: CupertinoSwitch(
+                  //             value: viewModel.isBalanceHidden,
+                  //             activeColor: CoconutColors.gray100,
+                  //             trackColor: CoconutColors.gray600,
+                  //             thumbColor: CoconutColors.gray800,
+                  //             onChanged: (value) {
+                  //               viewModel.changeIsBalanceHidden(value);
+                  //             }),
+                  //       ),
+                  //       if (viewModel.isBalanceHidden)
+                  //         SingleButton(
+                  //           title: t.settings_screen.fake_balance.fake_balance_setting,
+                  //           onPressed: () async {
+                  //             CommonBottomSheets.showBottomSheet_50(
+                  //                 context: context, child: const FakeBalanceBottomSheet());
+                  //           },
+                  //         ),
+                  //     ],
+                  //   ),
+                  // ],
                   CoconutLayout.spacing_400h,
 
                   // 단위
@@ -165,7 +143,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                         selector: (_, viewModel) => viewModel.isBtcUnit,
                         builder: (context, isBtcUnit, child) {
                           return _buildAnimatedButton(
-                            title: t.bitcoin_kr,
+                            title: t.bitcoin,
                             subtitle: isBtcUnit ? t.btc : t.sats,
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
@@ -222,7 +200,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                           CommonBottomSheets.showCustomHeightBottomSheet(
                             context: context,
                             heightRatio: 0.5,
-                            child: const LanguageBottomSheet(),
+                            child: LanguageBottomSheet(),
                           );
                         },
                       );
@@ -283,7 +261,16 @@ class _SettingsScreen extends State<SettingsScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: Sizes.size32),
+                  CoconutLayout.spacing_400h,
+
+                  // 앱 정보 보기
+                  _category(t.app_info),
+                  _buildAnimatedButton(
+                    title: t.view_app_info,
+                    onPressed: () => Navigator.pushNamed(context, '/app-info'),
+                  ),
+
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -341,13 +328,14 @@ class _SettingsScreen extends State<SettingsScreen> {
   String _getCurrentLanguageDisplayName(String language) {
     switch (language) {
       case 'kr':
-        return t.settings_screen.korean;
-      case 'en':
-        return t.settings_screen.english;
+        return t.settings_screen.locales.korean;
       case 'jp':
-        return t.settings_screen.japanese;
+        return t.settings_screen.locales.japanese;
+      case 'es':
+        return t.settings_screen.locales.spanish;
+      case 'en':
       default:
-        return t.settings_screen.korean;
+        return t.settings_screen.locales.english;
     }
   }
 }

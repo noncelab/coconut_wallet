@@ -1,7 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -10,7 +10,6 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -164,12 +163,18 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         .catchError((error) async {
           if (mounted) {
             context.loaderOverlay.hide();
-            CustomDialogs.showCustomAlertDialog(
-              context,
-              title: t.alert.error_tx.created_failed,
-              message: t.alert.error_tx.not_created(error: error.toString()),
-              onConfirm: () {
-                Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return CoconutPopup(
+                  languageCode: context.read<PreferenceProvider>().language,
+                  title: t.alert.error_tx.created_failed,
+                  description: t.alert.error_tx.not_created(error: error.toString()),
+                  onTapRight: () {
+                    Navigator.pop(context);
+                  },
+                  rightButtonText: t.OK,
+                );
               },
             );
           }

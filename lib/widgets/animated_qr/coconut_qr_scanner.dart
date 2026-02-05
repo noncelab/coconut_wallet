@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/app_settings_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_fragmented_qr_scan_data_handler.dart';
@@ -38,6 +38,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   final ValueNotifier<double> _progressNotifier = ValueNotifier(0.0);
   bool _isScanningExtraData = false;
+  bool _hasBeenScanningExtraData = false;
   bool _showLoadingBar = false;
   bool _isFirstScanData = true;
   bool _isShowedCameraPermissionDialog = false;
@@ -108,12 +109,13 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
         }
       }
 
-      if (!_showLoadingBar) {
-        setState(() {
-          _isScanningExtraData = handler.progress > 0.99;
-          _showLoadingBar = true;
-        });
-      }
+      setState(() {
+        _isScanningExtraData = handler.progress > 0.98;
+        if (_isScanningExtraData) {
+          _hasBeenScanningExtraData = true;
+        }
+        _showLoadingBar = true;
+      });
 
       if (handler.isCompleted()) {
         _resetLoadingBarState();
@@ -133,6 +135,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
     _progressNotifier.value = 0;
     setState(() {
       _isScanningExtraData = false;
+      _hasBeenScanningExtraData = false;
       if (_showLoadingBar) {
         _showLoadingBar = false;
       }
@@ -170,11 +173,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   }
 
   Widget _buildProgressOverlay(BuildContext context) {
-    final scanAreaSize =
-        (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400)
-            ? 320.0
-            : MediaQuery.of(context).size.width * 0.85;
-
+    final scanAreaSize = ScannerOverlay.calculateScanAreaSize(context);
     final scanAreaTop = (MediaQuery.of(context).size.height - scanAreaSize) / 2;
     final scanAreaBottom = scanAreaTop + scanAreaSize;
 
@@ -191,7 +190,11 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CoconutLayout.spacing_1300w,
-                if (!_isScanningExtraData) ...[_buildProgressBar(), CoconutLayout.spacing_300w, _buildProgressText()],
+                if (!_isScanningExtraData && !_hasBeenScanningExtraData) ...[
+                  _buildProgressBar(),
+                  CoconutLayout.spacing_300w,
+                  _buildProgressText(),
+                ],
                 if (_isScanningExtraData) _buildReadingExtraText(),
                 CoconutLayout.spacing_1300w,
               ],

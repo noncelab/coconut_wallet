@@ -1,9 +1,7 @@
-import 'dart:math';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/descriptor_util.dart';
@@ -55,7 +53,7 @@ class WalletAddInputViewModel extends ChangeNotifier {
   bool isValidCharacters(String text) {
     bool isValid = RegExp(r"^[a-zA-Z0-9#*();<>/'`\[\]]+$").hasMatch(text);
     if (!isValid) {
-      errorMessage = t.wallet_add_input_screen.invalid_character_error_text;
+      errorMessage = t.wallet_add_scanner_screen.paste.invalid_character_error_text;
       notifyListeners();
     }
     return isValid;
@@ -74,12 +72,12 @@ class WalletAddInputViewModel extends ChangeNotifier {
     if (e.toString().contains("network type")) {
       errorMessage =
           NetworkType.currentNetworkType == NetworkType.mainnet
-              ? t.wallet_add_input_screen.mainnet_wallet_error_text
-              : t.wallet_add_input_screen.testnet_wallet_error_text;
+              ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text
+              : t.wallet_add_scanner_screen.paste.testnet_wallet_error_text;
     } else if (e.toString().contains("not supported")) {
-      errorMessage = t.wallet_add_input_screen.unsupported_wallet_error_text;
+      errorMessage = t.wallet_add_scanner_screen.paste.unsupported_wallet_error_text;
     } else {
-      errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
+      errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
     }
     notifyListeners();
   }

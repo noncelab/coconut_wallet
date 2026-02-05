@@ -7,20 +7,24 @@ import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preference_provider.dart';
+import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/card/wallet_expandable_info_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -35,20 +39,40 @@ class WalletAddScannerScreen extends StatefulWidget {
   State<WalletAddScannerScreen> createState() => _WalletAddScannerScreenState();
 }
 
-class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
+class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   MobileScannerController? controller;
   bool _isProcessing = false;
+  bool _clipboardContentAvailable = false;
   late WalletAddScannerViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkClipboard();
+
     _viewModel = WalletAddScannerViewModel(
       widget.importSource,
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
     );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboard();
+    }
+  }
+
+  Future<void> _checkClipboard() async {
+    final isContentAvailable = await Clipboard.hasStrings();
+    if (mounted && _clipboardContentAvailable != isContentAvailable) {
+      setState(() {
+        _clipboardContentAvailable = isContentAvailable;
+      });
+    }
   }
 
   // In order to get hot reload to work we need to pause the camera if the platform
@@ -64,7 +88,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final isEnglish = Provider.of<PreferenceProvider>(context, listen: false).isEnglish;
+    final isEnglishOrSpanish =
+        Provider.of<PreferenceProvider>(context, listen: false).isEnglish ||
+        Provider.of<PreferenceProvider>(context, listen: false).isSpanish;
 
     switch (widget.importSource) {
       case WalletImportSource.coconutVault:
@@ -73,7 +99,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.seedSigner:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_seedsigner.step1),
               _em(t.wallet_add_scanner_screen.guide_seedsigner.step1_em),
@@ -132,7 +158,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.keystone:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               // 키스톤 3 프로 외 에센셜, 이전 프로 기기 호환되지 않음에 따른 임시 조치
               TextSpan(text: t.wallet_add_scanner_screen.guide_keystone.step0),
@@ -165,7 +191,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.jade:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               _em(t.wallet_add_scanner_screen.guide_jade.step0_em),
               TextSpan(text: t.wallet_add_scanner_screen.guide_jade.step0),
@@ -204,7 +230,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.coldCard:
         {
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: t.wallet_add_scanner_screen.guide_coldcard.step1),
               _em(t.wallet_add_scanner_screen.guide_coldcard.step1_em),
@@ -245,8 +271,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         }
       case WalletImportSource.krux:
         {
-          const prefix = 't.wallet_add_scanner_screen.guide_krux';
-          if (!isEnglish) {
+          if (!isEnglishOrSpanish) {
             return [
               TextSpan(text: '${t.wallet_add_scanner_screen.guide_krux.step0}\n'),
               TextSpan(text: t.wallet_add_scanner_screen.guide_krux.step1),
@@ -276,13 +301,20 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
   TextSpan _em(String text) => TextSpan(text: text, style: CoconutTypography.body2_14_Bold.copyWith(height: 1.3));
 
   @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    controller?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CoconutAppBar.build(
         title: _getAppBarTitle(),
         context: context,
         isBottom: true,
-        backgroundColor: CoconutColors.black.withOpacity(0.95),
+        backgroundColor: CoconutColors.black.withValues(alpha: 0.95),
         actionButtonList: [
           IconButton(
             onPressed: () {
@@ -290,7 +322,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
                 controller!.switchCamera();
               }
             },
-            icon: const Icon(CupertinoIcons.camera_rotate, size: 22),
+            icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
             color: CoconutColors.white,
           ),
         ],
@@ -311,20 +343,167 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
               left: CoconutLayout.defaultPadding,
               right: CoconutLayout.defaultPadding,
             ),
-            child: CoconutToolTip(
-              backgroundColor: CoconutColors.gray900,
-              borderColor: CoconutColors.gray900,
-              icon: SvgPicture.asset(
-                'assets/svg/circle-info.svg',
-                width: 20,
-                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-              ),
-              tooltipType: CoconutTooltipType.fixed,
-              richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
-            ),
+            child:
+                widget.importSource == WalletImportSource.extendedPublicKey
+                    ? const WalletExpandableInfoCard()
+                    : _buildDefaultToolTip(),
           ),
+          if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
+            FixedBottomButton(
+              onButtonClicked: _handleClipboardImport,
+              text: t.wallet_add_scanner_screen.paste.paste_button,
+              showGradient: false,
+              backgroundColor: CoconutColors.white,
+              textColor: CoconutColors.black,
+            ),
         ],
       ),
+    );
+  }
+
+  void _handleClipboardImport() async {
+    await controller?.stop();
+    if (!mounted) return;
+
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = clipboardData?.text?.trim();
+
+    if (text == null || text.isEmpty) {
+      _showErrorDialog(t.alert.wallet_add.add_failed, t.alert.invalid_qr);
+      await controller?.start();
+      return;
+    }
+
+    final inputViewModel = WalletAddInputViewModel(context.read<WalletProvider>(), context.read<PreferenceProvider>());
+
+    final bool isDescriptor = text.contains('[');
+    final bool isValid =
+        isDescriptor ? inputViewModel.normalizeDescriptor(text) : inputViewModel.isExtendedPublicKey(text);
+
+    if (!isValid) {
+      if (mounted) {
+        _showErrorDialog(
+          t.alert.wallet_add.add_failed,
+          inputViewModel.errorMessage ?? t.wallet_add_scanner_screen.paste.format_error_text,
+        );
+        await controller?.start();
+      }
+      return;
+    }
+
+    if (isDescriptor) {
+      await _executeAddWallet(inputViewModel);
+    } else {
+      if (mounted) {
+        _showMfpInputBottomSheet(inputViewModel);
+      }
+    }
+  }
+
+  Future<void> _executeAddWallet(WalletAddInputViewModel viewModel) async {
+    if (_isProcessing) return;
+
+    _isProcessing = true;
+    context.loaderOverlay.show();
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    try {
+      if (!mounted) return;
+      ResultOfSyncFromVault addResult = await viewModel.addWallet();
+
+      if (!mounted) return;
+
+      switch (addResult.result) {
+        case WalletSyncResult.newWalletAdded:
+          {
+            context.read<AnalyticsService>().logEvent(
+              eventName: AnalyticsEventNames.walletAddCompleted,
+              parameters: {AnalyticsParameterNames.walletAddImportSource: WalletImportSource.extendedPublicKey.name},
+            );
+
+            if (widget.onNewWalletAdded != null) {
+              widget.onNewWalletAdded!(addResult);
+            }
+            if (mounted) {
+              Navigator.pushReplacementNamed(
+                context,
+                '/wallet-detail',
+                arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
+              );
+            }
+            break;
+          }
+        case WalletSyncResult.existingWalletUpdateImpossible:
+          vibrateLightDouble();
+          if (mounted) {
+            _showErrorDialog(
+              t.alert.wallet_add.already_exist,
+              t.alert.wallet_add.already_exist_description(
+                name: TextUtils.ellipsisIfLonger(viewModel.getWalletName(addResult.walletId!), maxLength: 15),
+              ),
+            );
+          }
+          break;
+        default:
+          throw 'No Support Result: ${addResult.result.name}';
+      }
+    } catch (e) {
+      vibrateLightDouble();
+      if (mounted) {
+        _showErrorDialog(t.alert.wallet_add.add_failed, e.toString());
+      }
+    } finally {
+      vibrateMedium();
+      _isProcessing = false;
+      if (mounted) {
+        context.loaderOverlay.hide();
+      }
+    }
+  }
+
+  void _showMfpInputBottomSheet(WalletAddInputViewModel viewModel) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: WalletAddMfpInputBottomSheet(
+            onSkip: () {
+              viewModel.masterFingerPrint = null;
+              _executeAddWallet(viewModel);
+            },
+            onComplete: (text) {
+              viewModel.masterFingerPrint = text;
+              _executeAddWallet(viewModel);
+            },
+          ),
+        );
+      },
+      backgroundColor: CoconutColors.black,
+      isScrollControlled: true,
+      enableDrag: true,
+      useSafeArea: true,
+    ).then((_) {
+      if (mounted && !_isProcessing) {
+        controller?.start();
+      }
+    });
+  }
+
+  Widget _buildDefaultToolTip() {
+    if (_getGuideTextSpan().isEmpty) return const SizedBox.shrink();
+
+    return CoconutToolTip(
+      backgroundColor: CoconutColors.gray900,
+      borderColor: CoconutColors.gray900,
+      icon: SvgPicture.asset(
+        'assets/svg/circle-info.svg',
+        width: 20,
+        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+      ),
+      tooltipType: CoconutTooltipType.fixed,
+      richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
     );
   }
 
@@ -399,12 +578,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       FileLogger.error(className, methodName, '_onCompletedScanning failed: $e', stackTrace);
       vibrateLightDouble();
       if (mounted) {
-        String errorMessage = "${t.wallet_add_input_screen.format_error_text}\n${e.toString()}";
+        String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
         if (e.toString().contains("network type")) {
           errorMessage =
               NetworkType.currentNetworkType == NetworkType.mainnet
-                  ? t.wallet_add_input_screen.mainnet_wallet_error_text
-                  : t.wallet_add_input_screen.testnet_wallet_error_text;
+                  ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text
+                  : t.wallet_add_scanner_screen.paste.testnet_wallet_error_text;
         }
         _showErrorDialog(t.alert.wallet_add.add_failed, errorMessage);
       }
@@ -439,14 +618,20 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
       FileLogger.error(className, methodName, 'Non-QR format error detected');
     }
 
-    await CustomDialogs.showCustomAlertDialog(
-      context,
-      title: t.alert.scan_failed,
-      message: errorMessage,
-      onConfirm: () {
-        FileLogger.log(className, methodName, 'Error dialog confirmed');
-        _isProcessing = false;
-        Navigator.pop(context);
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return CoconutPopup(
+          languageCode: context.read<PreferenceProvider>().language,
+          title: t.alert.wallet_add.add_failed,
+          description: errorMessage,
+          onTapRight: () {
+            FileLogger.log(className, methodName, 'Error dialog confirmed');
+            _isProcessing = false;
+            Navigator.pop(context);
+          },
+          rightButtonText: t.OK,
+        );
       },
     );
   }
@@ -462,12 +647,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: title,
-          backgroundColor: CoconutColors.black.withOpacity(0.7),
+          backgroundColor: CoconutColors.black.withValues(alpha: 0.7),
           description: description,
           descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
           insetPadding: const EdgeInsets.symmetric(horizontal: 50),
           leftButtonText: t.cancel,
-          leftButtonColor: CoconutColors.black.withOpacity(0.7),
+          leftButtonColor: CoconutColors.black.withValues(alpha: 0.7),
           rightButtonText: t.confirm,
           rightButtonColor: CoconutColors.white,
           onTapRight: () {
@@ -486,12 +671,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> {
     WalletImportSource.seedSigner => t.wallet_add_scanner_screen.seed_signer,
     WalletImportSource.coldCard => t.wallet_add_scanner_screen.cold_card,
     WalletImportSource.krux => t.wallet_add_scanner_screen.krux,
+    WalletImportSource.extendedPublicKey => t.wallet_add_scanner_screen.self,
     _ => '',
   };
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
 }
