@@ -554,7 +554,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                             borderRadius: 8,
                             pressedColor: CoconutColors.gray850,
                             onPressed: () {
-                              // TODO: 공유 로직
+                              // TODO: 공유 로직, 화면 캡쳐기능 구현 시 MediaQuery 적용
                             },
                             child: Container(
                               width: 120,
@@ -868,32 +868,62 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${t.utility.p2p_calculator.one_btc} = ',
-                          style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
-                        ),
-                        if (_viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn) ...[
+                    MediaQuery(
+                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
                           Text(
-                            '${_viewModel.currentFiatUnit.symbol} ${FiatUtil.calculateFiatAmount(100000000, _viewModel.fixedBtcPrice!).toThousandsSeparatedString()}',
+                            '${t.utility.p2p_calculator.one_btc} = ',
                             style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                           ),
-                        ] else ...[
-                          Text('1BTC', style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+                          if (_viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn) ...[
+                            Text(
+                              '${_viewModel.currentFiatUnit.symbol} ${FiatUtil.calculateFiatAmount(100000000, _viewModel.fixedBtcPrice!).toThousandsSeparatedString()}',
+                              style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+                            ),
+                          ] else ...[
+                            Text('1BTC', style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                    _viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn
-                        ? Text(
-                          _getExchangePriceLabel(),
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                        )
-                        : Text(
-                          t.utility.p2p_calculator.offline_price_unavailable,
-                          style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
-                        ),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) {
+                        final isOutgoing = animation.status == AnimationStatus.reverse;
+                        final slideAnimation = Tween<Offset>(
+                          begin: isOutgoing ? const Offset(0, -0.5) : const Offset(0, 0.5),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+                        return ClipRect(
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(position: slideAnimation, child: child),
+                          ),
+                        );
+                      },
+                      layoutBuilder: (currentChild, previousChildren) {
+                        return Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [...previousChildren, if (currentChild != null) currentChild],
+                        );
+                      },
+                      child:
+                          _viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn
+                              ? Text(
+                                _getExchangePriceLabel(),
+                                key: ValueKey('exchange_${_viewModel.currentFiatUnit.name}'),
+                                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                                textAlign: TextAlign.start,
+                              )
+                              : Text(
+                                t.utility.p2p_calculator.offline_price_unavailable,
+                                key: const ValueKey('offline'),
+                                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+                                textAlign: TextAlign.start,
+                              ),
+                    ),
                   ],
                 ),
               ),
@@ -1137,15 +1167,18 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
               ),
             ),
           ] else ...[
-            Text(
-              rightText,
-              style:
-                  rightTextStyle ??
-                  CoconutTypography.body2_14_Number.copyWith(
-                    color: CoconutColors.white,
-                    height: 1.4,
-                    letterSpacing: -0.28, // 14 * -0.02
-                  ),
+            MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
+              child: Text(
+                rightText,
+                style:
+                    rightTextStyle ??
+                    CoconutTypography.body2_14_Number.copyWith(
+                      color: CoconutColors.white,
+                      height: 1.4,
+                      letterSpacing: -0.28, // 14 * -0.02
+                    ),
+              ),
             ),
           ],
         ],
