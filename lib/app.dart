@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -247,9 +246,9 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     (context) => buildLoadingScreenWithArgs(
                       context,
                       (args) => BroadcastingScreen(
-                        transactionDraft:
-                            args.containsKey('transactionDraft')
-                                ? args['transactionDraft'] as RealmTransactionDraft?
+                        signedTransactionDraftId:
+                            args.containsKey('signedTransactionDraftId')
+                                ? args['signedTransactionDraftId'] as int?
                                 : null,
                       ),
                     ),
@@ -303,7 +302,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       (args) => SendScreen(
                         walletId: args['walletId'],
                         sendEntryPoint: args['sendEntryPoint'],
-                        transactionDraft: args['transactionDraft'],
+                        transactionDraftId: args['transactionDraftId'],
                       ),
                     ),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),

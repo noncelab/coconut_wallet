@@ -4,6 +4,7 @@ import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -11,9 +12,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
-import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
@@ -34,8 +33,8 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class BroadcastingScreen extends StatefulWidget {
-  final RealmTransactionDraft? transactionDraft;
-  const BroadcastingScreen({super.key, this.transactionDraft});
+  final int? signedTransactionDraftId;
+  const BroadcastingScreen({super.key, this.signedTransactionDraftId});
 
   @override
   State<BroadcastingScreen> createState() => _BroadcastingScreenState();
@@ -81,7 +80,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
     Transaction signedTx;
     if (_viewModel.isPsbt()) {
-      signedTx = Psbt.parse(_viewModel.signedTransaction).getSignedTransaction(_viewModel.walletAddressType);
+      signedTx = Psbt.parse(_viewModel.signedTransaction).getSignedTransaction(_viewModel.walletAddressType!);
     } else {
       String hexTransaction = _viewModel.decodeTransactionToHex();
       signedTx = Transaction.parse(hexTransaction);
@@ -105,16 +104,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       if (result.isSuccess) {
         vibrateLight();
         await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
-
-        // transactionDraft가 있으면 삭제
-        // 서명된 임시저장 트랜잭션인 경우 widget.transactionDraft가 있음
-        // 서명되지 않은 임시저장 트랜잭션인 경우 widget.transactionDraft가 없고, sendInfoProvider.transactionDraftId가 있음
-        if (widget.transactionDraft != null) {
-          final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-          await transactionDraftRepository.deleteSignedTransactionDraft(widget.transactionDraft!.id);
-        } else if (_viewModel.transactionDraftId != null) {
-          final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-          await transactionDraftRepository.deleteUnsignedTransactionDraft(_viewModel.transactionDraftId!);
+        if (widget.signedTransactionDraftId == null) {
+          await _viewModel.deleteUnsignedDraftIfNeeded();
+        } else {
+          await _viewModel.deleteSignedDraft(widget.signedTransactionDraftId!);
         }
 
         if (!mounted) return;
@@ -128,7 +121,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 : "/",
           ),
           arguments: {
-            'id': _viewModel.walletId,
+            'id': _viewModel.walletId!,
             'txHash': signedTx.transactionHash,
             'isDonation': _viewModel.isSendingDonation,
           },
@@ -186,32 +179,15 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                         FixedBottomTweenButton(
                           leftButtonRatio: 0.35,
                           leftButtonClicked: () async {
-                            final transactionDraftRepository = Provider.of<TransactionDraftRepository>(
-                              context,
-                              listen: false,
-                            );
-                            final result = await transactionDraftRepository.saveTransactionDraft(
-                              walletId: viewModel.walletId,
-                              feeRateText: viewModel.feeRate?.toString() ?? '',
-                              isMaxMode: viewModel.isMaxMode ?? false,
-                              isMultisig: viewModel.isMultisig ?? false,
-                              transaction: viewModel.transaction,
-                              recipientList:
-                                  viewModel.recipientAddresses
-                                      .map((address) => RecipientInfo(address: address))
-                                      .toList(),
-                              txWaitingForSign: viewModel.txWaitingForSign,
-                              signedPsbtBase64Encoded: viewModel.signedPsbtBase64Encoded,
-                              currentUnit: context.read<PreferenceProvider>().currentUnit.symbol,
-                              totalAmount: (viewModel.totalAmount ?? 0) - viewModel.fee!,
-                            );
-
-                            if (result.isSuccess) {
-                              _showTransactionDraftSavedDialog();
-                            } else {
-                              // 저장 실패
-                              debugPrint('저장 실패 ${result.error.message}');
-                              _showTransactionDraftSaveFailedDialog(result.error.message);
+                            try {
+                              final result = await viewModel.saveTransactionDraft();
+                              if (result.isSuccess) {
+                                _showTransactionDraftSavedDialog();
+                              } else {
+                                _showTransactionDraftSaveFailedDialog(result.error.message);
+                              }
+                            } catch (e) {
+                              _showTransactionDraftSaveFailedDialog(e.toString());
                             }
                           },
                           rightButtonClicked: () async {
@@ -294,45 +270,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   void initState() {
     super.initState();
     _currentUnit = context.read<PreferenceProvider>().currentUnit;
-
-    // transactionDraft가 전달된 경우 SendInfoProvider에 데이터 설정
-    if (widget.transactionDraft != null) {
-      final sendInfoProvider = Provider.of<SendInfoProvider>(context, listen: false);
-      final draft = widget.transactionDraft!;
-
-      sendInfoProvider.setTransactionDraftId(draft.id);
-      sendInfoProvider.setWalletId(draft.walletId);
-
-      if (draft.feeRate != null) {
-        sendInfoProvider.setFeeRate(draft.feeRate!.toDouble());
-      }
-
-      if (draft.isMaxMode != null) {
-        sendInfoProvider.setIsMaxMode(draft.isMaxMode!);
-      }
-
-      if (draft.isMultisig != null) {
-        sendInfoProvider.setIsMultisig(draft.isMultisig!);
-      }
-
-      if (draft.txWaitingForSign != null && draft.txWaitingForSign!.isNotEmpty) {
-        sendInfoProvider.setTxWaitingForSign(draft.txWaitingForSign!);
-      }
-
-      if (draft.signedPsbtBase64Encoded != null && draft.signedPsbtBase64Encoded!.isNotEmpty) {
-        sendInfoProvider.setSignedPsbtBase64Encoded(draft.signedPsbtBase64Encoded!);
-      }
-
-      if (draft.transactionHex != null && draft.transactionHex!.isNotEmpty) {
-        try {
-          final transaction = Transaction.parse(draft.transactionHex!);
-          sendInfoProvider.setTransaction(transaction);
-        } catch (e) {
-          Logger.log('Failed to parse transactionHex from draft: $e');
-        }
-      }
-    }
-
     _viewModel = BroadcastingViewModel(
       Provider.of<SendInfoProvider>(context, listen: false),
       Provider.of<WalletProvider>(context, listen: false),
@@ -340,16 +277,18 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
+      Provider.of<TransactionDraftRepository>(context, listen: false),
+      widget.signedTransactionDraftId,
     );
 
     if (_viewModel.isSendingDonation) {
       userMessageIndex = 0;
     }
-    WidgetsBinding.instance.addPostFrameCallback((duration) {
+    WidgetsBinding.instance.addPostFrameCallback((duration) async {
       _setOverlayLoading(true);
 
       try {
-        _viewModel.setTxInfo();
+        _viewModel.setTxInfo(signedTxDraftId: widget.signedTransactionDraftId);
       } catch (e) {
         vibrateMedium();
         showAlertDialog(context: context, content: t.alert.error_tx.not_parsed(error: e));

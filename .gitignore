@@ -174,4 +174,4 @@ features/*
 GoogleService-Info.plist
 google-services.json
 firebase.json
-play_store_credentials.json
+coconut-fastlane-supply.json

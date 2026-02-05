@@ -383,7 +383,8 @@ send_screen:
   unintended_dust_fee: "${unintendedDustFee} satのおつりが手数料として使用されます。"
   fee_rate_too_low: "最小値は0.1です"
   drag_to_add_address: "送信先アドレスを追加するには、左にスワイプしてください"
-
+  dialog:
+    load_draft_failed: "読み込み失敗"
 utxo_selection_screen:
   title: "UTXO選択"
 
@@ -739,6 +740,8 @@ errors:
   data_not_found: "データが見つかりません。"
   utxo_lock_error: "一時的なエラーによりUTXOロックの設定に失敗"
   utxo_unlock_error: "一時的なエラーによりUTXOアンロックに失敗"
+  transaction_draft:
+    invalid_id: 一時保存された情報が見つかりません。
 
 text_field:
   enter_fee_with_two_decimal_places: "小数点以下2桁まで入力可能（sat/vB）"

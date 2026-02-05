@@ -11,6 +11,7 @@ import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
@@ -204,7 +205,7 @@ class SendViewModel extends ChangeNotifier {
   int? get unintendedDustFee => _unintendedDustFee;
 
   TransactionBuildResult? _txBuildResult;
-  final RealmTransactionDraft? _transactionDraft;
+  final int? _transactionDraftId;
 
   List<RecipientInfo> get validRecipientList {
     return _recipientList
@@ -261,6 +262,11 @@ class SendViewModel extends ChangeNotifier {
 
   bool get isSelectedWalletNull => _selectedWalletItem == null;
 
+  /// Draft
+  /// 초기화를 비동기로 진행하므로 null이면 아직 초기화 완료 안된 것으로 판단.
+  List<TransactionDraft>? _drafts;
+  List<TransactionDraft>? get drafts => _drafts;
+
   bool isMaxModeLastIndex(int index) {
     return _isMaxMode && index == lastIndex;
   }
@@ -281,7 +287,7 @@ class SendViewModel extends ChangeNotifier {
     this._onRecipientPageDeleted,
     int? walletId,
     SendEntryPoint sendEntryPoint,
-    this._transactionDraft,
+    this._transactionDraftId,
   ) {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
@@ -294,14 +300,16 @@ class SendViewModel extends ChangeNotifier {
 
     _recipientList = [RecipientInfo()];
 
-    if (_transactionDraft != null) {
-      loadTransactionDraft(_transactionDraft);
+    if (_transactionDraftId != null) {
+      loadTransactionDraft(_transactionDraftId);
     }
 
     _initBalances();
     _setRecommendedFees().whenComplete(() {
       notifyListeners();
     });
+
+    _loadDrafts();
   }
 
   List<WalletListItemBase> _getOrderedRegisteredWallets() {
@@ -398,7 +406,7 @@ class SendViewModel extends ChangeNotifier {
 
   /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
   /// UTXO 상태 문제가 있으면 SelectedUtxoStatusException 발생
-  RealmTransactionDraft getDraft(int draftId) {
+  TransactionDraft _getDraft(int draftId) {
     assert(_selectedWalletItem != null);
 
     final draft = _transactionDraftRepository.getUnsignedTransactionDraft(draftId);
@@ -409,7 +417,7 @@ class SendViewModel extends ChangeNotifier {
     // UTXO 상태 확인
     final selectedUtxoStatus = _transactionDraftRepository.getSelectedUtxoStatus(
       _selectedWalletItem!.id,
-      draft.selectedUtxoListJson.toList(),
+      draft.selectedUtxoIds.toList(),
     );
 
     debugPrint('selectedUtxoStatus: $selectedUtxoStatus');
@@ -422,9 +430,8 @@ class SendViewModel extends ChangeNotifier {
   }
 
   /// TransactionDraft를 로드하여 SendViewModel 상태에 반영
-  void loadTransactionDraft(RealmTransactionDraft? draft) {
-    if (draft == null) return;
-    debugPrint('draft id: ${draft.id}');
+  void loadTransactionDraft(int draftId) {
+    TransactionDraft draft = _getDraft(draftId);
     // draft id 설정
     _sendInfoProvider.setTransactionDraftId(draft.id);
 
@@ -433,44 +440,17 @@ class SendViewModel extends ChangeNotifier {
     if (walletIndex == -1) return;
 
     _initializeWithSelectedWallet(walletIndex);
-
-    // recipientList 설정
-    final recipientListJson = draft.recipientListJson.toList();
-    final recipientList =
-        recipientListJson.map((jsonString) {
-          final json = jsonDecode(jsonString) as Map<String, dynamic>;
-          debugPrint('json: $json');
-          debugPrint('address: ${json['address']}');
-          debugPrint('amount: ${json['amount']}');
-          debugPrint('addressError: ${json['addressError']}');
-          debugPrint('minimumAmountError: ${json['minimumAmountError']}');
-          return RecipientInfo(
-            address: json['address'] as String? ?? '',
-            amount: json['amount'] as String? ?? '',
-            addressError: AddressError.values.firstWhere(
-              (e) => e.name == (json['addressError'] as String? ?? 'none'),
-              orElse: () => AddressError.none,
-            ),
-            minimumAmountError: AmountError.values.firstWhere(
-              (e) => e.name == (json['minimumAmountError'] as String? ?? 'none'),
-              orElse: () => AmountError.none,
-            ),
-          );
+    _recipientList =
+        draft.recipients!.map((r) {
+          return RecipientInfo(address: r.address, amount: draft.bitcoinUnit!.displayBitcoinAmount(r.amount));
         }).toList();
-    _recipientList = recipientList;
-
-    // address 설정
     if (_recipientList.isNotEmpty) {
       for (int i = 0; i < _recipientList.length; i++) {
         setAddressText(_recipientList[i].address, i);
-        debugPrint('address: ${_recipientList[i].address}');
       }
     }
 
-    // feeRate 설정
-    if (draft.feeRate != null) {
-      setFeeRateText(draft.feeRate.toString());
-    }
+    setFeeRateText(draft.feeRate!.toString());
 
     final bool isMaxModeDraft = draft.isMaxMode == true;
 
@@ -489,12 +469,12 @@ class SendViewModel extends ChangeNotifier {
         if (isMaxModeDraft && i == lastIndex) continue;
 
         if (_recipientList[i].amount.isNotEmpty) {
-          if (draft.currentUnit == t.btc) {
+          if (draft.bitcoinUnit == t.btc) {
             setAmountText(UnitUtil.convertBitcoinToSatoshi(double.parse(_recipientList[i].amount)), i);
-          } else if (draft.currentUnit == t.sats) {
+          } else if (draft.bitcoinUnit == t.sats) {
             setAmountText(int.parse(_recipientList[i].amount), i);
           } else {
-            throw ArgumentError('Invalid unit: ${draft.currentUnit}');
+            throw ArgumentError('Invalid unit: ${draft.bitcoinUnit}');
           }
         }
       }
@@ -506,10 +486,10 @@ class SendViewModel extends ChangeNotifier {
     }
 
     // selectedUtxoList 설정
-    if (draft.selectedUtxoListJson.isNotEmpty) {
+    if (draft.selectedUtxoIds.isNotEmpty) {
       // 수동 선택 모드
       _isUtxoSelectionAuto = false;
-      final selectedUtxoListJson = draft.selectedUtxoListJson.toList();
+      final selectedUtxoListJson = draft.selectedUtxoIds.toList();
       final allUtxoList = _walletProvider.getUtxoList(draft.walletId);
       _selectedUtxoList =
           selectedUtxoListJson.map((jsonString) {
@@ -537,9 +517,9 @@ class SendViewModel extends ChangeNotifier {
     selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
 
     // 현재 단위 확인 및 업데이트
-    if (draft.currentUnit != null) {
+    if (draft.bitcoinUnit != null) {
       final draftUnit = BitcoinUnit.values.firstWhere(
-        (unit) => unit.symbol == draft.currentUnit,
+        (unit) => unit.symbol == draft.bitcoinUnit,
         orElse: () => _currentUnit,
       );
       if (draftUnit != _currentUnit) {
@@ -1147,30 +1127,45 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
+    _sendInfoProvider.setIsMaxMode(_isMaxMode);
   }
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///
-  Future<RealmTransactionDraft> saveDraft() async {
+  Future<TransactionDraft> saveDraft() async {
     assert(_selectedWalletItem != null);
 
-    final result = await _transactionDraftRepository.saveTransactionDraft(
+    final result = await _transactionDraftRepository.saveUnsignedDraft(
       walletId: selectedWalletItem!.id,
-      recipientList: _recipientList,
-      feeRateText: _feeRateText,
+      feeRate: double.parse(_feeRateText),
       isMaxMode: _isMaxMode,
       isMultisig: _selectedWalletItem!.walletType == WalletType.multiSignature,
       isFeeSubtractedFromSendAmount: _isFeeSubtractedFromSendAmount,
-      transaction: null, // 서명된 트랜잭션이 있는 경우
-      txWaitingForSign: null,
-      signedPsbtBase64Encoded: null,
-      currentUnit: _currentUnit.symbol,
-      selectedUtxoList: _isUtxoSelectionAuto ? null : _selectedUtxoList,
+      recipients:
+          _recipientList.map((r) => RecipientDraft.fromRecipientInfo(r.address, r.amount, _currentUnit)).toList(),
+      bitcoinUnit: _currentUnit,
+      selectedUtxoIds: _isUtxoSelectionAuto ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
     );
 
     if (result.isSuccess) {
       return result.value;
     } else {
       throw Exception(result.error.message);
+    }
+  }
+
+  Future<void> _loadDrafts() async {
+    if (_selectedWalletItem == null) return;
+    try {
+      _drafts = _transactionDraftRepository.getUnsignedTransactionDraftsByWalletId(_selectedWalletItem!.id);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  Future<void> deleteDraft(int draftId) async {
+    final result = await _transactionDraftRepository.deleteUnsignedTransactionDraft(draftId);
+    if (result.isSuccess) {
+      await _loadDrafts();
     }
   }
 }

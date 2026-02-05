@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/transaction_draft/transaction_draft_view_model.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
@@ -34,7 +34,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
   final GlobalKey<AnimatedListState> _animatedListKey = GlobalKey<AnimatedListState>();
 
   /// 현재 표시 중인 리스트 (AnimatedList용)
-  List<RealmTransactionDraft> _displayedDraftList = [];
+  List<TransactionDraft> _displayedDraftList = [];
 
   /// 애니메이션 duration
   static const Duration _duration = Duration(milliseconds: 300);
@@ -189,10 +189,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     );
   }
 
-  Widget _buildTransactionDraftList(
-    List<RealmTransactionDraft> transactionDraftList,
-    TransactionDraftViewModel viewModel,
-  ) {
+  Widget _buildTransactionDraftList(List<TransactionDraft> transactionDraftList, TransactionDraftViewModel viewModel) {
     if (transactionDraftList.isEmpty) {
       // 리스트가 비어있으면 _displayedDraftList도 비우기
       if (_displayedDraftList.isNotEmpty) {
@@ -253,7 +250,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
   }
 
   Widget _buildTransactionDraftCard(
-    RealmTransactionDraft transactionDraft,
+    TransactionDraft transactionDraft,
     int index,
     Animation<double> animation,
     int cardId,
@@ -319,6 +316,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                       // 애니메이션과 함께 삭제
                       // 삭제된 후에는 _displayedDraftList의 길이가 줄어들지만,
                       // AnimatedList는 removeItem이 호출될 때까지 원래 길이를 유지
+                      // TODO: 삭제 애니메이션 구현
                       if (_animatedListKey.currentState != null && deletedIndex >= 0) {
                         _animatedListKey.currentState?.removeItem(
                           deletedIndex,
@@ -380,20 +378,24 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
   }
 
   Future<void> _handleTransactionDraftCardTap(
-    RealmTransactionDraft transactionDraft,
+    TransactionDraft transactionDraft,
     TransactionDraftViewModel viewModel,
   ) async {
-    if (transactionDraft.signedPsbtBase64Encoded != null) {
-      await Navigator.pushNamed(context, '/broadcasting', arguments: {'transactionDraft': transactionDraft});
+    if (transactionDraft.isSigned) {
+      await Navigator.pushNamed(context, '/broadcasting', arguments: {'signedTransactionDraftId': transactionDraft.id});
     } else {
       await Navigator.pushNamed(
         context,
         '/send',
-        arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home, 'transactionDraft': transactionDraft},
+        arguments: {
+          'walletId': transactionDraft.walletId,
+          'sendEntryPoint': SendEntryPoint.home,
+          'transactionDraftId': transactionDraft.id,
+        },
       );
     }
     if (!mounted) return;
-    await _refreshTransactionDraftList(viewModel);
+    //await _refreshTransactionDraftList(viewModel);
   }
 
   Future<void> _refreshTransactionDraftList(TransactionDraftViewModel viewModel) async {

@@ -7,6 +7,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -22,7 +23,7 @@ import 'package:provider/provider.dart';
 import 'package:realm/realm.dart';
 
 class TransactionDraftCard extends StatefulWidget {
-  final RealmTransactionDraft transactionDraft;
+  final TransactionDraft transactionDraft;
   final bool? isSwiped;
   final void Function(bool isSwiped)? onSwipeChanged;
   final VoidCallback? onDelete;
@@ -131,41 +132,14 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     final screenWidth = MediaQuery.of(context).size.width;
     final walletId = widget.transactionDraft.walletId;
     // recipientListJson에서 amount 합산 (BTC 단위)
-    final totalAmount = widget.transactionDraft.recipientListJson.fold<double>(0.0, (sum, jsonString) {
-      final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      final amountStr = json['amount'] as String? ?? '0';
-      final amount = double.tryParse(amountStr) ?? 0.0;
-      return sum + amount;
+    final int totalAmountSats = widget.transactionDraft.recipients!.fold<int>(0, (sum, recipient) {
+      return sum + recipient.amount;
     });
-    final currentUnit = widget.transactionDraft.currentUnit;
-    // BTC를 사토시로 변환
-    final totalAmountSats = currentUnit == t.btc ? UnitUtil.convertBitcoinToSatoshi(totalAmount) : totalAmount.toInt();
-    final totalAmountForSignedTransaction = widget.transactionDraft.totalAmount;
     final feeRate = widget.transactionDraft.feeRate;
     final isMaxMode = widget.transactionDraft.isMaxMode;
-    final isMultisig = widget.transactionDraft.isMultisig;
-    final isFeeSubtractedFromSendAmount = widget.transactionDraft.isFeeSubtractedFromSendAmount;
-    final transactionHex = widget.transactionDraft.transactionHex;
-    final txWaitingForSign = widget.transactionDraft.txWaitingForSign;
-    final signedPsbtBase64Encoded = widget.transactionDraft.signedPsbtBase64Encoded;
-    final recipientListJson = widget.transactionDraft.recipientListJson;
+    final recipients = widget.transactionDraft.recipients;
     final createdAt = widget.transactionDraft.createdAt;
-    final formattedCreatedAt = createdAt != null ? DateTimeUtil.formatTimestamp(createdAt.toLocal()) : <String>[];
-
-    final selectedUtxoListJson = widget.transactionDraft.selectedUtxoListJson;
-    final formattedSelectedUtxoList =
-        selectedUtxoListJson.map((jsonString) {
-          final json = jsonDecode(jsonString) as Map<String, dynamic>;
-          return UtxoState(
-            transactionHash: json['transactionHash'] as String,
-            index: json['index'] as int,
-            amount: json['amount'] as int,
-            derivationPath: json['derivationPath'] as String,
-            blockHeight: json['blockHeight'] as int,
-            to: json['to'] as String,
-            timestamp: DateTime.parse(json['timestamp'] as String),
-          );
-        }).toList();
+    final formattedCreatedAt = DateTimeUtil.formatTimestamp(createdAt.toLocal());
 
     String walletName;
     int iconIndex;
@@ -293,7 +267,6 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                         _buildWalletNameAmount(
                           walletImportSource,
                           walletName,
-                          totalAmountForSignedTransaction,
                           totalAmountSats,
                           iconIndex,
                           colorIndex,
@@ -302,7 +275,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                           isMaxMode ?? false,
                         ),
                         CoconutLayout.spacing_200h,
-                        _buildRecipientAddress(recipientListJson),
+                        _buildRecipientAddress(recipients!),
                         CoconutLayout.spacing_200h,
                         _buildFeeRate(feeRate ?? 0),
                       ],
@@ -346,7 +319,6 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   Widget _buildWalletNameAmount(
     WalletImportSource walletImportSource,
     String walletName,
-    int? totalAmountForSignedTransaction,
     int amountSats,
     int iconIndex,
     int colorIndex,
@@ -354,10 +326,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     BitcoinUnit currentUnit,
     bool isMaxMode,
   ) {
-    String amountString = currentUnit.displayBitcoinAmount(
-      totalAmountForSignedTransaction ?? amountSats,
-      withUnit: true,
-    );
+    String amountString = currentUnit.displayBitcoinAmount(amountSats, withUnit: true);
     if (amountString != '0 BTC') {
       amountString = '- $amountString';
     } else {
@@ -402,13 +371,13 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     );
   }
 
-  Widget _buildRecipientAddress(RealmList<String> recipientListJson) {
+  Widget _buildRecipientAddress(List<RecipientDraft> recipientListJson) {
     if (recipientListJson.isEmpty) {
       return const SizedBox.shrink();
     }
 
     bool isBatchTransaction = recipientListJson.length > 1;
-    final firstRecipientAddress = jsonDecode(recipientListJson[0])['address'] as String;
+    final firstRecipientAddress = recipientListJson[0].address;
     return isBatchTransaction
         ? Text(
           t.transaction_draft.recipient_batch_address(
