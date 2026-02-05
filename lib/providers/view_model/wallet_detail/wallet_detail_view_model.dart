@@ -62,7 +62,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   bool get isWalletSyncing => _isWalletSyncing && networkStatus == NetworkStatus.online;
   late NodeSyncState _nodeSyncState;
   NetworkStatus get networkStatus {
-    if (_connectProvider.isNetworkOff) {
+    if (_connectProvider.isInternetOff) {
       return NetworkStatus.offline;
     }
 
@@ -144,7 +144,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   String get walletName => _walletName;
   WalletProvider? get walletProvider => _walletProvider;
   WalletType get walletType => _walletType;
-  bool get isNetworkOff => _connectProvider.isNetworkOff;
+  bool get isNetworkOff => _connectProvider.isInternetOff;
   bool get isMultisigWallet => _walletListBaseItem is MultisigWalletListItem;
   String? get masterFingerprint =>
       isMultisigWallet ? null : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;

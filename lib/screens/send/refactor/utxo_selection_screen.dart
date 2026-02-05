@@ -56,8 +56,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
-        if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
-          viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+        if (connectivityProvider.isInternetOn != viewModel!.isNetworkOn) {
+          viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // 네트워크 알림 툴팁이 생성되면 위젯이 밀리기 때문에 드롭다운 버튼 위치를 다시 계산
@@ -166,7 +166,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<UtxoTagProvider>(context, listen: false),
         Provider.of<PriceProvider>(context, listen: false),
         Provider.of<PreferenceProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+        Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
         widget.selectedUtxoList,
       );

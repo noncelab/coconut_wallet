@@ -82,7 +82,7 @@ class _SelectDonationAmountScreenState extends State<SelectDonationAmountScreen>
           if (handleDustThreshold()) return;
         },
         child: Selector<ConnectivityProvider, bool>(
-          selector: (_, provider) => provider.isNetworkOn ?? false,
+          selector: (_, provider) => provider.isInternetOn ?? false,
           builder: (context, isNetworkOn, _) {
             return Stack(
               children: [

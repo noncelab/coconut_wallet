@@ -740,7 +740,8 @@ errors:
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
   network_disconnected: "네트워크 끊김"
-  electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요."
+  electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요"
+  vpn_connected: "VPN 연결 상태를 확인해 주세요"
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
     insufficient_balance: "잔액이 부족하여 수수료를 낼 수 없어요"
