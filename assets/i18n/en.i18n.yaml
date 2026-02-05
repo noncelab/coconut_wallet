@@ -186,6 +186,7 @@ utility:
     one_btc: "1 BTC"
     upbit_price: "Upbit Price"
     binance_price: "Binance Price"
+    bitflyer_price: "Bitflyer Price"
     offline_price_unavailable: "Price unavailable"
     fee: "Fee"
     transaction_bill: "Transaction Bill"
