@@ -180,6 +180,22 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "ライトニングインボイスの生成に失敗しました。"
 
+utility:
+  p2p_calculator:
+    calculator: "計算機"
+    1btc: "1 BTC"
+    upbit_price: "Upbit 基準 時価"
+    binance_price: "Binance 基準 時価"
+    bitflyer_price: "Bitflyer 基準 時価"
+    offline_price_unavailable: "時価を取得できません"
+    fee: "手数料"
+    transaction_bill: "取引請求書"
+    reference_price: "基準価格"
+    reference_datetime: "基準日時"
+    transaction_fee: "取引手数料"
+    copy_all: "全コピー"
+    share: "共有"
+
 # lib/enums
 transaction_enums:
   high_priority: "高速"
