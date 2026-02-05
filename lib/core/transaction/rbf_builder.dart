@@ -190,54 +190,49 @@ class RbfBuilder {
       } else {
         // 가장 마지막 selfOutput에서부터 차감
         for (int i = selfOutputs!.length - 1; i >= 0; i--) {
-          final leftOutput = selfOutputs![i].amount - deficitAmount;
-          if (leftOutput <= dustLimit) {
-            newRecipients.remove(selfOutputs![i].address);
+          final currentSelfOutput = selfOutputs![i];
+          final currentSelfOutputAmount = currentSelfOutput.amount;
 
-            // 현재 selfOutputs![i]가 output에서 제거되었을 때 변화된 requiredFee를 재계산한다.
+          if (currentSelfOutputAmount - deficitAmount > dustLimit) {
+            newRecipients[currentSelfOutput.address] = currentSelfOutputAmount - deficitAmount;
             final txBuildResult = _buildTransaction(newFeeRate, newRecipients);
-            final newRequiredFee = txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0);
-            // [디버그 중] 기존 수수료보다 큰 지 체크
-            if (changeOutput != null) {
-              Logger.log('changeOutput: ${changeOutput!.amount}, newRequiredFee: $newRequiredFee');
-              assert(changeOutput!.amount < newRequiredFee);
-            }
 
-            if (leftOutput >= 0) {
-              if (txBuildResult.isSuccess) {
-                // TODO: 하지만 estimatedFee가 기존 Fee보다 큰지 반드시 확인해야함 크지 않으면 조정이 필요함
-                return RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true);
-              } else {
-                // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
-                return RbfBuildResult(transaction: null, exception: txBuildResult.exception);
-              }
-            }
-
-            // output이 1개 줄어들어 deficitAmount가 얼마나 줄어들었는지 계산
-            assert(newRequiredFee < estimatedRequiredFee);
-            final reducedFee = estimatedRequiredFee - newRequiredFee;
-
-            // output 개수가 줄어서 deficitAmount가 줄어들기 때문에 여기서 종료될 수 있는지 파악이 필요함
-            if (reducedFee >= leftOutput.abs()) {
-              if (txBuildResult.isSuccess) {
-                return RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true);
-              } else {
-                // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
-                return RbfBuildResult(transaction: null, exception: txBuildResult.exception);
-              }
-            }
-
-            deficitAmount -= reducedFee;
-            // selfOutput이 더 있다면 추가로 차감하거나 input이 더 필요한 상황
-          } else {
-            // 현재 selfOutputs![i]의 amount를 leftOutput으로 변경하여 트랜잭션 생성 성공 // TODO: return;
-            newRecipients[selfOutputs![i].address] = leftOutput;
-            final txBuildResult = _buildTransaction(newFeeRate, newRecipients);
             if (txBuildResult.isSuccess) {
               return RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true);
             } else {
               // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
               return RbfBuildResult(transaction: null, exception: txBuildResult.exception);
+            }
+          } else {
+            newRecipients.remove(currentSelfOutput.address);
+
+            final txBuildResult = _buildTransaction(newFeeRate, newRecipients);
+            final newRequiredFee = txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0);
+
+            final newOutputsSum = newRecipients.values.fold(0, (sum, amount) => sum + amount);
+            final balance = inputSum - (newOutputsSum + newRequiredFee);
+
+            if (balance >= 0) {
+              final actualFee = inputSum - newOutputsSum;
+              if (actualFee > pendingTx.fee) {
+                if (txBuildResult.isSuccess) {
+                  return RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true);
+                } else {
+                  return RbfBuildResult(transaction: null, exception: txBuildResult.exception);
+                }
+              } else {
+                // [실패 - 자금은 있지만 규칙 위반]
+                // Output을 없애니 vSize가 줄어서,
+                // 수수료를 다 내도(actualFee) 기존 수수료(pendingTx.fee)보다 작음.
+
+                // 해결책: 수수료를 더 내기 위해 돈을 더 깎아야 함.
+                // 다음 루프에서 더 깎아야 할 목표 금액 설정
+                continue;
+              }
+            } else {
+              deficitAmount = balance.abs();
+              continue;
+              // selfOutput이 더 있다면 추가로 차감하거나 input이 더 필요한 상황
             }
           }
         }
