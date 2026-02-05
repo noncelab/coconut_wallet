@@ -515,6 +515,38 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
     if (_isProcessing) return;
 
     _isProcessing = true;
+
+    if (widget.importSource == WalletImportSource.extendedPublicKey && additionInfo is String) {
+      await controller?.stop();
+
+      final inputViewModel = WalletAddInputViewModel(
+        context.read<WalletProvider>(),
+        context.read<PreferenceProvider>(),
+      );
+
+      final text = additionInfo;
+      final bool isDescriptor = text.contains('[');
+
+      final bool isValid =
+          isDescriptor ? inputViewModel.normalizeDescriptor(text) : inputViewModel.isExtendedPublicKey(text);
+
+      if (isValid) {
+        _isProcessing = false;
+
+        if (isDescriptor) {
+          await _executeAddWallet(inputViewModel);
+        } else {
+          if (mounted) {
+            _showMfpInputBottomSheet(inputViewModel);
+          }
+        }
+        return;
+      } else {
+        _isProcessing = false;
+        await controller?.start();
+      }
+    }
+
     try {
       ResultOfSyncFromVault addResult = await _viewModel.addWallet(additionInfo);
       FileLogger.log(className, methodName, 'addWallet completed: ${addResult.result.name}');
