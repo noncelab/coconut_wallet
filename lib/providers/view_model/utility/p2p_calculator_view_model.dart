@@ -4,7 +4,9 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 class P2PCalculatorViewModel extends ChangeNotifier {
@@ -333,21 +335,70 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     }
   }
 
-  void onFiatUnitChange() {
+  Future<void> onFiatUnitChange() async {
     vibrateExtraLight();
     switch (_currentFiatUnit) {
       case FiatCode.KRW:
         _currentFiatUnit = FiatCode.USD;
-        notifyListeners();
         break;
       case FiatCode.USD:
         _currentFiatUnit = FiatCode.JPY;
-        notifyListeners();
         break;
       default:
         _currentFiatUnit = FiatCode.KRW;
-        notifyListeners();
         break;
+    }
+
+    final fetchedPrice = await _fetchPriceForFiat(_currentFiatUnit);
+    _fixedBtcPrice = fetchedPrice;
+    // 가져오기에 성공하면 기준 시점도 업데이트
+    if (fetchedPrice != null) {
+      _referenceDateTime = DateTime.now();
+      _referenceDateTimeString =
+          '${_referenceDateTime.year}-${_referenceDateTime.month.toString().padLeft(2, '0')}-${_referenceDateTime.day.toString().padLeft(2, '0')} ${_referenceDateTime.hour.toString().padLeft(2, '0')}:${_referenceDateTime.minute.toString().padLeft(2, '0')}:${_referenceDateTime.second.toString().padLeft(2, '0')}';
+    } else {}
+    notifyListeners();
+  }
+
+  /// 특정 Fiat에 대한 BTC 가격을 REST API로 가져옴
+  Future<int?> _fetchPriceForFiat(FiatCode fiatCode) async {
+    try {
+      final dio = Dio(
+        BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)),
+      );
+
+      switch (fiatCode) {
+        case FiatCode.KRW:
+          // Upbit REST API
+          final response = await dio.get('https://api.upbit.com/v1/ticker?markets=KRW-BTC');
+          if (response.statusCode == 200 && response.data is List && response.data.isNotEmpty) {
+            final tradePrice = response.data[0]['trade_price'];
+            return (tradePrice is num) ? tradePrice.toInt() : null;
+          }
+          return null;
+
+        case FiatCode.USD:
+          // Binance REST API
+          final response = await dio.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+          if (response.statusCode == 200) {
+            final priceStr = response.data['price'];
+            final price = double.tryParse(priceStr?.toString() ?? '');
+            return price?.toInt();
+          }
+          return null;
+
+        case FiatCode.JPY:
+          // Bitflyer REST API
+          final response = await dio.get('https://api.bitflyer.com/v1/ticker?product_code=BTC_JPY');
+          if (response.statusCode == 200) {
+            final ltp = response.data['ltp'];
+            return (ltp is num) ? ltp.toInt() : null;
+          }
+          return null;
+      }
+    } catch (e) {
+      Logger.error('Failed to fetch price for $fiatCode: $e');
+      return null;
     }
   }
 
