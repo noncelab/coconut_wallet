@@ -75,7 +75,20 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     _feeFocusNode.addListener(() {
       if (!_feeFocusNode.hasFocus && !_isValidatingFee) {
         var text = _feeController.text;
-        if (text.isNotEmpty && !text.contains('.')) {
+
+        // 빈 문자열이면 '0'으로 설정
+        if (text.isEmpty) {
+          _isValidatingFee = true;
+          const newText = '0';
+          _feeController.value = const TextEditingValue(
+            text: newText,
+            selection: TextSelection.collapsed(offset: newText.length),
+          );
+          _previousFeeValue = newText;
+          _isValidatingFee = false;
+        }
+        // 소수점이 없으면 '.0' 추가
+        else if (!text.contains('.')) {
           _isValidatingFee = true;
           final newText = '$text.0';
           _feeController.value = TextEditingValue(
@@ -173,6 +186,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       if (mounted) {
         debugPrint('feeController.text: ${_feeController.text}');
         _updateAmountsOnFeeChange();
+        // placeholder 갱신을 위해 rebuild
+        setState(() {});
       }
     });
   }
@@ -441,7 +456,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   /// 공식 사이트 방식: fiat = round(btc × price × (1 + fee))
   int _calculateFiatFromBtc(double btc) {
     final isNetworkOn = context.read<ConnectivityProvider>().isNetworkOn;
-    final feeValue = double.tryParse(_feeController.text) ?? 1.0;
+    final feeValue = double.tryParse(_feeController.text) ?? 0;
     final feeRate = feeValue / 100.0;
     final premiumMultiplier = 1.0 + feeRate;
 
@@ -450,9 +465,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       // fiat = round(btc * price * (1 + fee))
       return (btc * _fixedBtcPrice! * premiumMultiplier).round();
     } else {
-      final selectedFiat = context.read<PreferenceProvider>().selectedFiat;
       int btcPriceInFiat;
-      switch (selectedFiat) {
+      switch (_currentFiatUnit) {
         case FiatCode.KRW:
           btcPriceInFiat = 26000000;
           break;
@@ -542,7 +556,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   }
 
   void _onShowTransactionBill() {
-    FiatCode selectedFiat = context.read<PreferenceProvider>().selectedFiat;
     String referenceDatetime =
         '${_referenceDateTime.year}-${_referenceDateTime.month.toString().padLeft(2, '0')}-${_referenceDateTime.day.toString().padLeft(2, '0')} ${_referenceDateTime.hour.toString().padLeft(2, '0')}:${_referenceDateTime.minute.toString().padLeft(2, '0')}:${_referenceDateTime.second.toString().padLeft(2, '0')}';
     showDialog(
@@ -580,14 +593,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                         ),
                         const SizedBox(height: 8),
                         transactionBillRowWidget(
-                          selectedFiat.code,
+                          _currentFiatUnit.code,
                           _fiatAmountController.text,
                           canCopyText: true,
                           isFiat: true,
                         ),
                       ] else ...[
                         transactionBillRowWidget(
-                          selectedFiat.code,
+                          _currentFiatUnit.code,
                           _fiatAmountController.text,
                           canCopyText: true,
                           isFiat: true,
@@ -605,7 +618,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                       const SizedBox(height: 24),
                       transactionBillRowWidget(
                         t.utility.p2p_calculator.reference_price,
-                        '${selectedFiat.symbol} ${_fixedBtcPrice?.toThousandsSeparatedString() ?? '-'} / ${isBtcUnit ? t.btc : t.sats}',
+                        '${_currentFiatUnit.symbol} ${_fixedBtcPrice?.toThousandsSeparatedString() ?? '-'} / ${isBtcUnit ? t.btc : t.sats}',
                         rightTextStyle: CoconutTypography.body2_14_Number.copyWith(height: 1.4, letterSpacing: -0.28),
                       ),
                       const SizedBox(height: 20),
@@ -755,7 +768,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
 
     // 아래쪽 위젯은 위쪽 기준으로 계산
     final isNetworkOn = context.read<ConnectivityProvider>().isNetworkOn;
-    final feeValue = double.tryParse(_feeController.text) ?? 1.0;
+    final feeValue = double.tryParse(_feeController.text) ?? 0;
     final feeRate = feeValue / 100.0;
 
     // 위쪽 위젯의 기본값
@@ -965,7 +978,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                   ],
                 ),
               ),
-              if (_feeFocusNode.hasFocus) buildKeyboardToolbar(context),
+              buildKeyboardToolbar(context),
             ],
           ),
         ),
@@ -974,7 +987,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   }
 
   Widget buildKeyboardToolbar(BuildContext context) {
+    if (!_feeFocusNode.hasFocus && !_fiatAmountFocusNode.hasFocus && !_btcAmountFocusNode.hasFocus) {
+      return const SizedBox.shrink();
+    }
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
+    // 버튼 라벨과 값 결정
+    final buttonData = _getToolbarButtonData();
 
     return Positioned(
       bottom: keyboardHeight,
@@ -986,82 +1005,121 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           color: keyboardToolbarGray,
           child: Row(
             children: [
-              Flexible(
-                fit: FlexFit.tight,
-                child: ShrinkAnimationButton(
-                  onPressed: () {},
-                  borderWidth: 1,
-                  borderGradientColors: const [CoconutColors.gray600, CoconutColors.gray600],
-                  borderRadius: 8,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      '+0.1 %',
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                      textAlign: TextAlign.center,
+              for (int i = 0; i < buttonData.length; i++) ...[
+                if (i > 0) CoconutLayout.spacing_50w,
+                Flexible(
+                  fit: FlexFit.tight,
+                  child: ShrinkAnimationButton(
+                    onPressed: () => _onToolbarButtonPressed(buttonData[i]['value']!),
+                    borderWidth: 1,
+                    borderGradientColors: const [CoconutColors.gray600, CoconutColors.gray600],
+                    borderRadius: 8,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        buttonData[i]['label']!,
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              CoconutLayout.spacing_50w,
-              Flexible(
-                fit: FlexFit.tight,
-                child: ShrinkAnimationButton(
-                  onPressed: () {},
-                  borderWidth: 1,
-                  borderGradientColors: const [CoconutColors.gray600, CoconutColors.gray600],
-                  borderRadius: 8,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      '+0.5 %',
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ),
-              CoconutLayout.spacing_50w,
-              Flexible(
-                fit: FlexFit.tight,
-                child: ShrinkAnimationButton(
-                  onPressed: () {},
-                  borderWidth: 1,
-                  borderGradientColors: const [CoconutColors.gray600, CoconutColors.gray600],
-                  borderRadius: 8,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      '+1.0 %',
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ),
-              CoconutLayout.spacing_50w,
-              Flexible(
-                fit: FlexFit.tight,
-                child: ShrinkAnimationButton(
-                  onPressed: () {},
-                  borderWidth: 1,
-                  borderGradientColors: const [CoconutColors.gray600, CoconutColors.gray600],
-                  borderRadius: 8,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(
-                      '+5.0 %',
-                      style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  List<Map<String, String>> _getToolbarButtonData() {
+    if (_feeFocusNode.hasFocus) {
+      // 수수료 입력 필드
+      return [
+        {'label': '+0.1 %', 'value': '0.1'},
+        {'label': '+0.5 %', 'value': '0.5'},
+        {'label': '+1.0 %', 'value': '1.0'},
+        {'label': '+5.0 %', 'value': '5.0'},
+      ];
+    } else if (_fiatAmountFocusNode.hasFocus) {
+      // Fiat 입력 필드
+      switch (_currentFiatUnit) {
+        case FiatCode.KRW:
+          return [
+            {'label': '+10,000', 'value': '10000'},
+            {'label': '+50,000', 'value': '50000'},
+            {'label': '+100,000', 'value': '100000'},
+            {'label': '+500,000', 'value': '500000'},
+          ];
+        case FiatCode.USD:
+          return [
+            {'label': '+10', 'value': '10'},
+            {'label': '+50', 'value': '50'},
+            {'label': '+100', 'value': '100'},
+            {'label': '+500', 'value': '500'},
+          ];
+        case FiatCode.JPY:
+          return [
+            {'label': '+1,000', 'value': '1000'},
+            {'label': '+5,000', 'value': '5000'},
+            {'label': '+10,000', 'value': '10000'},
+            {'label': '+50,000', 'value': '50000'},
+          ];
+      }
+    } else if (_btcAmountFocusNode.hasFocus) {
+      // BTC/Sats 입력 필드
+      if (isBtcUnit) {
+        return [
+          {'label': '+0.0001', 'value': '0.0001'},
+          {'label': '+0.0005', 'value': '0.0005'},
+          {'label': '+0.001', 'value': '0.001'},
+          {'label': '+0.005', 'value': '0.005'},
+        ];
+      } else {
+        // sats
+        return [
+          {'label': '+10,000', 'value': '10000'},
+          {'label': '+50,000', 'value': '50000'},
+          {'label': '+100,000', 'value': '100000'},
+          {'label': '+500,000', 'value': '500000'},
+        ];
+      }
+    }
+    return [];
+  }
+
+  void _onToolbarButtonPressed(String value) {
+    if (_feeFocusNode.hasFocus) {
+      // 수수료에 값 추가
+      final currentFee = double.tryParse(_feeController.text) ?? 0;
+      final addValue = double.tryParse(value) ?? 0;
+      final newFee = currentFee + addValue;
+      // 최대 99.9%로 제한
+      final clampedFee = newFee > 99.9 ? 99.9 : newFee;
+      _feeController.text = clampedFee.toStringAsFixed(1);
+    } else if (_fiatAmountFocusNode.hasFocus) {
+      // Fiat 값 추가
+      final currentText = _fiatAmountController.text.replaceAll(',', '');
+      final currentValue = int.tryParse(currentText) ?? 0;
+      final addValue = int.tryParse(value) ?? 0;
+      final newValue = currentValue + addValue;
+      _handleAmountInputChanged(newValue.toString(), true, !isSwitched);
+    } else if (_btcAmountFocusNode.hasFocus) {
+      // BTC/Sats 값 추가
+      final currentText = _btcAmountController.text.replaceAll(RegExp(r'[^0-9.]'), '');
+      if (isBtcUnit) {
+        final currentValue = double.tryParse(currentText) ?? 0;
+        final addValue = double.tryParse(value) ?? 0;
+        final newValue = currentValue + addValue;
+        _handleAmountInputChanged(newValue.toString(), false, isSwitched);
+      } else {
+        // sats
+        final currentValue = int.tryParse(currentText) ?? 0;
+        final addValue = int.tryParse(value) ?? 0;
+        final newValue = currentValue + addValue;
+        _handleAmountInputChanged(newValue.toString(), false, isSwitched);
+      }
+    }
   }
 
   /// 거래소 시세 위젯
@@ -1087,17 +1145,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                           style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
                         if (_fixedBtcPrice != null) ...[
-                          Consumer<PreferenceProvider>(
-                            builder: (context, preferenceProvider, child) {
-                              // 고정된 BTC 가격으로 직접 계산
-                              final fiatAmount = FiatUtil.calculateFiatAmount(100000000, _fixedBtcPrice!);
-                              final formattedAmount = fiatAmount.toThousandsSeparatedString();
-                              final symbol = preferenceProvider.selectedFiat.symbol;
-                              return Text(
-                                '$symbol $formattedAmount',
-                                style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
-                              );
-                            },
+                          Text(
+                            '${_currentFiatUnit.symbol} ${FiatUtil.calculateFiatAmount(100000000, _fixedBtcPrice!).toThousandsSeparatedString()}',
+                            style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                           ),
                         ] else ...[
                           // TODO: 1BTC = 1BTC
@@ -1170,7 +1220,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                           if (isFiat) ...[
                             // TODO: 설정된 법정 화폐에 따라 다르게 표시
                             Text(
-                              '${preferenceProvider.selectedFiat.symbol} ',
+                              '${_currentFiatUnit.symbol} ',
                               style: CoconutTypography.heading2_28_Bold.setColor(getInputTextColor()),
                             ),
                           ],
@@ -1180,12 +1230,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                               child: IntrinsicWidth(
                                 child: CoconutTextField(
                                   key: ValueKey(
-                                    'amount_${isFiat ? 'fiat' : (isBtcUnit ? 'btc' : 'sats')}_${isUpsideWidget ? 'up' : 'down'}',
+                                    'amount_${isFiat ? 'fiat' : (isBtcUnit ? 'btc' : 'sats')}_${isUpsideWidget ? 'up' : 'down'}_fee_${_feeController.text}',
                                   ),
                                   maxLines: 1,
                                   controller: isFiat ? _fiatAmountController : _btcAmountController,
                                   focusNode: isFiat ? _fiatAmountFocusNode : _btcAmountFocusNode,
-                                  placeholderText: _getPlaceholderText(isFiat, preferenceProvider.selectedFiat),
+                                  placeholderText: _getPlaceholderText(isFiat, _currentFiatUnit),
                                   textInputFormatter:
                                       isFiat || !isBtcUnit
                                           ? [FilteringTextInputFormatter.digitsOnly]
@@ -1249,19 +1299,21 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                             '${t.utility.p2p_calculator.fee} ',
                             style: CoconutTypography.body2_14.setColor(CoconutColors.white),
                           ),
-                          SizedBox(
-                            width: 40,
-                            child: CoconutTextField(
-                              controller: _feeController,
-                              focusNode: _feeFocusNode,
-                              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                              maxLines: 1,
-                              height: 22,
-                              textInputAction: TextInputAction.done,
-                              textInputType: TextInputType.number,
-                              onChanged: (value) {},
-                              textAlign: TextAlign.end,
-                              isVisibleBorder: false,
+                          IntrinsicWidth(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minWidth: 10),
+                              child: CoconutTextField(
+                                controller: _feeController,
+                                focusNode: _feeFocusNode,
+                                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+                                maxLines: 1,
+                                height: 22,
+                                textInputAction: TextInputAction.done,
+                                textInputType: TextInputType.number,
+                                onChanged: (value) {},
+                                textAlign: TextAlign.end,
+                                isVisibleBorder: false,
+                              ),
                             ),
                           ),
                           Text('%', style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
@@ -1379,9 +1431,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     } else {
       // 수수료 및 네트워크 상태를 고려하여 BTC/sats로 환산
       final isNetworkOn = context.read<ConnectivityProvider>().isNetworkOn;
-      final selectedFiat = context.read<PreferenceProvider>().selectedFiat;
 
-      final feeValue = double.tryParse(_feeController.text) ?? 1.0;
+      final feeValue = double.tryParse(_feeController.text) ?? 0;
       final feeRate = feeValue / 100.0;
       final discountMultiplier = 1.0 - feeRate;
 
@@ -1397,7 +1448,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       } else {
         // 네트워크 OFF: 20K BTC 가격 사용 (법정화폐별 상수)
         int btcPriceInFiat;
-        switch (selectedFiat) {
+        switch (_currentFiatUnit) {
           case FiatCode.KRW:
             btcPriceInFiat = 26000000;
             break;

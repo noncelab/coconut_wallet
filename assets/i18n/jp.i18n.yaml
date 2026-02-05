@@ -186,6 +186,7 @@ utility:
     1btc: "1 BTC"
     upbit_price: "Upbit 基準 時価"
     binance_price: "Binance 基準 時価"
+    bitflyer_price: "Bitflyer 基準 時価"
     offline_price_unavailable: "時価を取得できません"
     fee: "手数料"
     transaction_bill: "取引請求書"
