@@ -218,6 +218,9 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     if (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) {
       if (_connectivityProvider.isVpnActive) {
+        if (_connectivityProvider.isInternetOff) {
+          return NetworkStatus.offline;
+        }
         return NetworkStatus.vpnBlocked;
       }
       return NetworkStatus.connectionFailed;
