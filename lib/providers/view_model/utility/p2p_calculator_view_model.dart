@@ -134,8 +134,17 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String getAmountString(double feeValue, {bool isFiat = false}) {
     // 입력이 변경되지 않았거나 fiatPrice가 없으면 빈 문자열 반환 (placeholder 표시)
-    if (!isInputChanged || fiatPrice == null || fiatPrice == 0) {
+    if (!isInputChanged || fiatPrice == null) {
       return '';
+    }
+
+    // fiatPrice가 0이면 "0" 표시
+    if (fiatPrice == 0) {
+      if (isFiat) {
+        return '0';
+      } else {
+        return isBtcUnit ? '0.0000 0000' : '0';
+      }
     }
 
     if (isFiat) {

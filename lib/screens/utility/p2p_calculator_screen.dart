@@ -65,6 +65,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           _viewModel.setPreviousFeeValue(newText);
           _viewModel.setIsValidatingFee(false);
         }
+        // '.'으로 끝나면 뒤에 '0' 추가 (예: "1." → "1.0")
+        else if (text.endsWith('.')) {
+          _viewModel.setIsValidatingFee(true);
+          final newText = '${text}0';
+          _feeController.value = TextEditingValue(
+            text: newText,
+            selection: TextSelection.collapsed(offset: newText.length),
+          );
+          _viewModel.setPreviousFeeValue(newText);
+          _viewModel.setIsValidatingFee(false);
+        }
         // 소수점이 없으면 '.0' 추가
         else if (!text.contains('.')) {
           _viewModel.setIsValidatingFee(true);
@@ -673,6 +684,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                         children: [
                           Container(
                             width: MediaQuery.sizeOf(context).width,
+                            height:
+                                MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top - kToolbarHeight,
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -980,7 +993,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (isFiat) ...[
-                            // TODO: 설정된 법정 화폐에 따라 다르게 표시
                             Text(
                               '${_viewModel.currentFiatUnit.symbol} ',
                               style: CoconutTypography.heading2_28_Bold.setColor(getInputTextColor()),
@@ -1023,7 +1035,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                             ),
                           ),
                           if (!isFiat) ...[
-                            // TODO: 설정된 단위에 따라 다르게 표시
                             Text(
                               ' ${_viewModel.isBtcUnit ? t.btc : t.sats}',
                               textAlign: TextAlign.center,
