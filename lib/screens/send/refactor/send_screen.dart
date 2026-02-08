@@ -10,7 +10,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart'
-    show TransactionDraftRepository, SelectedUtxoStatus, SelectedUtxoStatusException;
+    show TransactionDraftRepository, SelectedUtxoExcludedStatus;
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -1206,7 +1206,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   final isAddressError = data.item2.isError;
                   final controller = _addressControllerList[index];
                   return CoconutTextField(
-                    key: _addressInputFieldKey,
+                    key: index == 0 ? _addressInputFieldKey : null,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: CoconutColors.black,

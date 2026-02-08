@@ -448,7 +448,10 @@ send_screen:
   dialog:
     load_draft_failed: "불러오기 실패"
   swipe_to_add_address: "수신자를 추가하려면 왼쪽으로 스와이프 해주세요"
-
+  toast:
+    draft_utxo_used: "이전에 선택한 비트코인이 이미 사용되었어요. UTXO를 다시 골라주세요."
+    draft_utxo_locked: "이전에 선택한 비트코인이 사용 잠금 되었어요. UTXO를 다시 골라주세요."
+    
 utxo_selection_screen:
   title: "UTXO 고르기"
 

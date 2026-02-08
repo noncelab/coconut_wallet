@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -408,8 +406,8 @@ class SendViewModel extends ChangeNotifier {
   }
 
   /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
-  /// UTXO 상태 문제가 있으면 SelectedUtxoStatusException 발생
-  TransactionDraft _getDraft(int draftId) {
+  /// 사용불가 UTXO는 제외하고 유효한 목록과 제외 상태를 함께 반환
+  (TransactionDraft, List<UtxoState>, SelectedUtxoExcludedStatus?) _getDraft(int draftId) {
     assert(_selectedWalletItem != null);
 
     final draft = _transactionDraftRepository.getUnsignedTransactionDraft(draftId);
@@ -417,139 +415,100 @@ class SendViewModel extends ChangeNotifier {
       throw StateError('Transaction draft not found: $draftId');
     }
 
-    // UTXO 상태 확인
-    final selectedUtxoStatus = _transactionDraftRepository.getSelectedUtxoStatus(
+    // UTXO 상태 확인 및 유효한 UTXO 목록 반환 (사용불가 UTXO 제외)
+    final (validUtxoList, excludedStatus) = _transactionDraftRepository.getValidatedSelectedUtxoList(
       _selectedWalletItem!.id,
       draft.selectedUtxoIds.toList(),
     );
 
-    debugPrint('selectedUtxoStatus: $selectedUtxoStatus');
-
-    if (selectedUtxoStatus == SelectedUtxoStatus.locked || selectedUtxoStatus == SelectedUtxoStatus.used) {
-      throw SelectedUtxoStatusException(selectedUtxoStatus);
-    }
-
-    return draft;
+    return (draft, validUtxoList, excludedStatus);
   }
 
   /// TransactionDraft를 로드하여 SendViewModel 상태에 반영
-  void loadTransactionDraft(int draftId) {
-    TransactionDraft draft = _getDraft(draftId);
-    // draft id 설정
+  /// 사용불가 UTXO가 제외된 경우 해당 상태를 반환 (토스트 표시용)
+  SelectedUtxoExcludedStatus? loadTransactionDraft(int draftId) {
+    final (draft, validatedUtxoList, excludedUtxoStatus) = _getDraft(draftId);
+
+    // 1. Draft ID 설정
     _sendInfoProvider.setTransactionDraftId(draft.id);
 
-    // 지갑 선택
+    // 2. 지갑 선택 및 초기화
     final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == draft.walletId);
-    if (walletIndex == -1) return;
-
+    if (walletIndex == -1) return null;
     _initializeWithSelectedWallet(walletIndex);
+
+    // 3. 비트코인 단위 설정 (수신자 금액 변환 전에 먼저 설정)
+    if (draft.bitcoinUnit != null && draft.bitcoinUnit != _currentUnit) {
+      _currentUnit = draft.bitcoinUnit!;
+    }
+
+    // 4. 수신자 목록 설정 (sats → 현재 단위 문자열로 변환)
     _recipientList =
         draft.recipients!.map((r) {
-          return RecipientInfo(address: r.address, amount: draft.bitcoinUnit!.displayBitcoinAmount(r.amount));
+          final amountStr =
+              _currentUnit == BitcoinUnit.sats
+                  ? r.amount.toString()
+                  : UnitUtil.convertSatoshiToBitcoin(r.amount).toString();
+          return RecipientInfo(address: r.address, amount: amountStr);
         }).toList();
-    if (_recipientList.isNotEmpty) {
-      for (int i = 0; i < _recipientList.length; i++) {
-        setAddressText(_recipientList[i].address, i);
-      }
+
+    // 5. 수수료율 설정 (setFeeRateText 대신 직접 설정하여 _buildTransaction 중복 호출 방지)
+    _feeRateText = draft.feeRate!.toString();
+    try {
+      final feeRateValue = double.parse(_feeRateText);
+      _isFeeRateLowerThanMin = _minimumFeeRate != null && feeRateValue < _minimumFeeRate!;
+    } catch (e) {
+      Logger.error(e);
+      _isFeeRateLowerThanMin = false;
     }
 
-    setFeeRateText(draft.feeRate!.toString());
-
-    final bool isMaxModeDraft = draft.isMaxMode == true;
-
-    if (isMaxModeDraft) {
-      // 항상 재계산하도록 일단 false로 만들고 setMaxMode(true) 호출
-      _isMaxMode = false;
-      setMaxMode(true);
-    } else {
-      setMaxMode(false, skipAmountReset: true);
-    }
-
-    if (_recipientList.isNotEmpty) {
-      for (int i = 0; i < _recipientList.length; i++) {
-        // maxMode draft에서는 마지막 수신자의 amount는 setMaxMode에서 다시 계산하므로
-        // draft에 저장된 값을 덮어쓰지 않도록 건너뜀
-        if (isMaxModeDraft && i == lastIndex) continue;
-
-        if (_recipientList[i].amount.isNotEmpty) {
-          if (draft.bitcoinUnit == t.btc) {
-            setAmountText(UnitUtil.convertBitcoinToSatoshi(double.parse(_recipientList[i].amount)), i);
-          } else if (draft.bitcoinUnit == t.sats) {
-            setAmountText(int.parse(_recipientList[i].amount), i);
-          } else {
-            throw ArgumentError('Invalid unit: ${draft.bitcoinUnit}');
-          }
-        }
-      }
-    }
-
-    // isFeeSubtractedFromSendAmount 설정
-    if (draft.isFeeSubtractedFromSendAmount == true) {
-      _isFeeSubtractedFromSendAmount = true;
-    }
-
-    // selectedUtxoList 설정
-    if (draft.selectedUtxoIds.isNotEmpty) {
-      // 수동 선택 모드
+    // 6. UTXO 선택 모드 및 목록 설정 (_getDraft에서 검증된 목록 활용)
+    if (validatedUtxoList.isNotEmpty) {
       _isUtxoSelectionAuto = false;
-      final selectedUtxoListJson = draft.selectedUtxoIds.toList();
-      final allUtxoList = _walletProvider.getUtxoList(draft.walletId);
-      _selectedUtxoList =
-          selectedUtxoListJson.map((jsonString) {
-            final json = jsonDecode(jsonString) as Map<String, dynamic>;
-            final utxoId = '${json['transactionHash'] as String}${json['index'] as int}';
-            return allUtxoList.firstWhere(
-              (utxo) => utxo.utxoId == utxoId,
-              orElse:
-                  () => UtxoState(
-                    transactionHash: json['transactionHash'] as String,
-                    index: json['index'] as int,
-                    amount: json['amount'] as int,
-                    derivationPath: json['derivationPath'] as String,
-                    blockHeight: json['blockHeight'] as int,
-                    to: json['to'] as String,
-                    timestamp: DateTime.parse(json['timestamp'] as String),
-                  ),
-            );
-          }).toList();
+      _selectedUtxoList = validatedUtxoList;
     } else {
-      // 자동 선택 모드
       _isUtxoSelectionAuto = true;
       _selectedUtxoList = _walletProvider.getUtxoList(draft.walletId);
     }
     selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
 
-    // 현재 단위 확인 및 업데이트
-    if (draft.bitcoinUnit != null) {
-      final draftUnit = BitcoinUnit.values.firstWhere(
-        (unit) => unit.symbol == draft.bitcoinUnit,
-        orElse: () => _currentUnit,
-      );
-      if (draftUnit != _currentUnit) {
-        toggleUnit();
-      }
+    // 7. 수수료 차감 설정
+    _isFeeSubtractedFromSendAmount = draft.isFeeSubtractedFromSendAmount == true;
+
+    // 8. 모두 보내기 모드 설정 (setMaxMode 대신 직접 설정하여 _buildTransaction 중복 호출 방지)
+    _isMaxMode = draft.isMaxMode == true;
+    if (_isMaxMode) {
+      _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
+      _isFeeSubtractedFromSendAmount = true;
     }
 
-    // 페이지 인덱스 초기화
-    _currentIndex = 0;
-    _onRecipientPageDeleted(0); // 페이지 초기화를 위해 삭제 콜백 호출
+    // 9. 잔액 초기화
     _initBalances();
 
-    for (int i = 0; i < _recipientList.length; i++) {
-      _onAmountTextUpdate(_recipientList[i].amount);
+    // 10. 모두 보내기 모드면 마지막 수신자 금액 재계산
+    if (_isMaxMode) {
+      _adjustLastReceiverAmount(recipientIndex: lastIndex);
     }
-    _onFeeRateTextUpdate(_feeRateText);
 
-    // 트랜잭션 빌드 및 잔액 검증 상태 업데이트
+    // 11. 트랜잭션 빌드 (딱 1번만 호출)
     _buildTransaction();
+
+    // 12. 유효성 검증 상태 업데이트
     _updateAmountValidationState();
 
-    setShowAddressBoard(false);
-    if (recipientList.length > 1 || recipientList.any((r) => r.amount.isNotEmpty && r.address.isNotEmpty)) {
-      _showFeeBoard = true;
-    }
-    _updateFeeBoardVisibility();
+    // 13. UI 상태 업데이트
+    _showAddressBoard = false;
+    _showFeeBoard = recipientList.length > 1 || recipientList.any((r) => r.amount.isNotEmpty && r.address.isNotEmpty);
+
+    // 14. 페이지 초기화 및 컨트롤러 동기화
+    _currentIndex = 0;
+    _onRecipientPageDeleted(0);
+    _onAmountTextUpdate(_recipientList[_currentIndex].amount);
+    _onFeeRateTextUpdate(_feeRateText);
+
     notifyListeners();
+
+    return excludedUtxoStatus;
   }
 
   void _setEstimatedFee(int? estimatedFee) {

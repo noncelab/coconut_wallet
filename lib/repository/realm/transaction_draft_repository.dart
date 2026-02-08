@@ -1,9 +1,7 @@
 import 'dart:convert';
 
-import 'package:coconut_lib/coconut_lib.dart' as lib;
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
@@ -18,39 +16,9 @@ import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 
 /// 선택된 UTXO의 상태를 나타내는 enum
-enum SelectedUtxoStatus {
-  unused, // 모든 UTXO가 사용 가능
+enum SelectedUtxoExcludedStatus {
   used, // 일부 UTXO가 이미 사용됨
   locked, // 일부 UTXO가 잠금됨
-}
-
-class SelectedUtxoStatusException implements Exception {
-  final SelectedUtxoStatus status;
-
-  SelectedUtxoStatusException(this.status);
-}
-
-/// JSON 문자열 리스트를 RecipientInfo 리스트로 변환
-List<RecipientInfo> _jsonToRecipientList(List<String> recipientListJson) {
-  return recipientListJson.map((jsonString) {
-    final json = jsonDecode(jsonString) as Map<String, dynamic>;
-    return RecipientInfo(
-      address: json['address'] as String? ?? '',
-      amount: json['amount'] as String? ?? '',
-      addressError: _parseAddressError(json['addressError'] as String?),
-      minimumAmountError: _parseAmountError(json['minimumAmountError'] as String?),
-    );
-  }).toList();
-}
-
-AddressError _parseAddressError(String? value) {
-  if (value == null) return AddressError.none;
-  return AddressError.values.firstWhere((e) => e.name == value, orElse: () => AddressError.none);
-}
-
-AmountError _parseAmountError(String? value) {
-  if (value == null) return AmountError.none;
-  return AmountError.values.firstWhere((e) => e.name == value, orElse: () => AmountError.none);
 }
 
 /// JSON 문자열 리스트를 UtxoState 리스트로 변환
@@ -311,29 +279,42 @@ class TransactionDraftRepository extends BaseRepository {
     });
   }
 
-  /// 선택된 UTXO의 상태 확인 (unused, used, locked)
-  SelectedUtxoStatus getSelectedUtxoStatus(int walletId, List<String> selectedUtxoListJson) {
-    if (selectedUtxoListJson.isEmpty) return SelectedUtxoStatus.unused;
+  /// 선택된 UTXO의 상태를 확인하고 유효한 UTXO 목록과 제외된 상태를 반환
+  /// - 사용 가능한 UTXO만 validUtxoList에 포함
+  /// - 사용되었거나 잠긴 UTXO가 있으면 excludedStatus에 해당 상태 반환
+  (List<UtxoState> validUtxoList, SelectedUtxoExcludedStatus? excludedStatus) getValidatedSelectedUtxoList(
+    int walletId,
+    List<String> selectedUtxoIds,
+  ) {
+    if (selectedUtxoIds.isEmpty) return ([], null);
 
     final utxoList = _utxoRepository.getUtxoStateList(walletId);
-    final selectedUtxoIds = _jsonToUtxoList(selectedUtxoListJson).map((utxo) => utxo.utxoId).toList();
 
-    bool hasUsed = false;
+    final List<UtxoState> validatedList = [];
+    final Set<String> foundIds = {};
     bool hasLocked = false;
 
     for (final utxo in utxoList) {
       if (selectedUtxoIds.contains(utxo.utxoId)) {
         if (utxo.status == UtxoStatus.locked) {
           hasLocked = true;
-        } else if (utxo.status != UtxoStatus.unspent) {
-          hasUsed = true;
+        } else {
+          validatedList.add(utxo);
         }
+        foundIds.add(utxo.utxoId);
       }
     }
 
-    if (hasUsed) return SelectedUtxoStatus.used;
-    if (hasLocked) return SelectedUtxoStatus.locked;
-    return SelectedUtxoStatus.unused;
+    final bool hasUsed = foundIds.length < selectedUtxoIds.length;
+
+    SelectedUtxoExcludedStatus? excludedStatus;
+    if (hasUsed) {
+      excludedStatus = SelectedUtxoExcludedStatus.used;
+    } else if (hasLocked) {
+      excludedStatus = SelectedUtxoExcludedStatus.locked;
+    }
+
+    return (validatedList, excludedStatus);
   }
 
   /// SignedTransactionDraft를 SecureStorage에 저장

@@ -447,6 +447,9 @@ send_screen:
   dialog:
     load_draft_failed: "Error al cargar"
   swipe_to_add_address: "Desliza para agregar un destinatario"
+  toast:
+    draft_utxo_used: "El bitcoin seleccionado anteriormente ya fue utilizado. Seleccione los UTXOs nuevamente."
+    draft_utxo_locked: "El bitcoin seleccionado anteriormente ha sido bloqueado. Seleccione los UTXOs nuevamente."
 
 utxo_selection_screen:
   title: "Seleccionar UTXOs"
