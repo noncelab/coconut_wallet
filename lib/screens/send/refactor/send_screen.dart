@@ -98,9 +98,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   bool _isQrDataHandling = false;
   String _previousAmountText = "";
 
-  // Transaction draft 선택 상태
-  int? _selectedDraftId;
-
   bool get _hasKeyboard => _amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus || _isAddressFocused;
 
   bool get _isAddressFocused => _addressFocusNodeList.any((e) => e.hasFocus);
@@ -328,7 +325,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   ),
                 ),
                 _buildFinalButton(context),
-                _buildDropdownMenu(),
+                Selector<SendViewModel, Tuple3<bool, bool?, bool>>(
+                  selector: (_, vm) => Tuple3(vm.isSaved, vm.hasDrafts, vm.canGoNext),
+                  builder: (context, data, child) {
+                    return _buildDropdownMenu(isSaved: data.item1, hasDrafts: data.item2, canGoNext: data.item3);
+                  },
+                ),
               ],
             ),
           ),
@@ -337,63 +339,76 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildDropdownMenu() {
-    if (_viewModel.drafts == null) return const SizedBox.shrink();
+  Widget _buildDropdownMenu({required bool isSaved, required bool? hasDrafts, required bool canGoNext}) {
+    if (!_isDropdownMenuVisible) return const SizedBox.shrink();
 
     return Positioned(
       top: 0,
       right: 20,
-      child: Visibility(
-        visible: _isDropdownMenuVisible,
-        child: CoconutPulldownMenu(
-          shadowColor: CoconutColors.gray800,
-          dividerColor: CoconutColors.gray800,
-          entries: [
-            CoconutPulldownMenuItem(title: t.transaction_draft.save, isDisabled: !_validateEnteredAddresses()),
-            if (_viewModel.drafts!.isNotEmpty) CoconutPulldownMenuItem(title: t.transaction_draft.load),
+      child: CoconutPulldownMenu(
+        shadowColor: CoconutColors.gray800,
+        dividerColor: CoconutColors.gray800,
+        entries: [
+          if (isSaved) ...[
+            CoconutPulldownMenuItem(title: t.transaction_draft.save_new, isDisabled: !canGoNext), // 새로 저장
+            CoconutPulldownMenuItem(title: t.transaction_draft.update, isDisabled: !canGoNext), // 변경 사항 저장
+          ] else ...[
+            CoconutPulldownMenuItem(
+              title: t.transaction_draft.save,
+              isDisabled: hasDrafts == null || !canGoNext,
+            ), // 임시 저장
           ],
-          onSelected: ((index, selectedText) async {
-            _setDropdownMenuVisiblility(false);
-            if (index == 0) {
-              // 임시 저장
-              try {
-                await _viewModel.saveDraft();
-                _showTransactionDraftSavedDialog();
-              } catch (e) {
-                _showTransactionDraftSaveFailedDialog(e.toString());
-              }
-            } else if (index == 1) {
-              _selectedDraftId = null;
-              CommonBottomSheets.showDraggableBottomSheet(
-                context: context,
-                childBuilder: (scrollController) {
-                  return _TransactionDraftBottomSheet(
-                    scrollController: scrollController,
-                    drafts: _viewModel.drafts!,
-                    selectedDraftId: _selectedDraftId,
-                    onSelectedDraftIdChanged: (id) {
-                      _selectedDraftId = id;
-                    },
-                    onDraftSelected: (context, setSheetState, removeItem) async {
-                      await _onDraftSelected(context, setSheetState, removeItem);
-                    },
-                  );
-                },
-              );
+          if (hasDrafts == true) CoconutPulldownMenuItem(title: t.transaction_draft.load),
+        ],
+        onSelected: ((index, selectedText) async {
+          _setDropdownMenuVisiblility(false);
+          if (selectedText == t.transaction_draft.save && (_viewModel.drafts != null && _validateEnteredAddresses())) {
+            // 임시 저장
+            try {
+              await _viewModel.saveNewDraft();
+              _showTransactionDraftSavedDialog();
+            } catch (e) {
+              _showTransactionDraftSaveFailedDialog(e.toString());
             }
-          }),
-        ),
+          } else if (selectedText == t.transaction_draft.load) {
+            final selected = await CommonBottomSheets.showSelectableDraggableSheet<TransactionDraft>(
+              context: context,
+              title: t.transaction_draft.title,
+              items: _viewModel.drafts!,
+              getItemId: (draft) => draft.id,
+              itemBuilder: (context, draft, isSelected, onTap) {
+                return Column(
+                  children: [
+                    TransactionDraftCard(
+                      transactionDraft: draft,
+                      isSelectable: true,
+                      isSelected: isSelected,
+                      onTap: onTap,
+                    ),
+                    CoconutLayout.spacing_300h,
+                  ],
+                );
+              },
+            );
+            if (selected != null) {
+              await _onDraftSelected(selected);
+            }
+          }
+        }),
       ),
     );
   }
 
-  Future<void> _onDraftSelected(BuildContext context, StateSetter setSheetState, Function(int, int) removeItem) async {
-    assert(_selectedDraftId != null);
+  Future<void> _onDraftSelected(TransactionDraft draft) async {
+    // 1. draft load
+    // 1-1. UTXO가 이미 사용된 경우 토스트 알림을 띄우긴 하지만 나머지 정보들은 불러온다.
+    // 1-2. UTXO가 잠긴 경우 토스트 알림을 띄우긴 하지만 나머지 정보들은 불러온다.
+    // 1-3. 성공적으로 불러온다.
     try {
-      _viewModel.loadTransactionDraft(_selectedDraftId!);
+      _viewModel.loadTransactionDraft(draft.id);
     } on SelectedUtxoStatusException catch (e) {
       // UTXO 상태 문제가 있는 경우 삭제 확인 다이얼로그 표시
-      await _showDeleteDraftDialog(context, setSheetState, removeItem, e.status);
+      await _showDeleteDraftDialog(e.status);
       return;
     } catch (e) {
       showInfoDialog(
@@ -411,8 +426,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _syncAddressControllersWithRecipientList();
       }
     });
-
-    Navigator.pop(context);
   }
 
   void _showTransactionDraftSavedDialog() {
@@ -453,12 +466,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Future<void> _showDeleteDraftDialog(
-    BuildContext context,
-    StateSetter setSheetState,
-    Function(int, int) removeItem,
-    SelectedUtxoStatus status,
-  ) async {
+  Future<void> _showDeleteDraftDialog(SelectedUtxoStatus status) async {
     // TODO: 제외하고 불러올까요? 로 변경하는게 어떨까...
     // final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
     // final description =
@@ -504,23 +512,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     //     );
     //   },
     // );
-  }
-
-  Future<void> _showDeleteCompletedDialog() async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.transaction_draft.dialog.transaction_draft_delete_completed,
-          description: t.transaction_draft.dialog.transaction_draft_delete_completed_description,
-          rightButtonText: t.transaction_draft.dialog.confirm,
-          onTapRight: () {
-            Navigator.pop(context);
-          },
-        );
-      },
-    );
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
@@ -2107,165 +2098,3 @@ class FinalButtonMessage {
 }
 
 enum RecommendedFeeFetchStatus { fetching, succeed, failed }
-
-// REFACTOR: 공통 사용 가능한 widget으로 분리하기
-class _TransactionDraftBottomSheet extends StatefulWidget {
-  final ScrollController scrollController;
-  final List<TransactionDraft> drafts;
-  final int? selectedDraftId;
-  final ValueChanged<int?> onSelectedDraftIdChanged;
-  final Future<void> Function(BuildContext, StateSetter, Function(int, int)) onDraftSelected;
-
-  const _TransactionDraftBottomSheet({
-    required this.scrollController,
-    required this.drafts,
-    required this.selectedDraftId,
-    required this.onSelectedDraftIdChanged,
-    required this.onDraftSelected,
-  });
-
-  @override
-  State<_TransactionDraftBottomSheet> createState() => _TransactionDraftBottomSheetState();
-}
-
-class _TransactionDraftBottomSheetState extends State<_TransactionDraftBottomSheet> {
-  final GlobalKey<AnimatedListState> _animatedListKey = GlobalKey<AnimatedListState>();
-  int? _selectedDraftId;
-  static const Duration _duration = Duration(milliseconds: 300);
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedDraftId = widget.selectedDraftId;
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _updateDisplayedList();
-    // });
-  }
-
-  @override
-  void didUpdateWidget(_TransactionDraftBottomSheet oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedDraftId != widget.selectedDraftId) {
-      setState(() {
-        _selectedDraftId = widget.selectedDraftId;
-      });
-    }
-  }
-
-  // void _updateDisplayedList() {
-  //   final sortedDrafts = getSortedUnsignedTransactionDrafts(widget.transactionDraftRepository);
-  //   if (mounted) {
-  //     setState(() {
-  //       _displayedDraftList = List.from(sortedDrafts);
-  //     });
-  //   }
-  // }
-
-  @override
-  Widget build(BuildContext context) {
-    final drafts = widget.drafts;
-    return Scaffold(
-      appBar: CoconutAppBar.build(title: t.transaction_draft.title, context: context, isBottom: true),
-      backgroundColor: CoconutColors.gray900,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            ClipRect(
-              clipBehavior: Clip.none,
-              child: AnimatedList(
-                key: ValueKey('${drafts.length}'),
-                controller: widget.scrollController,
-                initialItemCount: drafts.length,
-                itemBuilder: (context, index, animation) {
-                  if (index >= drafts.length) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final transactionDraft = drafts[index];
-                  try {
-                    transactionDraft.id;
-                  } catch (e) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final draft = transactionDraft;
-
-                  return Column(
-                    children: [
-                      if (index == 0) CoconutLayout.spacing_300h,
-                      TransactionDraftCard(
-                        transactionDraft: draft,
-                        isSelectable: true,
-                        isSelected: _selectedDraftId == draft.id,
-                        onTap: () {
-                          setState(() {
-                            if (_selectedDraftId == draft.id) {
-                              _selectedDraftId = null;
-                              widget.onSelectedDraftIdChanged(null);
-                            } else {
-                              _selectedDraftId = draft.id;
-                              widget.onSelectedDraftIdChanged(draft.id);
-                            }
-                          });
-                        },
-                      ),
-                      CoconutLayout.spacing_300h,
-                      if (index == drafts.length - 1) CoconutLayout.spacing_2500h,
-                    ],
-                  );
-                },
-              ),
-            ),
-            FixedBottomButton(
-              onButtonClicked: () async {
-                await widget.onDraftSelected(context, setState, removeItem);
-              },
-              isActive: _selectedDraftId != null,
-              text: t.select,
-              backgroundColor: CoconutColors.white,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRemoveCardPlaceholder(Animation<double> animation) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: Column(
-          children: [
-            if (widget.drafts.isNotEmpty) CoconutLayout.spacing_300h,
-            Container(
-              decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
-              height: 120,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void removeItem(int index, int draftId) {
-    setState(() {
-      widget.drafts.removeWhere((draft) {
-        try {
-          return draft.id == draftId;
-        } catch (e) {
-          return false;
-        }
-      });
-    });
-
-    if (_animatedListKey.currentState != null && index >= 0 && index < widget.drafts.length + 1) {
-      _animatedListKey.currentState?.removeItem(
-        index,
-        (context, animation) => _buildRemoveCardPlaceholder(animation),
-        duration: _duration,
-      );
-    }
-  }
-}

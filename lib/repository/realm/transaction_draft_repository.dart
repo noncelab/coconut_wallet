@@ -97,7 +97,7 @@ class TransactionDraftRepository extends BaseRepository {
     required int walletId,
     required double feeRate,
     required bool isMaxMode,
-    required bool isMultisig, // TODO: 필요?
+    //required bool isMultisig, // TODO: 필요?
     required bool isFeeSubtractedFromSendAmount,
     required List<RecipientDraft> recipients,
     required BitcoinUnit bitcoinUnit,
@@ -131,30 +131,47 @@ class TransactionDraftRepository extends BaseRepository {
     });
   }
 
-  /// Unsigned TransactionDraft 전체를 새 값으로 엎어치는 업데이트
-  Future<Result<bool>> updateUnsignedDraft(TransactionDraft txDraft) {
-    return handleAsyncRealm<bool>(() async {
-      final existing = realm.find<RealmTransactionDraft>(txDraft.id);
-      if (existing == null) {
-        throw ErrorCodes.invalidTransactionDraftId;
+  Future<Result<TransactionDraft>> updateUnsignedDraft({
+    required int draftId,
+    required double feeRate,
+    required bool isMaxMode,
+    //required bool isMultisig, // TODO: 필요?
+    required bool isFeeSubtractedFromSendAmount,
+    required List<RecipientDraft> recipients,
+    required BitcoinUnit bitcoinUnit,
+    List<String>? selectedUtxoIds,
+  }) {
+    return handleAsyncRealm<TransactionDraft>(() async {
+      final draft = realm.find<RealmTransactionDraft>(draftId);
+      if (draft == null) {
+        throw StateError('No draft found with id $draftId');
       }
 
+      final txDraft = TransactionDraft(
+        id: draftId,
+        walletId: draft.walletId,
+        recipients: recipients,
+        createdAt: draft.createdAt,
+        feeRate: feeRate,
+        isMaxMode: isMaxMode,
+        isFeeSubtractedFromSendAmount: isFeeSubtractedFromSendAmount,
+        bitcoinUnit: bitcoinUnit,
+        selectedUtxoIds: selectedUtxoIds ?? [],
+      );
+
       realm.write(() {
-        existing.recipientJsons
-          ..clear()
-          ..addAll(RecipientDraft.toJsonList(txDraft.recipients!)); // 여기서 jsonEncode list 반환
-
-        existing.selectedUtxoIds
-          ..clear()
-          ..addAll(txDraft.selectedUtxoIds);
-
-        existing.feeRate = txDraft.feeRate!;
-        existing.isMaxMode = txDraft.isMaxMode!;
-        existing.isFeeSubtractedFromSendAmount = txDraft.isFeeSubtractedFromSendAmount!;
-        existing.bitcoinUnit = txDraft.bitcoinUnit!.name; // or string mapping // TODO:
+        draft
+          ..feeRate = feeRate
+          ..isMaxMode = isMaxMode
+          ..isFeeSubtractedFromSendAmount = isFeeSubtractedFromSendAmount
+          ..recipientJsons.clear()
+          ..recipientJsons.addAll(RecipientDraft.toJsonList(recipients))
+          ..bitcoinUnit = bitcoinUnit.symbol
+          ..selectedUtxoIds.clear()
+          ..selectedUtxoIds.addAll(selectedUtxoIds ?? []);
       });
 
-      return true;
+      return txDraft;
     });
   }
 

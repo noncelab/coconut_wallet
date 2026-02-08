@@ -17,7 +17,6 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
@@ -25,6 +24,7 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 
@@ -205,7 +205,7 @@ class SendViewModel extends ChangeNotifier {
   int? get unintendedDustFee => _unintendedDustFee;
 
   TransactionBuildResult? _txBuildResult;
-  final int? _transactionDraftId;
+  int? _transactionDraftId;
 
   List<RecipientInfo> get validRecipientList {
     return _recipientList
@@ -262,10 +262,13 @@ class SendViewModel extends ChangeNotifier {
 
   bool get isSelectedWalletNull => _selectedWalletItem == null;
 
-  /// Draft
+  bool get canGoNext => !isWalletWithoutMfp(_selectedWalletItem) && isReadyToSend && _finalErrorMessage.isEmpty;
+
   /// 초기화를 비동기로 진행하므로 null이면 아직 초기화 완료 안된 것으로 판단.
   List<TransactionDraft>? _drafts;
   List<TransactionDraft>? get drafts => _drafts;
+  bool? get hasDrafts => _drafts?.isNotEmpty;
+  bool get isSaved => _transactionDraftId != null;
 
   bool isMaxModeLastIndex(int index) {
     return _isMaxMode && index == lastIndex;
@@ -301,7 +304,7 @@ class SendViewModel extends ChangeNotifier {
     _recipientList = [RecipientInfo()];
 
     if (_transactionDraftId != null) {
-      loadTransactionDraft(_transactionDraftId);
+      loadTransactionDraft(_transactionDraftId!);
     }
 
     _initBalances();
@@ -1131,14 +1134,13 @@ class SendViewModel extends ChangeNotifier {
   }
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///
-  Future<TransactionDraft> saveDraft() async {
+  Future<TransactionDraft> saveNewDraft() async {
     assert(_selectedWalletItem != null);
 
     final result = await _transactionDraftRepository.saveUnsignedDraft(
       walletId: selectedWalletItem!.id,
       feeRate: double.parse(_feeRateText),
       isMaxMode: _isMaxMode,
-      isMultisig: _selectedWalletItem!.walletType == WalletType.multiSignature,
       isFeeSubtractedFromSendAmount: _isFeeSubtractedFromSendAmount,
       recipients:
           _recipientList.map((r) => RecipientDraft.fromRecipientInfo(r.address, r.amount, _currentUnit)).toList(),
@@ -1147,6 +1149,31 @@ class SendViewModel extends ChangeNotifier {
     );
 
     if (result.isSuccess) {
+      _transactionDraftId = result.value.id;
+      _loadDrafts();
+      return result.value;
+    } else {
+      throw Exception(result.error.message);
+    }
+  }
+
+  Future<TransactionDraft> updateDraft() async {
+    assert(_selectedWalletItem != null);
+    assert(_transactionDraftId != null);
+
+    final result = await _transactionDraftRepository.updateUnsignedDraft(
+      draftId: _transactionDraftId!,
+      feeRate: double.parse(_feeRateText),
+      isMaxMode: _isMaxMode,
+      isFeeSubtractedFromSendAmount: _isFeeSubtractedFromSendAmount,
+      recipients:
+          _recipientList.map((r) => RecipientDraft.fromRecipientInfo(r.address, r.amount, _currentUnit)).toList(),
+      bitcoinUnit: _currentUnit,
+      selectedUtxoIds: _isUtxoSelectionAuto ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+    );
+
+    if (result.isSuccess) {
+      _loadDrafts();
       return result.value;
     } else {
       throw Exception(result.error.message);
