@@ -594,7 +594,7 @@ utxo_list_screen:
   total_balance: "총 잔액"
   utxo_locked_button: "사용 잠금"
   utxo_unlocked_button: "사용 가능으로 전환"
-  pending_utxo: "대기 중인 트랜잭션은 선택할 수 없습니다."
+  pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"

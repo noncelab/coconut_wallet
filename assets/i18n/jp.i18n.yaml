@@ -596,7 +596,7 @@ utxo_list_screen:
   total_balance: "総残高"
   utxo_locked_button: "使用ロック"
   utxo_unlocked_button: "使用可能にする"
-  pending_utxo: "保留中のトランザクションは選択できません。"
+  pending_utxo: "すでに送信中のUTXOは選択できません。"
 
 transaction_detail_screen:
   confirmation: "$height（$count確認）"
