@@ -115,12 +115,15 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ),
 
         // Repository 등록 - Provider보다 먼저 등록해야 함
-        Provider<WalletRepository>(create: (context) => WalletRepository(context.read<RealmManager>())),
         Provider<AddressRepository>(create: (context) => AddressRepository(context.read<RealmManager>())),
         Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
         Provider<UtxoRepository>(create: (context) => UtxoRepository(context.read<RealmManager>())),
         Provider<TransactionDraftRepository>(
           create: (context) => TransactionDraftRepository(context.read<RealmManager>()),
+        ),
+        Provider<WalletRepository>(
+          create:
+              (context) => WalletRepository(context.read<RealmManager>(), context.read<TransactionDraftRepository>()),
         ),
         Provider<SubscriptionRepository>(create: (context) => SubscriptionRepository(context.read<RealmManager>())),
         Provider<WalletPreferencesRepository>(

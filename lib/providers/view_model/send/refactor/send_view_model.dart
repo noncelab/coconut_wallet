@@ -469,6 +469,9 @@ class SendViewModel extends ChangeNotifier {
     if (validatedUtxoList.isNotEmpty) {
       _isUtxoSelectionAuto = false;
       _selectedUtxoList = validatedUtxoList;
+    } else if (excludedUtxoStatus != null) {
+      _isUtxoSelectionAuto = false;
+      _selectedUtxoList.clear();
     } else {
       _isUtxoSelectionAuto = true;
       _selectedUtxoList = _walletProvider.getUtxoList(draft.walletId);

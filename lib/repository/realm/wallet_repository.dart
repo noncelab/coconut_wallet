@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
@@ -16,8 +17,9 @@ import 'package:realm/realm.dart';
 
 class WalletRepository extends BaseRepository {
   final SharedPrefsRepository _sharedPrefs;
+  final TransactionDraftRepository _transactionDraftRepository;
 
-  WalletRepository(super._realmManager) : _sharedPrefs = SharedPrefsRepository();
+  WalletRepository(super._realmManager, this._transactionDraftRepository) : _sharedPrefs = SharedPrefsRepository();
 
   /// 지갑 목록을 DB에서 로드
   Future<List<WalletListItemBase>> getWalletItemList() async {
@@ -146,8 +148,10 @@ class WalletRepository extends BaseRepository {
       return;
     }
 
+    // signed draft의 SecureStorage 데이터 삭제
+    await _transactionDraftRepository.deleteAllByWalletId(walletId);
+
     final transactions = realm.query<RealmTransaction>('walletId == $walletId');
-    final transactionDrafts = realm.query<RealmTransactionDraft>('walletId == $walletId');
     final walletBalance = realm.query<RealmWalletBalance>('walletId == $walletId');
     final walletAddress = realm.query<RealmWalletAddress>('walletId == $walletId');
     final utxos = realm.query<RealmUtxo>('walletId == $walletId');
@@ -170,9 +174,6 @@ class WalletRepository extends BaseRepository {
       realm.delete(walletBase);
       if (transactions.isNotEmpty) {
         realm.deleteMany(transactions);
-      }
-      if (transactionDrafts.isNotEmpty) {
-        realm.deleteMany(transactionDrafts);
       }
       if (realmMultisigWallet != null) {
         realm.delete(realmMultisigWallet);

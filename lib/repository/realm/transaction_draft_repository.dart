@@ -345,6 +345,25 @@ class TransactionDraftRepository extends BaseRepository {
   //   return drafts;
   // }
 
+  /// 특정 지갑의 모든 Draft 삭제 (Realm + SecureStorage)
+  Future<void> deleteAllByWalletId(int walletId) async {
+    final drafts = realm.query<RealmTransactionDraft>('walletId == $walletId');
+
+    // signed draft의 SecureStorage 데이터 삭제
+    for (final draft in drafts) {
+      if (_isSignedDraft(draft)) {
+        await _secureStorage.delete(key: _getSignedTransactionStorageKey(draft.id));
+      }
+    }
+
+    // Realm 레코드 삭제
+    if (drafts.isNotEmpty) {
+      await realm.writeAsync(() {
+        realm.deleteMany(drafts);
+      });
+    }
+  }
+
   Future<Result<void>> deleteOne(int draftId) async {
     return handleAsyncRealm<void>(() async {
       final draft = realm.find<RealmTransactionDraft>(draftId);
