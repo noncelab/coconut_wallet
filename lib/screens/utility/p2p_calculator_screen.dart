@@ -335,6 +335,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       }
 
       _isUpdatingController = false;
+    } else {
+      _inputController.clear();
     }
 
     setState(() {});
@@ -769,7 +771,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   Widget _buildCalculatorCards(P2PCalculatorViewModel viewModel) {
     final hasInput = viewModel.inputAmount != null && viewModel.inputAmount! > 0;
     final result = hasInput ? viewModel.calculate(viewModel.inputAmount!) : 0;
-
+    final placeholder = viewModel.getPlaceholder(isInputCard: true);
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -779,7 +781,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
             _buildInputCardWidget(
               controller: _inputController,
               focusNode: _inputFocusNode,
-              placeholderText: viewModel.getPlaceholder(isInputCard: true),
+              placeholderText: placeholder,
               prefix: viewModel.inputAssetType == InputAssetType.fiat ? viewModel.fiatCode.symbol : null,
               postfix: viewModel.inputAssetType == InputAssetType.btc ? (viewModel.isBtcUnit ? t.btc : t.sats) : null,
               feeController: _feeController,
@@ -857,6 +859,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                       Flexible(
                         child: IntrinsicWidth(
                           child: CoconutTextField(
+                            key: ValueKey('input_textfield_$placeholderText'),
                             maxLines: 1,
                             controller: controller,
                             focusNode: focusNode,
