@@ -595,6 +595,7 @@ utxo_list_screen:
   total_balance: "Saldo total"
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
+  pending_utxo: "Las transacciones pendientes no se pueden seleccionar."
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmaciones)"

@@ -700,6 +700,11 @@ class _UtxoListState extends State<UtxoList> {
           isSelectionMode: isSelectionMode,
           onPressed: () {
             if (isSelectionMode) {
+              if (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming) {
+                CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: false);
+
+                return;
+              }
               setState(() {
                 if (_selectedUtxoIds.contains(utxo.utxoId)) {
                   _selectedUtxoIds.remove(utxo.utxoId);
