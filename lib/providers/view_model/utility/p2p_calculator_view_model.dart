@@ -63,21 +63,29 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   P2PCalculatorViewModel(this._preferenceProvider, this._connectivityProvider, this._priceProvider) {
     _connectivityProvider.addListener(_onConnectivityChanged);
+    _priceProvider.addListener(_onPriceChanged);
 
-    _btcPrice = _priceProvider.currentBitcoinPrice;
-    _isNetworkOn = _connectivityProvider.isNetworkOn;
     _fiatCode = _preferenceProvider.selectedFiat;
+    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+    _isNetworkOn = _connectivityProvider.isNetworkOn;
     _isBtcUnit = _preferenceProvider.isBtcUnit;
   }
 
   @override
   void dispose() {
     _connectivityProvider.removeListener(_onConnectivityChanged);
+    _priceProvider.removeListener(_onPriceChanged);
     super.dispose();
   }
 
   void _onConnectivityChanged() {
     _isNetworkOn = _connectivityProvider.isNetworkOn;
+    notifyListeners();
+  }
+
+  void _onPriceChanged() {
+    // 현재 선택된 fiatCode에 맞는 가격만 업데이트
+    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
     notifyListeners();
   }
 
@@ -235,9 +243,15 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         break;
     }
 
-    final fetchedPrice = await _fetchPriceForFiat(_fiatCode);
-    if (fetchedPrice != null) {
-      _btcPrice = fetchedPrice;
+    // PriceProvider가 웹소켓으로 실시간 제공하는 가격 사용
+    _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
+
+    // 웹소켓 가격이 없으면 fallback으로 HTTP API 호출
+    if (_btcPrice == null) {
+      final fetchedPrice = await _fetchPriceForFiat(_fiatCode);
+      if (fetchedPrice != null) {
+        _btcPrice = fetchedPrice;
+      }
     }
 
     notifyListeners();
