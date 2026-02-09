@@ -102,12 +102,11 @@ log_viewer: "ログビューアー"
 go_to_settings: "設定を開く"
 
 relative_time:
-  days_ago(cardinal):
-    zero: "今日"
-    one: "1日前"
-    other: "${n}日前"
+  just_now: "たった今"
+  minutes_ago(cardinal):
+    one: "1分前"
+    other: "${n}分前"
   hours_ago(cardinal):
-    zero: "たった今"
     one: "1時間前"
     other: "${n}時間前"
 

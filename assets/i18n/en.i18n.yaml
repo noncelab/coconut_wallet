@@ -102,12 +102,11 @@ log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 
 relative_time:
-  days_ago(cardinal):
-    zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
-    one: "1 day ago"   # 1일
-    other: "${n} days ago"  # 2일 이상
+  just_now: "Just now"
+  minutes_ago(cardinal):
+    one: "1 min ago"
+    other: "${n} mins ago"
   hours_ago(cardinal):
-    zero: "Just now"
     one: "1 hour ago"
     other: "${n} hours ago"
 

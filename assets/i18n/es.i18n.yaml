@@ -102,12 +102,11 @@ log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
 
 relative_time:
-  days_ago(cardinal):
-    zero: "Hoy"
-    one: "Hace 1 día"
-    other: "Hace ${n} días"
+  just_now: "Justo ahora"
+  minutes_ago(cardinal):
+    one: "Hace 1 min"
+    other: "Hace ${n} mins"
   hours_ago(cardinal):
-    zero: "Justo ahora"
     one: "Hace 1 hora"
     other: "Hace ${n} horas"
 

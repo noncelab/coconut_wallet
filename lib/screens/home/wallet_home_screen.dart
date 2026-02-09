@@ -1185,13 +1185,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     (() {
                       final now = DateTime.now();
                       final diff = now.difference(txDate);
+                      final diffMinutes = diff.inMinutes;
                       final diffHours = diff.inHours;
-                      final diffDays = diff.inDays;
 
-                      if (diffHours < 24) {
-                        return t.relative_time.hours_ago(n: diffHours);
+                      if (diffMinutes < 1) {
+                        return t.relative_time.just_now;
                       }
-                      return t.relative_time.days_ago(n: diffDays);
+                      if (diffHours < 1) {
+                        return t.relative_time.minutes_ago(n: diffMinutes);
+                      }
+                      return t.relative_time.hours_ago(n: diffHours);
                     })(),
                     style: CoconutTypography.caption_10,
                   ),
