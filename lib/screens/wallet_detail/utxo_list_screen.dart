@@ -641,8 +641,25 @@ class _UtxoListState extends State<UtxoList> {
     if (_selectedUtxoIds.isEmpty) return;
     final viewModel = context.read<UtxoListViewModel>();
     try {
+      final targetUtxoIds =
+          viewModel.utxoList
+              .where((utxo) => _selectedUtxoIds.contains(utxo.utxoId))
+              .where((utxo) {
+                return utxo.status != UtxoStatus.incoming && utxo.status != UtxoStatus.outgoing;
+              })
+              .map((utxo) => utxo.utxoId)
+              .toList();
+
+      if (targetUtxoIds.isEmpty) {
+        setState(() {
+          _selectedUtxoIds.clear();
+          widget.onSettingLockChanged?.call(false);
+        });
+        return;
+      }
+
       final newStatus = lock ? UtxoStatus.locked : UtxoStatus.unspent;
-      await viewModel.updateSelectedUtxosStatus(_selectedUtxoIds.toList(), newStatus);
+      await viewModel.updateSelectedUtxosStatus(targetUtxoIds, newStatus);
 
       setState(() {
         _selectedUtxoIds.clear();
