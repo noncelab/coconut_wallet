@@ -1,10 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
-import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -14,6 +12,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -77,17 +76,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     if (context.loaderOverlay.visible) return;
     _setOverlayLoading(true);
     await Future.delayed(const Duration(seconds: 1));
-
-    Transaction signedTx;
-    if (_viewModel.isPsbt()) {
-      signedTx = Psbt.parse(_viewModel.signedTransaction).getSignedTransaction(_viewModel.walletAddressType!);
-    } else {
-      String hexTransaction = _viewModel.decodeTransactionToHex();
-      signedTx = Transaction.parse(hexTransaction);
-    }
-
     try {
-      Result<String> result = await _viewModel.broadcast(signedTx);
+      Result<String> result = await _viewModel.broadcast();
       _setOverlayLoading(false);
 
       if (result.isFailure) {
@@ -103,12 +93,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
       if (result.isSuccess) {
         vibrateLight();
-        await _viewModel.updateTagsOfUsedUtxos(signedTx.transactionHash);
-        if (widget.signedTransactionDraftId == null) {
-          await _viewModel.deleteUnsignedDraftIfNeeded();
-        } else {
-          await _viewModel.deleteSignedDraft(widget.signedTransactionDraftId!);
-        }
+        await _viewModel.updateTagsOfUsedUtxos();
+        await _viewModel.deleteDraftsIfNeeded();
 
         if (!mounted) return;
 
@@ -122,7 +108,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           ),
           arguments: {
             'id': _viewModel.walletId!,
-            'txHash': signedTx.transactionHash,
+            'txHash': _viewModel.signedTx!.transactionHash,
             'isDonation': _viewModel.isSendingDonation,
           },
         );
@@ -179,6 +165,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                         FixedBottomTweenButton(
                           leftButtonRatio: 0.35,
                           leftButtonClicked: () async {
+                            if (viewModel.isAlreadySaved) {
+                              CoconutToast.showToast(
+                                context: context,
+                                text: t.broadcasting_screen.toast.already_saved_draft,
+                                isVisibleIcon: true,
+                              );
+                              return;
+                            }
                             try {
                               final result = await viewModel.saveTransactionDraft();
                               if (result.isSuccess) {
@@ -278,6 +272,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<TransactionDraftRepository>(context, listen: false),
+      Provider.of<UtxoRepository>(context, listen: false),
       widget.signedTransactionDraftId,
     );
 
@@ -288,7 +283,14 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       _setOverlayLoading(true);
 
       try {
-        _viewModel.setTxInfo(signedTxDraftId: widget.signedTransactionDraftId);
+        final excludedUtxoStatus = await _viewModel.setTxInfo();
+        if (excludedUtxoStatus != null && mounted) {
+          final message =
+              excludedUtxoStatus == SelectedUtxoExcludedStatus.used
+                  ? t.transaction_draft.dialog.transaction_already_used_utxo_included
+                  : t.transaction_draft.dialog.transaction_has_been_locked_utxo_included;
+          showAlertDialog(context: context, content: message);
+        }
       } catch (e) {
         vibrateMedium();
         showAlertDialog(context: context, content: t.alert.error_tx.not_parsed(error: e));

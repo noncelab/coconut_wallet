@@ -9,8 +9,8 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart'
-    show TransactionDraftRepository, SelectedUtxoExcludedStatus;
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart' show TransactionDraftRepository;
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -120,6 +120,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context.read<SendInfoProvider>(),
       context.read<PreferenceProvider>(),
       context.read<TransactionDraftRepository>(),
+      context.read<UtxoRepository>(),
       context.read<ConnectivityProvider>().isNetworkOn,
       _onAmountTextUpdate,
       _onFeeRateTextUpdate,

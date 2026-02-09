@@ -69,11 +69,7 @@ class SignedPsbtScannerViewModel {
     return Psbt.parse(signedPsbtBase64Encoded);
   }
 
-  void setSignedPsbt(String signedPsbtBase64Encoded) {
-    _sendInfoProvider.setSignedPsbtBase64Encoded(signedPsbtBase64Encoded);
-  }
-
-  void setRawSignedTransaction(String rawSignedTransaction) {
-    _sendInfoProvider.setRawSignedTransaction(rawSignedTransaction);
+  void setSignedResult(String signedResult) {
+    _sendInfoProvider.setSignedResult(signedResult);
   }
 }

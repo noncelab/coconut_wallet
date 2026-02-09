@@ -205,7 +205,6 @@ transaction_draft:
     transaction_draft_delete_description: "¿Quieres eliminar la transacción temporal? Una vez eliminada, no se puede recuperar."
     transaction_draft_delete_failed: "Error al eliminar el borrador de transacción"
     transaction_draft_delete_completed: "Eliminación completada"
-    transaction_draft_delete_completed_description: "La transacción temporal ha sido eliminada."
     cancel: "Cancelar"
     remove: "Eliminar"
     move: "Mover"
@@ -469,6 +468,8 @@ broadcasting_screen:
   self_sending: "Esta es una transacción enviada a mi propia billetera." 
   error_popup_title: "Envío fallido"
   btn_submit: "Enviar"
+  toast:
+    already_saved_draft: "Esta transacción ya ha sido guardada."
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"

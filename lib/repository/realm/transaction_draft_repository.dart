@@ -2,64 +2,20 @@ import 'dart:convert';
 
 import 'package:coconut_wallet/constants/secure_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
-import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction_draft.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
-import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:realm/realm.dart';
 
-/// 선택된 UTXO의 상태를 나타내는 enum
-enum SelectedUtxoExcludedStatus {
-  used, // 일부 UTXO가 이미 사용됨
-  locked, // 일부 UTXO가 잠금됨
-}
-
-/// JSON 문자열 리스트를 UtxoState 리스트로 변환
-List<UtxoState> _jsonToUtxoList(List<String> utxoListJson) {
-  return utxoListJson.map((jsonString) {
-    final json = jsonDecode(jsonString) as Map<String, dynamic>;
-    final tagsJson = json['tags'] as List<dynamic>?;
-    final tags =
-        tagsJson?.map((tagJson) {
-          return UtxoTag(
-            id: tagJson['id'] as String,
-            walletId: tagJson['walletId'] as int,
-            name: tagJson['name'] as String,
-            colorIndex: tagJson['colorIndex'] as int,
-            utxoIdList: (tagJson['utxoIdList'] as List<dynamic>?)?.map((e) => e as String).toList(),
-          );
-        }).toList();
-
-    final statusString = json['status'] as String? ?? 'unspent';
-    final status = UtxoStatus.values.firstWhere((s) => s.name == statusString, orElse: () => UtxoStatus.unspent);
-
-    return UtxoState(
-      transactionHash: json['transactionHash'] as String,
-      index: json['index'] as int,
-      amount: json['amount'] as int,
-      derivationPath: json['derivationPath'] as String,
-      blockHeight: json['blockHeight'] as int,
-      to: json['to'] as String,
-      timestamp: DateTime.parse(json['timestamp'] as String),
-      tags: tags,
-      status: status,
-      spentByTransactionHash: json['spentByTransactionHash'] as String?,
-    );
-  }).toList();
-}
-
 class TransactionDraftRepository extends BaseRepository {
-  final UtxoRepository _utxoRepository;
   final SecureStorageRepository _secureStorage = SecureStorageRepository();
 
-  TransactionDraftRepository(super._realmManager, this._utxoRepository);
+  TransactionDraftRepository(super._realmManager);
 
   Future<Result<TransactionDraft>> saveUnsignedDraft({
     required int walletId,
@@ -260,11 +216,6 @@ class TransactionDraftRepository extends BaseRepository {
         .toList();
   }
 
-  /// Signed TransactionDraft 삭제
-  Future<Result<void>> deleteTransactionDraft(int id) async {
-    return await deleteSignedDraft(id);
-  }
-
   /// Unsigned TransactionDraft 삭제
   Future<Result<void>> deleteUnsignedTransactionDraft(int id) async {
     return handleAsyncRealm<void>(() async {
@@ -277,44 +228,6 @@ class TransactionDraftRepository extends BaseRepository {
         realm.delete(draft);
       });
     });
-  }
-
-  /// 선택된 UTXO의 상태를 확인하고 유효한 UTXO 목록과 제외된 상태를 반환
-  /// - 사용 가능한 UTXO만 validUtxoList에 포함
-  /// - 사용되었거나 잠긴 UTXO가 있으면 excludedStatus에 해당 상태 반환
-  (List<UtxoState> validUtxoList, SelectedUtxoExcludedStatus? excludedStatus) getValidatedSelectedUtxoList(
-    int walletId,
-    List<String> selectedUtxoIds,
-  ) {
-    if (selectedUtxoIds.isEmpty) return ([], null);
-
-    final utxoList = _utxoRepository.getUtxoStateList(walletId);
-
-    final List<UtxoState> validatedList = [];
-    final Set<String> foundIds = {};
-    bool hasLocked = false;
-
-    for (final utxo in utxoList) {
-      if (selectedUtxoIds.contains(utxo.utxoId)) {
-        if (utxo.status == UtxoStatus.locked) {
-          hasLocked = true;
-        } else {
-          validatedList.add(utxo);
-        }
-        foundIds.add(utxo.utxoId);
-      }
-    }
-
-    final bool hasUsed = foundIds.length < selectedUtxoIds.length;
-
-    SelectedUtxoExcludedStatus? excludedStatus;
-    if (hasUsed) {
-      excludedStatus = SelectedUtxoExcludedStatus.used;
-    } else if (hasLocked) {
-      excludedStatus = SelectedUtxoExcludedStatus.locked;
-    }
-
-    return (validatedList, excludedStatus);
   }
 
   /// SignedTransactionDraft를 SecureStorage에 저장
@@ -431,23 +344,6 @@ class TransactionDraftRepository extends BaseRepository {
 
   //   return drafts;
   // }
-
-  /// SignedTransactionDraft 삭제
-  Future<Result<void>> deleteSignedDraft(int draftId) async {
-    return handleAsyncRealm<void>(() async {
-      final draft = realm.find<RealmTransactionDraft>(draftId);
-      if (draft == null) {
-        throw StateError('Transaction draft not found: $draftId');
-      }
-      assert(_isSignedDraft(draft));
-
-      realm.write(() {
-        realm.delete(draft);
-      });
-
-      await _secureStorage.delete(key: _getSignedTransactionStorageKey(draftId));
-    });
-  }
 
   Future<Result<void>> deleteOne(int draftId) async {
     return handleAsyncRealm<void>(() async {

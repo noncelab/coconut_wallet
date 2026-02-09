@@ -206,7 +206,6 @@ transaction_draft:
     transaction_draft_delete_description: "Would you like to delete the temporary transaction? Once deleted, it cannot be restored."
     transaction_draft_delete_failed: "Transaction Draft Delete Failed"
     transaction_draft_delete_completed: "Transaction Draft Delete Completed"
-    transaction_draft_delete_completed_description: "The temporary transaction has been deleted."
     cancel: "Cancel"
     remove: "Remove"
     move: "Move"
@@ -470,6 +469,8 @@ broadcasting_screen:
   self_sending: "This is a transaction sending to my own wallet."
   error_popup_title: "Broadcasting Failed"
   btn_submit: "Send"
+  toast:
+    already_saved_draft: "This transaction has already been saved."
 send_address_screen:
   text1: "Scan QR or\npaste the copied address"
   text2: "Please scan the address QR code"

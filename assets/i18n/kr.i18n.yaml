@@ -206,7 +206,6 @@ transaction_draft:
     transaction_draft_delete_description: "임시 저장된 트랜잭션을 삭제할까요? 한번 삭제하면 되돌릴 수 없어요."
     transaction_draft_delete_failed: "임시 저장 트랜잭션 삭제 실패"
     transaction_draft_delete_completed: "삭제 완료"
-    transaction_draft_delete_completed_description: "임시 저장 트랜잭션을 삭제했어요."
     cancel: "취소"
     remove: "지우기"
     move: "이동하기"
@@ -470,6 +469,8 @@ broadcasting_screen:
   self_sending: "내 지갑으로 보내는 트랜잭션입니다."
   error_popup_title: "브로드캐스팅 실패"
   btn_submit: "보내기"
+  toast:
+    already_saved_draft: "이미 추가한 트랜잭션이에요."
 send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"

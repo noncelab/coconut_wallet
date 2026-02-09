@@ -9,7 +9,9 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -31,6 +33,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   late final NodeProvider _nodeProvider;
   late final TransactionProvider _txProvider;
   late final TransactionDraftRepository _txDraftRepository;
+  late final UtxoRepository _utxoRepository;
+  late final int? _signedDraftId;
   WalletBase? _walletBase;
   int? _walletId;
   late bool? _isNetworkOn;
@@ -43,7 +47,8 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? _totalAmount;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
   final List<int> _outputIndexesToMyAddress = [];
-  int? _transactionDraftId;
+  Transaction? _signedTx;
+  int? _savedDraftId;
 
   BroadcastingViewModel(
     this._sendInfoProvider,
@@ -53,7 +58,8 @@ class BroadcastingViewModel extends ChangeNotifier {
     this._nodeProvider,
     this._txProvider,
     this._txDraftRepository,
-    this._transactionDraftId,
+    this._utxoRepository,
+    this._signedDraftId,
   );
 
   List<String> get recipientAddresses => UnmodifiableListView(_recipientAddresses);
@@ -65,22 +71,23 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isSendingToMyAddress => _isSendingToMyAddress;
   bool get isSendingDonation => _isSendingDonation;
   int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
-  String get signedTransaction => _sendInfoProvider.signedPsbt ?? _sendInfoProvider.rawSignedTransaction!;
   int? get totalAmount => _totalAmount;
   AddressType? get walletAddressType => _walletBase?.addressType;
   int? get walletId => _walletId;
   SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 
-  int? get transactionDraftId => _sendInfoProvider.transactionDraftId;
+  int? get transactionDraftId => _sendInfoProvider.unsignedDraftId;
+  Transaction? get signedTx => _signedTx;
+  bool get isAlreadySaved => _signedDraftId != null || _savedDraftId != null;
 
-  Future<Result<String>> broadcast(Transaction signedTx) async {
-    Logger.log('BroadcastingViewModel: signedTx = ${signedTx.serialize()}');
+  Future<Result<String>> broadcast() async {
+    Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final isConnected = await isElectrumServerConnected();
     if (!isConnected) {
       await _nodeProvider.reconnect();
     }
-    return _nodeProvider.broadcast(signedTx);
+    return _nodeProvider.broadcast(_signedTx!);
   }
 
   Future<bool> isElectrumServerConnected() async {
@@ -104,7 +111,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   /// 전달된 문자열이 Base64로 인코딩된 PSBT인지 확인하는 함수
-  bool isPsbt() {
+  bool isPsbt(String signedTransaction) {
     try {
       List<int> decoded;
       // 이미 Base64인지 확인
@@ -129,35 +136,26 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> setTxInfo({int? signedTxDraftId}) async {
-    if (signedTxDraftId != null) {
-      _transactionDraftId = signedTxDraftId;
-      await _setSendProviderFromSignedDraft(signedTxDraftId);
+  Future<SelectedUtxoExcludedStatus?> setTxInfo() async {
+    if (_signedDraftId != null) {
+      await _setSendProviderFromSignedDraft(_signedDraftId!);
     }
+
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
+
     _isSendingDonation = _sendInfoProvider.isDonation ?? false;
 
-    debugPrint('------- sendInfoProvider ------');
-    debugPrint('transactionDraftId: ${_sendInfoProvider.transactionDraftId}');
-    debugPrint('signedPsbt: ${_sendInfoProvider.signedPsbt}');
-    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
-    debugPrint('walletId: ${_sendInfoProvider.walletId}');
-    debugPrint('walletBase: $_walletBase');
-    debugPrint('walletAddressType: ${_walletBase!.addressType}');
-    debugPrint('walletId: $_walletId');
-    debugPrint('-------------------------------');
-
     Psbt signedPsbt;
-
-    if (isPsbt()) {
-      signedPsbt = Psbt.parse(signedTransaction);
+    if (isPsbt(_sendInfoProvider.signedResult!)) {
+      signedPsbt = Psbt.parse(_sendInfoProvider.signedResult!);
+      _signedTx = signedPsbt.getSignedTransaction(walletAddressType!);
     } else {
       try {
         signedPsbt = Psbt.parse(_sendInfoProvider.txWaitingForSign!);
 
         // raw transaction 데이터 처리 (hex 또는 base64)
-        String hexTransaction = decodeTransactionToHex();
+        String hexTransaction = decodeTransactionToHex(_sendInfoProvider.signedResult!);
         final signedTx = Transaction.parse(hexTransaction);
         final unSingedTx = signedPsbt.unsignedTransaction;
 
@@ -167,11 +165,26 @@ class BroadcastingViewModel extends ChangeNotifier {
         if (!isContentEqual) {
           throw InvalidTransactionException();
         }
+
+        _signedTx = Transaction.parse(hexTransaction);
       } catch (e) {
         Logger.log('--> BroadcastingViewModel.setTxInfo: raw transaction processing error: $e');
         rethrow;
       }
     }
+    // input UTXO 유효성 검증
+    final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
+    final (_, excludedUtxoStatus) = _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds);
+
+    debugPrint('------- sendInfoProvider ------');
+    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
+    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
+    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
+    debugPrint('walletId: ${_sendInfoProvider.walletId}');
+    debugPrint('walletBase: $_walletBase');
+    debugPrint('walletAddressType: ${_walletBase!.addressType}');
+    debugPrint('walletId: $_walletId');
+    debugPrint('-------------------------------');
 
     Psbt psbt;
     if (_hasAllInputsBip32Derivation(signedPsbt)) {
@@ -251,8 +264,12 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     _fee = psbt.fee;
     _totalAmount = psbt.sendingAmount + psbt.fee;
+
+    _setSignedTransaction(psbt);
     _isInitDone = true;
     notifyListeners();
+
+    return excludedUtxoStatus;
   }
 
   bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
@@ -301,13 +318,20 @@ class BroadcastingViewModel extends ChangeNotifier {
     return false;
   }
 
+  void _setSignedTransaction(Psbt psbt) {}
+
   // pending상태였던 Tx가 confirmed 되었는지 조회
   bool hasTransactionConfirmed() {
     return _txProvider.hasTransactionConfirmed(walletId!, _txProvider.transaction!.transactionHash);
   }
 
-  Future<void> updateTagsOfUsedUtxos(String signedTx) async {
-    await _tagProvider.applyTagsToNewUtxos(_walletId!, signedTx, _outputIndexesToMyAddress);
+  Future<void> updateTagsOfUsedUtxos() async {
+    try {
+      await _tagProvider.applyTagsToNewUtxos(_walletId!, _signedTx!.transactionHash, _outputIndexesToMyAddress);
+    } catch (e) {
+      Logger.error(e.toString());
+      // ignore
+    }
   }
 
   bool _hasAllInputsBip32Derivation(Psbt psbt) {
@@ -315,7 +339,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   }
 
   /// 트랜잭션 문자열을 hex 형식으로 디코딩하는 헬퍼 메서드
-  String decodeTransactionToHex() {
+  String decodeTransactionToHex(String signedTransaction) {
     try {
       // 먼저 hex 문자열인지 확인
       if (RegExp(r'^[0-9a-fA-F]+$').hasMatch(signedTransaction)) {
@@ -356,7 +380,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     _sendInfoProvider.setFeeRate(draft.feeRate!);
     _sendInfoProvider.setIsMaxMode(draft.isMaxMode!);
     _sendInfoProvider.setTxWaitingForSign(draft.txWaitingForSign!);
-    _sendInfoProvider.setSignedPsbtBase64Encoded(draft.signedPsbtBase64Encoded!);
+    _sendInfoProvider.setSignedResult(draft.signedPsbtBase64Encoded!);
   }
 
   Future<Result<TransactionDraft>> saveTransactionDraft() async {
@@ -371,27 +395,39 @@ class BroadcastingViewModel extends ChangeNotifier {
       feeRate: _sendInfoProvider.feeRate!,
       isMaxMode: _sendInfoProvider.isMaxMode!,
       txWaitingForSign: _sendInfoProvider.txWaitingForSign!,
-      signedPsbtBase64Encoded: _sendInfoProvider.signedPsbt!,
+      signedPsbtBase64Encoded: _sendInfoProvider.signedResult!,
     );
+
+    if (result.isSuccess) {
+      _savedDraftId = result.value.id;
+    }
 
     return result;
   }
 
-  Future<void> deleteSignedDraft(int draftId) async {
-    try {
-      await _txDraftRepository.deleteSignedDraft(draftId);
-    } catch (_) {
-      Logger.error('Failed to delete signed draft');
-    }
-  }
-
-  Future<void> deleteUnsignedDraftIfNeeded() async {
-    try {
-      if (_sendInfoProvider.transactionDraftId != null) {
-        await _txDraftRepository.deleteOne(_sendInfoProvider.transactionDraftId!);
+  /// 브로드캐스트 성공 후 관련 draft 삭제
+  /// - _sendInfoProvider.unsignedDraftId: 보내기 화면에서 불러온 서명 전 트랜잭션 삭제
+  /// - _signedDraftId: 화면 매개변수로 받은 서명 완료 트랜잭션 삭제 (불러오기)
+  /// - _savedDraftId: 이 화면에서 임시 저장한 서명 완료 트랜잭션 삭제
+  /// (_signedDraftId와 _savedDraftId는 동시에 존재하지 않음)
+  Future<void> deleteDraftsIfNeeded() async {
+    // 서명 전 트랜잭션 삭제
+    if (_sendInfoProvider.unsignedDraftId != null) {
+      try {
+        await _txDraftRepository.deleteOne(_sendInfoProvider.unsignedDraftId!);
+      } catch (e) {
+        Logger.error('Failed to delete unsigned draft: $e');
       }
-    } catch (_) {
-      Logger.error('Failed to delete unsigned draft');
+    }
+
+    // 서명 완료 트랜잭션 삭제 (_signedDraftId와 _savedDraftId는 상호 배타적)
+    final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
+    if (signedDraftIdToDelete != null) {
+      try {
+        await _txDraftRepository.deleteOne(signedDraftIdToDelete);
+      } catch (e) {
+        Logger.error('Failed to delete signed draft: $e');
+      }
     }
   }
 }

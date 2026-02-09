@@ -206,7 +206,6 @@ transaction_draft:
     transaction_draft_delete_description: "一時保存されたトランザクションを削除しますか？一度削除すると元に戻すことはできません。"
     transaction_draft_delete_failed: "一時保存トランザクション削除失敗"
     transaction_draft_delete_completed: "一時保存トランザクション削除完了"
-    transaction_draft_delete_completed_description: "一時保存されたトランザクションを削除しました。"
     cancel: "キャンセル"
     remove: "削除"
     move: "移動"
@@ -471,6 +470,8 @@ broadcasting_screen:
   self_sending: "これは自分のウォレットへ送信するトランザクションです。"
   error_popup_title: "送信失敗"
   btn_submit: "送信"
+  toast:
+    already_saved_draft: "すでに追加されたトランザクションです。"
 send_address_screen:
   text1: "QRをスキャンまたは\nコピーしたアドレスを貼り付け"
   text2: "アドレスQRコードをスキャンしてください"

@@ -120,7 +120,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
         Provider<UtxoRepository>(create: (context) => UtxoRepository(context.read<RealmManager>())),
         Provider<TransactionDraftRepository>(
-          create: (context) => TransactionDraftRepository(context.read<RealmManager>(), context.read<UtxoRepository>()),
+          create: (context) => TransactionDraftRepository(context.read<RealmManager>()),
         ),
         Provider<SubscriptionRepository>(create: (context) => SubscriptionRepository(context.read<RealmManager>())),
         Provider<WalletPreferencesRepository>(

@@ -119,23 +119,6 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     }
   }
 
-  Future<void> _showDeleteCompletedDialog() async {
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return CoconutPopup(
-          languageCode: context.read<PreferenceProvider>().language,
-          title: t.transaction_draft.dialog.transaction_draft_delete_completed,
-          description: t.transaction_draft.dialog.transaction_draft_delete_completed_description,
-          rightButtonText: t.transaction_draft.dialog.confirm,
-          onTapRight: () {
-            Navigator.pop(context);
-          },
-        );
-      },
-    );
-  }
-
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       context: context,
@@ -325,8 +308,6 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                         );
                         vibrateLight();
                       }
-
-                      await _showDeleteCompletedDialog();
                     } else {
                       vibrateLightDouble();
                       if (mounted) {

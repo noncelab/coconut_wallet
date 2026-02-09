@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -93,6 +94,7 @@ class SendViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
   final TransactionDraftRepository _transactionDraftRepository;
+  final UtxoRepository _utxoRepository;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
   final Function(String) _onAmountTextUpdate;
@@ -282,6 +284,7 @@ class SendViewModel extends ChangeNotifier {
     this._sendInfoProvider,
     this._preferenceProvider,
     this._transactionDraftRepository,
+    this._utxoRepository,
     this._isNetworkOn,
     this._onAmountTextUpdate,
     this._onFeeRateTextUpdate,
@@ -416,7 +419,7 @@ class SendViewModel extends ChangeNotifier {
     }
 
     // UTXO 상태 확인 및 유효한 UTXO 목록 반환 (사용불가 UTXO 제외)
-    final (validUtxoList, excludedStatus) = _transactionDraftRepository.getValidatedSelectedUtxoList(
+    final (validUtxoList, excludedStatus) = _utxoRepository.getValidatedSelectedUtxoList(
       _selectedWalletItem!.id,
       draft.selectedUtxoIds.toList(),
     );
@@ -429,13 +432,13 @@ class SendViewModel extends ChangeNotifier {
   SelectedUtxoExcludedStatus? loadTransactionDraft(int draftId) {
     final (draft, validatedUtxoList, excludedUtxoStatus) = _getDraft(draftId);
 
-    // 1. Draft ID 설정
-    _sendInfoProvider.setTransactionDraftId(draft.id);
-
-    // 2. 지갑 선택 및 초기화
+    // 1. 지갑 선택 및 초기화
     final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == draft.walletId);
     if (walletIndex == -1) return null;
     _initializeWithSelectedWallet(walletIndex);
+
+    // 2. Draft ID 설정
+    _sendInfoProvider.setUnsignedDraftId(draft.id);
 
     // 3. 비트코인 단위 설정 (수신자 금액 변환 전에 먼저 설정)
     if (draft.bitcoinUnit != null && draft.bitcoinUnit != _currentUnit) {
@@ -1090,6 +1093,7 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
+    _sendInfoProvider.setUnsignedDraftId(_transactionDraftId);
   }
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///
