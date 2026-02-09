@@ -7,7 +7,6 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,177 +22,111 @@ class P2PCalculatorScreen extends StatefulWidget {
 
 class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   static const double _maxBtc = 21000000;
-  final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
+  static const int _maxSats = 2100000000000000; // 21M BTC
+  final Color _keyboardToolbarColor = const Color(0xFF2E2E2E);
 
   late P2PCalculatorViewModel _viewModel;
 
-  // Controller
   late final TextEditingController _feeController;
-  late final TextEditingController _fiatAmountController;
-  late final TextEditingController _btcAmountController;
+  late final TextEditingController _inputController;
 
-  // FocusNode
   late final FocusNode _feeFocusNode;
-  late final FocusNode _fiatAmountFocusNode;
-  late final FocusNode _btcAmountFocusNode;
+  late final FocusNode _inputFocusNode;
 
-  double get keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
+  bool _isUpdatingController = false; // 무한 루프 방지 플래그
+
+  double get _keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
 
   @override
-  initState() {
+  void initState() {
     super.initState();
     _feeController = TextEditingController(text: '1.0');
-    _fiatAmountController = TextEditingController();
-    _btcAmountController = TextEditingController();
+    _inputController = TextEditingController();
 
     _feeFocusNode = FocusNode();
-    _fiatAmountFocusNode = FocusNode();
-    _btcAmountFocusNode = FocusNode();
+    _inputFocusNode = FocusNode();
 
-    _feeFocusNode.addListener(() {
-      if (!_feeFocusNode.hasFocus && !_viewModel.isValidatingFee) {
-        var text = _feeController.text;
-
-        // 빈 문자열이면 '0'으로 설정
-        if (text.isEmpty) {
-          _viewModel.setIsValidatingFee(true);
-          const newText = '0';
-          _feeController.value = const TextEditingValue(
-            text: newText,
-            selection: TextSelection.collapsed(offset: newText.length),
-          );
-          _viewModel.setPreviousFeeValue(newText);
-          _viewModel.setIsValidatingFee(false);
-        }
-        // '.'으로 끝나면 뒤에 '0' 추가 (예: "1." → "1.0")
-        else if (text.endsWith('.')) {
-          _viewModel.setIsValidatingFee(true);
-          final newText = '${text}0';
-          _feeController.value = TextEditingValue(
-            text: newText,
-            selection: TextSelection.collapsed(offset: newText.length),
-          );
-          _viewModel.setPreviousFeeValue(newText);
-          _viewModel.setIsValidatingFee(false);
-        }
-        // 소수점이 없으면 '.0' 추가
-        else if (!text.contains('.')) {
-          _viewModel.setIsValidatingFee(true);
-          final newText = '$text.0';
-          _feeController.value = TextEditingValue(
-            text: newText,
-            selection: TextSelection.collapsed(offset: newText.length),
-          );
-          _viewModel.setPreviousFeeValue(newText);
-          _viewModel.setIsValidatingFee(false);
-        }
-      }
-
-      if (mounted) {
-        setState(() {});
-      }
-    });
-    _fiatAmountFocusNode.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-    _btcAmountFocusNode.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+    _feeFocusNode.addListener(_onFeeFocusChanged);
+    _inputFocusNode.addListener(_onInputFocusChanged);
   }
 
   @override
   void dispose() {
     _feeController.dispose();
+    _inputController.dispose();
+    _feeFocusNode.removeListener(_onFeeFocusChanged);
+    _inputFocusNode.removeListener(_onInputFocusChanged);
     _feeFocusNode.dispose();
-    _fiatAmountFocusNode.dispose();
-    _btcAmountFocusNode.dispose();
-    _fiatAmountController.dispose();
-    _btcAmountController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
-  /// 스위치 토글, 단위 변경 시: 위쪽 위젯 기준으로 fiatPrice 재계산 후 아래쪽 업데이트
-  void _recalculateAndUpdateAmount() {
-    if (!_viewModel.isInputChanged || _viewModel.fiatPrice == null || _viewModel.fiatPrice == 0) {
-      _viewModel.setIsUpdatingAmounts(true);
-      _fiatAmountController.text = '';
-      _btcAmountController.text = '';
-      _viewModel.setIsUpdatingAmounts(false);
-      return;
+  void _onFeeFocusChanged() {
+    if (!_feeFocusNode.hasFocus) {
+      _formatFeeOnFocusLost();
     }
+    setState(() {});
+  }
 
-    // isSwitched가 true면 위쪽이 BTC/Sats → fiatPrice 재계산 필요
-    if (_viewModel.isSwitched) {
-      final feeValue = double.tryParse(_feeController.text) ?? 0;
-      final btcText = _btcAmountController.text.replaceAll(RegExp(r'[^0-9.]'), '');
-      if (btcText.isNotEmpty) {
-        double btc;
-        if (_viewModel.isBtcUnit) {
-          btc = double.tryParse(btcText) ?? 0;
-        } else {
-          final sats = int.tryParse(btcText) ?? 0;
-          btc = sats / 100000000;
+  void _onInputFocusChanged() {
+    if (!_inputFocusNode.hasFocus) {
+      // 포커스를 잃었을 때 - BTC 단위면 readable 형식으로 변환 (소수부 4자리씩 공백)
+      if (_viewModel.inputAssetType == InputAssetType.btc && _viewModel.isBtcUnit) {
+        final currentInput = _viewModel.inputAmount;
+        if (currentInput != null && currentInput > 0) {
+          final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(currentInput, forceEightDecimals: false);
+
+          _isUpdatingController = true;
+          _inputController.value = TextEditingValue(
+            text: formatted,
+            selection: TextSelection.collapsed(offset: formatted.length),
+          );
+          _isUpdatingController = false;
         }
-        _viewModel.setFiatPrice(_viewModel.calculateFiatFromBtc(feeValue, btc));
       }
     }
-
-    // 아래쪽 필드 업데이트
-    _updateAmountController(!_viewModel.isSwitched);
+    setState(() {});
   }
 
-  /// 반대쪽 필드만 업데이트 (fiatPrice는 이미 설정된 상태)
-  void _updateAmountController(bool isFiatInput) {
-    final feeValue = double.tryParse(_feeController.text) ?? 0;
+  void _formatFeeOnFocusLost() {
+    var text = _feeController.text;
 
-    _viewModel.setIsUpdatingAmounts(true);
-    if (isFiatInput) {
-      _btcAmountController.text = _viewModel.getAmountString(feeValue, isFiat: false);
-    } else {
-      _fiatAmountController.text = _viewModel.getAmountString(feeValue, isFiat: true);
+    if (text.isEmpty) {
+      _feeController.text = '0';
+    } else if (text.endsWith('.')) {
+      _feeController.text = '${text}0';
+    } else if (!text.contains('.')) {
+      _feeController.text = '$text.0';
     }
-    _viewModel.setIsUpdatingAmounts(false);
+
+    _viewModel.setFeeRate(double.tryParse(_feeController.text) ?? 0);
   }
 
-  /// Fee 입력 변경 처리 핸들러
   void _handleFeeInputChanged(String value) {
     var text = value;
 
-    // '.'만 입력하면 '0.'으로 변환
     if (text == '.') {
-      const newText = '0.';
-      _feeController.value = const TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newText.length),
-      );
-      _viewModel.setPreviousFeeValue(newText);
+      _feeController.value = const TextEditingValue(text: '0.', selection: TextSelection.collapsed(offset: 2));
       return;
     }
 
-    // 정수 2자리, 소수점 이하 1자리만 허용하는 검증
     final regex = RegExp(r'^\d{0,2}(\.\d{0,1})?$');
     if (!regex.hasMatch(text)) {
-      // 유효하지 않은 입력이면 이전 값으로 되돌림
+      final prevText = _viewModel.feeRate.toStringAsFixed(1);
       _feeController.value = TextEditingValue(
-        text: _viewModel.previousFeeValue,
-        selection: TextSelection.collapsed(offset: _viewModel.previousFeeValue.length),
+        text: prevText,
+        selection: TextSelection.collapsed(offset: prevText.length),
       );
       return;
     }
 
-    // 정수 부분이 두 자리 이상이고 0으로 시작하면 앞의 0 제거
     if (text.contains('.')) {
       final parts = text.split('.');
-      final integerPart = parts[0];
-      final decimalPart = parts[1];
-
-      if (integerPart.length >= 2 && integerPart.startsWith('0')) {
-        final cleanedInteger = integerPart.replaceFirst(RegExp(r'^0+'), '');
-        text = cleanedInteger.isEmpty ? '0.$decimalPart' : '$cleanedInteger.$decimalPart';
+      final intPart = parts[0];
+      final decPart = parts[1];
+      if (intPart.length >= 2 && intPart.startsWith('0')) {
+        final cleaned = intPart.replaceFirst(RegExp(r'^0+'), '');
+        text = '${cleaned.isEmpty ? '0' : cleaned}.$decPart';
       }
     } else {
       if (text.length >= 2 && text.startsWith('0')) {
@@ -202,238 +135,279 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       }
     }
 
-    // 값이 변경되었으면 업데이트
     if (text != _feeController.text) {
       _feeController.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
     }
 
-    // 유효한 값이면 이전 값 업데이트
-    _viewModel.setPreviousFeeValue(text);
-
-    // fee가 변경되면 위쪽 위젯 기준으로 아래쪽 위젯 값 업데이트
-    _updateAmountsOnFeeChange();
-    setState(() {});
+    _viewModel.setFeeRate(double.tryParse(text) ?? 0);
+    _updateResultOnFeeChange();
   }
 
-  /// Amount 입력 변경 처리 메인 핸들러
-  void _handleAmountInputChanged(String value, bool isFiat, bool isUpsideWidget) {
-    if (_viewModel.isUpdatingAmounts) return;
+  void _handleAmountInputChanged(String value) {
+    if (_isUpdatingController) return; // 무한 루프 방지
 
-    final sanitized = _viewModel.sanitizeInput(value, isFiat);
-    debugPrint('sanitized: $sanitized');
+    final isBtcInput = _viewModel.inputAssetType == InputAssetType.btc && _viewModel.isBtcUnit;
+    final sanitized = _sanitizeInput(value, isBtcInput);
 
-    // 불허 문자가 섞여 있었으면, 정제된 값으로 즉시 UI에 반영
-    if (sanitized != value) {
-      _viewModel.setIsUpdatingAmounts(true);
-      final controller = isFiat ? _fiatAmountController : _btcAmountController;
-      controller.value = TextEditingValue(
-        text: sanitized,
-        selection: TextSelection.collapsed(offset: sanitized.length),
-      );
-      _viewModel.setIsUpdatingAmounts(false);
-    }
-
-    // 빈 문자열이면 초기화
     if (sanitized.isEmpty) {
-      setState(() {
-        _viewModel.setFiatPrice(0);
-        _viewModel.setIsInputChanged(false);
-        _updateAmountController(isFiat);
-      });
+      _viewModel.setInputAmount(null);
+      if (!_isUpdatingController) {
+        _isUpdatingController = true;
+        _inputController.clear();
+        _isUpdatingController = false;
+      }
+      setState(() {});
       return;
     }
 
-    // 분기 처리
-    if (isFiat) {
+    if (_viewModel.inputAssetType == InputAssetType.fiat) {
       _processFiatInput(sanitized);
     } else if (_viewModel.isBtcUnit) {
-      _processBtcInput(sanitized, isUpsideWidget);
+      _processBtcInput(sanitized);
     } else {
       _processSatsInput(sanitized);
     }
+
+    setState(() {});
   }
 
-  /// Fiat 입력 처리
   void _processFiatInput(String sanitized) {
-    var intVal = int.tryParse(sanitized) ?? 0;
+    var value = int.tryParse(sanitized) ?? 0;
 
-    // 최대 BTC 제한 체크
-    if (_viewModel.fixedBtcPrice != null && _viewModel.fixedBtcPrice != 0) {
-      final btcFromFiat = intVal / _viewModel.fixedBtcPrice!;
+    if (_viewModel.btcPrice != null && _viewModel.btcPrice! > 0) {
+      final btcFromFiat = value / _viewModel.btcPrice!;
       if (btcFromFiat > _maxBtc) {
-        intVal = (_maxBtc * _viewModel.fixedBtcPrice!).round();
+        value = (_maxBtc * _viewModel.btcPrice!).round();
       }
     }
 
-    setState(() {
-      _viewModel.setFiatPrice(intVal);
-      _viewModel.setIsInputChanged(true);
-      _updateAmountController(true);
-    });
+    _viewModel.setInputAmount(value);
 
-    // fiat 입력 필드도 세 자리마다 콤마가 붙도록 포맷팅
-    _viewModel.setIsUpdatingAmounts(true);
-    final formattedFiat = intVal.toThousandsSeparatedString();
-    _fiatAmountController.value = TextEditingValue(
-      text: formattedFiat,
-      selection: TextSelection.collapsed(offset: formattedFiat.length),
+    final formatted = value.toThousandsSeparatedString();
+    _isUpdatingController = true;
+    _inputController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
-    _viewModel.setIsUpdatingAmounts(false);
+    _isUpdatingController = false;
   }
 
-  /// BTC 입력 처리
-  void _processBtcInput(String sanitized, bool isUpsideWidget) {
+  void _processBtcInput(String sanitized) {
     var btcText = sanitized;
 
-    // 사용자가 '.'만 입력한 경우 → '0.' 으로 보이게 처리
+    // "." 입력 시 "0."으로 자동 변환
     if (btcText == '.') {
       btcText = '0.';
-      if (isUpsideWidget) {
-        _viewModel.setIsUpdatingAmounts(true);
-        _btcAmountController.value = const TextEditingValue(text: '0.', selection: TextSelection.collapsed(offset: 2));
-        _viewModel.setIsUpdatingAmounts(false);
-      }
+      _isUpdatingController = true;
+      _inputController.value = const TextEditingValue(text: '0.', selection: TextSelection.collapsed(offset: 2));
+      _isUpdatingController = false;
+      _viewModel.setInputAmount(0);
+      return;
     }
 
-    // 소수점 이하 8자리까지만 허용
+    // 소수점 이하 8자리 제한
     if (btcText.contains('.')) {
       final parts = btcText.split('.');
-      final intPart = parts[0];
       var decPart = parts.length > 1 ? parts[1] : '';
       if (decPart.length > 8) {
         decPart = decPart.substring(0, 8);
-        btcText = '$intPart.$decPart';
+        btcText = '${parts[0]}.$decPart';
       }
     }
 
     var btc = double.tryParse(btcText) ?? 0;
 
-    // 최대 BTC 제한 체크
+    // 최대값 체크
     if (btc > _maxBtc) {
       btc = _maxBtc;
-      _viewModel.setIsUpdatingAmounts(true);
-      final formattedInt = _maxBtc.toInt().toThousandsSeparatedString();
-      _btcAmountController.value = TextEditingValue(
-        text: formattedInt,
-        selection: TextSelection.collapsed(offset: formattedInt.length),
+      final formatted = _maxBtc.toInt().toThousandsSeparatedString();
+      _isUpdatingController = true;
+      _inputController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
       );
-      _viewModel.setIsUpdatingAmounts(false);
+      _isUpdatingController = false;
       btcText = _maxBtc.toStringAsFixed(0);
-    }
-
-    // isUpsideWidget이면서 BTC 단위일 때는 정수 부분에 콤마 포맷 적용
-    if (isUpsideWidget && btc <= _maxBtc) {
-      final formattedBtcText = _viewModel.formatBtcTextWithCommas(btcText);
-      _viewModel.setIsUpdatingAmounts(true);
-      _btcAmountController.value = TextEditingValue(
-        text: formattedBtcText,
-        selection: TextSelection.collapsed(offset: formattedBtcText.length),
+    } else {
+      final formatted = _formatBtcWithCommas(btcText);
+      _isUpdatingController = true;
+      _inputController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
       );
-      _viewModel.setIsUpdatingAmounts(false);
+      _isUpdatingController = false;
     }
 
-    // fiatPrice 계산
-    final fiat = _viewModel.calculateFiatFromBtc(double.tryParse(_feeController.text) ?? 0, btc);
-
-    _viewModel.setFiatPrice(fiat);
-    _viewModel.setIsInputChanged(true);
-    _updateAmountController(false);
+    // Sats로 변환
+    final sats = (btc * 100000000).round();
+    _viewModel.setInputAmount(sats);
   }
 
-  /// Sats 입력 처리
+  /// BTC 입력값에 천 단위 구분자 추가 (소수부는 그대로 유지)
+  String _formatBtcWithCommas(String btcText) {
+    final parts = btcText.split('.');
+    final rawIntPart = parts[0].isEmpty ? '0' : parts[0];
+    final hasDotOnly = parts.length == 2 && parts[1].isEmpty;
+    final decPart = parts.length > 1 ? parts[1] : '';
+    final intVal = int.tryParse(rawIntPart) ?? 0;
+    final formattedInt = intVal.toThousandsSeparatedString();
+
+    if (hasDotOnly) {
+      return '$formattedInt.';
+    } else if (decPart.isEmpty) {
+      return formattedInt;
+    } else {
+      return '$formattedInt.$decPart';
+    }
+  }
+
   void _processSatsInput(String sanitized) {
     var sats = int.tryParse(sanitized) ?? 0;
 
-    // 최대 2,100조 sats (2,100만 BTC)
-    const maxSats = 2100000000000000; // 21,000,000 * 100,000,000
-    if (sats > maxSats) {
-      sats = maxSats;
-      _viewModel.setIsUpdatingAmounts(true);
-      final clampedText = sats.toThousandsSeparatedString();
-      _btcAmountController.value = TextEditingValue(
-        text: clampedText,
-        selection: TextSelection.collapsed(offset: clampedText.length),
-      );
-      _viewModel.setIsUpdatingAmounts(false);
+    if (sats > _maxSats) {
+      sats = _maxSats;
     }
 
-    final btc = sats / 100000000;
-    final cappedBtc = btc > _maxBtc ? _maxBtc : btc;
+    _viewModel.setInputAmount(sats);
 
-    // fiatPrice 계산
-    final fiat = _viewModel.calculateFiatFromBtc(double.tryParse(_feeController.text) ?? 0, cappedBtc);
-
-    // 현재 편집 중인 sats 필드도 콤마 기준으로 다시 포맷팅
-    _viewModel.setIsUpdatingAmounts(true);
-    final formattedSats = sats.toThousandsSeparatedString();
-    _btcAmountController.value = TextEditingValue(
-      text: formattedSats,
-      selection: TextSelection.collapsed(offset: formattedSats.length),
+    final formatted = sats.toThousandsSeparatedString();
+    _isUpdatingController = true;
+    _inputController.value = TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
-    _viewModel.setIsUpdatingAmounts(false);
-
-    _viewModel.setFiatPrice(fiat);
-    _viewModel.setIsInputChanged(true);
-    _updateAmountController(false);
+    _isUpdatingController = false;
   }
 
-  /// 수수료 변경 시 위쪽 위젯 기준으로 아래쪽 위젯 값 업데이트
-  void _updateAmountsOnFeeChange() {
-    if (!_viewModel.isInputChanged) return;
+  void _updateResultOnFeeChange() {
+    setState(() {});
+  }
 
-    // 수수료 변경 중 플래그 설정 (addPostFrameCallback에서 _updateAmountControllers 호출 방지)
-    _viewModel.setIsUpdatingOnFeeChange(true);
+  void _changeInputAsset() {
+    final currentInput = _viewModel.inputAmount;
 
-    // 현재 위쪽 위젯의 값을 먼저 저장
-    final currentFiatText = _fiatAmountController.text;
-    final currentBtcText = _btcAmountController.text;
-    final feeValue = double.tryParse(_feeController.text) ?? 0;
+    // 입력값이 있으면 계산 결과를 새로운 입력으로 설정
+    if (currentInput != null && currentInput > 0) {
+      final calculatedResult = _viewModel.calculate(currentInput);
 
-    if (_viewModel.isSwitched) {
-      // 위쪽 위젯이 btc/sats인 경우: btc/sats 값 기준으로 fiatPrice 역계산
-      final btcText = currentBtcText.replaceAll(RegExp(r'[^0-9.]'), '');
-      if (btcText.isEmpty) {
-        _viewModel.setIsUpdatingOnFeeChange(false);
-        return;
-      }
+      // 입력 타입 토글
+      _viewModel.toggleInputAssetType();
 
-      double btc;
-      if (_viewModel.isBtcUnit) {
-        btc = double.tryParse(btcText) ?? 0;
-      } else {
-        // sats인 경우
-        final sats = int.tryParse(btcText) ?? 0;
-        btc = sats / 100000000;
-      }
+      // 계산된 결과를 새로운 입력으로 설정
+      _viewModel.setInputAmount(calculatedResult);
 
-      // fiatPrice 역계산
-      final fiat = _viewModel.calculateFiatFromBtc(feeValue, btc);
-
-      setState(() {
-        _viewModel.setFiatPrice(fiat);
-        _viewModel.setIsUpdatingAmounts(true);
-        // 위쪽(btc/sats)은 현재 값 유지, 아래쪽(fiat)만 업데이트
-        _btcAmountController.text = currentBtcText;
-        _fiatAmountController.text = _viewModel.fiatPrice!.toThousandsSeparatedString();
-        _viewModel.setIsUpdatingAmounts(false);
-      });
+      // 컨트롤러 업데이트
+      _updateControllerWithResult(calculatedResult);
     } else {
-      // 위쪽 위젯이 fiat인 경우: fiatPrice 유지, btc/sats만 새 수수료로 재계산
-      setState(() {
-        _viewModel.setIsUpdatingAmounts(true);
-        // 위쪽(fiat)은 현재 값 유지, 아래쪽(btc/sats)만 업데이트
-        _fiatAmountController.text = currentFiatText;
-        _btcAmountController.text = _viewModel.getAmountString(feeValue, isFiat: false);
-        _viewModel.setIsUpdatingAmounts(false);
-      });
+      // 입력값이 없으면 그냥 토글만
+      _viewModel.toggleInputAssetType();
+      _inputController.clear();
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewModel.setIsUpdatingOnFeeChange(false);
-    });
+    setState(() {});
+  }
+
+  /// BTC/Sats 단위 토글 시 입력 컨트롤러 업데이트
+  void _onBtcUnitToggle() {
+    final currentInput = _viewModel.inputAmount;
+
+    // 단위 토글
+    _viewModel.toggleBtcUnit();
+
+    // 입력값이 있으면 컨트롤러를 새 단위로 재포맷
+    if (currentInput != null && currentInput > 0 && _viewModel.inputAssetType == InputAssetType.btc) {
+      _isUpdatingController = true;
+
+      if (_viewModel.isBtcUnit) {
+        // Sats → BTC 전환 (readable bitcoin 형식)
+        final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(currentInput, forceEightDecimals: true);
+        _inputController.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      } else {
+        // BTC → Sats 전환
+        final formatted = currentInput.toThousandsSeparatedString();
+        _inputController.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+
+      _isUpdatingController = false;
+    }
+
+    setState(() {});
+  }
+
+  /// 토글 후 컨트롤러를 결과값으로 업데이트
+  void _updateControllerWithResult(int result) {
+    _isUpdatingController = true;
+
+    if (_viewModel.inputAssetType == InputAssetType.fiat) {
+      // BTC → Fiat로 전환: 정수 포맷
+      final formatted = result.toThousandsSeparatedString();
+      _inputController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    } else {
+      // Fiat → BTC로 전환
+      if (_viewModel.isBtcUnit) {
+        // BTC 단위: readable bitcoin 형식
+        final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(result, forceEightDecimals: true);
+        _inputController.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      } else {
+        // Sats 단위: 정수 포맷
+        final formatted = result.toThousandsSeparatedString();
+        _inputController.value = TextEditingValue(
+          text: formatted,
+          selection: TextSelection.collapsed(offset: formatted.length),
+        );
+      }
+    }
+
+    _isUpdatingController = false;
+  }
+
+  String _sanitizeInput(String value, bool isBtcInput) {
+    if (!isBtcInput) {
+      return value.replaceAll(RegExp(r'[^0-9]'), '');
+    } else {
+      final buffer = StringBuffer();
+      bool dotSeen = false;
+      for (final ch in value.split('')) {
+        if (ch == '.' && !dotSeen) {
+          buffer.write('.');
+          dotSeen = true;
+        } else if (RegExp(r'[0-9]').hasMatch(ch)) {
+          buffer.write(ch);
+        }
+      }
+      return buffer.toString();
+    }
+  }
+
+  String formatResultAmount(int result) {
+    if (_viewModel.inputAssetType == InputAssetType.fiat) {
+      return _viewModel.formatSatsResult(result);
+    } else {
+      return _viewModel.formatFiatResult(result);
+    }
   }
 
   void _onShowTransactionBill() {
+    final input = _viewModel.inputAmount;
+    if (input == null || input == 0) return;
+
+    final result = _viewModel.calculate(input);
+    final referenceDateTime = DateTime.now();
+    final referenceDateTimeString =
+        '${referenceDateTime.year}-${referenceDateTime.month.toString().padLeft(2, '0')}-${referenceDateTime.day.toString().padLeft(2, '0')} ${referenceDateTime.hour.toString().padLeft(2, '0')}:${referenceDateTime.minute.toString().padLeft(2, '0')}:${referenceDateTime.second.toString().padLeft(2, '0')}';
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -460,137 +434,40 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                         ),
                       ),
                       CoconutLayout.spacing_900h,
-                      if (_viewModel.isSwitched) ...[
-                        transactionBillRowWidget(
-                          _viewModel.isBtcUnit ? t.btc : t.sats,
-                          _btcAmountController.text,
-                          canCopyText: true,
-                          isFiat: false,
-                        ),
-                        const SizedBox(height: 8),
-                        transactionBillRowWidget(
-                          _viewModel.currentFiatUnit.code,
-                          _fiatAmountController.text,
-                          canCopyText: true,
-                          isFiat: true,
-                        ),
-                      ] else ...[
-                        transactionBillRowWidget(
-                          _viewModel.currentFiatUnit.code,
-                          _fiatAmountController.text,
-                          canCopyText: true,
-                          isFiat: true,
-                        ),
-                        const SizedBox(height: 8),
-                        transactionBillRowWidget(
-                          _viewModel.isBtcUnit ? t.btc : t.sats,
-                          _btcAmountController.text,
-                          canCopyText: true,
-                          isFiat: false,
-                        ),
-                      ],
+                      // 입력값
+                      _buildBillRow(
+                        _viewModel.inputAssetType == InputAssetType.fiat
+                            ? _viewModel.fiatCode.code
+                            : (_viewModel.isBtcUnit ? t.btc : t.sats),
+                        _viewModel.inputAssetType == InputAssetType.fiat
+                            ? input.toThousandsSeparatedString()
+                            : _viewModel.formatSatsResult(input),
+                        canCopy: true,
+                      ),
+                      const SizedBox(height: 8),
+                      // 결과값
+                      _buildBillRow(
+                        _viewModel.inputAssetType == InputAssetType.fiat
+                            ? (_viewModel.isBtcUnit ? t.btc : t.sats)
+                            : _viewModel.fiatCode.code,
+                        _viewModel.inputAssetType == InputAssetType.fiat
+                            ? _viewModel.formatSatsResult(result)
+                            : result.toThousandsSeparatedString(),
+                        canCopy: true,
+                      ),
                       const SizedBox(height: 24),
                       const Divider(color: CoconutColors.gray700, height: 1),
                       const SizedBox(height: 24),
-                      transactionBillRowWidget(
+                      _buildBillRow(
                         t.utility.p2p_calculator.reference_price,
-                        '${_viewModel.currentFiatUnit.symbol} ${_viewModel.fixedBtcPrice?.toThousandsSeparatedString() ?? '-'} / ${_viewModel.isBtcUnit ? t.btc : t.sats}',
-                        rightTextStyle: CoconutTypography.body2_14_Number.copyWith(height: 1.4, letterSpacing: -0.28),
+                        '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
                       ),
                       const SizedBox(height: 20),
-                      transactionBillRowWidget(
-                        t.utility.p2p_calculator.reference_datetime,
-                        _viewModel.referenceDateTimeString,
-                        rightTextStyle: CoconutTypography.body2_14.copyWith(height: 1, letterSpacing: -0.14),
-                      ),
+                      _buildBillRow(t.utility.p2p_calculator.reference_datetime, referenceDateTimeString),
                       const SizedBox(height: 20),
-                      transactionBillRowWidget(
-                        t.utility.p2p_calculator.transaction_fee,
-                        '${_feeController.text} %',
-                        rightTextStyle: CoconutTypography.body2_14.copyWith(
-                          height: 1,
-                          letterSpacing: -0.14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 20.0),
-                          child: Text(
-                            '수수료 fiat 값 출력', // TODO: 수수료 fiat 계산 후 출력
-                            style: CoconutTypography.body3_12_Number.copyWith(
-                              color: CoconutColors.gray500,
-                              height: 1.4,
-                              letterSpacing: -0.24, //
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildBillRow(t.utility.p2p_calculator.transaction_fee, '${_feeController.text} %'),
                       const SizedBox(height: 34),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ShrinkAnimationButton(
-                            borderRadius: 8,
-                            pressedColor: CoconutColors.gray850,
-                            onPressed: () {
-                              // TODO: 전체 복사 로직, 토스트 출력
-                            },
-                            child: Container(
-                              width: 120,
-                              padding: const EdgeInsets.only(top: 14, bottom: 14),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset(
-                                    'assets/svg/copy.svg',
-                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                                    width: 14,
-                                    height: 14,
-                                  ),
-                                  CoconutLayout.spacing_200w,
-                                  Text(
-                                    t.utility.p2p_calculator.copy_all,
-                                    style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          CoconutLayout.spacing_300w,
-                          ShrinkAnimationButton(
-                            borderRadius: 8,
-                            pressedColor: CoconutColors.gray850,
-                            onPressed: () {
-                              // TODO: 공유 로직, 화면 캡쳐기능 구현 시 MediaQuery 적용
-                            },
-                            child: Container(
-                              width: 120,
-                              padding: const EdgeInsets.only(top: 14, bottom: 14),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SvgPicture.asset(
-                                    'assets/svg/export.svg',
-                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                                    width: 14,
-                                    height: 14,
-                                  ),
-                                  CoconutLayout.spacing_200w,
-                                  Text(
-                                    t.utility.p2p_calculator.share,
-                                    style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildBillActions(),
                       CoconutLayout.spacing_600h,
                     ],
                   ),
@@ -598,9 +475,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                     top: 0,
                     left: 0,
                     child: IconButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
+                      onPressed: () => Navigator.of(context).pop(),
                       icon: SvgPicture.asset(
                         'assets/svg/close.svg',
                         colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
@@ -616,29 +491,122 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     );
   }
 
+  Widget _buildBillRow(String label, String value, {bool canCopy = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: CoconutTypography.body3_12.copyWith(height: 1.0, letterSpacing: -0.12, fontWeight: FontWeight.w500),
+          ),
+          if (canCopy)
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: value.replaceAll(',', '').replaceAll(' ', '')));
+              },
+              child: Row(
+                children: [
+                  Text(
+                    value,
+                    style: CoconutTypography.body1_16_Number.copyWith(
+                      color: CoconutColors.white,
+                      height: 1.4,
+                      letterSpacing: -0.32,
+                    ),
+                  ),
+                  CoconutLayout.spacing_100w,
+                  SvgPicture.asset(
+                    'assets/svg/copy.svg',
+                    colorFilter: const ColorFilter.mode(CoconutColors.gray600, BlendMode.srcIn),
+                    width: 16,
+                    height: 16,
+                  ),
+                ],
+              ),
+            )
+          else
+            Text(
+              value,
+              style: CoconutTypography.body2_14_Number.copyWith(
+                color: CoconutColors.white,
+                height: 1.4,
+                letterSpacing: -0.28,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBillActions() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ShrinkAnimationButton(
+          borderRadius: 8,
+          pressedColor: CoconutColors.gray850,
+          onPressed: () {
+            // TODO: 전체 복사
+          },
+          child: Container(
+            width: 120,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  'assets/svg/copy.svg',
+                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  width: 14,
+                  height: 14,
+                ),
+                CoconutLayout.spacing_200w,
+                Text(
+                  t.utility.p2p_calculator.copy_all,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+        CoconutLayout.spacing_300w,
+        ShrinkAnimationButton(
+          borderRadius: 8,
+          pressedColor: CoconutColors.gray850,
+          onPressed: () {
+            // TODO: 공유
+          },
+          child: Container(
+            width: 120,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  'assets/svg/export.svg',
+                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  width: 14,
+                  height: 14,
+                ),
+                CoconutLayout.spacing_200w,
+                Text(t.utility.p2p_calculator.share, style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // build 시점에 controller 텍스트 동기화 (입력 중이 아닐 때만)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 포커스가 없고, 입력이 변경되었을 때만 업데이트 (초기에는 placeholder 표시)
-      // 단, 수수료 입력 중이거나 수수료 변경 중에는 업데이트하지 않음
-      if (!_fiatAmountFocusNode.hasFocus &&
-          !_btcAmountFocusNode.hasFocus &&
-          !_feeFocusNode.hasFocus &&
-          _viewModel.isInputChanged &&
-          !_viewModel.isUpdatingOnFeeChange) {
-        // isSwitched가 true면 아래쪽이 fiat이므로 isFiatInput=false로 fiat 업데이트
-        // isSwitched가 false면 아래쪽이 btc이므로 isFiatInput=true로 btc 업데이트
-        _updateAmountController(!_viewModel.isSwitched);
-      }
-    });
-
-    // usableHeight: height - safeArea - toolbar
     final usableHeight =
         MediaQuery.of(context).size.height -
         MediaQuery.of(context).padding.top -
         MediaQuery.of(context).padding.bottom -
-        56; // CoconutAppBar height
+        56;
 
     return ChangeNotifierProvider<P2PCalculatorViewModel>(
       create:
@@ -649,9 +617,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           ),
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
+        onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           resizeToAvoidBottomInset: false,
           backgroundColor: CoconutColors.black,
@@ -660,9 +626,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
             title: t.utility.p2p_calculator.calculator,
             actionButtonList: [
               IconButton(
-                onPressed: () {
-                  _onShowTransactionBill();
-                },
+                onPressed: _onShowTransactionBill,
                 icon: SvgPicture.asset(
                   'assets/svg/hand-shake.svg',
                   width: 24,
@@ -680,86 +644,20 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                 child: Stack(
                   children: [
                     SingleChildScrollView(
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: MediaQuery.sizeOf(context).width,
-                            height:
-                                MediaQuery.sizeOf(context).height - MediaQuery.of(context).padding.top - kToolbarHeight,
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CoconutLayout.spacing_400h,
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    currentBtcPriceWidget(),
-                                    if (_viewModel.isNetworkOn) ...[
-                                      ShrinkAnimationButton(
-                                        onPressed: () {
-                                          viewModel.onFiatUnitChange();
-                                        },
-                                        defaultColor: CoconutColors.gray800,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                          constraints: const BoxConstraints(minWidth: 65),
-                                          child: Center(
-                                            child: Text(
-                                              viewModel.currentFiatUnit.name,
-                                              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Column(
-                                      children: [
-                                        amountInputWidget(
-                                          isFiat: !viewModel.isSwitched,
-                                          isOfflineMode: viewModel.isOfflineMode,
-                                        ),
-                                        CoconutLayout.spacing_400h,
-                                        amountInputWidget(
-                                          isFiat: viewModel.isSwitched,
-                                          isOfflineMode: viewModel.isOfflineMode,
-                                        ),
-                                      ],
-                                    ),
-                                    ShrinkAnimationButton(
-                                      onPressed: () {
-                                        viewModel.toggleSwitch();
-                                        _recalculateAndUpdateAmount();
-                                      },
-                                      defaultColor: CoconutColors.gray900,
-                                      pressedColor: CoconutColors.gray850,
-                                      child: SizedBox(
-                                        width: 52,
-                                        height: 52,
-                                        child: Center(
-                                          child: SvgPicture.asset(
-                                            'assets/svg/arrow-top-down.svg',
-                                            width: 32,
-                                            height: 32,
-                                            colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      child: Container(
+                        width: MediaQuery.sizeOf(context).width,
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CoconutLayout.spacing_400h,
+                            _buildPriceHeader(viewModel),
+                            _buildCalculatorCards(viewModel),
+                          ],
+                        ),
                       ),
                     ),
-                    buildKeyboardToolbar(context),
+                    _buildKeyboardToolbar(),
                   ],
                 ),
               );
@@ -770,27 +668,335 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     );
   }
 
-  Widget buildKeyboardToolbar(BuildContext context) {
-    if (!_feeFocusNode.hasFocus && !_fiatAmountFocusNode.hasFocus && !_btcAmountFocusNode.hasFocus) {
+  Widget _buildPriceHeader(P2PCalculatorViewModel viewModel) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildCurrentPriceWidget(viewModel),
+        if (viewModel.isNetworkOn)
+          ShrinkAnimationButton(
+            onPressed: viewModel.onFiatUnitChange,
+            defaultColor: CoconutColors.gray800,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              constraints: const BoxConstraints(minWidth: 65),
+              child: Center(
+                child: Text(
+                  viewModel.fiatCode.name,
+                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildCurrentPriceWidget(P2PCalculatorViewModel viewModel) {
+    if (viewModel.isOfflineMode) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0, bottom: 7.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
+            child: Row(
+              children: [
+                Text(
+                  '${t.utility.p2p_calculator.one_btc} = ',
+                  style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+                ),
+                Text(
+                  viewModel.formattedOneBtcPrice,
+                  style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
+                ),
+              ],
+            ),
+          ),
+          _buildExchangePriceLabel(viewModel),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExchangePriceLabel(P2PCalculatorViewModel viewModel) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (child, animation) {
+        final isOutgoing = animation.status == AnimationStatus.reverse;
+        final slideAnimation = Tween<Offset>(
+          begin: isOutgoing ? const Offset(0, -0.5) : const Offset(0, 0.5),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+        return ClipRect(
+          child: FadeTransition(opacity: animation, child: SlideTransition(position: slideAnimation, child: child)),
+        );
+      },
+      layoutBuilder: (currentChild, previousChildren) {
+        return Stack(
+          alignment: Alignment.centerLeft,
+          children: [...previousChildren, if (currentChild != null) currentChild],
+        );
+      },
+      child:
+          viewModel.isBtcPriceAvailable
+              ? Text(
+                _getExchangeLabel(viewModel.fiatCode),
+                key: ValueKey('exchange_${viewModel.fiatCode.name}'),
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+              )
+              : Text(
+                t.utility.p2p_calculator.offline_price_unavailable,
+                key: const ValueKey('offline'),
+                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+              ),
+    );
+  }
+
+  String _getExchangeLabel(FiatCode fiatCode) {
+    switch (fiatCode) {
+      case FiatCode.KRW:
+        return t.utility.p2p_calculator.upbit_price;
+      case FiatCode.USD:
+        return t.utility.p2p_calculator.binance_price;
+      case FiatCode.JPY:
+        return t.utility.p2p_calculator.bitflyer_price;
+    }
+  }
+
+  Widget _buildCalculatorCards(P2PCalculatorViewModel viewModel) {
+    final hasInput = viewModel.inputAmount != null && viewModel.inputAmount! > 0;
+    final result = hasInput ? viewModel.calculate(viewModel.inputAmount!) : 0;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Column(
+          children: [
+            // 입력 카드
+            _buildInputCardWidget(
+              controller: _inputController,
+              focusNode: _inputFocusNode,
+              placeholderText: viewModel.getPlaceholder(isInputCard: true),
+              prefix: viewModel.inputAssetType == InputAssetType.fiat ? viewModel.fiatCode.symbol : null,
+              postfix: viewModel.inputAssetType == InputAssetType.btc ? (viewModel.isBtcUnit ? t.btc : t.sats) : null,
+              feeController: _feeController,
+              feeFocusNode: _feeFocusNode,
+              onUnitToggle: viewModel.inputAssetType == InputAssetType.btc ? _onBtcUnitToggle : null,
+            ),
+            CoconutLayout.spacing_400h,
+            // 결과 카드
+            _buildResultCardWidget(
+              isActive: hasInput,
+              resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
+              prefix: viewModel.inputAssetType == InputAssetType.fiat ? null : viewModel.fiatCode.symbol,
+              postfix: viewModel.inputAssetType == InputAssetType.fiat ? (viewModel.isBtcUnit ? t.btc : t.sats) : null,
+              onTap: viewModel.inputAssetType == InputAssetType.fiat ? _onBtcUnitToggle : null,
+            ),
+          ],
+        ),
+        // 스위치 버튼
+        ShrinkAnimationButton(
+          onPressed: _changeInputAsset,
+          defaultColor: CoconutColors.gray900,
+          pressedColor: CoconutColors.gray850,
+          child: SizedBox(
+            width: 52,
+            height: 52,
+            child: Center(
+              child: SvgPicture.asset(
+                'assets/svg/arrow-top-down.svg',
+                width: 32,
+                height: 32,
+                colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputCardWidget({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String placeholderText,
+    TextEditingController? feeController,
+    FocusNode? feeFocusNode,
+    String? prefix,
+    String? postfix,
+    VoidCallback? onUnitToggle,
+  }) {
+    final hasInput = _viewModel.inputAmount != null;
+    final textColor = hasInput ? CoconutColors.white : CoconutColors.gray600;
+
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onUnitToggle,
+        child: Stack(
+          children: [
+            Container(
+              constraints: const BoxConstraints(minHeight: 175),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (prefix != null)
+                        Text('$prefix ', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
+                      Flexible(
+                        child: IntrinsicWidth(
+                          child: CoconutTextField(
+                            maxLines: 1,
+                            controller: controller,
+                            focusNode: focusNode,
+                            placeholderText: placeholderText,
+                            textInputFormatter:
+                                postfix == t.btc
+                                    ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
+                                    : [FilteringTextInputFormatter.digitsOnly],
+                            onChanged: _handleAmountInputChanged,
+                            textInputType:
+                                postfix == t.btc
+                                    ? const TextInputType.numberWithOptions(signed: false, decimal: true)
+                                    : TextInputType.number,
+                            textInputAction: TextInputAction.done,
+                            enableInteractiveSelection: false,
+                            isVisibleBorder: false,
+                            textAlign: TextAlign.center,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
+                      if (postfix != null)
+                        Text(' $postfix', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (feeController != null && feeFocusNode != null)
+              Positioned(
+                bottom: 30,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () {
+                      feeFocusNode.requestFocus();
+                      final text = feeController.text;
+                      if (text.isNotEmpty) {
+                        feeController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: CoconutColors.gray900),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${t.utility.p2p_calculator.fee} ',
+                            style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                          ),
+                          IntrinsicWidth(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(minWidth: 10),
+                              child: CoconutTextField(
+                                controller: feeController,
+                                focusNode: feeFocusNode,
+                                padding: EdgeInsets.zero,
+                                maxLines: 1,
+                                height: 22,
+                                textInputAction: TextInputAction.done,
+                                textInputType: TextInputType.number,
+                                onChanged: _handleFeeInputChanged,
+                                textAlign: TextAlign.end,
+                                isVisibleBorder: false,
+                              ),
+                            ),
+                          ),
+                          Text('%', style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCardWidget({
+    required bool isActive,
+    required String resultText,
+    String? prefix,
+    String? postfix,
+    VoidCallback? onTap,
+  }) {
+    final textColor = isActive ? CoconutColors.white : CoconutColors.gray500;
+
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 175),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (prefix != null) Text('$prefix ', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
+                  Text(resultText, style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
+                  if (postfix != null) Text(' $postfix', style: CoconutTypography.heading2_28_Bold.setColor(textColor)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKeyboardToolbar() {
+    if (!_feeFocusNode.hasFocus && !_inputFocusNode.hasFocus) {
       return const SizedBox.shrink();
     }
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    // 버튼 라벨과 값 결정
-    final buttonData = _viewModel.getToolbarButtonData(
-      _feeFocusNode.hasFocus,
-      _fiatAmountFocusNode.hasFocus,
-      _btcAmountFocusNode.hasFocus,
-    );
+    final buttonData = _getQuickAddAmounts();
 
     return Positioned(
-      bottom: keyboardHeight,
+      bottom: _keyboardHeight,
       child: GestureDetector(
-        onTap: () {}, // ignore
+        onTap: () {},
         child: Container(
           width: MediaQuery.of(context).size.width,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          color: keyboardToolbarGray,
+          color: _keyboardToolbarColor,
           child: Row(
             children: [
               for (int i = 0; i < buttonData.length; i++) ...[
@@ -822,382 +1028,87 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
 
   void _onToolbarButtonPressed(String value) {
     if (_feeFocusNode.hasFocus) {
-      // 수수료에 값 추가
       final currentFee = double.tryParse(_feeController.text) ?? 0;
       final addValue = double.tryParse(value) ?? 0;
-      final newFee = currentFee + addValue;
-      // 최대 99.9%로 제한
-      final clampedFee = newFee > 99.9 ? 99.9 : newFee;
-      _feeController.text = clampedFee.toStringAsFixed(1);
-    } else if (_fiatAmountFocusNode.hasFocus) {
-      // Fiat 값 추가
-      final currentText = _fiatAmountController.text.replaceAll(',', '');
-      final currentValue = int.tryParse(currentText) ?? 0;
-      final addValue = int.tryParse(value) ?? 0;
-      final newValue = currentValue + addValue;
-      _handleAmountInputChanged(newValue.toString(), true, !_viewModel.isSwitched);
-    } else if (_btcAmountFocusNode.hasFocus) {
-      // BTC/Sats 값 추가
-      final currentText = _btcAmountController.text.replaceAll(RegExp(r'[^0-9.]'), '');
-      if (_viewModel.isBtcUnit) {
-        final currentValue = double.tryParse(currentText) ?? 0;
-        final addValue = double.tryParse(value) ?? 0;
-        final newValue = currentValue + addValue;
-        _handleAmountInputChanged(newValue.toString(), false, _viewModel.isSwitched);
-      } else {
-        // sats
+      final newFee = (currentFee + addValue).clamp(0.0, 99.9);
+      _feeController.text = newFee.toStringAsFixed(1);
+      _viewModel.setFeeRate(newFee);
+      _updateResultOnFeeChange();
+    } else if (_inputFocusNode.hasFocus) {
+      final currentText = _inputController.text.replaceAll(RegExp(r'[^0-9.]'), '');
+
+      if (_viewModel.inputAssetType == InputAssetType.fiat) {
         final currentValue = int.tryParse(currentText) ?? 0;
         final addValue = int.tryParse(value) ?? 0;
-        final newValue = currentValue + addValue;
-        _handleAmountInputChanged(newValue.toString(), false, _viewModel.isSwitched);
+        _handleAmountInputChanged((currentValue + addValue).toString());
+      } else if (_viewModel.isBtcUnit) {
+        final currentValue = double.tryParse(currentText) ?? 0;
+        final addValue = double.tryParse(value) ?? 0;
+        _handleAmountInputChanged((currentValue + addValue).toString());
+      } else {
+        final currentValue = int.tryParse(currentText) ?? 0;
+        final addValue = int.tryParse(value) ?? 0;
+        _handleAmountInputChanged((currentValue + addValue).toString());
       }
     }
   }
 
-  /// 통화에 따른 거래소 이름 반환
-  String _getExchangePriceLabel() {
-    switch (_viewModel.currentFiatUnit) {
-      case FiatCode.KRW:
-        return t.utility.p2p_calculator.upbit_price;
-      case FiatCode.USD:
-        return t.utility.p2p_calculator.binance_price;
-      case FiatCode.JPY:
-        return t.utility.p2p_calculator.bitflyer_price;
+  /// Quick Add 버튼 데이터 반환
+  List<Map<String, String>> _getQuickAddAmounts() {
+    final isFeeFocused = _feeFocusNode.hasFocus;
+    final isInputFocused = _inputFocusNode.hasFocus;
+    if (isFeeFocused) {
+      return [
+        {'label': '+0.1 %', 'value': '0.1'},
+        {'label': '+0.5 %', 'value': '0.5'},
+        {'label': '+1.0 %', 'value': '1.0'},
+        {'label': '+5.0 %', 'value': '5.0'},
+      ];
     }
-  }
 
-  /// 거래소 시세 위젯
-  Widget currentBtcPriceWidget() {
-    // 화면 진입 시점의 시세로 고정 (매번 갱신하지 않음)
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      alignment: Alignment.centerLeft,
-      child:
-          _viewModel.isOfflineMode
-              ? const SizedBox.shrink()
-              : Padding(
-                padding: const EdgeInsets.only(top: 8.0, bottom: 7.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    MediaQuery(
-                      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${t.utility.p2p_calculator.one_btc} = ',
-                            style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
-                          ),
-                          if (_viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn) ...[
-                            Text(
-                              '${_viewModel.currentFiatUnit.symbol} ${FiatUtil.calculateFiatAmount(100000000, _viewModel.fixedBtcPrice!).toThousandsSeparatedString()}',
-                              style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
-                            ),
-                          ] else ...[
-                            Text('1BTC', style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
-                          ],
-                        ],
-                      ),
-                    ),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) {
-                        final isOutgoing = animation.status == AnimationStatus.reverse;
-                        final slideAnimation = Tween<Offset>(
-                          begin: isOutgoing ? const Offset(0, -0.5) : const Offset(0, 0.5),
-                          end: Offset.zero,
-                        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
-                        return ClipRect(
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(position: slideAnimation, child: child),
-                          ),
-                        );
-                      },
-                      layoutBuilder: (currentChild, previousChildren) {
-                        return Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [...previousChildren, if (currentChild != null) currentChild],
-                        );
-                      },
-                      child:
-                          _viewModel.fixedBtcPrice != null && _viewModel.isNetworkOn
-                              ? Text(
-                                _getExchangePriceLabel(),
-                                key: ValueKey('exchange_${_viewModel.currentFiatUnit.name}'),
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                                textAlign: TextAlign.start,
-                              )
-                              : Text(
-                                t.utility.p2p_calculator.offline_price_unavailable,
-                                key: const ValueKey('offline'),
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
-                                textAlign: TextAlign.start,
-                              ),
-                    ),
-                  ],
-                ),
-              ),
-    );
-  }
+    if (!isInputFocused) return [];
 
-  Widget amountInputWidget({bool isFiat = false, bool isOfflineMode = false}) {
-    bool isUpsideWidget = (isFiat && !_viewModel.isSwitched) || (!isFiat && _viewModel.isSwitched);
-    debugPrint('isUpsideWidget: $isUpsideWidget');
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          if (isUpsideWidget) {
-            if (isFiat) {
-              _fiatAmountFocusNode.requestFocus();
-            } else {
-              _btcAmountFocusNode.requestFocus();
-            }
-            // 커서를 마지막으로 이동
-            final text = _feeController.text;
-            if (text.isNotEmpty) {
-              _feeController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
-            }
-          } else {
-            // isUpsideWidget이 false일 때는 focus를 받지 않음
-            if (!isFiat && !isOfflineMode) {
-              // BTC/sats 위젯을 누르면 단위 토글
-              FocusScope.of(context).unfocus();
-
-              setState(() {
-                _viewModel.toggleBtcUnit();
-                _recalculateAndUpdateAmount();
-              });
-            }
-          }
-        },
-        child: Stack(
-          children: [
-            Consumer<PreferenceProvider>(
-              builder: (context, preferenceProvider, child) {
-                return Container(
-                  constraints: const BoxConstraints(minHeight: 175),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
-                  child: Center(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.center,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isFiat) ...[
-                            Text(
-                              '${_viewModel.currentFiatUnit.symbol} ',
-                              style: CoconutTypography.heading2_28_Bold.setColor(getInputTextColor()),
-                            ),
-                          ],
-                          Flexible(
-                            child: IgnorePointer(
-                              ignoring: !isUpsideWidget,
-                              child: IntrinsicWidth(
-                                child: CoconutTextField(
-                                  key: ValueKey(
-                                    'amount_${isFiat ? 'fiat' : (_viewModel.isBtcUnit ? 'btc' : 'sats')}_${isUpsideWidget ? 'up' : 'down'}_fee_${_feeController.text}',
-                                  ),
-                                  maxLines: 1,
-                                  controller: isFiat ? _fiatAmountController : _btcAmountController,
-                                  focusNode: isFiat ? _fiatAmountFocusNode : _btcAmountFocusNode,
-                                  placeholderText: _viewModel.getPlaceholderText(
-                                    double.tryParse(_feeController.text) ?? 0,
-                                    isFiat,
-                                    _viewModel.currentFiatUnit,
-                                  ),
-                                  textInputFormatter:
-                                      isFiat || !_viewModel.isBtcUnit
-                                          ? [FilteringTextInputFormatter.digitsOnly]
-                                          : [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                                  onChanged: (value) => _handleAmountInputChanged(value, isFiat, isUpsideWidget),
-                                  textInputType:
-                                      isFiat || !_viewModel.isBtcUnit
-                                          ? TextInputType.number
-                                          : const TextInputType.numberWithOptions(signed: false, decimal: true),
-                                  textInputAction: TextInputAction.done,
-                                  enableInteractiveSelection: false,
-                                  isVisibleBorder: false,
-                                  textAlign: TextAlign.center,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w700,
-                                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (!isFiat) ...[
-                            Text(
-                              ' ${_viewModel.isBtcUnit ? t.btc : t.sats}',
-                              textAlign: TextAlign.center,
-                              style: CoconutTypography.heading2_28_Bold.setColor(getInputTextColor()),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            if (isUpsideWidget) ...[
-              Positioned(
-                bottom: 30,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: () {
-                      // Premium Container를 누르면 premium 필드에 focus
-                      _feeFocusNode.requestFocus();
-                      // 커서를 마지막으로 이동
-                      final text = _feeController.text;
-                      if (text.isNotEmpty) {
-                        _feeController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: CoconutColors.gray900),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${t.utility.p2p_calculator.fee} ',
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.white),
-                          ),
-                          IntrinsicWidth(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(minWidth: 10),
-                              child: CoconutTextField(
-                                controller: _feeController,
-                                focusNode: _feeFocusNode,
-                                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-                                maxLines: 1,
-                                height: 22,
-                                textInputAction: TextInputAction.done,
-                                textInputType: TextInputType.number,
-                                onChanged: _handleFeeInputChanged,
-                                textAlign: TextAlign.end,
-                                isVisibleBorder: false,
-                              ),
-                            ),
-                          ),
-                          Text('%', style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget transactionBillRowWidget(
-    String leftText,
-    String rightText, {
-    TextStyle? rightTextStyle,
-    bool canCopyText = false,
-    bool isFiat = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            leftText,
-            style: CoconutTypography.body3_12.copyWith(
-              height: 1.0,
-              letterSpacing: -0.12, // 12 * -0.01
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          if (canCopyText) ...[
-            GestureDetector(
-              onTap: () {
-                // TODO: 복사 로직
-                debugPrint('복사 로직');
-              },
-              child: Row(
-                children: [
-                  Text(
-                    () {
-                      final raw = rightText.replaceAll(',', '').trim();
-                      if (raw.isEmpty) return rightText;
-
-                      if (isFiat) {
-                        final value = int.tryParse(raw);
-                        if (value == null) return rightText;
-                        return value.toThousandsSeparatedString();
-                      }
-
-                      if (_viewModel.isBtcUnit) {
-                        final btc = double.tryParse(raw);
-                        if (btc == null) return rightText;
-                        final sats = UnitUtil.convertBitcoinToSatoshi(btc);
-                        // 예: 0.00001000 BTC (1000 sats) -> "0.0000 1000"
-                        return BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
-                      }
-
-                      // sats 등 기타 문자열은 콤마 제거 후 파싱
-                      final satsValue = int.tryParse(raw);
-                      if (satsValue == null) return rightText;
-                      return satsValue.toThousandsSeparatedString();
-                    }(),
-                    style:
-                        rightTextStyle ??
-                        CoconutTypography.body1_16_Number.copyWith(
-                          color: CoconutColors.white,
-                          height: 1.4,
-                          letterSpacing: -0.32, // 16 * -0.02
-                        ),
-                  ),
-                  CoconutLayout.spacing_100w,
-                  SvgPicture.asset(
-                    'assets/svg/copy.svg',
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray600, BlendMode.srcIn),
-                    width: 16,
-                    height: 16,
-                  ),
-                ],
-              ),
-            ),
-          ] else ...[
-            MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-              child: Text(
-                rightText,
-                style:
-                    rightTextStyle ??
-                    CoconutTypography.body2_14_Number.copyWith(
-                      color: CoconutColors.white,
-                      height: 1.4,
-                      letterSpacing: -0.28, // 14 * -0.02
-                    ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Color getInputTextColor() {
-    return _viewModel.isInputChanged ? CoconutColors.white : CoconutColors.gray600;
+    if (_viewModel.inputAssetType == InputAssetType.fiat) {
+      switch (_viewModel.fiatCode) {
+        case FiatCode.KRW:
+          return [
+            {'label': '+10,000', 'value': '10000'},
+            {'label': '+50,000', 'value': '50000'},
+            {'label': '+100,000', 'value': '100000'},
+            {'label': '+500,000', 'value': '500000'},
+          ];
+        case FiatCode.USD:
+          return [
+            {'label': '+10', 'value': '10'},
+            {'label': '+50', 'value': '50'},
+            {'label': '+100', 'value': '100'},
+            {'label': '+500', 'value': '500'},
+          ];
+        case FiatCode.JPY:
+          return [
+            {'label': '+1,000', 'value': '1000'},
+            {'label': '+5,000', 'value': '5000'},
+            {'label': '+10,000', 'value': '10000'},
+            {'label': '+50,000', 'value': '50000'},
+          ];
+      }
+    } else {
+      // BTC/Sats 입력
+      if (_viewModel.isBtcUnit) {
+        return [
+          {'label': '+0.0001', 'value': '0.0001'},
+          {'label': '+0.0005', 'value': '0.0005'},
+          {'label': '+0.001', 'value': '0.001'},
+          {'label': '+0.005', 'value': '0.005'},
+        ];
+      } else {
+        return [
+          {'label': '+10,000', 'value': '10000'},
+          {'label': '+50,000', 'value': '50000'},
+          {'label': '+100,000', 'value': '100000'},
+          {'label': '+500,000', 'value': '500000'},
+        ];
+      }
+    }
   }
 }
