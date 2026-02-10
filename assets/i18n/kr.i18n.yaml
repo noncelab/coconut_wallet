@@ -180,6 +180,23 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "라이트닝 인보이스 생성에 실패했어요"
 
+utility:
+  p2p_calculator:
+    calculator: "계산기"
+    one_btc: "1 BTC"
+    upbit_price: "업비트 기준 시세"
+    binance_price: "바이낸스 기준 시세"
+    bitflyer_price: "비트플라이어 기준 시세"
+    offline_price_unavailable: "시세를 가져올 수 없어요"
+    fee: "수수료"
+    transaction_bill: "거래 계산서"
+    reference_price: "기준 시세"
+    reference_datetime: "기준 일시"
+    transaction_fee: "거래 수수료"
+    copy_all: "전체 복사"
+    share: "공유"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[거래 계산서]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n기준 시세: $currencySymbol $referencePrice / BTC\n기준 일시: $referenceTime\n거래 수수료: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+
 # lib/enums
 transaction_enums:
   high_priority: "빠른 전송"

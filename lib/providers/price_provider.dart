@@ -12,9 +12,10 @@ class PriceProvider extends ChangeNotifier {
   final PreferenceProvider _preferenceProvider;
   late FiatCode _fiatCode;
 
-  /// 현재 통화별 웹소켓 서비스
-  WebSocketService? _currentWebSocketService;
-  WebSocketService? get currentWebSocketService => _currentWebSocketService;
+  /// 통화별 웹소켓 서비스
+  WebSocketService? _webSocketServiceKrw;
+  WebSocketService? _webSocketServiceUsd;
+  WebSocketService? _webSocketServiceJpy;
 
   late final VoidCallback _connectivityListener;
   late final VoidCallback _preferenceListener;
@@ -29,9 +30,9 @@ class PriceProvider extends ChangeNotifier {
   int? get bitcoinPriceUsd => _bitcoinPriceUsd;
   int? get bitcoinPriceJpy => _bitcoinPriceJpy;
 
-  /// 현재 선택된 통화의 가격
-  int? get currentBitcoinPrice {
-    switch (_preferenceProvider.selectedFiat) {
+  /// 특정 통화의 BTC 가격 조회
+  int? getBitcoinPriceForFiat(FiatCode fiatCode) {
+    switch (fiatCode) {
       case FiatCode.KRW:
         return _bitcoinPriceKrw;
       case FiatCode.USD:
@@ -67,7 +68,9 @@ class PriceProvider extends ChangeNotifier {
     final isNetworkOn = _connectivityProvider.isNetworkOn;
 
     if (isNetworkOn == true) {
-      if (_isPendingConnection || _currentWebSocketService == null) {
+      final hasAnyService =
+          _webSocketServiceKrw != null || _webSocketServiceUsd != null || _webSocketServiceJpy != null;
+      if (_isPendingConnection || !hasAnyService) {
         Logger.log('PriceProvider: Network connected');
         _isPendingConnection = false;
         initWebSocketService();
@@ -101,29 +104,47 @@ class PriceProvider extends ChangeNotifier {
       disposeWebSocketService();
     }
 
-    if (_currentWebSocketService != null) {
-      Logger.log('PriceProvider: WebSocket이 이미 연결되어 있습니다.');
+    // 이미 모든 WebSocket이 연결되어 있으면 스킵
+    if (_webSocketServiceKrw != null && _webSocketServiceUsd != null && _webSocketServiceJpy != null) {
+      Logger.log('PriceProvider: 모든 WebSocket이 이미 연결되어 있습니다.');
       return;
     }
 
     try {
-      final selectedFiat = _preferenceProvider.selectedFiat;
-      Logger.log('[${selectedFiat.code} WebSocket] 초기화 중...');
+      Logger.log('PriceProvider: 모든 통화의 WebSocket 초기화 중...');
       _isPendingConnection = false;
 
-      _currentWebSocketService = WebSocketServiceFactory.create(selectedFiat);
-      _currentWebSocketService?.tickerStream.listen(
-        (ticker) {
-          _updatePrice(ticker);
-          notifyListeners();
-        },
-        onError: (error) {
-          Logger.error('PriceProvider: WebSocket 스트림 오류: $error');
-          // 오류 발생 시 WebSocket 서비스 정리
-          disposeWebSocketService();
-        },
-      );
-      // Network off 상태에서 preferenceProvider.selectedFiat이 변경된 경우 업데이트가 안되어있음
+      // KRW 웹소켓 (Upbit)
+      if (_webSocketServiceKrw == null) {
+        _webSocketServiceKrw = WebSocketServiceFactory.create(FiatCode.KRW);
+        _webSocketServiceKrw?.tickerStream.listen(
+          (ticker) => updatePriceForFiat(FiatCode.KRW, ticker),
+          onError: (error) => Logger.error('[KRW WebSocket] 스트림 오류: $error'),
+        );
+        Logger.log('[KRW WebSocket] Upbit 연결 완료');
+      }
+
+      // USD 웹소켓 (Binance)
+      if (_webSocketServiceUsd == null) {
+        _webSocketServiceUsd = WebSocketServiceFactory.create(FiatCode.USD);
+        _webSocketServiceUsd?.tickerStream.listen(
+          (ticker) => updatePriceForFiat(FiatCode.USD, ticker),
+          onError: (error) => Logger.error('[USD WebSocket] 스트림 오류: $error'),
+        );
+        Logger.log('[USD WebSocket] Binance 연결 완료');
+      }
+
+      // JPY 웹소켓 (Bitflyer)
+      if (_webSocketServiceJpy == null) {
+        _webSocketServiceJpy = WebSocketServiceFactory.create(FiatCode.JPY);
+        _webSocketServiceJpy?.tickerStream.listen(
+          (ticker) => updatePriceForFiat(FiatCode.JPY, ticker),
+          onError: (error) => Logger.error('[JPY WebSocket] 스트림 오류: $error'),
+        );
+        Logger.log('[JPY WebSocket] Bitflyer 연결 완료');
+      }
+
+      final selectedFiat = _preferenceProvider.selectedFiat;
       if (selectedFiat != _fiatCode) {
         _fiatCode = selectedFiat;
       }
@@ -133,10 +154,11 @@ class PriceProvider extends ChangeNotifier {
     }
   }
 
-  void _updatePrice(PriceResponse? ticker) {
+  /// fiatCode별로 거래소 ticker를 통해 실시간 가격 업데이트
+  void updatePriceForFiat(FiatCode fiatCode, PriceResponse? ticker) {
     if (ticker == null) return;
 
-    switch (_preferenceProvider.selectedFiat) {
+    switch (fiatCode) {
       case FiatCode.KRW:
         _bitcoinPriceKrw = ticker.tradePrice;
         break;
@@ -147,17 +169,44 @@ class PriceProvider extends ChangeNotifier {
         _bitcoinPriceJpy = ticker.tradePrice;
         break;
     }
+
+    notifyListeners();
   }
 
   void disposeWebSocketService() {
-    if (_currentWebSocketService != null) {
+    // KRW WebSocket 정리
+    if (_webSocketServiceKrw != null) {
       try {
-        _currentWebSocketService?.dispose();
-        Logger.log('[${_preferenceProvider.selectedFiat.code} WebSocket] 정리 완료');
+        _webSocketServiceKrw?.dispose();
+        Logger.log('[KRW WebSocket] 정리 완료');
       } catch (e) {
-        Logger.error('PriceProvider: WebSocket 서비스 정리 중 오류: $e');
+        Logger.error('[KRW WebSocket] 정리 중 오류: $e');
       } finally {
-        _currentWebSocketService = null;
+        _webSocketServiceKrw = null;
+      }
+    }
+
+    // USD WebSocket 정리
+    if (_webSocketServiceUsd != null) {
+      try {
+        _webSocketServiceUsd?.dispose();
+        Logger.log('[USD WebSocket] 정리 완료');
+      } catch (e) {
+        Logger.error('[USD WebSocket] 정리 중 오류: $e');
+      } finally {
+        _webSocketServiceUsd = null;
+      }
+    }
+
+    // JPY WebSocket 정리
+    if (_webSocketServiceJpy != null) {
+      try {
+        _webSocketServiceJpy?.dispose();
+        Logger.log('[JPY WebSocket] 정리 완료');
+      } catch (e) {
+        Logger.error('[JPY WebSocket] 정리 중 오류: $e');
+      } finally {
+        _webSocketServiceJpy = null;
       }
     }
   }
@@ -167,7 +216,7 @@ class PriceProvider extends ChangeNotifier {
     _connectivityProvider.removeListener(_connectivityListener);
     _preferenceProvider.removeListener(_preferenceListener);
     try {
-      _currentWebSocketService?.dispose();
+      disposeWebSocketService();
     } catch (e) {
       Logger.error('PriceProvider: dispose 중 WebSocket 오류: $e');
     }
