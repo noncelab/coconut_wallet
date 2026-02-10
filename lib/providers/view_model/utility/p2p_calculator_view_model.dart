@@ -361,6 +361,10 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       feeAmountStr,
       feeSatsStr,
     );
-    Clipboard.setData(ClipboardData(text: bill));
+    copyText(bill);
+  }
+
+  void copyText(String text) {
+    Clipboard.setData(ClipboardData(text: text));
   }
 }

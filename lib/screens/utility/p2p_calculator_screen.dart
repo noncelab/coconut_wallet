@@ -549,6 +549,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                     left: 0,
                     child: IconButton(
                       onPressed: () => Navigator.of(context).pop(),
+                      color: CoconutColors.white,
                       icon: SvgPicture.asset(
                         'assets/svg/close.svg',
                         colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
@@ -575,30 +576,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
             style: CoconutTypography.body3_12.copyWith(height: 1.0, letterSpacing: -0.12, fontWeight: FontWeight.w500),
           ),
           if (canCopy)
-            GestureDetector(
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: value.replaceAll(',', '').replaceAll(' ', '')));
-              },
-              child: Row(
-                children: [
-                  Text(
-                    value,
-                    style: CoconutTypography.body1_16_Number.copyWith(
-                      color: CoconutColors.white,
-                      height: 1.4,
-                      letterSpacing: -0.32,
-                    ),
-                  ),
-                  CoconutLayout.spacing_100w,
-                  SvgPicture.asset(
-                    'assets/svg/copy.svg',
-                    colorFilter: const ColorFilter.mode(CoconutColors.gray600, BlendMode.srcIn),
-                    width: 16,
-                    height: 16,
-                  ),
-                ],
-              ),
-            )
+            _CopyableText(value: value)
           else
             Text(
               value,
@@ -1209,5 +1187,67 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         ];
       }
     }
+  }
+}
+
+class _CopyableText extends StatefulWidget {
+  final String value;
+
+  const _CopyableText({required this.value});
+
+  @override
+  State<_CopyableText> createState() => _CopyableTextState();
+}
+
+class _CopyableTextState extends State<_CopyableText> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (_) {
+        setState(() {
+          _isPressed = true;
+        });
+      },
+      onTapUp: (_) {
+        setState(() {
+          _isPressed = false;
+        });
+        Clipboard.setData(ClipboardData(text: widget.value.replaceAll(',', '').replaceAll(' ', '')));
+      },
+      onTapCancel: () {
+        setState(() {
+          _isPressed = false;
+        });
+      },
+      child: Container(
+        constraints: BoxConstraints(minWidth: MediaQuery.sizeOf(context).width * 0.3),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              widget.value,
+              style: CoconutTypography.body1_16_Number.copyWith(
+                color: _isPressed ? CoconutColors.gray400 : CoconutColors.white,
+                height: 1.4,
+                letterSpacing: -0.32,
+              ),
+            ),
+            CoconutLayout.spacing_100w,
+            SvgPicture.asset(
+              'assets/svg/copy.svg',
+              colorFilter: ColorFilter.mode(
+                _isPressed ? CoconutColors.gray800 : CoconutColors.gray600,
+                BlendMode.srcIn,
+              ),
+              width: 16,
+              height: 16,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
