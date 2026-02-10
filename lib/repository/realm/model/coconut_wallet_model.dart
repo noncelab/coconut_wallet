@@ -236,8 +236,8 @@ class _RealmTransactionDraft {
   // 각 문자열은 {"address": "...", "amount": "..."} 형태
   late List<String> recipientJsons;
   late DateTime createdAt;
-  late double? feeRate;
-  late bool? isMaxMode;
+  late double feeRate;
+  late bool isMaxMode;
   late bool? isFeeSubtractedFromSendAmount;
   late String? bitcoinUnit;
   late List<String> selectedUtxoIds;

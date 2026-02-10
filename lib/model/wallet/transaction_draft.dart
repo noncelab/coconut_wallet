@@ -7,17 +7,13 @@ class TransactionDraft {
   final int id;
   final int walletId;
   final DateTime createdAt;
+  final List<RecipientDraft> recipients;
+  final double feeRate;
+  final bool isMaxMode;
 
   // 서명 전 임시 저장
-  final List<RecipientDraft>? recipients;
-  final double? feeRate;
-  final bool? isMaxMode;
   final bool? isFeeSubtractedFromSendAmount;
-
-  /// 저장 시 사용한 비트코인 단위 ("BTC" / "sats")
   final BitcoinUnit? bitcoinUnit;
-
-  /// 선택된 UTXO 리스트 (자동 선택 모드면 빈 리스트).
   final List<String> selectedUtxoIds;
 
   // 서명 후 임시 저장
@@ -28,9 +24,9 @@ class TransactionDraft {
     required this.id,
     required this.walletId,
     required this.createdAt,
-    this.recipients,
-    this.feeRate,
-    this.isMaxMode,
+    required this.recipients,
+    required this.feeRate,
+    required this.isMaxMode,
     this.isFeeSubtractedFromSendAmount,
     this.bitcoinUnit,
     this.selectedUtxoIds = const [],
