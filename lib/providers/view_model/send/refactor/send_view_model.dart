@@ -380,12 +380,16 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void onWalletInfoUpdated(WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto) {
-    // 모두 보내기 모드 활성화 상태에서 지갑 변경시 모두 보내기 모드를 끄고 마지막 수신자 정보를 초기화
-    if (_selectedWalletItem != null && _selectedWalletItem!.id != walletItem.id && _isMaxMode) {
-      _recipientList[lastIndex].amount = "";
-      setMaxMode(false);
-      if (_currentIndex == lastIndex) {
-        _onAmountTextUpdate(recipientList[lastIndex].amount);
+    // 지갑이 변경됨
+    if (_selectedWalletItem != null && _selectedWalletItem!.id != walletItem.id) {
+      _transactionDraftId = null;
+      // 모두 보내기 모드 활성화 상태에서 지갑 변경시 모두 보내기 모드를 끄고 마지막 수신자 정보를 초기화
+      if (_isMaxMode) {
+        _recipientList[lastIndex].amount = "";
+        setMaxMode(false);
+        if (_currentIndex == lastIndex) {
+          _onAmountTextUpdate(recipientList[lastIndex].amount);
+        }
       }
     }
 
