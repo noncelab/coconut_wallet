@@ -348,8 +348,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       top: 0,
       right: 20,
       child: CoconutPulldownMenu(
-        shadowColor: CoconutColors.gray800,
-        dividerColor: CoconutColors.gray800,
+        shadowColor: CoconutColors.white.withValues(alpha: 0.1),
+        dividerColor: CoconutColors.black,
+        spreadRadius: 12,
         entries: [
           if (isSaved) ...[
             CoconutPulldownMenuItem(title: t.transaction_draft.save_new, isDisabled: !canGoNext), // 새로 저장
