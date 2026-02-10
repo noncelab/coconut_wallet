@@ -374,7 +374,8 @@ class UtxoListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<int> toggleUtxoLockStatus(List<String> selectedIds, bool lock) async {
+  // Lock Status Setting
+  Future<int> setUtxoLockStatus(List<String> selectedIds, bool lock) async {
     final targetUtxoIds =
         utxoList
             .where((utxo) => selectedIds.contains(utxo.utxoId))

@@ -643,7 +643,7 @@ class _UtxoListState extends State<UtxoList> {
     final viewModel = context.read<UtxoListViewModel>();
 
     try {
-      final updatedCount = await viewModel.toggleUtxoLockStatus(_selectedUtxoIds.toList(), lock);
+      final updatedCount = await viewModel.setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
 
       setState(() {
         _selectedUtxoIds.clear();
