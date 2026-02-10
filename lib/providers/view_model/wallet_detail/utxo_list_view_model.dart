@@ -374,7 +374,7 @@ class UtxoListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Lock Status Setting
+  // Sets the lock status of selected UTXOs and returns the updated count.
   Future<int> setUtxoLockStatus(List<String> selectedIds, bool lock) async {
     final targetUtxoIds =
         utxoList
