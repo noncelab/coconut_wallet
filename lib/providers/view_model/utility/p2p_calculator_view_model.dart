@@ -363,12 +363,4 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     );
     Clipboard.setData(ClipboardData(text: bill));
   }
-
-  void share() {
-    if (inputAmount == null || inputAmount == 0) return;
-    // TODO: Share 기능 구현
-    // final now = DateTime.now();
-    // final bill = _generateTransactionBill(now);
-    // Share.share(bill);
-  }
 }

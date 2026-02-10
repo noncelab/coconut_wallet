@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -9,9 +12,13 @@ import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
 
 class P2PCalculatorScreen extends StatefulWidget {
   const P2PCalculatorScreen({super.key});
@@ -34,6 +41,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   late final FocusNode _inputFocusNode;
 
   bool _isUpdatingController = false; // 무한 루프 방지 플래그
+
+  final GlobalKey _billCaptureKey = GlobalKey(); // 거래 계산서 캡처용
 
   @override
   void initState() {
@@ -281,6 +290,25 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     setState(() {});
   }
 
+  Future<void> _captureAndShareBill() async {
+    try {
+      final RenderRepaintBoundary boundary =
+          _billCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/transaction_bill.png');
+      await file.writeAsBytes(pngBytes);
+
+      await Share.shareXFiles([XFile(file.path)], text: t.utility.p2p_calculator.transaction_bill);
+    } catch (e) {
+      debugPrint('Failed to capture and share: $e');
+    }
+  }
+
   void _changeInputAsset() {
     final currentInput = _viewModel.inputAmount;
 
@@ -450,47 +478,59 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CoconutLayout.spacing_1000h,
-                      Align(
-                        alignment: Alignment.center,
-                        child: Text(
-                          t.utility.p2p_calculator.transaction_bill,
-                          style: CoconutTypography.heading3_21_Bold,
+                      RepaintBoundary(
+                        key: _billCaptureKey,
+                        child: Container(
+                          color: CoconutColors.gray900,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CoconutLayout.spacing_1000h,
+                              Align(
+                                alignment: Alignment.center,
+                                child: Text(
+                                  t.utility.p2p_calculator.transaction_bill,
+                                  style: CoconutTypography.heading3_21_Bold,
+                                ),
+                              ),
+                              CoconutLayout.spacing_900h,
+                              // 입력값
+                              _buildBillRow(
+                                _viewModel.inputAssetType == InputAssetType.fiat
+                                    ? _viewModel.fiatCode.code
+                                    : (_viewModel.isBtcUnit ? t.btc : t.sats),
+                                _viewModel.inputAssetType == InputAssetType.fiat
+                                    ? input.toThousandsSeparatedString()
+                                    : _viewModel.formatSatsResult(input),
+                                canCopy: true,
+                              ),
+                              const SizedBox(height: 8),
+                              // 결과값
+                              _buildBillRow(
+                                _viewModel.inputAssetType == InputAssetType.fiat
+                                    ? (_viewModel.isBtcUnit ? t.btc : t.sats)
+                                    : _viewModel.fiatCode.code,
+                                _viewModel.inputAssetType == InputAssetType.fiat
+                                    ? _viewModel.formatSatsResult(result)
+                                    : result.toThousandsSeparatedString(),
+                                canCopy: true,
+                              ),
+                              const SizedBox(height: 24),
+                              const Divider(color: CoconutColors.gray700, height: 1),
+                              const SizedBox(height: 24),
+                              _buildBillRow(
+                                t.utility.p2p_calculator.reference_price,
+                                '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
+                              ),
+                              const SizedBox(height: 20),
+                              _buildBillRow(t.utility.p2p_calculator.reference_datetime, referenceDateTimeString),
+                              const SizedBox(height: 20),
+                              _buildBillRow(t.utility.p2p_calculator.transaction_fee, '${_feeController.text} %'),
+                              CoconutLayout.spacing_1000h,
+                            ],
+                          ),
                         ),
                       ),
-                      CoconutLayout.spacing_900h,
-                      // 입력값
-                      _buildBillRow(
-                        _viewModel.inputAssetType == InputAssetType.fiat
-                            ? _viewModel.fiatCode.code
-                            : (_viewModel.isBtcUnit ? t.btc : t.sats),
-                        _viewModel.inputAssetType == InputAssetType.fiat
-                            ? input.toThousandsSeparatedString()
-                            : _viewModel.formatSatsResult(input),
-                        canCopy: true,
-                      ),
-                      const SizedBox(height: 8),
-                      // 결과값
-                      _buildBillRow(
-                        _viewModel.inputAssetType == InputAssetType.fiat
-                            ? (_viewModel.isBtcUnit ? t.btc : t.sats)
-                            : _viewModel.fiatCode.code,
-                        _viewModel.inputAssetType == InputAssetType.fiat
-                            ? _viewModel.formatSatsResult(result)
-                            : result.toThousandsSeparatedString(),
-                        canCopy: true,
-                      ),
-                      const SizedBox(height: 24),
-                      const Divider(color: CoconutColors.gray700, height: 1),
-                      const SizedBox(height: 24),
-                      _buildBillRow(
-                        t.utility.p2p_calculator.reference_price,
-                        '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
-                      ),
-                      const SizedBox(height: 20),
-                      _buildBillRow(t.utility.p2p_calculator.reference_datetime, referenceDateTimeString),
-                      const SizedBox(height: 20),
-                      _buildBillRow(t.utility.p2p_calculator.transaction_fee, '${_feeController.text} %'),
                       const SizedBox(height: 34),
                       _buildBillActions(
                         btcPriceStr,
@@ -625,7 +665,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           borderRadius: 8,
           pressedColor: CoconutColors.gray850,
           onPressed: () {
-            _viewModel.share();
+            _captureAndShareBill();
           },
           child: Container(
             width: 120,
