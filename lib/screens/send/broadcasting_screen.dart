@@ -163,7 +163,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           viewModel.isNetworkOn,
                         ),
                     if (!viewModel.isSendingDonation)
-                      if (viewModel.unsignedDraftId == null && viewModel.feeBumpingType == null) ...{
+                      if (viewModel.feeBumpingType == null) ...{
                         FixedBottomTweenButton(
                           leftButtonRatio: 0.35,
                           leftButtonClicked: () async {
@@ -298,6 +298,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             message,
             rightButtonText: t.delete,
             onTapRight: () async {
+              Navigator.pop(context);
               _setOverlayLoading(true);
               await Future.delayed(const Duration(seconds: 1));
               try {
@@ -311,6 +312,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                   e.toString(),
                 );
                 _setOverlayLoading(false);
+                return;
               }
               if (!mounted) return;
               Navigator.of(
