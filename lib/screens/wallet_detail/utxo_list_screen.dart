@@ -644,9 +644,7 @@ class _UtxoListState extends State<UtxoList> {
       final targetUtxoIds =
           viewModel.utxoList
               .where((utxo) => _selectedUtxoIds.contains(utxo.utxoId))
-              .where((utxo) {
-                return utxo.status != UtxoStatus.incoming && utxo.status != UtxoStatus.outgoing;
-              })
+              .where((utxo) => !utxo.isPending)
               .map((utxo) => utxo.utxoId)
               .toList();
 
