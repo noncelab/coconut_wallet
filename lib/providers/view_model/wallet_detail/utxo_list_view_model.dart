@@ -20,6 +20,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class UtxoListViewModel extends ChangeNotifier {
+  // Defendencies
   late final WalletProvider _walletProvider;
   late final TransactionProvider _txProvider;
   late final UtxoTagProvider _tagProvider;
@@ -27,28 +28,60 @@ class UtxoListViewModel extends ChangeNotifier {
   late final PriceProvider _priceProvider;
   late final PreferenceProvider _preferenceProvider;
   late final WalletListItemBase _walletListBaseItem;
+
   final Stream<WalletUpdateInfo> _syncWalletStateStream;
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
   late final int _walletId;
-  WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
-  List<UtxoState> _filteredUtxoList = [];
-  final List<UtxoState> _confirmedUtxoList = [];
-  final Map<String, List<UtxoTag>> _utxoTagMap = {};
-  List<UtxoState> _selectedUtxoList = [];
 
-  // balance 애니메이션을 위한 이전 잔액을 담는 변수
-  late int _prevBalance;
+  // State Variables
+  WalletSyncState _prevUpdateStatus = WalletSyncState.completed;
 
   List<UtxoState> _utxoList = [];
-  late UtxoOrder _selectedUtxoOrder;
+  List<UtxoState> _confirmedUtxoList = [];
+  List<UtxoState> _filteredUtxoList = [];
+  List<UtxoState> _selectedUtxoList = [];
+
+  // cache variable
+  int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
+  late int _prevBalance;
+
+  // UI State
   bool _isUtxoListLoadComplete = false;
   String _selectedUtxoTagName = t.all;
+  late UtxoOrder _selectedUtxoOrder;
+
+  // Tag Data
+  final Map<String, List<UtxoTag>> _utxoTagMap = {};
   List<UtxoTag> _utxoTagList = [];
+
+  // Getters
   List<UtxoState> get filteredUtxoList => _filteredUtxoList;
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
-  int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
   UtxoOrder get utxoOrder => _preferenceProvider.utxoSortOrder;
 
+  int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
+  int get prevBalance => _prevBalance;
+  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
+  bool? get isNetworkOn => _connectProvider.isNetworkOn;
+  bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
+  bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
+
+  UtxoOrder get selectedUtxoOrder => _selectedUtxoOrder;
+  String get selectedUtxoTagName => _selectedUtxoTagName;
+  UtxoTagProvider get tagProvider => _tagProvider;
+  List<UtxoState> get utxoList => _utxoList;
+  List<UtxoTag> get utxoTagList => _utxoTagList;
+
+  String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
+  WalletType get walletType => _walletListBaseItem.walletType;
+  bool get isSyncing => _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
+
+  int get selectedUtxoAmountSum {
+    _cachedSelectedUtxoAmountSum ??= _calculateTotalAmountOfUtxoList(_selectedUtxoList);
+    return _cachedSelectedUtxoAmountSum!;
+  }
+
+  // Constructor
   UtxoListViewModel(
     this._walletId,
     this._walletProvider,
@@ -59,56 +92,32 @@ class UtxoListViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._syncWalletStateStream,
   ) {
-    _walletListBaseItem = _walletProvider.getWalletById(_walletId);
-    _initUtxoAndTags();
+    _initializeProperties();
+    _loadAndProcessUtxos();
     _addChangeListener();
-    _prevBalance = balance;
+  }
 
-    // 모든 UTXO (locked 포함)를 리스트에 추가
-    _walletProvider.getUtxoList(_walletId).fold<int>(0, (sum, utxo) {
-      // unspent와 locked 모두 포함
-      if (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked) {
-        _confirmedUtxoList.add(utxo);
-      }
-      return utxo.status == UtxoStatus.unspent ? sum + utxo.amount : sum;
-    });
+  void _initializeProperties() {
+    _walletListBaseItem = _walletProvider.getWalletById(_walletId);
+    _prevBalance = balance;
+    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
+    _initUtxoAndTags();
+  }
+
+  void _loadAndProcessUtxos() {
+    final allUtxos = _walletProvider.getUtxoList(_walletId);
+
+    _confirmedUtxoList =
+        allUtxos.where((utxo) {
+          return utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked;
+        }).toList();
+
     _sortConfirmedUtxoList(utxoOrder);
     _initUtxoTagMap();
     _updateFilteredUtxoList();
-
-    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-  }
-
-  int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
-  int get prevBalance => _prevBalance;
-  int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
-  bool? get isNetworkOn => _connectProvider.isNetworkOn;
-
-  bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
-
-  bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
-
-  UtxoOrder get selectedUtxoOrder => _selectedUtxoOrder;
-  String get selectedUtxoTagName => _selectedUtxoTagName;
-  UtxoTagProvider get tagProvider => _tagProvider;
-  List<UtxoState> get utxoList => _utxoList;
-
-  List<UtxoTag> get utxoTagList => _utxoTagList;
-
-  int get selectedUtxoAmountSum {
-    _cachedSelectedUtxoAmountSum ??= _calculateTotalAmountOfUtxoList(_selectedUtxoList);
-
-    return _cachedSelectedUtxoAmountSum!;
   }
 
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
-
-  // 태그 목록 변경을 감지하기 위한 key
-  String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
-
-  WalletType get walletType => _walletListBaseItem.walletType;
-
-  bool get isSyncing => _prevUpdateStatus == WalletSyncState.waiting || _prevUpdateStatus == WalletSyncState.syncing;
 
   int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
     return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
