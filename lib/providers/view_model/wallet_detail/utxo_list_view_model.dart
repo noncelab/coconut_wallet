@@ -364,4 +364,24 @@ class UtxoListViewModel extends ChangeNotifier {
     _cachedSelectedUtxoAmountSum = null;
     notifyListeners();
   }
+
+  Future<int> toggleUtxoLockStatus(List<String> selectedIds, bool lock) async {
+    final targetUtxoIds =
+        utxoList
+            .where((utxo) => selectedIds.contains(utxo.utxoId))
+            .where((utxo) => !utxo.isPending)
+            .map((utxo) => utxo.utxoId)
+            .toList();
+
+    if (targetUtxoIds.isEmpty) {
+      return 0;
+    }
+
+    final newStatus = lock ? UtxoStatus.locked : UtxoStatus.unspent;
+    await updateSelectedUtxosStatus(targetUtxoIds, newStatus);
+
+    clearUtxoList();
+
+    return targetUtxoIds.length;
+  }
 }

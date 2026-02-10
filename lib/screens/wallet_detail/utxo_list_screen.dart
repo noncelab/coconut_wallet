@@ -639,38 +639,26 @@ class _UtxoListState extends State<UtxoList> {
 
   Future<void> _updateSelectedUtxos({required bool lock}) async {
     if (_selectedUtxoIds.isEmpty) return;
+
     final viewModel = context.read<UtxoListViewModel>();
+
     try {
-      final targetUtxoIds =
-          viewModel.utxoList
-              .where((utxo) => _selectedUtxoIds.contains(utxo.utxoId))
-              .where((utxo) => !utxo.isPending)
-              .map((utxo) => utxo.utxoId)
-              .toList();
-
-      if (targetUtxoIds.isEmpty) {
-        setState(() {
-          _selectedUtxoIds.clear();
-          widget.onSettingLockChanged?.call(false);
-        });
-        return;
-      }
-
-      final newStatus = lock ? UtxoStatus.locked : UtxoStatus.unspent;
-      await viewModel.updateSelectedUtxosStatus(targetUtxoIds, newStatus);
+      final updatedCount = await viewModel.toggleUtxoLockStatus(_selectedUtxoIds.toList(), lock);
 
       setState(() {
         _selectedUtxoIds.clear();
-        viewModel.clearUtxoList();
         widget.onSettingLockChanged?.call(false);
       });
 
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
-        text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
-      );
+      if (updatedCount > 0) {
+        if (!mounted) return;
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+        );
+      }
 
       _bottomSheetController?.close();
     } catch (e) {
