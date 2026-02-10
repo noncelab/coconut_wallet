@@ -371,11 +371,13 @@ class TransactionDraftRepository extends BaseRepository {
         throw StateError('Transaction draft not found: $draftId');
       }
 
+      final isSigned = _isSignedDraft(draft);
+
       realm.write(() {
         realm.delete(draft);
       });
 
-      if (_isSignedDraft(draft)) {
+      if (isSigned) {
         await _secureStorage.delete(key: _getSignedTransactionStorageKey(draftId));
       }
     });

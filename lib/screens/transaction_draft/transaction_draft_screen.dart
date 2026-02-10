@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
@@ -20,7 +18,6 @@ class TransactionDraftScreen extends StatefulWidget {
 }
 
 class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
-  final bool _isInitializing = false;
   bool? _isSignedTransactionSelected;
 
   /// 스크롤
@@ -29,15 +26,6 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
 
   /// 현재 열린 카드 ID (스와이프된 카드)
   int? _swipedCardId;
-
-  /// AnimatedList를 위한 키
-  final GlobalKey<AnimatedListState> _animatedListKey = GlobalKey<AnimatedListState>();
-
-  /// 현재 표시 중인 리스트 (AnimatedList용)
-  List<TransactionDraft> _displayedDraftList = [];
-
-  /// 애니메이션 duration
-  static const Duration _duration = Duration(milliseconds: 300);
 
   /// 초기 선택 상태가 설정되었는지 여부
   bool _initialSelectionSet = false;
@@ -68,23 +56,10 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
             _initialSelectionSet = true;
           }
 
-          // ViewModel 리스트와 _displayedDraftList 동기화
           final currentList =
               (_isSignedTransactionSelected ?? true)
                   ? viewModel.signedTransactionDraftList
                   : viewModel.unsignedTransactionDraftList;
-
-          // 초기 로드 시 또는 세그먼트 전환 시에만 동기화
-          if (_displayedDraftList.isEmpty && currentList.isNotEmpty) {
-            // setState를 사용하여 상태 업데이트 (다음 프레임에 AnimatedList가 올바른 initialItemCount로 생성됨)
-            Future.microtask(() {
-              if (mounted) {
-                setState(() {
-                  _displayedDraftList = List.from(currentList);
-                });
-              }
-            });
-          }
 
           return Scaffold(
             backgroundColor: CoconutColors.black,
@@ -150,20 +125,8 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
             }
           }
 
-          // 세그먼트 전환 시 _displayedDraftList 초기화
           if (wasSignedSelected != (_isSignedTransactionSelected ?? true)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                final newList =
-                    (_isSignedTransactionSelected ?? true)
-                        ? viewModel.signedTransactionDraftList
-                        : viewModel.unsignedTransactionDraftList;
-                setState(() {
-                  _displayedDraftList = List.from(newList);
-                  _swipedCardId = null;
-                });
-              }
-            });
+            _swipedCardId = null;
           }
 
           await scrollToTop();
@@ -174,68 +137,38 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
 
   Widget _buildTransactionDraftList(List<TransactionDraft> transactionDraftList, TransactionDraftViewModel viewModel) {
     if (transactionDraftList.isEmpty) {
-      // 리스트가 비어있으면 _displayedDraftList도 비우기
-      if (_displayedDraftList.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              _displayedDraftList = [];
-            });
-          }
-        });
-      }
       return Column(children: [CoconutLayout.spacing_2500h, Text(t.transaction_draft.empty_message)]);
     }
 
-    // 초기 로드가 완료되지 않았으면 로딩 표시
-    if (_displayedDraftList.isEmpty && transactionDraftList.isNotEmpty) {
-      return Container();
-    }
+    return GestureDetector(
+      onTap: () {
+        if (_swipedCardId != null) {
+          setState(() {
+            _swipedCardId = null;
+          });
+        }
+      },
+      child: ListView.builder(
+        controller: _controller,
+        itemCount: transactionDraftList.length,
+        itemBuilder: (context, index) {
+          final transactionDraft = transactionDraftList[index];
+          final cardId = transactionDraft.id;
 
-    return _isInitializing
-        ? const Center(child: CircularProgressIndicator(color: CoconutColors.white))
-        : GestureDetector(
-          onTap: () {
-            // 화면 탭 시 열린 카드 닫기
-            if (_swipedCardId != null) {
-              setState(() {
-                _swipedCardId = null;
-              });
-            }
-          },
-          child: AnimatedList(
-            key: ValueKey('${_displayedDraftList.length}_$_isSignedTransactionSelected'),
-            initialItemCount: _displayedDraftList.length,
-            itemBuilder: (context, index, animation) {
-              if (index >= _displayedDraftList.length) {
-                return const SizedBox.shrink();
-              }
-
-              // Realm 객체가 유효한지 확인
-              final transactionDraft = _displayedDraftList[index];
-              int? cardId;
-              try {
-                cardId = transactionDraft.id;
-              } catch (e) {
-                // Realm 객체가 이미 invalidated된 경우
-                return const SizedBox.shrink();
-              }
-
-              return Column(
-                children: [
-                  if (index > 0) CoconutLayout.spacing_300h,
-                  _buildTransactionDraftCard(transactionDraft, index, animation, cardId, viewModel),
-                ],
-              );
-            },
-          ),
-        );
+          return Column(
+            children: [
+              if (index > 0) CoconutLayout.spacing_300h,
+              _buildTransactionDraftCard(transactionDraft, index, cardId, viewModel),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildTransactionDraftCard(
     TransactionDraft transactionDraft,
     int index,
-    Animation<double> animation,
     int cardId,
     TransactionDraftViewModel viewModel,
   ) {
@@ -249,6 +182,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
         }
       },
       child: TransactionDraftCard(
+        key: ValueKey(cardId),
         transactionDraft: transactionDraft,
         isSwiped: _swipedCardId == cardId,
         onSwipeChanged: (isSwiped) {
@@ -259,100 +193,8 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
         onTap: () {
           _handleTransactionDraftCardTap(transactionDraft, viewModel);
         },
-        onDelete: () async {
-          final transactionDraftRepository = Provider.of<TransactionDraftRepository>(context, listen: false);
-          try {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return CoconutPopup(
-                  languageCode: context.read<PreferenceProvider>().language,
-                  title: t.transaction_draft.dialog.transaction_draft_delete,
-                  description: t.transaction_draft.dialog.transaction_draft_delete_description,
-                  leftButtonText: t.cancel,
-                  rightButtonText: t.confirm,
-                  rightButtonColor: CoconutColors.white,
-                  onTapRight: () async {
-                    Navigator.pop(context);
-
-                    // 삭제될 아이템 인덱스와 ID 저장
-                    final deletedIndex = index;
-                    final deletedCardId = cardId;
-
-                    // Realm 객체 삭제 먼저 수행
-                    final result = await transactionDraftRepository.deleteUnsignedTransactionDraft(cardId);
-
-                    if (result.isSuccess) {
-                      // _displayedDraftList에서 해당 ID를 가진 항목만 제거 (인덱스로 접근하면 안됨)
-                      setState(() {
-                        _displayedDraftList.removeWhere((draft) {
-                          try {
-                            return draft.id == deletedCardId;
-                          } catch (e) {
-                            // invalidated 객체는 제거
-                            return false;
-                          }
-                        });
-                        _swipedCardId = null;
-                      });
-
-                      // 애니메이션과 함께 삭제
-                      // 삭제된 후에는 _displayedDraftList의 길이가 줄어들지만,
-                      // AnimatedList는 removeItem이 호출될 때까지 원래 길이를 유지
-                      // TODO: 삭제 애니메이션 구현
-                      if (_animatedListKey.currentState != null && deletedIndex >= 0) {
-                        _animatedListKey.currentState?.removeItem(
-                          deletedIndex,
-                          (context, animation) => _buildRemoveCardPlaceholder(animation),
-                          duration: _duration,
-                        );
-                        vibrateLight();
-                      }
-                    } else {
-                      vibrateLightDouble();
-                      if (mounted) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return CoconutPopup(
-                              languageCode: context.read<PreferenceProvider>().language,
-                              title: t.transaction_draft.dialog.transaction_draft_delete_failed,
-                              description: result.error.message,
-                              rightButtonText: t.confirm,
-                              rightButtonColor: CoconutColors.white,
-                              onTapRight: () {
-                                Navigator.pop(context);
-                              },
-                            );
-                          },
-                        );
-                      }
-                    }
-                  },
-                  onTapLeft: () {
-                    Navigator.pop(context);
-                  },
-                );
-              },
-            );
-          } catch (e) {
-            vibrateLightDouble();
-            showDialog(
-              context: context,
-              builder: (context) {
-                return CoconutPopup(
-                  languageCode: context.read<PreferenceProvider>().language,
-                  title: t.transaction_draft.dialog.transaction_draft_delete_failed,
-                  description: e.toString(),
-                  rightButtonText: t.confirm,
-                  rightButtonColor: CoconutColors.white,
-                  onTapRight: () {
-                    Navigator.pop(context);
-                  },
-                );
-              },
-            );
-          }
+        onDelete: () {
+          _showDeleteConfirmDialog(transactionDraft, cardId, viewModel);
         },
       ),
     );
@@ -376,45 +218,61 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
       );
     }
     if (!mounted) return;
-    //await _refreshTransactionDraftList(viewModel);
+    await _refreshList(viewModel);
   }
 
-  Future<void> _refreshTransactionDraftList(TransactionDraftViewModel viewModel) async {
-    await viewModel.initializeDraftList();
-
-    if (!mounted) {
-      return;
-    }
-
-    final updatedList =
-        (_isSignedTransactionSelected ?? true)
-            ? viewModel.signedTransactionDraftList
-            : viewModel.unsignedTransactionDraftList;
-
-    setState(() {
-      _displayedDraftList = List.from(updatedList);
-      _swipedCardId = null;
-    });
-  }
-
-  Widget _buildRemoveCardPlaceholder(Animation<double> animation) {
-    return SizeTransition(
-      sizeFactor: animation,
-      child: FadeTransition(
-        opacity: animation,
-        child: Column(
-          children: [
-            if (_displayedDraftList.isNotEmpty) CoconutLayout.spacing_300h,
-            // 삭제되는 카드와 동일한 높이의 플레이스홀더
-            Container(
-              decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: Sizes.size24, vertical: Sizes.size16),
-              // 대략적인 카드 높이 (타임스탬프, 지갑 정보, 주소, 수수료 등)
-              height: 120,
-            ),
-          ],
-        ),
-      ),
+  void _showDeleteConfirmDialog(TransactionDraft transactionDraft, int cardId, TransactionDraftViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return CoconutPopup(
+          languageCode: dialogContext.read<PreferenceProvider>().language,
+          title: t.transaction_draft.dialog.transaction_draft_delete,
+          description: t.transaction_draft.dialog.transaction_draft_delete_description,
+          leftButtonText: t.cancel,
+          rightButtonText: t.confirm,
+          rightButtonColor: CoconutColors.white,
+          onTapRight: () async {
+            Navigator.pop(dialogContext);
+            await _deleteDraft(transactionDraft, cardId, viewModel);
+          },
+          onTapLeft: () {
+            Navigator.pop(dialogContext);
+          },
+        );
+      },
     );
+  }
+
+  Future<void> _deleteDraft(TransactionDraft transactionDraft, int cardId, TransactionDraftViewModel viewModel) async {
+    final result = await viewModel.deleteDraft(cardId, isSigned: transactionDraft.isSigned);
+
+    if (!mounted) return;
+
+    if (result.isSuccess) {
+      _swipedCardId = null;
+      vibrateLight();
+    } else {
+      vibrateLightDouble();
+      showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return CoconutPopup(
+            languageCode: dialogContext.read<PreferenceProvider>().language,
+            title: t.transaction_draft.dialog.transaction_draft_delete_failed,
+            description: result.error.message,
+            rightButtonText: t.confirm,
+            rightButtonColor: CoconutColors.white,
+            onTapRight: () {
+              Navigator.pop(dialogContext);
+            },
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _refreshList(TransactionDraftViewModel viewModel) async {
+    await viewModel.initializeDraftList();
   }
 }
