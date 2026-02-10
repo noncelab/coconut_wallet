@@ -19,7 +19,6 @@ import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/wallet_expandable_info_card.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
