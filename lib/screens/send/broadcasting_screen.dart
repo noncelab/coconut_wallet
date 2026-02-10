@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -23,6 +24,7 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/floating_widget.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
 import 'package:flutter/material.dart';
@@ -289,7 +291,33 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               excludedUtxoStatus == SelectedUtxoExcludedStatus.used
                   ? t.transaction_draft.dialog.transaction_already_used_utxo_included
                   : t.transaction_draft.dialog.transaction_has_been_locked_utxo_included;
-          showAlertDialog(context: context, content: message);
+          showConfirmDialog(
+            context,
+            context.read<PreferenceProvider>().language,
+            t.broadcasting_screen.dialog.send_unavailable,
+            message,
+            rightButtonText: t.delete,
+            onTapRight: () async {
+              _setOverlayLoading(true);
+              await Future.delayed(const Duration(seconds: 1));
+              try {
+                await _viewModel.deleteSignedDraft();
+              } catch (e) {
+                if (!mounted) return;
+                showInfoDialog(
+                  context,
+                  context.read<PreferenceProvider>().language,
+                  t.transaction_draft.dialog.transaction_draft_delete_failed,
+                  e.toString(),
+                );
+                _setOverlayLoading(false);
+              }
+              if (!mounted) return;
+              Navigator.of(
+                context,
+              ).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const WalletHomeScreen()), (route) => false);
+            },
+          );
         }
       } catch (e) {
         vibrateMedium();

@@ -138,7 +138,7 @@ class BroadcastingViewModel extends ChangeNotifier {
 
   Future<SelectedUtxoExcludedStatus?> setTxInfo() async {
     if (_signedDraftId != null) {
-      await _setSendProviderFromSignedDraft(_signedDraftId!);
+      await _setSendProviderFromSignedDraft(_signedDraftId);
     }
 
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
@@ -266,9 +266,11 @@ class BroadcastingViewModel extends ChangeNotifier {
     _totalAmount = psbt.sendingAmount + psbt.fee;
 
     _setSignedTransaction(psbt);
-    _isInitDone = true;
-    notifyListeners();
 
+    if (excludedUtxoStatus == null) {
+      _isInitDone = true;
+    }
+    notifyListeners();
     return excludedUtxoStatus;
   }
 
@@ -429,5 +431,12 @@ class BroadcastingViewModel extends ChangeNotifier {
         Logger.error('Failed to delete signed draft: $e');
       }
     }
+  }
+
+  // 삭제 실패 시 안내..??
+  Future<void> deleteSignedDraft() async {
+    final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
+    assert(signedDraftIdToDelete != null);
+    await _txDraftRepository.deleteOne(signedDraftIdToDelete!);
   }
 }

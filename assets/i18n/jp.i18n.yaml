@@ -472,6 +472,8 @@ broadcasting_screen:
   btn_submit: "送信"
   toast:
     already_saved_draft: "すでに追加されたトランザクションです。"
+  dialog:
+    send_unavailable: "送信不可"
 send_address_screen:
   text1: "QRをスキャンまたは\nコピーしたアドレスを貼り付け"
   text2: "アドレスQRコードをスキャンしてください"

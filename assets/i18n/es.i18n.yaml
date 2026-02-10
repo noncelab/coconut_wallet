@@ -470,6 +470,8 @@ broadcasting_screen:
   btn_submit: "Enviar"
   toast:
     already_saved_draft: "Esta transacción ya ha sido guardada."
+  dialog:
+    send_unavailable: "No se puede enviar"
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"

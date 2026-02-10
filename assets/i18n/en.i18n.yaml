@@ -471,6 +471,8 @@ broadcasting_screen:
   btn_submit: "Send"
   toast:
     already_saved_draft: "This transaction has already been saved."
+  dialog:
+    send_unavailable: "Unable to Send"
 send_address_screen:
   text1: "Scan QR or\npaste the copied address"
   text2: "Please scan the address QR code"
