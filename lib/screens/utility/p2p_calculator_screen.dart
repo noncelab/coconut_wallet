@@ -35,8 +35,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
 
   bool _isUpdatingController = false; // 무한 루프 방지 플래그
 
-  double get _keyboardHeight => MediaQuery.of(context).viewInsets.bottom;
-
   @override
   void initState() {
     super.initState();
@@ -302,6 +300,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       // 입력값이 없으면 그냥 토글만
       _viewModel.toggleInputAssetType();
       _inputController.clear();
+      _inputFocusNode.unfocus();
     }
 
     setState(() {});
@@ -335,8 +334,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       }
 
       _isUpdatingController = false;
-    } else {
-      _inputController.clear();
     }
 
     setState(() {});
@@ -621,7 +618,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         behavior: HitTestBehavior.translucent,
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
-          resizeToAvoidBottomInset: false,
+          resizeToAvoidBottomInset: true,
           backgroundColor: CoconutColors.black,
           appBar: CoconutAppBar.build(
             context: context,
@@ -655,6 +652,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                             CoconutLayout.spacing_400h,
                             _buildPriceHeader(viewModel),
                             _buildCalculatorCards(viewModel),
+                            CoconutLayout.spacing_2500h,
                           ],
                         ),
                       ),
@@ -677,7 +675,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         _buildCurrentPriceWidget(viewModel),
         if (viewModel.isNetworkOn)
           ShrinkAnimationButton(
-            onPressed: viewModel.onFiatUnitChange,
+            onPressed: () async {
+              await viewModel.onFiatUnitChange();
+              _inputFocusNode.unfocus();
+            },
             defaultColor: CoconutColors.gray800,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -782,8 +783,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
               controller: _inputController,
               focusNode: _inputFocusNode,
               placeholderText: placeholder,
-              prefix: viewModel.inputAssetType == InputAssetType.fiat ? viewModel.fiatCode.symbol : null,
-              postfix: viewModel.inputAssetType == InputAssetType.btc ? (viewModel.isBtcUnit ? t.btc : t.sats) : null,
+              prefix: viewModel.inputCardPrefix,
+              postfix: viewModel.inputCardPostfix,
               feeController: _feeController,
               feeFocusNode: _feeFocusNode,
               onUnitToggle: viewModel.inputAssetType == InputAssetType.btc ? _onBtcUnitToggle : null,
@@ -793,8 +794,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
             _buildResultCardWidget(
               isActive: hasInput,
               resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
-              prefix: viewModel.inputAssetType == InputAssetType.fiat ? null : viewModel.fiatCode.symbol,
-              postfix: viewModel.inputAssetType == InputAssetType.fiat ? (viewModel.isBtcUnit ? t.btc : t.sats) : null,
+              prefix: viewModel.resultCardPrefix,
+              postfix: viewModel.resultCardPostfix,
               onTap: viewModel.inputAssetType == InputAssetType.fiat ? _onBtcUnitToggle : null,
             ),
           ],
@@ -833,6 +834,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   }) {
     final hasInput = _viewModel.inputAmount != null;
     final textColor = hasInput ? CoconutColors.white : CoconutColors.gray600;
+    // focus가 있고 입력값이 비어있으면 placeholder 숨김 (단, controller.text가 있으면 표시)
+    final shouldHidePlaceholder = focusNode.hasFocus && controller.text.isEmpty;
+    final effectivePlaceholder = shouldHidePlaceholder ? '' : placeholderText;
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
@@ -863,7 +867,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                             maxLines: 1,
                             controller: controller,
                             focusNode: focusNode,
-                            placeholderText: placeholderText,
+                            placeholderText: effectivePlaceholder,
                             textInputFormatter:
                                 postfix == t.btc
                                     ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
@@ -993,7 +997,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     final buttonData = _getQuickAddAmounts();
 
     return Positioned(
-      bottom: _keyboardHeight,
+      bottom: 0,
+      left: 0,
+      right: 0,
       child: GestureDetector(
         onTap: () {},
         child: Container(

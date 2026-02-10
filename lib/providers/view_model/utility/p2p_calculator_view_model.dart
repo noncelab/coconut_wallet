@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -51,6 +52,11 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   /// BTC 가격이 사용 가능한지 여부
   bool get isBtcPriceAvailable => _btcPrice != null && _btcPrice! > 0 && _isNetworkOn;
+
+  String get inputCardPrefix => _inputAssetType == InputAssetType.fiat ? _fiatCode.symbol : '';
+  String get inputCardPostfix => _inputAssetType == InputAssetType.fiat ? '' : (isBtcUnit ? t.btc : t.sats);
+  String get resultCardPrefix => _inputAssetType == InputAssetType.fiat ? '' : _fiatCode.symbol;
+  String get resultCardPostfix => _inputAssetType == InputAssetType.fiat ? (isBtcUnit ? t.btc : t.sats) : '';
 
   /// 1 BTC의 법정화폐 환산 가격 (포맷팅된 문자열)
   String get formattedOneBtcPrice {
@@ -146,7 +152,6 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   int calculateFiatFromSats(int satsAmount) {
     final price = _getBtcPrice();
     if (price == 0) return 0;
-
     final premiumMultiplier = 1.0 + (_feeRate / 100.0);
     final btcAmount = satsAmount / 100000000;
     return (btcAmount * price * premiumMultiplier).round();
@@ -196,21 +201,23 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   String _getResultPlaceholder() {
     int inputValue;
 
-    switch (_fiatCode) {
-      case FiatCode.KRW:
-        inputValue = 50000;
-      case FiatCode.USD:
-        inputValue = 50;
-      case FiatCode.JPY:
-        inputValue = 5000;
-    }
-
     if (_inputAssetType == InputAssetType.fiat) {
+      // Fiat 입력 모드: inputValue는 법정화폐 금액
+      switch (_fiatCode) {
+        case FiatCode.KRW:
+          inputValue = 50000;
+        case FiatCode.USD:
+          inputValue = 50;
+        case FiatCode.JPY:
+          inputValue = 5000;
+      }
       // Fiat → Sats
       final sats = calculateSatsFromFiat(inputValue);
       return formatSatsResult(sats);
     } else {
-      // BTC/Sats → Fiat
+      // BTC 입력 모드: inputValue는 sats 금액 (모든 통화 동일)
+      inputValue = 50000; // 50,000 sats = 0.0005 BTC
+      // Sats → Fiat
       final fiat = calculateFiatFromSats(inputValue);
       return fiat.toThousandsSeparatedString();
     }
