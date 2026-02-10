@@ -405,7 +405,33 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     final result = _viewModel.calculate(input);
     final referenceDateTime = DateTime.now();
     final referenceDateTimeString =
-        '${referenceDateTime.year}-${referenceDateTime.month.toString().padLeft(2, '0')}-${referenceDateTime.day.toString().padLeft(2, '0')} ${referenceDateTime.hour.toString().padLeft(2, '0')}:${referenceDateTime.minute.toString().padLeft(2, '0')}:${referenceDateTime.second.toString().padLeft(2, '0')}';
+        '${referenceDateTime.year.toString().substring(2)}-${referenceDateTime.month.toString().padLeft(2, '0')}-${referenceDateTime.day.toString().padLeft(2, '0')} ${referenceDateTime.hour.toString().padLeft(2, '0')}:${referenceDateTime.minute.toString().padLeft(2, '0')}:${referenceDateTime.second.toString().padLeft(2, '0')}';
+
+    final btcPriceStr = _viewModel.btcPrice?.toThousandsSeparatedString() ?? '-';
+    final fiatAmountStr =
+        _viewModel.inputAssetType == InputAssetType.fiat
+            ? input.toThousandsSeparatedString()
+            : result.toThousandsSeparatedString();
+    final btcAmountStr =
+        _viewModel.inputAssetType == InputAssetType.fiat
+            ? _viewModel.formatSatsResult(result)
+            : _viewModel.formatSatsResult(input);
+    final feeRateStr = '${_feeController.text}%';
+
+    final feeRate = double.tryParse(_feeController.text) ?? 0;
+    int feeAmount;
+    int feeSats;
+    if (_viewModel.inputAssetType == InputAssetType.fiat) {
+      final originalSats = (result / (1.0 - feeRate / 100)).round();
+      feeSats = originalSats - result;
+      feeAmount = (input * feeRate / (100 - feeRate)).round();
+    } else {
+      final baseFiat = (result / (1.0 + feeRate / 100)).round();
+      feeAmount = result - baseFiat;
+      feeSats = (input * feeRate / 100).round();
+    }
+    final feeAmountStr = feeAmount.toThousandsSeparatedString();
+    final feeSatsStr = feeSats.toThousandsSeparatedString();
 
     showDialog(
       context: context,
@@ -466,7 +492,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                       const SizedBox(height: 20),
                       _buildBillRow(t.utility.p2p_calculator.transaction_fee, '${_feeController.text} %'),
                       const SizedBox(height: 34),
-                      _buildBillActions(),
+                      _buildBillActions(
+                        btcPriceStr,
+                        fiatAmountStr,
+                        btcAmountStr,
+                        referenceDateTimeString,
+                        feeRateStr,
+                        feeAmountStr,
+                        feeSatsStr,
+                      ),
                       CoconutLayout.spacing_600h,
                     ],
                   ),
@@ -539,7 +573,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     );
   }
 
-  Widget _buildBillActions() {
+  Widget _buildBillActions(
+    String btcPriceStr,
+    String fiatAmountStr,
+    String btcAmountStr,
+    String referenceDateTime,
+    String feeRateStr,
+    String feeAmountStr,
+    String feeSatsStr,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -547,7 +589,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           borderRadius: 8,
           pressedColor: CoconutColors.gray850,
           onPressed: () {
-            // TODO: 전체 복사
+            _viewModel.copyAll(
+              btcPriceStr,
+              fiatAmountStr,
+              btcAmountStr,
+              referenceDateTime,
+              feeRateStr,
+              feeAmountStr,
+              feeSatsStr,
+            );
           },
           child: Container(
             width: 120,
@@ -575,7 +625,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           borderRadius: 8,
           pressedColor: CoconutColors.gray850,
           onPressed: () {
-            // TODO: 공유
+            _viewModel.share();
           },
           child: Container(
             width: 120,

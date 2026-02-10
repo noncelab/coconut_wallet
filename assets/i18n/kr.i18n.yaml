@@ -195,6 +195,7 @@ utility:
     transaction_fee: "거래 수수료"
     copy_all: "전체 복사"
     share: "공유"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[거래 계산서]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n기준 시세: $currencySymbol $referencePrice / BTC\n기준 일시: $referenceTime\n거래 수수료: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
 
 # lib/enums
 transaction_enums:

@@ -195,6 +195,7 @@ utility:
     transaction_fee: "Transaction Fee"
     copy_all: "Copy All"
     share: "Share"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[Transaction Bill]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nReference Price: $currencySymbol $referencePrice / BTC\nReference Datetime: $referenceTime\nTransaction Fee: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
 
 # lib/enums
 transaction_enums:

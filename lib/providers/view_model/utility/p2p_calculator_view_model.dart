@@ -10,6 +10,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 enum InputAssetType { fiat, btc } // 단위는 btc로 구분되지만 실제 vm에 저장되고 사용하는 단위는 satoshi 단위입니다.(int)
 
@@ -301,5 +302,73 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       Logger.error('Failed to fetch price for $fiatCode: $e');
       return null;
     }
+  }
+
+  String _generateTransactionBill(
+    String btcPriceStr,
+    String fiatAmountStr,
+    String btcAmountStr,
+    String referenceDateTime,
+    String feeRateStr,
+    String feeAmountStr,
+    String feeSatsStr,
+  ) {
+    if (_inputAssetType == InputAssetType.fiat) {
+      return t.utility.p2p_calculator.copy_format(
+        currency: _fiatCode.name,
+        currencyAmount: fiatAmountStr,
+        btcUnit: isBtcUnit ? t.btc : t.sats,
+        btcAmount: btcAmountStr,
+        currencySymbol: _fiatCode.symbol,
+        referencePrice: btcPriceStr,
+        referenceTime: referenceDateTime,
+        transactionFeeRate: feeRateStr,
+        transactionFee: feeAmountStr,
+        feeToSats: feeSatsStr,
+      );
+    } else {
+      return t.utility.p2p_calculator.copy_format(
+        currency: isBtcUnit ? t.btc : t.sats,
+        currencyAmount: btcAmountStr,
+        btcUnit: _fiatCode.name,
+        btcAmount: fiatAmountStr,
+        currencySymbol: _fiatCode.symbol,
+        referencePrice: btcPriceStr,
+        referenceTime: referenceDateTime,
+        transactionFeeRate: feeRateStr,
+        transactionFee: feeAmountStr,
+        feeToSats: feeSatsStr,
+      );
+    }
+  }
+
+  void copyAll(
+    String btcPriceStr,
+    String fiatAmountStr,
+    String btcAmountStr,
+    String referenceDateTime,
+    String feeRateStr,
+    String feeAmountStr,
+    String feeSatsStr,
+  ) {
+    if (inputAmount == null || inputAmount == 0) return;
+    final bill = _generateTransactionBill(
+      btcPriceStr,
+      fiatAmountStr,
+      btcAmountStr,
+      referenceDateTime,
+      feeRateStr,
+      feeAmountStr,
+      feeSatsStr,
+    );
+    Clipboard.setData(ClipboardData(text: bill));
+  }
+
+  void share() {
+    if (inputAmount == null || inputAmount == 0) return;
+    // TODO: Share 기능 구현
+    // final now = DateTime.now();
+    // final bill = _generateTransactionBill(now);
+    // Share.share(bill);
   }
 }
