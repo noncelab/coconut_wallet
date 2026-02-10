@@ -1956,7 +1956,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             visible: isVisible,
             child: CoconutPulldownMenu(
               shadowColor: CoconutColors.white.withValues(alpha: 0.1),
-              dividerColor: CoconutColors.gray800,
+              dividerColor: CoconutColors.black,
               spreadRadius: 12,
               entries: [
                 CoconutPulldownMenuGroup(
