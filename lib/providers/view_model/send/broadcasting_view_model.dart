@@ -77,7 +77,7 @@ class BroadcastingViewModel extends ChangeNotifier {
   SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
   FeeBumpingType? get feeBumpingType => _sendInfoProvider.feeBumpingType;
 
-  int? get transactionDraftId => _sendInfoProvider.unsignedDraftId;
+  int? get unsignedDraftId => _sendInfoProvider.unsignedDraftId;
   Transaction? get signedTx => _signedTx;
   bool get isAlreadySaved => _signedDraftId != null || _savedDraftId != null;
 

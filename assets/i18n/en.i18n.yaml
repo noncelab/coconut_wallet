@@ -194,6 +194,7 @@ transaction_draft:
   dialog:
     transaction_draft_saved_send_screen: "Transaction Draft Saved"
     transaction_draft_saved_send_screen_description: "The transaction information has been temporarily saved. Would you like to move to the list now?"
+    transaction_draft_updated_description: "Changes have been saved.\nWould you like to move to the list now?"
     transaction_draft_saved_broadcast_screen: "Transaction Draft Saved"
     transaction_draft_saved_description_broadcast_screen: "The transaction has been temporarily saved. Would you like to move to the list now?"
     transaction_draft_save_failed: "Transaction Draft Save Failed"

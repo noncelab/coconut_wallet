@@ -193,6 +193,7 @@ transaction_draft:
   dialog:
     transaction_draft_saved_send_screen: "Borrador de transacción guardado"
     transaction_draft_saved_send_screen_description: "La información de envío se ha guardado temporalmente. ¿Quieres ir ahora a la lista?"
+    transaction_draft_updated_description: "Los cambios se han guardado.\n¿Quieres ir ahora a la lista?"
     transaction_draft_saved_broadcast_screen: "Borrador de transacción guardado"
     transaction_draft_saved_description_broadcast_screen: "La transacción se ha guardado temporalmente. ¿Quieres ir ahora a la lista?"
     transaction_draft_save_failed: "Error al guardar el borrador de transacción"

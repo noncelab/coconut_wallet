@@ -13,6 +13,12 @@ extension _SendScreenDraft on _SendScreenState {
 
   Future<void> _onUpdateDraft() async {
     // TODO: 변경 사항 저장 로직 구현
+    try {
+      await _viewModel.updateDraft();
+      _showTransactionDraftSavedDialog(isUpdate: true);
+    } catch (e) {
+      _showTransactionDraftSaveFailedDialog(e.toString());
+    }
   }
 
   Future<void> _onLoadDraft() async {
@@ -67,14 +73,17 @@ extension _SendScreenDraft on _SendScreenState {
     });
   }
 
-  void _showTransactionDraftSavedDialog() {
+  void _showTransactionDraftSavedDialog({bool isUpdate = false}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: t.transaction_draft.dialog.transaction_draft_saved_send_screen,
-          description: t.transaction_draft.dialog.transaction_draft_saved_send_screen_description,
+          description:
+              !isUpdate
+                  ? t.transaction_draft.dialog.transaction_draft_saved_send_screen_description
+                  : t.transaction_draft.dialog.transaction_draft_updated_description,
           leftButtonText: t.transaction_draft.dialog.cancel,
           rightButtonText: t.transaction_draft.dialog.move,
           onTapRight: () {

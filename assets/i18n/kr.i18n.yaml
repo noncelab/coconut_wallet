@@ -194,6 +194,7 @@ transaction_draft:
   dialog:
     transaction_draft_saved_send_screen: "임시 저장 완료"
     transaction_draft_saved_send_screen_description: "나중에 서명할 수 있도록 보내기 정보를 임시 저장했어요.\n지금 목록으로 이동할까요?"
+    transaction_draft_updated_description: "변경 사항을 저장했어요.\n지금 목록으로 이동할까요?"
     transaction_draft_saved_broadcast_screen: "트랜잭션 저장 완료"
     transaction_draft_saved_description_broadcast_screen: "나중에 전송할 수 있도록 트랜잭션을 임시 저장했어요.\n지금 목록으로 이동할까요?"
     transaction_draft_save_failed: "임시 저장 실패"
