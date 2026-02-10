@@ -1972,8 +1972,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 CoconutPulldownMenuItem(title: t.app_settings),
                 // CoconutPulldownMenuItem(title: t.view_app_info),
               ],
-              dividerHeight: 1,
-              thickDividerHeight: 3,
               thickDividerIndexList: [_getThickDividerIndex(showGlossary)],
               onSelected: ((index, selectedText) {
                 _setPulldownMenuVisiblility(false);
