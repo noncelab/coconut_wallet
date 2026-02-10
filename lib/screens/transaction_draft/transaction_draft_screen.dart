@@ -241,7 +241,13 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
           },
         );
       },
-    );
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _swipedCardId = null;
+        });
+      }
+    });
   }
 
   Future<void> _deleteDraft(TransactionDraft transactionDraft, int cardId, TransactionDraftViewModel viewModel) async {

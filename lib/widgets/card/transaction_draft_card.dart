@@ -42,9 +42,11 @@ class TransactionDraftCard extends StatefulWidget {
 
 class _TransactionDraftCardState extends State<TransactionDraftCard> with SingleTickerProviderStateMixin {
   late double _dragOffset;
-  final double _swipeThreshold = 0.2; // 20% 스와이프
   late AnimationController _animationController;
   late Animation<double> _animation;
+  bool _isAnimating = false;
+  VoidCallback? _pendingOnComplete;
+  final double _deleteThreshold = 0.2; // 20% 이상 스와이프 시 삭제
 
   @override
   void initState() {
@@ -67,33 +69,16 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   void didUpdateWidget(TransactionDraftCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isSwiped != widget.isSwiped) {
-      if (widget.isSwiped != null && widget.isSwiped!) {
-        _animateToSwipedPosition();
-      } else {
+      if (widget.isSwiped != null && !widget.isSwiped!) {
         _animateToOriginalPosition();
       }
     }
   }
 
-  void _animateToSwipedPosition() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final targetOffset = -screenWidth * _swipeThreshold;
-
-    // 기존 리스너 제거
-    _animation.removeListener(_animationListener);
-    _animationController.stop();
-    _animationController.reset();
-
-    _animation = Tween<double>(
-      begin: _dragOffset,
-      end: targetOffset,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
-
-    _animation.addListener(_animationListener);
-    _animationController.forward();
-  }
-
   void _animateToOriginalPosition() {
+    _isAnimating = true;
+    _pendingOnComplete = null;
+
     // 기존 리스너 제거
     _animation.removeListener(_animationListener);
     _animationController.stop();
@@ -108,6 +93,36 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     _animation.addStatusListener((status) {
       if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
         _animation.removeListener(_animationListener);
+        _isAnimating = false;
+      }
+    });
+    _animationController.forward();
+  }
+
+  void _animateToDeletePosition({VoidCallback? onComplete}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    _isAnimating = true;
+    _pendingOnComplete = onComplete;
+
+    // 기존 리스너 제거
+    _animation.removeListener(_animationListener);
+    _animationController.stop();
+    _animationController.reset();
+
+    _animation = Tween<double>(
+      begin: _dragOffset,
+      end: -screenWidth,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+
+    _animation.addListener(_animationListener);
+    _animation.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _animation.removeListener(_animationListener);
+        _isAnimating = false;
+        final callback = _pendingOnComplete;
+        _pendingOnComplete = null; // 콜백 무효화
+        callback?.call();
       }
     });
     _animationController.forward();
@@ -126,7 +141,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     final screenWidth = MediaQuery.of(context).size.width;
     final walletId = widget.transactionDraft.walletId;
     // recipientListJson에서 amount 합산 (BTC 단위)
-    final int totalAmountSats = widget.transactionDraft.recipients!.fold<int>(0, (sum, recipient) {
+    final int totalAmountSats = widget.transactionDraft.recipients.fold<int>(0, (sum, recipient) {
       return sum + recipient.amount;
     });
     final feeRate = widget.transactionDraft.feeRate;
@@ -187,64 +202,56 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
           borderRadius: BorderRadius.circular(12),
           child: Stack(
             children: [
-              // 삭제 버튼
+              // 빨간색 배경 (시각적 피드백용)
               if (widget.onDelete != null)
                 Positioned.fill(
                   child: Container(
                     decoration: const BoxDecoration(
-                      color: CoconutColors.gray800,
-                      borderRadius: BorderRadius.only(topRight: Radius.circular(12), bottomRight: Radius.circular(12)),
+                      color: CoconutColors.hotPink,
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(
-                        width: screenWidth * _swipeThreshold + 20,
-                        height: double.infinity,
-                        child: GestureDetector(
-                          onTap: widget.onDelete,
-                          child: Container(
-                            decoration: const BoxDecoration(color: CoconutColors.hotPink),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                CoconutLayout.spacing_500w,
-                                SvgPicture.asset(
-                                  'assets/svg/trash.svg',
-                                  width: 24,
-                                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                                ),
-                              ],
-                            ),
-                          ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg/trash.svg',
+                          width: 24,
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),
               GestureDetector(
                 onHorizontalDragUpdate: (details) {
-                  if (widget.onSwipeChanged == null) return;
+                  if (widget.onSwipeChanged == null || _isAnimating) return;
                   if (details.delta.dx < 0) {
                     // 왼쪽으로 드래그
                     setState(() {
-                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
+                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth, 0);
                     });
                   } else if (details.delta.dx > 0 && _dragOffset < 0) {
                     // 오른쪽으로 드래그 (복원)
                     setState(() {
-                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth * _swipeThreshold, 0);
+                      _dragOffset = (_dragOffset + details.delta.dx).clamp(-screenWidth, 0);
                     });
                   }
                 },
                 onHorizontalDragEnd: (details) {
-                  if (widget.onSwipeChanged == null) return;
-                  final threshold = screenWidth * _swipeThreshold;
-                  if (_dragOffset.abs() >= threshold * 0.5) {
-                    // 50% 이상 스와이프되면 완전히 열기
-                    widget.onSwipeChanged?.call(true);
-                    _animateToSwipedPosition();
+                  if (widget.onSwipeChanged == null || _isAnimating) return;
+
+                  final deleteThresholdPx = screenWidth * _deleteThreshold;
+
+                  if (_dragOffset.abs() >= deleteThresholdPx) {
+                    // 20% 이상 스와이프되면 100% 왼쪽으로 이동 후 삭제 다이얼로그 호출
+                    widget.onSwipeChanged?.call(true); // 스와이프 중 상태로 설정
+                    _animateToDeletePosition(
+                      onComplete: () {
+                        widget.onDelete?.call();
+                      },
+                    );
                   } else {
-                    // 그렇지 않으면 닫기
+                    // 20% 미만이면 원래 위치로 복귀
                     widget.onSwipeChanged?.call(false);
                     _animateToOriginalPosition();
                   }
@@ -269,7 +276,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                           context.read<PreferenceProvider>().currentUnit,
                         ),
                         CoconutLayout.spacing_200h,
-                        _buildRecipientAddress(recipients!),
+                        _buildRecipientAddress(recipients),
                         CoconutLayout.spacing_200h,
                         _buildFeeRate(feeRate ?? 0),
                       ],
