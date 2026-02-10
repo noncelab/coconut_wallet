@@ -361,6 +361,10 @@ class UtxoRepository extends BaseRepository {
 
     for (final utxo in utxoList) {
       if (selectedUtxoIds.contains(utxo.utxoId)) {
+        if (utxo.status == UtxoStatus.outgoing) {
+          continue;
+        }
+
         if (utxo.status == UtxoStatus.locked) {
           hasLocked = true;
         } else {

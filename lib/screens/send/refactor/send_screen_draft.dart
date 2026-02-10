@@ -12,7 +12,6 @@ extension _SendScreenDraft on _SendScreenState {
   }
 
   Future<void> _onUpdateDraft() async {
-    // TODO: 변경 사항 저장 로직 구현
     try {
       await _viewModel.updateDraft();
       _showTransactionDraftSavedDialog(isUpdate: true);
@@ -37,14 +36,14 @@ extension _SendScreenDraft on _SendScreenState {
       },
     );
     if (selected != null) {
-      await _onDraftSelected(selected);
+      await _onDraftSelected(selected.id);
     }
   }
 
-  Future<void> _onDraftSelected(TransactionDraft draft) async {
+  Future<void> _onDraftSelected(int draftId) async {
     SelectedUtxoExcludedStatus? excludedUtxoStatus;
     try {
-      excludedUtxoStatus = _viewModel.loadTransactionDraft(draft.id);
+      excludedUtxoStatus = _viewModel.loadTransactionDraft(draftId);
     } catch (e) {
       showInfoDialog(
         context,
@@ -61,7 +60,7 @@ extension _SendScreenDraft on _SendScreenState {
           excludedUtxoStatus == SelectedUtxoExcludedStatus.used
               ? t.send_screen.toast.draft_utxo_used
               : t.send_screen.toast.draft_utxo_locked;
-      CoconutToast.showToast(isVisibleIcon: true, context: context, text: toastMessage);
+      CoconutToast.showWarningToast(context: context, text: toastMessage);
     }
 
     // recipientList와 _addressControllerList 동기화

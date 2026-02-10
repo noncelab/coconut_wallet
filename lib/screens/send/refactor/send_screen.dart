@@ -28,7 +28,6 @@ import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -129,10 +128,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.sendEntryPoint,
       widget.transactionDraftId,
     );
-    if (widget.transactionDraftId != null) {
-      _syncAddressControllersWithRecipientList();
-    }
-
     _amountFocusNode.addListener(
       () => setState(() {
         if (!_amountFocusNode.hasFocus) {
@@ -196,6 +191,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             MediaQuery.of(context).padding.top -
             kToolbarHeight;
       });
+
+      if (widget.transactionDraftId != null) {
+        _onDraftSelected(widget.transactionDraftId!);
+      }
     });
   }
 

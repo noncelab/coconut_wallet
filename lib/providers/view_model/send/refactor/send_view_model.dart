@@ -176,7 +176,11 @@ class SendViewModel extends ChangeNotifier {
   int _incomingBalance = 0;
   int selectedUtxoAmountSum = 0;
 
-  int get balance => isUtxoSelectionAuto || selectedUtxoListLength == 0 ? _confirmedBalance : selectedUtxoAmountSum;
+  int get balance {
+    return isUtxoSelectionAuto ? _confirmedBalance : selectedUtxoAmountSum;
+    //return isUtxoSelectionAuto || selectedUtxoListLength == 0 ? _confirmedBalance : selectedUtxoAmountSum;
+  }
+
   int get incomingBalance => _incomingBalance;
 
   AmountError _isAmountSumExceedsBalance = AmountError.none;
@@ -303,10 +307,6 @@ class SendViewModel extends ChangeNotifier {
     }
 
     _recipientList = [RecipientInfo()];
-
-    if (_transactionDraftId != null) {
-      loadTransactionDraft(_transactionDraftId!);
-    }
 
     _initBalances();
     _setRecommendedFees().whenComplete(() {
