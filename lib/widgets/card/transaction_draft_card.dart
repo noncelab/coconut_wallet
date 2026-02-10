@@ -46,7 +46,8 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
   late Animation<double> _animation;
   bool _isAnimating = false;
   VoidCallback? _pendingOnComplete;
-  final double _deleteThreshold = 0.2; // 20% 이상 스와이프 시 삭제
+  final double _swipeThreshold = 0.15; // 15% 이상 스와이프 시 삭제 동작
+  final double _swipeStopPosition = 0.3; // 30% 위치에서 멈춤
 
   @override
   void initState() {
@@ -112,7 +113,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
 
     _animation = Tween<double>(
       begin: _dragOffset,
-      end: -screenWidth,
+      end: -screenWidth * _swipeStopPosition,
     ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
 
     _animation.addListener(_animationListener);
@@ -210,15 +211,19 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                       color: CoconutColors.hotPink,
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SvgPicture.asset(
-                          'assets/svg/trash.svg',
-                          width: 24,
-                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                        ),
-                      ],
+                  ),
+                ),
+              if (widget.onDelete != null)
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: screenWidth * _swipeStopPosition,
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/svg/trash.svg',
+                      width: 24,
+                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                     ),
                   ),
                 ),
@@ -240,10 +245,10 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                 onHorizontalDragEnd: (details) {
                   if (widget.onSwipeChanged == null || _isAnimating) return;
 
-                  final deleteThresholdPx = screenWidth * _deleteThreshold;
+                  final swipeThresholdPx = screenWidth * _swipeThreshold;
 
-                  if (_dragOffset.abs() >= deleteThresholdPx) {
-                    // 20% 이상 스와이프되면 100% 왼쪽으로 이동 후 삭제 다이얼로그 호출
+                  if (_dragOffset.abs() >= swipeThresholdPx) {
+                    // 15% 이상 스와이프되면 30% 위치로 이동 후 삭제 다이얼로그 호출
                     widget.onSwipeChanged?.call(true); // 스와이프 중 상태로 설정
                     _animateToDeletePosition(
                       onComplete: () {
@@ -251,7 +256,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                       },
                     );
                   } else {
-                    // 20% 미만이면 원래 위치로 복귀
+                    // 15% 미만이면 원래 위치로 복귀
                     widget.onSwipeChanged?.call(false);
                     _animateToOriginalPosition();
                   }
