@@ -30,8 +30,8 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
     super.initState();
 
     context.read<PreferenceProvider>();
-    final networkPreferenceProvider = context.read<BlockExplorerProvider>();
-    _viewModel = BlockExplorerViewModel(networkPreferenceProvider);
+    final blockExplorereProvider = context.read<BlockExplorerProvider>();
+    _viewModel = BlockExplorerViewModel(blockExplorereProvider);
 
     _viewModel.addListener(_onViewModelChanged);
 
@@ -261,7 +261,7 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
   }
 
   Widget _buildCustomExplorerAlertBox() {
-    if (!_viewModel.showAlertBox) {
+    if (!_viewModel.showCustomExplorerAlertBox) {
       return const SizedBox.shrink();
     }
 

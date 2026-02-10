@@ -16,7 +16,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
   bool _isDefaultExplorerEnabled = true;
   String _customExplorerUrl = '';
   bool _hasChanges = false;
-  bool _showAlertBox = false;
+  bool _showCustomExplorerAlertBox = false;
   ExplorerConnectionStatus _connectionStatus = ExplorerConnectionStatus.none;
 
   Timer? _connectionTimer;
@@ -30,7 +30,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
   bool get isDefaultExplorerEnabled => _isDefaultExplorerEnabled;
   String get customExplorerUrl => _customExplorerUrl;
   bool get hasChanges => _hasChanges;
-  bool get showAlertBox => _showAlertBox;
+  bool get showCustomExplorerAlertBox => _showCustomExplorerAlertBox;
 
   bool get showCustomUrlTextField => !_isDefaultExplorerEnabled;
   bool get showConnectionStatus => _connectionStatus != ExplorerConnectionStatus.none;
@@ -52,7 +52,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
     _initialCustomUrl = _customExplorerUrl;
 
     if (!_isDefaultExplorerEnabled && _customExplorerUrl.isNotEmpty) {
-      _showAlertBox = true;
+      _showCustomExplorerAlertBox = true;
     }
 
     notifyListeners();
@@ -63,7 +63,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
 
     if (value) {
       _connectionStatus = ExplorerConnectionStatus.none;
-      _showAlertBox = false;
+      _showCustomExplorerAlertBox = false;
     }
 
     _checkForChanges();
@@ -107,7 +107,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
 
   Future<void> _testAndSaveCustomUrl() async {
     _setConnectionStatus(ExplorerConnectionStatus.connecting);
-    _showAlertBox = false;
+    _showCustomExplorerAlertBox = false;
 
     final String urlToTest = UrlNormalizeUtil.normalize(_customExplorerUrl);
 
@@ -121,7 +121,7 @@ class BlockExplorerViewModel extends ChangeNotifier {
         _customExplorerUrl = urlToTest;
 
         _setConnectionStatus(ExplorerConnectionStatus.connected);
-        _showAlertBox = true;
+        _showCustomExplorerAlertBox = true;
         _resetStateAfterSave();
 
         _connectionTimer?.cancel();

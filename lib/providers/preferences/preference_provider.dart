@@ -497,4 +497,11 @@ class PreferenceProvider extends ChangeNotifier {
     vibrateExtraLight();
     notifyListeners();
   }
+
+  @override
+  void dispose() {
+    _electrumServerProvider.removeListener(notifyListeners);
+    _blockExplorerProvider.removeListener(notifyListeners);
+    super.dispose();
+  }
 }

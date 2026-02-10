@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 class ElectrumServerProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
 
-  static const String _serverNameCustom = 'CUSTOM';
+  static const String _customServerLabel = 'CUSTOM';
 
   ElectrumServerProvider();
 
@@ -24,7 +24,7 @@ class ElectrumServerProvider extends ChangeNotifier {
 
   Future<void> setCustomElectrumServer(String host, int port, bool ssl) async {
     _validateCustomElectrumServerParams(host, port, ssl);
-    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, _serverNameCustom);
+    await _sharedPrefs.setString(SharedPrefKeys.kElectrumServerName, _customServerLabel);
     await _sharedPrefs.setString(SharedPrefKeys.kCustomElectrumHost, host);
     await _sharedPrefs.setInt(SharedPrefKeys.kCustomElectrumPort, port);
     await _sharedPrefs.setBool(SharedPrefKeys.kCustomElectrumIsSsl, ssl);
@@ -43,7 +43,7 @@ class ElectrumServerProvider extends ChangeNotifier {
       }
     }
 
-    if (serverName == _serverNameCustom) {
+    if (serverName == _customServerLabel) {
       return ElectrumServer.custom(
         _sharedPrefs.getString(SharedPrefKeys.kCustomElectrumHost),
         _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumPort),
