@@ -163,7 +163,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                           viewModel.isNetworkOn,
                         ),
                     if (!viewModel.isSendingDonation)
-                      if (viewModel.feeBumpingType == null) ...{
+                      if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
                         FixedBottomTweenButton(
                           leftButtonRatio: 0.35,
                           leftButtonClicked: () async {
