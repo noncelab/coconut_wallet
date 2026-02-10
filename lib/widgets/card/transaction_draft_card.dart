@@ -257,7 +257,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTimestamp(formattedCreatedAt),
+                        _buildTimestampAndMax(formattedCreatedAt, isMaxMode ?? false),
                         CoconutLayout.spacing_200h,
                         _buildWalletNameAmount(
                           walletImportSource,
@@ -267,7 +267,6 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                           colorIndex,
                           signers,
                           context.read<PreferenceProvider>().currentUnit,
-                          isMaxMode ?? false,
                         ),
                         CoconutLayout.spacing_200h,
                         _buildRecipientAddress(recipients!),
@@ -294,7 +293,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     );
   }
 
-  Widget _buildTimestamp(List<String> transactionTimeStamp) {
+  Widget _buildTimestampAndMax(List<String> transactionTimeStamp, bool isMaxMode) {
     if (transactionTimeStamp.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -307,6 +306,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
         Container(width: 1, height: 10, color: CoconutColors.gray600),
         CoconutLayout.spacing_200w,
         Text(transactionTimeStamp[1], style: textStyle),
+        if (isMaxMode) ...[const Spacer(), Text(t.transaction_draft.max, style: textStyle)],
       ],
     );
   }
@@ -319,7 +319,6 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
     int colorIndex,
     List<MultisigSigner>? signers,
     BitcoinUnit currentUnit,
-    bool isMaxMode,
   ) {
     String amountString = currentUnit.displayBitcoinAmount(amountSats, withUnit: true);
     if (amountString != '0 BTC') {
@@ -356,10 +355,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
-            child: Text(
-              isMaxMode ? t.transaction_draft.max : amountString,
-              style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
-            ),
+            child: Text(amountString, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
           ),
         ),
       ],
