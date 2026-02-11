@@ -416,8 +416,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           final selectedUtxoListLength = data.item4;
           final currentUnit = data.item5;
 
-          // 지갑에 mfp가 없을 때
-          if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
+          // 지갑이 선택되지 않았거나 mfp가 없을 때
+          if (selectedWalletItem == null || isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
             return Container(
               color: Colors.transparent,
               width: 50,
@@ -437,7 +437,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           return Column(
             children: [
               Text(
-                isWalletWithoutMfp(_viewModel.selectedWalletItem) ? '-' : selectedWalletItem!.name,
+                isWalletWithoutMfp(_viewModel.selectedWalletItem) ? '-' : selectedWalletItem.name,
                 style: CoconutTypography.body1_16.setColor(CoconutColors.white),
               ),
               CoconutLayout.spacing_50h,
