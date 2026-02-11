@@ -179,6 +179,40 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "Error al generar la factura Lightning."
 
+transaction_draft:
+  title: "Transacción temporal"
+  empty_message: "No hay transacciones temporales guardadas"
+  deleted_wallet: "Billetera eliminada"
+  save: "Guardar temporalmente"
+  update: "Guardar cambios"
+  load: "Cargar transacción"
+  recipient_batch_address: "$address y otras $count direcciones"
+  fee_rate: "Tasa de comisión"
+  sats_per_vbyte: "sat/vB"
+  dialog:
+    transaction_draft_saved_send_screen: "Borrador de transacción guardado"
+    transaction_draft_saved_send_screen_description: "La información de envío se ha guardado temporalmente. ¿Quieres ir ahora a la lista?"
+    transaction_draft_updated_description: "Los cambios se han guardado.\n¿Quieres ir ahora a la lista?"
+    transaction_draft_saved_broadcast_screen: "Borrador de transacción guardado"
+    transaction_draft_saved_description_broadcast_screen: "La transacción se ha guardado temporalmente. ¿Quieres ir ahora a la lista?"
+    transaction_draft_save_failed: "Error al guardar el borrador de transacción"
+    transaction_draft_already_exists: "El borrador de transacción ya existe"
+    transaction_draft_empty_required_fields: "Por favor, introduce tanto la dirección como el monto a enviar."
+    transaction_unavailable_to_sign: "Transacción no disponible para firmar"
+    transaction_already_used_utxo_included: "Hay UTXOs ya usados incluidos. ¿Quieres eliminar la transacción guardada?"
+    transaction_has_been_locked_utxo_included: "Hay UTXOs bloqueados incluidos. ¿Quieres eliminar la transacción guardada?"
+    transaction_draft_delete: "Eliminar transacción temporal"
+    transaction_draft_delete_description: "¿Quieres eliminar la transacción temporal? Una vez eliminada, no se puede recuperar."
+    transaction_draft_delete_failed: "Error al eliminar el borrador de transacción"
+    transaction_draft_delete_completed: "Eliminación completada"
+    cancel: "Cancelar"
+    remove: "Eliminar"
+    move: "Mover"
+    confirm: "Confirmar"
+  signed: "Firmada"
+  unsigned: "Sin firmar"
+  max: "Máximo"
+
 #lib/enums
 transaction_enums:
   high_priority: "Rápido"
@@ -409,7 +443,12 @@ send_screen:
   max_mode_insufficient_balance: "Saldo insuficiente"
   unintended_dust_fee: "El cambio de ${unintendedDustFee} sat será usado como comisión." 
   fee_rate_too_low: "El valor mínimo permitido es 0.1"
+  dialog:
+    load_draft_failed: "Error al cargar"
   swipe_to_add_address: "Desliza para agregar un destinatario"
+  toast:
+    draft_utxo_used: "El bitcoin seleccionado anteriormente ya fue utilizado. Seleccione los UTXOs nuevamente."
+    draft_utxo_locked: "El bitcoin seleccionado anteriormente ha sido bloqueado. Seleccione los UTXOs nuevamente."
 
 utxo_selection_screen:
   title: "Seleccionar UTXOs"
@@ -429,6 +468,10 @@ broadcasting_screen:
   self_sending: "Esta es una transacción enviada a mi propia billetera." 
   error_popup_title: "Envío fallido"
   btn_submit: "Enviar"
+  toast:
+    already_saved_draft: "Esta transacción ya ha sido guardada."
+  dialog:
+    send_unavailable: "No se puede enviar"
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"
@@ -474,6 +517,9 @@ unsigned_tx_qr_screen:
   fast_scan_mode: "Modo de escaneo rápido"
   low_density_qr: "QR simple"
   high_density_qr: "QR complejo"
+
+  view_bbqr: "Ver BBQR"
+  view_ur: "Ver UR"
 
   guide_hardware_wallet:
     step1: "Escanea el código QR a continuación con tu billetera de hardware para iniciar el proceso de firma." 
@@ -769,6 +815,8 @@ errors:
   utxo_lock_error: "Fallo al establecer el bloqueo de UTXO debido a un error temporal"
   utxo_unlock_error: "Fallo al desbloquear el UTXO debido a un error temporal"
   empty_input: "No se pueden obtener entradas. Por favor, verifique el mempool."
+  transaction_draft:
+    invalid_id: "No se pueden encontrar los datos del borrador de transacción"
   
 text_field:
   enter_fee_with_two_decimal_places: "Hasta dos decimales permitidos (sat/vB)"

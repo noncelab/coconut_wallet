@@ -26,6 +26,7 @@ final realmAllSchemas = [
   RealmCpfpHistory.schema,
   RealmTransactionMemo.schema,
   RealmWalletPreferences.schema,
+  RealmTransactionDraft.schema,
 ];
 
 @RealmModel()
@@ -225,4 +226,20 @@ class _RealmWalletPreferences {
   late List<int> favoriteWalletIds;
   // 총 잔액에서 제외되는 지갑 ID 목록.
   late List<int> excludedFromTotalBalanceWalletIds;
+}
+
+@RealmModel()
+class _RealmTransactionDraft {
+  @PrimaryKey()
+  late int id;
+  late int walletId;
+  // 각 문자열은 {"address": "...", "amount": "..."} 형태
+  late List<String> recipientJsons;
+  late DateTime createdAt;
+  late double feeRate;
+  late bool isMaxMode;
+  late bool? isFeeSubtractedFromSendAmount;
+  late String? bitcoinUnit;
+  late List<String> selectedUtxoIds;
+  late String? txWaitingForSign;
 }

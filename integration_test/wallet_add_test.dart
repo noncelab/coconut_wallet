@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
@@ -34,7 +35,7 @@ void main() {
 
   setUp(() async {
     realmManager = RealmManager();
-    walletRepository = WalletRepository(realmManager);
+    walletRepository = WalletRepository(realmManager, TransactionDraftRepository(realmManager));
     realmManager.reset();
 
     final prefs = SharedPrefsRepository();

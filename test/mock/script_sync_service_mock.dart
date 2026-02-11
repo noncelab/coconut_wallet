@@ -12,6 +12,7 @@ import 'package:coconut_wallet/providers/node_provider/transaction/transaction_r
 import 'package:coconut_wallet/providers/node_provider/transaction/transaction_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -70,7 +71,7 @@ class ScriptSyncServiceMock {
     // 리포지토리 초기화
     addressRepository = AddressRepository(realmManager!);
     transactionRepository = TransactionRepository(realmManager!);
-    walletRepository = WalletRepository(realmManager!);
+    walletRepository = WalletRepository(realmManager!, TransactionDraftRepository(realmManager!));
     utxoRepository = UtxoRepository(realmManager!);
 
     // 매니저 초기화

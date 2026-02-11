@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -34,6 +35,7 @@ import 'package:coconut_wallet/screens/settings/block_explorer_screen.dart';
 import 'package:coconut_wallet/screens/settings/coconut_crew_screen.dart';
 import 'package:coconut_wallet/screens/settings/electrum_server_screen.dart';
 import 'package:coconut_wallet/screens/settings/log_viewer_screen.dart';
+import 'package:coconut_wallet/screens/transaction_draft/transaction_draft_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/screens/review/negative_feedback_screen.dart';
 import 'package:coconut_wallet/screens/review/positive_feedback_screen.dart';
@@ -114,10 +116,16 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         ),
 
         // Repository 등록 - Provider보다 먼저 등록해야 함
-        Provider<WalletRepository>(create: (context) => WalletRepository(context.read<RealmManager>())),
         Provider<AddressRepository>(create: (context) => AddressRepository(context.read<RealmManager>())),
         Provider<TransactionRepository>(create: (context) => TransactionRepository(context.read<RealmManager>())),
         Provider<UtxoRepository>(create: (context) => UtxoRepository(context.read<RealmManager>())),
+        Provider<TransactionDraftRepository>(
+          create: (context) => TransactionDraftRepository(context.read<RealmManager>()),
+        ),
+        Provider<WalletRepository>(
+          create:
+              (context) => WalletRepository(context.read<RealmManager>(), context.read<TransactionDraftRepository>()),
+        ),
         Provider<SubscriptionRepository>(create: (context) => SubscriptionRepository(context.read<RealmManager>())),
         Provider<WalletPreferencesRepository>(
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
@@ -247,7 +255,16 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/block-explorer': (context) => const BlockExplorerScreen(),
 
                 // 로딩이 필요한 화면들
-                '/broadcasting': (context) => const CustomLoadingOverlay(child: BroadcastingScreen()),
+                '/broadcasting':
+                    (context) => buildLoadingScreenWithArgs(
+                      context,
+                      (args) => BroadcastingScreen(
+                        signedTransactionDraftId:
+                            args.containsKey('signedTransactionDraftId')
+                                ? args['signedTransactionDraftId'] as int?
+                                : null,
+                      ),
+                    ),
 
                 // 인자가 있는 기본 화면들 (Privacy Screen 사용 ❌ - 각 화면 내부에서 설정/해제 합니다)
                 // 1. 주소 보기
@@ -290,7 +307,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/send':
                     (context) => buildScreenWithArgs(
                       context,
-                      (args) => SendScreen(walletId: args['walletId'], sendEntryPoint: args['sendEntryPoint']),
+                      (args) => SendScreen(
+                        walletId: args['walletId'],
+                        sendEntryPoint: args['sendEntryPoint'],
+                        transactionDraftId: args['transactionDraftId'],
+                      ),
                     ),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
                 '/select-donation-amount':
@@ -355,6 +376,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
                     ),
+                '/transaction-draft':
+                    (context) => buildScreenWithArgs(
+                      context,
+                      (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
+                    ),
                 '/wallet-home-edit':
                     (context) => buildLoadingScreenWithArgs(
                       context,
@@ -373,13 +399,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   /// 화면 생성 헬퍼 메서드
   /// 1. 인자가 있는 화면
   Widget buildScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
-    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     return builder(args);
   }
 
   /// 2. CustomLoadingOverlay + 인자가 있는 화면
   Widget buildLoadingScreenWithArgs(BuildContext context, Widget Function(Map<String, dynamic>) builder) {
-    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    final Map<String, dynamic> args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     return CustomLoadingOverlay(child: builder(args));
   }
 }

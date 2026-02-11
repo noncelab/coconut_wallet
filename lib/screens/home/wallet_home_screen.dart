@@ -334,6 +334,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _pageIndicatorController = ScrollController();
 
     _dropdownActions = [
+      () => Navigator.pushNamed(context, '/transaction-draft'),
       () => CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
         child: const GlossaryBottomSheet(),
@@ -1954,12 +1955,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           return Visibility(
             visible: isVisible,
             child: CoconutPulldownMenu(
-              shadowColor: CoconutColors.gray800,
-              dividerColor: CoconutColors.gray800,
+              shadowColor: CoconutColors.white.withValues(alpha: 0.1),
+              dividerColor: CoconutColors.black,
+              spreadRadius: 12,
               entries: [
                 CoconutPulldownMenuGroup(
                   groupTitle: t.tool,
                   items: [
+                    CoconutPulldownMenuItem(title: t.transaction_draft.title),
                     if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
                     CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
                     if (NetworkType.currentNetworkType.isTestnet) CoconutPulldownMenuItem(title: t.tutorial),
@@ -1969,8 +1972,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 CoconutPulldownMenuItem(title: t.app_settings),
                 // CoconutPulldownMenuItem(title: t.view_app_info),
               ],
-              dividerHeight: 1,
-              thickDividerHeight: 3,
               thickDividerIndexList: [_getThickDividerIndex(showGlossary)],
               onSelected: ((index, selectedText) {
                 _setPulldownMenuVisiblility(false);
@@ -1999,6 +2000,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   /// 드롭다운 선택 처리 (인덱스 조정 포함)
   void _handleDropdownSelection(int index, bool showGlossary) {
     int adjustedIndex = index;
+
+    if (adjustedIndex == 0) {
+      // 임시저장 트랜잭션
+      _dropdownActions[adjustedIndex].call();
+      return;
+    }
 
     // 용어집이 없는 경우 인덱스 조정
     if (!showGlossary) {
