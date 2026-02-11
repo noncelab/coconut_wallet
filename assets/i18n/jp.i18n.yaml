@@ -185,7 +185,6 @@ transaction_draft:
   empty_message: "一時保存されたトランザクションがありません"
   deleted_wallet: "削除されたウォレット"
   save: "一時保存"
-  save_new: "新規保存"
   update: "変更を保存"
   load: "読み込み"
   recipient_batch_address: "$address および $count 個の他のアドレス"

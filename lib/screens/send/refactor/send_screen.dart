@@ -353,7 +353,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         spreadRadius: 12,
         entries: [
           if (isSaved) ...[
-            CoconutPulldownMenuItem(title: t.transaction_draft.save_new, isDisabled: !canGoNext), // 새로 저장
             CoconutPulldownMenuItem(title: t.transaction_draft.update, isDisabled: !canGoNext), // 변경 사항 저장
           ] else ...[
             CoconutPulldownMenuItem(
@@ -361,11 +360,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               isDisabled: hasDrafts == null || !canGoNext,
             ), // 임시 저장
           ],
-          if (hasDrafts == true) CoconutPulldownMenuItem(title: t.transaction_draft.load),
+          CoconutPulldownMenuItem(title: t.transaction_draft.load, isDisabled: hasDrafts != true),
         ],
         onSelected: ((index, selectedText) async {
           _setDropdownMenuVisiblility(false);
-          if (selectedText == t.transaction_draft.save || selectedText == t.transaction_draft.save_new) {
+          if (selectedText == t.transaction_draft.save) {
             await _onSaveNewDraft();
           } else if (selectedText == t.transaction_draft.update) {
             await _onUpdateDraft();

@@ -184,7 +184,6 @@ transaction_draft:
   empty_message: "No hay transacciones temporales guardadas"
   deleted_wallet: "Billetera eliminada"
   save: "Guardar temporalmente"
-  save_new: "Guardar como nuevo"
   update: "Guardar cambios"
   load: "Cargar transacción"
   recipient_batch_address: "$address y otras $count direcciones"

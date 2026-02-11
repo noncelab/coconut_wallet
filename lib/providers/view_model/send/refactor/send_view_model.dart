@@ -451,7 +451,7 @@ class SendViewModel extends ChangeNotifier {
 
     // 4. 수신자 목록 설정 (sats → 현재 단위 문자열로 변환)
     _recipientList =
-        draft.recipients!.map((r) {
+        draft.recipients.map((r) {
           final amountStr =
               _currentUnit == BitcoinUnit.sats
                   ? r.amount.toString()
@@ -460,7 +460,7 @@ class SendViewModel extends ChangeNotifier {
         }).toList();
 
     // 5. 수수료율 설정 (setFeeRateText 대신 직접 설정하여 _buildTransaction 중복 호출 방지)
-    _feeRateText = draft.feeRate!.toString();
+    _feeRateText = draft.feeRate.toString();
     try {
       final feeRateValue = double.parse(_feeRateText);
       _isFeeRateLowerThanMin = _minimumFeeRate != null && feeRateValue < _minimumFeeRate!;
@@ -515,6 +515,7 @@ class SendViewModel extends ChangeNotifier {
     _onRecipientPageDeleted(0);
     _onAmountTextUpdate(_recipientList[_currentIndex].amount);
     _onFeeRateTextUpdate(_feeRateText);
+    _transactionDraftId = draftId;
 
     notifyListeners();
 
