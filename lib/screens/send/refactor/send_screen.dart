@@ -1938,6 +1938,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         }
       }
     }
+
+    setState(() {});
   }
 }
 
