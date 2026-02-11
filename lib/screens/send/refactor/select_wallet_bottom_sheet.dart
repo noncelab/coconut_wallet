@@ -53,7 +53,7 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: CoconutAppBar.build(
-        title: t.send_screen.select_wallet,
+        title: t.send_screen.utxo_auto_selection,
         context: context,
         onBackPressed: null,
         isBottom: true,

@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -94,6 +95,7 @@ class SendViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
   final TransactionDraftRepository _transactionDraftRepository;
+  final WalletPreferencesRepository _walletPreferencesRepository;
   final UtxoRepository _utxoRepository;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
@@ -178,7 +180,6 @@ class SendViewModel extends ChangeNotifier {
 
   int get balance {
     return isUtxoSelectionAuto ? _confirmedBalance : selectedUtxoAmountSum;
-    //return isUtxoSelectionAuto || selectedUtxoListLength == 0 ? _confirmedBalance : selectedUtxoAmountSum;
   }
 
   int get incomingBalance => _incomingBalance;
@@ -289,6 +290,7 @@ class SendViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._transactionDraftRepository,
     this._utxoRepository,
+    this._walletPreferencesRepository,
     this._isNetworkOn,
     this._onAmountTextUpdate,
     this._onFeeRateTextUpdate,
@@ -304,6 +306,14 @@ class SendViewModel extends ChangeNotifier {
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
       if (walletIndex != -1) _initializeWithSelectedWallet(walletIndex);
+
+      _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(walletId);
+
+      // 수동 UTXO 선택 모드인 경우, 초기에는 선택된 UTXO가 없어야 함
+      if (!_isUtxoSelectionAuto) {
+        _selectedUtxoList = [];
+        selectedUtxoAmountSum = 0;
+      }
     }
 
     _recipientList = [RecipientInfo()];
@@ -354,15 +364,15 @@ class SendViewModel extends ChangeNotifier {
     _walletAddressNeedsUpdate = List.filled(_registeredWalletAddressMap.length, false);
   }
 
-  void _updateRegisteredWalletAsOrder(int selectedWalletId) {
-    _updateWalletAddressList();
-    final newMap = {selectedWalletId: _registeredWalletAddressMap[selectedWalletId]!};
-    for (int i = 0; i < _orderedRegisteredWallets.length; i++) {
-      if (_orderedRegisteredWallets[i].id == selectedWalletId) continue;
-      newMap[_orderedRegisteredWallets[i].id] = _registeredWalletAddressMap[_orderedRegisteredWallets[i].id]!;
-    }
-    _registeredWalletAddressMap = newMap;
-  }
+  // void _updateRegisteredWalletAsOrder(int selectedWalletId) {
+  //   _updateWalletAddressList();
+  //   final newMap = {selectedWalletId: _registeredWalletAddressMap[selectedWalletId]!};
+  //   for (int i = 0; i < _orderedRegisteredWallets.length; i++) {
+  //     if (_orderedRegisteredWallets[i].id == selectedWalletId) continue;
+  //     newMap[_orderedRegisteredWallets[i].id] = _registeredWalletAddressMap[_orderedRegisteredWallets[i].id]!;
+  //   }
+  //   _registeredWalletAddressMap = newMap;
+  // }
 
   void _initializeWithSelectedWallet(int index) {
     if (index == -1) return;
@@ -379,36 +389,29 @@ class SendViewModel extends ChangeNotifier {
     selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
 
-  void onWalletInfoUpdated(WalletListItemBase walletItem, List<UtxoState> selectedUtxoList, bool isUtxoSelectionAuto) {
-    // 지갑이 변경됨
-    if (_selectedWalletItem != null && _selectedWalletItem!.id != walletItem.id) {
-      _transactionDraftId = null;
-      // 모두 보내기 모드 활성화 상태에서 지갑 변경시 모두 보내기 모드를 끄고 마지막 수신자 정보를 초기화
-      if (_isMaxMode) {
-        _recipientList[lastIndex].amount = "";
-        setMaxMode(false);
-        if (_currentIndex == lastIndex) {
-          _onAmountTextUpdate(recipientList[lastIndex].amount);
-        }
+  void setSelectedUtxoList(List<UtxoState> list) {
+    _selectedUtxoList = list;
+    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+    setIsUtxoSelectionAuto(false);
+    notifyListeners();
+  }
+
+  void setIsUtxoSelectionAuto(bool value) async {
+    final wasAuto = _isUtxoSelectionAuto;
+    _isUtxoSelectionAuto = value;
+
+    // 자동 → 수동 전환 시
+    // 선택된 UTXO가 없고 선택된 UTXO 금액 합이 0인 경우에만 초기화
+    if (wasAuto && !value && _selectedUtxoList.isEmpty && selectedUtxoAmountSum == 0) {
+      _selectedUtxoList = [];
+      selectedUtxoAmountSum = 0;
+    }
+
+    if (wasAuto != value) {
+      if (_selectedWalletItem != null) {
+        await _walletPreferencesRepository.toggleManualUtxoSelection(_selectedWalletItem!.id);
       }
     }
-
-    _selectedWalletItem = walletItem;
-    _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
-    _updateRegisteredWalletAsOrder(walletItem.id);
-    _isUtxoSelectionAuto = isUtxoSelectionAuto;
-    _selectedUtxoList = selectedUtxoList;
-    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
-    _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
-
-    _initBalances();
-    if (_isMaxMode) {
-      _adjustLastReceiverAmount(recipientIndex: lastIndex);
-    }
-
-    _updateAmountValidationState();
-    _updateFeeBoardVisibility();
-    _buildTransaction();
     notifyListeners();
   }
 
@@ -943,7 +946,7 @@ class SendViewModel extends ChangeNotifier {
       }
     }
 
-    _confirmedBalance = unspentBalance;
+    _confirmedBalance = _isUtxoSelectionAuto ? unspentBalance : 0;
     _incomingBalance = incomingBalance;
   }
 

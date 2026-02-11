@@ -17,6 +17,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+@Deprecated('Not used in send screen')
 class SelectWalletWithOptionsBottomSheet extends StatefulWidget {
   final int selectedWalletId;
   final List<UtxoState> selectedUtxoList;

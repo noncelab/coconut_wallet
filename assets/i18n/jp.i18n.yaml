@@ -424,8 +424,10 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  utxo_auto_selection: "UTXO自動選択"
   select_wallet: "ウォレット選択"
-  n_utxos: " • ${count} UTXOs"
+  n_utxos(param=count):
+    other: " • ${count} UTXOs"
   delete: "削除"
   fee_rate: "手数料率"
   fee_rate_suffix: "sat/vB"
@@ -461,7 +463,8 @@ select_wallet_with_options_bottom_sheet:
   select_utxo_auto: "UTXO自動選択"
   select_utxo_auto_minimal_fee_description: "最小手数料でUTXOを自動選択"
   select_utxo_auto_selected_utxo_description: "トランザクションは選択されたUTXOのみを使用します"
-  n_utxos: " • ${count} utxos"
+  n_utxos(param=count):
+    other: " • ${count} UTXOs"
 
 # send screen end ----
 

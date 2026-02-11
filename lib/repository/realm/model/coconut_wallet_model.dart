@@ -226,6 +226,8 @@ class _RealmWalletPreferences {
   late List<int> favoriteWalletIds;
   // 총 잔액에서 제외되는 지갑 ID 목록.
   late List<int> excludedFromTotalBalanceWalletIds;
+  // UTXO 수동 선택 지갑 ID 목록
+  late List<int> manualUtxoSelectionWalletIds;
 }
 
 @RealmModel()
