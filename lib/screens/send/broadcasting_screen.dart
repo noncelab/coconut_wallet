@@ -221,7 +221,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           leftButtonText: t.transaction_draft.dialog.cancel,
           rightButtonText: t.transaction_draft.dialog.move,
           onTapRight: () {
-            Navigator.pushNamedAndRemoveUntil(context, '/transaction-draft', ModalRoute.withName("/"));
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/transaction-draft',
+              ModalRoute.withName("/"),
+              arguments: {'isSignedTabActive': true},
+            );
           },
           onTapLeft: () {
             Navigator.pop(context);

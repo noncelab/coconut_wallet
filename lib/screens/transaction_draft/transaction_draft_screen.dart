@@ -11,7 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class TransactionDraftScreen extends StatefulWidget {
-  const TransactionDraftScreen({super.key});
+  final bool? isSignedTabActive;
+
+  const TransactionDraftScreen({super.key, this.isSignedTabActive});
 
   @override
   State<TransactionDraftScreen> createState() => _TransactionDraftScreenState();
@@ -41,17 +43,18 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
         builder: (context, viewModel, child) {
           // 초기 선택 상태 설정 (한 번만 실행, initializeDraftList 완료 후)
           if (!_initialSelectionSet && viewModel.isInitialized) {
-            final signedList = viewModel.signedTransactionDraftList;
-            final unsignedList = viewModel.unsignedTransactionDraftList;
-            if (signedList.isNotEmpty) {
-              // 서명 완료 탭에 데이터가 있으면 서명 완료 탭 선택
-              _isSignedTransactionSelected = true;
-            } else if (unsignedList.isNotEmpty) {
-              // 서명 완료 탭이 비어있고 서명 전 탭이 비어있지 않으면 서명 전 탭 선택
-              _isSignedTransactionSelected = false;
+            if (widget.isSignedTabActive != null) {
+              _isSignedTransactionSelected = widget.isSignedTabActive!;
             } else {
-              // 둘 다 비어있으면 서명 완료 탭 선택 (기본값)
-              _isSignedTransactionSelected = true;
+              final signedList = viewModel.signedTransactionDraftList;
+              final unsignedList = viewModel.unsignedTransactionDraftList;
+              if (signedList.isNotEmpty) {
+                _isSignedTransactionSelected = true;
+              } else if (unsignedList.isNotEmpty) {
+                _isSignedTransactionSelected = false;
+              } else {
+                _isSignedTransactionSelected = true;
+              }
             }
             _initialSelectionSet = true;
           }
@@ -211,9 +214,11 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
         arguments: {'signedTransactionDraftId': transactionDraft.id},
       );
     } else {
-      await Navigator.pushReplacementNamed(
-        context,
+      // INFO: 보내기 - 임시 저장 - 임시 저장 완료 다이얼로그 '이동하기'를 통해 이 화면 진입 시 항목 선택으로 send_screen이
+      // 중복으로 스택에 쌓이는 것을 방지하기 위해 pushNamedAndRemoveUntil을 사용합니다.
+      await Navigator.of(context).pushNamedAndRemoveUntil(
         '/send',
+        ModalRoute.withName("/"),
         arguments: {
           'walletId': transactionDraft.walletId,
           'sendEntryPoint': SendEntryPoint.home,
@@ -221,8 +226,6 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
         },
       );
     }
-    if (!mounted) return;
-    await _refreshList(viewModel);
   }
 
   void _showDeleteConfirmDialog(TransactionDraft transactionDraft, int cardId, TransactionDraftViewModel viewModel) {

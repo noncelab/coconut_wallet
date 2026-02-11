@@ -379,7 +379,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
                     ),
-                '/transaction-draft': (context) => const TransactionDraftScreen(),
+                '/transaction-draft':
+                    (context) => buildScreenWithArgs(
+                      context,
+                      (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
+                    ),
                 '/wallet-home-edit':
                     (context) => buildLoadingScreenWithArgs(
                       context,
