@@ -205,9 +205,13 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
     TransactionDraftViewModel viewModel,
   ) async {
     if (transactionDraft.isSigned) {
-      await Navigator.pushNamed(context, '/broadcasting', arguments: {'signedTransactionDraftId': transactionDraft.id});
+      await Navigator.pushReplacementNamed(
+        context,
+        '/broadcasting',
+        arguments: {'signedTransactionDraftId': transactionDraft.id},
+      );
     } else {
-      await Navigator.pushNamed(
+      await Navigator.pushReplacementNamed(
         context,
         '/send',
         arguments: {
