@@ -499,9 +499,9 @@ class SendViewModel extends ChangeNotifier {
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
     }
-
     // 11. 트랜잭션 빌드 (딱 1번만 호출)
     _buildTransaction();
+    _transactionDraftId = draftId;
 
     // 12. 유효성 검증 상태 업데이트
     _updateAmountValidationState();
@@ -515,7 +515,6 @@ class SendViewModel extends ChangeNotifier {
     _onRecipientPageDeleted(0);
     _onAmountTextUpdate(_recipientList[_currentIndex].amount);
     _onFeeRateTextUpdate(_feeRateText);
-    _transactionDraftId = draftId;
 
     notifyListeners();
 
@@ -612,7 +611,7 @@ class SendViewModel extends ChangeNotifier {
     _minimumFeeRate = recommendedFees.hourFee?.toDouble();
 
     final defaultFeeRate = recommendedFees.halfHourFee?.toString();
-    if (defaultFeeRate != null) {
+    if (defaultFeeRate != null && _transactionDraftId == null) {
       _feeRateText = defaultFeeRate;
       _onFeeRateTextUpdate(_feeRateText);
     }
