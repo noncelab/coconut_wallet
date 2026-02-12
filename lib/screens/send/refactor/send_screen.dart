@@ -369,6 +369,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             title: t.send_screen.utxo_auto_selection,
             hasSwitch: true,
             switchValue: isUtxoSelectionAuto,
+            isDisabled: widget.walletId == null,
           ),
           if (isSaved) ...[
             CoconutPulldownMenuItem(title: t.transaction_draft.update, isDisabled: !canGoNext), // 변경 사항 저장
@@ -477,6 +478,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _onUtxoSelectionModeButtonPressed() {
+    _setDropdownMenuVisiblility(false);
     Navigator.pushNamed(
       context,
       '/utxo-selection',

@@ -310,6 +310,8 @@ class SendViewModel extends ChangeNotifier {
       if (walletIndex != -1) {
         _initializeWithSelectedWallet(walletIndex);
       }
+    } else {
+      _isUtxoSelectionAuto = true;
     }
 
     _recipientList = [RecipientInfo()];
