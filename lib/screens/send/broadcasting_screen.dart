@@ -13,7 +13,6 @@ import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -320,9 +319,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 return;
               }
               if (!mounted) return;
-              Navigator.of(
-                context,
-              ).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const WalletHomeScreen()), (route) => false);
+              Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
             },
           );
         }
