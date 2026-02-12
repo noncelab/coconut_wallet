@@ -379,8 +379,8 @@ class BroadcastingViewModel extends ChangeNotifier {
     assert(result.value.isSigned);
     final TransactionDraft draft = result.value;
     _sendInfoProvider.setWalletId(draft.walletId);
-    _sendInfoProvider.setFeeRate(draft.feeRate!);
-    _sendInfoProvider.setIsMaxMode(draft.isMaxMode!);
+    _sendInfoProvider.setFeeRate(draft.feeRate);
+    _sendInfoProvider.setIsMaxMode(draft.isMaxMode);
     _sendInfoProvider.setTxWaitingForSign(draft.txWaitingForSign!);
     _sendInfoProvider.setSignedResult(draft.signedPsbtBase64Encoded!);
   }

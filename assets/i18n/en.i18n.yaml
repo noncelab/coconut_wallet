@@ -185,7 +185,6 @@ transaction_draft:
   empty_message: "No temporary transaction saved"
   deleted_wallet: "Deleted Wallet"
   save: "Temporary Save"
-  save_new: "Save New"
   update: "Save Changes"
   load: "Load Transaction"
   recipient_batch_address: "$address and $count other addresses"

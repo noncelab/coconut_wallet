@@ -454,7 +454,7 @@ class SendViewModel extends ChangeNotifier {
 
     // 4. 수신자 목록 설정 (sats → 현재 단위 문자열로 변환)
     _recipientList =
-        draft.recipients!.map((r) {
+        draft.recipients.map((r) {
           final amountStr =
               _currentUnit == BitcoinUnit.sats
                   ? r.amount.toString()
@@ -463,7 +463,7 @@ class SendViewModel extends ChangeNotifier {
         }).toList();
 
     // 5. 수수료율 설정 (setFeeRateText 대신 직접 설정하여 _buildTransaction 중복 호출 방지)
-    _feeRateText = draft.feeRate!.toString();
+    _feeRateText = draft.feeRate.toString();
     try {
       final feeRateValue = double.parse(_feeRateText);
       _isFeeRateLowerThanMin = _minimumFeeRate != null && feeRateValue < _minimumFeeRate!;
@@ -502,9 +502,9 @@ class SendViewModel extends ChangeNotifier {
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
     }
-
     // 11. 트랜잭션 빌드 (딱 1번만 호출)
     _buildTransaction();
+    _transactionDraftId = draftId;
 
     // 12. 유효성 검증 상태 업데이트
     _updateAmountValidationState();
@@ -614,7 +614,7 @@ class SendViewModel extends ChangeNotifier {
     _minimumFeeRate = recommendedFees.hourFee?.toDouble();
 
     final defaultFeeRate = recommendedFees.halfHourFee?.toString();
-    if (defaultFeeRate != null) {
+    if (defaultFeeRate != null && _transactionDraftId == null) {
       _feeRateText = defaultFeeRate;
       _onFeeRateTextUpdate(_feeRateText);
     }
