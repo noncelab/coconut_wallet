@@ -86,7 +86,8 @@ extension _SendScreenDraft on _SendScreenState {
           leftButtonText: t.transaction_draft.dialog.cancel,
           rightButtonText: t.transaction_draft.dialog.move,
           onTapRight: () {
-            Navigator.pushNamedAndRemoveUntil(context, '/transaction-draft', ModalRoute.withName("/"));
+            Navigator.pop(context); // Dialog close
+            Navigator.pushNamed(context, '/transaction-draft', arguments: {'isSignedTabActive': false});
           },
           onTapLeft: () {
             Navigator.pop(context);

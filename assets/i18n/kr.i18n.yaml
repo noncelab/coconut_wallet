@@ -185,7 +185,6 @@ transaction_draft:
   empty_message: "임시 저장된 트랜잭션이 없어요"
   deleted_wallet: "삭제된 지갑"
   save: "임시 저장"
-  save_new: "새로 저장"
   update: "변경 사항 저장"
   load: "불러오기"
   recipient_batch_address: "$address 외 $count개 주소"

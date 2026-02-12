@@ -3,6 +3,8 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
+import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/feature_settings_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -61,7 +63,6 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
@@ -129,19 +130,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         Provider<WalletPreferencesRepository>(
           create: (context) => WalletPreferencesRepository(context.read<RealmManager>()),
         ),
-
+        ChangeNotifierProvider(create: (_) => ElectrumServerProvider()),
+        ChangeNotifierProvider(create: (_) => BlockExplorerProvider()),
         ChangeNotifierProvider(
           create:
               (context) => PreferenceProvider(
                 context.read<WalletPreferencesRepository>(),
-                featureSettingsProvider: context.read<FeatureSettingsProvider>(),
-              ),
-        ),
-
-        ChangeNotifierProvider(
-          create:
-              (context) => PreferenceProvider(
-                context.read<WalletPreferencesRepository>(),
+                context.read<ElectrumServerProvider>(),
+                context.read<BlockExplorerProvider>(),
                 featureSettingsProvider: context.read<FeatureSettingsProvider>(),
               ),
         ),
@@ -174,7 +170,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
             create: (context) {
               final walletProvider = context.read<WalletProvider>();
               return NodeProvider(
-                context.read<PreferenceProvider>().getElectrumServer(),
+                context.read<ElectrumServerProvider>().getElectrumServer(),
                 CoconutWalletApp.kNetworkType,
                 context.read<ConnectivityProvider>(),
                 walletProvider.walletLoadStateNotifier,
@@ -380,7 +376,11 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => UtxoDetailScreen(utxo: args['utxo'], id: args['id']),
                     ),
-                '/transaction-draft': (context) => const TransactionDraftScreen(),
+                '/transaction-draft':
+                    (context) => buildScreenWithArgs(
+                      context,
+                      (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
+                    ),
                 '/wallet-home-edit':
                     (context) => buildLoadingScreenWithArgs(
                       context,

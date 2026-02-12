@@ -269,7 +269,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildTimestampAndMax(formattedCreatedAt, isMaxMode ?? false),
+                        _buildTimestampAndMax(formattedCreatedAt, isMaxMode),
                         CoconutLayout.spacing_200h,
                         _buildWalletNameAmount(
                           walletImportSource,
@@ -283,7 +283,7 @@ class _TransactionDraftCardState extends State<TransactionDraftCard> with Single
                         CoconutLayout.spacing_200h,
                         _buildRecipientAddress(recipients),
                         CoconutLayout.spacing_200h,
-                        _buildFeeRate(feeRate ?? 0),
+                        _buildFeeRate(feeRate),
                       ],
                     ),
                   ),
