@@ -5,11 +5,9 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/coordinator_bsms_qr_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
-import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
@@ -344,10 +342,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
       if (mounted) {
         if (widget.entryPoint == kEntryPointWalletHome) {
-          navigator.pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const WalletHomeScreen()),
-            (route) => false,
-          );
+          navigator.pushNamedAndRemoveUntil('/', (route) => false);
         } else {
           navigator.pushNamedAndRemoveUntil(kEntryPointWalletList, (route) => route.isFirst);
         }

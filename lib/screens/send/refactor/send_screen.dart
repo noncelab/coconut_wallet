@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -11,8 +12,8 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart' show TransactionDraftRepository;
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -24,6 +25,7 @@ import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/button/shrink_tap_wrapper.dart';
 import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -120,6 +122,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context.read<PreferenceProvider>(),
       context.read<TransactionDraftRepository>(),
       context.read<UtxoRepository>(),
+      context.read<WalletPreferencesRepository>(),
       context.read<ConnectivityProvider>().isNetworkOn,
       _onAmountTextUpdate,
       _onFeeRateTextUpdate,
@@ -327,10 +330,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   ),
                 ),
                 _buildFinalButton(context),
-                Selector<SendViewModel, Tuple3<bool, bool?, bool>>(
-                  selector: (_, vm) => Tuple3(vm.isSaved, vm.hasDrafts, vm.canGoNext),
+                Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
+                  selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
                   builder: (context, data, child) {
-                    return _buildDropdownMenu(isSaved: data.item1, hasDrafts: data.item2, canGoNext: data.item3);
+                    return _buildDropdownMenu(
+                      isSaved: data.item1,
+                      hasDrafts: data.item2,
+                      canGoNext: data.item3,
+                      isUtxoSelectionAuto: data.item4,
+                    );
                   },
                 ),
               ],
@@ -341,7 +349,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildDropdownMenu({required bool isSaved, required bool? hasDrafts, required bool canGoNext}) {
+  Widget _buildDropdownMenu({
+    required bool isSaved,
+    required bool? hasDrafts,
+    required bool canGoNext,
+    required bool isUtxoSelectionAuto,
+  }) {
     if (!_isDropdownMenuVisible) return const SizedBox.shrink();
 
     return Positioned(
@@ -352,6 +365,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         dividerColor: CoconutColors.black,
         spreadRadius: 12,
         entries: [
+          CoconutPulldownMenuItem(
+            title: t.send_screen.utxo_auto_selection,
+            hasSwitch: true,
+            switchValue: isUtxoSelectionAuto,
+            isDisabled: widget.walletId == null,
+          ),
           if (isSaved) ...[
             CoconutPulldownMenuItem(title: t.transaction_draft.update, isDisabled: !canGoNext), // 변경 사항 저장
           ] else ...[
@@ -372,6 +391,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             await _onLoadDraft();
           }
         }),
+        onSwitchChanged: (index, value) {
+          _viewModel.setIsUtxoSelectionAuto(value);
+        },
       ),
     );
   }
@@ -394,10 +416,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           final selectedUtxoListLength = data.item4;
           final currentUnit = data.item5;
 
-          // null 이거나, 대표지갑이 mfp가 없고 mfp 있는 지갑이 0개일 때
-          if (_viewModel.isSelectedWalletNull ||
-              (isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-                  !hasMfpWallet(_viewModel.orderedRegisteredWallets))) {
+          // 지갑이 선택되지 않았거나 mfp가 없을 때
+          if (selectedWalletItem == null || isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
             return Container(
               color: Colors.transparent,
               width: 50,
@@ -410,46 +430,26 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           }
 
           String amountText = currentUnit.displayBitcoinAmount(_viewModel.balance, withUnit: true);
-          if (!isUtxoSelectionAuto && selectedUtxoListLength > 0) {
+          if (!isUtxoSelectionAuto) {
             amountText += t.send_screen.n_utxos(count: selectedUtxoListLength);
           }
 
           return Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          isWalletWithoutMfp(_viewModel.selectedWalletItem)
-                              ? '-'
-                              : (selectedWalletItem!.name.length > 10
-                                  ? '${selectedWalletItem.name.substring(0, 10)}...'
-                                  : selectedWalletItem.name),
-                          style: CoconutTypography.body1_16.setColor(CoconutColors.white),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        CoconutLayout.spacing_50w,
-                        const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
-                      ],
-                    ),
-                  ),
-                ],
+              Text(
+                isWalletWithoutMfp(_viewModel.selectedWalletItem) ? '-' : selectedWalletItem.name,
+                style: CoconutTypography.body1_16.setColor(CoconutColors.white),
               ),
-              if (!isWalletWithoutMfp(_viewModel.selectedWalletItem) && !isUtxoSelectionAuto)
-                Text(amountText, style: CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white)),
+              CoconutLayout.spacing_50h,
+              if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
+                _buildUtxoSelectionModeButton(isUtxoSelectionAuto, amountText, selectedUtxoListLength),
             ],
           );
         },
       ),
       onTitlePressed: () {
-        // 지갑이 적어도 1개 이상 있어야 하며, MFP를 가진 지갑이 존재하는 경우에 출력한다. (존재하지 않는 경우 지갑 선택, UTXO 옵션처리를 할 필요가 없음)
-        if (!_viewModel.isSelectedWalletNull && hasMfpWallet(_viewModel.orderedRegisteredWallets)) {
-          _onAppBarTitlePressed();
+        if (!_viewModel.isSelectedWalletNull && !isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
+          _onUtxoSelectionModeButtonPressed();
         }
       },
       context: context,
@@ -474,6 +474,45 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       onBackPressed: () {
         Navigator.of(context).pop();
       },
+    );
+  }
+
+  void _onUtxoSelectionModeButtonPressed() {
+    _setDropdownMenuVisiblility(false);
+    Navigator.pushNamed(
+      context,
+      '/utxo-selection',
+      arguments: {
+        'selectedUtxoList': _viewModel.isUtxoSelectionAuto ? List<UtxoState>.empty() : _viewModel.selectedUtxoList,
+        'walletId': _viewModel.selectedWalletItem!.id,
+        'currentUnit': _viewModel.currentUnit,
+      },
+    ).then((result) {
+      if (result != null && result is List) {
+        _viewModel.setSelectedUtxoList(List<UtxoState>.from(result));
+      }
+    });
+  }
+
+  Widget _buildUtxoSelectionModeButton(bool isUtxoSelectionAuto, String amountText, int selectedUtxoListLength) {
+    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
+    final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
+    final textColor =
+        isUtxoSelectionAuto
+            ? CoconutColors.white
+            : selectedUtxoListLength == 0
+            ? CoconutColors.white
+            : CoconutColors.black;
+    final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
+
+    return ShrinkTapWrapper(
+      shrinkScale: 0.95,
+      onTap: _onUtxoSelectionModeButtonPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(4)),
+        child: Text(text, style: fontStyle.setColor(textColor)),
+      ),
     );
   }
 
@@ -1599,21 +1638,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
     // amount, fee는 스크롤 허용하지 않음
     return scrollbarHeight;
-  }
-
-  void _onAppBarTitlePressed() {
-    _clearFocus();
-    CommonBottomSheets.showCustomHeightBottomSheet(
-      context: context,
-      heightRatio: 0.4,
-      child: SelectWalletWithOptionsBottomSheet(
-        currentUnit: _viewModel.currentUnit,
-        selectedWalletId: _viewModel.selectedWalletId,
-        onWalletInfoUpdated: _viewModel.onWalletInfoUpdated,
-        isUtxoSelectionAuto: _viewModel.isUtxoSelectionAuto,
-        selectedUtxoList: _viewModel.selectedUtxoList,
-      ),
-    );
   }
 
   void _showAddressListBottomSheet(int walletId) {
