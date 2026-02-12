@@ -46,4 +46,10 @@ enum BitcoinUnit {
 
     return withUnit ? "$amountText $symbol" : amountText;
   }
+
+  static BitcoinUnit? getFromSymbol(String symbol) {
+    if (symbol == t.btc) return BitcoinUnit.btc;
+    if (symbol == t.sats) return BitcoinUnit.sats;
+    return null;
+  }
 }

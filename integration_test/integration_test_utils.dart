@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
@@ -135,7 +136,7 @@ Future<int> addWallets({WalletProvider? walletProvider, RealmManager? realmManag
     await walletProvider.syncFromCoconutVault(WatchOnlyWallet.fromJson(multiSigWallet1));
   } else {
     var realmManagerForSetup = realmManager ?? RealmManager();
-    var walletRepository = WalletRepository(realmManagerForSetup);
+    var walletRepository = WalletRepository(realmManagerForSetup, TransactionDraftRepository(realmManagerForSetup));
     var addressRepository = AddressRepository(realmManagerForSetup);
 
     var item1 = await walletRepository.addSinglesigWallet(WatchOnlyWallet.fromJson(singleSigWallet1));
@@ -157,7 +158,7 @@ Future<void> setOneExternalWallet({WalletProvider? walletProvider}) async {
     await walletProvider.syncFromThirdParty(WatchOnlyWallet.fromJson(exSingleSigWallet1));
   } else {
     var realmManager = RealmManager();
-    var walletRepository = WalletRepository(realmManager);
+    var walletRepository = WalletRepository(realmManager, TransactionDraftRepository(realmManager));
     var addressRepository = AddressRepository(realmManager);
 
     var item1 = await walletRepository.addSinglesigWallet(WatchOnlyWallet.fromJson(exSingleSigWallet1));

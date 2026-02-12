@@ -40,6 +40,7 @@ class RealmManager {
       realm.deleteAll<RealmCpfpHistory>();
       realm.deleteAll<RealmTransactionMemo>();
       realm.deleteAll<RealmWalletPreferences>();
+      realm.deleteAll<RealmTransactionDraft>();
     });
   }
 

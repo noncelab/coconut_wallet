@@ -102,12 +102,11 @@ log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 
 relative_time:
-  days_ago(cardinal):
-    zero: "Today"        # 0일이면 Today로 처리(원하면 생략 가능)
-    one: "1 day ago"   # 1일
-    other: "${n} days ago"  # 2일 이상
+  just_now: "Just now"
+  minutes_ago(cardinal):
+    one: "1 min ago"
+    other: "${n} mins ago"
   hours_ago(cardinal):
-    zero: "Just now"
     one: "1 hour ago"
     other: "${n} hours ago"
 
@@ -180,6 +179,40 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "Failed to generate Lightning invoice."
 
+transaction_draft:
+  title: "Temporary Transaction"
+  empty_message: "No temporary transaction saved"
+  deleted_wallet: "Deleted Wallet"
+  save: "Temporary Save"
+  update: "Save Changes"
+  load: "Load Transaction"
+  recipient_batch_address: "$address and $count other addresses"
+  fee_rate: "Fee Rate"
+  sats_per_vbyte: "sat/vB"
+  dialog:
+    transaction_draft_saved_send_screen: "Transaction Draft Saved"
+    transaction_draft_saved_send_screen_description: "The transaction information has been temporarily saved. Would you like to move to the list now?"
+    transaction_draft_updated_description: "Changes have been saved.\nWould you like to move to the list now?"
+    transaction_draft_saved_broadcast_screen: "Transaction Draft Saved"
+    transaction_draft_saved_description_broadcast_screen: "The transaction has been temporarily saved. Would you like to move to the list now?"
+    transaction_draft_save_failed: "Transaction Draft Save Failed"
+    transaction_draft_already_exists: "Transaction Draft Already Exists"
+    transaction_draft_empty_required_fields: "Please enter the address and amount to send."
+    transaction_unavailable_to_sign: "Transaction Unavailable to Sign"
+    transaction_already_used_utxo_included: "Transaction Already Used UTXO Included. Would you like to delete the saved transaction?"
+    transaction_has_been_locked_utxo_included: "Locked UTXO Included. Would you like to delete the saved transaction?"
+    transaction_draft_delete: "Delete Temporary Transaction"
+    transaction_draft_delete_description: "Would you like to delete the temporary transaction? Once deleted, it cannot be restored."
+    transaction_draft_delete_failed: "Transaction Draft Delete Failed"
+    transaction_draft_delete_completed: "Transaction Draft Delete Completed"
+    cancel: "Cancel"
+    remove: "Remove"
+    move: "Move"
+    confirm: "Confirm"
+  signed: "Signed"
+  unsigned: "Unsigned"
+  max: "Max"
+
 # lib/enums
 transaction_enums:
   high_priority: "Fast"
@@ -220,10 +253,10 @@ wallet_home_screen:
       recent_transactions: "Recent\nTransactions\n(24hours)"
       analysis: "Analysis"
     alert: 
-          empty_fake_balance: "Enter Fake Balance"
-          empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
-          set_to_0: "Set balance to 0 BTC" 
-          enter_again: "Try again"
+      empty_fake_balance: "Enter Fake Balance"
+      empty_fake_balance_description: "No amount has been entered.\nWould you like to enter it again or set it to 0 BTC?"
+      set_to_0: "Set balance to 0 BTC" 
+      enter_again: "Try again"
   last_24_hours_transactions: "Last 24 hours transactions"
   syncing_recent_transaction: "Syncing recent transactions"
   cannot_modify_fixed_widget: "You can’t show or hide this item."
@@ -409,7 +442,13 @@ send_screen:
   max_mode_insufficient_balance: "Insufficient Balance"
   unintended_dust_fee: "The change of ${unintendedDustFee} sat will be used as a fee."
   fee_rate_too_low: "Minimum allowed value is 0.1"
+  drag_to_add_address: "Drag to add an address"
+  dialog:
+    load_draft_failed: "Failed to load"
   swipe_to_add_address: "Swipe to add a recipient"
+  toast:
+    draft_utxo_used: "Previously selected bitcoin has already been spent. Please select UTXOs again."
+    draft_utxo_locked: "Previously selected bitcoin has been locked. Please select UTXOs again."
 
 utxo_selection_screen:
   title: "Select UTXOs"
@@ -429,6 +468,10 @@ broadcasting_screen:
   self_sending: "This is a transaction sending to my own wallet."
   error_popup_title: "Broadcasting Failed"
   btn_submit: "Send"
+  toast:
+    already_saved_draft: "This transaction has already been saved."
+  dialog:
+    send_unavailable: "Unable to Send"
 send_address_screen:
   text1: "Scan QR or\npaste the copied address"
   text2: "Please scan the address QR code"
@@ -766,6 +809,8 @@ errors:
   data_not_found: "No data found."
   utxo_lock_error: "Failed to set UTXO lock due to temporary error"
   utxo_unlock_error: "Failed to unlock UTXO due to temporary error"
+  transaction_draft:
+    invalid_id: "Cannot find transaction draft"
   empty_input: "Could not fetch transaction inputs. Please check mempool."
 
 text_field:

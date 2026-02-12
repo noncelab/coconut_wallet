@@ -6,6 +6,7 @@ import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -66,7 +67,7 @@ void main() {
       // await Future.delayed(const Duration(milliseconds: 300));
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
-      walletRepository = WalletRepository(realmManager!);
+      walletRepository = WalletRepository(realmManager!, TransactionDraftRepository(realmManager!));
       addressRepository = AddressRepository(realmManager!);
       final sharedPrefsRepository = SharedPrefsRepository()..setSharedPreferencesForTest(MockSharedPreferences());
       when(sharedPrefsRepository.getInt(SharedPrefKeys.kNextIdField)).thenReturn(walletItem.id);
