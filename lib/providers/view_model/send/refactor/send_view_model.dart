@@ -380,24 +380,20 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void setSelectedUtxoList(List<UtxoState> list) {
+    setIsUtxoSelectionAuto(false);
     _selectedUtxoList = list;
     selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
-    setIsUtxoSelectionAuto(false);
     notifyListeners();
   }
 
-  void setIsUtxoSelectionAuto(bool value, {bool isFromPulldownMenu = false}) async {
+  void setIsUtxoSelectionAuto(bool value) async {
     final wasAuto = _isUtxoSelectionAuto;
     _isUtxoSelectionAuto = value;
 
     // 자동 → 수동 전환 시
     if (wasAuto && !value) {
-      // switch 버튼을 통해 전환한 경우 초기화
-      // 앱 바를 통해 utxo 선택 후 _selectedUtxoList가 있을 때는 초기화하지 않음
-      if (isFromPulldownMenu || _selectedUtxoList.isEmpty && selectedUtxoAmountSum == 0) {
-        _selectedUtxoList = [];
-        selectedUtxoAmountSum = 0;
-      }
+      _selectedUtxoList = [];
+      selectedUtxoAmountSum = 0;
     }
 
     if (wasAuto != value) {
