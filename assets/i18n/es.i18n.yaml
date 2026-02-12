@@ -645,6 +645,7 @@ utxo_list_screen:
   total_balance: "Saldo total"
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
+  pending_utxo: "Los UTXO que ya están en proceso de envío no se pueden seleccionar."
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmaciones)"
