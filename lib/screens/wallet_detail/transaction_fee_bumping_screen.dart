@@ -2,6 +2,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -14,6 +15,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
@@ -143,6 +145,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                             viewModel.feeInfos[1].satsPerVb?.toInt() ?? 0,
                                             viewModel.feeInfos[2].satsPerVb?.toInt() ?? 0,
                                           ),
+                                          CoconutLayout.spacing_300h,
+                                          _buildUtxoSelectionOptionWidget(viewModel),
                                         ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
                                           _buildFetchFailedWidget(),
                                       ],
@@ -290,6 +294,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     }
 
     if (input.isEmpty) {
+      _viewModel.initializeBumpingTransaction(0);
       setState(() {
         _isEstimatedFeeTooLow = false;
         _isEstimatedFeeTooHigh = false;
@@ -302,7 +307,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
     double? value = double.tryParse(_textEditingController.text);
 
-    if (value == null || _viewModel.isFeeRateTooLow(value)) {
+    if (value == null) {
       setState(() {
         _isEstimatedFeeTooLow = true;
         _isEstimatedFeeTooHigh = false;
@@ -310,6 +315,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
       return;
     }
+
+    bool isFeeTooLow = _viewModel.isFeeRateTooLow(value);
 
     await _viewModel.initializeBumpingTransaction(value).then((_) {
       if (_viewModel.insufficientUtxos) {
@@ -321,7 +328,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
     setState(() {
       _isEstimatedFeeTooHigh = _viewModel.getTotalEstimatedFee(value) >= 1000000;
-      _isEstimatedFeeTooLow = false;
+      _isEstimatedFeeTooLow = isFeeTooLow;
     });
   }
 
@@ -357,6 +364,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     final nodeProvider = Provider.of<NodeProvider>(context, listen: false);
     final addressRepository = Provider.of<AddressRepository>(context, listen: false);
     final utxoRepositry = Provider.of<UtxoRepository>(context, listen: false);
+    final preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
 
     return FeeBumpingViewModel(
       widget.feeBumpingType,
@@ -368,6 +376,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       walletProvider,
       addressRepository,
       utxoRepositry,
+      preferenceProvider,
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
     );
   }
@@ -692,6 +701,162 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             t.transaction_fee_bumping_screen.recommended_fees_fetch_error,
             style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUtxoSelectionOptionWidget(FeeBumpingViewModel viewModel) {
+    Widget child;
+
+    if (!viewModel.isAdditionalInputRequired) {
+      child = const SizedBox.shrink(key: ValueKey('empty'));
+    } else {
+      int balanceInt = viewModel.selectedUtxoList.fold(0, (sum, item) => sum + item.amount);
+
+      String selectedUtxoAmountText = viewModel.currentUnit.displayBitcoinAmount(balanceInt, withUnit: true);
+
+      if (!viewModel.isUtxoSelectionAuto) {
+        if (viewModel.selectedUtxoList.isNotEmpty) {
+          selectedUtxoAmountText += t.transaction_fee_bumping_screen.n_utxos(count: viewModel.selectedUtxoList.length);
+        } else {
+          selectedUtxoAmountText += t.transaction_fee_bumping_screen.no_utxos_selected;
+        }
+      }
+
+      Color textColor = viewModel.selectedUtxoList.isNotEmpty ? CoconutColors.primary : CoconutColors.hotPink;
+
+      child = Container(
+        key: const ValueKey('content'),
+        width: MediaQuery.sizeOf(context).width,
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 27),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
+          color: CoconutColors.gray800,
+        ),
+        child: Column(
+          children: [
+            _buildUtxoOption(viewModel),
+            if (!viewModel.isUtxoSelectionAuto) ...[
+              Column(children: [CoconutLayout.spacing_400h, _buildDivider(), CoconutLayout.spacing_400h]),
+              Row(
+                children: [
+                  Expanded(child: _buildSelectedUtxoAmount(selectedUtxoAmountText, textColor: textColor)),
+                  CoconutLayout.spacing_200w,
+                  _buildSelectUtxoButton(viewModel),
+                ],
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(seconds: 1),
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      child: child,
+    );
+  }
+
+  Widget _buildSelectedUtxoAmount(String amountText, {Color? textColor}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FittedBox(child: Text(amountText, style: CoconutTypography.body2_14_Number.copyWith(color: textColor))),
+      ],
+    );
+  }
+
+  Widget _buildSelectUtxoButton(FeeBumpingViewModel viewModel) {
+    return IgnorePointer(
+      ignoring: viewModel.isUtxoSelectionAuto,
+      child: Opacity(
+        opacity: viewModel.isUtxoSelectionAuto ? 0.0 : 1.0,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            CoconutButton(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  "/utxo-selection",
+                  arguments: {
+                    "selectedUtxoList": viewModel.selectedUtxoList,
+                    "walletId": widget.walletId,
+                    "currentUnit": viewModel.currentUnit,
+                  },
+                ).then((utxoList) {
+                  if (utxoList != null) {
+                    viewModel.updateSelectedUtxos(utxoList as List<UtxoState>);
+                  }
+                });
+              },
+              disabledBackgroundColor: CoconutColors.gray800,
+              disabledForegroundColor: CoconutColors.gray700,
+              backgroundColor: CoconutColors.white,
+              buttonType: CoconutButtonType.outlined,
+              borderRadius: 8,
+              isActive: true,
+              text: t.select_wallet_with_options_bottom_sheet.select_utxo,
+              textStyle: CoconutTypography.caption_10,
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+            ),
+            CoconutLayout.spacing_100h,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(color: CoconutColors.gray700, height: 1);
+  }
+
+  Widget _buildUtxoOption(FeeBumpingViewModel viewModel) {
+    bool isNonMpfWallet = isWalletWithoutMfp(_viewModel.walletListItemBase);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (isNonMpfWallet) return;
+        viewModel.toggleUtxoSelectionAuto(!viewModel.isUtxoSelectionAuto);
+      },
+      child: Row(
+        children: [
+          Expanded(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.transaction_fee_bumping_screen.utxo_auto_selection, style: CoconutTypography.body2_14),
+                  Text(
+                    t.transaction_fee_bumping_screen.utxo_auto_selection_description,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          CoconutLayout.spacing_300w,
+          Align(
+            alignment: Alignment.centerRight,
+            child: CoconutSwitch(
+              scale: 0.7,
+              isOn: viewModel.isUtxoSelectionAuto,
+              activeColor: CoconutColors.gray100.withValues(alpha: isNonMpfWallet ? 0.3 : 1.0),
+              trackColor: CoconutColors.gray600,
+              thumbColor: CoconutColors.gray800,
+              onChanged: (isOn) {
+                if (isNonMpfWallet) return;
+                viewModel.toggleUtxoSelectionAuto(isOn);
+              },
+            ),
+          ),
+          CoconutLayout.spacing_100w,
         ],
       ),
     );

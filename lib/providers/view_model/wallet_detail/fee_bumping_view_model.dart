@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -9,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -36,6 +38,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final AddressRepository _addressRepository;
   final UtxoRepository _utxoRepository;
   final int _walletId;
+  final PreferenceProvider _preferenceProvider;
   Transaction? _bumpingTransaction;
   late WalletListItemBase _walletListItemBase;
   late bool? _isNetworkOn;
@@ -50,6 +53,15 @@ class FeeBumpingViewModel extends ChangeNotifier {
   double? _recommendedFeeRate;
   String? _recommendedFeeRateDescription;
 
+  bool _isUtxoSelectionAuto = true;
+  List<UtxoState> _selectedUtxoList = [];
+  double _lastInputFeeRate = 0.0;
+
+  bool _isAdditionalInputRequired = false;
+  bool get isAdditionalInputRequired => _isAdditionalInputRequired;
+
+  List<Utxo>? _cachedRbfInputUtxos;
+
   FeeBumpingViewModel(
     this._type,
     this._pendingTx,
@@ -60,6 +72,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._walletProvider,
     this._addressRepository,
     this._utxoRepository,
+    this._preferenceProvider,
     this._isNetworkOn,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
@@ -82,9 +95,38 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _insufficientUtxos = false;
   bool get insufficientUtxos => _insufficientUtxos;
 
+  BitcoinUnit get currentUnit => _preferenceProvider.currentUnit;
+
+  bool get isUtxoSelectionAuto => _isUtxoSelectionAuto;
+  List<UtxoState> get selectedUtxoList => _selectedUtxoList;
+
+  void toggleUtxoSelectionAuto(bool value) {
+    _isUtxoSelectionAuto = value;
+    if (_isUtxoSelectionAuto) {
+      _selectedUtxoList = [];
+    }
+    // 모드 변경 시 기존 수수료율로 재계산
+    if (_lastInputFeeRate > 0) {
+      initializeBumpingTransaction(_lastInputFeeRate);
+    }
+    notifyListeners();
+  }
+
+  void updateSelectedUtxos(List<UtxoState> list) {
+    _selectedUtxoList = list;
+
+    if (_lastInputFeeRate > 0) {
+      initializeBumpingTransaction(_lastInputFeeRate);
+    }
+    notifyListeners();
+  }
+
   Future<void> initialize() async {
     await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
     if (_isFeeFetchSuccess == true) {
+      double initialFee = _feeInfos[2].satsPerVb!.toDouble();
+      _lastInputFeeRate = initialFee;
+
       await initializeBumpingTransaction(_feeInfos[2].satsPerVb!.toDouble());
       if (_bumpingTransaction == null) {
         _isInitializedSuccess = false;
@@ -187,11 +229,23 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   // 새 수수료로 트랜잭션 생성
   Future<void> initializeBumpingTransaction(double newFeeRate) async {
+    _lastInputFeeRate = newFeeRate;
+    _isAdditionalInputRequired = false;
+
+    if (newFeeRate < 0) {
+      _insufficientUtxos = false;
+      _bumpingTransaction = null;
+      notifyListeners();
+      return;
+    }
+
     if (_type == FeeBumpingType.cpfp) {
       _initializeCpfpTransaction(newFeeRate);
     } else if (_type == FeeBumpingType.rbf) {
       await _initializeRbfTransaction(newFeeRate);
     }
+
+    notifyListeners();
   }
 
   void _initializeCpfpTransaction(double newFeeRate) {
@@ -259,7 +313,13 @@ class FeeBumpingViewModel extends ChangeNotifier {
     final bool hasChange = changeAddress.isNotEmpty && changeAmount > 0;
 
     //input 정보 추출
-    List<Utxo> utxoList = await _getUtxoListForRbf();
+    List<Utxo> utxoList;
+    if (_cachedRbfInputUtxos != null) {
+      utxoList = List.from(_cachedRbfInputUtxos!); // 복사해서 사용
+    } else {
+      utxoList = await _getUtxoListForRbf();
+      _cachedRbfInputUtxos = List.from(utxoList); // 캐시에 저장
+    }
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     double estimatedVSize =
         _bumpingTransaction == null ? _pendingTx.vSize.toDouble() : _estimateVirtualByte(_bumpingTransaction!);
@@ -279,6 +339,16 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
     double requiredFee = estimatedVSize * newFeeRate;
     debugPrint('RBF:: inputSum ($inputSum) outputSum ($outputSum) requiredFee ($requiredFee) newFeeRate ($newFeeRate)');
+
+    bool isInsufficient = inputSum < outputSum + requiredFee;
+    bool isChangeSufficient = hasChange && changeAmount >= requiredFee;
+
+    if (isInsufficient && !isChangeSufficient) {
+      _isAdditionalInputRequired = true;
+    } else {
+      _isAdditionalInputRequired = false;
+    }
+
     if (inputSum < outputSum + requiredFee) {
       debugPrint('RBF:: ❌ input이 부족함');
       // 1. 충분한 잔돈이 있음 - singlePayment or batchPayment
@@ -407,8 +477,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
       case PaymentType.batchPayment:
         Map<String, int> paymentMap = _createPaymentMapForRbfBatchTx(newOutputList);
         _generateBatchTransation(utxoList, paymentMap, changeAddress, newFeeRate);
-        break;
-      default:
         break;
     }
   }
@@ -627,11 +695,25 @@ class FeeBumpingViewModel extends ChangeNotifier {
     double inputSum = utxoList.fold(0, (sum, utxo) => sum + utxo.amount);
     double requiredAmount = outputSum + estimatedVSize * newFeeRate;
 
-    List<UtxoState> unspentUtxos = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
-    unspentUtxos.sort((a, b) => b.amount.compareTo(a.amount));
-    int sublistIndex = 0; // for unspentUtxos
-    while (inputSum <= requiredAmount && sublistIndex < unspentUtxos.length) {
-      final additionalUtxos = _getAdditionalUtxos(unspentUtxos.sublist(sublistIndex), outputSum - inputSum);
+    List<UtxoState> availableUtxos;
+
+    if (!_isUtxoSelectionAuto) {
+      final usedHashes = utxoList.map((u) => u.transactionHash + u.index.toString()).toSet();
+      availableUtxos =
+          _selectedUtxoList.where((u) => !usedHashes.contains(u.transactionHash + u.index.toString())).toList();
+    } else {
+      availableUtxos = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
+      availableUtxos.sort((a, b) => b.amount.compareTo(a.amount));
+    }
+
+    if (!_isUtxoSelectionAuto && inputSum <= requiredAmount && availableUtxos.isEmpty) {
+      _setInsufficientUtxo(true);
+      return false;
+    }
+
+    int sublistIndex = 0; // for availableUtxos
+    while (inputSum <= requiredAmount && sublistIndex < availableUtxos.length) {
+      final additionalUtxos = _getAdditionalUtxos(availableUtxos.sublist(sublistIndex), outputSum - inputSum);
       if (additionalUtxos.isEmpty) {
         debugPrint('❌ 사용할 수 있는 추가 UTXO가 없음!');
         _setInsufficientUtxo(true);
@@ -668,8 +750,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
         final m = wallet.requiredSignature;
         final n = wallet.totalSigner;
         return 1 + (m * 73) + (n * 34) + 2;
-      default:
-        return 68;
     }
   }
 
