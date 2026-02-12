@@ -364,16 +364,6 @@ class SendViewModel extends ChangeNotifier {
     _walletAddressNeedsUpdate = List.filled(_registeredWalletAddressMap.length, false);
   }
 
-  // void _updateRegisteredWalletAsOrder(int selectedWalletId) {
-  //   _updateWalletAddressList();
-  //   final newMap = {selectedWalletId: _registeredWalletAddressMap[selectedWalletId]!};
-  //   for (int i = 0; i < _orderedRegisteredWallets.length; i++) {
-  //     if (_orderedRegisteredWallets[i].id == selectedWalletId) continue;
-  //     newMap[_orderedRegisteredWallets[i].id] = _registeredWalletAddressMap[_orderedRegisteredWallets[i].id]!;
-  //   }
-  //   _registeredWalletAddressMap = newMap;
-  // }
-
   void _initializeWithSelectedWallet(int index) {
     if (index == -1) return;
     if (_selectedWalletItem != null && _selectedWalletItem!.id == _walletProvider.walletItemList[index].id) return;
@@ -396,15 +386,18 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setIsUtxoSelectionAuto(bool value) async {
+  void setIsUtxoSelectionAuto(bool value, {bool isFromPulldownMenu = false}) async {
     final wasAuto = _isUtxoSelectionAuto;
     _isUtxoSelectionAuto = value;
 
     // 자동 → 수동 전환 시
-    // 선택된 UTXO가 없고 선택된 UTXO 금액 합이 0인 경우에만 초기화
-    if (wasAuto && !value && _selectedUtxoList.isEmpty && selectedUtxoAmountSum == 0) {
-      _selectedUtxoList = [];
-      selectedUtxoAmountSum = 0;
+    if (wasAuto && !value) {
+      // switch 버튼을 통해 전환한 경우 초기화
+      // 앱 바를 통해 utxo 선택 후 _selectedUtxoList가 있을 때는 초기화하지 않음
+      if (isFromPulldownMenu || _selectedUtxoList.isEmpty && selectedUtxoAmountSum == 0) {
+        _selectedUtxoList = [];
+        selectedUtxoAmountSum = 0;
+      }
     }
 
     if (wasAuto != value) {

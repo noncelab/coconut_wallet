@@ -392,7 +392,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           }
         }),
         onSwitchChanged: (index, value) {
-          _viewModel.setIsUtxoSelectionAuto(value);
+          _viewModel.setIsUtxoSelectionAuto(value, isFromPulldownMenu: true);
         },
       ),
     );
