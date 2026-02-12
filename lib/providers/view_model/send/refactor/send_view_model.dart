@@ -103,6 +103,8 @@ class SendViewModel extends ChangeNotifier {
   final Function(String) _onFeeRateTextUpdate;
   final Function(int) _onRecipientPageDeleted;
 
+  late final List<UtxoState> _allUtxos; // unspent, outgoing, incoming, locked 다 포함
+
   bool _isMaxMode = false;
   bool get isMaxMode => _isMaxMode;
   bool get isBatchMode => recipientList.length >= 2;
@@ -123,7 +125,7 @@ class SendViewModel extends ChangeNotifier {
   String get amountSumText => _currentUnit.displayBitcoinAmount(_amountSum, withUnit: true);
 
   WalletListItemBase? _selectedWalletItem;
-  bool _isUtxoSelectionAuto = true;
+  late bool _isUtxoSelectionAuto;
 
   bool _isFeeSubtractedFromSendAmount = false;
   bool _previousIsFeeSubtractedFromSendAmount = false;
@@ -132,6 +134,7 @@ class SendViewModel extends ChangeNotifier {
   List<UtxoState> _selectedUtxoList = [];
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
   int get selectedUtxoListLength => _selectedUtxoList.length;
+  int get selectedUtxoAmountSum => _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
 
   /// 사용자가 설정한 순서대로 정렬한 지갑 목록
   late List<WalletListItemBase> _orderedRegisteredWallets;
@@ -176,10 +179,9 @@ class SendViewModel extends ChangeNotifier {
   late BitcoinUnit _currentUnit;
   int _confirmedBalance = 0;
   int _incomingBalance = 0;
-  int selectedUtxoAmountSum = 0;
 
   int get balance {
-    return isUtxoSelectionAuto ? _confirmedBalance : selectedUtxoAmountSum;
+    return _isUtxoSelectionAuto ? _confirmedBalance : selectedUtxoAmountSum;
   }
 
   int get incomingBalance => _incomingBalance;
@@ -305,20 +307,12 @@ class SendViewModel extends ChangeNotifier {
 
     if (walletId != null) {
       final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == walletId);
-      if (walletIndex != -1) _initializeWithSelectedWallet(walletIndex);
-
-      _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(walletId);
-
-      // 수동 UTXO 선택 모드인 경우, 초기에는 선택된 UTXO가 없어야 함
-      if (!_isUtxoSelectionAuto) {
-        _selectedUtxoList = [];
-        selectedUtxoAmountSum = 0;
+      if (walletIndex != -1) {
+        _initializeWithSelectedWallet(walletIndex);
       }
     }
 
     _recipientList = [RecipientInfo()];
-
-    _initBalances();
     _setRecommendedFees().whenComplete(() {
       notifyListeners();
     });
@@ -374,34 +368,39 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
-    // UTXO 자동 선택 모드이므로 전체 UTXO 리스트 설정
-    _selectedUtxoList = _walletProvider.getUtxoList(_selectedWalletItem!.id);
-    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
+    // UTXO 모드 불러온 후 selectedUtxoList 필요 시 초기화
+    _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
+    _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(_selectedWalletItem!.id);
+    if (_isUtxoSelectionAuto) {
+      _selectAllUtxos();
+    }
+    _initBalances(_allUtxos);
   }
 
   void setSelectedUtxoList(List<UtxoState> list) {
     setIsUtxoSelectionAuto(false);
     _selectedUtxoList = list;
-    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
-    notifyListeners();
+    _buildTransaction();
   }
 
   void setIsUtxoSelectionAuto(bool value) async {
     final wasAuto = _isUtxoSelectionAuto;
     _isUtxoSelectionAuto = value;
 
-    // 자동 → 수동 전환 시
-    if (wasAuto && !value) {
-      _selectedUtxoList = [];
-      selectedUtxoAmountSum = 0;
-    }
-
     if (wasAuto != value) {
+      // 자동 → 수동 전환 시
+      if (wasAuto && !value) {
+        _selectedUtxoList = [];
+      } else {
+        _selectAllUtxos();
+      }
+
       if (_selectedWalletItem != null) {
         await _walletPreferencesRepository.toggleManualUtxoSelection(_selectedWalletItem!.id);
       }
+
+      _buildTransaction();
     }
-    notifyListeners();
   }
 
   /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
@@ -470,9 +469,8 @@ class SendViewModel extends ChangeNotifier {
       _selectedUtxoList.clear();
     } else {
       _isUtxoSelectionAuto = true;
-      _selectedUtxoList = _walletProvider.getUtxoList(draft.walletId);
+      _selectAllUtxos();
     }
-    selectedUtxoAmountSum = _selectedUtxoList.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
 
     // 7. 수수료 차감 설정
     _isFeeSubtractedFromSendAmount = draft.isFeeSubtractedFromSendAmount == true;
@@ -484,25 +482,22 @@ class SendViewModel extends ChangeNotifier {
       _isFeeSubtractedFromSendAmount = true;
     }
 
-    // 9. 잔액 초기화
-    _initBalances();
-
-    // 10. 모두 보내기 모드면 마지막 수신자 금액 재계산
+    // 9. 모두 보내기 모드면 마지막 수신자 금액 재계산
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
     }
-    // 11. 트랜잭션 빌드 (딱 1번만 호출)
+    // 10. 트랜잭션 빌드 (딱 1번만 호출)
     _buildTransaction();
     _transactionDraftId = draftId;
 
-    // 12. 유효성 검증 상태 업데이트
+    // 11. 유효성 검증 상태 업데이트
     _updateAmountValidationState();
 
-    // 13. UI 상태 업데이트
+    // 12. UI 상태 업데이트
     _showAddressBoard = false;
     _showFeeBoard = recipientList.length > 1 || recipientList.any((r) => r.amount.isNotEmpty && r.address.isNotEmpty);
 
-    // 14. 페이지 초기화 및 컨트롤러 동기화
+    // 13. 페이지 초기화 및 컨트롤러 동기화
     _currentIndex = 0;
     _onRecipientPageDeleted(0);
     _onAmountTextUpdate(_recipientList[_currentIndex].amount);
@@ -532,6 +527,7 @@ class SendViewModel extends ChangeNotifier {
         _feeRateText == "0" ||
         _changeAddressDerivationPath.isEmpty) {
       _setEstimatedFee(null);
+      notifyListeners();
       return;
     }
 
@@ -918,16 +914,13 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _initBalances() {
+  void _initBalances(List<UtxoState> allUtxos) {
     if (_selectedWalletItem == null) {
-      _confirmedBalance = 0;
-      _incomingBalance = 0;
       return;
     }
 
-    List<UtxoState> utxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
     int unspentBalance = 0, incomingBalance = 0;
-    for (UtxoState utxo in utxos) {
+    for (UtxoState utxo in allUtxos) {
       if (utxo.status == UtxoStatus.unspent) {
         unspentBalance += utxo.amount;
       } else if (utxo.status == UtxoStatus.incoming) {
@@ -935,7 +928,7 @@ class SendViewModel extends ChangeNotifier {
       }
     }
 
-    _confirmedBalance = _isUtxoSelectionAuto ? unspentBalance : 0;
+    _confirmedBalance = unspentBalance;
     _incomingBalance = incomingBalance;
   }
 
@@ -1093,6 +1086,11 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
     _sendInfoProvider.setUnsignedDraftId(_transactionDraftId);
+  }
+
+  void _selectAllUtxos() {
+    assert(_isUtxoSelectionAuto);
+    _selectedUtxoList = _allUtxos;
   }
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///
