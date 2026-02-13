@@ -696,7 +696,7 @@ transaction_fee_bumping_screen:
   current_fee: "推奨手数料"
   utxo_auto_selection: "UTXO自動選択"
   utxo_auto_selection_description: "追加手数料が必要なため、UTXOを自動選択します。"
-  n_utxos: " • %{count}個選択済み"
+  n_utxos: " • ${count}個選択済み"
   no_utxos_selected: " • 選択が必要です"
   estimated_fee: "推定総手数料約${fee} sats"
   estimated_fee_too_high_error: "推定総手数料が0.01 BTCを超えています！"

@@ -697,7 +697,7 @@ transaction_fee_bumping_screen:
   current_fee: "Comisión recomendada"
   utxo_auto_selection: "Selección automática de UTXO"
   utxo_auto_selection_description: "Se seleccionan automáticamente los UTXO debido a las comisiones adicionales."
-  n_utxos: " • %{count} seleccionados"
+  n_utxos: " • ${count} seleccionados"
   no_utxos_selected: " • Selección requerida"
   estimated_fee: "Comisión total estimada de ${fee} sats"  
   estimated_fee_too_high_error: "¡La comisión total estimada es superior a 0.01 BTC!"  

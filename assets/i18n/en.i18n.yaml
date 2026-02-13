@@ -694,7 +694,7 @@ transaction_fee_bumping_screen:
   current_fee: "Recommended Fee"
   utxo_auto_selection: "Auto-select UTXO"
   utxo_auto_selection_description: "UTXOs are auto-selected due to additional fees required."
-  n_utxos: " • %{count} selected"
+  n_utxos: " • ${count} selected"
   no_utxos_selected: " • Selection required"
   estimated_fee: "Estimated total fee about ${fee} sats"
   estimated_fee_too_high_error: "Estimated total fee is over 0.01 BTC!"
