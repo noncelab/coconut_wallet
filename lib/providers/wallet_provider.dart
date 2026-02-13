@@ -284,6 +284,7 @@ class WalletProvider extends ChangeNotifier {
     await _preferenceProvider.removeWalletOrder(walletId);
     await _preferenceProvider.removeFavoriteWalletId(walletId);
     await _preferenceProvider.removeExcludedFromTotalBalanceWalletId(walletId);
+    await _preferenceProvider.removeManualUtxoSelectionWalletId(walletId);
     if (_walletItemList.isEmpty) {
       await _preferenceProvider.changeIsBalanceHidden(false); // 잔액 숨기기 비활성화, fakeBalance 초기화
       await _preferenceProvider.clearFakeBalanceTotalAmount();

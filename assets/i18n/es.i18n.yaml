@@ -421,8 +421,11 @@ broadcasting_complete_screen:
 
 #send screen start ----
 send_screen:
-  select_wallet: "Seleccionar billetera"  
-  n_utxos: " • ${count} UTXOs"
+  utxo_auto_selection: "Seleccionar UTXO"
+  select_wallet: "Seleccionar billetera"
+  n_utxos(param=count):
+    one: " • ${count} UTXO"
+    other: " • ${count} UTXOs"
   delete: "Eliminar"
   fee_rate: "Tasa de comisión"  
   fee_rate_suffix: "sat/vB"
@@ -457,7 +460,9 @@ select_wallet_with_options_bottom_sheet:
   select_utxo_auto: "Selección automática"
   select_utxo_auto_minimal_fee_description: "Selecciona automáticamente los UTXO para pagar la mínima comisión" 
   select_utxo_auto_selected_utxo_description: "La transacción usará solo los UTXO que elijas"
-  n_utxos: " • ${count} UTXOs"
+  n_utxos(param=count):
+    one: " • ${count} UTXO"
+    other: " • ${count} UTXOs"
 
 #send screen end ----
 
@@ -640,6 +645,7 @@ utxo_list_screen:
   total_balance: "Saldo total"
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
+  pending_utxo: "Los UTXO que ya están en proceso de envío no se pueden seleccionar."
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmaciones)"

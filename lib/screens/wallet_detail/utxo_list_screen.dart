@@ -639,23 +639,26 @@ class _UtxoListState extends State<UtxoList> {
 
   Future<void> _updateSelectedUtxos({required bool lock}) async {
     if (_selectedUtxoIds.isEmpty) return;
+
     final viewModel = context.read<UtxoListViewModel>();
+
     try {
-      final newStatus = lock ? UtxoStatus.locked : UtxoStatus.unspent;
-      await viewModel.updateSelectedUtxosStatus(_selectedUtxoIds.toList(), newStatus);
+      final updatedCount = await viewModel.setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
 
       setState(() {
         _selectedUtxoIds.clear();
-        viewModel.clearUtxoList();
         widget.onSettingLockChanged?.call(false);
       });
 
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
-        text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
-      );
+      if (updatedCount > 0) {
+        if (!mounted) return;
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+        );
+      }
 
       _bottomSheetController?.close();
     } catch (e) {
@@ -683,6 +686,11 @@ class _UtxoListState extends State<UtxoList> {
           isSelectionMode: isSelectionMode,
           onPressed: () {
             if (isSelectionMode) {
+              if (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming) {
+                CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: false);
+
+                return;
+              }
               setState(() {
                 if (_selectedUtxoIds.contains(utxo.utxoId)) {
                   _selectedUtxoIds.remove(utxo.utxoId);

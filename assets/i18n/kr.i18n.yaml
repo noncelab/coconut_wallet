@@ -421,8 +421,10 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  utxo_auto_selection: "UTXO 자동 선택"
   select_wallet: "지갑 선택"
-  n_utxos: " • ${count}개"
+  n_utxos(param=count):
+    other: " • ${count}개"
   delete: "삭제하기"
   fee_rate: "수수료율"
   fee_rate_suffix: "sat/vB"
@@ -458,7 +460,8 @@ select_wallet_with_options_bottom_sheet:
   select_utxo_auto: "UTXO 자동 선택"
   select_utxo_auto_minimal_fee_description: "최소 수수료로 전송하도록 최적의 UTXO를 선택해요"
   select_utxo_auto_selected_utxo_description: "선택한 UTXO를 사용해 거래를 생성해요"
-  n_utxos: " • ${count}개 선택"
+  n_utxos(param=count):
+    other: " • ${count}개 선택"
 
 # send screen end ----
 
@@ -637,6 +640,7 @@ utxo_list_screen:
   total_balance: "총 잔액"
   utxo_locked_button: "사용 잠금"
   utxo_unlocked_button: "사용 가능으로 전환"
+  pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"

@@ -425,6 +425,15 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// UTXO 수동 선택 지갑 목록에서 제거
+  Future<void> removeManualUtxoSelectionWalletId(int walletId) async {
+    final ids = _walletPreferencesRepository.getManualUtxoSelectionWalletIds();
+    if (ids.contains(walletId)) {
+      ids.remove(walletId);
+      await _walletPreferencesRepository.setManualUtxoSelectionWalletIds(ids);
+    }
+  }
+
   /// 홈 화면에 표시할 기능 (FeatureSettingsProvider로 위임)
   List<HomeFeature> getHomeFeatures() {
     return _featureSettingsProvider?.features ?? [];
