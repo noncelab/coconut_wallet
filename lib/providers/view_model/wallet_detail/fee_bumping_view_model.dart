@@ -17,6 +17,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
@@ -39,6 +40,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final UtxoRepository _utxoRepository;
   final int _walletId;
   final PreferenceProvider _preferenceProvider;
+  final WalletPreferencesRepository _walletPreferencesRepository;
   Transaction? _bumpingTransaction;
   late WalletListItemBase _walletListItemBase;
   late bool? _isNetworkOn;
@@ -73,9 +75,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
     this._addressRepository,
     this._utxoRepository,
     this._preferenceProvider,
+    this._walletPreferencesRepository,
     this._isNetworkOn,
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
+    _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(_walletId);
   }
 
   double? get recommendFeeRate => _recommendedFeeRate;

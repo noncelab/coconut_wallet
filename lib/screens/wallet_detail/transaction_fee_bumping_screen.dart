@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_vi
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -183,17 +184,32 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                         ),
                                         CoconutLayout.spacing_100h,
                                       ],
-                                      if (!_viewModel.insufficientUtxos)
+                                      if (_viewModel.insufficientUtxos) ...[
+                                        Text(
+                                          t.transaction_fee_bumping_screen.insufficient_balance_error,
+                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                          textScaler: const TextScaler.linear(1.0),
+                                        ),
+                                      ] else if (_isEstimatedFeeTooLow) ...[
+                                        Text(
+                                          t.transaction_fee_bumping_screen.fee_rate_too_low_error,
+                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                          textScaler: const TextScaler.linear(1.0),
+                                        ),
+                                      ] else ...[
                                         Text(
                                           t.transaction_fee_bumping_screen.estimated_fee(
                                             fee:
                                                 viewModel
-                                                    .getTotalEstimatedFee(double.parse(_textEditingController.text))
+                                                    .getTotalEstimatedFee(
+                                                      double.tryParse(_textEditingController.text) ?? 0.0,
+                                                    )
                                                     .toThousandsSeparatedString(),
                                           ),
                                           style: CoconutTypography.body2_14,
                                           textScaler: const TextScaler.linear(1.0),
                                         ),
+                                      ],
                                     ],
                                   ),
                         ),
@@ -365,6 +381,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     final addressRepository = Provider.of<AddressRepository>(context, listen: false);
     final utxoRepositry = Provider.of<UtxoRepository>(context, listen: false);
     final preferenceProvider = Provider.of<PreferenceProvider>(context, listen: false);
+    final walletPreferencesRepository = Provider.of<WalletPreferencesRepository>(context, listen: false);
 
     return FeeBumpingViewModel(
       widget.feeBumpingType,
@@ -377,6 +394,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       addressRepository,
       utxoRepositry,
       preferenceProvider,
+      walletPreferencesRepository,
       Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
     );
   }
@@ -541,7 +559,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           },
           child: Container(
             color: _isRecommendFeePannelPressed ? CoconutColors.gray900 : CoconutColors.gray800,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.only(
+              left: CoconutLayout.defaultPadding,
+              right: CoconutLayout.defaultPadding,
+              bottom: CoconutLayout.defaultPadding,
+              top: 0,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -570,7 +593,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   Widget _buildCurrentMempoolFeesWidget(int fastestFeeSatsPerVb, int halfhourFeeSatsPerVb, int hourFeeSatsPerVb) {
     return Container(
       width: MediaQuery.sizeOf(context).width,
-      padding: const EdgeInsets.only(top: 14, left: 12, right: 24, bottom: CoconutLayout.defaultPadding),
+      padding: const EdgeInsets.all(CoconutLayout.defaultPadding),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(CoconutStyles.radius_200),
         color: CoconutColors.gray800,
@@ -796,6 +819,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               disabledBackgroundColor: CoconutColors.gray800,
               disabledForegroundColor: CoconutColors.gray700,
               backgroundColor: CoconutColors.white,
+              borderColor: CoconutColors.gray400,
               buttonType: CoconutButtonType.outlined,
               borderRadius: 8,
               isActive: true,
@@ -847,9 +871,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             child: CoconutSwitch(
               scale: 0.7,
               isOn: viewModel.isUtxoSelectionAuto,
-              activeColor: CoconutColors.gray100.withValues(alpha: isNonMpfWallet ? 0.3 : 1.0),
-              trackColor: CoconutColors.gray600,
-              thumbColor: CoconutColors.gray800,
+              activeColor: CoconutColors.white.withValues(alpha: isNonMpfWallet ? 0.3 : 1.0),
+              trackColor: viewModel.isUtxoSelectionAuto ? CoconutColors.white : CoconutColors.gray600,
+              thumbColor: viewModel.isUtxoSelectionAuto ? CoconutColors.black : CoconutColors.gray500,
               onChanged: (isOn) {
                 if (isNonMpfWallet) return;
                 viewModel.toggleUtxoSelectionAuto(isOn);

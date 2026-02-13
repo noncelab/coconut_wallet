@@ -704,6 +704,8 @@ transaction_fee_bumping_screen:
   no_utxos_selected: " • Selection required"
   estimated_fee: "Estimated total fee about ${fee} sats"
   estimated_fee_too_high_error: "Estimated total fee is over 0.01 BTC!"
+  fee_rate_too_low_error: "The fee is too low!"
+  insufficient_balance_error: "Insufficient balance!"
   recommended_fees_fetch_error: "Cannot fetch recommended fees!"
   recommended_fees_is_null: "Fetching fees..."
   recommended_fee_less_than_pending_tx_fee: "Please specify a fee higher than the existing fee"

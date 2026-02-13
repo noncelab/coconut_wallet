@@ -702,6 +702,8 @@ transaction_fee_bumping_screen:
   no_utxos_selected: " • 선택 필요"
   estimated_fee: "예상 총 수수료 약 ${fee} sats"
   estimated_fee_too_high_error: "예상 총 수수료가 0.01 BTC 이상이에요!"
+  fee_rate_too_low_error: "수수료가 부족해요!"
+  insufficient_balance_error: "잔액이 부족해요!"
   recommended_fees_fetch_error: "추천 수수료를 조회할 수 없어요!"
   recommended_fees_is_null: "수수료를 조회하는 중이에요"
   recommended_fee_less_than_pending_tx_fee: "기존 수수료보다 큰 수수료를 지정해 주세요"

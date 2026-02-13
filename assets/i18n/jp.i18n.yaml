@@ -704,6 +704,8 @@ transaction_fee_bumping_screen:
   no_utxos_selected: " • 選択が必要です"
   estimated_fee: "推定総手数料約${fee} sats"
   estimated_fee_too_high_error: "推定総手数料が0.01 BTCを超えています！"
+  fee_rate_too_low_error: "手数料が不足しています！"
+  insufficient_balance_error: "残高が不足しています！"
   recommended_fees_fetch_error: "推奨手数料を取得できません！"
   recommended_fees_is_null: "手数料を取得中..."
   recommended_fee_less_than_pending_tx_fee: "既存手数料より高い手数料を指定してください"
