@@ -366,9 +366,9 @@ wallet_add_scanner_screen:
     mfp_title: "Master Fingerprint"
     mfp_description_title: "Master Fingerprint"
     mfp_description_texts:
-      - "A unique value required to identify a watch-only wallet"
-      - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
-      - "Without fingerprint, you will not be able to use the send feature."
+      - "The master fingerprint is an 8-digit identifier that accurately matches the signing device with the wallet."
+      - "This value cannot be determined automatically using only the extended public key, so it must be entered manually."
+      - "If not entered, sending is disabled."
     mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
     mfp_skip: "Skip"
     back_scan: "Go back to QR scan"

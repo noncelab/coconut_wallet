@@ -24,6 +24,12 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
   void initState() {
     super.initState();
 
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _mfpFocusNode.requestFocus();
+      }
+    });
+
     _mfpController.addListener(() {
       if (_mfpController.text.length < 8) {
         setState(() {

@@ -365,9 +365,9 @@ wallet_add_scanner_screen:
     mfp_title: "Huella digital maestra"
     mfp_description_title: "Huella digital maestra"
     mfp_description_texts:
-      - "Un valor único requerido para identificar una billetera de solo lectura" 
-      - "Como este valor no puede determinarse automáticamente a partir de la información que ingresaste, necesitas ingresarlo directamente para una conexión segura y precisa de la billetera." 
-      - "Sin huella digital, no podrás usar la función de envío."
+      - "La huella maestra es un identificador de 8 dígitos que vincula con precisión el dispositivo de firma y la billetera."
+      - "Este valor no puede obtenerse automáticamente solo con la clave pública extendida, por lo que debe ingresarse manualmente."
+      - "Si no se ingresa, no se puede usar la función de envío."
     mfp_input_placeholder: "Huella digital maestra ej: f75f7ab5"
     mfp_skip: "Omitir"
     back_scan: "Volver al escaneo de QR"
