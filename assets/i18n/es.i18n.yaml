@@ -794,6 +794,7 @@ errors:
   network_disconnected: "Red desconectada"
   network_not_found: "¡Red no conectada!"
   electrum_connection_failed: "No se puede conectar al servidor Electrum"
+  vpn_connected: "Por favor, verifique su estado de conexión VPN"
   insufficient_balance: "Saldo insuficiente."
   fee_selection_error:
     insufficient_balance: "Saldo insuficiente para pagar la comisión"  

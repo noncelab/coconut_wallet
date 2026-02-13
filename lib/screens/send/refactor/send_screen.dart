@@ -123,7 +123,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context.read<TransactionDraftRepository>(),
       context.read<UtxoRepository>(),
       context.read<WalletPreferencesRepository>(),
-      context.read<ConnectivityProvider>().isNetworkOn,
+      context.read<ConnectivityProvider>().isInternetOn,
       _onAmountTextUpdate,
       _onFeeRateTextUpdate,
       _onRecipientPageDeleted,
@@ -293,9 +293,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, SendViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, walletProvider, previous) {
-        if (connectivityProvider.isNetworkOn != previous?.isNetworkOn) {
+        if (connectivityProvider.isInternetOn != previous?.isNetworkOn) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            previous?.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            previous?.setIsNetworkOn(connectivityProvider.isInternetOn);
           });
         }
         return previous ?? _viewModel;

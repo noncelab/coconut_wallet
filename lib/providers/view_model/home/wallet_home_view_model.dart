@@ -50,7 +50,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   late bool _isBalanceHidden;
   late bool _isFiatBalanceHidden;
   late final bool _isReviewScreenVisible;
-  late bool? _isNetworkOn;
+  // late bool? _isNetworkOn;
 
   Map<int, AnimatedBalanceData> _walletBalance = {};
   Map<int, dynamic> _fakeBalanceMap = {};
@@ -134,7 +134,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._connectivityProvider, this._nodeProvider)
     : _syncNodeStateStream = _nodeProvider.syncStateStream {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _nodeProvider.currentBlockNotifier.addListener(_onCurrentBlockChanged);
 
@@ -185,7 +184,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   List<WalletListItemBase> get favoriteWallets => _favoriteWallets;
   List<HomeFeature> get homeFeatures => _preferenceProvider.homeFeatures;
 
-  bool? get isNetworkOn => _isNetworkOn;
+  bool? get isNetworkOn => _connectivityProvider.isInternetOn;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
@@ -209,15 +208,21 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {
-    Logger.log(
-      'WalletHomeViewModel: _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}',
-    );
-
-    if (!(_isNetworkOn ?? false)) {
+    if (_connectivityProvider.isInternetOff && _connectivityProvider.isVpnInactive) {
       return NetworkStatus.offline;
     }
 
+    if (_nodeSyncState == NodeSyncState.completed || _nodeProvider.isInitializing) {
+      return NetworkStatus.online;
+    }
+
     if (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) {
+      if (_connectivityProvider.isVpnActive) {
+        if (_connectivityProvider.isInternetOff) {
+          return NetworkStatus.offline;
+        }
+        return NetworkStatus.vpnBlocked;
+      }
       return NetworkStatus.connectionFailed;
     }
 
@@ -395,11 +400,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void onNodeProviderUpdated() {
-    notifyListeners();
-  }
-
-  void updateIsNetworkOn(bool? isNetworkOn) {
-    _isNetworkOn = isNetworkOn;
     notifyListeners();
   }
 

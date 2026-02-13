@@ -144,12 +144,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         WalletHomeViewModel? previous,
       ) {
         previous ??= _createViewModel();
-
         previous.onPreferenceProviderUpdated();
-
-        if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
-          previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
-        }
 
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
@@ -1760,7 +1755,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
     final shouldShow = networkStatus != NetworkStatus.online;
 
-    Logger.log('networkStatus: $networkStatus, shouldShow: $shouldShow');
     String message;
     switch (networkStatus) {
       case NetworkStatus.offline:
@@ -1768,6 +1762,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         break;
       case NetworkStatus.connectionFailed:
         message = t.errors.electrum_connection_failed;
+        break;
+      case NetworkStatus.vpnBlocked:
+        message = t.errors.vpn_connected;
         break;
       case NetworkStatus.online:
         message = '';

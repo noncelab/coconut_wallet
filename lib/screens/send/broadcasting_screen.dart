@@ -132,8 +132,8 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, BroadcastingViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, walletProvider, viewModel) {
-        if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
-          viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+        if (viewModel!.isNetworkOn != connectivityProvider.isInternetOn) {
+          viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
         }
 
         return viewModel;
@@ -274,7 +274,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       Provider.of<SendInfoProvider>(context, listen: false),
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<UtxoTagProvider>(context, listen: false),
-      Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+      Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<TransactionProvider>(context, listen: false),
       Provider.of<TransactionDraftRepository>(context, listen: false),

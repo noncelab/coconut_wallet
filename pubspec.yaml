@@ -95,6 +95,7 @@ dependencies:
   mobile_scanner: 7.0.1
   firebase_core: ^3.15.2
   firebase_analytics: ^11.6.0
+  vpn_detector: ^1.2.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
