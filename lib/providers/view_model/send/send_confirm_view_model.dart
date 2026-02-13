@@ -13,51 +13,45 @@ class SendConfirmViewModel extends ChangeNotifier {
   late final SendInfoProvider _sendInfoProvider;
   late final WalletProvider _walletProvider;
   late WalletListItemBase _walletListItemBase;
-  int? _totalUsedAmount;
   Psbt? _unsignedPsbt;
-
-  late double _amount;
-  late List<String> _addresses;
-  Map<String, double>? _recipientsForBatch;
+  int? _totalUsedAmount;
+  late double _totalSendAmount;
 
   SendConfirmViewModel(this._sendInfoProvider, this._walletProvider) {
     _walletListItemBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!);
     if (_sendInfoProvider.recipientsForBatch != null) {
-      _setBatchTxParams();
+      _setSendingAmountForBatchTx();
     } else {
-      _setSingleTxParams();
+      _setSendingAmountForSingleTx();
     }
   }
-
-  double get amount => _amount;
-  List<String> get addresses => _addresses;
-  Map<String, double>? get recipientsForBatch =>
-      _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
 
   int? get estimatedFee => _unsignedPsbt?.fee;
   String get walletName => _walletListItemBase.name;
   int? get totalUsedAmount => _totalUsedAmount;
+  Transaction? get transaction => _sendInfoProvider.transaction;
+  List<int?> get inputAmounts =>
+      _unsignedPsbt?.inputs.map((input) => input.witnessUtxo?.amount).toList() ??
+      List<int?>.filled(transaction?.inputs.length ?? 0, null);
+  double? get totalSendAmount => _totalSendAmount; // BTC
 
-  void _setSingleTxParams() {
-    _amount = _sendInfoProvider.amount!;
-    _addresses = [_sendInfoProvider.recipientAddress!];
+  void _setSendingAmountForSingleTx() {
+    _totalSendAmount = _sendInfoProvider.amount!;
   }
 
-  void _setBatchTxParams() {
-    _recipientsForBatch = _sendInfoProvider.recipientsForBatch!;
+  void _setSendingAmountForBatchTx() {
     double totalSendAmount = 0;
     List<String> addresses = [];
-    _recipientsForBatch!.forEach((key, value) {
+    _sendInfoProvider.recipientsForBatch!.forEach((key, value) {
       totalSendAmount += value;
-      addresses.add('$key ($value ${t.btc})');
+      addresses.add('$key | $value ${t.btc}');
     });
-    _amount = totalSendAmount.roundTo8Digits();
-    _addresses = addresses;
+    _totalSendAmount = totalSendAmount.roundTo8Digits();
   }
 
   Future<void> setEstimatedFeeAndTotalUsedAmount() async {
     _unsignedPsbt = await _generateUnsignedPsbt();
-    _totalUsedAmount = UnitUtil.convertBitcoinToSatoshi(_amount) + _unsignedPsbt!.fee;
+    _totalUsedAmount = UnitUtil.convertBitcoinToSatoshi(_totalSendAmount) + _unsignedPsbt!.fee;
     notifyListeners();
   }
 

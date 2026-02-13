@@ -484,7 +484,13 @@ send_address_screen:
   address_placeholder: "Please enter the address to send"
   amount_placeholder: "Please enter the amount to send"
 send_confirm_screen:
-  title: "Review Details"
+  title: "Transaction Details"
+  total_cost:
+    total: "Total $n"
+    sentence: " is required."
+  output_detail_title: "Output Details"
+  flow_input_title: "Input $index"
+  flow_output_title: "Output $index"
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
   bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
