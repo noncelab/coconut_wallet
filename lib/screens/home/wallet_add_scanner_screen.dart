@@ -7,14 +7,15 @@ import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_names.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/view_model/home/wallet_add_input_view_model.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_add_scanner_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
@@ -361,6 +362,9 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
   }
 
   void _handleClipboardImport() async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
     await controller?.stop();
     if (!mounted) return;
 
@@ -369,112 +373,63 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
     if (text == null || text.isEmpty) {
       _showErrorDialog(t.alert.wallet_add.add_failed, t.alert.invalid_qr);
+      _isProcessing = false;
       await controller?.start();
       return;
     }
+    String? descriptor;
+    String? extendedPublicKey;
+    try {
+      if (text.contains('[') && text.contains(']')) {
+        descriptor = DescriptorUtil.normalizeDescriptor(text);
+      } else {
+        ExtendedPublicKey.parse(text);
+        extendedPublicKey = text;
+      }
+    } catch (_) {}
 
-    final inputViewModel = WalletAddInputViewModel(context.read<WalletProvider>(), context.read<PreferenceProvider>());
-
-    final bool isDescriptor = text.contains('[');
-    final bool isValid =
-        isDescriptor ? inputViewModel.normalizeDescriptor(text) : inputViewModel.isExtendedPublicKey(text);
-
-    if (!isValid) {
+    if (descriptor == null && extendedPublicKey == null) {
       if (mounted) {
         _showErrorDialog(
           t.alert.wallet_add.add_failed,
-          inputViewModel.errorMessage ?? t.wallet_add_scanner_screen.paste.format_error_text,
+          "${t.wallet_add_scanner_screen.paste.format_error_text} ($text)",
         );
+        _isProcessing = false;
         await controller?.start();
       }
       return;
     }
 
-    if (isDescriptor) {
-      await _executeAddWallet(inputViewModel);
-    } else {
-      if (mounted) {
-        _showMfpInputBottomSheet(inputViewModel);
-      }
-    }
-  }
-
-  Future<void> _executeAddWallet(WalletAddInputViewModel viewModel) async {
-    if (_isProcessing) return;
-
-    _isProcessing = true;
-    context.loaderOverlay.show();
-
-    await Future.delayed(const Duration(seconds: 2));
-
     try {
-      if (!mounted) return;
-      ResultOfSyncFromVault addResult = await viewModel.addWallet();
-
-      if (!mounted) return;
-
-      switch (addResult.result) {
-        case WalletSyncResult.newWalletAdded:
-          {
-            context.read<AnalyticsService>().logEvent(
-              eventName: AnalyticsEventNames.walletAddCompleted,
-              parameters: {AnalyticsParameterNames.walletAddImportSource: WalletImportSource.extendedPublicKey.name},
-            );
-
-            if (widget.onNewWalletAdded != null) {
-              widget.onNewWalletAdded!(addResult);
-            }
-            if (mounted) {
-              Navigator.pushReplacementNamed(
-                context,
-                '/wallet-detail',
-                arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
-              );
-            }
-            break;
-          }
-        case WalletSyncResult.existingWalletUpdateImpossible:
-          vibrateLightDouble();
-          if (mounted) {
-            _showErrorDialog(
-              t.alert.wallet_add.already_exist,
-              t.alert.wallet_add.already_exist_description(
-                name: TextUtils.ellipsisIfLonger(viewModel.getWalletName(addResult.walletId!), maxLength: 15),
-              ),
-            );
-          }
-          break;
-        default:
-          throw 'No Support Result: ${addResult.result.name}';
+      ResultOfSyncFromVault? addResult;
+      if (descriptor != null) {
+        context.loaderOverlay.show();
+        addResult = await _viewModel.addWallet(descriptor);
+      } else {
+        String? mfp = await _showMfpInputBottomSheet();
+        context.loaderOverlay.show();
+        addResult = await _viewModel.addWallet(extendedPublicKey!, isExtendedPublicKey: true, masterFingerPrint: mfp);
       }
-    } catch (e) {
-      vibrateLightDouble();
-      if (mounted) {
-        _showErrorDialog(t.alert.wallet_add.add_failed, e.toString());
-      }
+      await _handleAddWalletResult(addResult);
+    } catch (e, stackTrace) {
+      _handleAddWalletError(e, stackTrace);
     } finally {
-      vibrateMedium();
-      _isProcessing = false;
-      if (mounted) {
-        context.loaderOverlay.hide();
-      }
+      _finalizeAddWallet();
     }
   }
 
-  void _showMfpInputBottomSheet(WalletAddInputViewModel viewModel) {
-    showModalBottomSheet(
+  Future<String?> _showMfpInputBottomSheet() async {
+    final result = await showModalBottomSheet(
       context: context,
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
           child: WalletAddMfpInputBottomSheet(
             onSkip: () {
-              viewModel.masterFingerPrint = null;
-              _executeAddWallet(viewModel);
+              Navigator.pop(context, null);
             },
             onComplete: (text) {
-              viewModel.masterFingerPrint = text;
-              _executeAddWallet(viewModel);
+              Navigator.pop(context, text);
             },
           ),
         );
@@ -483,11 +438,16 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
-    ).then((_) {
-      if (mounted && !_isProcessing) {
-        controller?.start();
-      }
-    });
+    );
+
+    return result;
+
+    // .then((_) {
+    //   if (mounted) {
+    //     _isProcessing = false;
+    //     controller?.start();
+    //   }
+    // });
   }
 
   Widget _buildDefaultToolTip() {
@@ -508,122 +468,113 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
 
   Future<void> _onCompletedScanning(dynamic additionInfo) async {
     const methodName = '_onCompletedScanning';
-
     FileLogger.log(className, methodName, 'additionInfo type: ${additionInfo.runtimeType}');
 
     if (_isProcessing) return;
-
     _isProcessing = true;
 
-    if (widget.importSource == WalletImportSource.extendedPublicKey && additionInfo is String) {
-      await controller?.stop();
-
-      final inputViewModel = WalletAddInputViewModel(
-        context.read<WalletProvider>(),
-        context.read<PreferenceProvider>(),
-      );
-
-      final text = additionInfo;
-      final bool isDescriptor = text.contains('[');
-
-      final bool isValid =
-          isDescriptor ? inputViewModel.normalizeDescriptor(text) : inputViewModel.isExtendedPublicKey(text);
-
-      if (isValid) {
-        _isProcessing = false;
-
-        if (isDescriptor) {
-          await _executeAddWallet(inputViewModel);
-        } else {
-          if (mounted) {
-            _showMfpInputBottomSheet(inputViewModel);
-          }
-        }
-        return;
-      } else {
-        _isProcessing = false;
-        await controller?.start();
-      }
-    }
-
     try {
-      ResultOfSyncFromVault addResult = await _viewModel.addWallet(additionInfo);
-      FileLogger.log(className, methodName, 'addWallet completed: ${addResult.result.name}');
-
-      if (!mounted) return;
-
-      switch (addResult.result) {
-        case WalletSyncResult.newWalletAdded:
-          {
-            context.read<AnalyticsService>().logEvent(
-              eventName: AnalyticsEventNames.walletAddCompleted,
-              parameters: {AnalyticsParameterNames.walletAddImportSource: widget.importSource.name},
-            );
-
-            if (widget.onNewWalletAdded != null) {
-              widget.onNewWalletAdded!(addResult);
-            }
-            if (mounted) {
-              Navigator.pushReplacementNamed(
-                context,
-                '/wallet-detail',
-                arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
-              );
-            }
-            break;
-          }
-        case WalletSyncResult.existingWalletUpdated:
-          {
-            Navigator.pop(context, addResult);
-            break;
-          }
-        case WalletSyncResult.existingWalletNoUpdate:
-          {
-            vibrateLightDouble();
-            _showErrorDialog(
-              t.alert.wallet_add.update_failed,
-              t.alert.wallet_add.update_failed_description(
-                name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!), maxLength: 15),
-              ),
-            );
-
-            break;
-          }
-        case WalletSyncResult.existingName:
-          vibrateLightDouble();
-          if (mounted) {
-            _showErrorDialog(t.alert.wallet_add.duplicate_name, t.alert.wallet_add.duplicate_name_description);
-          }
-        case WalletSyncResult.existingWalletUpdateImpossible:
-          vibrateLightDouble();
-          if (mounted) {
-            _showErrorDialog(
-              t.alert.wallet_add.already_exist,
-              t.alert.wallet_add.already_exist_description(
-                name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!), maxLength: 15),
-              ),
-            );
-          }
+      String? mfp;
+      if (_viewModel.isExtendedPublicKeyScanned) {
+        await controller?.stop();
+        mfp = await _showMfpInputBottomSheet();
       }
+
+      ResultOfSyncFromVault addResult = await _viewModel.addWallet(
+        additionInfo,
+        isExtendedPublicKey: _viewModel.isExtendedPublicKeyScanned,
+        masterFingerPrint: mfp,
+      );
+      await _handleAddWalletResult(addResult);
     } catch (e, stackTrace) {
-      FileLogger.error(className, methodName, '_onCompletedScanning failed: $e', stackTrace);
-      vibrateLightDouble();
-      if (mounted) {
-        String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
-        if (e.toString().contains("network type")) {
-          errorMessage =
-              NetworkType.currentNetworkType == NetworkType.mainnet
-                  ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text
-                  : t.wallet_add_scanner_screen.paste.testnet_wallet_error_text;
-        }
-        _showErrorDialog(t.alert.wallet_add.add_failed, errorMessage);
-      }
+      _handleAddWalletError(e, stackTrace);
     } finally {
-      FileLogger.log(className, methodName, '_onCompletedScanning finally block');
-      vibrateMedium();
-      if (mounted) {
-        context.loaderOverlay.hide();
+      _finalizeAddWallet();
+    }
+  }
+
+  Future<void> _handleAddWalletResult(ResultOfSyncFromVault addResult) async {
+    FileLogger.log(className, '_handleAddWalletResult', 'result: ${addResult.result.name}');
+
+    if (!mounted) return;
+
+    switch (addResult.result) {
+      case WalletSyncResult.newWalletAdded:
+        {
+          context.read<AnalyticsService>().logEvent(
+            eventName: AnalyticsEventNames.walletAddCompleted,
+            parameters: {AnalyticsParameterNames.walletAddImportSource: widget.importSource.name},
+          );
+
+          if (widget.onNewWalletAdded != null) {
+            widget.onNewWalletAdded!(addResult);
+          }
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              '/wallet-detail',
+              arguments: {'id': addResult.walletId, 'entryPoint': kEntryPointWalletHome},
+            );
+          }
+          break;
+        }
+      case WalletSyncResult.existingWalletUpdated:
+        {
+          Navigator.pop(context, addResult);
+          break;
+        }
+      case WalletSyncResult.existingWalletNoUpdate:
+        {
+          vibrateLightDouble();
+          _showErrorDialog(
+            t.alert.wallet_add.update_failed,
+            t.alert.wallet_add.update_failed_description(
+              name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!), maxLength: 15),
+            ),
+          );
+
+          break;
+        }
+      case WalletSyncResult.existingName:
+        vibrateLightDouble();
+        if (mounted) {
+          _showErrorDialog(t.alert.wallet_add.duplicate_name, t.alert.wallet_add.duplicate_name_description);
+        }
+      case WalletSyncResult.existingWalletUpdateImpossible:
+        vibrateLightDouble();
+        if (mounted) {
+          _showErrorDialog(
+            t.alert.wallet_add.already_exist,
+            t.alert.wallet_add.already_exist_description(
+              name: TextUtils.ellipsisIfLonger(_viewModel.getWalletName(addResult.walletId!), maxLength: 15),
+            ),
+          );
+        }
+    }
+  }
+
+  void _handleAddWalletError(Object e, StackTrace stackTrace) {
+    FileLogger.error(className, '_handleAddWalletError', 'failed: $e', stackTrace);
+    vibrateLightDouble();
+    if (mounted) {
+      String errorMessage = "${t.wallet_add_scanner_screen.paste.format_error_text}\n${e.toString()}";
+      if (e.toString().contains("network type")) {
+        errorMessage =
+            NetworkType.currentNetworkType == NetworkType.mainnet
+                ? t.wallet_add_scanner_screen.paste.mainnet_wallet_error_text
+                : t.wallet_add_scanner_screen.paste.testnet_wallet_error_text;
       }
+      _showErrorDialog(t.alert.wallet_add.add_failed, errorMessage);
+    }
+  }
+
+  void _finalizeAddWallet() {
+    FileLogger.log(className, '_finalizeAddWallet', 'finalize');
+    vibrateMedium();
+    if (mounted) {
+      context.loaderOverlay.hide();
+      controller?.start();
+      _viewModel.qrDataHandler.reset(); // TODO: 추가됨. 다른 타입 지갑 추가 시 동작 확인 필요
     }
   }
 
@@ -659,6 +610,7 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
           onTapRight: () {
             FileLogger.log(className, methodName, 'Error dialog confirmed');
             _isProcessing = false;
+
             Navigator.pop(context);
           },
           rightButtonText: t.OK,

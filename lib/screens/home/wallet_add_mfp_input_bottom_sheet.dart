@@ -199,7 +199,6 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                 FocusScope.of(context).unfocus();
                               });
                               widget.onSkip();
-                              Navigator.pop(context);
                             },
                             textStyle: CoconutTypography.body2_14,
                             disabledBackgroundColor: CoconutColors.gray800,
@@ -220,7 +219,6 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                 FocusScope.of(context).unfocus();
                               });
                               widget.onComplete(_mfpController.text);
-                              Navigator.pop(context);
                             },
                             disabledBackgroundColor: CoconutColors.gray800,
                             disabledForegroundColor: CoconutColors.gray700,
