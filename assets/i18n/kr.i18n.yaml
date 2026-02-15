@@ -482,7 +482,13 @@ send_address_screen:
   address_placeholder: "받을 주소를 입력해 주세요"
   amount_placeholder: "수량을 입력해 주세요"
 send_confirm_screen:
-  title: "입력 정보 확인"
+  title: "거래 정보 확인"
+  total_cost:
+    total: "총 $n"
+    sentence: "가 소요됩니다"
+  output_detail_title: "출력 상세 보기"
+  flow_input_title: "입력 $index"
+  flow_output_title: "출력 $index"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
   bbqr_mode_switching: "BBQR 모드로 전환 중이에요.\n잠시만 기다려주세요."

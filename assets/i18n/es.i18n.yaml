@@ -483,7 +483,13 @@ send_address_screen:
   address_placeholder: "Ingrese la dirección para enviar"
   amount_placeholder: "Ingrese la cantidad para enviar"
 send_confirm_screen:
-  title: "Revisión de detalles"
+  title: "Detalles de la transacción"
+  total_cost:
+    total: "El total de $n"
+    sentence: " es necesario."
+  output_detail_title: "Detalles de salida"
+  flow_input_title: "Entrada $index"
+  flow_output_title: "Salida $index"
 signed_psbt_scanner_screen:
   title: "Escanear transacción firmada"
   bbqr_mode_switching: "Cambiando a modo BBQR.\nPor favor, espere un momento."

@@ -5,11 +5,11 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/card/information_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
+import 'package:coconut_wallet/widgets/send_amount_header.dart';
+import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +27,8 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
   late SendConfirmViewModel _viewModel;
   late BitcoinUnit _currentUnit;
 
-  String get confirmText => _currentUnit.displayBitcoinAmount(UnitUtil.convertBitcoinToSatoshi(_viewModel.amount));
+  String get totalSendAmountText =>
+      _currentUnit.displayBitcoinAmount(UnitUtil.convertBitcoinToSatoshi(_viewModel.totalSendAmount ?? 0));
 
   String get estimatedFeeText => _currentUnit.displayBitcoinAmount(
     _viewModel.estimatedFee,
@@ -58,62 +59,24 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                   SingleChildScrollView(
                     child: Column(
                       children: [
-                        GestureDetector(
+                        SendAmountHeader(
+                          amountText: totalSendAmountText,
+                          unitText: unitText,
+                          satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
+                          totalCostAmountText: totalCostText,
                           onTap: _toggleUnit,
-                          child: Column(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.only(top: 40),
-                                child: Center(
-                                  child: Text.rich(
-                                    TextSpan(
-                                      text: confirmText,
-                                      children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)],
-                                    ),
-                                    style: Styles.balance1,
-                                    textScaler: const TextScaler.linear(1.0),
-                                  ),
-                                ),
-                              ),
-                              FiatPrice(satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.amount)),
-                            ],
-                          ),
                         ),
-                        CoconutLayout.spacing_1000h,
+                        CoconutLayout.spacing_300h,
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(28.0),
-                              color: MyColors.transparentWhite_06,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: Column(
-                                children: [
-                                  InformationItemCard(
-                                    label: t.receiver,
-                                    value: viewModel.addresses,
-                                    isNumber: true,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                  ),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
-                                  InformationItemCard(
-                                    label: t.estimated_fee,
-                                    value: ["$estimatedFeeText $unitText"],
-                                    isNumber: true,
-                                  ),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
-                                  InformationItemCard(
-                                    label: t.total_cost,
-                                    value: ["$totalCostText $unitText"],
-                                    isNumber: true,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          child: _buildTransactionFlowCard(viewModel),
                         ),
+                        CoconutLayout.spacing_500h,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: _buildOutputDetailCard(viewModel),
+                        ),
+                        CoconutLayout.spacing_500h,
                         CoconutLayout.spacing_2500h,
                       ],
                     ),
@@ -185,5 +148,59 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
     setState(() {
       _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
+  }
+
+  Widget _buildTransactionFlowCard(SendConfirmViewModel viewModel) {
+    final transaction = viewModel.transaction;
+    if (transaction == null) {
+      return const SizedBox.shrink();
+    }
+
+    final inputCount = transaction.inputs.length;
+    final List<int?> inputAmounts = List<int?>.from(viewModel.inputAmounts);
+    if (inputAmounts.length != inputCount) {
+      inputAmounts
+        ..clear()
+        ..addAll(List<int?>.filled(inputCount, null));
+    }
+
+    final externalOutputAmounts =
+        transaction.outputs.where((output) => output.isChangeOutput != true).map((output) => output.amount).toList();
+    final changeOutputAmounts =
+        transaction.outputs.where((output) => output.isChangeOutput == true).map((output) => output.amount).toList();
+
+    return SendTransactionFlowCard(
+      inputAmounts: inputAmounts,
+      externalOutputAmounts: externalOutputAmounts,
+      changeOutputAmounts: changeOutputAmounts,
+      fee: viewModel.estimatedFee,
+      currentUnit: _currentUnit,
+    );
+  }
+
+  Widget _buildOutputDetailCard(SendConfirmViewModel viewModel) {
+    final transaction = viewModel.transaction;
+    if (transaction == null || transaction.outputs.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final detailItems = <OutputDetailItem>[];
+    int outputIndex = 0;
+    for (final output in transaction.outputs) {
+      final isChange = output.isChangeOutput == true;
+      if (!isChange) {
+        outputIndex += 1;
+      }
+      detailItems.add(
+        OutputDetailItem(
+          label: isChange ? t.change : t.send_confirm_screen.flow_output_title(index: outputIndex),
+          address: output.getAddress(),
+          amountSats: output.amount,
+          isChange: isChange,
+        ),
+      );
+    }
+
+    return SendOutputDetailCard(items: detailItems);
   }
 }
