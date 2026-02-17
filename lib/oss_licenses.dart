@@ -206,6 +206,7 @@ const allDependencies = <Package>[
   _vibration,
   _vibration_platform_interface,
   _vm_service,
+  _vpn_detector,
   _watcher,
   _web,
   _web_socket,
@@ -227,6 +228,7 @@ const dependencies = <Package>[
   _cbor,
   _coconut_design_system,
   _coconut_lib,
+  _collection,
   _connectivity_plus,
   _convert,
   _crypto,
@@ -271,6 +273,7 @@ const dependencies = <Package>[
   _url_launcher,
   _uuid,
   _vibration,
+  _vpn_detector,
   _web_socket_channel,
 ];
 
@@ -1230,14 +1233,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   dependencies: [PackageRef('meta'), PackageRef('collection')],
 );
 
-/// carousel_slider 5.1.1
+/// carousel_slider 5.1.2
 const _carousel_slider = Package(
   name: 'carousel_slider',
   description: 'A carousel slider widget, support infinite scroll and custom child widget.',
   homepage: 'https://github.com/serenader2014/flutter_carousel_slider',
   repository: 'https://github.com/serenader2014/flutter_carousel_slider',
   authors: [],
-  version: '5.1.1',
+  version: '5.1.2',
   license: '''MIT License
 
 Copyright (c) 2017 serenader
@@ -1636,7 +1639,7 @@ const _clock = Package(
   dependencies: [],
 );
 
-/// coconut_design_system 0.9.10
+/// coconut_design_system 0.9.11
 const _coconut_design_system = Package(
   name: 'coconut_design_system',
   description:
@@ -1644,7 +1647,7 @@ const _coconut_design_system = Package(
   homepage: 'https://www.noncelab.com',
   repository: 'https://github.com/noncelab/coconut_design_system',
   authors: [],
-  version: '0.9.10',
+  version: '0.9.11',
   license: '''MIT License
 
 Copyright 2025 Nonce Lab
@@ -11716,6 +11719,45 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   isMarkdown: false,
   isSdk: false,
   dependencies: [],
+);
+
+/// vpn_detector 1.2.0
+const _vpn_detector = Package(
+  name: 'vpn_detector',
+  description:
+      'A Flutter package for reliable VPN detection on iOS and Android, featuring a clean, testable API and real-time status updates.',
+  repository: 'https://github.com/aelahmar/vpn_detector',
+  authors: [],
+  version: '1.2.0',
+  license: '''MIT License
+
+Copyright (c) 2023 Ali O. AlAhmar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.''',
+  isMarkdown: false,
+  isSdk: false,
+  dependencies: [
+    PackageRef('flutter'),
+    PackageRef('plugin_platform_interface'),
+    PackageRef('connectivity_plus'),
+    PackageRef('meta'),
+  ],
 );
 
 /// watcher 1.1.3
