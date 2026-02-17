@@ -1,29 +1,16 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/i_qr_scan_data_handler.dart';
 
 class ExtendedPublicKeyQrScanDataHandler implements IQrScanDataHandler {
   String? _scannedResult;
 
   bool _isValidExtendedPublicKey(String text) {
-    final cleanText = text.trim();
-
-    if (cleanText.contains(RegExp(r'\s'))) return false;
-
-    final lowerText = cleanText.toLowerCase();
-    final bool hasValidPrefix =
-        lowerText.startsWith('xpub') ||
-        lowerText.startsWith('zpub') ||
-        lowerText.startsWith('tpub') ||
-        lowerText.startsWith('vpub');
-
-    if (!hasValidPrefix || cleanText.length < 10) return false;
-
-    return true;
-  }
-
-  String handle(dynamic data) {
-    if (data is! String) throw 'Invalid data type';
-    if (!_isValidExtendedPublicKey(data)) throw 'Invalid Extended Public Key format';
-    return data.trim();
+    try {
+      ExtendedPublicKey.parse(text.trim());
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

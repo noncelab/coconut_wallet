@@ -72,10 +72,10 @@ class UtxoItemCard extends StatelessWidget {
                       children: [
                         if (utxo.isPending) ...[
                           _buildPendingStatus(utxo.status),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                         ] else if (utxo.status == UtxoStatus.locked) ...[
                           SvgPicture.asset('assets/svg/lock.svg'),
-                          SizedBox(width: 4),
+                          const SizedBox(width: 4),
                         ],
                         Text(
                           currentUnit.displayBitcoinAmount(utxo.amount),
@@ -161,8 +161,8 @@ class UtxoItemCard extends StatelessWidget {
           decoration: BoxDecoration(
             color:
                 status == UtxoStatus.incoming
-                    ? CoconutColors.cyan.withOpacity(0.2)
-                    : CoconutColors.primary.withOpacity(0.2),
+                    ? CoconutColors.cyan.withValues(alpha: 0.2)
+                    : CoconutColors.primary.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(100),
           ),
           child: Lottie.asset(

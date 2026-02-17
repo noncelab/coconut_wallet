@@ -18,13 +18,14 @@ class SendInfoProvider {
   SendEntryPoint? _sendEntryPoint;
   Transaction? _transaction;
   String? _txWaitingForSign;
-  String? _signedPsbtBase64Encoded;
-  String? _rawSignedTransaction;
+  String? _signedResult; // Base64 OR RawHexString
   // batch tx (주소, 수량)
   Map<String, double>? _recipientsForBatch;
   // null인 경우 RBF 또는 CPFP가 아닙니다.
   FeeBumpingType? _feeBumpingType;
   WalletImportSource? _walletImportSource;
+  int? _unsignedDraftId;
+  double? _feeRate;
 
   int? get walletId => _walletId;
   String? get recipientAddress => _recipientAddress;
@@ -36,12 +37,21 @@ class SendInfoProvider {
   SendEntryPoint? get sendEntryPoint => _sendEntryPoint;
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
-  String? get signedPsbt => _signedPsbtBase64Encoded;
-  String? get rawSignedTransaction => _rawSignedTransaction;
+  String? get signedResult => _signedResult; // Base64 OR RawHexString
   Map<String, double>? get recipientsForBatch =>
       _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
   FeeBumpingType? get feeBumpingType => _feeBumpingType;
   WalletImportSource? get walletImportSource => _walletImportSource;
+  int? get unsignedDraftId => _unsignedDraftId;
+  double? get feeRate => _feeRate;
+
+  void setFeeRate(double feeRate) {
+    _feeRate = feeRate;
+  }
+
+  void setUnsignedDraftId(int? id) {
+    _unsignedDraftId = id;
+  }
 
   void setWalletId(int id) {
     _walletId = id;
@@ -75,12 +85,8 @@ class SendInfoProvider {
     _txWaitingForSign = transaction;
   }
 
-  void setSignedPsbtBase64Encoded(String signedPsbtBase64Encoded) {
-    _signedPsbtBase64Encoded = signedPsbtBase64Encoded;
-  }
-
-  void setRawSignedTransaction(String rawSignedTransaction) {
-    _rawSignedTransaction = rawSignedTransaction;
+  void setSignedResult(String signedPsbtBase64Encoded) {
+    _signedResult = signedPsbtBase64Encoded;
   }
 
   void setRecipientsForBatch(Map<String, double>? recipients) {
@@ -112,11 +118,11 @@ class SendInfoProvider {
                         _isMultisig =
                             _transaction =
                                 _txWaitingForSign =
-                                    _signedPsbtBase64Encoded =
-                                        _rawSignedTransaction =
-                                            _isDonation =
-                                                _sendEntryPoint =
-                                                    _recipientsForBatch = _feeBumpingType = _walletImportSource = null;
+                                    _signedResult =
+                                        _isDonation =
+                                            _sendEntryPoint =
+                                                _recipientsForBatch =
+                                                    _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
   }
 
   Map<String, int>? getRecipientMap() {

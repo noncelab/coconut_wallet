@@ -183,7 +183,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         }
       }
 
-      _viewModel.setSignedPsbt(psbt.serialize());
+      _viewModel.setSignedResult(psbt.serialize());
 
       await _stopCamera();
       if (mounted) {
@@ -210,7 +210,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     assert(encodedSignedPsbt != null);
 
     try {
-      _viewModel.setSignedPsbt(encodedSignedPsbt!);
+      _viewModel.setSignedResult(encodedSignedPsbt!);
       await _stopCamera();
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/broadcasting');
@@ -225,7 +225,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
     _isProcessing = true;
 
     try {
-      _viewModel.setRawSignedTransaction(rawSignedTx);
+      _viewModel.setSignedResult(rawSignedTx);
 
       await _stopCamera();
       if (mounted) {

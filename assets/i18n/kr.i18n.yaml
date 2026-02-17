@@ -102,12 +102,11 @@ log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
 
 relative_time:
-  days_ago(cardinal):
-    zero: "오늘"        # 0일이면 Today로 처리(원하면 생략 가능)
-    one: "1일 전"   # 1일
-    other: "${n}일 전"  # 2일 이상
+  just_now: "방금 전"
+  minutes_ago(cardinal):
+    one: "1분 전"
+    other: "${n}분 전"
   hours_ago(cardinal):
-    zero: "방금 전"
     one: "1시간 전"
     other: "${n}시간 전"
 
@@ -179,6 +178,40 @@ donation:
   ln_address: "라이트닝 주소"
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "라이트닝 인보이스 생성에 실패했어요"
+
+transaction_draft:
+  title: "임시 저장 트랜잭션"
+  empty_message: "임시 저장된 트랜잭션이 없어요"
+  deleted_wallet: "삭제된 지갑"
+  save: "임시 저장"
+  update: "변경 사항 저장"
+  load: "불러오기"
+  recipient_batch_address: "$address 외 $count개 주소"
+  fee_rate: "수수료율"
+  sats_per_vbyte: "sat/vB"
+  dialog:
+    transaction_draft_saved_send_screen: "임시 저장 완료"
+    transaction_draft_saved_send_screen_description: "나중에 서명할 수 있도록 보내기 정보를 임시 저장했어요.\n지금 목록으로 이동할까요?"
+    transaction_draft_updated_description: "변경 사항을 저장했어요.\n지금 목록으로 이동할까요?"
+    transaction_draft_saved_broadcast_screen: "트랜잭션 저장 완료"
+    transaction_draft_saved_description_broadcast_screen: "나중에 전송할 수 있도록 트랜잭션을 임시 저장했어요.\n지금 목록으로 이동할까요?"
+    transaction_draft_save_failed: "임시 저장 실패"
+    transaction_draft_already_exists: "이미 저장된 트랜잭션이에요."
+    transaction_draft_empty_required_fields: "주소와 보낼 금액을 모두 입력해야 해요. 빠진 항목을 확인해 주세요."
+    transaction_unavailable_to_sign: "트랜잭션 서명 불가"
+    transaction_already_used_utxo_included: "이미 사용된 UTXO가 포함되어 있어요. 저장된 트랜잭션을 지울까요?"
+    transaction_has_been_locked_utxo_included: "잠금 설정이 된 UTXO가 포함되어 있어요. 저장된 트랜잭션을 지울까요?"
+    transaction_draft_delete: "임시 저장 트랜잭션 삭제"
+    transaction_draft_delete_description: "임시 저장된 트랜잭션을 삭제할까요? 한번 삭제하면 되돌릴 수 없어요."
+    transaction_draft_delete_failed: "임시 저장 트랜잭션 삭제 실패"
+    transaction_draft_delete_completed: "삭제 완료"
+    cancel: "취소"
+    remove: "지우기"
+    move: "이동하기"
+    confirm: "확인"
+  signed: "서명 완료"
+  unsigned: "서명 전"
+  max: "최대"
 
 # lib/enums
 transaction_enums:
@@ -333,9 +366,9 @@ wallet_add_scanner_screen:
     mfp_title: "마스터 핑거프린트 입력"
     mfp_description_title: "마스터 핑거프린트(Master Fingerprint)"
     mfp_description_texts:
-      - "보기 전용 지갑을 식별할 때 필요한 고유 값이에요."
-      - "입력한 정보만으로는 이 값을 자동으로 알 수 없기 때문에, 안전하고 정확한 지갑 연결을 위해 직접 입력해주셔야 해요."
-      - "이 정보가 없으면 보내기 기능을 사용하실 수 없어요."
+      - "마스터 핑거프린트는 서명기와 지갑을 정확히 매칭하는 8자리 식별자예요."
+      - "확장 공개키만으로는 이 값을 자동으로 알 수 없어 직접 입력이 필요합니다."
+      - "미입력 시 보내기를 사용할 수 없어요."
     mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
     mfp_skip: "건너뛰기"
     back_scan: "QR 스캔으로 돌아가기"
@@ -388,8 +421,10 @@ broadcasting_complete_screen:
 
 # send screen start ----
 send_screen:
+  utxo_auto_selection: "UTXO 자동 선택"
   select_wallet: "지갑 선택"
-  n_utxos: " • ${count}개"
+  n_utxos(param=count):
+    other: " • ${count}개"
   delete: "삭제하기"
   fee_rate: "수수료율"
   fee_rate_suffix: "sat/vB"
@@ -409,8 +444,14 @@ send_screen:
   max_mode_insufficient_balance: "잔액 부족"
   unintended_dust_fee: "잔돈 ${unintendedDustFee} sat는 수수료로 사용돼요."
   fee_rate_too_low: "0.1 미만으로는 설정할 수 없어요"
+  drag_to_add_address: "받을 주소를 추가하려면 왼쪽으로 드래그 해주세요"
+  dialog:
+    load_draft_failed: "불러오기 실패"
   swipe_to_add_address: "수신자를 추가하려면 왼쪽으로 스와이프 해주세요"
-
+  toast:
+    draft_utxo_used: "이전에 선택한 비트코인이 이미 사용되었어요. UTXO를 다시 골라주세요."
+    draft_utxo_locked: "이전에 선택한 비트코인이 사용 잠금 되었어요. UTXO를 다시 골라주세요."
+    
 utxo_selection_screen:
   title: "UTXO 고르기"
 
@@ -419,7 +460,8 @@ select_wallet_with_options_bottom_sheet:
   select_utxo_auto: "UTXO 자동 선택"
   select_utxo_auto_minimal_fee_description: "최소 수수료로 전송하도록 최적의 UTXO를 선택해요"
   select_utxo_auto_selected_utxo_description: "선택한 UTXO를 사용해 거래를 생성해요"
-  n_utxos: " • ${count}개 선택"
+  n_utxos(param=count):
+    other: " • ${count}개 선택"
 
 # send screen end ----
 
@@ -429,6 +471,10 @@ broadcasting_screen:
   self_sending: "내 지갑으로 보내는 트랜잭션입니다."
   error_popup_title: "브로드캐스팅 실패"
   btn_submit: "보내기"
+  toast:
+    already_saved_draft: "이미 추가한 트랜잭션이에요."
+  dialog:
+    send_unavailable: "전송 불가"
 send_address_screen:
   text1: "QR을 스캔하거나\n복사한 주소를 붙여넣어 주세요"
   text2: "주소 QR 코드를 스캔해 주세요"
@@ -594,6 +640,7 @@ utxo_list_screen:
   total_balance: "총 잔액"
   utxo_locked_button: "사용 잠금"
   utxo_unlocked_button: "사용 가능으로 전환"
+  pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
@@ -740,7 +787,8 @@ errors:
   network_connect: "네트워크 연결이 없습니다."
   network_not_found: "네트워크가 연결되어 있지 않아요!"
   network_disconnected: "네트워크 끊김"
-  electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요."
+  electrum_connection_failed: "일렉트럼 서버에 연결할 수 없어요"
+  vpn_connected: "VPN 연결 상태를 확인해 주세요"
   insufficient_balance: "잔액이 부족해요."
   fee_selection_error:
     insufficient_balance: "잔액이 부족하여 수수료를 낼 수 없어요"
@@ -766,6 +814,8 @@ errors:
   data_not_found: "데이터가 없습니다."
   utxo_lock_error: "일시적인 오류로 인해 UTXO 잠금 설정에 실패했어요"
   utxo_unlock_error: "일시적인 오류로 인해 UTXO 잠금 해제에 실패했어요"
+  transaction_draft:
+    invalid_id: "임시 저장 정보를 찾을 수 없습니다"
   empty_input: "트랜잭션 입력 정보를 불러올 수 없어요. 멤풀에서 확인해 주세요."
   
 text_field:
