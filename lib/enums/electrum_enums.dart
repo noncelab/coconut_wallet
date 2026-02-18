@@ -8,33 +8,15 @@ enum DefaultElectrumServer {
     false, // isRegtest
   ),
   fulrum(ElectrumServer('fulcrum2.not.fyi', 51002, true), 'FULRUM', 2, false),
-  // blockstream(
-  //   ElectrumServer(
-  //     'blockstream.info',
-  //     700,
-  //     true,
-  //   ),
-  //   'BLOCKSTREAM',
-  //   2,
-  //   false,
-  // ),
-  acinq(ElectrumServer('electrum.acinq.co', 50002, true), 'ACINQ', 3, false),
-  foundationdevices(ElectrumServer('mainnet.foundationdevices.com', 50002, true), 'FOUNDATIONDEVICES', 4, false),
-  bluewallet(ElectrumServer('electrum1.bluewallet.io', 443, true), 'BLUEWALLET', 5, false),
-  lukechilds(ElectrumServer('bitcoin.lukechilds.co', 50002, true), 'LUKECHILDS', 6, false),
-  bitaroo(ElectrumServer('electrum.bitaroo.net', 50002, true), 'BITAROO', 7, false),
-  jochenhoenicke(ElectrumServer('electrum.jochen-hoenicke.de', 50006, true), 'JOCHENHOENICKE', 8, false),
-  emzy(ElectrumServer('electrum.emzy.de', 50002, true), 'EMZY', 9, false),
-  // ecdsa(
-  //   ElectrumServer(
-  //     'ecdsa.net',
-  //     110,
-  //     true,
-  //   ),
-  //   'ECDSA',
-  //   10,
-  //   false,
-  // ),
+  nunchuk(ElectrumServer('mainnet.nunchuk.io', 51001, false), 'NUNCHUK', 3, false),
+  acinq(ElectrumServer('electrum.acinq.co', 50002, true), 'ACINQ', 4, false),
+  foundationdevices(ElectrumServer('mainnet.foundationdevices.com', 50002, true), 'FOUNDATIONDEVICES', 5, false),
+  bluewallet(ElectrumServer('electrum1.bluewallet.io', 443, true), 'BLUEWALLET', 6, false),
+  lukechilds(ElectrumServer('bitcoin.lukechilds.co', 50002, true), 'LUKECHILDS', 7, false),
+  bitaroo(ElectrumServer('electrum.bitaroo.net', 50002, true), 'BITAROO', 8, false),
+  jochenhoenicke(ElectrumServer('electrum.jochen-hoenicke.de', 50006, true), 'JOCHENHOENICKE', 9, false),
+  emzy(ElectrumServer('electrum.emzy.de', 50002, true), 'EMZY', 10, false),
+  blockstream(ElectrumServer('blockstream.info', 700, true), 'BLOCKSTREAM', 11, false),
 
   // Regtest
   regtest(

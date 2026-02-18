@@ -12,7 +12,6 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/screens/home/analysis_period_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -145,12 +144,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         WalletHomeViewModel? previous,
       ) {
         previous ??= _createViewModel();
-
         previous.onPreferenceProviderUpdated();
-
-        if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
-          previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
-        }
 
         // FIXME: 다른 provider의 변경에 의해서도 항상 호출됨
         return previous..onWalletProviderUpdated(walletProvider);
@@ -259,11 +253,11 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             // 지갑 리스트가 비어있지 않을 때
 
                             // 전체보기 위젯
-                            _buildViewAll(walletItem.length),
+                            _buildViewAllWallets(walletItem.length),
 
                             if (favoriteWallets.isNotEmpty)
                               // 즐겨찾기된 지갑 목록
-                              _buildWalletList(
+                              _buildFavoriteWalletList(
                                 walletItem,
                                 favoriteWallets,
                                 walletBalanceMap,
@@ -281,7 +275,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 ),
                               ),
                               // 최근 트랜잭션 섹션: 로딩 중이면 스켈레톤, 아니면 컨텐츠
-                              buildFeatureSectionIfEnabled(
+                              _buildFeatureSectionIfEnabled(
                                 HomeFeatureType.recentTransaction,
                                 () =>
                                     viewModel.isFetchingLatestTx
@@ -289,7 +283,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                         : _buildRecentTransactions(),
                               ),
                               // 분석 섹션: 로딩 중이면서 기존 데이터가 없으면 스켈레톤, 아니면 컨텐츠 (기존 데이터 있으면 보여줌)
-                              buildFeatureSectionIfEnabled(
+                              _buildFeatureSectionIfEnabled(
                                 HomeFeatureType.analysis,
                                 () =>
                                     viewModel.isLatestTxAnalysisRunning && viewModel.recentTransactionAnalysis == null
@@ -334,6 +328,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _pageIndicatorController = ScrollController();
 
     _dropdownActions = [
+      () => Navigator.pushNamed(context, '/transaction-draft'),
       () => CommonBottomSheets.showCustomHeightBottomSheet(
         context: context,
         child: const GlossaryBottomSheet(),
@@ -408,7 +403,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _viewModel = WalletHomeViewModel(
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<PreferenceProvider>(context, listen: false),
-      Provider.of<VisibilityProvider>(context, listen: false),
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
     );
@@ -838,34 +832,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
   }
 
-  // Widget _buildHomeEditButton() {
-  //   return SliverToBoxAdapter(
-  //     child: Column(
-  //       children: [
-  //         CoconutLayout.spacing_800h,
-  //         CoconutUnderlinedButton(
-  //           padding: const EdgeInsets.all(8),
-  //           onTap: () async {
-  //             _viewModel.captureEnabledFeaturesSnapshot();
-  //             await Navigator.pushNamed(
-  //               context,
-  //               '/wallet-home-edit',
-  //               arguments: {'scrollController': _scrollController},
-  //             );
-  //             if (context.mounted) {
-  //               _viewModel.refreshEnabledFeaturesData();
-  //             }
-  //           },
-  //           text: t.wallet_home_screen.edit_home_screen,
-  //           textStyle: CoconutTypography.body3_12,
-  //         ),
-  //         CoconutLayout.spacing_2500h,
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  Widget _buildViewAll(int walletCount) {
+  Widget _buildViewAllWallets(int walletCount) {
     return SliverToBoxAdapter(
       child: Column(
         children: [
@@ -914,7 +881,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildWalletList(
+  Widget _buildFavoriteWalletList(
     List<WalletListItemBase> walletList,
     List<WalletListItemBase> favoriteWalletList,
     Map<int, AnimatedBalanceData> walletBalanceMap,
@@ -1001,9 +968,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget buildFeatureSectionIfEnabled(HomeFeatureType type, Widget Function() builder) {
+  Widget _buildFeatureSectionIfEnabled(HomeFeatureType type, Widget Function() builder) {
     if (_viewModel.isHomeFeatureEnabled(type)) {
-      return SliverToBoxAdapter(child: Column(children: [builder(), CoconutLayout.spacing_900h]));
+      return SliverToBoxAdapter(child: Column(children: [builder(), CoconutLayout.spacing_400h]));
     }
 
     return SliverToBoxAdapter(child: Container());
@@ -1015,7 +982,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       builder: (context, isEditMode, child) {
         return LongPressedMenuWidget(
           onMenuOpen: () {
-            _setPulldownMenuVisiblility(false);
+            _setDropdownMenuVisiblility(false);
           },
           isEditMode: isEditMode,
           onRemove: () {
@@ -1052,20 +1019,18 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   child: Selector2<
                     PreferenceProvider,
                     WalletHomeViewModel,
-                    Tuple4<bool, Map<int, List<TransactionRecord>>, bool, int?>
+                    Tuple3<bool, bool, List<Tuple2<int, TransactionRecord>>>
                   >(
                     selector:
-                        (_, prefProvider, homeViewModel) => Tuple4(
+                        (_, prefProvider, homeViewModel) => Tuple3(
                           prefProvider.isBtcUnit,
-                          homeViewModel.recentTransactions,
                           homeViewModel.showRecentFeatureInitialLoading,
-                          homeViewModel.currentBlockHeight,
+                          homeViewModel.orderedRecentTransactions,
                         ),
                     builder: (context, data, child) {
                       final isBtcUnit = data.item1;
-                      final showRecentInitialLoading = data.item3;
-                      // 정렬된 트랜잭션 플랫 리스트
-                      final ordered = _getOrderedRecentTransactions();
+                      final showRecentInitialLoading = data.item2;
+                      final ordered = data.item3;
 
                       if (ordered.isEmpty || _viewModel.isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) {
                         return Container(
@@ -1108,12 +1073,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 ),
               ),
               // 페이지 인디케이터 (트랜잭션 단위, 2개 이상일 때만 표시)
-              Selector<WalletHomeViewModel, Map<int, List<TransactionRecord>>>(
-                selector: (_, viewModel) => viewModel.recentTransactions,
-                builder: (context, recentTransactions, child) {
-                  final totalCount = _getOrderedRecentTransactions().length;
-
-                  if (totalCount <= 1 || _viewModel.isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) {
+              Selector<WalletHomeViewModel, int>(
+                selector: (_, viewModel) => viewModel.orderedRecentTransactions.length,
+                builder: (context, indicatorCount, child) {
+                  if (indicatorCount <= 1 || _viewModel.isBalanceHidden || _viewModel.fakeBalanceTotalAmount != null) {
                     return Container();
                   }
 
@@ -1124,7 +1087,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       controller: _pageIndicatorController,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(totalCount, (index) {
+                        children: List.generate(indicatorCount, (index) {
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,
@@ -1178,7 +1141,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SvgPicture.asset(iconSource, fit: BoxFit.fill, width: 24, height: 24),
+                  SvgPicture.asset(iconSource, fit: BoxFit.fill, width: 28, height: 28),
                   CoconutLayout.spacing_300w,
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1188,14 +1151,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                         children: [
                           Text(
                             transactionTimeStamp[0],
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
                           ),
                           CoconutLayout.spacing_50w,
-                          Text('|', style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                          Text('|', style: CoconutTypography.caption_10.setColor(CoconutColors.gray400)),
                           CoconutLayout.spacing_50w,
                           Text(
                             transactionTimeStamp[1],
-                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
                           ),
                         ],
                       ),
@@ -1218,15 +1181,18 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     (() {
                       final now = DateTime.now();
                       final diff = now.difference(txDate);
+                      final diffMinutes = diff.inMinutes;
                       final diffHours = diff.inHours;
-                      final diffDays = diff.inDays;
 
-                      if (diffHours < 24) {
-                        return t.relative_time.hours_ago(n: diffHours);
+                      if (diffMinutes < 1) {
+                        return t.relative_time.just_now;
                       }
-                      return t.relative_time.days_ago(n: diffDays);
+                      if (diffHours < 1) {
+                        return t.relative_time.minutes_ago(n: diffMinutes);
+                      }
+                      return t.relative_time.hours_ago(n: diffHours);
                     })(),
-                    style: CoconutTypography.body3_12,
+                    style: CoconutTypography.caption_10,
                   ),
                   Text('$prefix $amountString', style: CoconutTypography.body2_14_Number),
                 ],
@@ -1302,7 +1268,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     }
 
     return Container(
-      padding: const EdgeInsets.only(left: 20, right: 14, top: 20, bottom: 20),
+      padding: const EdgeInsets.only(left: 20, right: 14, top: 28, bottom: 28),
       decoration: const BoxDecoration(
         color: CoconutColors.gray800,
         borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -1324,25 +1290,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 ),
       ),
     );
-  }
-
-  // 최근 트랜잭션을 플랫하고 정렬(pending 최신순 → confirmed 최신순)하여 반환
-  List<Tuple2<int, TransactionRecord>> _getOrderedRecentTransactions() {
-    final flatTxs =
-        _viewModel.recentTransactions.entries
-            .expand((entry) => entry.value.map((tx) => Tuple2(entry.key, tx)))
-            .toList();
-
-    final pendingStatuses = {TransactionStatus.receiving, TransactionStatus.sending, TransactionStatus.selfsending};
-    final confirmedStatuses = {TransactionStatus.received, TransactionStatus.sent, TransactionStatus.self};
-
-    final pending =
-        flatTxs.where((t) => pendingStatuses.contains(TransactionUtil.getStatus(t.item2))).toList()
-          ..sort((a, b) => b.item2.timestamp.compareTo(a.item2.timestamp));
-    final confirmed =
-        flatTxs.where((t) => confirmedStatuses.contains(TransactionUtil.getStatus(t.item2))).toList()
-          ..sort((a, b) => b.item2.timestamp.compareTo(a.item2.timestamp));
-    return [...pending, ...confirmed];
   }
 
   Widget _buildAnalysis() {
@@ -1432,7 +1379,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     builder: (context, isBtcUnit, child) {
                       return Container(
                         width: MediaQuery.sizeOf(context).width,
-                        padding: const EdgeInsets.only(top: 24, left: 16, right: 20, bottom: 20),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           color: CoconutColors.gray800,
@@ -1462,15 +1409,15 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 ),
                               ],
                             ),
-                            CoconutLayout.spacing_300h,
+                            CoconutLayout.spacing_200h,
                             Text(
                               _viewModel.recentTransactionAnalysis!.subtitleString,
                               style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                             ),
+                            CoconutLayout.spacing_300h,
                             if (_viewModel.recentTransactionAnalysis!.receivedTxs.isNotEmpty &&
                                 _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlySent) ...[
                               _buildAnalysisTransactionRow(
-                                'assets/svg/tx-received.svg',
                                 _viewModel.recentTransactionAnalysis!.receivedTxs.length,
                                 _viewModel.recentTransactionAnalysis!.receivedAmount,
                                 TransactionType.received,
@@ -1480,7 +1427,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             if (_viewModel.recentTransactionAnalysis!.sentTxs.isNotEmpty &&
                                 _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlyReceived) ...[
                               _buildAnalysisTransactionRow(
-                                'assets/svg/tx-sent.svg',
                                 _viewModel.recentTransactionAnalysis!.sentTxs.length,
                                 _viewModel.recentTransactionAnalysis!.sentAmount,
                                 TransactionType.sent,
@@ -1490,7 +1436,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             if (_viewModel.recentTransactionAnalysis!.selfTxs.isNotEmpty &&
                                 _viewModel.selectedAnalysisTransactionType != AnalysisTransactionType.onlyReceived) ...[
                               _buildAnalysisTransactionRow(
-                                'assets/svg/tx-self.svg',
                                 _viewModel.recentTransactionAnalysis!.selfTxs.length,
                                 _viewModel.recentTransactionAnalysis!.selfAmount,
                                 TransactionType.self,
@@ -1543,7 +1488,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildAnalysisTransactionRow(String assetPath, int count, int amount, TransactionType type, bool isBtcUnit) {
+  Widget _buildAnalysisTransactionRow(int count, int amount, TransactionType type, bool isBtcUnit) {
     String getIconPath() {
       switch (type) {
         case TransactionType.received:
@@ -1562,51 +1507,36 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             ? BitcoinUnit.btc.displayBitcoinAmount(amount, withUnit: true)
             : BitcoinUnit.sats.displayBitcoinAmount(amount, withUnit: true);
     final bool isReceived = type == TransactionType.received;
-    final String prefix = isReceived ? '+' : '';
+    final String prefix = isReceived ? '+' : '-';
+    final String amountText = amountString.startsWith('-') ? amountString.substring(1) : amountString;
+
     return Column(
       children: [
-        if (type != TransactionType.self) ...[CoconutLayout.spacing_400h] else ...[CoconutLayout.spacing_200h],
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                SvgPicture.asset(getIconPath(), fit: BoxFit.fill, width: 24, height: 24),
-                CoconutLayout.spacing_100w,
-                Text(
-                  t.wallet_home_screen.count(count: count.toString()),
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                ),
-              ],
+            SvgPicture.asset(getIconPath(), fit: BoxFit.fill, width: 24, height: 24),
+            CoconutLayout.spacing_200w,
+            Text(
+              t.wallet_home_screen.count(count: count.toString()),
+              style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
             ),
-            if (type == TransactionType.self) ...[
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
-                      Text(
-                        t.fee,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray400).copyWith(height: 1.4),
-                      ),
-                    ],
-                  ),
-                ),
+
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Text('$prefix $amountText', style: CoconutTypography.body2_14_Number),
               ),
-            ] else ...[
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Text('$prefix$amountString', style: CoconutTypography.body2_14_Number),
-                ),
-              ),
-            ],
+            ),
           ],
         ),
+        if (type == TransactionType.self) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(t.fee, style: CoconutTypography.caption_10.setColor(CoconutColors.gray400).copyWith(height: 1)),
+          ),
+        ],
+        CoconutLayout.spacing_400h,
       ],
     );
   }
@@ -1682,11 +1612,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     });
 
     if (_resultOfSyncFromVault == null) return;
-  }
-
-  void _goToManualInputScreen() {
-    Navigator.pop(context);
-    Navigator.pushNamed(context, "/wallet-add-input");
   }
 
   void _onAddWalletPressed() {
@@ -1830,7 +1755,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   SliverAppBar _buildAppBar(NetworkStatus networkStatus) {
     final shouldShow = networkStatus != NetworkStatus.online;
 
-    Logger.log('networkStatus: $networkStatus, shouldShow: $shouldShow');
     String message;
     switch (networkStatus) {
       case NetworkStatus.offline:
@@ -1838,6 +1762,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         break;
       case NetworkStatus.connectionFailed:
         message = t.errors.electrum_connection_failed;
+        break;
+      case NetworkStatus.vpnBlocked:
+        message = t.errors.vpn_connected;
         break;
       case NetworkStatus.online:
         message = '';
@@ -1887,7 +1814,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           key: _dropdownButtonKey,
           icon: SvgPicture.asset('assets/svg/kebab.svg'),
           onPressed: () {
-            _setPulldownMenuVisiblility(true);
+            _setDropdownMenuVisiblility(true);
           },
         ),
       ],
@@ -1933,7 +1860,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
                 onTap: () {
-                  _setPulldownMenuVisiblility(false);
+                  _setDropdownMenuVisiblility(false);
                 },
               ),
             )
@@ -1954,12 +1881,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           return Visibility(
             visible: isVisible,
             child: CoconutPulldownMenu(
-              shadowColor: CoconutColors.gray800,
-              dividerColor: CoconutColors.gray800,
+              shadowColor: CoconutColors.white.withValues(alpha: 0.1),
+              dividerColor: CoconutColors.black,
+              spreadRadius: 12,
               entries: [
                 CoconutPulldownMenuGroup(
                   groupTitle: t.tool,
                   items: [
+                    CoconutPulldownMenuItem(title: t.transaction_draft.title),
                     if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
                     CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
                     if (NetworkType.currentNetworkType.isTestnet) CoconutPulldownMenuItem(title: t.tutorial),
@@ -1969,11 +1898,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 CoconutPulldownMenuItem(title: t.app_settings),
                 // CoconutPulldownMenuItem(title: t.view_app_info),
               ],
-              dividerHeight: 1,
-              thickDividerHeight: 3,
               thickDividerIndexList: [_getThickDividerIndex(showGlossary)],
               onSelected: ((index, selectedText) {
-                _setPulldownMenuVisiblility(false);
+                _setDropdownMenuVisiblility(false);
                 _handleDropdownSelection(index, showGlossary);
               }),
             ),
@@ -1999,6 +1926,12 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   /// 드롭다운 선택 처리 (인덱스 조정 포함)
   void _handleDropdownSelection(int index, bool showGlossary) {
     int adjustedIndex = index;
+
+    if (adjustedIndex == 0) {
+      // 임시저장 트랜잭션
+      _dropdownActions[adjustedIndex].call();
+      return;
+    }
 
     // 용어집이 없는 경우 인덱스 조정
     if (!showGlossary) {
@@ -2063,7 +1996,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  void _setPulldownMenuVisiblility(bool value) {
+  void _setDropdownMenuVisiblility(bool value) {
     _isDropdownMenuVisible.value = value;
   }
 

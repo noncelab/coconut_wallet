@@ -33,4 +33,9 @@ class ErrorCodes {
   static AppError nodeIsolateError = AppError('1301', t.errors.node_unknown);
   static AppError broadcastError = AppError('1302', t.errors.broadcast_error);
   static AppError broadcastErrorWithMessage(String message) => ErrorCodes.withMessage(broadcastError, message);
+  static AppError invalidTransactionDraftId = AppError('1400', t.errors.transaction_draft.invalid_id);
+  static AppError transactionDraftAlreadyExists = AppError(
+    '1401',
+    t.transaction_draft.dialog.transaction_draft_already_exists,
+  );
 }
