@@ -21,11 +21,12 @@ import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
-import 'package:coconut_wallet/widgets/card/information_item_card.dart';
-import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
+import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/floating_widget.dart';
 import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:coconut_wallet/widgets/send_amount_header.dart';
+import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -153,6 +154,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                     viewModel.isSendingDonation
                         ? _buildDonationBroadcastInfo(viewModel.amount, viewModel.isInitDone, viewModel.isNetworkOn)
                         : _buildNormalBroadcastInfo(
+                          viewModel,
                           viewModel.amount,
                           viewModel.fee,
                           viewModel.totalAmount,
@@ -405,6 +407,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   }
 
   Widget _buildNormalBroadcastInfo(
+    BroadcastingViewModel viewModel,
     int? amount,
     int? fee,
     int? totalAmount,
@@ -429,58 +432,21 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             CoconutLayout.spacing_1000h,
             Text(t.broadcasting_screen.description, style: Styles.h3, textAlign: TextAlign.center),
             CoconutLayout.spacing_400h,
-            GestureDetector(
+            SendAmountHeader(
+              amountText: confirmText,
+              unitText: unitText,
+              satoshiAmount: amount ?? 0,
+              totalCostAmountText: totalCostText,
               onTap: _toggleUnit,
-              child: Column(
-                children: [
-                  Center(
-                    child: Text.rich(
-                      TextSpan(
-                        text: confirmText,
-                        children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)],
-                      ),
-                      style: Styles.balance1,
-                      textAlign: TextAlign.center,
-                      textScaler: const TextScaler.linear(1.0),
-                    ),
-                  ),
-                  FiatPrice(
-                    satoshiAmount: amount ?? 0,
-                    textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
-                  ),
-                ],
-              ),
+              topMargin: 0,
+              fiatTextStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
             ),
-            CoconutLayout.spacing_1000h,
+            CoconutLayout.spacing_300h,
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: _buildTransactionFlowCard(viewModel)),
+            CoconutLayout.spacing_500h,
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28.0),
-                  color: MyColors.transparentWhite_06,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      InformationItemCard(
-                        label: t.receiver,
-                        value: recipientAddresses,
-                        isNumber: true,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                      ),
-                      const Divider(color: MyColors.transparentWhite_12, height: 1),
-                      InformationItemCard(
-                        label: t.estimated_fee,
-                        value: ["$estimatedFeeText $unitText"],
-                        isNumber: true,
-                      ),
-                      const Divider(color: MyColors.transparentWhite_12, height: 1),
-                      InformationItemCard(label: t.total_cost, value: ["$totalCostText $unitText"], isNumber: true),
-                    ],
-                  ),
-                ),
-              ),
+              child: _buildOutputDetailCardSection(viewModel),
             ),
             if (isSendingToMyAddress) ...[
               const SizedBox(height: 20),
@@ -581,5 +547,46 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     setState(() {
       _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
     });
+  }
+
+  Widget _buildTransactionFlowCard(BroadcastingViewModel viewModel) {
+    final inputCount = viewModel.inputCount;
+    final List<int?> inputAmounts = List<int?>.from(viewModel.inputAmounts);
+    if (inputAmounts.length != inputCount) {
+      inputAmounts
+        ..clear()
+        ..addAll(List<int?>.filled(inputCount, null));
+    }
+
+    return SendTransactionFlowCard(
+      inputAmounts: inputAmounts,
+      externalOutputAmounts: viewModel.externalOutputAmounts,
+      changeOutputAmounts: viewModel.changeOutputAmounts,
+      fee: viewModel.fee,
+      currentUnit: _currentUnit,
+    );
+  }
+
+  Widget _buildOutputDetailCardSection(BroadcastingViewModel viewModel) {
+    final detailItems = viewModel.outputDetailItems;
+    if (detailItems.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    int outputIndex = 0;
+    final uiItems =
+        detailItems.map((item) {
+          if (!item.isChange) {
+            outputIndex += 1;
+          }
+          return OutputDetailItem(
+            label: item.isChange ? t.change : t.send_confirm_screen.flow_output_title(index: outputIndex),
+            address: item.address,
+            amountSats: item.amount,
+            isChange: item.isChange,
+          );
+        }).toList();
+
+    return SendOutputDetailCard(items: uiItems);
   }
 }
