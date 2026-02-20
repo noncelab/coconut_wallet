@@ -5,8 +5,8 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
@@ -29,20 +29,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
   String get confirmText => _currentUnit.displayBitcoinAmount(UnitUtil.convertBitcoinToSatoshi(_viewModel.amount));
 
-  String get estimatedFeeText => _currentUnit.displayBitcoinAmount(
-    _viewModel.estimatedFee,
-    defaultWhenZero: t.calculation_failed,
-    shouldCheckZero: true,
-  );
-
-  String get totalCostText => _currentUnit.displayBitcoinAmount(
-    _viewModel.totalUsedAmount,
-    defaultWhenZero: t.calculation_failed,
-    shouldCheckZero: true,
-  );
-
-  String get unitText => _currentUnit.symbol;
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<SendConfirmViewModel>(
@@ -62,15 +48,14 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                           onTap: _toggleUnit,
                           child: Column(
                             children: [
-                              Container(
-                                margin: const EdgeInsets.only(top: 40),
-                                child: Center(
-                                  child: Text.rich(
-                                    TextSpan(
-                                      text: confirmText,
-                                      children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)],
-                                    ),
-                                    style: Styles.balance1,
+                              CoconutLayout.spacing_1000h,
+                              Center(
+                                child: BitcoinAmountUnit(
+                                  currentUnit: _currentUnit,
+                                  unitStyle: CoconutTypography.heading4_18_Number,
+                                  child: Text(
+                                    confirmText,
+                                    style: CoconutTypography.heading2_28_NumberBold,
                                     textScaler: const TextScaler.linear(1.0),
                                   ),
                                 ),
@@ -85,7 +70,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(28.0),
-                              color: MyColors.transparentWhite_06,
+                              color: CoconutColors.gray800,
                             ),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -97,16 +82,30 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                                     isNumber: true,
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                   ),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
+                                  const Divider(color: CoconutColors.gray700, height: 1),
                                   InformationItemCard(
                                     label: t.estimated_fee,
-                                    value: ["$estimatedFeeText $unitText"],
+                                    value: [
+                                      _currentUnit.displayBitcoinAmount(
+                                        _viewModel.estimatedFee,
+                                        withUnit: true,
+                                        defaultWhenZero: t.calculation_failed,
+                                        shouldCheckZero: true,
+                                      ),
+                                    ],
                                     isNumber: true,
                                   ),
-                                  const Divider(color: MyColors.transparentWhite_12, height: 1),
+                                  const Divider(color: CoconutColors.gray700, height: 1),
                                   InformationItemCard(
                                     label: t.total_cost,
-                                    value: ["$totalCostText $unitText"],
+                                    value: [
+                                      _currentUnit.displayBitcoinAmount(
+                                        _viewModel.totalUsedAmount,
+                                        withUnit: true,
+                                        defaultWhenZero: t.calculation_failed,
+                                        shouldCheckZero: true,
+                                      ),
+                                    ],
                                     isNumber: true,
                                   ),
                                 ],
@@ -183,7 +182,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+      _currentUnit = _currentUnit.next;
     });
   }
 }

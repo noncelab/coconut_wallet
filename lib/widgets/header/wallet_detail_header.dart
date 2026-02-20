@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
@@ -62,29 +63,17 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   }
 
   Widget _buildBtcBalance() {
-    return SizedBox(
-      height: 36,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: AnimatedBalance(
-              prevValue: widget.animatedBalanceData.previous,
-              value: widget.animatedBalanceData.current,
-              currentUnit: widget.currentUnit,
-            ),
-          ),
-          const SizedBox(width: 4.0),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              widget.currentUnit.symbol,
-              style: CoconutTypography.heading4_18_Number.setColor(CoconutColors.gray350),
-            ),
-          ),
-        ],
+    return BitcoinAmountUnit(
+      currentUnit: widget.currentUnit,
+      unitStyle: CoconutTypography.heading4_18_Number,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: AnimatedBalance(
+          prevValue: widget.animatedBalanceData.previous,
+          value: widget.animatedBalanceData.current,
+          currentUnit: widget.currentUnit,
+          textStyle: CoconutTypography.heading2_28_NumberBold,
+        ),
       ),
     );
   }
@@ -101,14 +90,14 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           widget.sendingAmount != 0,
           'assets/lottie/arrow-up.json',
           getSendingAmountText(),
-          CoconutColors.primary.withOpacity(0.2),
+          CoconutColors.primary.withValues(alpha: 0.2),
         ),
         CoconutLayout.spacing_100h,
         _buildPendingAmountRow(
           widget.receivingAmount != 0,
           'assets/lottie/arrow-down.json',
           getReceivingAmountText(),
-          CoconutColors.cyan.withOpacity(0.2),
+          CoconutColors.cyan.withValues(alpha: 0.2),
         ),
       ],
     );

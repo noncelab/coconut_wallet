@@ -152,14 +152,24 @@ class WalletItemCard extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          if (currentUnit.isPrefixSymbol) ...[
+                            Text(
+                              currentUnit.symbol,
+                              style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                            ),
+                            CoconutLayout.spacing_50w,
+                          ],
                           Text(
                             displayFakeBalance,
                             style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
                           ),
-                          Text(
-                            " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
-                            style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
-                          ),
+                          if (!currentUnit.isPrefixSymbol) ...[
+                            Text(
+                              " ${currentUnit.symbol}",
+                              style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                            ),
+                            CoconutLayout.spacing_50w,
+                          ],
                         ],
                       ),
                     )
@@ -169,16 +179,26 @@ class WalletItemCard extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          if (currentUnit.isPrefixSymbol) ...[
+                            Text(
+                              currentUnit.symbol,
+                              style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                            ),
+                            CoconutLayout.spacing_50w,
+                          ],
                           AnimatedBalance(
                             prevValue: animatedBalanceData.previous,
                             value: animatedBalanceData.current,
-                            currentUnit: currentUnit == BitcoinUnit.btc ? BitcoinUnit.btc : BitcoinUnit.sats,
+                            currentUnit: currentUnit,
                             textStyle: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
                           ),
-                          Text(
-                            " ${currentUnit == BitcoinUnit.btc ? t.btc : t.sats}",
-                            style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
-                          ),
+                          if (!currentUnit.isPrefixSymbol) ...[
+                            CoconutLayout.spacing_50w,
+                            Text(
+                              currentUnit.symbol,
+                              style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                            ),
+                          ],
                         ],
                       ),
                     ),

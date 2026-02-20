@@ -517,6 +517,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildInvisibleAmountField() {
+    final bool allowDecimal = !_viewModel.currentUnit.isBasedOnSatoshi;
     return SizedBox(
       width: 0,
       height: 0,
@@ -529,8 +530,11 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           _amountController.text = _removeTrailingDot(_amountController.text);
           FocusScope.of(context).unfocus();
         },
-        keyboardType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')), SingleDotInputFormatter()],
+        keyboardType: TextInputType.numberWithOptions(signed: false, decimal: allowDecimal),
+        inputFormatters:
+            allowDecimal
+                ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')), SingleDotInputFormatter()]
+                : [FilteringTextInputFormatter.digitsOnly],
       ),
     );
   }
@@ -653,8 +657,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             !isFetching
                 ? child
                 : Shimmer.fromColors(
-                  baseColor: CoconutColors.white.withOpacity(0.2),
-                  highlightColor: CoconutColors.white.withOpacity(0.6),
+                  baseColor: CoconutColors.white.withValues(alpha: 0.2),
+                  highlightColor: CoconutColors.white.withValues(alpha: 0.6),
                   child: child,
                 ),
       ),
@@ -688,20 +692,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
             child: Selector<SendViewModel, BitcoinUnit>(
               selector: (_, viewModel) => viewModel.currentUnit,
-              builder: (context, data, child) {
+              builder: (context, currentUnit, child) {
                 return Row(
                   children: [
                     SvgPicture.asset(
                       'assets/svg/check.svg',
-                      colorFilter: ColorFilter.mode(
-                        _viewModel.isBtcUnit ? CoconutColors.white : CoconutColors.gray700,
-                        BlendMode.srcIn,
-                      ),
+                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                       width: 10,
                       height: 10,
                     ),
                     CoconutLayout.spacing_200w,
-                    Text(t.send_screen.use_btc_unit, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+                    Text(currentUnit.symbol, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
                   ],
                 );
               },
@@ -1170,26 +1171,42 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         child: SizedBox(
                           height: kAmountHeight,
                           child: FittedBox(
-                            child: RichText(
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              text:
-                                  _viewModel.isAmountInsufficient(index)
-                                      ? TextSpan(
-                                        text: t.send_screen.max_mode_insufficient_balance,
-                                        style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.hotPink),
-                                      )
-                                      : TextSpan(
-                                        text: '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()} ',
-                                        style: CoconutTypography.heading2_28_NumberBold.setColor(amountTextColor),
-                                        children: [
-                                          TextSpan(
-                                            text: _viewModel.currentUnit.symbol,
-                                            style: CoconutTypography.heading4_18_Number,
+                            child:
+                                _viewModel.isAmountInsufficient(index)
+                                    ? Text(
+                                      t.send_screen.max_mode_insufficient_balance,
+                                      style: CoconutTypography.heading3_21_Bold.setColor(CoconutColors.hotPink),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    )
+                                    : Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          _viewModel.currentUnit.isPrefixSymbol
+                                              ? CrossAxisAlignment.center
+                                              : CrossAxisAlignment.baseline,
+                                      textBaseline: TextBaseline.alphabetic,
+                                      children: [
+                                        if (_viewModel.currentUnit.isPrefixSymbol) ...[
+                                          Text(
+                                            _viewModel.currentUnit.symbol,
+                                            style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
+                                          ),
+                                          CoconutLayout.spacing_50w,
+                                        ],
+                                        Text(
+                                          '${amountText.isEmpty ? 0 : amountText.toThousandsSeparatedString()}',
+                                          style: CoconutTypography.heading2_28_NumberBold.setColor(amountTextColor),
+                                        ),
+                                        if (!_viewModel.currentUnit.isPrefixSymbol) ...[
+                                          CoconutLayout.spacing_50w,
+                                          Text(
+                                            _viewModel.currentUnit.symbol,
+                                            style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
                                           ),
                                         ],
-                                      ),
-                            ),
+                                      ],
+                                    ),
                           ),
                         ),
                       ),
@@ -1204,7 +1221,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               _clearFocus();
                             },
                             defaultColor: MyColors.grey,
-                            pressedColor: MyColors.grey.withOpacity(0.8),
+                            pressedColor: MyColors.grey.withValues(alpha: 0.8),
                             borderRadius: 4.0,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
@@ -1215,7 +1232,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                   SvgPicture.asset(
                                     'assets/svg/broom.svg',
                                     colorFilter: ColorFilter.mode(
-                                      CoconutColors.white.withOpacity(_viewModel.isMaxMode ? 1.0 : 0.3),
+                                      CoconutColors.white.withValues(alpha: _viewModel.isMaxMode ? 1.0 : 0.3),
                                       BlendMode.srcIn,
                                     ),
                                   ),
@@ -1719,9 +1736,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
         if (bip21Data.amount != null) {
           final amountText =
-              _viewModel.isBtcUnit
-                  ? BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!)
-                  : bip21Data.amount!.toString();
+              _viewModel.currentUnit.isBasedOnSatoshi
+                  ? bip21Data.amount!.toString()
+                  : BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!);
           _amountController.text = amountText;
           _viewModel.setAmountText(bip21Data.amount!, index);
         }

@@ -176,7 +176,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
           final walletItem = data.item1;
           final favoriteWallets = data.item2;
-          final balnaceVisibilityData = data.item3;
+          final balanceVisibilityData = data.item3;
           final shouldShowLoadingIndicator = data.item4;
           final walletBalanceMap = data.item5;
           final fakeBalanceData = data.item6;
@@ -228,8 +228,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                           CupertinoSliverRefreshControl(onRefresh: viewModel.onRefresh),
                           _buildLoadingIndicator(viewModel),
                           _buildHeader(
-                            balnaceVisibilityData.item1,
-                            balnaceVisibilityData.item2,
+                            balanceVisibilityData.item1,
+                            balanceVisibilityData.item2,
                             fakeBalanceData.item1,
                             shouldShowLoadingIndicator,
                             walletItem.isEmpty,
@@ -261,7 +261,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 walletItem,
                                 favoriteWallets,
                                 walletBalanceMap,
-                                balnaceVisibilityData.item1,
+                                balanceVisibilityData.item1,
                                 (id) => viewModel.getFakeBalance(id),
                               ),
                             if (hasEnabledHomeFeature) ...[
@@ -555,9 +555,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     ],
                   ),
                 ),
-                Selector<PreferenceProvider, bool>(
-                  selector: (_, viewModel) => viewModel.isBtcUnit,
-                  builder: (context, isBtcUnit, child) {
+                Selector<PreferenceProvider, BitcoinUnit>(
+                  selector: (_, viewModel) => viewModel.currentUnit,
+                  builder: (context, currentUnit, child) {
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
@@ -567,6 +567,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             fit: BoxFit.scaleDown,
                             child: Row(
                               children: [
+                                if (!isBalanceHidden && currentUnit.isBip177Unit) ...[
+                                  Text(currentUnit.symbol, style: CoconutTypography.heading3_21_NumberBold),
+                                  CoconutLayout.spacing_50w,
+                                ],
                                 isBalanceHidden
                                     ? FittedBox(
                                       fit: BoxFit.scaleDown,
@@ -580,13 +584,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                     : fakeBalanceTotalAmount != null
                                     ? FittedBox(
                                       child: Text(
-                                        isBtcUnit
-                                            ? BitcoinUnit.btc.displayBitcoinAmount(
-                                              _viewModel.getHomeFakeBalanceTotal().toInt(),
-                                            )
-                                            : BitcoinUnit.sats.displayBitcoinAmount(
-                                              _viewModel.getHomeFakeBalanceTotal().toInt(),
-                                            ),
+                                        currentUnit.displayBitcoinAmount(
+                                          _viewModel.getHomeFakeBalanceTotal().toInt(),
+                                          withUnit: true,
+                                        ),
                                         style: CoconutTypography.heading3_21_NumberBold.merge(
                                           const TextStyle(height: 1.4),
                                         ),
@@ -615,7 +616,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                           return AnimatedBalance(
                                             prevValue: prevValue,
                                             value: currentValue,
-                                            currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                                            currentUnit: currentUnit,
                                             textStyle: CoconutTypography.heading3_21_NumberBold.merge(
                                               const TextStyle(height: 1.4),
                                             ),
@@ -623,9 +624,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                         },
                                       ),
                                     ),
-                                const SizedBox(width: 4.0),
-                                if (!isBalanceHidden)
-                                  Text(isBtcUnit ? t.btc : t.sats, style: CoconutTypography.heading3_21_NumberBold),
+                                if (!isBalanceHidden && !currentUnit.isBip177Unit) ...[
+                                  CoconutLayout.spacing_50w,
+                                  Text(currentUnit.symbol, style: CoconutTypography.heading3_21_NumberBold),
+                                ],
                               ],
                             ),
                           ),
@@ -944,10 +946,10 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       signers = (walletItem as MultisigWalletListItem).signers;
     }
 
-    return Selector2<PreferenceProvider, WalletHomeViewModel, Tuple2<bool, bool>>(
-      selector: (_, preferenceProvider, viewModel) => Tuple2(preferenceProvider.isBtcUnit, viewModel.isBalanceHidden),
+    return Selector2<PreferenceProvider, WalletHomeViewModel, Tuple2<BitcoinUnit, bool>>(
+      selector: (_, preferenceProvider, viewModel) => Tuple2(preferenceProvider.currentUnit, viewModel.isBalanceHidden),
       builder: (context, data, child) {
-        final isBtcUnit = data.item1;
+        final currentUnit = data.item1;
         final isBalanceHidden = data.item2;
         return WalletItemCard(
           key: key,
@@ -961,7 +963,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
           fakeBalance: fakeBalance,
           signers: signers,
           walletImportSource: walletImportSource,
-          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+          currentUnit: currentUnit,
           entryPoint: kEntryPointWalletHome,
         );
       },
@@ -1019,16 +1021,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                   child: Selector2<
                     PreferenceProvider,
                     WalletHomeViewModel,
-                    Tuple3<bool, bool, List<Tuple2<int, TransactionRecord>>>
+                    Tuple3<BitcoinUnit, bool, List<Tuple2<int, TransactionRecord>>>
                   >(
                     selector:
                         (_, prefProvider, homeViewModel) => Tuple3(
-                          prefProvider.isBtcUnit,
+                          prefProvider.currentUnit,
                           homeViewModel.showRecentFeatureInitialLoading,
                           homeViewModel.orderedRecentTransactions,
                         ),
                     builder: (context, data, child) {
-                      final isBtcUnit = data.item1;
+                      final currentUnit = data.item1;
                       final showRecentInitialLoading = data.item2;
                       final ordered = data.item3;
 
@@ -1045,7 +1047,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                       return ordered.length == 1
                           ? Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, isBtcUnit),
+                            child: _buildRecentTransactionCard(ordered.first.item1, ordered.first.item2, currentUnit),
                           )
                           : CarouselSlider(
                             carouselController: _carouselController,
@@ -1065,7 +1067,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             ),
                             items:
                                 ordered.map((t) {
-                                  return _buildRecentTransactionCard(t.item1, t.item2, isBtcUnit);
+                                  return _buildRecentTransactionCard(t.item1, t.item2, currentUnit);
                                 }).toList(),
                           );
                     },
@@ -1115,18 +1117,14 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildRecentTransactionCard(int walletId, TransactionRecord transaction, bool isBtcUnit) {
+  Widget _buildRecentTransactionCard(int walletId, TransactionRecord transaction, BitcoinUnit currentUnit) {
     final walletName = _viewModel.getWalletById(walletId).name;
 
     Widget buildTxRow(TransactionRecord transaction) {
       final bool isReceived = transaction.transactionType == TransactionType.received;
       final DateTime txDate = transaction.getDateTimeToDisplay()!.toLocal();
       final List<String> transactionTimeStamp = DateTimeUtil.formatTimestamp(txDate);
-      final String amountString =
-          isBtcUnit
-              ? BitcoinUnit.btc.displayBitcoinAmount(transaction.amount, withUnit: true)
-              : BitcoinUnit.sats.displayBitcoinAmount(transaction.amount, withUnit: true);
-      final String prefix = isReceived ? '+' : '';
+      final String formattedAmount = currentUnit.formatAmountWithSign(transaction.amount, isPositive: isReceived);
       final status = TransactionUtil.getStatus(transaction);
       final String iconSource = TransactionUtil.getStatusIconAsset(status);
 
@@ -1194,7 +1192,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     })(),
                     style: CoconutTypography.caption_10,
                   ),
-                  Text('$prefix $amountString', style: CoconutTypography.body2_14_Number),
+                  Text(formattedAmount, style: CoconutTypography.body2_14_Number),
                 ],
               ),
             ),
@@ -1374,9 +1372,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     ),
                   ),
                 ] else if (_viewModel.recentTransactionAnalysis?.isEmpty == false) ...[
-                  Selector<PreferenceProvider, bool>(
-                    selector: (_, viewModel) => viewModel.isBtcUnit,
-                    builder: (context, isBtcUnit, child) {
+                  Selector<PreferenceProvider, BitcoinUnit>(
+                    selector: (_, viewModel) => viewModel.currentUnit,
+                    builder: (context, currentUnit, child) {
                       return Container(
                         width: MediaQuery.sizeOf(context).width,
                         padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
@@ -1421,7 +1419,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 _viewModel.recentTransactionAnalysis!.receivedTxs.length,
                                 _viewModel.recentTransactionAnalysis!.receivedAmount,
                                 TransactionType.received,
-                                isBtcUnit,
+                                currentUnit,
                               ),
                             ],
                             if (_viewModel.recentTransactionAnalysis!.sentTxs.isNotEmpty &&
@@ -1430,7 +1428,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 _viewModel.recentTransactionAnalysis!.sentTxs.length,
                                 _viewModel.recentTransactionAnalysis!.sentAmount,
                                 TransactionType.sent,
-                                isBtcUnit,
+                                currentUnit,
                               ),
                             ],
                             if (_viewModel.recentTransactionAnalysis!.selfTxs.isNotEmpty &&
@@ -1439,7 +1437,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                 _viewModel.recentTransactionAnalysis!.selfTxs.length,
                                 _viewModel.recentTransactionAnalysis!.selfAmount,
                                 TransactionType.self,
-                                isBtcUnit,
+                                currentUnit,
                               ),
                             ],
                           ],
@@ -1488,7 +1486,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildAnalysisTransactionRow(int count, int amount, TransactionType type, bool isBtcUnit) {
+  Widget _buildAnalysisTransactionRow(int count, int amount, TransactionType type, BitcoinUnit currentUnit) {
     String getIconPath() {
       switch (type) {
         case TransactionType.received:
@@ -1502,13 +1500,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
       }
     }
 
-    final String amountString =
-        isBtcUnit
-            ? BitcoinUnit.btc.displayBitcoinAmount(amount, withUnit: true)
-            : BitcoinUnit.sats.displayBitcoinAmount(amount, withUnit: true);
     final bool isReceived = type == TransactionType.received;
-    final String prefix = isReceived ? '+' : '-';
-    final String amountText = amountString.startsWith('-') ? amountString.substring(1) : amountString;
+    final String formattedAmount = currentUnit.formatAmountWithSign(amount, isPositive: isReceived);
 
     return Column(
       children: [
@@ -1525,7 +1518,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             Expanded(
               child: Align(
                 alignment: Alignment.centerRight,
-                child: Text('$prefix $amountText', style: CoconutTypography.body2_14_Number),
+                child: Text(formattedAmount, style: CoconutTypography.body2_14_Number),
               ),
             ),
           ],

@@ -55,6 +55,7 @@ class RecipientDraft {
       case BitcoinUnit.btc:
         amountInSats = UnitUtil.convertBitcoinToSatoshi(double.parse(amount));
       case BitcoinUnit.sats:
+      case BitcoinUnit.bip177:
         amountInSats = int.parse(amount);
     }
 
