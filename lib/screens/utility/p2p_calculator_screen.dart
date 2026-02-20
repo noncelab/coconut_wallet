@@ -447,18 +447,21 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     final feeRateStr = '${_feeController.text}%';
 
     final feeRate = double.tryParse(_feeController.text) ?? 0;
-    int feeAmount;
-    int feeSats;
+    double feeAmount;
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      final originalSats = (result / (1.0 - feeRate / 100)).round();
-      feeSats = originalSats - result;
-      feeAmount = (input * feeRate / (100 - feeRate)).round();
+      feeAmount = input * feeRate / 100;
     } else {
-      final baseFiat = (result / (1.0 + feeRate / 100)).round();
-      feeAmount = result - baseFiat;
-      feeSats = (input * feeRate / 100).round();
+      feeAmount = result * feeRate / 100;
     }
-    final feeAmountStr = feeAmount.toThousandsSeparatedString();
+
+    // feeAmount를 BTC 가격으로 변환하여 sats로 표시
+    final btcPrice = _viewModel.btcPrice ?? 0;
+    final feeSats = btcPrice > 0 ? ((feeAmount / btcPrice) * 100000000).round() : 0;
+
+    final feeAmountStr = feeAmount
+        .toStringAsFixed(2)
+        .replaceAll(RegExp(r'\.00$'), '')
+        .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
     final feeSatsStr = feeSats.toThousandsSeparatedString();
 
     showDialog(
@@ -516,7 +519,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                 canCopy: true,
                               ),
                               const SizedBox(height: 24),
-                              const Divider(color: CoconutColors.gray700, height: 1),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 15),
+                                child: Stack(children: [Divider(color: CoconutColors.gray850, height: 1)]),
+                              ),
                               const SizedBox(height: 24),
                               _buildBillRow(
                                 t.utility.p2p_calculator.reference_price,
@@ -526,12 +532,27 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                               _buildBillRow(t.utility.p2p_calculator.reference_datetime, referenceDateTimeString),
                               const SizedBox(height: 20),
                               _buildBillRow(t.utility.p2p_calculator.transaction_fee, '${_feeController.text} %'),
-                              CoconutLayout.spacing_1000h,
+                              const SizedBox(height: 2),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${_viewModel.fiatCode.symbol} $feeAmountStr ($feeSatsStr sats)',
+                                      style: CoconutTypography.body3_12_Number.copyWith(
+                                        color: CoconutColors.gray500,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              CoconutLayout.spacing_900h,
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 34),
                       _buildBillActions(
                         btcPriceStr,
                         fiatAmountStr,
@@ -573,7 +594,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         children: [
           Text(
             label,
-            style: CoconutTypography.body3_12.copyWith(height: 1.0, letterSpacing: -0.12, fontWeight: FontWeight.w500),
+            style: CoconutTypography.body3_12.copyWith(
+              height: 1.0,
+              letterSpacing: -0.12,
+              fontWeight: FontWeight.w500,
+              color: CoconutColors.gray400,
+            ),
           ),
           if (canCopy)
             _CopyableText(value: value)
@@ -1058,7 +1084,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   }
 
   Widget _buildKeyboardToolbar() {
-    if (!_feeFocusNode.hasFocus && !_inputFocusNode.hasFocus) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final hasFocus = _feeFocusNode.hasFocus || _inputFocusNode.hasFocus;
+
+    if (!hasFocus || keyboardHeight == 0) {
       return const SizedBox.shrink();
     }
 
@@ -1077,12 +1106,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           child: Row(
             children: [
               for (int i = 0; i < buttonData.length; i++) ...[
-                if (i > 0) CoconutLayout.spacing_50w,
+                if (i > 0) const SizedBox(width: 3),
                 Flexible(
                   fit: FlexFit.tight,
                   child: ShrinkAnimationButton(
                     onPressed: () => _onToolbarButtonPressed(buttonData[i]['value']!),
-                    borderWidth: 1,
+                    borderWidth: 1.2,
                     borderGradientColors: const [CoconutColors.gray600, CoconutColors.gray600],
                     borderRadius: 8,
                     child: Padding(
