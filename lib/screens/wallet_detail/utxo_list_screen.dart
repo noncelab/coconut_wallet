@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
@@ -395,32 +396,41 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                         child: _buildInvisibleActionArea(
                           iconPath: 'assets/svg/send.svg',
                           text: t.send,
-                          onTap: () {
-                            // TODO: 1번 버튼 로직 구현
-                          },
+                          onTap:
+                              () => _handleActionIfSelected(() {
+                                // TODO: 1번 버튼 로직 구현
+                              }),
                         ),
                       ),
                       Expanded(
                         child: _buildInvisibleActionArea(
                           iconPath: 'assets/svg/tag.svg',
                           text: t.utxo_list_screen.tag_apply,
-                          onTap: () {
-                            // TODO: 2번 버튼 로직 구현
-                          },
+                          onTap:
+                              () => _handleActionIfSelected(
+                                () {},
+                                // _showTagBottomSheet
+                              ),
                         ),
                       ),
                       Expanded(
                         child: _buildInvisibleActionArea(
                           iconPath: 'assets/svg/lock_simple.svg',
                           text: t.utxo_list_screen.utxo_locked_button,
-                          onTap: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: true),
+                          onTap:
+                              () => _handleActionIfSelected(() {
+                                _utxoListKey.currentState?._updateSelectedUtxos(lock: true);
+                              }),
                         ),
                       ),
                       Expanded(
                         child: _buildInvisibleActionArea(
                           iconPath: 'assets/svg/unlock_simple.svg',
                           text: t.utxo_list_screen.utxo_unlocked_button,
-                          onTap: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: false),
+                          onTap:
+                              () => _handleActionIfSelected(() {
+                                _utxoListKey.currentState?._updateSelectedUtxos(lock: false);
+                              }),
                         ),
                       ),
                     ],
@@ -461,6 +471,14 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         ),
       ),
     );
+  }
+
+  void _handleActionIfSelected(VoidCallback action) {
+    if (_utxoListKey.currentState?._selectedUtxoIds.isEmpty ?? true) {
+      CoconutToast.showToast(context: context, text: t.utxo_list_screen.utxo_select_required, isVisibleIcon: false);
+      return;
+    }
+    action();
   }
 
   // ──────────────────────────────
@@ -897,4 +915,39 @@ class _UtxoListState extends State<UtxoList> {
   void dispose() {
     super.dispose();
   }
+
+  // Future<void> _applyTagsToSelectedUtxos(List<String> tagNames) async {
+  //   if (_selectedUtxoIds.isEmpty) return;
+
+  //   final tagProvider = context.read<UtxoTagProvider>();
+  //   final viewModel = context.read<UtxoListViewModel>();
+
+  //   try {
+  //     // 선택된 모든 UTXO에 대해 태그 업데이트 수행
+  //     for (final utxoId in _selectedUtxoIds) {
+  //       tagProvider.updateUtxoTagIdList(walletId: widget.walletId, utxoId: utxoId, selectedTagNames: tagNames);
+  //     }
+
+  //     // DB 업데이트 후 리스트 새로고침
+  //     viewModel.refetchFromDB();
+
+  //     setState(() {
+  //       _selectedUtxoIds.clear();
+  //       widget.onSettingLockChanged?.call(false);
+  //     });
+
+  //     if (!mounted) return;
+
+  //     CoconutToast.showToast(
+  //       context: context,
+  //       isVisibleIcon: true,
+  //       iconPath: 'assets/svg/circle-info.svg',
+  //       text: '태그가 적용되었습니다.', // t.tag_bottom_sheet.tag_applied 와 같이 strings.g.dart 에 맞게 수정
+  //     );
+
+  //     _bottomSheetController?.close();
+  //   } catch (e) {
+  //     debugPrint('UTXO 다중 태그 적용 실패: $e');
+  //   }
+  // }
 }

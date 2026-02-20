@@ -641,6 +641,7 @@ address_search_screen:
 utxo_list_screen:
   total_balance: "総残高"
   tag_apply: "タグを適用"
+  utxo_select_required: "まずUTXOを選択してください"
   utxo_locked_button: "使用ロック"
   utxo_unlocked_button: "ロック解除"
   pending_utxo: "すでに送信中のUTXOは選択できません。"
