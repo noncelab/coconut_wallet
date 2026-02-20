@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:flutter/cupertino.dart';
 
 class WalletDetailStickyHeader extends StatefulWidget {
@@ -51,16 +52,15 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
-                        child: Row(
-                          children: [
-                            AnimatedBalance(
-                              prevValue: widget.animatedBalanceData.previous,
-                              value: widget.animatedBalanceData.current,
-                              currentUnit: widget.currentUnit,
-                              textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
-                            ),
-                            Text(' ${widget.currentUnit.symbol}', style: CoconutTypography.body2_14_Number),
-                          ],
+                        child: BitcoinAmountUnit(
+                          currentUnit: widget.currentUnit,
+                          unitStyle: CoconutTypography.body2_14_Number,
+                          child: AnimatedBalance(
+                            prevValue: widget.animatedBalanceData.previous,
+                            value: widget.animatedBalanceData.current,
+                            currentUnit: widget.currentUnit,
+                            textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
+                          ),
                         ),
                       ),
                     ),

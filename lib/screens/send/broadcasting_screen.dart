@@ -13,12 +13,12 @@ import 'package:coconut_wallet/providers/view_model/send/broadcasting_view_model
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/alert_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/information_item_card.dart';
@@ -45,14 +45,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BitcoinUnit _currentUnit;
 
   String get confirmText => _currentUnit.displayBitcoinAmount(_viewModel.amount);
-
-  String get estimatedFeeText =>
-      _currentUnit.displayBitcoinAmount(_viewModel.fee, defaultWhenNull: t.calculation_failed);
-
-  String get totalCostText =>
-      _currentUnit.displayBitcoinAmount(_viewModel.totalAmount, defaultWhenNull: t.calculation_failed);
-
-  String get unitText => _currentUnit.symbol;
   int? userMessageIndex; // 후원하기에서만 사용
 
   void _setOverlayLoading(bool value) {
@@ -427,21 +419,25 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           children: [
             if (!isNetworkOn) NetworkErrorTooltip(isNetworkOn: isNetworkOn),
             CoconutLayout.spacing_1000h,
-            Text(t.broadcasting_screen.description, style: Styles.h3, textAlign: TextAlign.center),
+            Text(
+              t.broadcasting_screen.description,
+              style: CoconutTypography.heading4_18_Bold,
+              textAlign: TextAlign.center,
+            ),
             CoconutLayout.spacing_400h,
             GestureDetector(
               onTap: _toggleUnit,
               child: Column(
                 children: [
                   Center(
-                    child: Text.rich(
-                      TextSpan(
-                        text: confirmText,
-                        children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)],
+                    child: BitcoinAmountUnit(
+                      currentUnit: _currentUnit,
+                      unitStyle: CoconutTypography.heading4_18_Number,
+                      child: Text(
+                        confirmText,
+                        style: CoconutTypography.heading2_28_NumberBold,
+                        textScaler: const TextScaler.linear(1.0),
                       ),
-                      style: Styles.balance1,
-                      textAlign: TextAlign.center,
-                      textScaler: const TextScaler.linear(1.0),
                     ),
                   ),
                   FiatPrice(
@@ -455,10 +451,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28.0),
-                  color: MyColors.transparentWhite_06,
-                ),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(28.0), color: CoconutColors.gray800),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
@@ -469,14 +462,30 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                         isNumber: true,
                         crossAxisAlignment: CrossAxisAlignment.start,
                       ),
-                      const Divider(color: MyColors.transparentWhite_12, height: 1),
+                      const Divider(color: CoconutColors.gray700, height: 1),
                       InformationItemCard(
                         label: t.estimated_fee,
-                        value: ["$estimatedFeeText $unitText"],
+                        value: [
+                          _currentUnit.displayBitcoinAmount(
+                            _viewModel.fee,
+                            withUnit: true,
+                            defaultWhenNull: t.calculation_failed,
+                          ),
+                        ],
                         isNumber: true,
                       ),
-                      const Divider(color: MyColors.transparentWhite_12, height: 1),
-                      InformationItemCard(label: t.total_cost, value: ["$totalCostText $unitText"], isNumber: true),
+                      const Divider(color: CoconutColors.gray700, height: 1),
+                      InformationItemCard(
+                        label: t.total_cost,
+                        value: [
+                          _currentUnit.displayBitcoinAmount(
+                            _viewModel.totalAmount,
+                            withUnit: true,
+                            defaultWhenNull: t.calculation_failed,
+                          ),
+                        ],
+                        isNumber: true,
+                      ),
                     ],
                   ),
                 ),
@@ -484,7 +493,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             ),
             if (isSendingToMyAddress) ...[
               const SizedBox(height: 20),
-              Text(t.broadcasting_screen.self_sending, textAlign: TextAlign.center, style: Styles.caption),
+              Text(
+                t.broadcasting_screen.self_sending,
+                textAlign: TextAlign.center,
+                style: CoconutTypography.caption_10_Number,
+              ),
             ],
             // FixedBottomButton 크기에 맞게 스크롤이 가능하도록 설정
             CoconutLayout.spacing_600h,
@@ -579,7 +592,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+      _currentUnit = _currentUnit.next;
     });
   }
 }

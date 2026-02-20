@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/selection_bottom_sheet.dart';
@@ -9,33 +10,27 @@ class UnitBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<PreferenceProvider, bool>(
-      selector: (_, provider) => provider.isBtcUnit,
-      builder: (context, isBtcUnit, child) {
-        return SelectionBottomSheet<bool>(
-          title: t.unit_bottom_sheet.basic_unit,
-          headerText: t.unit_bottom_sheet.header_text,
-          selectedValue: isBtcUnit,
-          items: [
-            SelectionItem<bool>(
-              title: t.bitcoin_name,
-              subtitle: t.btc,
-              value: true,
-              onTap: () {
-                context.read<PreferenceProvider>().changeIsBtcUnit(true);
-                Navigator.of(context).pop();
-              },
-            ),
-            SelectionItem<bool>(
-              title: t.satoshi,
-              subtitle: t.sats,
-              value: false,
-              onTap: () {
-                context.read<PreferenceProvider>().changeIsBtcUnit(false);
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+    return Selector<PreferenceProvider, BitcoinUnit>(
+      selector: (_, provider) => provider.currentUnit,
+      builder: (context, currentUnit, child) {
+        return SelectionBottomSheet<BitcoinUnit>(
+          title: t.unit_bottom_sheet.title,
+          headerText: currentUnit.isBip177Unit ? t.unit_bottom_sheet.bip177_text : t.unit_bottom_sheet.header_text,
+          selectedValue: currentUnit,
+          items:
+              BitcoinUnit.values
+                  .map(
+                    (unit) => SelectionItem<BitcoinUnit>(
+                      title: unit.fullName,
+                      subtitle: unit.symbol,
+                      value: unit,
+                      onTap: () {
+                        context.read<PreferenceProvider>().changeBitcoinUnit(unit);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  )
+                  .toList(),
         );
       },
     );

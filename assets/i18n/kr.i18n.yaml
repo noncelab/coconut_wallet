@@ -564,6 +564,7 @@ settings_screen:
   set_password: "비밀번호 설정하기"
   use_biometric: "생체 인증 사용하기"
   change_password: "비밀번호 바꾸기"
+  fiat: "법정 화폐"
   language: "언어"
   locales:
     korean: "한국어"
@@ -764,8 +765,9 @@ user_experience_survey_bottom_sheet:
   text3: "네, 좋아요!"
   text4: "그냥 그래요"
 unit_bottom_sheet:
-  basic_unit: "기본 단위"
+  title: "단위 설정"
   header_text: "1 BTC = 100,000,000 sats"
+  bip177_text: "1 BTC = ₿ 100,000,000"
 
 errors:
   storage_read_error: "저장소에서 데이터를 불러오는데 실패했습니다."
@@ -946,11 +948,18 @@ trade_exchange:
   upbit: "업비트"
   binance: "바이낸스"
 
-fiat:
-  fiat: "법정 화폐"
+fiat_bottom_sheet:
+  title: "통화 설정"
   krw_price: "업비트 기준"
   usd_price: "바이낸스 기준"
   jpy_price: "비트플라이어 기준"
+
+language_bottom_sheet:
+  title: "언어 설정"   
+  korean: "한국어"
+  english: "English"
+  japanese: "日本語"
+  spanish: "Español"
 
 long_pressed_menu:
   hide: "숨기기"

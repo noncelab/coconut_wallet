@@ -566,12 +566,8 @@ settings_screen:
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
   change_password: "Change Password"
+  fiat: "Fiat"
   language: "Language"
-  locales:
-    korean: "한국어"
-    english: "English"
-    japanese: "日本語"
-    spanish: "Español"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -766,8 +762,9 @@ user_experience_survey_bottom_sheet:
   text3: "Yes, it's good!"
   text4: "Just okay"
 unit_bottom_sheet:
-  basic_unit: "Basic Unit"
+  title: "Unit Settings"
   header_text: "1 BTC = 100,000,000 sats"
+  bip177_text: "1 BTC = ₿ 100,000,000"
 
 errors:
   storage_read_error: "Failed to load data from storage."
@@ -948,11 +945,18 @@ trade_exchange:
   upbit: "Upbit"
   binance: "Binance"
 
-fiat:
-  fiat: "Fiat"
+fiat_bottom_sheet:
+  title: "Currency Settings"
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
+
+language_bottom_sheet:
+  title: "Language Settings"
+  korean: "한국어"
+  english: "English"
+  japanese: "日本語"
+  spanish: "Español"
 
 long_pressed_menu:
   hide: "Hide"

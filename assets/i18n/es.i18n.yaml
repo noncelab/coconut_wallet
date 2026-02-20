@@ -567,12 +567,8 @@ settings_screen:
   use_biometric: "Usar autenticación biométrica"
   change_password: "Cambiar contraseña"
   hide_balance: "Ocultar saldo"
+  fiat: "Fiat"
   language: "Idioma"
-  locales:
-    korean: "한국어"
-    english: "English"
-    japanese: "日本語"
-    spanish: "Español"
   electrum_server: 
     server_address: "Dirección del servidor"
     port: "Puerto"
@@ -770,8 +766,9 @@ user_experience_survey_bottom_sheet:
   text3: "¡Sí, es bueno!"
   text4: "Justo bien"
 unit_bottom_sheet:
-  basic_unit: "Unidad básica"
+  title: "Configuración de unidad"
   header_text: "1 BTC = 100,000,000 sats"
+  bip177_text: "1 BTC = ₿ 100,000,000"
 
 errors:
   storage_read_error: "Fallo al cargar datos desde el almacenamiento."
@@ -952,8 +949,22 @@ trade_exchange:
   upbit: "Upbit"
   binance: "Binance"
 
-fiat:
-  fiat: "Fiat"
+fiat_bottom_sheet:
+  title: "Configuración de fiat"
   krw_price: "Precio Upbit"
   usd_price: "Precio Binance"
   jpy_price: "Precio Bitflyer"
+
+language_bottom_sheet:
+  title: "Configuración de idioma"
+  korean: "한국어"
+  english: "English"
+  japanese: "日本語"
+  spanish: "Español"
+
+long_pressed_menu:
+  hide: "Ocultar"
+  edit_home_widget: "Editar widget de inicio"
+  go_to_home_screen_settings: "Ir a la configuración de inicio"
+  hide_home_widget_title: "¿Ocultar widget '${widgetName}' en la pantalla de inicio?"
+  hide_home_widget_description: "Puedes mostrarlo nuevamente más tarde al ir al menú 'Configuración de inicio' en el botón de menú superior derecho."

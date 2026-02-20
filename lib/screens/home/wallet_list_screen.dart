@@ -13,6 +13,7 @@ import 'package:coconut_wallet/screens/home/wallet_item_setting_bottom_sheet.dar
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
@@ -279,15 +280,15 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
-          child: Selector<PreferenceProvider, Tuple3<bool, List<int>, List<int>>>(
+          child: Selector<PreferenceProvider, Tuple3<BitcoinUnit, List<int>, List<int>>>(
             selector:
                 (_, viewModel) => Tuple3(
-                  viewModel.isBtcUnit,
+                  viewModel.currentUnit,
                   viewModel.excludedFromTotalBalanceWalletIds,
                   viewModel.favoriteWalletIds,
                 ),
             builder: (context, data, child) {
-              final isBtcUnit = data.item1;
+              final currentUnit = data.item1;
               final excludedIds = data.item2;
               final favoriteIds = data.item3;
 
@@ -308,21 +309,20 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 전체 총액
-                  Row(
-                    children: [
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: AnimatedBalance(
-                          prevValue: prevTotalBalance,
-                          value: totalBalance,
-                          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                          textStyle: CoconutTypography.heading4_18_NumberBold,
-                        ),
+                  BitcoinAmountUnit(
+                    currentUnit: currentUnit,
+                    unitStyle: CoconutTypography.heading4_18_NumberBold,
+                    spacing: CoconutLayout.spacing_100w,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedBalance(
+                        prevValue: prevTotalBalance,
+                        value: totalBalance,
+                        currentUnit: currentUnit,
+                        textStyle: CoconutTypography.heading4_18_NumberBold,
                       ),
-                      CoconutLayout.spacing_100w,
-                      Text(isBtcUnit ? t.btc : t.sats, style: CoconutTypography.heading4_18_NumberBold),
-                    ],
+                    ),
                   ),
                   // 전체 총액 - Fiat Price
                   Text(
@@ -345,13 +345,13 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                 _buildBalanceRow(
                                   label: t.wallet_list.home_balance,
                                   amount: homeBalance,
-                                  isBtcUnit: isBtcUnit,
+                                  currentUnit: currentUnit,
                                 ),
                                 CoconutLayout.spacing_200h,
                                 _buildBalanceRow(
                                   label: t.wallet_list.excluded_balance,
                                   amount: excludedBalance,
-                                  isBtcUnit: isBtcUnit,
+                                  currentUnit: currentUnit,
                                 ),
                               ],
                             )
@@ -366,19 +366,22 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     );
   }
 
-  Widget _buildBalanceRow({required String label, required int amount, required bool isBtcUnit}) {
+  Widget _buildBalanceRow({required String label, required int amount, required BitcoinUnit currentUnit}) {
     return Column(
       children: [
         Row(
           children: [
             Text(label, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
             const Spacer(),
-            Text(
-              isBtcUnit ? BitcoinUnit.btc.displayBitcoinAmount(amount) : BitcoinUnit.sats.displayBitcoinAmount(amount),
-              style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+            BitcoinAmountUnit(
+              currentUnit: currentUnit,
+              unitStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+              spacing: CoconutLayout.spacing_100w,
+              child: Text(
+                currentUnit.displayBitcoinAmount(amount),
+                style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300),
+              ),
             ),
-            CoconutLayout.spacing_100w,
-            Text(isBtcUnit ? t.btc : t.sats, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray300)),
           ],
         ),
         // Fiat price
@@ -527,10 +530,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     if (walletItem.walletType == WalletType.multiSignature) {
       signers = (walletItem as MultisigWalletListItem).signers;
     }
-    return Selector<PreferenceProvider, Tuple2<bool, List<int>>>(
-      selector: (_, viewModel) => Tuple2(viewModel.isBtcUnit, viewModel.excludedFromTotalBalanceWalletIds),
+    return Selector<PreferenceProvider, Tuple2<BitcoinUnit, List<int>>>(
+      selector: (_, viewModel) => Tuple2(viewModel.currentUnit, viewModel.excludedFromTotalBalanceWalletIds),
       builder: (context, data, child) {
-        bool isBtcUnit = data.item1;
+        final currentUnit = data.item1;
         bool isExludedFromTotalBalance = data.item2.contains(id);
 
         return WalletItemCard(
@@ -544,7 +547,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
           isBalanceHidden: false,
           signers: signers,
           walletImportSource: walletImportSource,
-          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+          currentUnit: currentUnit,
           backgroundColor: CoconutColors.black,
           isPrimaryWallet: isFirstItem,
           isExcludeFromTotalBalance: isExludedFromTotalBalance,

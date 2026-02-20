@@ -566,12 +566,8 @@ settings_screen:
   use_biometric: "生体認証を使用"
   change_password: "パスワード変更"
   hide_balance: "残高を非表示"
+  fiat: "法定通貨"
   language: "言語"
-  locales:
-    korean: "한국어"
-    english: "English"
-    japanese: "日本語"
-    spanish: "Español"
   electrum_server: 
     server_address: "サーバーアドレス"
     port: "ポート"
@@ -766,8 +762,9 @@ user_experience_survey_bottom_sheet:
   text3: "はい、良かったです！"
   text4: "まあまあです"
 unit_bottom_sheet:
-  basic_unit: "基本単位"
+  title: "単位設定"
   header_text: "1 BTC = 100,000,000 sats"
+  bip177_text: "1 BTC = ₿ 100,000,000"
 
 errors:
   storage_read_error: "ストレージからのデータ読み込みに失敗しました。"
@@ -948,11 +945,18 @@ trade_exchange:
   upbit: "Upbit"
   binance: "Binance"
 
-fiat:
-  fiat: "法定通貨"
+fiat_bottom_sheet:
+  title: "通貨設定"
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"
+
+language_bottom_sheet:
+  title: "言語設定"
+  korean: "한국어"
+  english: "English"
+  japanese: "日本語"
+  spanish: "Español"
 
 long_pressed_menu:
   hide: "非表示"

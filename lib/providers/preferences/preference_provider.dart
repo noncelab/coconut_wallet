@@ -44,9 +44,9 @@ class PreferenceProvider extends ChangeNotifier {
   late int? _fakeBalanceTotalBtc;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalBtc;
 
-  late bool _isBtcUnit;
-  bool get isBtcUnit => _isBtcUnit;
-  BitcoinUnit get currentUnit => _isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats;
+  late BitcoinUnit _bitcoinUnit;
+  bool get isBtcUnit => _bitcoinUnit.isBtcUnit;
+  BitcoinUnit get currentUnit => _bitcoinUnit;
 
   /// 전체 주소 보기 화면 '사용 전 주소만 보기' 여부
   late bool _showOnlyUnusedAddresses;
@@ -120,8 +120,7 @@ class PreferenceProvider extends ChangeNotifier {
     _isFiatBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsFiatBalanceHidden);
     _isFakeBalanceActive = _fakeBalanceTotalBtc != null;
     _isBalanceHidden = _sharedPrefs.getBool(SharedPrefKeys.kIsBalanceHidden);
-    _isBtcUnit =
-        _sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit) ? _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit) : true;
+    _bitcoinUnit = _loadBitcoinUnit();
     _showOnlyUnusedAddresses = _sharedPrefs.getBool(SharedPrefKeys.kShowOnlyUnusedAddresses);
     _walletOrder = _walletPreferencesRepository.getWalletOrder().toList();
     _favoriteWalletIds = _walletPreferencesRepository.getFavoriteWalletIds().toList();
@@ -249,10 +248,34 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// 비트코인 기본 단위
-  Future<void> changeIsBtcUnit(bool isBtcUnit) async {
-    _isBtcUnit = isBtcUnit;
-    await _sharedPrefs.setBool(SharedPrefKeys.kIsBtcUnit, isBtcUnit);
+  Future<void> changeBitcoinUnit(BitcoinUnit unit) async {
+    if (_bitcoinUnit == unit) return;
+    _bitcoinUnit = unit;
+    await _sharedPrefs.setString(SharedPrefKeys.kBitcoinUnit, unit.storageKey);
     notifyListeners();
+  }
+
+  @Deprecated('changeBitcoinUnit를 사용하세요')
+  Future<void> changeIsBtcUnit(bool isBtcUnit) async {
+    await changeBitcoinUnit(isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats);
+  }
+
+  /// 기존 bool(kIsBtcUnit) → 새 String(kBitcoinUnit) 마이그레이션 포함 로딩
+  BitcoinUnit _loadBitcoinUnit() {
+    final newKey = _sharedPrefs.getString(SharedPrefKeys.kBitcoinUnit);
+    if (newKey.isNotEmpty) {
+      return BitcoinUnit.fromStorageKey(newKey);
+    }
+
+    // 새 키가 없으면 레거시 bool에서 마이그레이션
+    if (_sharedPrefs.isContainsKey(SharedPrefKeys.kIsBtcUnit)) {
+      final legacy = _sharedPrefs.getBool(SharedPrefKeys.kIsBtcUnit);
+      final unit = BitcoinUnit.fromLegacyBool(legacy);
+      _sharedPrefs.setString(SharedPrefKeys.kBitcoinUnit, unit.storageKey);
+      return unit;
+    }
+
+    return BitcoinUnit.btc;
   }
 
   /// 주소 리스트 화면 '사용 전 주소만 보기' 옵션

@@ -69,9 +69,9 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   double get btcBalanceWidth => _longestBtcText.length * widthPerLetter;
   double get balanceMaxWidth =>
       _isBalanceWidthCalculated
-          ? widget.currentUnit == BitcoinUnit.btc
-              ? btcBalanceWidth
-              : satoshiBalanceWidth
+          ? widget.currentUnit.isBasedOnSatoshi
+              ? satoshiBalanceWidth
+              : btcBalanceWidth
           : 100;
 
   @override

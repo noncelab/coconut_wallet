@@ -74,13 +74,7 @@ class FakeBalanceUtil {
       return List.filled(walletCount, 0);
     }
 
-    // BitcoinUnit에 따라 사토시로 변환
-    int fakeBalanceSats;
-    if (unit == BitcoinUnit.btc) {
-      fakeBalanceSats = UnitUtil.convertBitcoinToSatoshi(fakeBalance);
-    } else {
-      fakeBalanceSats = fakeBalance.toInt();
-    }
+    int fakeBalanceSats = unit.toSatoshi(fakeBalance);
 
     final random = Random();
 

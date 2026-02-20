@@ -78,14 +78,20 @@ class FeeSelectionItemCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        if (currentUnit.isPrefixSymbol)
+                          Text(
+                            currentUnit.symbol,
+                            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+                          ),
                         Text(
                           currentUnit.displayBitcoinAmount(feeInfo.estimatedFee),
                           style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white),
                         ),
-                        Text(
-                          " ${currentUnit.symbol}",
-                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
-                        ),
+                        if (!currentUnit.isPrefixSymbol)
+                          Text(
+                            " ${currentUnit.symbol}",
+                            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 5),
