@@ -187,33 +187,17 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       context: context,
       backgroundColor: CoconutColors.black,
       actionButtonList: [
-        CoconutUnderlinedButton(
-          text: _isSelectionMode ? t.complete : t.select,
-          textStyle: const TextStyle(color: CoconutColors.white, fontSize: 16, fontWeight: FontWeight.bold),
-          onTap: _toggleSelectionMode,
+        Container(
+          alignment: Alignment.center,
+          child: CoconutUnderlinedButton(
+            text: _isSelectionMode ? t.complete : t.select,
+            textStyle: CoconutTypography.body2_14.setColor(CoconutColors.onPrimary(CoconutTheme.brightness())),
+            onTap: _toggleSelectionMode,
+          ),
         ),
       ],
     );
   }
-
-  Widget _buildBottomGradient() => Positioned(
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 150,
-    child: IgnorePointer(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, CoconutColors.black],
-            stops: [0.0, 0.75],
-          ),
-        ),
-      ),
-    ),
-  );
 
   // ──────────────────────────────
   // Header / Sticky Header
