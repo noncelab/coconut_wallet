@@ -361,6 +361,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       }
 
       _isUpdatingController = false;
+    } else {
+      // 입력값이 없으면 focus 해제하여 placeholder가 보이도록
+      _inputFocusNode.unfocus();
     }
 
     setState(() {});
@@ -954,7 +957,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                   alignment: Alignment.center,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (prefix != null)
