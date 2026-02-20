@@ -152,7 +152,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       builder:
           (context) => TagBottomSheet(
             walletId: widget.id,
-            utxoTags: tags,
             selectedTagNames: selectedTags.map((e) => e.name).toList(),
             onUpdate: (selectedNames, updatedTagList, updateMode) {
               viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, updatedTagList, updateMode);

@@ -18,17 +18,10 @@ enum UtxoTagEditMode { add, delete, changAppliedTags, update }
 /// [onUpdate] : utxo detail에서 선택 또는 생성된 태그 목록 변경 완료 콜백
 class TagBottomSheet extends StatefulWidget {
   final int walletId;
-  final List<UtxoTag> utxoTags;
   final List<String>? selectedTagNames;
   final Function(List<String>, List<UtxoTag>, UtxoTagEditMode)? onUpdate;
 
-  const TagBottomSheet({
-    super.key,
-    required this.walletId,
-    required this.utxoTags,
-    this.selectedTagNames,
-    this.onUpdate,
-  });
+  const TagBottomSheet({super.key, required this.walletId, this.selectedTagNames, this.onUpdate});
 
   @override
   State<TagBottomSheet> createState() => _TagBottomSheetState();
