@@ -640,6 +640,7 @@ address_search_screen:
   change_address: "Change Address"
 utxo_list_screen:
   total_balance: "Total Balance"
+  tag_apply: "Apply tag"
   utxo_locked_button: "Lock"
   utxo_unlocked_button: "Unlock"
   pending_utxo: "UTXOs that are already being sent cannot be selected."

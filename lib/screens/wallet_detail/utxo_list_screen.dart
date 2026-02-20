@@ -16,7 +16,6 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
@@ -25,6 +24,7 @@ import 'package:coconut_wallet/widgets/header/utxo_tag_list_widget.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
@@ -378,18 +378,104 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildSelectionButtons() {
-    return FixedBottomTweenButton(
-      leftText: t.utxo_list_screen.utxo_unlocked_button,
-      rightText: t.utxo_list_screen.utxo_locked_button,
-      leftButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: false),
-      rightButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: true),
-      leftButtonRatio: 0.5,
-      showGradient: true,
-      gradientPadding: const EdgeInsets.only(top: 0, bottom: 0, left: 0, right: 0),
-      leftButtonBackgroundColor: CoconutColors.white,
-      rightButtonBackgroundColor: CoconutColors.white,
-      leftButtonTextColor: CoconutColors.black,
-      rightButtonTextColor: CoconutColors.black,
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 40,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, CoconutColors.black],
+              ),
+            ),
+          ),
+
+          Container(
+            color: CoconutColors.black,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/send.svg',
+                          text: t.send,
+                          onTap: () {
+                            // TODO: 1번 버튼 로직 구현
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/tag.svg',
+                          text: t.utxo_list_screen.tag_apply,
+                          onTap: () {
+                            // TODO: 2번 버튼 로직 구현
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/lock_simple.svg',
+                          text: t.utxo_list_screen.utxo_locked_button,
+                          onTap: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: true),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/unlock_simple.svg',
+                          text: t.utxo_list_screen.utxo_unlocked_button,
+                          onTap: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: false),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: bottomPadding > 0 ? bottomPadding : 16),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvisibleActionArea({required String iconPath, required String text, required VoidCallback onTap}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 64,
+        alignment: Alignment.center,
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(iconPath, width: 24, height: 24),
+            const SizedBox(height: 4),
+            Text(
+              text,
+              style: const TextStyle(color: CoconutColors.gray100, fontSize: 12, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

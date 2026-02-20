@@ -638,8 +638,9 @@ address_search_screen:
   change_address: "잔돈 주소"
 utxo_list_screen:
   total_balance: "총 잔액"
+  tag_apply: "태그 적용"
   utxo_locked_button: "사용 잠금"
-  utxo_unlocked_button: "사용 가능으로 전환"
+  utxo_unlocked_button: "잠금 해제"
   pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
 
 transaction_detail_screen:

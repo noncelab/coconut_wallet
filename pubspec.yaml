@@ -145,6 +145,7 @@ flutter:
     - assets/svg/arrow-right-md.svg
     - assets/svg/arrow-back.svg
     - assets/svg/send.svg
+    - assets/svg/tag.svg
     - assets/svg/settings.svg
     - assets/svg/receive.svg
     - assets/svg/back.svg
@@ -267,6 +268,8 @@ flutter:
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg
+    - assets/svg/lock_simple.svg
+    - assets/svg/unlock_simple.svg
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
     - assets/svg/cloud-disconnected.svg

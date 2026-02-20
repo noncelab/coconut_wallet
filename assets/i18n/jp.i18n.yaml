@@ -640,8 +640,9 @@ address_search_screen:
   change_address: "おつりアドレス"
 utxo_list_screen:
   total_balance: "総残高"
+  tag_apply: "タグを適用"
   utxo_locked_button: "使用ロック"
-  utxo_unlocked_button: "使用可能にする"
+  utxo_unlocked_button: "ロック解除"
   pending_utxo: "すでに送信中のUTXOは選択できません。"
 
 transaction_detail_screen:
