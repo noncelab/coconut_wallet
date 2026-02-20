@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -18,7 +18,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
 
 class P2PCalculatorScreen extends StatefulWidget {
   const P2PCalculatorScreen({super.key});
@@ -521,7 +520,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                               const SizedBox(height: 24),
                               const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 15),
-                                child: Stack(children: [Divider(color: CoconutColors.gray850, height: 1)]),
+                                child: Divider(color: CoconutColors.gray700, height: 1),
                               ),
                               const SizedBox(height: 24),
                               _buildBillRow(
@@ -529,9 +528,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                 '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
                               ),
                               const SizedBox(height: 20),
-                              _buildBillRow(t.utility.p2p_calculator.reference_datetime, referenceDateTimeString),
+                              _buildBillRow(
+                                t.utility.p2p_calculator.reference_datetime,
+                                referenceDateTimeString,
+                                valueLineHeight: 1.0,
+                              ),
                               const SizedBox(height: 20),
-                              _buildBillRow(t.utility.p2p_calculator.transaction_fee, '${_feeController.text} %'),
+                              _buildBillRow(
+                                t.utility.p2p_calculator.transaction_fee,
+                                '${_feeController.text} %',
+                                valueLineHeight: 1.0,
+                              ),
                               const SizedBox(height: 2),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -540,10 +547,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                   children: [
                                     Text(
                                       '${_viewModel.fiatCode.symbol} $feeAmountStr ($feeSatsStr sats)',
-                                      style: CoconutTypography.body3_12_Number.copyWith(
-                                        color: CoconutColors.gray500,
-                                        height: 1.4,
-                                      ),
+                                      style: CoconutTypography.body3_12_Number.copyWith(color: CoconutColors.gray500),
                                     ),
                                   ],
                                 ),
@@ -586,7 +590,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     );
   }
 
-  Widget _buildBillRow(String label, String value, {bool canCopy = false}) {
+  Widget _buildBillRow(String label, String value, {bool canCopy = false, double valueLineHeight = 1.4}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Row(
@@ -608,7 +612,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
               value,
               style: CoconutTypography.body2_14_Number.copyWith(
                 color: CoconutColors.white,
-                height: 1.4,
+                height: valueLineHeight,
                 letterSpacing: -0.28,
               ),
             ),
@@ -769,6 +773,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         _buildCurrentPriceWidget(viewModel),
         if (viewModel.isNetworkOn)
           ShrinkAnimationButton(
+            pressedColor: CoconutColors.gray850,
             onPressed: () async {
               await viewModel.onFiatUnitChange();
               _inputFocusNode.unfocus();
@@ -776,11 +781,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
             defaultColor: CoconutColors.gray800,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              constraints: const BoxConstraints(minWidth: 65),
+              constraints: const BoxConstraints(minWidth: 60),
               child: Center(
                 child: Text(
                   viewModel.fiatCode.name,
-                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                  style: CoconutTypography.body2_14_Bold.copyWith(color: CoconutColors.white, height: 1.0),
                 ),
               ),
             ),
