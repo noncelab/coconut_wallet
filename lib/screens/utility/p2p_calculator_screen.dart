@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -302,9 +303,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       final file = File('${directory.path}/transaction_bill.png');
       await file.writeAsBytes(pngBytes);
 
+      AppGuard.disablePrivacyScreen();
       await Share.shareXFiles([XFile(file.path)], text: t.utility.p2p_calculator.transaction_bill);
     } catch (e) {
       debugPrint('Failed to capture and share: $e');
+    } finally {
+      AppGuard.enablePrivacyScreen();
     }
   }
 
@@ -429,6 +433,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   }
 
   void _onShowTransactionBill() {
+    if (!_viewModel.isNetworkOn) return;
     final input = _viewModel.inputAmount;
     if (input == null || input == 0) return;
 
