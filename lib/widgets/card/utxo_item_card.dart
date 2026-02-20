@@ -40,8 +40,7 @@ class UtxoItemCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color:
-                isSelectionMode ? (isSelected ? CoconutColors.primary : CoconutColors.borderGray) : Colors.transparent,
+            color: isSelectionMode ? (isSelected ? CoconutColors.white : CoconutColors.borderGray) : Colors.transparent,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
@@ -52,6 +51,21 @@ class UtxoItemCard extends StatelessWidget {
           children: [
             Row(
               children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child:
+                      isSelectionMode
+                          ? SvgPicture.asset(
+                            isSelected ? 'assets/svg/circle-check-filled.svg' : 'assets/svg/circle-check-outline.svg',
+                            colorFilter: ColorFilter.mode(
+                              isSelected ? CoconutColors.white : CoconutColors.gray600,
+                              BlendMode.srcIn,
+                            ),
+                          )
+                          : null,
+                ),
+                CoconutLayout.spacing_200w,
                 // data string
                 Row(
                   children: [

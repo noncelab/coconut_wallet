@@ -244,6 +244,8 @@ flutter:
     - assets/svg/circle-arrow-right.svg
     - assets/svg/circle-pick.svg
     - assets/svg/circle-check.svg
+    - assets/svg/circle-check-filled.svg
+    - assets/svg/circle-check-outline.svg
     - assets/svg/circle-info.svg
     - assets/svg/circle-help.svg
     - assets/svg/circle-warning.svg
