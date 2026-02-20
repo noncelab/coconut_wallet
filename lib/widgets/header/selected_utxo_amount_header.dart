@@ -46,10 +46,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
   Widget _buildTotalRow(String utxoSumText, String unitText) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: CoconutColors.black.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(24),
-      ),
+      decoration: BoxDecoration(color: CoconutColors.gray850, borderRadius: BorderRadius.circular(24)),
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
       child: Row(
         children: [

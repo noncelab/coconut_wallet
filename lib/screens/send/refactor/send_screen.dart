@@ -1202,7 +1202,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                           CoconutLayout.spacing_50w,
                                           Text(
                                             _viewModel.currentUnit.symbol,
-                                            style: CoconutTypography.heading4_18_Number,
+                                            style: CoconutTypography.heading4_18_Number.setColor(amountTextColor),
                                           ),
                                         ],
                                       ],
@@ -1221,7 +1221,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                               _clearFocus();
                             },
                             defaultColor: MyColors.grey,
-                            pressedColor: MyColors.grey.withOpacity(0.8),
+                            pressedColor: MyColors.grey.withValues(alpha: 0.8),
                             borderRadius: 4.0,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
@@ -1232,7 +1232,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                   SvgPicture.asset(
                                     'assets/svg/broom.svg',
                                     colorFilter: ColorFilter.mode(
-                                      CoconutColors.white.withOpacity(_viewModel.isMaxMode ? 1.0 : 0.3),
+                                      CoconutColors.white.withValues(alpha: _viewModel.isMaxMode ? 1.0 : 0.3),
                                       BlendMode.srcIn,
                                     ),
                                   ),

@@ -879,7 +879,7 @@ alert:
   error_send:
     broadcasting_failed: "[Envío fallido]\n$error"
     insufficient_balance: "Saldo insuficiente"
-    minimum_amount: "Puedes enviar al menos $bitcoin $unit"
+    minimum_amount: "Puedes enviar al menos $amount"
     insufficient_fee: "[Envío fallido]\nPor favor, intenta nuevamente aumentando la comisión." 
   signed_psbt:
     wrong_send_info: "La información de envío es diferente.\nPor favor, intenta nuevamente desde el principio."

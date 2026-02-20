@@ -78,11 +78,7 @@ enum AmountError {
         return t.errors.insufficient_balance;
       case AmountError.minimumAmount:
         return t.alert.error_send.minimum_amount(
-          bitcoin:
-              currentUnit == BitcoinUnit.btc
-                  ? UnitUtil.convertSatoshiToBitcoin(dustLimit + 1)
-                  : (dustLimit + 1).toThousandsSeparatedString(),
-          unit: currentUnit.symbol,
+          amount: currentUnit.displayBitcoinAmount(dustLimit + 1, withUnit: true),
         );
       case AmountError.none:
         return "";

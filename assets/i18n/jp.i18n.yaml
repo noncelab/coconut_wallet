@@ -875,7 +875,7 @@ alert:
   error_send:
     broadcasting_failed: "[送信失敗]\n$error"
     insufficient_balance: "残高が不足しています。"
-    minimum_amount: "$bitcoin $unitから送信できます。"
+    minimum_amount: "$amountから送信できます。"
     insufficient_fee: "[送信失敗]\n手数料を増やして\n再度お試しください。"
   signed_psbt:
     wrong_send_info: "送信情報が異なります。\n最初からやり直してください。"
