@@ -878,7 +878,7 @@ alert:
   error_send:
     broadcasting_failed: "[전송 실패]\n$error"
     insufficient_balance: "잔액이 부족해요"
-    minimum_amount: "$amount 부터 전송할 수 있어요"
+    minimum_amount: "$amount부터 전송할 수 있어요"
     insufficient_fee: "[전송 실패]\n수수료율을 높여서\n다시 시도해주세요."
   signed_psbt:
     wrong_send_info: "전송 정보가 달라요.\n처음부터 다시 시도해 주세요."
