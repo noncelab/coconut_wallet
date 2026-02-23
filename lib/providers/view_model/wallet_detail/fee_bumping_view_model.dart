@@ -140,7 +140,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
       _recommendedFeeRateDescription =
           _type == FeeBumpingType.cpfp
               ? _getRecommendedFeeRateDescriptionForCpfp()
-              : t.transaction_fee_bumping_screen.recommend_fee_info_rbf;
+              : t.transaction_fee_bumping_screen.recommend_fee_info_rbf; // TODO: 안내 문구 변경해야함
+      /// "새 거래의 총 수수료는 기존 거래보다 커야 해요. 일반적으로 새 거래 크기 1vB당 최소 1sat 이상의 추가 수수료가 필요해요.
+      /// 만약 계산된 최소 수수료가 현재 네트워크의 느린 전송 수수료보다 낮다면, 느린 전송 수수료를 추천해요. 단, 거래 크기가 증가하면 수수료율(sat/vB)는 기존보다 낮을 수 있어요."
       _isInitializedSuccess = true;
     } else {
       _isInitializedSuccess = false;

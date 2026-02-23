@@ -1,46 +1,49 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
-import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart'
-    as tx_creation_exception;
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/fee_bumping_view_model.dart';
-import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
+import 'package:coconut_wallet/utils/fee_rate_util.dart';
+import 'package:coconut_wallet/utils/transaction_util.dart';
 
 class RbfBuildResult {
   final Transaction? transaction;
+  final double minimumFeeRate;
   final Exception? exception;
 
   final bool isOnlyChangeOutputUsed;
   final bool isSelfOutputsUsed;
   final List<UtxoState>? addedUtxos;
   final int? deficitAmount;
+  final double estimatedVSize;
 
   bool get isSuccess => transaction != null;
   bool get isFailure => transaction == null;
 
   RbfBuildResult({
-    required this.transaction,
+    required this.minimumFeeRate,
+    this.transaction,
     this.isOnlyChangeOutputUsed = false,
     this.isSelfOutputsUsed = false,
     this.exception,
     this.addedUtxos,
     this.deficitAmount,
+    required this.estimatedVSize,
   });
 }
 
 class RbfBuilder {
+  static const double incrementalRelayFeeRate = 1.0; // 1 sat/vB (Bitcoin Core 기본값)
+
   final TransactionRecord pendingTx;
   final WalletListItemBase walletListItemBase;
   final int dustLimit;
-
-  /// vsize 증가량은 밖에서 계산해서 주입 (테스트를 위해 순수 함수로 유지)
-  final int vSizeIncreasePerInput;
-
   final List<UtxoState> inputUtxos;
 
   final bool Function(String address, {bool isChange}) isMyAddress;
@@ -49,72 +52,32 @@ class RbfBuilder {
 
   final String Function(int walletId, String address) getDerivationPath;
 
-  late double _estimatedVSize;
+  late final int _vSizeIncreasePerInput;
+  late final int _vSizeChangeOutput;
+  late List<UtxoState> _additionalSpendable;
+  //late double _minimumFeeRate;
 
   /// ----------- Output -----------
-  List<TransactionAddress>? _nonChangeOutputs;
-  List<TransactionAddress> get nonChangeOutputs {
-    _ensureOutputsComputed();
-    return _nonChangeOutputs!;
-  }
+  late final _OutputAnalysis _outputAnalysis;
 
-  Map<String, int>? _recipientMap;
-  Map<String, int> get recipientMap {
-    if (_recipientMap != null) {
-      return _recipientMap!;
-    }
-    _recipientMap = {};
-    for (var output in nonChangeOutputs) {
-      _recipientMap![output.address] = output.amount;
-    }
-    return _recipientMap!;
-  }
+  List<TransactionAddress> get nonChangeOutputs => [..._outputAnalysis.externalOutputs, ..._outputAnalysis.selfOutputs];
 
-  int? _nonChangeOutputsSum;
-  int get nonChangeOutputsSum {
-    _ensureOutputsComputed();
-    return _nonChangeOutputsSum!;
-  }
+  Map<String, int> get recipientMap => _outputAnalysis.recipientMap;
 
-  TransactionAddress? _changeOutput;
-  TransactionAddress? get changeOutput {
-    _ensureOutputsComputed();
-    return _changeOutput;
-  }
+  int get nonChangeOutputsSum => _outputAnalysis.nonChangeSum;
 
-  String? _changeOutputDerivationPath;
-  String? get changeOutputDerivationPath {
-    _ensureOutputsComputed();
-    return _changeOutputDerivationPath;
-  }
+  TransactionAddress? get changeOutput => _outputAnalysis.changeOutput;
 
-  List<TransactionAddress>? _selfOutputs;
-  List<TransactionAddress>? _externalOutputs;
-  List<TransactionAddress>? get selfOutputs {
-    _ensureSelfAndExternalOutputsComputed();
-    if (_selfOutputs!.isEmpty) {
-      return null;
-    }
-    return _selfOutputs;
-  }
+  String? get changeOutputDerivationPath => _outputAnalysis.changeDerivationPath;
 
-  List<TransactionAddress>? get externalOutputs {
-    _ensureSelfAndExternalOutputsComputed();
-    if (_externalOutputs!.isEmpty) {
-      return null;
-    }
-    return _externalOutputs;
-  }
+  List<TransactionAddress>? get selfOutputs => _outputAnalysis.selfOutputs.isEmpty ? null : _outputAnalysis.selfOutputs;
 
-  PaymentType? _paymentType;
-  PaymentType get paymentType {
-    _paymentType ??= _determinePaymentType();
-    return _paymentType!;
-  }
+  List<TransactionAddress>? get externalOutputs =>
+      _outputAnalysis.externalOutputs.isEmpty ? null : _outputAnalysis.externalOutputs;
 
-  int get sendAmount {
-    return nonChangeOutputs.fold(0, (sum, output) => sum + output.amount);
-  }
+  // int get sendAmount {
+  //   return nonChangeOutputs.fold(0, (sum, output) => sum + output.amount);
+  // }
 
   /// ----------- Output -----------
   /// ----------- Input -----------
@@ -125,171 +88,273 @@ class RbfBuilder {
   }
 
   /// ----------- Input -----------
+  RbfBuildResult? _cachedBaseline;
 
   RbfBuilder({
     required this.pendingTx,
     required this.walletListItemBase,
-    required this.vSizeIncreasePerInput,
     required this.isMyAddress,
     required this.inputUtxos,
     required this.nextChangeAddress,
     required this.getDerivationPath,
     required this.dustLimit,
+    List<UtxoState> additionalSpendable = const [],
   }) {
-    _estimatedVSize = pendingTx.vSize;
-  }
+    _outputAnalysis = _OutputAnalysis.fromPendingTx(
+      outputs: pendingTx.outputAddressList,
+      isMyAddress: isMyAddress,
+      getDerivationPath: (address) => getDerivationPath(walletListItemBase.id, address),
+    );
 
-  /// - [newFeeRate]: 새로 적용할 fee rate (sats/vB)
-  /// - [additionalSpendable]: 추가로 사용할 수 있는 UTXO 풀
-  /// - [getDerivationPath]: 특정 주소의 derivation path를 반환하는 콜백
-  Future<RbfBuildResult> buildRbfTransaction({
-    required double newFeeRate,
-    required List<UtxoState> additionalSpendable,
-  }) async {
-    if (newFeeRate <= pendingTx.feeRate) {
-      throw const FeeRateTooLowException();
-    }
-
-    int estimatedRequiredFee = _getEstimatedRequiredFee(newFeeRate, recipientMap);
-    if (estimatedRequiredFee < pendingTx.fee + 1) {
-      throw const FeeRateTooLowException();
-    }
-
-    int additionalFee = estimatedRequiredFee - pendingTx.fee;
-    int left = inputSum - nonChangeOutputsSum - pendingTx.fee;
-
-    bool isInputAmountEnough = inputSum >= nonChangeOutputsSum + estimatedRequiredFee;
-    if (isInputAmountEnough) {
-      // 1. 잔돈을 줄여서 트랜잭션 생성하기
-      final tx = _buildTransaction(newFeeRate, recipientMap);
-      if (tx.isSuccess) {
-        return RbfBuildResult(transaction: tx.transaction, isOnlyChangeOutputUsed: true);
-      } else {
-        // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
-        return RbfBuildResult(transaction: null, exception: tx.exception);
-      }
-    }
-
-    // 2-1. deficitAmount만큼 selfOutput 1개에서 amount를 일부 줄여서 트랜잭션 생성 성공
-    // 2-2-1. deficitAmount만큼 selfOutput N개를 통째로 없애야 트랜잭션 생성 성공 > 이 때 output이 줄어들어 vSize가 줄어들고 필요한 수수료도 줄어들게 되는데, 반드시 기존 수수료보다 +1 이상 큰지 확인 후 부족하면 추가해야함. 그렇지 않으면 네트워크에서 전송 거절됨
-    // 2-2-2. output 개수가 줄어들면서 requiredFee가 감소할 수도 있음
-    // 2-3. selfOutput 모두 차감으로 부족
-    // (2-4. externalOutput이 null이고 selfOutput을 모두 deficit 충당으로 사용해버렸다면 결국 내가 받을 수 있는 금액이 0이 되어버리는 상황 -> 무조건 input 추가해야함 -> 특별히 처리하진 않음)
-    int deficitAmount = (nonChangeOutputsSum + estimatedRequiredFee) - inputSum;
-    Map<String, int> newRecipients = Map<String, int>.from(recipientMap);
-    _SweepResult? oneSelfOutputSweepResult;
-    if (selfOutputs != null) {
-      // selfOutput만 1개인 경우 sweep 트랜잭션 생성
-      if (selfOutputs!.length == 1 && externalOutputs == null) {
-        final result = _handleSingleSelfOutputSweep(newFeeRate: newFeeRate, selfOutputAddress: selfOutputs![0].address);
-        if (result.rbfBuildResult.isSuccess) {
-          return result.rbfBuildResult;
-        } else {
-          oneSelfOutputSweepResult = result;
-        }
-      } else {
-        // 가장 마지막 selfOutput에서부터 차감
-        for (int i = selfOutputs!.length - 1; i >= 0; i--) {
-          final leftOutput = selfOutputs![i].amount - deficitAmount;
-          if (leftOutput <= dustLimit) {
-            newRecipients.remove(selfOutputs![i].address);
-
-            // 현재 selfOutputs![i]가 output에서 제거되었을 때 변화된 requiredFee를 재계산한다.
-            final txBuildResult = _buildTransaction(newFeeRate, newRecipients);
-            final newRequiredFee = txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0);
-            // [디버그 중] 기존 수수료보다 큰 지 체크
-            if (changeOutput != null) {
-              Logger.log('changeOutput: ${changeOutput!.amount}, newRequiredFee: $newRequiredFee');
-              assert(changeOutput!.amount < newRequiredFee);
-            }
-
-            if (leftOutput >= 0) {
-              if (txBuildResult.isSuccess) {
-                // TODO: 하지만 estimatedFee가 기존 Fee보다 큰지 반드시 확인해야함 크지 않으면 조정이 필요함
-                return RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true);
-              } else {
-                // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
-                return RbfBuildResult(transaction: null, exception: txBuildResult.exception);
-              }
-            }
-
-            // output이 1개 줄어들어 deficitAmount가 얼마나 줄어들었는지 계산
-            assert(newRequiredFee < estimatedRequiredFee);
-            final reducedFee = estimatedRequiredFee - newRequiredFee;
-
-            // output 개수가 줄어서 deficitAmount가 줄어들기 때문에 여기서 종료될 수 있는지 파악이 필요함
-            if (reducedFee >= leftOutput.abs()) {
-              if (txBuildResult.isSuccess) {
-                return RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true);
-              } else {
-                // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
-                return RbfBuildResult(transaction: null, exception: txBuildResult.exception);
-              }
-            }
-
-            deficitAmount -= reducedFee;
-            // selfOutput이 더 있다면 추가로 차감하거나 input이 더 필요한 상황
-          } else {
-            // 현재 selfOutputs![i]의 amount를 leftOutput으로 변경하여 트랜잭션 생성 성공 // TODO: return;
-            newRecipients[selfOutputs![i].address] = leftOutput;
-            final txBuildResult = _buildTransaction(newFeeRate, newRecipients);
-            if (txBuildResult.isSuccess) {
-              return RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true);
-            } else {
-              // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
-              return RbfBuildResult(transaction: null, exception: txBuildResult.exception);
-            }
-          }
-        }
-      }
-    }
-
-    // 3. selfOutput이 있었다면 사용한 만큼 deficitAmount가 차감된 상태
-    if (additionalSpendable.isNotEmpty) {
-      // 3-1. additionalSpendable로 deficitAmount 이상 채울 수 있으면 추가 utxo를 활용하여 트랜잭션 생성 성공. 큰 금액의 utxo부터 사용
-    }
-
-    // input에 UTXO 무조건 추가해야함
-    return RbfBuildResult(transaction: null);
-  }
-
-  _SweepResult _handleSingleSelfOutputSweep({required double newFeeRate, required String selfOutputAddress}) {
-    final newRecipients = {selfOutputAddress: inputSum};
-    final txBuildResult = _buildSweepTransaction(newFeeRate, newRecipients);
-    if (txBuildResult.isSuccess) {
-      return _SweepResult(
-        rbfBuildResult: RbfBuildResult(transaction: txBuildResult.transaction, isSelfOutputsUsed: true),
-        newRecipients: newRecipients,
-      );
+    if (walletListItemBase.walletType == WalletType.singleSignature) {
+      _vSizeIncreasePerInput = 68;
+      _vSizeChangeOutput = 31;
     } else {
-      if (txBuildResult.exception is tx_creation_exception.SendAmountTooLowException) {
-        final estimatedFee = (txBuildResult.exception as tx_creation_exception.SendAmountTooLowException).estimatedFee;
-        final deficitAmount = (dustLimit + 1) + estimatedFee - inputSum;
-        return _SweepResult(
-          rbfBuildResult: RbfBuildResult(
-            transaction: null,
-            exception: txBuildResult.exception,
-            deficitAmount: deficitAmount,
-          ),
-          newRecipients: newRecipients,
-        );
+      final wallet = walletListItemBase as MultisigWalletListItem;
+      _vSizeIncreasePerInput = p2wshMultisigInputVSize(m: wallet.requiredSignatureCount, n: wallet.signers.length);
+      _vSizeChangeOutput = 43;
+    }
+    _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
+    //_minimumFeeRate = getBaselineTransaction().minimumFeeRate;
+  }
+
+  double _calculateMinimumFeeRate(double newTxVSize) {
+    return FeeRateUtils.ceilFeeRate(_calculateMinimumRbfFee(newTxVSize: newTxVSize) / newTxVSize);
+  }
+
+  int _calculateMinimumRbfFee({required double newTxVSize}) {
+    return pendingTx.fee + (newTxVSize * incrementalRelayFeeRate).ceil();
+  }
+
+  int _calculateMinAdditionalFee({required double newTxSize}) {
+    return (newTxSize * incrementalRelayFeeRate).ceil();
+  }
+
+  ({TransactionBuildResult? txBuildResult, Map<String, int>? newRecipients, int? leftDeficit})
+  _tryWithSelfOutputReduction(int deficitAmount, double feeRate) {
+    if (selfOutputs?.isNotEmpty != true) return (txBuildResult: null, newRecipients: null, leftDeficit: null);
+
+    // if (selfOutputs!.length == 1 && externalOutputs == null) {
+    //    final result = _handleSingleSelfOutputSweep(feeRate: feeRate, selfOutputAddress: selfOutputAddress)
+    // }
+
+    Map<String, int> newRecipients = Map.from(recipientMap);
+    int leftDeficit = deficitAmount;
+    for (int i = selfOutputs!.length - 1; i >= 0; i--) {
+      if (selfOutputs![i].amount >= leftDeficit && selfOutputs![i].amount - leftDeficit > dustLimit) {
+        final result = _buildSweepTransaction(feeRate, newRecipients, []);
+        if (result.isSuccess) {
+          return (txBuildResult: result, newRecipients: newRecipients, leftDeficit: 0);
+        } else {
+          // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
+          throw '_tryWithSelfOutputReduction _buildSweepTx result.isFailure: ${result.exception.toString()}';
+        }
       } else {
-        // INFO: 이 지점에 도달할 일이 없을 거라고 예상됨 TODO: 이 지점에 도달 시 원인 파악 후 추가 예외 처리 필요
-        throw txBuildResult.exception!;
+        // 남은게 dustlimit보다 작으면 제거
+        newRecipients.remove(selfOutputs![i].address);
+        leftDeficit -= selfOutputs![i].amount;
+        // TODO: 이렇게 해도 괜찮은건지 지금 판단이 안됨....
+        leftDeficit -= (_vSizeChangeOutput * feeRate).toInt();
       }
+    }
+
+    if (newRecipients.isEmpty) {
+      newRecipients.addEntries([MapEntry(selfOutputs![0].address, selfOutputs![0].amount)]);
+    }
+
+    return (txBuildResult: null, newRecipients: newRecipients, leftDeficit: leftDeficit);
+  }
+
+  ({TransactionBuildResult? txBuildResult, List<UtxoState> addedUtxos, int? leftDeficit}) _tryWithAdditionalSpendable(
+    List<UtxoState> utxos,
+    int deficitAmount,
+    Map<String, int> recipitents,
+  ) {
+    // TODO:
+    return (txBuildResult: null, addedUtxos: [], leftDeficit: null);
+  }
+
+  double _getEstimatedTxVSize(Transaction tx) {
+    return TransactionUtil.estimateVirtualByteByWallet(walletListItemBase, tx);
+  }
+
+  double _getFeeRateFromSucceedTxBuildResult(TransactionBuildResult txBuildResult) {
+    assert(txBuildResult.isSuccess);
+    return FeeRateUtils.ceilFeeRate(txBuildResult.estimatedFee / _getEstimatedTxVSize(txBuildResult.transaction!));
+  }
+
+  RbfBuildResult getBaselineTransaction({bool isForce = false}) {
+    if (!isForce && _cachedBaseline != null) return _cachedBaseline!;
+
+    double newTxVSize = pendingTx.vSize;
+    if (changeOutput == null) {
+      // RBF 최소 수수료율을 구할 때는 changeOutput이 있다고 가정하고 보수적으로 계산
+      newTxVSize += _vSizeChangeOutput * pendingTx.feeRate;
+    }
+
+    int additionalFee = _calculateMinAdditionalFee(newTxSize: newTxVSize);
+    int minimumFee = _calculateMinimumRbfFee(newTxVSize: newTxVSize);
+    int deficitAmount = additionalFee;
+    if (changeOutput != null) {
+      if (changeOutput!.amount >= deficitAmount) {
+        double minimumFeeRate = FeeRateUtils.ceilFeeRate(minimumFee / newTxVSize);
+        final txBuildResult = _buildTransaction(minimumFeeRate, recipientMap, []);
+        if (txBuildResult.isSuccess) {
+          _cachedBaseline = RbfBuildResult(
+            transaction: txBuildResult.transaction,
+            isOnlyChangeOutputUsed: true,
+            minimumFeeRate: _getFeeRateFromSucceedTxBuildResult(txBuildResult),
+            estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+          );
+          return _cachedBaseline!;
+        } else {
+          throw 'RbfBuilder.getBaselineTransaction: _buildTransaction failed1 - ${txBuildResult.exception.toString()}';
+        }
+      } else {
+        deficitAmount -= changeOutput!.amount;
+      }
+    }
+
+    // TODO: self Output 조작을 우선 생략...
+
+    List<UtxoState> addedUtxos = [];
+    for (int i = 0; i < _additionalSpendable.length && deficitAmount > 0; i++) {
+      addedUtxos.add(_additionalSpendable[i]);
+      newTxVSize += _vSizeIncreasePerInput;
+      deficitAmount += _vSizeIncreasePerInput;
+      if (_additionalSpendable[i].amount >= deficitAmount) {
+        deficitAmount = 0;
+      } else {
+        deficitAmount -= _additionalSpendable[i].amount;
+      }
+    }
+
+    if (deficitAmount == 0) {
+      final txBuildResult = _buildTransaction(_calculateMinimumFeeRate(newTxVSize), recipientMap, addedUtxos);
+      if (txBuildResult.isSuccess) {
+        _cachedBaseline = RbfBuildResult(
+          transaction: txBuildResult.transaction,
+          minimumFeeRate: _getFeeRateFromSucceedTxBuildResult(txBuildResult),
+          addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+          estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+        );
+        return _cachedBaseline!;
+      } else {
+        throw 'RbfBuilder.getBaselineTransaction: _buildTransaction failed2 - ${txBuildResult.exception.toString()}';
+      }
+    }
+
+    newTxVSize += _vSizeIncreasePerInput;
+    deficitAmount += _vSizeIncreasePerInput;
+    _cachedBaseline = RbfBuildResult(
+      minimumFeeRate: _calculateMinimumFeeRate(newTxVSize),
+      addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+      deficitAmount: deficitAmount,
+      estimatedVSize: newTxVSize,
+    );
+    return _cachedBaseline!;
+  }
+
+  RbfBuildResult changeAdditionalSpendable(List<UtxoState> utxos) {
+    _additionalSpendable = [...utxos]..sort((a, b) => b.amount.compareTo(a.amount));
+    _cachedBaseline = getBaselineTransaction(isForce: true);
+    return _cachedBaseline!;
+  }
+
+  RbfBuildResult build({required double newFeeRate}) {
+    _cachedBaseline ??= getBaselineTransaction();
+    // TODO: minimumFeeRate가 newFeeRate보다 크면 에러를 반환
+
+    // getBaselineTxResult로 구한 트랜잭션의 vSize를 이용해서 newFeeRate을 곱해서 예상 필요 수수료를 구하기
+    // change로 충분하지 않으면 additionalSpendable에서 모자란 만큼 계산해서 얼마나 필요한지 구한다음 트랜잭션을 만듦
+    try {
+      if (_cachedBaseline!.minimumFeeRate > newFeeRate) {
+        throw const FeeRateTooLowException();
+      }
+
+      final int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
+      final int additionalFee = requiredFee - pendingTx.fee;
+      int deficitAmount = additionalFee;
+      if (changeOutput != null) {
+        if (changeOutput!.amount > deficitAmount) {
+          final txBuildResult = _buildTransaction(newFeeRate, recipientMap, []);
+          if (txBuildResult.isSuccess) {
+            return RbfBuildResult(
+              transaction: txBuildResult.transaction,
+              isOnlyChangeOutputUsed: true,
+              minimumFeeRate: _cachedBaseline!.minimumFeeRate,
+              estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+            );
+          } else {
+            throw 'RbfBuild.build: _buildTransaction failed1 - ${txBuildResult.exception!.toString()}';
+          }
+        } else {
+          deficitAmount -= changeOutput!.amount;
+        }
+      }
+
+      double newTxVSize = _cachedBaseline!.estimatedVSize;
+
+      // TODO: self Output 조작을 우선 생략...
+
+      List<UtxoState> addedUtxos = [];
+      for (int i = 0; i < _additionalSpendable.length && deficitAmount > 0; i++) {
+        addedUtxos.add(_additionalSpendable[i]);
+        newTxVSize += _vSizeIncreasePerInput * newFeeRate;
+        deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
+        if (_additionalSpendable[i].amount >= deficitAmount) {
+          deficitAmount = 0;
+        } else {
+          deficitAmount -= _additionalSpendable[i].amount;
+        }
+      }
+
+      if (deficitAmount == 0) {
+        final txBuildResult = _buildTransaction(newFeeRate, recipientMap, addedUtxos);
+        if (txBuildResult.isSuccess) {
+          return RbfBuildResult(
+            transaction: txBuildResult.transaction,
+            minimumFeeRate: _cachedBaseline!.minimumFeeRate,
+            addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+            estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+          );
+        } else {
+          throw 'RbfBuilder.getBaselineTransaction: _buildTransaction failed2 - ${txBuildResult.exception.toString()}';
+        }
+      }
+
+      newTxVSize += _vSizeIncreasePerInput * newFeeRate;
+      deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
+      return RbfBuildResult(
+        minimumFeeRate: _cachedBaseline!.minimumFeeRate,
+        addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+        deficitAmount: deficitAmount,
+        estimatedVSize: newTxVSize,
+      );
+    } on RbfCreationException catch (e) {
+      return RbfBuildResult(
+        transaction: null,
+        exception: e,
+        minimumFeeRate: _cachedBaseline!.minimumFeeRate,
+        estimatedVSize: _cachedBaseline!.estimatedVSize,
+      );
     }
   }
 
-  int _getEstimatedRequiredFee(double newFeeRate, Map<String, int> recipients) {
-    final txBuildResult = _buildTransaction(newFeeRate, recipients);
-    return txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0);
-  }
+  // int _getEstimatedRequiredFee(double newFeeRate, Map<String, int> recipients) {
+  //   final txBuildResult = _buildTransaction(newFeeRate, recipients);
+  //   return txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0);
+  // }
 
-  TransactionBuildResult _buildTransaction(double newFeeRate, Map<String, int> recipients) {
+  TransactionBuildResult _buildTransaction(
+    double newFeeRate,
+    Map<String, int> recipients,
+    List<UtxoState> additionalUtxos,
+  ) {
     final changeDerivationPath = changeOutput == null ? nextChangeAddress.derivationPath : changeOutputDerivationPath!;
 
     return TransactionBuilder(
-      availableUtxos: inputUtxos,
+      availableUtxos: [...inputUtxos, ...additionalUtxos],
       recipients: recipients,
       feeRate: newFeeRate,
       changeDerivationPath: changeDerivationPath,
@@ -299,11 +364,15 @@ class RbfBuilder {
     ).build();
   }
 
-  TransactionBuildResult _buildSweepTransaction(double newFeeRate, Map<String, int> recipients) {
+  TransactionBuildResult _buildSweepTransaction(
+    double newFeeRate,
+    Map<String, int> recipients,
+    List<UtxoState> additionalUtxos,
+  ) {
     final changeDerivationPath = changeOutput == null ? nextChangeAddress.derivationPath : changeOutputDerivationPath!;
 
     return TransactionBuilder(
-      availableUtxos: inputUtxos,
+      availableUtxos: [...inputUtxos, ...additionalUtxos],
       recipients: recipients,
       feeRate: newFeeRate,
       changeDerivationPath: changeDerivationPath,
@@ -312,87 +381,61 @@ class RbfBuilder {
       isUtxoFixed: true,
     ).build();
   }
+}
 
-  // TODO: 필요 없어질 수도 있음
-  PaymentType _determinePaymentType() {
-    int inputCount = pendingTx.inputAddressList.length;
-    int outputCount = pendingTx.outputAddressList.length;
+class _OutputAnalysis {
+  final List<TransactionAddress> externalOutputs; // 남의 주소
+  final List<TransactionAddress> selfOutputs; // 내 receiving 주소
+  final TransactionAddress? changeOutput; // 내 change 주소
+  final String? changeDerivationPath;
 
-    if (inputCount == 0 || outputCount == 0) {
-      throw Exception('Invalid transaction. Input $inputCount / Output $outputCount');
-    }
+  _OutputAnalysis._(this.externalOutputs, this.selfOutputs, this.changeOutput, this.changeDerivationPath);
 
-    switch (outputCount) {
-      case 1:
-        return PaymentType.singleSweep;
-      case 2:
-        if (nonChangeOutputs.length == 1) {
-          return PaymentType.singlePayment;
-        }
-    }
-    return PaymentType.batchPayment;
-  }
-
-  void _ensureOutputsComputed() {
-    // 이미 계산된 경우 재계산하지 않음
-    if (_nonChangeOutputs != null || _changeOutput != null) {
-      return;
-    }
-
-    final outputs = pendingTx.outputAddressList;
+  factory _OutputAnalysis.fromPendingTx({
+    required List<TransactionAddress> outputs,
+    required bool Function(String address, {bool isChange}) isMyAddress,
+    required String Function(String address) getDerivationPath,
+  }) {
     // change output 찾기
     final changeIndex = outputs.lastIndexWhere((output) => isMyAddress(output.address, isChange: true));
+    TransactionAddress? changeOutput;
+    String? changeDerivationPath;
     if (changeIndex != -1) {
-      _changeOutput = outputs[changeIndex];
-      _changeOutputDerivationPath = getDerivationPath(walletListItemBase.id, _changeOutput!.address);
-      if (_changeOutputDerivationPath == null || _changeOutputDerivationPath!.isEmpty) {
+      changeOutput = outputs[changeIndex];
+      changeDerivationPath = getDerivationPath(changeOutput.address);
+      if (changeDerivationPath.isEmpty) {
         throw const InvalidChangeOutputException();
       }
     }
-    // change output 을 제외한 나머지 = nonChangeOutputs
-    int outputSum = 0;
-    _nonChangeOutputs =
-        outputs.asMap().entries.where((entry) => entry.key != changeIndex).map((entry) {
-          outputSum += entry.value.amount;
-          return entry.value;
-        }).toList();
-    _nonChangeOutputsSum = outputSum;
-  }
 
-  void _ensureSelfAndExternalOutputsComputed() {
-    if (_selfOutputs != null || _externalOutputs != null) {
-      return;
-    }
-
+    // change output 을 제외한 나머지를 self/external로 분류
     final List<TransactionAddress> selfOutputs = [];
     final List<TransactionAddress> externalOutputs = [];
-    for (var output in nonChangeOutputs) {
-      if (isMyAddress(output.address)) {
-        selfOutputs.add(output);
+    for (int i = 0; i < outputs.length; i++) {
+      if (i == changeIndex) continue;
+      if (isMyAddress(outputs[i].address)) {
+        selfOutputs.add(outputs[i]);
       } else {
-        externalOutputs.add(output);
+        externalOutputs.add(outputs[i]);
       }
     }
 
-    _selfOutputs = selfOutputs;
-    _externalOutputs = externalOutputs;
+    return _OutputAnalysis._(externalOutputs, selfOutputs, changeOutput, changeDerivationPath);
   }
 
-  // - bool makeDust(...)
-  // - bool _ensureSufficientUtxos(...)
-  // - List<Utxo> _getAdditionalUtxos(...)
-  // - int _getVSizeIncreasement(...)  → vsizeIncreasePerInput 로 대체 가능
-  // - bool _handleTransactionWithSelfOutputs(...)
-  // - bool _handleBatchTransactionWithSelfOutputs(...)
-  // - bool _handleSingleOrSweepWithSelfOutputs(...)
+  int get externalSum => externalOutputs.fold(0, (s, o) => s + o.amount);
+  int get selfSum => selfOutputs.fold(0, (s, o) => s + o.amount);
+  int get nonChangeSum => externalSum + selfSum;
 
-  // - void _generateSinglePayment(...)
-  // - void _generateSweepPayment(...)
-  // - void _generateBatchTransation(...)
+  Map<String, int> get recipientMap => {
+    for (final o in [...externalOutputs, ...selfOutputs]) o.address: o.amount,
+  };
 }
 
-class _SweepResult {
-  final Map<String, int> newRecipients;
-  final RbfBuildResult rbfBuildResult;
-  _SweepResult({required this.newRecipients, required this.rbfBuildResult});
+class _AdjustedRecipients {
+  final Map<String, int> recipients;
+  final List<TransactionAddress> removedSelfOutputs;
+  final List<TransactionAddress> reducedSelfOutputs;
+
+  _AdjustedRecipients({required this.recipients, required this.removedSelfOutputs, required this.reducedSelfOutputs});
 }
