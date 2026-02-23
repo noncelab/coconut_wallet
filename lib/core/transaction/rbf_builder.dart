@@ -244,6 +244,7 @@ class RbfBuilder {
       }
     }
 
+    // 추가 UTXO가 필요한 상황이어서 더해줌
     newTxVSize += _vSizeIncreasePerInput;
     deficitAmount += _vSizeIncreasePerInput;
     _cachedBaseline = RbfBuildResult(
@@ -263,10 +264,6 @@ class RbfBuilder {
 
   RbfBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
-    // TODO: minimumFeeRate가 newFeeRate보다 크면 에러를 반환
-
-    // getBaselineTxResult로 구한 트랜잭션의 vSize를 이용해서 newFeeRate을 곱해서 예상 필요 수수료를 구하기
-    // change로 충분하지 않으면 additionalSpendable에서 모자란 만큼 계산해서 얼마나 필요한지 구한다음 트랜잭션을 만듦
     try {
       if (_cachedBaseline!.minimumFeeRate > newFeeRate) {
         throw const FeeRateTooLowException();
@@ -276,7 +273,7 @@ class RbfBuilder {
       final int additionalFee = requiredFee - pendingTx.fee;
       int deficitAmount = additionalFee;
       if (changeOutput != null) {
-        if (changeOutput!.amount > deficitAmount) {
+        if (changeOutput!.amount >= deficitAmount) {
           final txBuildResult = _buildTransaction(newFeeRate, recipientMap, []);
           if (txBuildResult.isSuccess) {
             return RbfBuildResult(
@@ -300,8 +297,11 @@ class RbfBuilder {
       List<UtxoState> addedUtxos = [];
       for (int i = 0; i < _additionalSpendable.length && deficitAmount > 0; i++) {
         addedUtxos.add(_additionalSpendable[i]);
-        newTxVSize += _vSizeIncreasePerInput * newFeeRate;
-        deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
+        // getBaselineTransaction()에서 모자란 경우 임의로 한 번 더해줬기 때문에 맨 처음에는 아래 조건을 만족해야만 더함
+        if (i != 0 || (i == 0 && _cachedBaseline!.deficitAmount == null)) {
+          newTxVSize += _vSizeIncreasePerInput * newFeeRate;
+          deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
+        }
         if (_additionalSpendable[i].amount >= deficitAmount) {
           deficitAmount = 0;
         } else {
