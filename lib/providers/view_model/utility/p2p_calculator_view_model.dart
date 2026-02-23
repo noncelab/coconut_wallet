@@ -74,7 +74,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
     _fiatCode = _preferenceProvider.selectedFiat;
     _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
-    _isNetworkOn = _connectivityProvider.isNetworkOn;
+    _isNetworkOn = _connectivityProvider.isInternetOn;
     _isBtcUnit = _preferenceProvider.isBtcUnit;
   }
 
@@ -86,7 +86,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   void _onConnectivityChanged() {
-    _isNetworkOn = _connectivityProvider.isNetworkOn;
+    _isNetworkOn = _connectivityProvider.isInternetOn;
     notifyListeners();
   }
 

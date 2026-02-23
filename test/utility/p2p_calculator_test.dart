@@ -51,7 +51,7 @@ void main() {
   }) {
     final prefProvider = FakePreferenceProvider(selectedFiat: fiatCode, isBtcUnit: isBtcUnit);
     final connectivityProvider = ConnectivityProvider();
-    connectivityProvider.setIsNetworkOn(isNetworkOn);
+    //connectivityProvider.setIsNetworkOn(isNetworkOn);
     final priceProvider = FakePriceProvider(defaultPrice: btcPrice);
 
     return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider);
