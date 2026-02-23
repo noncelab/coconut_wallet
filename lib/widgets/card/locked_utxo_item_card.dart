@@ -50,7 +50,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                   children: [
                     Text(
                       widget.currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                      style: Styles.h2Number.setColor(CoconutColors.white.withOpacity(0.3)),
+                      style: Styles.h2Number.setColor(CoconutColors.white.withValues(alpha: 0.3)),
                     ),
                     CoconutLayout.spacing_100w,
                     if (widget.utxo.status == UtxoStatus.incoming)
@@ -65,14 +65,14 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
                 CoconutLayout.spacing_200h,
                 Row(
                   children: [
-                    Text(dateString[0], style: Styles.caption.setColor(CoconutColors.white.withOpacity(0.3))),
+                    Text(dateString[0], style: Styles.caption.setColor(CoconutColors.white.withValues(alpha: 0.3))),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
-                      color: CoconutColors.white.withOpacity(0.3),
+                      color: CoconutColors.white.withValues(alpha: 0.3),
                       width: 1,
                       height: 10,
                     ),
-                    Text(dateString[1], style: Styles.caption.setColor(CoconutColors.white.withOpacity(0.3))),
+                    Text(dateString[1], style: Styles.caption.setColor(CoconutColors.white.withValues(alpha: 0.3))),
                   ],
                 ),
                 Visibility(
@@ -105,7 +105,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
             'assets/svg/lock.svg',
             width: 24,
             height: 24,
-            colorFilter: ColorFilter.mode(CoconutColors.white.withOpacity(0.3), BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(CoconutColors.white.withValues(alpha: 0.3), BlendMode.srcIn),
           ),
         ],
       ),

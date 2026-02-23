@@ -152,7 +152,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
 
                         backgroundColor: CoconutColors.gray800,
                         borderRadius: 8,
-                        shadowColor: CoconutColors.black.withOpacity(0.1),
                         isSelectedItemBold: true,
                         buttonPadding: const EdgeInsets.only(right: 16, left: 16),
                       ),

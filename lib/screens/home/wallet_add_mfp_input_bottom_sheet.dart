@@ -24,6 +24,12 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
   void initState() {
     super.initState();
 
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _mfpFocusNode.requestFocus();
+      }
+    });
+
     _mfpController.addListener(() {
       if (_mfpController.text.length < 8) {
         setState(() {
@@ -193,7 +199,6 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                 FocusScope.of(context).unfocus();
                               });
                               widget.onSkip();
-                              Navigator.pop(context);
                             },
                             textStyle: CoconutTypography.body2_14,
                             disabledBackgroundColor: CoconutColors.gray800,
@@ -214,7 +219,6 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                 FocusScope.of(context).unfocus();
                               });
                               widget.onComplete(_mfpController.text);
-                              Navigator.pop(context);
                             },
                             disabledBackgroundColor: CoconutColors.gray800,
                             disabledForegroundColor: CoconutColors.gray700,

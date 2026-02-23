@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/node_provider/utxo_sync_service.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/realm_manager.dart';
 import 'package:coconut_wallet/repository/realm/subscription_repository.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -23,7 +24,8 @@ class IsolateInitializer {
     // TODO: isSetPin, 핀 설정/해제할 때 isolate에서도 인지할 수 있는 로직 추가
     final realmManager = RealmManager();
     final addressRepository = AddressRepository(realmManager);
-    final walletRepository = WalletRepository(realmManager);
+    final transactionDraftRepository = TransactionDraftRepository(realmManager);
+    final walletRepository = WalletRepository(realmManager, transactionDraftRepository);
     final utxoRepository = UtxoRepository(realmManager);
     final transactionRepository = TransactionRepository(realmManager);
     final subscribeRepository = SubscriptionRepository(realmManager);

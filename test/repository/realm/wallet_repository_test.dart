@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,7 +15,7 @@ void main() {
     realmManager = await setupTestRealmManager();
 
     // WalletRepository 생성
-    walletRepository = WalletRepository(realmManager);
+    walletRepository = WalletRepository(realmManager, TransactionDraftRepository(realmManager));
   });
 
   tearDown(() {

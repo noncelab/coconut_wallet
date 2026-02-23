@@ -61,8 +61,8 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
       ) {
         previous ??= _createViewModel();
 
-        if (previous.isNetworkOn != connectivityProvider.isNetworkOn) {
-          previous.updateIsNetworkOn(connectivityProvider.isNetworkOn);
+        if (previous.isNetworkOn != connectivityProvider.isInternetOn) {
+          previous.updateIsNetworkOn(connectivityProvider.isInternetOn);
         }
 
         previous.onPreferenceProviderUpdated();
@@ -310,16 +310,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                   // 전체 총액
                   Row(
                     children: [
-                      Expanded(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedBalance(
-                            prevValue: prevTotalBalance,
-                            value: totalBalance,
-                            currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
-                            textStyle: CoconutTypography.heading4_18_NumberBold,
-                          ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: AnimatedBalance(
+                          prevValue: prevTotalBalance,
+                          value: totalBalance,
+                          currentUnit: isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats,
+                          textStyle: CoconutTypography.heading4_18_NumberBold,
                         ),
                       ),
                       CoconutLayout.spacing_100w,

@@ -21,7 +21,7 @@ class _FiatPriceState extends State<FiatPrice> {
     return Consumer2<PriceProvider, ConnectivityProvider>(
       builder: (context, priceProvider, connectivityProvider, child) {
         // 네트워크 연결이 없으면 가격 정보를 표시하지 않음
-        if (!connectivityProvider.isNetworkOn) {
+        if (!connectivityProvider.isInternetOn) {
           return const SizedBox.shrink();
         }
 

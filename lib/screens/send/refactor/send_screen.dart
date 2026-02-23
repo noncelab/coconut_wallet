@@ -2,14 +2,18 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart' show TransactionDraftRepository;
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
-import 'package:coconut_wallet/screens/send/refactor/select_wallet_with_options_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -21,10 +25,13 @@ import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/button/shrink_tap_wrapper.dart';
+import 'package:coconut_wallet/widgets/card/transaction_draft_card.dart';
+import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -34,11 +41,14 @@ import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
 
+part 'send_screen_draft.dart';
+
 class SendScreen extends StatefulWidget {
   final int? walletId;
   final SendEntryPoint sendEntryPoint;
+  final int? transactionDraftId;
 
-  const SendScreen({super.key, this.walletId, required this.sendEntryPoint});
+  const SendScreen({super.key, this.walletId, required this.sendEntryPoint, this.transactionDraftId});
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -48,6 +58,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   final GlobalKey _viewMoreButtonKey = GlobalKey();
   final GlobalKey _addressInputFieldKey = GlobalKey();
   double _addressInputFieldBottomDy = 0; // 주소 입력창의 하단 Position.dy
+
+  bool _isDropdownMenuVisible = false;
 
   final Color keyboardToolbarGray = const Color(0xFF2E2E2E);
   final Color feeRateFieldGray = const Color(0xFF2B2B2B);
@@ -108,18 +120,24 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context.read<WalletProvider>(),
       context.read<SendInfoProvider>(),
       context.read<PreferenceProvider>(),
-      context.read<ConnectivityProvider>().isNetworkOn,
+      context.read<TransactionDraftRepository>(),
+      context.read<UtxoRepository>(),
+      context.read<WalletPreferencesRepository>(),
+      context.read<ConnectivityProvider>().isInternetOn,
       _onAmountTextUpdate,
       _onFeeRateTextUpdate,
       _onRecipientPageDeleted,
       widget.walletId,
       widget.sendEntryPoint,
+      widget.transactionDraftId,
     );
-
     _amountFocusNode.addListener(
       () => setState(() {
         if (!_amountFocusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
+        }
+        if (_isDropdownMenuVisible) {
+          _setDropdownMenuVisiblility(false);
         }
       }),
     );
@@ -176,6 +194,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             MediaQuery.of(context).padding.top -
             kToolbarHeight;
       });
+
+      if (widget.transactionDraftId != null) {
+        _onDraftSelected(widget.transactionDraftId!);
+      }
     });
   }
 
@@ -227,6 +249,38 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     setState(() {});
   }
 
+  void _setDropdownMenuVisiblility(bool isVisible) {
+    if (isVisible) {
+      _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+      _amountController.text = _removeTrailingDot(_amountController.text);
+      FocusManager.instance.primaryFocus?.unfocus();
+
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isDropdownMenuVisible = true;
+          });
+        }
+      });
+    } else {
+      if (_isDropdownMenuVisible != isVisible) {
+        setState(() {
+          _isDropdownMenuVisible = false;
+        });
+      }
+    }
+  }
+
+  bool _validateEnteredAddresses() {
+    // 임시저장 가능한지 확인하기 위한 함수
+    for (var address in _addressControllerList) {
+      if (address.text.isEmpty || !_viewModel.validateAddress(address.text, _addressControllerList.indexOf(address))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     // usableHeight: height - safeArea - toolbar
@@ -239,20 +293,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, SendViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, walletProvider, previous) {
-        if (connectivityProvider.isNetworkOn != previous?.isNetworkOn) {
+        if (connectivityProvider.isInternetOn != previous?.isNetworkOn) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            previous?.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            previous?.setIsNetworkOn(connectivityProvider.isInternetOn);
           });
         }
         return previous ?? _viewModel;
       },
-      child: GestureDetector(
-        onTap: _clearFocus,
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: CoconutColors.black,
-          appBar: _buildAppBar(context),
-          body: SizedBox(
+      child: Scaffold(
+        resizeToAvoidBottomInset: false,
+        backgroundColor: Colors.black,
+        appBar: _buildAppBar(context),
+        body: GestureDetector(
+          onTap: _clearFocus,
+          behavior: HitTestBehavior.translucent,
+          child: SizedBox(
             height: usableHeight,
             child: Stack(
               children: [
@@ -275,10 +330,70 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   ),
                 ),
                 _buildFinalButton(context),
+                Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
+                  selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
+                  builder: (context, data, child) {
+                    return _buildDropdownMenu(
+                      isSaved: data.item1,
+                      hasDrafts: data.item2,
+                      canGoNext: data.item3,
+                      isUtxoSelectionAuto: data.item4,
+                    );
+                  },
+                ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownMenu({
+    required bool isSaved,
+    required bool? hasDrafts,
+    required bool canGoNext,
+    required bool isUtxoSelectionAuto,
+  }) {
+    if (!_isDropdownMenuVisible) return const SizedBox.shrink();
+
+    return Positioned(
+      top: 0,
+      right: 20,
+      child: CoconutPulldownMenu(
+        shadowColor: CoconutColors.white.withValues(alpha: 0.1),
+        dividerColor: CoconutColors.black,
+        spreadRadius: 12,
+        entries: [
+          CoconutPulldownMenuItem(
+            title: t.send_screen.utxo_auto_selection,
+            hasSwitch: true,
+            switchValue: isUtxoSelectionAuto,
+            isDisabled: widget.walletId == null,
+          ),
+          if (isSaved) ...[
+            CoconutPulldownMenuItem(title: t.transaction_draft.update, isDisabled: !canGoNext), // 변경 사항 저장
+          ] else ...[
+            CoconutPulldownMenuItem(
+              title: t.transaction_draft.save,
+              isDisabled: hasDrafts == null || !canGoNext,
+            ), // 임시 저장
+          ],
+          CoconutPulldownMenuItem(title: t.transaction_draft.load, isDisabled: hasDrafts != true),
+        ],
+        onSelected: ((index, selectedText) async {
+          _setDropdownMenuVisiblility(false);
+          if (selectedText == t.transaction_draft.save) {
+            await _onSaveNewDraft();
+          } else if (selectedText == t.transaction_draft.update) {
+            await _onUpdateDraft();
+          } else if (selectedText == t.transaction_draft.load) {
+            await _onLoadDraft();
+          }
+        }),
+        onSwitchChanged: (index, value) {
+          _viewModel.setIsUtxoSelectionAuto(value);
+        },
       ),
     );
   }
@@ -301,10 +416,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           final selectedUtxoListLength = data.item4;
           final currentUnit = data.item5;
 
-          // null 이거나, 대표지갑이 mfp가 없고 mfp 있는 지갑이 0개일 때
-          if (_viewModel.isSelectedWalletNull ||
-              (isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-                  !hasMfpWallet(_viewModel.orderedRegisteredWallets))) {
+          // 지갑이 선택되지 않았거나 mfp가 없을 때
+          if (selectedWalletItem == null || isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
             return Container(
               color: Colors.transparent,
               width: 50,
@@ -317,41 +430,89 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           }
 
           String amountText = currentUnit.displayBitcoinAmount(_viewModel.balance, withUnit: true);
-          if (!isUtxoSelectionAuto && selectedUtxoListLength > 0) {
+          if (!isUtxoSelectionAuto) {
             amountText += t.send_screen.n_utxos(count: selectedUtxoListLength);
           }
 
           return Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    isWalletWithoutMfp(_viewModel.selectedWalletItem) ? '-' : selectedWalletItem!.name,
-                    style: CoconutTypography.body1_16.setColor(CoconutColors.white),
-                  ),
-                  CoconutLayout.spacing_50w,
-                  const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
-                ],
+              Text(
+                isWalletWithoutMfp(_viewModel.selectedWalletItem) ? '-' : selectedWalletItem.name,
+                style: CoconutTypography.body1_16.setColor(CoconutColors.white),
               ),
-              if (!isWalletWithoutMfp(_viewModel.selectedWalletItem) && !isUtxoSelectionAuto)
-                Text(amountText, style: CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.white)),
+              CoconutLayout.spacing_50h,
+              if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
+                _buildUtxoSelectionModeButton(isUtxoSelectionAuto, amountText, selectedUtxoListLength),
             ],
           );
         },
       ),
       onTitlePressed: () {
-        // 지갑이 적어도 1개 이상 있어야 하며, MFP를 가진 지갑이 존재하는 경우에 출력한다. (존재하지 않는 경우 지갑 선택, UTXO 옵션처리를 할 필요가 없음)
-        if (!_viewModel.isSelectedWalletNull && hasMfpWallet(_viewModel.orderedRegisteredWallets)) {
-          _onAppBarTitlePressed();
+        if (!_viewModel.isSelectedWalletNull && !isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
+          _onUtxoSelectionModeButtonPressed();
         }
       },
       context: context,
       isBottom: true,
-      actionButtonList: [const SizedBox(width: 24, height: 24)],
+      actionButtonList: [
+        SizedBox(
+          height: 40,
+          width: 40,
+          child: IconButton(
+            icon: SvgPicture.asset('assets/svg/kebab.svg'),
+            onPressed: () {
+              if (_isDropdownMenuVisible) {
+                _setDropdownMenuVisiblility(false);
+              } else {
+                _setDropdownMenuVisiblility(true);
+              }
+            },
+            color: CoconutColors.white,
+          ),
+        ),
+      ],
       onBackPressed: () {
         Navigator.of(context).pop();
       },
+    );
+  }
+
+  void _onUtxoSelectionModeButtonPressed() {
+    _setDropdownMenuVisiblility(false);
+    Navigator.pushNamed(
+      context,
+      '/utxo-selection',
+      arguments: {
+        'selectedUtxoList': _viewModel.isUtxoSelectionAuto ? List<UtxoState>.empty() : _viewModel.selectedUtxoList,
+        'walletId': _viewModel.selectedWalletItem!.id,
+        'currentUnit': _viewModel.currentUnit,
+      },
+    ).then((result) {
+      if (result != null && result is List) {
+        _viewModel.setSelectedUtxoList(List<UtxoState>.from(result));
+      }
+    });
+  }
+
+  Widget _buildUtxoSelectionModeButton(bool isUtxoSelectionAuto, String amountText, int selectedUtxoListLength) {
+    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
+    final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
+    final textColor =
+        isUtxoSelectionAuto
+            ? CoconutColors.white
+            : selectedUtxoListLength == 0
+            ? CoconutColors.white
+            : CoconutColors.black;
+    final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
+
+    return ShrinkTapWrapper(
+      shrinkScale: 0.95,
+      onTap: _onUtxoSelectionModeButtonPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(4)),
+        child: Text(text, style: fontStyle.setColor(textColor)),
+      ),
     );
   }
 
@@ -925,6 +1086,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           _viewModel.addRecipient();
           _amountController.text = '';
           _addAddressField();
+          _setDropdownMenuVisiblility(false);
         },
         child: CustomPaint(
           painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0, color: CoconutColors.gray600),
@@ -986,7 +1148,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       isMinimumAmount ||
                       hasInsufficientBalanceErrorOfLastRecipient) {
                     amountTextColor = CoconutColors.hotPink;
-                  } else if (_viewModel.isMaxModeIndex(index)) {
+                  } else if (_viewModel.isMaxModeLastIndex(index)) {
                     amountTextColor = CoconutColors.gray600;
                   } else if (amountText.isEmpty) {
                     amountTextColor = MyColors.transparentWhite_20;
@@ -1083,7 +1245,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   final isAddressError = data.item2.isError;
                   final controller = _addressControllerList[index];
                   return CoconutTextField(
-                    key: _addressInputFieldKey,
+                    key: index == 0 ? _addressInputFieldKey : null,
                     controller: _addressControllerList[index],
                     focusNode: _addressFocusNodeList[index],
                     backgroundColor: CoconutColors.black,
@@ -1095,6 +1257,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       iconSize: 14,
                       padding: EdgeInsets.zero,
                       onPressed: () async {
+                        _setDropdownMenuVisiblility(false);
                         if (controller.text.isEmpty) {
                           await _showAddressScanner(index);
                         } else {
@@ -1136,6 +1299,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                             onTap: () {
                               _deleteAddressField(_viewModel.currentIndex);
                               _viewModel.deleteRecipient();
+                              _setDropdownMenuVisiblility(false);
                             },
                             textStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                             padding: EdgeInsets.zero,
@@ -1184,10 +1348,29 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
     return ShrinkAnimationButton(
       onPressed: () {
-        _addressControllerList[_viewModel.currentIndex].text = address;
+        final currentIndex = _viewModel.currentIndex;
+        if (currentIndex < _addressControllerList.length) {
+          // 리스너를 제거하여 notifyListeners 호출 방지
+          _addressControllerList[currentIndex].removeListener(_addressTextListenerList[currentIndex]);
+          _addressControllerList[currentIndex].text = address;
+          // 리스너는 빌드 완료 후 다시 추가
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            if (mounted && currentIndex < _addressControllerList.length) {
+              _addressControllerList[currentIndex].addListener(_addressTextListenerList[currentIndex]);
+              // ViewModel에 직접 설정 (이미 텍스트가 같으면 notifyListeners 호출 안 함)
+              _viewModel.setAddressText(address, currentIndex);
+            }
+          });
+        }
         _viewModel.markWalletAddressForUpdate(index);
-        _clearFocus();
         vibrateLight();
+
+        // _clearFocus는 한 프레임 더 지연
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _clearFocus();
+          }
+        });
       },
       defaultColor: Colors.transparent,
       pressedColor: CoconutColors.gray800,
@@ -1457,21 +1640,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return scrollbarHeight;
   }
 
-  void _onAppBarTitlePressed() {
-    _clearFocus();
-    CommonBottomSheets.showCustomHeightBottomSheet(
-      context: context,
-      heightRatio: 0.4,
-      child: SelectWalletWithOptionsBottomSheet(
-        currentUnit: _viewModel.currentUnit,
-        selectedWalletId: _viewModel.selectedWalletId,
-        onWalletInfoUpdated: _viewModel.onWalletInfoUpdated,
-        isUtxoSelectionAuto: _viewModel.isUtxoSelectionAuto,
-        selectedUtxoList: _viewModel.selectedUtxoList,
-      ),
-    );
-  }
-
   void _showAddressListBottomSheet(int walletId) {
     CommonBottomSheets.showCustomHeightBottomSheet(
       context: context,
@@ -1591,6 +1759,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _onRecipientPageDeleted(int page) {
+    // PageController가 아직 attach되지 않았으면 (PageView가 빌드되지 않았으면) 실행하지 않음
+    if (!_recipientPageController.hasClients) return;
     if (_recipientPageController.page == page) return;
     _recipientPageController.animateToPage(page, duration: const Duration(milliseconds: 200), curve: Curves.easeInOut);
   }
@@ -1666,6 +1836,24 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             }
           });
         }
+        if (_isDropdownMenuVisible) {
+          _setDropdownMenuVisiblility(false);
+        }
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
+          final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
+          final viewMoreButtonHeight = viewMoreButtonRect.size.height;
+          final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
+          bool isViewMoreButtonVisible =
+              viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
+          if (!isViewMoreButtonVisible) {
+            _screenScrollController.animateTo(
+              _screenScrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
       }),
     );
     _addressFocusNodeList.add(focusNode);
@@ -1695,11 +1883,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _feeRateController.text = _removeTrailingDot(_feeRateController.text);
     _amountController.text = _removeTrailingDot(_amountController.text);
     FocusManager.instance.primaryFocus?.unfocus();
-    if (_isLeftDragGuideViewVisible) {
-      setState(() {
-        _isLeftDragGuideViewVisible = false;
-      });
-    }
+
+    // setState 변경은 빌드 완료 후 실행
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (_isLeftDragGuideViewVisible || _isDropdownMenuVisible) {
+        setState(() {
+          _isLeftDragGuideViewVisible = false;
+          _isDropdownMenuVisible = false;
+        });
+      }
+    });
   }
 
   /// 텍스트 끝의 소수점을 제거하는 함수
@@ -1708,6 +1903,67 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       return text.substring(0, text.length - 1);
     }
     return text;
+  }
+
+  /// recipientList와 _addressControllerList 동기화
+  void _syncAddressControllersWithRecipientList() {
+    final recipientListLength = _viewModel.recipientList.length;
+    final currentControllerLength = _addressControllerList.length;
+
+    // recipientList의 길이에 맞춰 _addressControllerList 조정
+    if (recipientListLength > currentControllerLength) {
+      // 부족한 만큼 추가
+      for (int i = currentControllerLength; i < recipientListLength; i++) {
+        _addAddressField();
+      }
+    } else if (recipientListLength < currentControllerLength) {
+      // 초과하는 만큼 삭제
+      for (int i = currentControllerLength - 1; i >= recipientListLength; i--) {
+        _deleteAddressField(i);
+      }
+    }
+
+    // 각 컨트롤러의 텍스트를 recipientList의 address로 업데이트
+    // 리스너를 모두 제거한 후 텍스트를 설정하고, 나중에 다시 추가
+    for (int i = 0; i < recipientListLength; i++) {
+      if (i < _addressControllerList.length) {
+        _addressControllerList[i].removeListener(_addressTextListenerList[i]);
+      }
+    }
+
+    for (int i = 0; i < recipientListLength; i++) {
+      if (i < _addressControllerList.length) {
+        final address = _viewModel.recipientList[i].address;
+        if (_addressControllerList[i].text != address) {
+          _addressControllerList[i].text = address;
+        }
+      }
+    }
+
+    // 모든 리스너를 다시 추가 (빌드 완료 후)
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      for (int i = 0; i < recipientListLength && i < _addressControllerList.length; i++) {
+        _addressControllerList[i].addListener(_addressTextListenerList[i]);
+      }
+    });
+
+    // REFACTOR: amountController listener 설정도 addPostFrameCallback 내부에서 해야하는건 아닌지 확인
+    // amount 컨트롤러도 업데이트
+    if (recipientListLength > 0) {
+      final currentIndex = _viewModel.currentIndex;
+      if (currentIndex < recipientListLength) {
+        final amount = _viewModel.recipientList[currentIndex].amount;
+        if (_amountController.text != amount) {
+          _amountController.removeListener(_amountTextListener);
+          _amountController.text = amount;
+          _previousAmountText = amount;
+          _amountController.addListener(_amountTextListener);
+        }
+      }
+    }
+
+    setState(() {});
   }
 }
 

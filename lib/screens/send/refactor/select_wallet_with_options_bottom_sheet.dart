@@ -17,6 +17,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+@Deprecated('Not used in send screen')
 class SelectWalletWithOptionsBottomSheet extends StatefulWidget {
   final int selectedWalletId;
   final List<UtxoState> selectedUtxoList;
@@ -283,17 +284,37 @@ class _SelectWalletWithOptionsBottomSheetState extends State<SelectWalletWithOpt
         children: [
           Row(
             children: [
-              Text(
-                isWalletWithoutMfp(_selectedWalletItem)
-                    ? '-'
-                    : _selectedWalletItem?.name ?? t.send_screen.select_wallet,
-                style: CoconutTypography.body2_14_Bold,
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Text(
+                        isWalletWithoutMfp(_selectedWalletItem)
+                            ? '-'
+                            : _selectedWalletItem != null
+                            ? (_selectedWalletItem!.name.length > 10
+                                ? '${_selectedWalletItem!.name.substring(0, 10)}...'
+                                : _selectedWalletItem!.name)
+                            : t.send_screen.select_wallet,
+                        style: CoconutTypography.body2_14_Bold,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      CoconutLayout.spacing_50w,
+                      const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: Sizes.size20),
+                    ],
+                  ),
+                ),
               ),
-              CoconutLayout.spacing_50w,
-              const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: Sizes.size20),
             ],
           ),
-          FittedBox(child: Text(amountText, style: CoconutTypography.body2_14_Number)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(amountText, style: CoconutTypography.body2_14_Number),
+          ),
         ],
       ),
     );

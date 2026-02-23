@@ -1,8 +1,7 @@
 // VisibilityProvider
 
 // 1. 최초 구동인지 - 홈 / 온보딩
-// 2. 용어집 바로가기 요소 보여줄지 - 홈
-// 3. 지갑 목록이 비었는지 → 지갑이 몇 개인지?! - 홈
+// 2. 지갑 목록이 비었는지 → 지갑이 몇 개인지?! - 홈
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/repository/secure_storage/secure_storage_repository.dart';
@@ -19,10 +18,6 @@ class VisibilityProvider extends ChangeNotifier {
   late bool _hasLaunchedBefore;
   bool get hasLaunchedBefore => _hasLaunchedBefore;
 
-  /// 용어집 바로가기 요소
-  late bool _hideTermsShortcut;
-  bool get visibleTermsShortcut => !_hideTermsShortcut;
-
   late int _walletCount;
   int get walletCount => _walletCount;
 
@@ -34,19 +29,12 @@ class VisibilityProvider extends ChangeNotifier {
 
   VisibilityProvider() {
     _hasLaunchedBefore = _sharedPrefs.getBool(SharedPrefKeys.kHasLaunchedBefore);
-    _hideTermsShortcut = _sharedPrefs.getBool(SharedPrefKeys.kHideTermsShortcut);
     _walletCount = _sharedPrefs.getInt(SharedPrefKeys.kWalletCount);
   }
 
   Future<void> setHasLaunchedBefore() async {
     await _secureStorageService.deleteAll();
     await _sharedPrefs.setBool(SharedPrefKeys.kHasLaunchedBefore, true);
-  }
-
-  Future<void> hideTermsShortcut() async {
-    _hideTermsShortcut = true;
-    await _sharedPrefs.setBool(SharedPrefKeys.kHideTermsShortcut, true);
-    if (!_isDisposed) notifyListeners();
   }
 
   Future<void> setWalletCount(int count) async {

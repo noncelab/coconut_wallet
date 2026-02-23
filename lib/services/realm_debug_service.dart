@@ -28,6 +28,8 @@ class RealmDebugService {
     'RealmRbfHistory': ['id', 'timestamp', 'feeRate'],
     'RealmCpfpHistory': ['id', 'timestamp', 'originalFee', 'newFee'],
     'RealmTransactionMemo': ['id', 'createdAt'],
+    'RealmWalletPreferences': ['id'],
+    'RealmTransactionDraft': ['id', 'walletId', 'createdAt', 'feeRate'],
   };
 
   /// Realm 쿼리 실행
@@ -67,6 +69,10 @@ class RealmDebugService {
         return _convertToMapList(realm.query<RealmCpfpHistory>(query));
       case 'RealmTransactionMemo':
         return _convertToMapList(realm.query<RealmTransactionMemo>(query));
+      case 'RealmWalletPreferences':
+        return _convertToMapList(realm.query<RealmWalletPreferences>(query));
+      case 'RealmTransactionDraft':
+        return _convertToMapList(realm.query<RealmTransactionDraft>(query));
       default:
         throw ArgumentError('지원되지 않는 테이블: $tableName');
     }
@@ -220,6 +226,27 @@ class RealmDebugService {
           map['createdAt'] = memo.createdAt.toIso8601String();
           break;
 
+        case RealmWalletPreferences prefs:
+          map['id'] = prefs.id;
+          map['walletOrder'] = prefs.walletOrder.toList();
+          map['favoriteWalletIds'] = prefs.favoriteWalletIds.toList();
+          map['excludedFromTotalBalanceWalletIds'] = prefs.excludedFromTotalBalanceWalletIds.toList();
+          map['manualUtxoSelectionWalletIds'] = prefs.manualUtxoSelectionWalletIds.toList();
+          break;
+
+        case RealmTransactionDraft draft:
+          map['id'] = draft.id;
+          map['walletId'] = draft.walletId;
+          map['recipientJsons'] = draft.recipientJsons.toList();
+          map['createdAt'] = draft.createdAt.toIso8601String();
+          map['feeRate'] = draft.feeRate;
+          map['isMaxMode'] = draft.isMaxMode;
+          map['isFeeSubtractedFromSendAmount'] = draft.isFeeSubtractedFromSendAmount;
+          map['bitcoinUnit'] = draft.bitcoinUnit;
+          map['selectedUtxoIds'] = draft.selectedUtxoIds.toList();
+          map['txWaitingForSign'] = draft.txWaitingForSign;
+          break;
+
         default:
           // 알 수 없는 타입인 경우 기본 처리
           map['type'] = obj.runtimeType.toString();
@@ -352,6 +379,8 @@ class RealmDebugService {
       'RealmRbfHistory': realm.all<RealmRbfHistory>().length,
       'RealmCpfpHistory': realm.all<RealmCpfpHistory>().length,
       'RealmTransactionMemo': realm.all<RealmTransactionMemo>().length,
+      'RealmWalletPreferences': realm.all<RealmWalletPreferences>().length,
+      'RealmTransactionDraft': realm.all<RealmTransactionDraft>().length,
     };
   }
 
