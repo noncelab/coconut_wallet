@@ -198,7 +198,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       }
     } else {
       if (_isBtcUnit) {
-        return '0.0005 0000';
+        return '0.0005';
       } else {
         return '50,000';
       }
@@ -232,10 +232,17 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   String formatSatsResult(int sats) {
     if (_isBtcUnit) {
-      return BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats, forceEightDecimals: true);
+      return formatBtcTrimmed(sats);
     } else {
       return sats.toThousandsSeparatedString();
     }
+  }
+
+  static String formatBtcTrimmed(int sats) {
+    var result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
+    result = result.replaceFirst(RegExp(r'[0\s]+$'), '');
+    if (result.endsWith('.')) result = result.substring(0, result.length - 1);
+    return result;
   }
 
   String formatFiatResult(int fiat) {
