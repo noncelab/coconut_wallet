@@ -22,6 +22,22 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   void removeListener(VoidCallback listener) {}
 }
 
+class FakeConnectivityProvider extends Fake implements ConnectivityProvider {
+  @override
+  bool isInternetOn;
+
+  FakeConnectivityProvider({this.isInternetOn = true});
+
+  @override
+  bool get isInternetOff => !isInternetOn;
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
+}
+
 class FakePriceProvider extends Fake implements PriceProvider {
   final Map<FiatCode, int?> _prices;
 
@@ -50,8 +66,7 @@ void main() {
     bool isNetworkOn = true,
   }) {
     final prefProvider = FakePreferenceProvider(selectedFiat: fiatCode, isBtcUnit: isBtcUnit);
-    final connectivityProvider = ConnectivityProvider();
-    //connectivityProvider.setIsNetworkOn(isNetworkOn);
+    final connectivityProvider = FakeConnectivityProvider(isInternetOn: isNetworkOn);
     final priceProvider = FakePriceProvider(defaultPrice: btcPrice);
 
     return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider);
