@@ -797,6 +797,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
             pressedColor: CoconutColors.gray850,
             onPressed: () async {
               await viewModel.onFiatUnitChange();
+              _resetCalculator();
               _inputFocusNode.unfocus();
             },
             defaultColor: CoconutColors.gray800,
