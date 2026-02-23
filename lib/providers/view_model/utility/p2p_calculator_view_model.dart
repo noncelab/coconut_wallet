@@ -90,6 +90,12 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void resetInput() {
+    _inputAmount = null;
+    _feeRate = 1.0;
+    notifyListeners();
+  }
+
   void _onPriceChanged() {
     // 현재 선택된 fiatCode에 맞는 가격만 업데이트
     _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);

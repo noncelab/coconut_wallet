@@ -57,6 +57,14 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     _inputFocusNode.addListener(_onInputFocusChanged);
   }
 
+  void _resetCalculator() {
+    _isUpdatingController = true;
+    _inputController.clear();
+    _feeController.text = '1.0';
+    _isUpdatingController = false;
+    _viewModel.resetInput();
+  }
+
   @override
   void dispose() {
     _feeController.dispose();
@@ -744,6 +752,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
           body: Consumer<P2PCalculatorViewModel>(
             builder: (context, viewModel, child) {
               _viewModel = viewModel;
+              if (!viewModel.isNetworkOn && _inputController.text.isNotEmpty) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _resetCalculator();
+                });
+              }
               return SizedBox(
                 height: usableHeight,
                 child: Stack(
@@ -972,6 +985,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                         child: IntrinsicWidth(
                           child: CoconutTextField(
                             key: ValueKey('input_textfield_$placeholderText'),
+                            enabled: _viewModel.isNetworkOn,
                             maxLines: 1,
                             controller: controller,
                             focusNode: focusNode,
@@ -1032,6 +1046,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(minWidth: 10),
                               child: CoconutTextField(
+                                enabled: _viewModel.isNetworkOn,
                                 controller: feeController,
                                 focusNode: feeFocusNode,
                                 padding: EdgeInsets.zero,
