@@ -238,7 +238,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     }
   }
 
-  static String formatBtcTrimmed(int sats) {
+  String formatBtcTrimmed(int sats) {
     var result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
     result = result.replaceFirst(RegExp(r'[0\s]+$'), '');
     if (result.endsWith('.')) result = result.substring(0, result.length - 1);

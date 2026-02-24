@@ -357,7 +357,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
 
       if (_viewModel.isBtcUnit) {
         // Sats → BTC 전환 (readable bitcoin 형식)
-        final formatted = P2PCalculatorViewModel.formatBtcTrimmed(currentInput);
+        final formatted = _viewModel.formatBtcTrimmed(currentInput);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -395,7 +395,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       // Fiat → BTC로 전환
       if (_viewModel.isBtcUnit) {
         // BTC 단위: readable bitcoin 형식 (trailing zero 제거)
-        final formatted = P2PCalculatorViewModel.formatBtcTrimmed(result);
+        final formatted = _viewModel.formatBtcTrimmed(result);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
