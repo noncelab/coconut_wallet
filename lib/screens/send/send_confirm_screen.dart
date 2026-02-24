@@ -201,6 +201,6 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
       );
     }
 
-    return SendOutputDetailCard(items: detailItems);
+    return SendOutputDetailCard(items: detailItems, currentUnit: _currentUnit);
   }
 }

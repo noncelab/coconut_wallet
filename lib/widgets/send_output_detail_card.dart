@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_row.dart';
@@ -20,11 +21,13 @@ class OutputDetailItem {
 
 class SendOutputDetailCard extends StatefulWidget {
   final List<OutputDetailItem> items;
+  final BitcoinUnit currentUnit;
   final bool initiallyExpanded;
 
   const SendOutputDetailCard({
     super.key,
     required this.items,
+    required this.currentUnit,
     this.initiallyExpanded = true,
   });
 
@@ -99,6 +102,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
                     address: item.address,
                     amountSats: item.amountSats,
                     isChange: item.isChange,
+                    currentUnit: widget.currentUnit,
                   ),
                   if (!isLast) ...[
                     const SizedBox(height: 16),

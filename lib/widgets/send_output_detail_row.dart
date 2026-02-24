@@ -1,6 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:flutter/material.dart';
 
 class SendOutputDetailRow extends StatelessWidget {
@@ -8,6 +7,7 @@ class SendOutputDetailRow extends StatelessWidget {
   final String address;
   final int amountSats;
   final bool isChange;
+  final BitcoinUnit currentUnit;
 
   const SendOutputDetailRow({
     super.key,
@@ -15,11 +15,12 @@ class SendOutputDetailRow extends StatelessWidget {
     required this.address,
     required this.amountSats,
     required this.isChange,
+    required this.currentUnit,
   });
 
   @override
   Widget build(BuildContext context) {
-    final amountText = '${BalanceFormatUtil.formatSatoshiToReadableBitcoin(amountSats)} ${t.btc}';
+    final amountText = currentUnit.displayBitcoinAmount(amountSats, withUnit: true);
     final valueColor = isChange ? CoconutColors.cyan : CoconutColors.white;
 
     return Row(

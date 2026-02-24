@@ -587,6 +587,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           );
         }).toList();
 
-    return SendOutputDetailCard(items: uiItems);
+    return SendOutputDetailCard(items: uiItems, currentUnit: _currentUnit);
   }
 }
