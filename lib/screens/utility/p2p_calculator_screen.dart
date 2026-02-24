@@ -357,7 +357,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
 
       if (_viewModel.isBtcUnit) {
         // Sats → BTC 전환 (readable bitcoin 형식)
-        final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(currentInput, forceEightDecimals: true);
+        final formatted = P2PCalculatorViewModel.formatBtcTrimmed(currentInput);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
