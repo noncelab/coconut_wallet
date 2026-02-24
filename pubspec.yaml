@@ -241,6 +241,7 @@ flutter:
     - assets/svg/arrow-circle-down.svg
     - assets/svg/text-field-clear.svg
     - assets/svg/question-mark.svg
+    - assets/svg/circle.svg
     - assets/svg/circle-arrow-right.svg
     - assets/svg/circle-pick.svg
     - assets/svg/circle-check.svg
@@ -248,6 +249,7 @@ flutter:
     - assets/svg/circle-check-outline.svg
     - assets/svg/circle-info.svg
     - assets/svg/circle-help.svg
+    - assets/svg/circle-minus.svg
     - assets/svg/circle-warning.svg
     - assets/svg/caret-down.svg
     - assets/svg/row-divider.svg

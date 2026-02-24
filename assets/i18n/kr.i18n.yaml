@@ -640,6 +640,7 @@ utxo_list_screen:
   total_balance: "총 잔액"
   tag_apply: "태그 적용"
   utxo_select_required: "UTXO를 먼저 선택해 주세요"
+  utxo_tag_updated: "UTXO 태그가 성공적으로 업데이트되었습니다."
   utxo_locked_button: "사용 잠금"
   utxo_unlocked_button: "잠금 해제"
   pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
@@ -750,6 +751,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "태그 추가"
   title_edit_tag: "태그 편집"
+  title_apply_tag: "태그 적용"
   tag_list: "태그 목록"
   add_new_tag: "태그 추가하기"
   delete_tag: "태그 삭제하기"

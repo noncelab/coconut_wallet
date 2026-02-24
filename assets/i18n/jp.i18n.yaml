@@ -642,6 +642,7 @@ utxo_list_screen:
   total_balance: "総残高"
   tag_apply: "タグを適用"
   utxo_select_required: "まずUTXOを選択してください"
+  utxo_tag_updated: "UTXOのタグが正常に更新されました。"
   utxo_locked_button: "使用ロック"
   utxo_unlocked_button: "ロック解除"
   pending_utxo: "すでに送信中のUTXOは選択できません。"
@@ -752,6 +753,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "タグ追加"
   title_edit_tag: "タグ編集"
+  title_apply_tag: "タグを適用"
   tag_list: "タグ一覧"
   add_new_tag: "タグ追加"
   delete_tag: "タグ削除"

@@ -645,6 +645,7 @@ utxo_list_screen:
   total_balance: "Saldo total"
   tag_apply: "Aplicar etiqueta"
   utxo_select_required: "Por favor, seleccione primero el UTXO"
+  utxo_tag_updated: "La etiqueta de UTXO se ha actualizado correctamente."
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
   pending_utxo: "Los UTXO que ya están en proceso de envío no se pueden seleccionar."
@@ -756,6 +757,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "Agregar etiqueta"
   title_edit_tag: "Editar etiqueta"
+  title_apply_tag: "Aplicar etiqueta"
   tag_list: "Lista de etiquetas"
   add_new_tag: "Agregar etiqueta"
   delete_tag: "Eliminar etiqueta"

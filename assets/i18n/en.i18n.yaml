@@ -642,6 +642,7 @@ utxo_list_screen:
   total_balance: "Total Balance"
   tag_apply: "Apply tag"
   utxo_select_required: "Please select a UTXO first"
+  utxo_tag_updated: "UTXO tag has been successfully updated."
   utxo_locked_button: "Lock"
   utxo_unlocked_button: "Unlock"
   pending_utxo: "UTXOs that are already being sent cannot be selected."
@@ -752,6 +753,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "Add Tag"
   title_edit_tag: "Edit Tag"
+  title_apply_tag: "Apply Tag"
   tag_list: "Tag List"
   add_new_tag: "Add Tag"
   delete_tag: "Delete Tag"
