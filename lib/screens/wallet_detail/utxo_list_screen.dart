@@ -402,6 +402,16 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                           onTap:
                               () => _handleActionUtxoSelected(() {
                                 final selectedUtxos = List<UtxoState>.from(viewModel.selectedUtxoList);
+                                final hasLockedUtxo = selectedUtxos.any((utxo) => utxo.status == UtxoStatus.locked);
+
+                                if (hasLockedUtxo) {
+                                  CoconutToast.showToast(
+                                    context: context,
+                                    text: t.utxo_list_screen.send_locked_utxo,
+                                    isVisibleIcon: true,
+                                  );
+                                  return;
+                                }
 
                                 setState(() {
                                   _isSelectionMode = false;
@@ -490,7 +500,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   void _handleActionUtxoSelected(VoidCallback action) {
     if (_utxoListKey.currentState?._selectedUtxoIds.isEmpty ?? true) {
-      CoconutToast.showToast(context: context, text: t.utxo_list_screen.utxo_select_required, isVisibleIcon: false);
+      CoconutToast.showToast(context: context, text: t.utxo_list_screen.utxo_select_required, isVisibleIcon: true);
       return;
     }
     action();
@@ -816,7 +826,7 @@ class _UtxoListState extends State<UtxoList> {
           onPressed: () {
             if (isSelectionMode) {
               if (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming) {
-                CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: false);
+                CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: true);
 
                 return;
               }

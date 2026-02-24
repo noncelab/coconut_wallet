@@ -644,8 +644,9 @@ address_search_screen:
 utxo_list_screen:
   total_balance: "Saldo total"
   tag_apply: "Aplicar etiqueta"
-  utxo_select_required: "Por favor, seleccione primero el UTXO"
+  utxo_select_required: "Por favor, seleccione primero el UTXO."
   utxo_tag_updated: "La etiqueta de UTXO se ha actualizado correctamente."
+  send_locked_utxo: "No se pueden enviar UTXO bloqueados para uso."
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
   pending_utxo: "Los UTXO que ya están en proceso de envío no se pueden seleccionar."

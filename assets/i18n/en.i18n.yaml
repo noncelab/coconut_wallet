@@ -641,8 +641,9 @@ address_search_screen:
 utxo_list_screen:
   total_balance: "Total Balance"
   tag_apply: "Apply tag"
-  utxo_select_required: "Please select a UTXO first"
+  utxo_select_required: "Please select a UTXO first."
   utxo_tag_updated: "UTXO tag has been successfully updated."
+  send_locked_utxo: "Locked UTXOs cannot be sent."
   utxo_locked_button: "Lock"
   utxo_unlocked_button: "Unlock"
   pending_utxo: "UTXOs that are already being sent cannot be selected."
