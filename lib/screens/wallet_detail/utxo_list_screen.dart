@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -144,10 +145,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: _buildAppBar(context),
-      body: Selector<UtxoListViewModel, Tuple3<bool, bool, List<UtxoState>>>(
-        selector: (_, vm) => Tuple3(vm.isSyncing, vm.isUtxoTagListEmpty, vm.utxoList),
+      body: Selector<UtxoListViewModel, (bool, bool, List<UtxoState>)>(
+        selector: (_, vm) => (vm.isSyncing, vm.isUtxoTagListEmpty, vm.utxoList),
         builder: (context, data, _) {
-          final (isSyncing, isEmpty, utxos) = (data.item1, data.item2, data.item3);
+          final (isSyncing, isEmpty, utxos) = data;
           return Stack(
             children: [
               CustomScrollView(
@@ -400,7 +401,23 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                           text: t.send,
                           onTap:
                               () => _handleActionUtxoSelected(() {
-                                // TODO: 보내기 버튼 로직 구현
+                                final selectedUtxos = List<UtxoState>.from(viewModel.selectedUtxoList);
+
+                                setState(() {
+                                  _isSelectionMode = false;
+                                });
+                                viewModel.deselectTaggedUtxo();
+                                _utxoListKey.currentState?._selectedUtxoIds.clear();
+
+                                Navigator.pushNamed(
+                                  context,
+                                  '/send',
+                                  arguments: {
+                                    'walletId': widget.id,
+                                    'sendEntryPoint': SendEntryPoint.walletDetail,
+                                    'selectedUtxoList': selectedUtxos,
+                                  },
+                                );
                               }),
                         ),
                       ),
@@ -878,6 +895,7 @@ class _UtxoListState extends State<UtxoList> {
     for (var index in removed.reversed) {
       if (index >= _displayedUtxoList.length) continue;
       await Future.delayed(_animationDuration);
+      if (!mounted) return;
       _utxoListKey.currentState?.removeItem(
         index,
         (c, anim) => _buildRemoveUtxoItem(_displayedUtxoList[index], anim),
@@ -887,6 +905,7 @@ class _UtxoListState extends State<UtxoList> {
 
     for (var index in inserted) {
       await Future.delayed(_animationDuration);
+      if (!mounted) return;
       _utxoListKey.currentState?.insertItem(index, duration: _duration);
     }
 
@@ -906,7 +925,9 @@ class _UtxoListState extends State<UtxoList> {
     final oldMap = {for (var u in oldList) u.utxoId: u};
     final newMap = {for (var u in newList) u.utxoId: u};
 
-    if (!oldMap.keys.toSet().containsAll(newMap.keys) || !newMap.keys.toSet().containsAll(oldMap.keys)) return true;
+    for (final key in oldMap.keys) {
+      if (!newMap.containsKey(key)) return true;
+    }
 
     for (final id in oldMap.keys) {
       final oldU = oldMap[id]!;
@@ -930,7 +951,7 @@ class _UtxoListState extends State<UtxoList> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isSelectionMode != widget.isSelectionMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) setState(() {});
+        if (mounted) setState(() {});
       });
     }
   }
