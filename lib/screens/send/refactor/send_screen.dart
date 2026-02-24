@@ -308,39 +308,47 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           onTap: _clearFocus,
           behavior: HitTestBehavior.translucent,
           child: SizedBox(
-            height: usableHeight,
+            height: MediaQuery.sizeOf(context).height,
             child: Stack(
               children: [
-                SingleChildScrollView(
-                  controller: _screenScrollController,
-                  child: Selector<SendViewModel, bool>(
-                    selector: (_, viewModel) => viewModel.showAddressBoard,
-                    builder: (context, data, child) {
-                      return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
-                    },
-                    child: Stack(
-                      children: [
-                        _buildInvisibleAmountField(),
-                        _buildCounter(context),
-                        _buildPageView(context),
-                        _buildBoard(context),
-                        if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus) _buildKeyboardToolbar(context),
-                      ],
-                    ),
+                SizedBox(
+                  height: usableHeight,
+                  child: Stack(
+                    children: [
+                      SingleChildScrollView(
+                        controller: _screenScrollController,
+                        child: Selector<SendViewModel, bool>(
+                          selector: (_, viewModel) => viewModel.showAddressBoard,
+                          builder: (context, data, child) {
+                            return SizedBox(height: _getScrollableHeight(usableHeight), child: child);
+                          },
+                          child: Stack(
+                            children: [
+                              _buildInvisibleAmountField(),
+                              _buildCounter(context),
+                              _buildPageView(context),
+                              _buildBoard(context),
+                              if (_amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus)
+                                _buildKeyboardToolbar(context),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
+                        selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
+                        builder: (context, data, child) {
+                          return _buildDropdownMenu(
+                            isSaved: data.item1,
+                            hasDrafts: data.item2,
+                            canGoNext: data.item3,
+                            isUtxoSelectionAuto: data.item4,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
                 _buildFinalButton(context),
-                Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
-                  selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
-                  builder: (context, data, child) {
-                    return _buildDropdownMenu(
-                      isSaved: data.item1,
-                      hasDrafts: data.item2,
-                      canGoNext: data.item3,
-                      isUtxoSelectionAuto: data.item4,
-                    );
-                  },
-                ),
               ],
             ),
           ),
