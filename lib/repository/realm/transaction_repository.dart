@@ -46,7 +46,7 @@ class TransactionRepository extends BaseRepository {
 
   List<TransactionRecord> getUnconfirmedTransactionRecordList(int walletId) {
     final realmTxs = realm.query<RealmTransaction>(
-      'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) SORT(createdAt DESC)',
+      'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) AND replaceByTransactionHash == null SORT(createdAt DESC)',
     );
 
     if (realmTxs.isEmpty) return [];
@@ -83,10 +83,9 @@ class TransactionRepository extends BaseRepository {
   List<TransactionRecord> getTransactionRecordListWithDateRange(int walletId, Tuple2<DateTime, DateTime> dateRange) {
     final rawStart = dateRange.item1.isBefore(dateRange.item2) ? dateRange.item1 : dateRange.item2;
     final rawEnd = dateRange.item2.isAfter(dateRange.item1) ? dateRange.item2 : dateRange.item1;
-    // 시간 정보를 포함하여 정확한 범위로 필터링
 
     final realmTxs = realm.query<RealmTransaction>(
-      r'walletId == $0 AND timestamp >= $1 AND timestamp <= $2 SORT(createdAt DESC)',
+      r'walletId == $0 AND timestamp >= $1 AND timestamp <= $2 AND replaceByTransactionHash == null SORT(createdAt DESC)',
       [walletId, rawStart, rawEnd],
     );
     if (realmTxs.isEmpty) return [];
