@@ -175,7 +175,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     // input UTXO 유효성 검증 (단, feeBumping일 때는 제외)
     final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
     final (_, excludedUtxoStatus) =
-        feeBumpingType == null
+        _signedDraftId != null
             ? _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds)
             : (inputUtxoIds, null);
 
