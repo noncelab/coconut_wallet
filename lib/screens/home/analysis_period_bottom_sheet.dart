@@ -74,11 +74,12 @@ class _AnalysisPeriodBottomSheetState extends State<AnalysisPeriodBottomSheet> {
               ),
             ),
             child: SafeArea(
-              bottom: true,
+              bottom: false,
               child: Container(
                 color: CoconutColors.black,
-                height: 300,
+                height: 300 + MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom,
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     SizedBox(
                       height: 216,
