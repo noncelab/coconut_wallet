@@ -5,8 +5,8 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomTweenButton extends StatefulWidget {
-  static const fixedBottomButtonDefaultHeight = 50.0;
-  static const fixedBottomButtonDefaultBottomPadding = 30.0;
+  static const fixedBottomButtonDefaultHeight = 55.0;
+  static const fixedBottomButtonDefaultBottomPadding = 22.0;
 
   const FixedBottomTweenButton({
     super.key,
@@ -70,7 +70,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
         widget.buttonHeight ??
         (Platform.isAndroid
             ? FixedBottomButton.fixedBottomButtonDefaultHeight
-            : FixedBottomButton.fixedBottomButtonDefaultHeight + 8);
+            : FixedBottomButton.fixedBottomButtonDefaultHeight + 3);
 
     return SizedBox(
       width: MediaQuery.sizeOf(context).width,
@@ -81,16 +81,24 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
               left: 0,
               right: 0,
               bottom: 0,
-              height: 100 + bottomInset,
               child: IgnorePointer(
                 ignoring: true,
                 child: Container(
-                  decoration: const BoxDecoration(
+                  padding:
+                      widget.gradientPadding ??
+                      EdgeInsets.only(left: 16, right: 16, bottom: 40, top: buttonHeight + bottomInset + 24),
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, CoconutColors.black],
-                      stops: [0.0, 0.75],
+                      colors: [
+                        Colors.transparent,
+                        CoconutColors.black.withValues(alpha: 0.1),
+                        CoconutColors.black.withValues(alpha: 0.4),
+                        CoconutColors.black.withValues(alpha: 0.7),
+                        CoconutColors.black,
+                      ],
+                      stops: const [0.0, 0.03, 0.07, 0.15, 0.23],
                     ),
                   ),
                 ),
