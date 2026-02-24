@@ -44,10 +44,17 @@ class TransactionRepository extends BaseRepository {
     return result;
   }
 
-  List<TransactionRecord> getUnconfirmedTransactionRecordList(int walletId) {
-    final realmTxs = realm.query<RealmTransaction>(
-      'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) AND replaceByTransactionHash == null SORT(createdAt DESC)',
-    );
+  List<TransactionRecord> getUnconfirmedTransactionRecordList(int walletId, {bool excludeReplaced = false}) {
+    RealmResults<RealmTransaction>? realmTxs;
+    if (excludeReplaced) {
+      realmTxs = realm.query<RealmTransaction>(
+        'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) AND replaceByTransactionHash == null SORT(createdAt DESC)',
+      );
+    } else {
+      realmTxs = realm.query<RealmTransaction>(
+        'walletId == $walletId AND (blockHeight = 0 OR blockHeight = null) SORT(createdAt DESC)',
+      );
+    }
 
     if (realmTxs.isEmpty) return [];
     List<TransactionRecord> result = [];
