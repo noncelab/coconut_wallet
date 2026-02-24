@@ -84,9 +84,9 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           boxShadow: [
                             BoxShadow(
                               color: Color.fromRGBO(255, 255, 255, 0.2),
-                              offset: Offset(0, 3),
+                              offset: Offset(0, 5),
                               blurRadius: 4,
-                              spreadRadius: 0,
+                              spreadRadius: -2,
                             ),
                           ],
                         ),
