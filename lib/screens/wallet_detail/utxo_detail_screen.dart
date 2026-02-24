@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
@@ -109,7 +110,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+      _currentUnit = _currentUnit.next;
     });
   }
 
@@ -321,8 +322,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  // TODO: 공통 위젯으로 빼서 여러 화면에서 재사용하기
-  // wallet-detail, tx-detail, utxo-list, utxo-detail
   Widget _buildAmount() {
     return GestureDetector(
       onTap: _toggleUnit,
@@ -330,15 +329,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
         padding: const EdgeInsets.only(bottom: 2.0),
         child: Center(
           child: FittedBox(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _currentUnit.displayBitcoinAmount(widget.utxo.amount),
-                  style: CoconutTypography.heading2_28_NumberBold,
-                ),
-                Text(" ${_currentUnit.symbol}", style: CoconutTypography.heading3_21_Number),
-              ],
+            child: BitcoinAmountUnit(
+              currentUnit: _currentUnit,
+              unitStyle: CoconutTypography.heading4_18_Number,
+              child: Text(
+                _currentUnit.displayBitcoinAmount(widget.utxo.amount),
+                style: CoconutTypography.heading2_28_NumberBold,
+              ),
             ),
           ),
         ),
