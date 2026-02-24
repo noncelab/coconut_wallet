@@ -7,6 +7,7 @@ import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/third_party_util.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/bb_qr_scan_data_handler.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/composed_scan_data_handler.dart';
+import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/composed_scan_data_handler2.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/extended_pub_key_qr_scan_data_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:ur/ur.dart';
@@ -46,16 +47,24 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       case WalletImportSource.coldCard:
         _qrDataHandler = BbQrScanDataHandler();
         break;
-      case WalletImportSource.extendedPublicKey:
-        _qrDataHandler = ExtendedPublicKeyQrScanDataHandler();
+      case WalletImportSource.extendedPublicKey: // ExtendedPublicKey or Descriptor
+        _qrDataHandler = ComposedScanDataHandler2();
         break;
     }
   }
 
   IQrScanDataHandler get qrDataHandler => _qrDataHandler;
+
+  bool get isExtendedPublicKeyScanned =>
+      _walletImportSource == WalletImportSource.extendedPublicKey &&
+      (_qrDataHandler as ComposedScanDataHandler2).selectedHandler is ExtendedPublicKeyQrScanDataHandler;
   int? get fakeBalanceTotalAmount => _preferenceProvider.fakeBalanceTotalAmount;
 
-  Future<ResultOfSyncFromVault> addWallet(dynamic additionInfo) async {
+  Future<ResultOfSyncFromVault> addWallet(
+    dynamic additionInfo, {
+    bool? isExtendedPublicKey,
+    String? masterFingerPrint,
+  }) async {
     const methodName = 'addWallet';
 
     FileLogger.log(
@@ -70,8 +79,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       } else if (additionInfo is UR) {
         return _addBcUrWallet(_walletImportSource, additionInfo);
       } else if (additionInfo is String) {
-        if (_walletImportSource == WalletImportSource.extendedPublicKey) {
-          return _addExtendedPublicKeyWallet(additionInfo);
+        if (isExtendedPublicKey == true) {
+          return _addExtendedPublicKeyWallet(additionInfo, masterFingerPrint);
         }
         return _addDescriptorWallet(_walletImportSource, additionInfo);
       } else if (additionInfo is Map<String, dynamic>) {
@@ -110,13 +119,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
-  Future<ResultOfSyncFromVault> _addExtendedPublicKeyWallet(String xPub) async {
+  Future<ResultOfSyncFromVault> _addExtendedPublicKeyWallet(String xPub, String? mfp) async {
     final name = getNextThirdPartyWalletName(
       _walletImportSource,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
 
-    final wallet = _walletAddService.createExtendedPublicKeyWallet(xPub, name, null);
+    final wallet = _walletAddService.createExtendedPublicKeyWallet(xPub, name, mfp);
 
     return await _walletProvider.syncFromThirdParty(wallet);
   }

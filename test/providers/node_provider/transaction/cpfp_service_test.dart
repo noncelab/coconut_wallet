@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/node/cpfp_history.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/cpfp_service.dart';
+import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
@@ -54,7 +55,7 @@ void main() {
       when(sharedPrefsRepository.setInt(SharedPrefKeys.kNextIdField, walletItem.id + 1)).thenAnswer((_) async => true);
       transactionRepository = TransactionRepository(realmManager!);
       utxoRepository = UtxoRepository(realmManager!);
-      walletRepository = WalletRepository(realmManager!);
+      walletRepository = WalletRepository(realmManager!, TransactionDraftRepository(realmManager!));
       electrumService = MockElectrumService();
       cpfpService = CpfpService(transactionRepository, utxoRepository, electrumService);
       walletRepository.addSinglesigWallet(

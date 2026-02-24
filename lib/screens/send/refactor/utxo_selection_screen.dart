@@ -56,8 +56,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
-        if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
-          viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+        if (connectivityProvider.isInternetOn != viewModel!.isNetworkOn) {
+          viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // 네트워크 알림 툴팁이 생성되면 위젯이 밀리기 때문에 드롭다운 버튼 위치를 다시 계산
@@ -82,65 +82,67 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       context: context,
                       onBackPressed: () => Navigator.pop(context),
                     ),
-                    body: Stack(
-                      children: [
-                        Column(
-                          children: [
-                            Visibility(
-                              visible: !viewModel.isNetworkOn,
-                              maintainSize: false,
-                              maintainAnimation: false,
-                              maintainState: false,
-                              child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
-                            ),
-                            SelectedUtxoAmountHeader(
-                              orderDropdownButtonKey: _orderDropdownButtonKey,
-                              orderText: _viewModel.utxoOrder.text,
-                              selectedUtxoCount: viewModel.selectedUtxoList.length,
-                              selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
-                              currentUnit: widget.currentUnit,
-                              onSelectAll: _selectAll,
-                              onUnselectAll: _deselectAll,
-                              onToggleOrderDropdown: () {
-                                setState(() {
-                                  _isOrderDropdownVisible = !_isOrderDropdownVisible;
-                                });
-                              },
-                            ),
-                            _buildUtxoTagList(viewModel),
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  SingleChildScrollView(
-                                    controller: _scrollController,
-                                    child: Column(
-                                      children: [
-                                        _buildUtxoList(viewModel),
-                                        CoconutLayout.spacing_400h,
-                                        const SizedBox(height: 50),
-                                      ],
-                                    ),
-                                  ),
-                                  FixedBottomButton(
-                                    buttonHeight: 50,
-                                    onButtonClicked: () {
-                                      vibrateLight();
-                                      Navigator.pop(context, _viewModel.selectedUtxoList);
-                                    },
-                                    text: t.complete,
-                                    isActive: _viewModel.hasSelectionChanged,
-                                    showGradient: true,
-                                    gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
-                                    horizontalPadding: 16,
-                                    backgroundColor: CoconutColors.white,
-                                  ),
-                                ],
+                    body: SafeArea(
+                      child: Stack(
+                        children: [
+                          Column(
+                            children: [
+                              Visibility(
+                                visible: !viewModel.isNetworkOn,
+                                maintainSize: false,
+                                maintainAnimation: false,
+                                maintainState: false,
+                                child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
                               ),
-                            ),
-                          ],
-                        ),
-                        _buildUtxoOrderDropdown(viewModel),
-                      ],
+                              SelectedUtxoAmountHeader(
+                                orderDropdownButtonKey: _orderDropdownButtonKey,
+                                orderText: _viewModel.utxoOrder.text,
+                                selectedUtxoCount: viewModel.selectedUtxoList.length,
+                                selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
+                                currentUnit: widget.currentUnit,
+                                onSelectAll: _selectAll,
+                                onUnselectAll: _deselectAll,
+                                onToggleOrderDropdown: () {
+                                  setState(() {
+                                    _isOrderDropdownVisible = !_isOrderDropdownVisible;
+                                  });
+                                },
+                              ),
+                              _buildUtxoTagList(viewModel),
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    SingleChildScrollView(
+                                      controller: _scrollController,
+                                      child: Column(
+                                        children: [
+                                          _buildUtxoList(viewModel),
+                                          CoconutLayout.spacing_400h,
+                                          const SizedBox(height: 50),
+                                        ],
+                                      ),
+                                    ),
+                                    FixedBottomButton(
+                                      buttonHeight: 50,
+                                      onButtonClicked: () {
+                                        vibrateLight();
+                                        Navigator.pop(context, _viewModel.selectedUtxoList);
+                                      },
+                                      text: t.complete,
+                                      isActive: _viewModel.hasSelectionChanged,
+                                      showGradient: true,
+                                      gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
+                                      horizontalPadding: 16,
+                                      backgroundColor: CoconutColors.white,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          _buildUtxoOrderDropdown(viewModel),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -166,7 +168,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<UtxoTagProvider>(context, listen: false),
         Provider.of<PriceProvider>(context, listen: false),
         Provider.of<PreferenceProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+        Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
         widget.selectedUtxoList,
       );

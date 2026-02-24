@@ -5,12 +5,12 @@ import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
-import 'package:coconut_wallet/services/block_explorer_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -25,6 +25,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   final AddressRepository _addressRepository;
   final ConnectivityProvider _connectivityProvider;
   final SendInfoProvider _sendInfoProvider;
+  final BlockExplorerProvider _blockExplorerProvider;
 
   BlockTimestamp? _currentBlock;
 
@@ -46,8 +47,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   bool _disposed = false;
   bool get isDisposed => _disposed;
 
-  String _mempoolHost = '';
-  String get mempoolHost => _mempoolHost;
+  String get mempoolHost => _blockExplorerProvider.blockExplorerUrl;
 
   @override
   void dispose() {
@@ -64,14 +64,10 @@ class TransactionDetailViewModel extends ChangeNotifier {
     this._addressRepository,
     this._connectivityProvider,
     this._sendInfoProvider,
+    this._blockExplorerProvider,
   ) {
     _setCanBumpingTx();
     _initTransactionList();
-    _loadMempoolHost();
-  }
-
-  void _loadMempoolHost() async {
-    _mempoolHost = await BlockExplorerService.getExplorerUrl();
   }
 
   void _setCanBumpingTx() {
@@ -88,7 +84,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   BlockTimestamp? get currentBlock => _currentBlock;
 
   Utxo? get currentUtxo => _currentUtxo;
-  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+  bool get isNetworkOn => _connectivityProvider.isInternetOn == true;
   bool? get isSendType => _isSendType;
 
   int get previousTransactionIndex => _previousTransactionIndex;

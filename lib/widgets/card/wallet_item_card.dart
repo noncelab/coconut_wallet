@@ -65,7 +65,6 @@ class WalletItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayedFakeBalance = currentUnit.displayBitcoinAmount(fakeBalance);
-    final isExternalWallet = walletImportSource != WalletImportSource.coconutVault;
     if (isEditMode) {
       return _buildWalletItemContent(
         displayedFakeBalance,

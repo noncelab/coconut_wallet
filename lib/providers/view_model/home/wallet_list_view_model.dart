@@ -65,7 +65,7 @@ class WalletListViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._priceProvider,
   ) {
-    _isNetworkOn = _connectivityProvider.isNetworkOn;
+    _isNetworkOn = _connectivityProvider.isInternetOn;
     _walletOrder = _preferenceProvider.walletOrder;
     _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;

@@ -1,4 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/selectable_list_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
@@ -256,6 +260,42 @@ class CommonBottomSheets {
     );
   }
 
+  /// 드래그 가능한 바텀시트 안에 선택 가능한 리스트를 보여줍니다.
+  /// 확인 버튼을 누르면 선택된 아이템 T를 반환합니다.
+  /// 선택 없이 닫으면 null을 반환합니다.
+  static Future<T?> showSelectableDraggableSheet<T>({
+    required BuildContext context,
+    required String title,
+    required List<T> items,
+    required Object Function(T item) getItemId,
+    required SelectableItemBuilder<T> itemBuilder,
+    Object? initiallySelectedId,
+    String? confirmText,
+    double minChildSize = 0.5,
+    double maxChildSize = 0.9,
+    double? initialChildSize,
+    Color backgroundColor = CoconutColors.gray900,
+  }) async {
+    return showDraggableBottomSheet<T>(
+      context: context,
+      title: title,
+      minChildSize: minChildSize,
+      maxChildSize: maxChildSize,
+      initialChildSize: initialChildSize,
+      childBuilder: (scrollController) {
+        return _SelectableDraggableSheetBody<T>(
+          scrollController: scrollController,
+          items: items,
+          getItemId: getItemId,
+          itemBuilder: itemBuilder,
+          initiallySelectedId: initiallySelectedId,
+          confirmText: confirmText ?? t.select,
+          backgroundColor: backgroundColor,
+        );
+      },
+    );
+  }
+
   static Future<T?> showDraggableScrollableSheet<T>({
     required BuildContext context,
     required Widget child,
@@ -297,6 +337,87 @@ class CommonBottomSheets {
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+    );
+  }
+}
+
+class _SelectableDraggableSheetBody<T> extends StatefulWidget {
+  final ScrollController scrollController;
+  final List<T> items;
+  final Object Function(T item) getItemId;
+  final SelectableItemBuilder<T> itemBuilder;
+  final Object? initiallySelectedId;
+  final String confirmText;
+  final Color backgroundColor;
+
+  const _SelectableDraggableSheetBody({
+    super.key,
+    required this.scrollController,
+    required this.items,
+    required this.getItemId,
+    required this.itemBuilder,
+    this.initiallySelectedId,
+    required this.confirmText,
+    required this.backgroundColor,
+  });
+
+  @override
+  State<_SelectableDraggableSheetBody<T>> createState() => _SelectableDraggableSheetBodyState<T>();
+}
+
+class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSheetBody<T>> {
+  Object? _selectedId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedId = widget.initiallySelectedId;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: widget.backgroundColor,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+              child: ListView.builder(
+                controller: widget.scrollController,
+                padding: const EdgeInsets.only(bottom: Sizes.size96),
+                itemCount: widget.items.length,
+                itemBuilder: (context, index) {
+                  final item = widget.items[index];
+                  final id = widget.getItemId(item);
+                  final isSelected = _selectedId == id;
+
+                  void handleTap() {
+                    vibrateExtraLight();
+                    setState(() {
+                      _selectedId = _selectedId == id ? null : id;
+                    });
+                  }
+
+                  return widget.itemBuilder(context, item, isSelected, handleTap);
+                },
+              ),
+            ),
+            FixedBottomButton(
+              onButtonClicked: () {
+                final selectedItem =
+                    _selectedId == null
+                        ? null
+                        : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                Navigator.pop(context, selectedItem);
+              },
+              isActive: _selectedId != null,
+              text: widget.confirmText,
+              backgroundColor: CoconutColors.white,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

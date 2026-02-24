@@ -32,6 +32,9 @@ import 'package:realm/realm.dart';
 /// 4. RealmWalletAddress 의 id 를 재생성
 /// 5. TempBroadcastTimeRecord 삭제
 ///
+/// [addRealmTransactionDraft] (5 -> 6)
+/// 1. RealmTransactionDraft 추가
+/// 2. RealmWalletPreferences 에 manualUtxoSelectionWalletIds 필드 추가
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');

@@ -73,7 +73,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Selector<ConnectivityProvider, bool?>(
-      selector: (context, connectivityProvider) => connectivityProvider.isNetworkOn,
+      selector: (context, connectivityProvider) => connectivityProvider.isInternetOn,
       builder: (context, isNetworkOn, child) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _onChangedNetworkStatus(isNetworkOn);

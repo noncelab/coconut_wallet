@@ -35,7 +35,7 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
       Provider.of<WalletProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
       Provider.of<SendInfoProvider>(context, listen: false),
-      Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+      Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
       widget.donationAmount,
     );
 
@@ -58,9 +58,9 @@ class _OnchainDonationInfoScreenState extends State<OnchainDonationInfoScreen> {
       body: ChangeNotifierProxyProvider2<ConnectivityProvider, WalletProvider, OnchainDonationInfoViewModel>(
         create: (_) => _viewModel,
         update: (_, connectivityProvider, walletProvider, viewModel) {
-          if (viewModel!.isNetworkOn != connectivityProvider.isNetworkOn) {
+          if (viewModel!.isNetworkOn != connectivityProvider.isInternetOn) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+              viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
             });
           }
           return viewModel;
