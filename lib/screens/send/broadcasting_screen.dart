@@ -414,82 +414,83 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     bool isNetworkOn,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(
-        left: 10,
-        right: 10,
-        bottom: FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
-      ),
+      padding: const EdgeInsets.only(left: 10, right: 10),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            if (!isNetworkOn) NetworkErrorTooltip(isNetworkOn: isNetworkOn),
-            CoconutLayout.spacing_1000h,
-            Text(t.broadcasting_screen.description, style: Styles.h3, textAlign: TextAlign.center),
-            CoconutLayout.spacing_400h,
-            GestureDetector(
-              onTap: _toggleUnit,
-              child: Column(
-                children: [
-                  Center(
-                    child: Text.rich(
-                      TextSpan(
-                        text: confirmText,
-                        children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)],
+        child: SizedBox(
+          height:
+              MediaQuery.sizeOf(context).height -
+              kToolbarHeight -
+              MediaQuery.of(context).padding.top -
+              FixedBottomButton.fixedBottomButtonDefaultBottomPadding -
+              22,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              if (!isNetworkOn) NetworkErrorTooltip(isNetworkOn: isNetworkOn),
+              CoconutLayout.spacing_1000h,
+              Text(t.broadcasting_screen.description, style: Styles.h3, textAlign: TextAlign.center),
+              CoconutLayout.spacing_400h,
+              GestureDetector(
+                onTap: _toggleUnit,
+                child: Column(
+                  children: [
+                    Center(
+                      child: Text.rich(
+                        TextSpan(
+                          text: confirmText,
+                          children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)],
+                        ),
+                        style: Styles.balance1,
+                        textAlign: TextAlign.center,
+                        textScaler: const TextScaler.linear(1.0),
                       ),
-                      style: Styles.balance1,
-                      textAlign: TextAlign.center,
-                      textScaler: const TextScaler.linear(1.0),
+                    ),
+                    FiatPrice(
+                      satoshiAmount: amount ?? 0,
+                      textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
+                    ),
+                  ],
+                ),
+              ),
+              CoconutLayout.spacing_1000h,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28.0),
+                    color: MyColors.transparentWhite_06,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        InformationItemCard(
+                          label: t.receiver,
+                          value: recipientAddresses,
+                          isNumber: true,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        const Divider(color: MyColors.transparentWhite_12, height: 1),
+                        InformationItemCard(
+                          label: t.estimated_fee,
+                          value: ["$estimatedFeeText $unitText"],
+                          isNumber: true,
+                        ),
+                        const Divider(color: MyColors.transparentWhite_12, height: 1),
+                        InformationItemCard(label: t.total_cost, value: ["$totalCostText $unitText"], isNumber: true),
+                      ],
                     ),
                   ),
-                  FiatPrice(
-                    satoshiAmount: amount ?? 0,
-                    textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
-                  ),
-                ],
-              ),
-            ),
-            CoconutLayout.spacing_1000h,
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28.0),
-                  color: MyColors.transparentWhite_06,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      InformationItemCard(
-                        label: t.receiver,
-                        value: recipientAddresses,
-                        isNumber: true,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                      ),
-                      const Divider(color: MyColors.transparentWhite_12, height: 1),
-                      InformationItemCard(
-                        label: t.estimated_fee,
-                        value: ["$estimatedFeeText $unitText"],
-                        isNumber: true,
-                      ),
-                      const Divider(color: MyColors.transparentWhite_12, height: 1),
-                      InformationItemCard(label: t.total_cost, value: ["$totalCostText $unitText"], isNumber: true),
-                    ],
-                  ),
                 ),
               ),
-            ),
-            if (isSendingToMyAddress) ...[
-              const SizedBox(height: 20),
-              Text(t.broadcasting_screen.self_sending, textAlign: TextAlign.center, style: Styles.caption),
+              if (isSendingToMyAddress) ...[
+                const SizedBox(height: 20),
+                Text(t.broadcasting_screen.self_sending, textAlign: TextAlign.center, style: Styles.caption),
+              ],
             ],
-            // FixedBottomButton 크기에 맞게 스크롤이 가능하도록 설정
-            CoconutLayout.spacing_600h,
-            const SizedBox(height: FixedBottomButton.fixedBottomButtonDefaultHeight),
-          ],
+          ),
         ),
       ),
     );
