@@ -9,10 +9,10 @@ class LanguageBottomSheet extends StatelessWidget {
   LanguageBottomSheet({super.key});
 
   final List<_LanguageOption> _languages = <_LanguageOption>[
-    _LanguageOption(code: 'kr', title: t.settings_screen.locales.korean),
-    _LanguageOption(code: 'en', title: t.settings_screen.locales.english),
-    _LanguageOption(code: 'jp', title: t.settings_screen.locales.japanese),
-    _LanguageOption(code: 'es', title: t.settings_screen.locales.spanish),
+    _LanguageOption(code: 'kr', title: t.language_bottom_sheet.korean),
+    _LanguageOption(code: 'en', title: t.language_bottom_sheet.english),
+    _LanguageOption(code: 'jp', title: t.language_bottom_sheet.japanese),
+    _LanguageOption(code: 'es', title: t.language_bottom_sheet.spanish),
   ];
 
   Future<void> _onLanguageSelected(BuildContext context, String code) async {
@@ -29,7 +29,7 @@ class LanguageBottomSheet extends StatelessWidget {
       selector: (_, provider) => provider.language,
       builder: (context, language, child) {
         return SelectionBottomSheet<String>(
-          title: t.settings_screen.language,
+          title: t.language_bottom_sheet.title,
           selectedValue: language,
           items:
               _languages

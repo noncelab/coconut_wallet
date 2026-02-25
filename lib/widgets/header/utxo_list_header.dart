@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/header/selected_utxo_amount_header.dart';
 import 'package:flutter/cupertino.dart';
@@ -87,24 +88,21 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IntrinsicWidth(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: FittedBox(
-                          alignment: Alignment.centerLeft,
-                          fit: BoxFit.scaleDown,
-                          child: AnimatedBalance(
-                            prevValue: widget.animatedBalanceData.previous,
-                            value: widget.animatedBalanceData.current,
-                            currentUnit: widget.currentUnit,
-                            textStyle: CoconutTypography.heading1_32_NumberBold,
-                          ),
+                  child: BitcoinAmountUnit(
+                    currentUnit: widget.currentUnit,
+                    unitStyle: CoconutTypography.heading4_18_Number,
+                    child: Expanded(
+                      child: FittedBox(
+                        alignment: Alignment.centerLeft,
+                        fit: BoxFit.scaleDown,
+                        child: AnimatedBalance(
+                          prevValue: widget.animatedBalanceData.previous,
+                          value: widget.animatedBalanceData.current,
+                          currentUnit: widget.currentUnit,
+                          textStyle: CoconutTypography.heading2_28_NumberBold,
                         ),
                       ),
-                      CoconutLayout.spacing_200w,
-                      Text(widget.currentUnit.symbol, style: CoconutTypography.heading3_21_Number),
-                    ],
+                    ),
                   ),
                 ),
                 CoconutLayout.spacing_50h,

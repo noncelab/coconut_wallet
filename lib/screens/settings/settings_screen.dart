@@ -139,12 +139,12 @@ class _SettingsScreen extends State<SettingsScreen> {
                   _category(t.unit),
                   ButtonGroup(
                     buttons: [
-                      Selector<PreferenceProvider, bool>(
-                        selector: (_, viewModel) => viewModel.isBtcUnit,
-                        builder: (context, isBtcUnit, child) {
+                      Selector<PreferenceProvider, BitcoinUnit>(
+                        selector: (_, viewModel) => viewModel.currentUnit,
+                        builder: (context, currentUnit, child) {
                           return _buildAnimatedButton(
                             title: t.bitcoin,
-                            subtitle: isBtcUnit ? t.btc : t.sats,
+                            subtitle: currentUnit.symbol,
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
                                 context: context,
@@ -172,7 +172,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                               break;
                           }
                           return _buildAnimatedButton(
-                            title: t.fiat.fiat,
+                            title: t.settings_screen.fiat,
                             subtitle: fiatDisplayName,
                             onPressed: () async {
                               CommonBottomSheets.showCustomHeightBottomSheet(
@@ -289,6 +289,7 @@ class _SettingsScreen extends State<SettingsScreen> {
         trackColor: CoconutColors.gray600,
         thumbColor: CoconutColors.gray800,
         onChanged: onChanged,
+        scale: 0.75,
       ),
     );
   }

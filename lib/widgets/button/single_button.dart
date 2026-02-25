@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
@@ -57,7 +58,7 @@ class SingleButton extends StatelessWidget {
     this.rightElement,
     this.leftElement,
     this.buttonPosition = SingleButtonPosition.none,
-    this.subtitleStyle = CoconutTypography.body3_12,
+    this.subtitleStyle,
     this.backgroundColor = CoconutColors.gray800,
     this.betweenGap = 0,
     this.customPadding,
@@ -98,8 +99,17 @@ class SingleButton extends StatelessWidget {
     return customPadding ?? buttonPosition.padding;
   }
 
+  TextStyle get _resolvedSubtitleStyle {
+    final baseStyle =
+        subtitle != null && subtitle!.containsCJK
+            ? CoconutTypography.body3_12.copyWith(height: 1.3)
+            : CoconutTypography.body3_12_Number;
+    return baseStyle.setColor(CoconutColors.gray400);
+  }
+
   Widget _buildButtonContent() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (leftElement != null) ...{Container(child: leftElement), CoconutLayout.spacing_400w},
         Expanded(
@@ -112,25 +122,13 @@ class SingleButton extends StatelessWidget {
               ),
               if (isVerticalSubtitle) ...{
                 CoconutLayout.spacing_100h,
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    subtitle!,
-                    style: subtitleStyle ?? CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
-                  ),
-                ),
+                FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle)),
               },
             ],
           ),
         ),
         if (subtitle != null && !isVerticalSubtitle)
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              subtitle!,
-              style: subtitleStyle ?? CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
-            ),
-          ),
+          FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle)),
         rightElement ?? _rightArrow(),
       ],
     );
