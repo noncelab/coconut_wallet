@@ -72,9 +72,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     return ChangeNotifierProxyProvider<ConnectivityProvider, FeeBumpingViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
-        if (connectivityProvider.isNetworkOn != viewModel!.isNetworkOn) {
+        if (connectivityProvider.isInternetOn != viewModel!.isNetworkOn) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            viewModel.setIsNetworkOn(connectivityProvider.isNetworkOn);
+            viewModel.setIsNetworkOn(connectivityProvider.isInternetOn);
           });
         }
         return viewModel;
@@ -395,7 +395,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       utxoRepositry,
       preferenceProvider,
       walletPreferencesRepository,
-      Provider.of<ConnectivityProvider>(context, listen: false).isNetworkOn,
+      Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
     );
   }
 

@@ -60,9 +60,9 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   String get recommendedFeeTooltipText => t.tooltip.recommended_fee2(
     bitcoin:
-        _currentUnit == BitcoinUnit.btc
-            ? UnitUtil.convertSatoshiToBitcoin(kMaxFeeLimit)
-            : kMaxFeeLimit.toThousandsSeparatedString(),
+        _currentUnit.isBasedOnSatoshi
+            ? kMaxFeeLimit.toThousandsSeparatedString()
+            : UnitUtil.convertSatoshiToBitcoin(kMaxFeeLimit),
     unit: unitText,
   );
 
@@ -73,7 +73,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Selector<ConnectivityProvider, bool?>(
-      selector: (context, connectivityProvider) => connectivityProvider.isNetworkOn,
+      selector: (context, connectivityProvider) => connectivityProvider.isInternetOn,
       builder: (context, isNetworkOn, child) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _onChangedNetworkStatus(isNetworkOn);
@@ -223,7 +223,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+      _currentUnit = _currentUnit.next;
     });
   }
 

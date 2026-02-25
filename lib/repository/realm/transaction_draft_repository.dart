@@ -153,9 +153,6 @@ class TransactionDraftRepository extends BaseRepository {
   bool _isSignedDraft(RealmTransactionDraft draft) {
     final hasRequired = draft.txWaitingForSign != null;
     final noHaveUnsignedDraftRequired =
-        //draft.recipientJsons.isEmpty &&
-        //draft.feeRate == null &&
-        //draft.isMaxMode == null &&
         draft.isFeeSubtractedFromSendAmount == null && draft.bitcoinUnit == null && draft.selectedUtxoIds.isEmpty;
 
     return hasRequired && noHaveUnsignedDraftRequired;
@@ -190,7 +187,7 @@ class TransactionDraftRepository extends BaseRepository {
   /// walletId로 Unsigned TransactionDraft 조회
   List<TransactionDraft> getUnsignedTransactionDraftsByWalletId(int walletId) {
     return realm
-        .query<RealmTransactionDraft>('walletId == $walletId AND feeRate != nil SORT(createdAt DESC)')
+        .query<RealmTransactionDraft>('walletId == $walletId AND txWaitingForSign == null SORT(createdAt DESC)')
         .map((draft) => mapRealmTxDraftToTxDraft(draft, null))
         .toList();
   }

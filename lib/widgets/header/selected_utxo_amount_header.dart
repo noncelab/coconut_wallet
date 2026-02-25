@@ -1,7 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,7 +46,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
   Widget _buildTotalRow(String utxoSumText, String unitText) {
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(color: MyColors.transparentWhite_10, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: CoconutColors.gray850, borderRadius: BorderRadius.circular(24)),
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
       child: Row(
         children: [
@@ -57,15 +56,13 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Row(
                 children: [
-                  Text(t.utxo_total, style: Styles.body2Bold.merge(const TextStyle(color: CoconutColors.white))),
-                  const SizedBox(width: 4),
+                  Text(t.utxo_total, style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+                  CoconutLayout.spacing_100w,
                   Visibility(
                     visible: selectedUtxoCount != 0,
                     child: Text(
                       t.utxo_count(count: selectedUtxoCount),
-                      style: Styles.caption.merge(
-                        const TextStyle(fontFamily: 'Pretendard', color: MyColors.transparentWhite_70),
-                      ),
+                      style: CoconutTypography.caption_10_Number.setColor(CoconutColors.gray350),
                     ),
                   ),
                 ],
@@ -76,11 +73,20 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
           Expanded(
             child: Align(
               alignment: Alignment.centerRight,
-              child: Text(
-                "$utxoSumText $unitText",
-                style: Styles.body1Number.merge(
-                  const TextStyle(color: CoconutColors.white, fontWeight: FontWeight.w700, height: 16.8 / 14),
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment:
+                    currentUnit.isPrefixSymbol ? CrossAxisAlignment.center : CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  if (currentUnit.isPrefixSymbol)
+                    Text(unitText, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+                  Text(utxoSumText, style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white)),
+                  if (!currentUnit.isPrefixSymbol) ...[
+                    CoconutLayout.spacing_50w,
+                    Text(unitText, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+                  ],
+                ],
               ),
             ),
           ),
@@ -102,7 +108,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
               Text(
                 orderText,
                 key: orderDropdownButtonKey,
-                style: Styles.caption2.merge(const TextStyle(color: CoconutColors.white, fontSize: 12)),
+                style: CoconutTypography.caption_10.setColor(CoconutColors.white),
               ),
               const SizedBox(width: 4),
               SvgPicture.asset(

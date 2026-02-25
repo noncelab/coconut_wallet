@@ -179,6 +179,23 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "Failed to generate Lightning invoice."
 
+utility:
+  p2p_calculator:
+    calculator: "Calculator"
+    one_btc: "1 BTC"
+    upbit_price: "Upbit Price"
+    binance_price: "Binance Price"
+    bitflyer_price: "Bitflyer Price"
+    offline_price_unavailable: "Price unavailable"
+    fee: "Fee"
+    transaction_bill: "Transaction Bill"
+    reference_price: "Reference Price"
+    reference_datetime: "Reference Datetime"
+    transaction_fee: "Transaction Fee"
+    copy_all: "Copy All"
+    share: "Share"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[Transaction Bill]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nReference Price: $currencySymbol $referencePrice / BTC\nReference Datetime: $referenceTime\nTransaction Fee: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+    
 transaction_draft:
   title: "Temporary Transaction"
   empty_message: "No temporary transaction saved"
@@ -366,9 +383,9 @@ wallet_add_scanner_screen:
     mfp_title: "Master Fingerprint"
     mfp_description_title: "Master Fingerprint"
     mfp_description_texts:
-      - "A unique value required to identify a watch-only wallet"
-      - "Since this value cannot be automatically determined from the information you entered, you need to enter it directly for a secure and accurate wallet connection."
-      - "Without fingerprint, you will not be able to use the send feature."
+      - "The master fingerprint is an 8-digit identifier that accurately matches the signing device with the wallet."
+      - "This value cannot be determined automatically using only the extended public key, so it must be entered manually."
+      - "If not entered, sending is disabled."
     mfp_input_placeholder: "Master Fingerprint ex: f75f7ab5"
     mfp_skip: "Skip"
     back_scan: "Go back to QR scan"
@@ -484,7 +501,13 @@ send_address_screen:
   address_placeholder: "Please enter the address to send"
   amount_placeholder: "Please enter the amount to send"
 send_confirm_screen:
-  title: "Review Details"
+  title: "Transaction Details"
+  total_cost:
+    total: "Total $n"
+    sentence: " is required."
+  output_detail_title: "Output Details"
+  flow_input_title: "Input $index"
+  flow_output_title: "Output $index"
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
   bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
@@ -566,12 +589,8 @@ settings_screen:
   set_password: "Set Password"
   use_biometric: "Use Biometric Auth"
   change_password: "Change Password"
+  fiat: "Fiat"
   language: "Language"
-  locales:
-    korean: "한국어"
-    english: "English"
-    japanese: "日本語"
-    spanish: "Español"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -772,8 +791,9 @@ user_experience_survey_bottom_sheet:
   text3: "Yes, it's good!"
   text4: "Just okay"
 unit_bottom_sheet:
-  basic_unit: "Basic Unit"
+  title: "Unit Settings"
   header_text: "1 BTC = 100,000,000 sats"
+  bip177_text: "1 BTC = ₿ 100,000,000"
 
 errors:
   storage_read_error: "Failed to load data from storage."
@@ -796,6 +816,7 @@ errors:
   network_disconnected: "Network disconnected"
   network_not_found: "Network is not connected!"
   electrum_connection_failed: "Unable to connect to Electrum server"
+  vpn_connected: "Please check your VPN connection status"
   insufficient_balance: "Insufficient balance."
   fee_selection_error:
     insufficient_balance: "Insufficient balance to pay fee"
@@ -883,7 +904,7 @@ alert:
   error_send:
     broadcasting_failed: "[Send Failed]\n$error"
     insufficient_balance: "Insufficient balance"
-    minimum_amount: "You can send at least $bitcoin $unit"
+    minimum_amount: "You can send at least $amount"
     insufficient_fee: "[Send Failed]\nPlease try again by\nincreasing the fee rate."
   signed_psbt:
     wrong_send_info: "Send information is different.\nPlease try again from the beginning."
@@ -953,11 +974,18 @@ trade_exchange:
   upbit: "Upbit"
   binance: "Binance"
 
-fiat:
-  fiat: "Fiat"
+fiat_bottom_sheet:
+  title: "Currency Settings"
   krw_price: "Upbit Price"
   usd_price: "Binance Price"
   jpy_price: "Bitflyer Price"
+
+language_bottom_sheet:
+  title: "Language Settings"
+  korean: "한국어"
+  english: "English"
+  japanese: "日本語"
+  spanish: "Español"
 
 long_pressed_menu:
   hide: "Hide"

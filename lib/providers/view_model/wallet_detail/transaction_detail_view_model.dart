@@ -84,7 +84,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   BlockTimestamp? get currentBlock => _currentBlock;
 
   Utxo? get currentUtxo => _currentUtxo;
-  bool get isNetworkOn => _connectivityProvider.isNetworkOn == true;
+  bool get isNetworkOn => _connectivityProvider.isInternetOn == true;
   bool? get isSendType => _isSendType;
 
   int get previousTransactionIndex => _previousTransactionIndex;

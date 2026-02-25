@@ -26,6 +26,7 @@ class UtxoListStickyHeader extends StatelessWidget {
   final Function onTapDropdown;
   final Function removePopup;
   final BitcoinUnit currentUnit;
+  final VoidCallback onPressedUnitToggle;
 
   final bool isSelectionMode;
   final int selectedUtxoCount;
@@ -51,6 +52,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.onTapDropdown,
     required this.removePopup,
     required this.currentUnit,
+    required this.onPressedUnitToggle,
     required this.isSelectionMode,
     required this.selectedUtxoCount,
     required this.selectedUtxoAmountSum,
@@ -121,35 +123,44 @@ class UtxoListStickyHeader extends StatelessWidget {
   Widget _buildStickyHeader(BuildContext context, int totalCount) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20, right: 16, top: 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              AnimatedBalance(
-                prevValue: animatedBalanceData.previous,
-                value: animatedBalanceData.current,
-                currentUnit: currentUnit,
-                textStyle: CoconutTypography.heading4_18_NumberBold,
-              ),
-              CoconutLayout.spacing_100w,
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Row(
-                    children: [
-                      Text(currentUnit.symbol, style: CoconutTypography.body2_14_Number),
-                      CoconutLayout.spacing_100w,
-                      Text(
-                        t.total_item_count(count: totalCount),
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                      ),
-                    ],
+        GestureDetector(
+          onTap: onPressedUnitToggle,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 16, top: 20),
+            child: Row(
+              crossAxisAlignment: currentUnit.isPrefixSymbol ? CrossAxisAlignment.center : CrossAxisAlignment.end,
+              children: [
+                if (currentUnit.isPrefixSymbol) ...[
+                  Text(currentUnit.symbol, style: CoconutTypography.body2_14_Number),
+                  CoconutLayout.spacing_50w,
+                ],
+                AnimatedBalance(
+                  prevValue: animatedBalanceData.previous,
+                  value: animatedBalanceData.current,
+                  currentUnit: currentUnit,
+                  textStyle: CoconutTypography.heading4_18_NumberBold,
+                ),
+                CoconutLayout.spacing_100w,
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        if (!currentUnit.isPrefixSymbol) ...[
+                          Text(currentUnit.symbol, style: CoconutTypography.body2_14_Number),
+                          CoconutLayout.spacing_50w,
+                        ],
+                        Text(
+                          t.total_item_count(count: totalCount),
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
 

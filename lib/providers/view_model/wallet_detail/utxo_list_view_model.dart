@@ -62,7 +62,7 @@ class UtxoListViewModel extends ChangeNotifier {
   int get balance => _walletProvider.getWalletBalance(_walletListBaseItem.id).total;
   int get prevBalance => _prevBalance;
   int? get bitcoinPriceKrw => _priceProvider.bitcoinPriceKrw;
-  bool? get isNetworkOn => _connectProvider.isNetworkOn;
+  bool? get isNetworkOn => _connectProvider.isInternetOn;
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
 

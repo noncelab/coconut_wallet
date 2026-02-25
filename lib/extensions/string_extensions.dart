@@ -1,6 +1,11 @@
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:intl/intl.dart';
 
+extension StringCheck on String {
+  /// CJK 문자(한글, 일본어, 한자 등)를 포함하는지 검사
+  bool get containsCJK => RegExp(r'[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uAC00-\uD7AF]').hasMatch(this);
+}
+
 extension StringFormatting on String {
   String toThousandsSeparatedString() {
     // String을 숫자로 변환할 수 없는 경우 원래 문자열 반환

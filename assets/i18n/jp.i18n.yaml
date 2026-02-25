@@ -179,6 +179,23 @@ donation:
   ln_address_pow: "powbitcoiner@speed.app"
   ln_invoice_api_error: "ライトニングインボイスの生成に失敗しました。"
 
+utility:
+  p2p_calculator:
+    calculator: "計算機"
+    1btc: "1 BTC"
+    upbit_price: "Upbit 基準 時価"
+    binance_price: "Binance 基準 時価"
+    bitflyer_price: "Bitflyer 基準 時価"
+    offline_price_unavailable: "時価を取得できません"
+    fee: "手数料"
+    transaction_bill: "取引請求書"
+    reference_price: "基準価格"
+    reference_datetime: "基準日時"
+    transaction_fee: "取引手数料"
+    copy_all: "全コピー"
+    share: "共有"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[取引請求書]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n基準価格: $currencySymbol $referencePrice / BTC\n基準日時: $referenceTime\n取引手数料: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+
 transaction_draft:
   title: "一時保存トランザクション"
   empty_message: "一時保存されたトランザクションがありません"
@@ -366,9 +383,9 @@ wallet_add_scanner_screen:
     mfp_title: "マスターフィンガープリント"
     mfp_description_title: "マスターフィンガープリント"
     mfp_description_texts:
-      - "ウォッチオンリーウォレットを識別するために必要な固有値"
-      - "この値は入力した情報から自動的に決定できないため、安全で正確なウォレット接続のために直接入力する必要があります。"
-      - "フィンガープリントがないと、送信機能を使用できません。"
+      - "マスターフィンガープリントは、署名機とウォレットを正確に紐づける8桁の識別子です。"
+      - "拡張公開鍵だけではこの値を自動的に取得できないため、手動で入力する必要があります。"
+      - "未入力の場合、送信機能を使用できません。"
     mfp_input_placeholder: "マスターフィンガープリントの例: f75f7ab5"
     mfp_skip: "スキップ"
     back_scan: "QRスキャンに戻る"
@@ -483,7 +500,13 @@ send_address_screen:
   address_placeholder: "送信先アドレスを入力してください"
   amount_placeholder: "送信金額を入力してください"
 send_confirm_screen:
-  title: "詳細確認"
+  title: "取引情報の確認"
+  total_cost:
+    total: "合計$n"
+    sentence: "が必要です"
+  output_detail_title: "出力詳細を見る"
+  flow_input_title: "入力 $index"
+  flow_output_title: "出力 $index"
 signed_psbt_scanner_screen:
   title: "署名済みトランザクションをスキャン"
   bbqr_mode_switching: "BBQRモードに切り替え中。\nしばらくお待ちください。"
@@ -566,12 +589,8 @@ settings_screen:
   use_biometric: "生体認証を使用"
   change_password: "パスワード変更"
   hide_balance: "残高を非表示"
+  fiat: "法定通貨"
   language: "言語"
-  locales:
-    korean: "한국어"
-    english: "English"
-    japanese: "日本語"
-    spanish: "Español"
   electrum_server: 
     server_address: "サーバーアドレス"
     port: "ポート"
@@ -772,8 +791,9 @@ user_experience_survey_bottom_sheet:
   text3: "はい、良かったです！"
   text4: "まあまあです"
 unit_bottom_sheet:
-  basic_unit: "基本単位"
+  title: "単位設定"
   header_text: "1 BTC = 100,000,000 sats"
+  bip177_text: "1 BTC = ₿ 100,000,000"
 
 errors:
   storage_read_error: "ストレージからのデータ読み込みに失敗しました。"
@@ -796,6 +816,7 @@ errors:
   network_disconnected: "ネットワークが切断されました"
   network_not_found: "ネットワークが接続されていません！"
   electrum_connection_failed: "Electrumサーバーに接続できません"
+  vpn_connected: "VPN接続状態を確認してください"
   insufficient_balance: "残高が不足しています。"
   fee_selection_error:
     insufficient_balance: "手数料を支払うための残高が不足"
@@ -883,7 +904,7 @@ alert:
   error_send:
     broadcasting_failed: "[送信失敗]\n$error"
     insufficient_balance: "残高が不足しています。"
-    minimum_amount: "$bitcoin $unitから送信できます。"
+    minimum_amount: "$amountから送信できます。"
     insufficient_fee: "[送信失敗]\n手数料を増やして\n再度お試しください。"
   signed_psbt:
     wrong_send_info: "送信情報が異なります。\n最初からやり直してください。"
@@ -953,11 +974,18 @@ trade_exchange:
   upbit: "Upbit"
   binance: "Binance"
 
-fiat:
-  fiat: "法定通貨"
+fiat_bottom_sheet:
+  title: "通貨設定"
   krw_price: "Upbit 基準"
   usd_price: "Binance 基準"
   jpy_price: "Bitflyer 基準"
+
+language_bottom_sheet:
+  title: "言語設定"
+  korean: "한국어"
+  english: "English"
+  japanese: "日本語"
+  spanish: "Español"
 
 long_pressed_menu:
   hide: "非表示"

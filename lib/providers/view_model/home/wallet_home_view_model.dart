@@ -50,7 +50,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   late bool _isBalanceHidden;
   late bool _isFiatBalanceHidden;
   late final bool _isReviewScreenVisible;
-  late bool? _isNetworkOn;
+  // late bool? _isNetworkOn;
 
   Map<int, AnimatedBalanceData> _walletBalance = {};
   Map<int, dynamic> _fakeBalanceMap = {};
@@ -114,8 +114,9 @@ class WalletHomeViewModel extends ChangeNotifier {
   RecentTransactionAnalysis? _recentTransactionAnalysis;
   RecentTransactionAnalysis? get recentTransactionAnalysis => _recentTransactionAnalysis;
 
-  bool _isBtcUnit = false;
-  bool get isBtcUnit => _isBtcUnit;
+  BitcoinUnit _bitcoinUnit = BitcoinUnit.btc;
+  bool get isBtcUnit => _bitcoinUnit.isBtcUnit;
+  BitcoinUnit get currentUnit => _bitcoinUnit;
 
   bool _isEditWidgetMode = false;
   bool get isEditWidgetMode => _isEditWidgetMode;
@@ -134,7 +135,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   WalletHomeViewModel(this._walletProvider, this._preferenceProvider, this._connectivityProvider, this._nodeProvider)
     : _syncNodeStateStream = _nodeProvider.syncStateStream {
     _isReviewScreenVisible = AppReviewService.shouldShowReviewScreen();
-    _isNetworkOn = _connectivityProvider.isNetworkOn;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _nodeProvider.currentBlockNotifier.addListener(_onCurrentBlockChanged);
 
@@ -185,7 +185,7 @@ class WalletHomeViewModel extends ChangeNotifier {
   List<WalletListItemBase> get favoriteWallets => _favoriteWallets;
   List<HomeFeature> get homeFeatures => _preferenceProvider.homeFeatures;
 
-  bool? get isNetworkOn => _isNetworkOn;
+  bool? get isNetworkOn => _connectivityProvider.isInternetOn;
   int? get fakeBalanceTotalAmount => _fakeBalanceTotalAmount;
   Map<int, dynamic> get fakeBalanceMap => _fakeBalanceMap;
   Map<int, AnimatedBalanceData> get walletBalanceMap => _walletBalance;
@@ -209,15 +209,21 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   /// 네트워크 상태를 구분하여 반환
   NetworkStatus get networkStatus {
-    Logger.log(
-      'WalletHomeViewModel: _isNetworkOn: $_isNetworkOn, _nodeSyncState: $_nodeSyncState, hasConnectionError: ${_nodeProvider.hasConnectionError}',
-    );
-
-    if (!(_isNetworkOn ?? false)) {
+    if (_connectivityProvider.isInternetOff && _connectivityProvider.isVpnInactive) {
       return NetworkStatus.offline;
     }
 
+    if (_nodeSyncState == NodeSyncState.completed || _nodeProvider.isInitializing) {
+      return NetworkStatus.online;
+    }
+
     if (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) {
+      if (_connectivityProvider.isVpnActive) {
+        if (_connectivityProvider.isInternetOff) {
+          return NetworkStatus.offline;
+        }
+        return NetworkStatus.vpnBlocked;
+      }
       return NetworkStatus.connectionFailed;
     }
 
@@ -333,8 +339,8 @@ class WalletHomeViewModel extends ChangeNotifier {
       _analysisPeriod = _preferenceProvider.analysisPeriod;
     }
 
-    if (_preferenceProvider.isBtcUnit != _isBtcUnit) {
-      _isBtcUnit = _preferenceProvider.isBtcUnit;
+    if (_preferenceProvider.currentUnit != _bitcoinUnit) {
+      _bitcoinUnit = _preferenceProvider.currentUnit;
       updateRecentTxAnalysis(_analysisPeriod);
     }
     notifyListeners();
@@ -395,11 +401,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   }
 
   void onNodeProviderUpdated() {
-    notifyListeners();
-  }
-
-  void updateIsNetworkOn(bool? isNetworkOn) {
-    _isNetworkOn = isNetworkOn;
     notifyListeners();
   }
 
@@ -536,7 +537,7 @@ class WalletHomeViewModel extends ChangeNotifier {
       sentAmount: sentAmount,
       selfAmount: selfAmount,
       days: daysForAnalysis,
-      isBtcUnit: _isBtcUnit,
+      bitcoinUnit: _bitcoinUnit,
       selectedAnalysisTransactionType: _selectedAnalysisTransactionType,
     );
     _isLatestTxAnalysisRunning = false;
@@ -617,7 +618,8 @@ class RecentTransactionAnalysis {
   final int sentAmount;
   final int selfAmount;
   final int days;
-  final bool isBtcUnit;
+  final BitcoinUnit bitcoinUnit;
+  bool get isBtcUnit => bitcoinUnit.isBtcUnit;
   final AnalysisTransactionType selectedAnalysisTransactionType;
 
   const RecentTransactionAnalysis({
@@ -631,7 +633,7 @@ class RecentTransactionAnalysis {
     required this.sentAmount,
     required this.selfAmount,
     required this.days,
-    required this.isBtcUnit,
+    required this.bitcoinUnit,
     required this.selectedAnalysisTransactionType,
   });
 
@@ -660,16 +662,16 @@ class RecentTransactionAnalysis {
 
   String get _endDate => days == 0 ? _formatYyMmDd(endDate ?? DateTime.now()) : _formatYyMmDd(DateTime.now());
 
-  String get titleString =>
-      '${isBtcUnit ? BitcoinUnit.btc.displayBitcoinAmount(selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
-              ? receivedAmount
-              : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
-              ? (sentAmount + selfAmount).abs()
-              : totalAmount.abs(), withUnit: true) : BitcoinUnit.sats.displayBitcoinAmount(selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
-              ? receivedAmount
-              : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
-              ? sentAmount + selfAmount
-              : totalAmount.abs(), withUnit: true)} ';
+  String get titleString {
+    final amount =
+        selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
+            ? receivedAmount
+            : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
+            ? (sentAmount + selfAmount).abs()
+            : totalAmount.abs();
+    return '${bitcoinUnit.displayBitcoinAmount(amount, withUnit: true)} ';
+  }
+
   String get totalAmountResult => totalTransactionResult;
   String get subtitleString =>
       '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived

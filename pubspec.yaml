@@ -18,10 +18,10 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 version: 0.7.0+1
 app_versions:
-  ios_regtest: 3.6.0+0
-  ios_mainnet: 0.7.0+3
-  aos_regtest: 3.6.0+61
-  aos_mainnet: 0.7.0+49
+  ios_regtest: 3.7.0+2
+  ios_mainnet: 0.8.0+2
+  aos_regtest: 3.7.0+65
+  aos_mainnet: 0.8.0+51
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -95,6 +95,7 @@ dependencies:
   mobile_scanner: 7.0.1
   firebase_core: ^3.15.2
   firebase_analytics: ^11.6.0
+  vpn_detector: ^1.2.0
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
@@ -287,6 +288,11 @@ flutter:
     - assets/svg/fee-rate/high.svg
     - testnet.env
     - assets/svg/puzzle-piece.svg
+    - assets/svg/offline-mode.svg
+    - assets/svg/online-mode.svg
+    - assets/svg/arrow-top-down.svg
+    - assets/svg/hand-shake.svg
+    - assets/svg/export.svg
     - assets/svg/widget.svg
     - assets/svg/search-not-found.svg
     - assets/svg/remove-minus.svg
