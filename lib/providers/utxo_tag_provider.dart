@@ -1,7 +1,9 @@
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/utxo_tag_util.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 
@@ -161,5 +163,20 @@ class UtxoTagProvider extends ChangeNotifier {
 
     _isUpdatedTagList = true;
     notifyListeners();
+  }
+
+  Future<void> applyTagsToUtxos({
+    required int walletId,
+    required List<String> selectedUtxoIds,
+    required Map<String, TagApplyState> tagStates,
+    required List<String> Function(String utxoId) getCurrentTagsCallback,
+  }) async {
+    for (final utxoId in selectedUtxoIds) {
+      final currentTagNames = getCurrentTagsCallback(utxoId);
+
+      final finalTags = UtxoTagUtil.calculateUpdatedTags(currentTagNames: currentTagNames, tagStates: tagStates);
+
+      updateUtxoTagIdList(walletId: walletId, utxoId: utxoId, selectedTagNames: finalTags);
+    }
   }
 }

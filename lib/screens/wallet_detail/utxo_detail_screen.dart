@@ -13,7 +13,9 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
+import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/utxo_tag_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -22,7 +24,6 @@ import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
-import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
@@ -140,24 +141,27 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  void _showTagBottomSheet(
-    BuildContext context,
-    List<UtxoTag> tags,
-    List<UtxoTag> selectedTags,
-    UtxoDetailViewModel viewModel,
-  ) {
+  void showTagBottomSheet() {
+    final List<String> selectedUtxoIds = [widget.utxo.utxoId];
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: CoconutColors.black,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder:
-          (context) => TagBottomSheet(
+          (context) => TagApplyBottomSheet(
             walletId: widget.id,
-            selectedTagNames: selectedTags.map((e) => e.name).toList(),
-            onUpdate: (selectedNames, updatedTagList, updateMode) {
-              viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, updatedTagList, updateMode);
-              viewModel.refreshTagList(widget.id);
-            },
+            selectedUtxoIds: selectedUtxoIds,
+            onUpdate:
+                (tagStates, updatedTags, mode) => UtxoTagUtil.handleTagApplyCompleted(
+                  context: context,
+                  mode: mode,
+                  tagStates: tagStates,
+                  walletId: widget.id,
+                  selectedUtxoIds: selectedUtxoIds,
+                  getCurrentTagsCallback: (_) => _viewModel.selectedUtxoTagList.map((e) => e.name).toList(),
+                  onRefreshUI: () => _viewModel.refreshTagList(widget.id),
+                ),
           ),
     );
   }
@@ -488,13 +492,12 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   Widget _buildTagSection(BuildContext context, List<UtxoTag> tags, List<UtxoTag> selectedTags) {
-    final viewModel = context.read<UtxoDetailViewModel>();
     return Column(
       children: [
         UnderlineButtonItemCard(
           label: t.tag,
           underlineButtonLabel: t.edit,
-          onTapUnderlineButton: () => _showTagBottomSheet(context, tags, selectedTags, viewModel),
+          onTapUnderlineButton: showTagBottomSheet,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

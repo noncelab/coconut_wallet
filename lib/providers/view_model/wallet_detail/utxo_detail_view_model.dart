@@ -8,7 +8,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -107,7 +107,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     String utxoId,
     List<String> selectedTagNames,
     List<UtxoTag> updatedTagList,
-    UtxoTagEditMode editMode,
+    UtxoTagApplyEditMode editMode,
   ) {
     final addedTags =
         updatedTagList
@@ -119,24 +119,24 @@ class UtxoDetailViewModel extends ChangeNotifier {
             .toList();
 
     switch (editMode) {
-      case UtxoTagEditMode.add:
+      case UtxoTagApplyEditMode.add:
         if (addedTags.isNotEmpty) {
           for (int i = 0; i < addedTags.length; i++) {
             _tagProvider.addUtxoTag(_walletId, addedTags[i]);
           }
         }
         break;
-      case UtxoTagEditMode.delete:
+      case UtxoTagApplyEditMode.delete:
         if (removedTags.isNotEmpty) {
           for (int i = 0; i < removedTags.length; i++) {
             _tagProvider.deleteUtxoTag(_walletId, removedTags[i]);
           }
         }
         break;
-      case UtxoTagEditMode.changAppliedTags:
+      case UtxoTagApplyEditMode.changAppliedTags:
         _tagProvider.updateUtxoTagIdList(walletId: _walletId, utxoId: utxoId, selectedTagNames: selectedTagNames);
         break;
-      case UtxoTagEditMode.update:
+      case UtxoTagApplyEditMode.update:
         final List<UtxoTag> modifiedTags = [];
         final currentTagsById = {for (var tag in _utxoTagList) tag.id: tag};
         final updatedTagsById = {for (var tag in updatedTagList) tag.id: tag};
