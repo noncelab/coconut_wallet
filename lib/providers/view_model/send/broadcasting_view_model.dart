@@ -46,6 +46,12 @@ class BroadcastingViewModel extends ChangeNotifier {
   int? _fee;
   int? _totalAmount;
   int? _sendingAmountWhenAddressIsMyChange; // 내 지갑의 change address로 보내는 경우 잔액
+  int _inputCount = 0;
+  int? _inputTotalAmount;
+  final List<int?> _inputAmounts = [];
+  final List<int> _externalOutputAmounts = [];
+  final List<int> _changeOutputAmounts = [];
+  final List<BroadcastingOutputDetailItem> _outputDetailItems = [];
   final List<int> _outputIndexesToMyAddress = [];
   Transaction? _signedTx;
   int? _savedDraftId;
@@ -72,6 +78,12 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isSendingDonation => _isSendingDonation;
   int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
   int? get totalAmount => _totalAmount;
+  int get inputCount => _inputCount;
+  int? get inputTotalAmount => _inputTotalAmount;
+  List<int?> get inputAmounts => UnmodifiableListView(_inputAmounts);
+  List<int> get externalOutputAmounts => UnmodifiableListView(_externalOutputAmounts);
+  List<int> get changeOutputAmounts => UnmodifiableListView(_changeOutputAmounts);
+  List<BroadcastingOutputDetailItem> get outputDetailItems => UnmodifiableListView(_outputDetailItems);
   AddressType? get walletAddressType => _walletBase?.addressType;
   int? get walletId => _walletId;
   SendEntryPoint? get sendEntryPoint => _sendInfoProvider.sendEntryPoint;
@@ -179,15 +191,7 @@ class BroadcastingViewModel extends ChangeNotifier {
             ? _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds)
             : (inputUtxoIds, null);
 
-    debugPrint('------- sendInfoProvider ------');
-    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
-    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
-    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
-    debugPrint('walletId: ${_sendInfoProvider.walletId}');
-    debugPrint('walletBase: $_walletBase');
-    debugPrint('walletAddressType: ${_walletBase!.addressType}');
-    debugPrint('walletId: $_walletId');
-    debugPrint('-------------------------------');
+    //_debugPrintSendInfoProvider();
 
     Psbt psbt;
     if (_hasAllInputsBip32Derivation(signedPsbt)) {
@@ -197,6 +201,28 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
 
     List<PsbtOutput> outputs = psbt.outputs;
+    _inputCount = _signedTx?.inputs.length ?? 0;
+    _inputTotalAmount = _signedTx?.totalInputAmount;
+    _inputAmounts
+      ..clear()
+      ..addAll(psbt.inputs.map((input) => input.witnessUtxo?.amount));
+    _externalOutputAmounts.clear();
+    _changeOutputAmounts.clear();
+    _outputDetailItems.clear();
+    for (final output in outputs) {
+      final amount = output.outAmount;
+      if (amount == null) {
+        continue;
+      }
+      _outputDetailItems.add(
+        BroadcastingOutputDetailItem(address: output.outAddress, amount: amount, isChange: output.isChange),
+      );
+      if (output.isChange) {
+        _changeOutputAmounts.add(amount);
+      } else {
+        _externalOutputAmounts.add(amount);
+      }
+    }
 
     // case1. 다른 사람에게 보내고(B1) 잔액이 있는 경우(A2)
     // case2. 다른 사람에게 보내고(B1) 잔액이 없는 경우
@@ -277,6 +303,18 @@ class BroadcastingViewModel extends ChangeNotifier {
     return excludedUtxoStatus;
   }
 
+  void _debugPrintSendInfoProvider() {
+    debugPrint('------- sendInfoProvider ------');
+    debugPrint('walletId: $_walletId');
+    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
+    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
+    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
+    debugPrint('walletId: ${_sendInfoProvider.walletId}');
+    debugPrint('walletBase: $_walletBase');
+    debugPrint('walletAddressType: ${_walletBase!.addressType}');
+    debugPrint('-------------------------------');
+  }
+
   bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
     if (unSignedTx == null) return false;
 
@@ -288,7 +326,9 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     // outputs에서 각 output의 amount가 같은지 비교
     for (int i = 0; i < signedTx.outputs.length; i++) {
-      if (signedTx.outputs[i].amount != unSignedTx.outputs[i].amount) return false;
+      if (signedTx.outputs[i].amount != unSignedTx.outputs[i].amount) {
+        return false;
+      }
     }
 
     // totalInputAmount 비교
@@ -442,4 +482,12 @@ class BroadcastingViewModel extends ChangeNotifier {
     assert(signedDraftIdToDelete != null);
     await _txDraftRepository.deleteOne(signedDraftIdToDelete!);
   }
+}
+
+class BroadcastingOutputDetailItem {
+  final String address;
+  final int amount;
+  final bool isChange;
+
+  const BroadcastingOutputDetailItem({required this.address, required this.amount, required this.isChange});
 }
