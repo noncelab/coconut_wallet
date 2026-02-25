@@ -663,13 +663,15 @@ class RecentTransactionAnalysis {
   String get _endDate => days == 0 ? _formatYyMmDd(endDate ?? DateTime.now()) : _formatYyMmDd(DateTime.now());
 
   String get titleString {
-    final amount = selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
-        ? receivedAmount
-        : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
-        ? (sentAmount + selfAmount).abs()
-        : totalAmount.abs();
+    final amount =
+        selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
+            ? receivedAmount
+            : selectedAnalysisTransactionType == AnalysisTransactionType.onlySent
+            ? (sentAmount + selfAmount).abs()
+            : totalAmount.abs();
     return '${bitcoinUnit.displayBitcoinAmount(amount, withUnit: true)} ';
   }
+
   String get totalAmountResult => totalTransactionResult;
   String get subtitleString =>
       '$dateRange | ${t.wallet_home_screen.transaction_count(count: selectedAnalysisTransactionType == AnalysisTransactionType.onlyReceived
