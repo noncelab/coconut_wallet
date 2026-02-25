@@ -35,9 +35,8 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   int? _inputAmount;
   int? get inputAmount => _inputAmount;
 
-  /// BTC 단위 (true: BTC, false: sats)
-  late bool _isBtcUnit;
-  bool get isBtcUnit => _isBtcUnit;
+  late BitcoinUnit _currentUnit;
+  BitcoinUnit get currentUnit => _currentUnit;
 
   /// 네트워크 연결 상태
   late bool _isNetworkOn;
@@ -54,10 +53,18 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   /// BTC 가격이 사용 가능한지 여부
   bool get isBtcPriceAvailable => _btcPrice != null && _btcPrice! > 0 && _isNetworkOn;
 
-  String get inputCardPrefix => _inputAssetType == InputAssetType.fiat ? _fiatCode.symbol : '';
-  String get inputCardPostfix => _inputAssetType == InputAssetType.fiat ? '' : (isBtcUnit ? t.btc : t.sats);
-  String get resultCardPrefix => _inputAssetType == InputAssetType.fiat ? '' : _fiatCode.symbol;
-  String get resultCardPostfix => _inputAssetType == InputAssetType.fiat ? (isBtcUnit ? t.btc : t.sats) : '';
+  String get inputCardPrefix =>
+      _inputAssetType == InputAssetType.fiat
+          ? _fiatCode.symbol
+          : (_currentUnit.isBip177Unit ? _currentUnit.symbol : '');
+  String get inputCardPostfix =>
+      _inputAssetType == InputAssetType.fiat || _currentUnit.isBip177Unit ? '' : _currentUnit.symbol;
+  String get resultCardPrefix =>
+      _inputAssetType == InputAssetType.fiat
+          ? (_currentUnit.isBip177Unit ? _currentUnit.symbol : '')
+          : _fiatCode.symbol;
+  String get resultCardPostfix =>
+      _inputAssetType == InputAssetType.fiat ? (_currentUnit.isBip177Unit ? '' : _currentUnit.symbol) : '';
 
   /// 1 BTC의 법정화폐 환산 가격 (포맷팅된 문자열)
   String get formattedOneBtcPrice {
@@ -75,7 +82,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     _fiatCode = _preferenceProvider.selectedFiat;
     _btcPrice = _priceProvider.getBitcoinPriceForFiat(_fiatCode);
     _isNetworkOn = _connectivityProvider.isInternetOn;
-    _isBtcUnit = _preferenceProvider.isBtcUnit;
+    _currentUnit = _preferenceProvider.currentUnit;
   }
 
   @override
@@ -117,9 +124,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleBtcUnit() {
+  void cycleBtcUnit() {
     vibrateExtraLight();
-    _isBtcUnit = !_isBtcUnit;
+    _currentUnit = _currentUnit.next;
     notifyListeners();
   }
 
@@ -197,10 +204,10 @@ class P2PCalculatorViewModel extends ChangeNotifier {
           return '5,000';
       }
     } else {
-      if (_isBtcUnit) {
-        return '0.0005';
-      } else {
+      if (_currentUnit.isBasedOnSatoshi) {
         return '50,000';
+      } else {
+        return '0.0005';
       }
     }
   }
@@ -231,16 +238,15 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   }
 
   String formatSatsResult(int sats) {
-    if (_isBtcUnit) {
-      return formatBtcTrimmed(sats);
-    } else {
+    if (_currentUnit.isBasedOnSatoshi) {
       return sats.toThousandsSeparatedString();
+    } else {
+      return formatBtc(sats);
     }
   }
 
-  String formatBtcTrimmed(int sats) {
+  String formatBtc(int sats) {
     var result = BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
-    result = result.replaceFirst(RegExp(r'[0\s]+$'), '');
     if (result.endsWith('.')) result = result.substring(0, result.length - 1);
     return result;
   }
@@ -330,7 +336,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       return t.utility.p2p_calculator.copy_format(
         currency: _fiatCode.name,
         currencyAmount: fiatAmountStr,
-        btcUnit: isBtcUnit ? t.btc : t.sats,
+        btcUnit: _currentUnit.isBasedOnSatoshi ? t.sats : t.btc,
         btcAmount: btcAmountStr,
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
@@ -341,7 +347,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       );
     } else {
       return t.utility.p2p_calculator.copy_format(
-        currency: isBtcUnit ? t.btc : t.sats,
+        currency: _currentUnit.isBasedOnSatoshi ? t.sats : t.btc,
         currencyAmount: btcAmountStr,
         btcUnit: _fiatCode.name,
         btcAmount: fiatAmountStr,
