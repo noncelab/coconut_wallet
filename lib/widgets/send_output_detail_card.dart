@@ -64,6 +64,7 @@ class _SendOutputDetailCardState extends State<SendOutputDetailCard> {
                 ),
               ),
               GestureDetector(
+                behavior: HitTestBehavior.translucent,
                 onTap: () {
                   setState(() {
                     _isExpanded = !_isExpanded;

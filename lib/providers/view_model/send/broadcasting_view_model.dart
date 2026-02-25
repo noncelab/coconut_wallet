@@ -188,15 +188,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
     final (_, excludedUtxoStatus) = _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds);
 
-    debugPrint('------- sendInfoProvider ------');
-    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
-    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
-    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
-    debugPrint('walletId: ${_sendInfoProvider.walletId}');
-    debugPrint('walletBase: $_walletBase');
-    debugPrint('walletAddressType: ${_walletBase!.addressType}');
-    debugPrint('walletId: $_walletId');
-    debugPrint('-------------------------------');
+    //_debugPrintSendInfoProvider();
 
     Psbt psbt;
     if (_hasAllInputsBip32Derivation(signedPsbt)) {
@@ -306,6 +298,18 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
     notifyListeners();
     return excludedUtxoStatus;
+  }
+
+  void _debugPrintSendInfoProvider() {
+    debugPrint('------- sendInfoProvider ------');
+    debugPrint('walletId: $_walletId');
+    debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
+    debugPrint('signedPsbt: ${_sendInfoProvider.signedResult}');
+    debugPrint('txWaitingForSign: ${_sendInfoProvider.txWaitingForSign}');
+    debugPrint('walletId: ${_sendInfoProvider.walletId}');
+    debugPrint('walletBase: $_walletBase');
+    debugPrint('walletAddressType: ${_walletBase!.addressType}');
+    debugPrint('-------------------------------');
   }
 
   bool isTxContentEqual(Transaction signedTx, Transaction? unSignedTx) {
