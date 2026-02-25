@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/rbf_builder.dart';
+import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
@@ -38,7 +39,7 @@ void main() {
       final int totalInput = tx.totalInputAmount;
       final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
       final int actualFee = totalInput - totalOutput;
-      final double vByte = TransactionUtil.estimateVirtualByteByWallet(multiWallet, tx);
+      final double vByte = tx.estimateVirtualByteForWallet(multiWallet);
       final double calculatedFeeRate = FeeRateUtils.ceilFeeRate(actualFee / vByte);
       final int changeAmount = totalInput - 1000 - actualFee;
 

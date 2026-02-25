@@ -1,16 +1,16 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/extensions/transaction_extension.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
-import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 
 class RbfBuildResult {
   final Transaction? transaction;
@@ -174,15 +174,6 @@ class RbfBuilder {
     return (txBuildResult: null, addedUtxos: [], leftDeficit: null);
   }
 
-  double _getEstimatedTxVSize(Transaction tx) {
-    return TransactionUtil.estimateVirtualByteByWallet(walletListItemBase, tx);
-  }
-
-  double _getFeeRateFromSucceedTxBuildResult(TransactionBuildResult txBuildResult) {
-    assert(txBuildResult.isSuccess);
-    return FeeRateUtils.ceilFeeRate(txBuildResult.estimatedFee / _getEstimatedTxVSize(txBuildResult.transaction!));
-  }
-
   RbfBuildResult getBaselineTransaction({bool isForce = false}) {
     if (!isForce && _cachedBaseline != null) return _cachedBaseline!;
 
@@ -200,11 +191,12 @@ class RbfBuilder {
         double minimumFeeRate = FeeRateUtils.ceilFeeRate(minimumFee / newTxVSize);
         final txBuildResult = _buildTransaction(minimumFeeRate, recipientMap, []);
         if (txBuildResult.isSuccess) {
+          final tx = txBuildResult.transaction!;
           _cachedBaseline = RbfBuildResult(
-            transaction: txBuildResult.transaction,
+            transaction: tx,
             isOnlyChangeOutputUsed: true,
-            minimumFeeRate: _getFeeRateFromSucceedTxBuildResult(txBuildResult),
-            estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+            minimumFeeRate: txBuildResult.getFeeRate(walletListItemBase)!,
+            estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
           );
           return _cachedBaseline!;
         } else {
@@ -232,11 +224,12 @@ class RbfBuilder {
     if (deficitAmount == 0) {
       final txBuildResult = _buildTransaction(_calculateMinimumFeeRate(newTxVSize), recipientMap, addedUtxos);
       if (txBuildResult.isSuccess) {
+        final tx = txBuildResult.transaction!;
         _cachedBaseline = RbfBuildResult(
-          transaction: txBuildResult.transaction,
-          minimumFeeRate: _getFeeRateFromSucceedTxBuildResult(txBuildResult),
+          transaction: tx,
+          minimumFeeRate: txBuildResult.getFeeRate(walletListItemBase)!,
           addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
-          estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+          estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
         );
         return _cachedBaseline!;
       } else {
@@ -276,11 +269,12 @@ class RbfBuilder {
         if (changeOutput!.amount >= deficitAmount) {
           final txBuildResult = _buildTransaction(newFeeRate, recipientMap, []);
           if (txBuildResult.isSuccess) {
+            final tx = txBuildResult.transaction!;
             return RbfBuildResult(
-              transaction: txBuildResult.transaction,
+              transaction: tx,
               isOnlyChangeOutputUsed: true,
               minimumFeeRate: _cachedBaseline!.minimumFeeRate,
-              estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+              estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
             );
           } else {
             throw 'RbfBuild.build: _buildTransaction failed1 - ${txBuildResult.exception!.toString()}';
@@ -312,11 +306,12 @@ class RbfBuilder {
       if (deficitAmount == 0) {
         final txBuildResult = _buildTransaction(newFeeRate, recipientMap, addedUtxos);
         if (txBuildResult.isSuccess) {
+          final tx = txBuildResult.transaction!;
           return RbfBuildResult(
-            transaction: txBuildResult.transaction,
+            transaction: tx,
             minimumFeeRate: _cachedBaseline!.minimumFeeRate,
             addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
-            estimatedVSize: _getEstimatedTxVSize(txBuildResult.transaction!),
+            estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
           );
         } else {
           throw 'RbfBuilder.getBaselineTransaction: _buildTransaction failed2 - ${txBuildResult.exception.toString()}';

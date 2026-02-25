@@ -3,6 +3,7 @@ import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -23,7 +24,6 @@ import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -938,7 +938,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   double _estimateVirtualByte(Transaction transaction) {
-    return TransactionUtil.estimateVirtualByteByWallet(walletListItemBase, transaction);
+    return transaction.estimateVirtualByteForWallet(walletListItemBase);
   }
 
   String _getRecommendedFeeRateDescriptionForCpfp() {
