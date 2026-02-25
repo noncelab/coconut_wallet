@@ -172,9 +172,12 @@ class BroadcastingViewModel extends ChangeNotifier {
         rethrow;
       }
     }
-    // input UTXO 유효성 검증
+    // input UTXO 유효성 검증 (단, feeBumping일 때는 제외)
     final inputUtxoIds = _signedTx!.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
-    final (_, excludedUtxoStatus) = _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds);
+    final (_, excludedUtxoStatus) =
+        _signedDraftId != null
+            ? _utxoRepository.getValidatedSelectedUtxoList(_walletId!, inputUtxoIds)
+            : (inputUtxoIds, null);
 
     debugPrint('------- sendInfoProvider ------');
     debugPrint('transactionDraftId: ${_sendInfoProvider.unsignedDraftId}');
