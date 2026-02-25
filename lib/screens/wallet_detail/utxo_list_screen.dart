@@ -313,6 +313,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   onTapDropdown: _toggleDropdownSticky,
                   onSelectAll: () => _selectAll(tagName),
                   onUnselectAll: _deselectAll,
+                  onPressedUnitToggle: _toggleUnit,
                   removePopup: _hideDropdown,
                   onToggleOrderDropdown: () => _dropdownVisible.value = !_dropdownVisible.value,
                   selectedUtxoCount: viewModel.selectedUtxoList.length,
@@ -560,7 +561,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+      _currentUnit = _currentUnit.next;
     });
   }
 
@@ -896,9 +897,12 @@ class _UtxoListState extends State<UtxoList> {
     final inserted = <int>[];
     final removed = <int>[];
 
-    for (int i = 0; i < utxoList.length; i++) if (!oldMap.containsKey(utxoList[i].utxoId)) inserted.add(i);
-    for (int i = 0; i < _displayedUtxoList.length; i++)
+    for (int i = 0; i < utxoList.length; i++) {
+      if (!oldMap.containsKey(utxoList[i].utxoId)) inserted.add(i);
+    }
+    for (int i = 0; i < _displayedUtxoList.length; i++) {
       if (!newMap.containsKey(_displayedUtxoList[i].utxoId)) removed.add(i);
+    }
 
     setState(() => _displayedUtxoList = List.from(utxoList));
 
