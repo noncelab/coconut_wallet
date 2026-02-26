@@ -51,21 +51,33 @@ class UtxoItemCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  alignment: Alignment.centerLeft,
                   child:
                       isSelectionMode
-                          ? SvgPicture.asset(
-                            isSelected ? 'assets/svg/circle-check-filled.svg' : 'assets/svg/circle-check-outline.svg',
-                            colorFilter: ColorFilter.mode(
-                              isSelected ? CoconutColors.white : CoconutColors.gray600,
-                              BlendMode.srcIn,
-                            ),
+                          ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: SvgPicture.asset(
+                                  isSelected
+                                      ? 'assets/svg/circle-check-filled.svg'
+                                      : 'assets/svg/circle-check-outline.svg',
+                                  colorFilter: ColorFilter.mode(
+                                    isSelected ? CoconutColors.white : CoconutColors.gray600,
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                              ),
+                              CoconutLayout.spacing_200w,
+                            ],
                           )
-                          : null,
+                          : const SizedBox.shrink(),
                 ),
-                CoconutLayout.spacing_200w,
                 // data string
                 Row(
                   children: [
