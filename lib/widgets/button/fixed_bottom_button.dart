@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomButton extends StatefulWidget {
@@ -97,20 +98,31 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
               children: [
                 widget.subWidget ?? Container(),
                 CoconutLayout.spacing_300h,
-                CoconutButton(
+                ShrinkAnimationButton(
                   onPressed: () {
                     widget.onButtonClicked();
                   },
-                  width: MediaQuery.sizeOf(context).width,
-                  disabledBackgroundColor: CoconutColors.gray800,
-                  disabledForegroundColor: CoconutColors.gray700,
                   isActive: widget.isActive,
-                  height: buttonHeight,
-                  backgroundColor: widget.backgroundColor,
-                  foregroundColor: CoconutColors.black,
-                  pressedTextColor: CoconutColors.black,
-                  pressedBackgroundColor: widget.pressedBackgroundColor,
-                  text: widget.text,
+                  defaultColor: widget.backgroundColor,
+                  pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(widget.backgroundColor),
+                  disabledColor: CoconutColors.gray800,
+                  borderRadius: 12,
+                  child: SizedBox(
+                    width: MediaQuery.sizeOf(context).width,
+                    height: buttonHeight,
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.text,
+                          textAlign: TextAlign.center,
+                          style: CoconutTypography.heading4_18_Bold.setColor(
+                            widget.isActive ? widget.textColor : CoconutColors.gray700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -119,4 +131,10 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
       ),
     );
   }
+}
+
+Color getDarkerColor(Color color, [double amount = 0.15]) {
+  final hsl = HSLColor.fromColor(color);
+  final darker = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+  return darker.toColor();
 }
