@@ -13,7 +13,14 @@ class FakePreferenceProvider extends Fake implements PreferenceProvider {
   @override
   final bool isBtcUnit;
 
-  FakePreferenceProvider({this.selectedFiat = FiatCode.KRW, this.isBtcUnit = false});
+  FakePreferenceProvider({
+    this.selectedFiat = FiatCode.KRW,
+    this.isBtcUnit = false,
+    this.currentUnit = BitcoinUnit.btc,
+  });
+
+  @override
+  final BitcoinUnit currentUnit;
 
   @override
   void addListener(VoidCallback listener) {}
@@ -40,6 +47,7 @@ class FakeConnectivityProvider extends Fake implements ConnectivityProvider {
 
 class FakePriceProvider extends Fake implements PriceProvider {
   final Map<FiatCode, int?> _prices;
+  final BitcoinUnit _currentUnit = BitcoinUnit.btc;
 
   FakePriceProvider({int? defaultPrice})
     : _prices = {FiatCode.KRW: defaultPrice, FiatCode.USD: defaultPrice, FiatCode.JPY: defaultPrice};
@@ -48,6 +56,8 @@ class FakePriceProvider extends Fake implements PriceProvider {
 
   @override
   int? getBitcoinPriceForFiat(FiatCode fiatCode) => _prices[fiatCode];
+
+  BitcoinUnit get currentUnit => _currentUnit;
 
   @override
   void addListener(VoidCallback listener) {}

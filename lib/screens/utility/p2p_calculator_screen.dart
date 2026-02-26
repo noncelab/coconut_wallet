@@ -86,7 +86,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   void _onInputFocusChanged() {
     if (!_inputFocusNode.hasFocus) {
       // 포커스를 잃었을 때 - BTC 단위면 readable 형식으로 변환 (소수부 4자리씩 공백)
-      if (_viewModel.inputAssetType == InputAssetType.btc && _viewModel.isBtcUnit) {
+      if (_viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi) {
         final currentInput = _viewModel.inputAmount;
         if (currentInput != null && currentInput > 0) {
           final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(currentInput, forceEightDecimals: false);
@@ -161,7 +161,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   void _handleAmountInputChanged(String value) {
     if (_isUpdatingController) return; // 무한 루프 방지
 
-    final isBtcInput = _viewModel.inputAssetType == InputAssetType.btc && _viewModel.isBtcUnit;
+    final isBtcInput = _viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi;
     final sanitized = _sanitizeInput(value, isBtcInput);
 
     if (sanitized.isEmpty) {
@@ -177,10 +177,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
 
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
       _processFiatInput(sanitized);
-    } else if (_viewModel.isBtcUnit) {
-      _processBtcInput(sanitized);
-    } else {
+    } else if (_viewModel.currentUnit.isBasedOnSatoshi) {
       _processSatsInput(sanitized);
+    } else {
+      _processBtcInput(sanitized);
     }
 
     setState(() {});
@@ -347,22 +347,22 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   /// BTC/Sats 단위 토글 시 입력 컨트롤러 업데이트
   void _onBtcUnitToggle() {
     final currentInput = _viewModel.inputAmount;
-
+    final prevIsBasedOnSatoshi = _viewModel.currentUnit.isBasedOnSatoshi;
     // 단위 토글
-    _viewModel.toggleBtcUnit();
+    _viewModel.cycleBtcUnit();
 
     // 입력값이 있으면 컨트롤러를 새 단위로 재포맷
     if (currentInput != null && currentInput > 0 && _viewModel.inputAssetType == InputAssetType.btc) {
       _isUpdatingController = true;
 
-      if (_viewModel.isBtcUnit) {
+      if (prevIsBasedOnSatoshi && !_viewModel.currentUnit.isBasedOnSatoshi) {
         // Sats → BTC 전환 (readable bitcoin 형식)
-        final formatted = _viewModel.formatBtcTrimmed(currentInput);
+        final formatted = _viewModel.formatBtc(currentInput);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
         );
-      } else {
+      } else if (!prevIsBasedOnSatoshi && _viewModel.currentUnit.isBasedOnSatoshi) {
         // BTC → Sats 전환
         final formatted = currentInput.toThousandsSeparatedString();
         _inputController.value = TextEditingValue(
@@ -393,16 +393,16 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       );
     } else {
       // Fiat → BTC로 전환
-      if (_viewModel.isBtcUnit) {
-        // BTC 단위: readable bitcoin 형식 (trailing zero 제거)
-        final formatted = _viewModel.formatBtcTrimmed(result);
+      if (_viewModel.currentUnit.isBasedOnSatoshi) {
+        // Sats 단위: 정수 포맷
+        final formatted = result.toThousandsSeparatedString();
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
         );
       } else {
-        // Sats 단위: 정수 포맷
-        final formatted = result.toThousandsSeparatedString();
+        // BTC 단위: readable bitcoin 형식 (trailing zero 제거)
+        final formatted = _viewModel.formatBtc(result);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -444,7 +444,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
     final input = _viewModel.inputAmount;
     if (input == null || input == 0) return;
 
-    final result = _viewModel.calculate(input);
+    final int result = _viewModel.calculate(input);
     final referenceDateTime = DateTime.now();
     final referenceDateTimeString =
         '${referenceDateTime.year.toString().substring(2)}-${referenceDateTime.month.toString().padLeft(2, '0')}-${referenceDateTime.day.toString().padLeft(2, '0')} ${referenceDateTime.hour.toString().padLeft(2, '0')}:${referenceDateTime.minute.toString().padLeft(2, '0')}:${referenceDateTime.second.toString().padLeft(2, '0')}';
@@ -515,7 +515,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                               _buildBillRow(
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? _viewModel.fiatCode.code
-                                    : (_viewModel.isBtcUnit ? t.btc : t.sats),
+                                    : _viewModel.currentUnit.symbol,
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? input.toThousandsSeparatedString()
                                     : _viewModel.formatSatsResult(input),
@@ -525,7 +525,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                               // 결과값
                               _buildBillRow(
                                 _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? (_viewModel.isBtcUnit ? t.btc : t.sats)
+                                    ? _viewModel.currentUnit.symbol
                                     : _viewModel.fiatCode.code,
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? _viewModel.formatSatsResult(result)
@@ -962,7 +962,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onUnitToggle,
+        onTap: focusNode.hasFocus ? null : onUnitToggle,
         child: Stack(
           children: [
             Container(
@@ -1176,13 +1176,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         final currentValue = int.tryParse(currentText) ?? 0;
         final addValue = int.tryParse(value) ?? 0;
         _handleAmountInputChanged((currentValue + addValue).toString());
-      } else if (_viewModel.isBtcUnit) {
-        final currentValue = double.tryParse(currentText) ?? 0;
-        final addValue = double.tryParse(value) ?? 0;
-        _handleAmountInputChanged((currentValue + addValue).toString());
-      } else {
+      } else if (_viewModel.currentUnit.isBasedOnSatoshi) {
         final currentValue = int.tryParse(currentText) ?? 0;
         final addValue = int.tryParse(value) ?? 0;
+        _handleAmountInputChanged((currentValue + addValue).toString());
+      } else {
+        final currentValue = double.tryParse(currentText) ?? 0;
+        final addValue = double.tryParse(value) ?? 0;
         _handleAmountInputChanged((currentValue + addValue).toString());
       }
     }
@@ -1229,19 +1229,19 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       }
     } else {
       // BTC/Sats 입력
-      if (_viewModel.isBtcUnit) {
-        return [
-          {'label': '+0.0001', 'value': '0.0001'},
-          {'label': '+0.0005', 'value': '0.0005'},
-          {'label': '+0.001', 'value': '0.001'},
-          {'label': '+0.005', 'value': '0.005'},
-        ];
-      } else {
+      if (_viewModel.currentUnit.isBasedOnSatoshi) {
         return [
           {'label': '+10,000', 'value': '10000'},
           {'label': '+50,000', 'value': '50000'},
           {'label': '+100,000', 'value': '100000'},
           {'label': '+500,000', 'value': '500000'},
+        ];
+      } else {
+        return [
+          {'label': '+0.0001', 'value': '0.0001'},
+          {'label': '+0.0005', 'value': '0.0005'},
+          {'label': '+0.001', 'value': '0.001'},
+          {'label': '+0.005', 'value': '0.005'},
         ];
       }
     }
