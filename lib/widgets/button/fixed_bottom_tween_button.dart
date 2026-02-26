@@ -132,7 +132,9 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                           child: Center(
                             child: Text(
                               widget.leftText,
-                              style: CoconutTypography.body1_16_Bold.setColor(widget.leftButtonTextColor),
+                              style: CoconutTypography.body1_16_Bold.setColor(
+                                widget.isLeftButtonActive ? widget.leftButtonTextColor : CoconutColors.gray700,
+                              ),
                             ),
                           ),
                         ),
@@ -156,7 +158,9 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                           child: Center(
                             child: Text(
                               widget.rightText,
-                              style: CoconutTypography.body1_16_Bold.setColor(widget.rightButtonTextColor),
+                              style: CoconutTypography.body1_16_Bold.setColor(
+                                widget.isRightButtonActive ? widget.rightButtonTextColor : CoconutColors.gray700,
+                              ),
                             ),
                           ),
                         ),
