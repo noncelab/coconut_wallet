@@ -29,7 +29,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
   List<UtxoTag> _utxoTagList = [];
-  List<UtxoTag> _selectedUtxoTagList = [];
+  List<UtxoTag> _appliedUtxoTagList = [];
   late final List<String> _dateString;
   late final TransactionRecord? _transaction;
 
@@ -49,7 +49,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   ) {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
+    _appliedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
 
     _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash);
     _dateString = _transaction != null ? DateTimeUtil.formatTimestamp(_transaction.timestamp) : ['-', '-'];
@@ -89,7 +89,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
   }
 
   List<String> get dateString => _dateString;
-  List<UtxoTag> get selectedUtxoTagList => _selectedUtxoTagList;
+  List<UtxoTag> get appliedUtxoTagList => _appliedUtxoTagList;
   UtxoTagProvider? get tagProvider => _tagProvider;
 
   TransactionRecord? get transaction => _transaction;
@@ -105,7 +105,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   void updateUtxoTags(
     String utxoId,
-    List<String> selectedTagNames,
+    List<String> tagNamesToApply,
     List<UtxoTag> updatedTagList,
     UtxoTagApplyEditMode editMode,
   ) {
@@ -133,8 +133,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
           }
         }
         break;
-      case UtxoTagApplyEditMode.changAppliedTags:
-        _tagProvider.updateUtxoTagIdList(walletId: _walletId, utxoId: utxoId, selectedTagNames: selectedTagNames);
+      case UtxoTagApplyEditMode.changeAppliedTags:
+        _tagProvider.updateUtxoTagIdList(walletId: _walletId, utxoId: utxoId, tagNamesToApply: tagNamesToApply);
         break;
       case UtxoTagApplyEditMode.update:
         final List<UtxoTag> modifiedTags = [];
@@ -159,28 +159,21 @@ class UtxoDetailViewModel extends ChangeNotifier {
     }
 
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxoId);
+    _appliedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxoId);
     notifyListeners();
   }
 
   void _initUtxoInOutputList() {
     if (_transaction == null) return;
 
-    _utxoInputMaxCount =
-        _transaction.inputAddressList.length <= kInputMaxCount ? _transaction.inputAddressList.length : kInputMaxCount;
-    _utxoOutputMaxCount =
-        _transaction.outputAddressList.length <= kOutputMaxCount
-            ? _transaction.outputAddressList.length
-            : kOutputMaxCount;
-    if (_transaction.inputAddressList.length <= utxoInputMaxCount) {
-      _utxoInputMaxCount = _transaction.inputAddressList.length;
-    }
-    if (_transaction.outputAddressList.length <= utxoOutputMaxCount) {
-      _utxoOutputMaxCount = _transaction.outputAddressList.length;
-    }
+    final inputCount = _transaction.inputAddressList.length;
+    final outputCount = _transaction.outputAddressList.length;
+
+    _utxoInputMaxCount = inputCount <= kInputMaxCount ? inputCount : kInputMaxCount;
+    _utxoOutputMaxCount = outputCount <= kOutputMaxCount ? outputCount : kOutputMaxCount;
   }
 
-  List<UtxoTag> refreshTagList(walletId) {
+  List<UtxoTag> refreshTagList() {
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
     return _utxoTagList;
   }

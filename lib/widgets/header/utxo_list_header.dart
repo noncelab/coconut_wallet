@@ -14,7 +14,7 @@ class UtxoListHeader extends StatefulWidget {
   final GlobalKey headerGlobalKey;
   final GlobalKey dropdownGlobalKey;
   final AnimatedBalanceData animatedBalanceData;
-  final String selectedOption;
+  final String activeOption;
   final Function onTapDropdown;
   final bool isLoadComplete;
   final void Function() onPressedUnitToggle;
@@ -34,7 +34,7 @@ class UtxoListHeader extends StatefulWidget {
     required this.headerGlobalKey,
     required this.dropdownGlobalKey,
     required this.animatedBalanceData,
-    required this.selectedOption,
+    required this.activeOption,
     required this.onTapDropdown,
     required this.isLoadComplete,
     required this.currentUnit,
@@ -129,7 +129,7 @@ class _UtxoListHeaderState extends State<UtxoListHeader> {
                 child: Row(
                   children: [
                     Text(
-                      widget.selectedOption,
+                      widget.activeOption,
                       style: CoconutTypography.body3_12.setColor(
                         widget.isLoadComplete ? CoconutColors.white : CoconutColors.gray700,
                       ),

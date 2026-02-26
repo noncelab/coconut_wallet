@@ -212,9 +212,9 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         return Selector<UtxoListViewModel, Tuple5<UtxoOrder, String, String, int, int>>(
           selector:
               (_, vm) => Tuple5(
-                vm.selectedUtxoOrder,
+                vm.activeUtxoOrder,
                 vm.utxoTagListKey,
-                vm.selectedUtxoTagName,
+                vm.activeUtxoTagName,
                 vm.selectedUtxoList.length,
                 vm.selectedUtxoAmountSum,
               ),
@@ -235,7 +235,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               dropdownGlobalKey: _headerDropdownKey,
               isLoadComplete: canShowDropdown,
               animatedBalanceData: AnimatedBalanceData(vm.balance, vm.prevBalance),
-              selectedOption: order.text,
+              activeOption: order.text,
               onTapDropdown: () {
                 _dropdownVisible.value = !_dropdownVisible.value;
                 _hideStickyHeaderAndUpdateDropdownPosition();
@@ -243,8 +243,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               onPressedUnitToggle: _toggleUnit,
               currentUnit: _currentUnit,
               tagListWidget: UtxoTagListWidget(
-                selectedUtxoTagName: tagName,
-                onTagSelected: (name) => vm.setSelectedUtxoTagName(name),
+                activeUtxoTagName: tagName,
+                onTagSelected: (name) => vm.setActiveUtxoTagName(name),
               ),
               orderDropdownButtonKey: _selectModeHeaderDropdownKey,
               orderText: vm.utxoOrder.text,
@@ -268,11 +268,11 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         return Selector<UtxoListViewModel, Tuple6<UtxoOrder, String, int, AnimatedBalanceData, String, int>>(
           selector:
               (_, vm) => Tuple6(
-                vm.selectedUtxoOrder,
+                vm.activeUtxoOrder,
                 vm.utxoTagListKey,
                 vm.utxoList.length,
                 AnimatedBalanceData(vm.balance, vm.prevBalance),
-                vm.selectedUtxoTagName,
+                vm.activeUtxoTagName,
                 vm.selectedUtxoList.length,
               ),
           shouldRebuild:
@@ -305,7 +305,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   enableDropdown: enableDropdown,
                   animatedBalanceData: balanceData,
                   totalCount: count,
-                  selectedOption: order.text,
+                  activeOption: order.text,
                   currentUnit: _currentUnit,
                   isSelectionMode: _isSelectionMode,
                   orderDropdownButtonKey: _selectModeStickyHeaderDropdownKey,
@@ -319,8 +319,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
                   orderText: viewModel.utxoOrder.text,
                   tagListWidget: UtxoTagListWidget(
-                    selectedUtxoTagName: tagName,
-                    onTagSelected: (name) => viewModel.setSelectedUtxoTagName(name),
+                    activeUtxoTagName: tagName,
+                    onTagSelected: (name) => viewModel.setActiveUtxoTagName(name),
                   ),
                 );
               },
@@ -347,12 +347,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                 : _headerDropdownPos.dy + _headerDropdownSize.height;
 
         return Selector<UtxoListViewModel, UtxoOrder>(
-          selector: (_, vm) => vm.selectedUtxoOrder,
-          builder: (context, selectedOrder, _) {
+          selector: (_, vm) => vm.activeUtxoOrder,
+          builder: (context, activeOrder, _) {
             return UtxoOrderDropdown(
               isVisible: isVisible,
               positionTop: positionTop,
-              selectedOption: selectedOrder,
+              activeOption: activeOrder,
               isSelectionMode: _isSelectionMode,
               onOptionSelected: (filter) {
                 _hideDropdown();
@@ -556,7 +556,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   void _toggleSelectionMode() {
     setState(() {
       _isSelectionMode = !_isSelectionMode;
-      _isSelectionMode ? viewModel.setSelectedUtxoTagName(t.all) : _deselectAll();
+      _isSelectionMode ? viewModel.setActiveUtxoTagName(t.all) : _deselectAll();
     });
   }
 
@@ -636,7 +636,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   void _selectAll(String tagName) {
     _hideDropdown();
     viewModel
-      ..setSelectedUtxoTagName(tagName)
+      ..setActiveUtxoTagName(tagName)
       ..selectTaggedUtxo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _utxoListKey.currentState?._setSelectedUtxosFromViewModel(viewModel.selectedUtxoList);
@@ -699,11 +699,11 @@ class _UtxoListState extends State<UtxoList> {
     double bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Selector<UtxoListViewModel, Tuple3<List<UtxoState>, String, UtxoOrder>>(
-      selector: (_, vm) => Tuple3(vm.utxoList, vm.selectedUtxoTagName, vm.selectedUtxoOrder),
+      selector: (_, vm) => Tuple3(vm.utxoList, vm.activeUtxoTagName, vm.activeUtxoOrder),
       shouldRebuild: (prev, next) => prev.item1 != next.item1 || prev.item2 != next.item2 || prev.item3 != next.item3,
       builder: (_, data, __) {
         final utxoList = data.item1;
-        final selectedTag = data.item2;
+        final activeTag = data.item2;
 
         if (utxoList.isEmpty) return _buildEmptyState();
 
@@ -715,7 +715,7 @@ class _UtxoListState extends State<UtxoList> {
 
         return SliverPadding(
           padding: EdgeInsets.only(bottom: bottomInset + 70),
-          sliver: _buildSliverAnimatedList(utxoList, selectedTag),
+          sliver: _buildSliverAnimatedList(utxoList, activeTag),
         );
       },
     );
@@ -724,11 +724,11 @@ class _UtxoListState extends State<UtxoList> {
   // --------------------
   // Sliver & List Building
   // --------------------
-  Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String selectedTag) {
+  Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String activeTag) {
     Key listKey;
-    if (selectedTag == t.utxo_detail_screen.utxo_locked) {
+    if (activeTag == t.utxo_detail_screen.utxo_locked) {
       listKey = _lockedUtxoListKey;
-    } else if (selectedTag == t.change) {
+    } else if (activeTag == t.change) {
       listKey = _changeUtxoListKey;
     } else {
       listKey = _utxoListKey;
@@ -741,7 +741,7 @@ class _UtxoListState extends State<UtxoList> {
         if (index >= utxoList.length) return const SizedBox();
 
         final utxo = utxoList[index];
-        if (!_belongsToTag(utxo, selectedTag)) return const SizedBox();
+        if (!_belongsToTag(utxo, activeTag)) return const SizedBox();
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),

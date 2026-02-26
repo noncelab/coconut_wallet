@@ -121,7 +121,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   void showTagBottomSheet() {
-    final List<String> selectedUtxoIds = [widget.utxo.utxoId];
+    final List<String> currentUtxoIds = [widget.utxo.utxoId];
 
     showModalBottomSheet(
       context: context,
@@ -130,16 +130,16 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       builder:
           (context) => TagApplyBottomSheet(
             walletId: widget.id,
-            selectedUtxoIds: selectedUtxoIds,
+            selectedUtxoIds: currentUtxoIds,
             onUpdate:
                 (tagStates, updatedTags, mode) => UtxoTagUtil.handleTagApplyCompleted(
                   context: context,
                   mode: mode,
                   tagStates: tagStates,
                   walletId: widget.id,
-                  selectedUtxoIds: selectedUtxoIds,
-                  getCurrentTagsCallback: (_) => _viewModel.selectedUtxoTagList.map((e) => e.name).toList(),
-                  onRefreshUI: () => _viewModel.refreshTagList(widget.id),
+                  selectedUtxoIds: currentUtxoIds,
+                  getCurrentTagsCallback: (_) => _viewModel.appliedUtxoTagList.map((e) => e.name).toList(),
+                  onRefreshUI: () => _viewModel.refreshTagList(),
                 ),
           ),
     );
@@ -157,13 +157,13 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               (_, viewModel) => Tuple4(
                 viewModel.transaction,
                 viewModel.dateString,
-                viewModel.selectedUtxoTagList,
+                viewModel.appliedUtxoTagList,
                 viewModel.utxoStatus,
               ),
           builder: (_, data, __) {
             final tx = data.item1;
             final dateString = data.item2;
-            final selectedTags = data.item3;
+            final appliedTags = data.item3;
             final utxoStatus = data.item4;
 
             return Column(
@@ -217,7 +217,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                   ),
                   _buildAddress(),
                   _buildTxMemo(tx.memo),
-                  _buildTagSection(selectedTags),
+                  _buildTagSection(appliedTags),
                   _buildTxId(),
                   _buildBlockHeight(),
                   CoconutLayout.spacing_1000h,
@@ -466,7 +466,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildTagSection(List<UtxoTag> selectedTags) {
+  Widget _buildTagSection(List<UtxoTag> appliedTags) {
     return Column(
       children: [
         UnderlineButtonItemCard(
@@ -476,14 +476,14 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (selectedTags.isEmpty) ...{
+              if (appliedTags.isEmpty) ...{
                 Text('-', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
               } else ...{
                 Wrap(
                   spacing: 4,
                   runSpacing: 4,
                   children:
-                      selectedTags.map((tag) {
+                      appliedTags.map((tag) {
                         final foregroundColor = tagColorPalette[tag.colorIndex];
                         return IntrinsicWidth(
                           child: CoconutChip(

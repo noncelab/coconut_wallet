@@ -40,7 +40,7 @@ class UtxoTagUtil {
       return;
     }
 
-    if (mode == UtxoTagApplyEditMode.changAppliedTags) {
+    if (mode == UtxoTagApplyEditMode.changeAppliedTags) {
       final tagProvider = context.read<UtxoTagProvider>();
 
       await tagProvider.applyTagsToUtxos(

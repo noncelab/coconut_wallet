@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
-enum UtxoTagApplyEditMode { add, delete, changAppliedTags, update }
+enum UtxoTagApplyEditMode { add, delete, changeAppliedTags, update }
 
 enum TagApplyState { original, checked, unchecked }
 
@@ -88,7 +88,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
                 Navigator.pop(context);
               },
               onNextPressed: () {
-                widget.onUpdate?.call(_tagStates, _utxoTags, UtxoTagApplyEditMode.changAppliedTags);
+                widget.onUpdate?.call(_tagStates, _utxoTags, UtxoTagApplyEditMode.changeAppliedTags);
                 Navigator.pop(context);
               },
               title: t.tag_bottom_sheet.title_apply_tag,
