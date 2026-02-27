@@ -397,7 +397,7 @@ class WalletProvider extends ChangeNotifier {
     final dateRange = Tuple2<DateTime, DateTime>(start, end);
 
     for (int walletId in walletIds) {
-      final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId);
+      final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId, excludeReplaced: true);
       final confirmedTxs = getConfirmedTransactionRecordListWithinDateRange([walletId], dateRange);
 
       if (pendingTxs.isNotEmpty || confirmedTxs.isNotEmpty) {

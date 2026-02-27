@@ -14,7 +14,8 @@ class SharedPrefKeys {
 
   static const String kNextVersionUpdateDialogDate = "NEXT_VERSION_UPDATE_DIALOG_DATE";
   static const String kCanCheckBiometrics = "CAN_CHECK_BIOMETRICS";
-  static const String kIsBtcUnit = "IS_BTC_UNIT";
+  static const String kIsBtcUnit = "IS_BTC_UNIT"; // deprecated: 마이그레이션 전용
+  static const String kBitcoinUnit = "BITCOIN_UNIT";
   static const String kShowOnlyUnusedAddresses = "SHOW_ONLY_UNUSED_ADDRESSES";
   static const String kIsReceivingTooltipDisabled = "IS_RECEIVING_TOOLTIP_DISABLED";
   static const String kIsChangeTooltipDisabled = "IS_CHANGE_TOOLTIP_DISABLED";

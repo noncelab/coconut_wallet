@@ -53,7 +53,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
   void _toggleUnit() {
     setState(() {
-      _currentUnit = _currentUnit == BitcoinUnit.btc ? BitcoinUnit.sats : BitcoinUnit.btc;
+      _currentUnit = _currentUnit.next;
     });
   }
 
@@ -122,14 +122,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    _amountText(tx),
-                                    CoconutLayout.spacing_100w,
-                                    Text(
-                                      _currentUnit.symbol,
-                                      style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray350),
-                                    ),
-                                  ],
+                                  children: [_amountText(tx)],
                                 ),
                               ),
                               CoconutLayout.spacing_100h,
@@ -216,7 +209,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           onTapUnderlineButton: () {},
                           child: Text(
                             // 인풋을 조회할 수 없는 경우, 수수료 표시 안 함.
-                            tx.inputAddressList.isNotEmpty ? '${tx.feeRate.toStringAsFixed(2)} sats/vb' : '-',
+                            tx.inputAddressList.isNotEmpty ? '${tx.feeRate.toStringAsFixed(2)} sats/vB' : '-',
                             style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
                           ),
                         ),
@@ -623,13 +616,32 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
   }
 
   Widget _amountText(TransactionRecord tx) {
-    String prefix = _getPrefix(tx) == '-' ? '' : '+';
-    Color color = prefix == '+' ? CoconutColors.cyan : CoconutColors.primary;
-    String amountText = _currentUnit.displayBitcoinAmount(tx.amount);
+    final bool isPositive = _getPrefix(tx) != '-';
+    final Color color = isPositive ? CoconutColors.cyan : CoconutColors.primary;
+    final String sign = isPositive ? '+' : '-';
+    final String absAmount = _currentUnit.displayBitcoinAmount(tx.amount.abs());
+    final String symbol = _currentUnit.symbol;
+    final boldStyle = CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color);
+    final unitStyle = CoconutTypography.heading4_18_NumberBold.copyWith(color: color);
 
-    return Text(
-      '$prefix$amountText',
-      style: CoconutTypography.heading2_28_NumberBold.copyWith(fontSize: 24, color: color),
+    if (_currentUnit.isPrefixSymbol) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(sign, style: boldStyle),
+          Text(symbol, style: unitStyle),
+          CoconutLayout.spacing_50w,
+          Text(absAmount, style: boldStyle),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [Text('$sign$absAmount', style: boldStyle), CoconutLayout.spacing_50w, Text(symbol, style: unitStyle)],
     );
   }
 
