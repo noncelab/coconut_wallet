@@ -15,7 +15,6 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/utxo_tag_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -120,29 +119,50 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  void showTagBottomSheet() {
+  Future<void> showTagBottomSheet() async {
     final List<String> currentUtxoIds = [widget.utxo.utxoId];
 
-    showModalBottomSheet(
+    final result = await showModalBottomSheet<TagApplyResult>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder:
-          (context) => TagApplyBottomSheet(
-            walletId: widget.id,
-            selectedUtxoIds: currentUtxoIds,
-            onUpdate:
-                (tagStates, updatedTags, mode) => UtxoTagUtil.handleTagApplyCompleted(
-                  context: context,
-                  mode: mode,
-                  tagStates: tagStates,
-                  walletId: widget.id,
-                  selectedUtxoIds: currentUtxoIds,
-                  getCurrentTagsCallback: (_) => _viewModel.appliedUtxoTagList.map((e) => e.name).toList(),
-                  onRefreshUI: () => _viewModel.refreshTagList(),
-                ),
-          ),
+      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: currentUtxoIds),
     );
+
+    if (result == null) return;
+    if (!mounted) return;
+
+    final mode = result.mode;
+    final tagStates = result.tagStates;
+
+    if (mode == UtxoTagApplyEditMode.add ||
+        mode == UtxoTagApplyEditMode.update ||
+        mode == UtxoTagApplyEditMode.delete) {
+      _viewModel.refreshTagList();
+      return;
+    }
+
+    if (mode == UtxoTagApplyEditMode.changeAppliedTags) {
+      final tagProvider = context.read<UtxoTagProvider>();
+
+      await tagProvider.applyTagsToUtxos(
+        walletId: widget.id,
+        selectedUtxoIds: currentUtxoIds,
+        tagStates: tagStates,
+        getCurrentTagsCallback: (_) => _viewModel.appliedUtxoTagList.map((e) => e.name).toList(),
+      );
+
+      _viewModel.refreshTagList();
+
+      if (mounted) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          text: t.utxo_list_screen.utxo_tag_updated,
+        );
+      }
+    }
   }
 
   Widget _buildScaffold(BuildContext context) {

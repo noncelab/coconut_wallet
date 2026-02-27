@@ -14,14 +14,20 @@ enum UtxoTagApplyEditMode { add, delete, changeAppliedTags, update }
 
 enum TagApplyState { original, checked, unchecked }
 
+class TagApplyResult {
+  final UtxoTagApplyEditMode mode;
+  final Map<String, TagApplyState> tagStates;
+  final List<String> updatedTags;
+
+  const TagApplyResult({required this.mode, required this.tagStates, this.updatedTags = const []});
+}
+
 /// [TagApplyBottomSheet] : Utxo Detail 화면에서 '태그 편집' 클릭 시 노출
-/// [onUpdate] : utxo detail에서 선택 또는 생성된 태그 목록 변경 완료 콜백 (Map 형태로 변경됨)
 class TagApplyBottomSheet extends StatefulWidget {
   final int walletId;
   final List<String> selectedUtxoIds;
-  final Function(Map<String, TagApplyState>, List<UtxoTag>, UtxoTagApplyEditMode)? onUpdate;
 
-  const TagApplyBottomSheet({super.key, required this.walletId, required this.selectedUtxoIds, this.onUpdate});
+  const TagApplyBottomSheet({super.key, required this.walletId, required this.selectedUtxoIds});
 
   @override
   State<TagApplyBottomSheet> createState() => _TagApplyBottomSheetState();
@@ -35,6 +41,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
   late List<String> _tagNamesToDelete;
 
   bool _isDeletionMode = false;
+  bool _isTagListModified = false;
 
   List<UtxoTag> get _deletableTags {
     return _utxoTags.where((tag) => tag.utxoIdList == null || tag.utxoIdList!.isEmpty).toList();
@@ -73,40 +80,55 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
     super.dispose();
   }
 
+  void _handlePop() {
+    if (_isTagListModified) {
+      Navigator.pop(context, TagApplyResult(mode: UtxoTagApplyEditMode.update, tagStates: _tagStates));
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<UtxoTagCrudViewModel>.value(
-      value: _viewModel,
-      child: Consumer<UtxoTagCrudViewModel>(
-        builder: (context, model, child) {
-          return CoconutBottomSheet(
-            useIntrinsicHeight: true,
-            appBar: CoconutAppBar.buildWithNext(
-              isBottom: true,
-              context: context,
-              onBackPressed: () {
-                Navigator.pop(context);
-              },
-              onNextPressed: () {
-                widget.onUpdate?.call(_tagStates, _utxoTags, UtxoTagApplyEditMode.changeAppliedTags);
-                Navigator.pop(context);
-              },
-              title: t.tag_bottom_sheet.title_apply_tag,
-              isActive: !_isDeletionMode,
-              nextButtonTitle: t.complete,
-            ),
-            body: Consumer<UtxoTagCrudViewModel>(
-              builder: (context, viewModel, child) {
-                return SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SizedBox(width: double.infinity, child: _buildUpdateView()),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, dynamic result) {
+        if (didPop) return;
+        _handlePop();
+      },
+      child: ChangeNotifierProvider<UtxoTagCrudViewModel>.value(
+        value: _viewModel,
+        child: Consumer<UtxoTagCrudViewModel>(
+          builder: (context, model, child) {
+            return CoconutBottomSheet(
+              useIntrinsicHeight: true,
+              appBar: CoconutAppBar.buildWithNext(
+                isBottom: true,
+                context: context,
+                onBackPressed: _handlePop,
+                onNextPressed: () {
+                  Navigator.pop(
+                    context,
+                    TagApplyResult(mode: UtxoTagApplyEditMode.changeAppliedTags, tagStates: _tagStates),
+                  );
+                },
+                title: t.tag_bottom_sheet.title_apply_tag,
+                isActive: !_isDeletionMode,
+                nextButtonTitle: t.complete,
+              ),
+              body: Consumer<UtxoTagCrudViewModel>(
+                builder: (context, viewModel, child) {
+                  return SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(width: double.infinity, child: _buildUpdateView()),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -173,11 +195,11 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
       _tagNamesToDelete.add(tag);
       _tagStates.remove(tag);
       _viewModel.deleteUtxoTag(tagToDelete);
+
       setState(() {
         _utxoTags = List.from(_viewModel.utxoTagList);
+        _isTagListModified = true;
       });
-
-      widget.onUpdate?.call(_tagStates, _utxoTags, UtxoTagApplyEditMode.delete);
 
       if (_deletableTags.isEmpty) {
         _toggleDeletionMode();
@@ -189,7 +211,6 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
       final currentState = _tagStates[tag] ?? TagApplyState.original;
       TagApplyState nextState;
 
-      // 3가지 상태 순환 로직 적용
       switch (currentState) {
         case TagApplyState.original:
           nextState = TagApplyState.checked;
@@ -241,8 +262,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
                     _tagStates[updatedTag.name] = previousState;
                   }
                 }
-
-                widget.onUpdate?.call(_tagStates, _utxoTags, UtxoTagApplyEditMode.update);
+                _isTagListModified = true;
               });
             },
           ),
@@ -278,7 +298,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
               setState(() {
                 _utxoTags = List.from(_viewModel.utxoTagList);
                 _tagStates[newTag.name] = TagApplyState.checked;
-                widget.onUpdate?.call(_tagStates, _utxoTags, UtxoTagApplyEditMode.add);
+                _isTagListModified = true;
               });
             },
           ),
