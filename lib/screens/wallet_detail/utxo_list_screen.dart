@@ -10,13 +10,14 @@ import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
-import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
@@ -25,6 +26,7 @@ import 'package:coconut_wallet/widgets/header/utxo_tag_list_widget.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
@@ -141,10 +143,10 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: _buildAppBar(context),
-      body: Selector<UtxoListViewModel, Tuple3<bool, bool, List<UtxoState>>>(
-        selector: (_, vm) => Tuple3(vm.isSyncing, vm.isUtxoTagListEmpty, vm.utxoList),
+      body: Selector<UtxoListViewModel, (bool, bool, List<UtxoState>)>(
+        selector: (_, vm) => (vm.isSyncing, vm.isUtxoTagListEmpty, vm.utxoList),
         builder: (context, data, _) {
-          final (isSyncing, isEmpty, utxos) = (data.item1, data.item2, data.item3);
+          final (isSyncing, isEmpty, utxos) = data;
           return Stack(
             children: [
               CustomScrollView(
@@ -187,33 +189,17 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       context: context,
       backgroundColor: CoconutColors.black,
       actionButtonList: [
-        CoconutUnderlinedButton(
-          text: _isSelectionMode ? t.complete : t.select,
-          textStyle: const TextStyle(color: CoconutColors.white, fontSize: 16, fontWeight: FontWeight.bold),
-          onTap: _toggleSelectionMode,
+        Container(
+          alignment: Alignment.center,
+          child: CoconutUnderlinedButton(
+            text: _isSelectionMode ? t.complete : t.select,
+            textStyle: CoconutTypography.body2_14.setColor(CoconutColors.onPrimary(CoconutTheme.brightness())),
+            onTap: _toggleSelectionMode,
+          ),
         ),
       ],
     );
   }
-
-  Widget _buildBottomGradient() => Positioned(
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 150,
-    child: IgnorePointer(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.transparent, CoconutColors.black],
-            stops: [0.0, 0.75],
-          ),
-        ),
-      ),
-    ),
-  );
 
   // ──────────────────────────────
   // Header / Sticky Header
@@ -225,9 +211,9 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         return Selector<UtxoListViewModel, Tuple5<UtxoOrder, String, String, int, int>>(
           selector:
               (_, vm) => Tuple5(
-                vm.selectedUtxoOrder,
+                vm.activeUtxoOrder,
                 vm.utxoTagListKey,
-                vm.selectedUtxoTagName,
+                vm.activeUtxoTagName,
                 vm.selectedUtxoList.length,
                 vm.selectedUtxoAmountSum,
               ),
@@ -248,7 +234,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               dropdownGlobalKey: _headerDropdownKey,
               isLoadComplete: canShowDropdown,
               animatedBalanceData: AnimatedBalanceData(vm.balance, vm.prevBalance),
-              selectedOption: order.text,
+              activeOption: order.text,
               onTapDropdown: () {
                 _dropdownVisible.value = !_dropdownVisible.value;
                 _hideStickyHeaderAndUpdateDropdownPosition();
@@ -256,8 +242,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               onPressedUnitToggle: _toggleUnit,
               currentUnit: _currentUnit,
               tagListWidget: UtxoTagListWidget(
-                selectedUtxoTagName: tagName,
-                onTagSelected: (name) => vm.setSelectedUtxoTagName(name),
+                activeUtxoTagName: tagName,
+                onTagSelected: (name) => vm.setActiveUtxoTagName(name),
               ),
               orderDropdownButtonKey: _selectModeHeaderDropdownKey,
               orderText: vm.utxoOrder.text,
@@ -281,11 +267,11 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         return Selector<UtxoListViewModel, Tuple6<UtxoOrder, String, int, AnimatedBalanceData, String, int>>(
           selector:
               (_, vm) => Tuple6(
-                vm.selectedUtxoOrder,
+                vm.activeUtxoOrder,
                 vm.utxoTagListKey,
                 vm.utxoList.length,
                 AnimatedBalanceData(vm.balance, vm.prevBalance),
-                vm.selectedUtxoTagName,
+                vm.activeUtxoTagName,
                 vm.selectedUtxoList.length,
               ),
           shouldRebuild:
@@ -318,7 +304,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   enableDropdown: enableDropdown,
                   animatedBalanceData: balanceData,
                   totalCount: count,
-                  selectedOption: order.text,
+                  activeOption: order.text,
                   currentUnit: _currentUnit,
                   isSelectionMode: _isSelectionMode,
                   orderDropdownButtonKey: _selectModeStickyHeaderDropdownKey,
@@ -332,8 +318,8 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                   selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
                   orderText: viewModel.utxoOrder.text,
                   tagListWidget: UtxoTagListWidget(
-                    selectedUtxoTagName: tagName,
-                    onTagSelected: (name) => viewModel.setSelectedUtxoTagName(name),
+                    activeUtxoTagName: tagName,
+                    onTagSelected: (name) => viewModel.setActiveUtxoTagName(name),
                   ),
                 );
               },
@@ -360,12 +346,12 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
                 : _headerDropdownPos.dy + _headerDropdownSize.height;
 
         return Selector<UtxoListViewModel, UtxoOrder>(
-          selector: (_, vm) => vm.selectedUtxoOrder,
-          builder: (context, selectedOrder, _) {
+          selector: (_, vm) => vm.activeUtxoOrder,
+          builder: (context, activeOrder, _) {
             return UtxoOrderDropdown(
               isVisible: isVisible,
               positionTop: positionTop,
-              selectedOption: selectedOrder,
+              activeOption: activeOrder,
               isSelectionMode: _isSelectionMode,
               onOptionSelected: (filter) {
                 _hideDropdown();
@@ -379,19 +365,197 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildSelectionButtons() {
-    return FixedBottomTweenButton(
-      leftText: t.utxo_list_screen.utxo_unlocked_button,
-      rightText: t.utxo_list_screen.utxo_locked_button,
-      leftButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: false),
-      rightButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: true),
-      leftButtonRatio: 0.5,
-      showGradient: true,
-      gradientPadding: const EdgeInsets.only(top: 0, bottom: 0, left: 0, right: 0),
-      leftButtonBackgroundColor: CoconutColors.white,
-      rightButtonBackgroundColor: CoconutColors.white,
-      leftButtonTextColor: CoconutColors.black,
-      rightButtonTextColor: CoconutColors.black,
+    final double bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            height: 40,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, CoconutColors.black],
+              ),
+            ),
+          ),
+
+          Container(
+            color: CoconutColors.black,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/send.svg',
+                          text: t.send,
+                          onTap:
+                              () => _handleActionUtxoSelected(() {
+                                final selectedUtxos = List<UtxoState>.from(viewModel.selectedUtxoList);
+                                final hasLockedUtxo = selectedUtxos.any((utxo) => utxo.status == UtxoStatus.locked);
+
+                                if (hasLockedUtxo) {
+                                  CoconutToast.showToast(
+                                    context: context,
+                                    text: t.utxo_list_screen.send_locked_utxo,
+                                    isVisibleIcon: true,
+                                  );
+                                  return;
+                                }
+
+                                setState(() {
+                                  _isSelectionMode = false;
+                                });
+                                viewModel.deselectTaggedUtxo();
+                                _utxoListKey.currentState?._selectedUtxoIds.clear();
+
+                                Navigator.pushNamed(
+                                  context,
+                                  '/send',
+                                  arguments: {
+                                    'walletId': widget.id,
+                                    'sendEntryPoint': SendEntryPoint.walletDetail,
+                                    'selectedUtxoList': selectedUtxos,
+                                  },
+                                );
+                              }),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/tag.svg',
+                          text: t.utxo_list_screen.tag_apply,
+                          onTap: () => _handleActionUtxoSelected(showTagBottomSheet),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/lock_simple.svg',
+                          text: t.utxo_list_screen.utxo_locked_button,
+                          onTap:
+                              () => _handleActionUtxoSelected(() {
+                                _utxoListKey.currentState?._updateSelectedUtxos(lock: true);
+                              }),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildInvisibleActionArea(
+                          iconPath: 'assets/svg/unlock_simple.svg',
+                          text: t.utxo_list_screen.utxo_unlocked_button,
+                          onTap:
+                              () => _handleActionUtxoSelected(() {
+                                _utxoListKey.currentState?._updateSelectedUtxos(lock: false);
+                              }),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: bottomPadding > 0 ? bottomPadding : 16),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildInvisibleActionArea({required String iconPath, required String text, required VoidCallback onTap}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        height: 64,
+        alignment: Alignment.center,
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(iconPath, width: 24, height: 24),
+            const SizedBox(height: 4),
+            Text(
+              text,
+              style: const TextStyle(color: CoconutColors.gray100, fontSize: 12, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleActionUtxoSelected(VoidCallback action) {
+    if (_utxoListKey.currentState?._selectedUtxoIds.isEmpty ?? true) {
+      CoconutToast.showToast(context: context, text: t.utxo_list_screen.utxo_select_required, isVisibleIcon: true);
+      return;
+    }
+    action();
+  }
+
+  Future<void> showTagBottomSheet() async {
+    final selectedUtxoIds = _utxoListKey.currentState?._selectedUtxoIds.toList() ?? [];
+
+    final result = await showModalBottomSheet<TagApplyResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+    );
+
+    if (result == null) return;
+    if (!mounted) return;
+
+    final mode = result.mode;
+    final tagStates = result.tagStates;
+
+    if (mode == UtxoTagApplyEditMode.add ||
+        mode == UtxoTagApplyEditMode.update ||
+        mode == UtxoTagApplyEditMode.delete) {
+      viewModel.refetchFromDB();
+      viewModel.deselectTaggedUtxo();
+      return;
+    }
+
+    if (mode == UtxoTagApplyEditMode.changeAppliedTags) {
+      final tagProvider = context.read<UtxoTagProvider>();
+
+      await tagProvider.applyTagsToUtxos(
+        walletId: widget.id,
+        selectedUtxoIds: selectedUtxoIds,
+        tagStates: tagStates,
+        getCurrentTagsCallback: (utxoId) => _utxoListKey.currentState?._getCurrentTagsForUtxo(utxoId) ?? [],
+      );
+
+      viewModel.refetchFromDB();
+      viewModel.deselectTaggedUtxo();
+
+      setState(() {
+        _utxoListKey.currentState?._selectedUtxoIds.clear();
+        _isSelectionMode = false;
+      });
+
+      if (mounted) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          text: t.utxo_list_screen.utxo_tag_updated,
+        );
+      }
+    }
   }
 
   // ──────────────────────────────
@@ -410,7 +574,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   void _toggleSelectionMode() {
     setState(() {
       _isSelectionMode = !_isSelectionMode;
-      _isSelectionMode ? viewModel.setSelectedUtxoTagName(t.all) : _deselectAll();
+      _isSelectionMode ? viewModel.setActiveUtxoTagName(t.all) : _deselectAll();
     });
   }
 
@@ -490,7 +654,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   void _selectAll(String tagName) {
     _hideDropdown();
     viewModel
-      ..setSelectedUtxoTagName(tagName)
+      ..setActiveUtxoTagName(tagName)
       ..selectTaggedUtxo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _utxoListKey.currentState?._setSelectedUtxosFromViewModel(viewModel.selectedUtxoList);
@@ -553,11 +717,11 @@ class _UtxoListState extends State<UtxoList> {
     double bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Selector<UtxoListViewModel, Tuple3<List<UtxoState>, String, UtxoOrder>>(
-      selector: (_, vm) => Tuple3(vm.utxoList, vm.selectedUtxoTagName, vm.selectedUtxoOrder),
+      selector: (_, vm) => Tuple3(vm.utxoList, vm.activeUtxoTagName, vm.activeUtxoOrder),
       shouldRebuild: (prev, next) => prev.item1 != next.item1 || prev.item2 != next.item2 || prev.item3 != next.item3,
       builder: (_, data, __) {
         final utxoList = data.item1;
-        final selectedTag = data.item2;
+        final activeTag = data.item2;
 
         if (utxoList.isEmpty) return _buildEmptyState();
 
@@ -569,7 +733,7 @@ class _UtxoListState extends State<UtxoList> {
 
         return SliverPadding(
           padding: EdgeInsets.only(bottom: bottomInset + 70),
-          sliver: _buildSliverAnimatedList(utxoList, selectedTag),
+          sliver: _buildSliverAnimatedList(utxoList, activeTag),
         );
       },
     );
@@ -578,11 +742,11 @@ class _UtxoListState extends State<UtxoList> {
   // --------------------
   // Sliver & List Building
   // --------------------
-  Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String selectedTag) {
+  Widget _buildSliverAnimatedList(List<UtxoState> utxoList, String activeTag) {
     Key listKey;
-    if (selectedTag == t.utxo_detail_screen.utxo_locked) {
+    if (activeTag == t.utxo_detail_screen.utxo_locked) {
       listKey = _lockedUtxoListKey;
-    } else if (selectedTag == t.change) {
+    } else if (activeTag == t.change) {
       listKey = _changeUtxoListKey;
     } else {
       listKey = _utxoListKey;
@@ -595,7 +759,7 @@ class _UtxoListState extends State<UtxoList> {
         if (index >= utxoList.length) return const SizedBox();
 
         final utxo = utxoList[index];
-        if (!_belongsToTag(utxo, selectedTag)) return const SizedBox();
+        if (!_belongsToTag(utxo, activeTag)) return const SizedBox();
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
@@ -688,7 +852,7 @@ class _UtxoListState extends State<UtxoList> {
           onPressed: () {
             if (isSelectionMode) {
               if (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming) {
-                CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: false);
+                CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: true);
 
                 return;
               }
@@ -770,6 +934,7 @@ class _UtxoListState extends State<UtxoList> {
     for (var index in removed.reversed) {
       if (index >= _displayedUtxoList.length) continue;
       await Future.delayed(_animationDuration);
+      if (!mounted) return;
       _utxoListKey.currentState?.removeItem(
         index,
         (c, anim) => _buildRemoveUtxoItem(_displayedUtxoList[index], anim),
@@ -779,6 +944,7 @@ class _UtxoListState extends State<UtxoList> {
 
     for (var index in inserted) {
       await Future.delayed(_animationDuration);
+      if (!mounted) return;
       _utxoListKey.currentState?.insertItem(index, duration: _duration);
     }
 
@@ -798,7 +964,9 @@ class _UtxoListState extends State<UtxoList> {
     final oldMap = {for (var u in oldList) u.utxoId: u};
     final newMap = {for (var u in newList) u.utxoId: u};
 
-    if (!oldMap.keys.toSet().containsAll(newMap.keys) || !newMap.keys.toSet().containsAll(oldMap.keys)) return true;
+    for (final key in oldMap.keys) {
+      if (!newMap.containsKey(key)) return true;
+    }
 
     for (final id in oldMap.keys) {
       final oldU = oldMap[id]!;
@@ -822,7 +990,7 @@ class _UtxoListState extends State<UtxoList> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isSelectionMode != widget.isSelectionMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) setState(() {});
+        if (mounted) setState(() {});
       });
     }
   }
@@ -830,5 +998,10 @@ class _UtxoListState extends State<UtxoList> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  List<String> _getCurrentTagsForUtxo(String utxoId) {
+    final utxo = _displayedUtxoList.where((u) => u.utxoId == utxoId).firstOrNull;
+    return utxo?.tags?.map((tag) => tag.name).toList() ?? [];
   }
 }
