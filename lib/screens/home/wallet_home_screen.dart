@@ -571,7 +571,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             fit: BoxFit.scaleDown,
                             child: Row(
                               children: [
-                                if (!isBalanceHidden && currentUnit.isBip177Unit) ...[
+                                if (!isBalanceHidden && fakeBalanceTotalAmount == null && currentUnit.isBip177Unit) ...[
                                   Text(currentUnit.symbol, style: CoconutTypography.heading3_21_NumberBold),
                                   CoconutLayout.spacing_50w,
                                 ],
@@ -628,7 +628,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                                         },
                                       ),
                                     ),
-                                if (!isBalanceHidden && !currentUnit.isBip177Unit) ...[
+                                if (!isBalanceHidden &&
+                                    fakeBalanceTotalAmount == null &&
+                                    !currentUnit.isBip177Unit) ...[
                                   CoconutLayout.spacing_50w,
                                   Text(currentUnit.symbol, style: CoconutTypography.heading3_21_NumberBold),
                                 ],
