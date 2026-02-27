@@ -304,6 +304,7 @@ void main() {
       final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate);
       expect(baselineResult.transaction, isNotNull);
       expect(buildResult.transaction, isNotNull);
+      expect(baselineResult.minimumFeeRate, equals(buildResult.minimumFeeRate));
       final baselineTxFee =
           baselineResult.transaction!.totalInputAmount -
           baselineResult.transaction!.outputs.fold(0, (s, o) => s + o.amount);
@@ -315,7 +316,134 @@ void main() {
         greaterThanOrEqualTo(FeeRateUtils.ceilFeeRate((pendingTxFee + baselineVSize) / baselineVSize)), // 1.53
       );
     });
+
+    test('External 1 / no change / manual UTXO add / add enough UTXO later', () async {
+      // Step 1: additionalSpendable 없이 rbfBuilder 생성 (change 없음, 수수료 부족)
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(false, 99890)],
+        changeAmount: 0,
+        fee: 110,
+        vSize: 110,
+        // additionalSpendable: [] (기본값)
+      );
+
+      // Step 2: 초기 baseline 확인 — 실패
+      final RbfBuildResult firstResult = rbfBuilder.getBaselineTransaction();
+      expect(firstResult.isFailure, isTrue);
+      expect(firstResult.transaction, isNull);
+      expect(firstResult.addedUtxos, isNull); // 아무 UTXO도 시도하지 않음
+      expect(firstResult.deficitAmount, equals(141 + 68)); // = 209
+      expect(firstResult.minimumFeeRate, equals(1.53));
+
+      // Step 3: changeAdditionalSpendable로 충분한 UTXO 추가 → 새 Baseline 생성
+      final newUtxo = UtxoState(
+        transactionHash: creator.transactionHashes[1],
+        index: 0,
+        amount: 1000,
+        blockHeight: 21000,
+        to: creator.receiveAddressList[1],
+        derivationPath: "m/84'/1'/0'/0/1",
+        timestamp: DateTime.now(),
+      );
+      final RbfBuildResult changeResult = rbfBuilder.changeAdditionalSpendable([newUtxo]);
+
+      expect(changeResult.isSuccess, isTrue);
+      expect(changeResult.transaction, isNotNull);
+      expect(changeResult.isOnlyChangeOutputUsed, isFalse);
+      expect(changeResult.isSelfOutputsUsed, isFalse);
+      expect(changeResult.addedUtxos, isNotNull);
+      expect(changeResult.addedUtxos!.length, equals(1));
+      expect(changeResult.deficitAmount, isNull);
+      // ⚠️ minimumFeeRate는 firstResult(1.53)보다 0.01 높은 1.54
+      //    (getBaselineTransaction 계산값 1.53으로 빌드 후 getFeeRate()가 1.54 반환 — 정수 반올림)
+      expect(changeResult.minimumFeeRate, equals(1.54));
+      expect(changeResult.minimumFeeRate, greaterThanOrEqualTo(firstResult.minimumFeeRate));
+
+      // Step 4: build() 호출 → isSuccess 확인
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: changeResult.minimumFeeRate);
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.addedUtxos, isNotNull);
+      expect(buildResult.addedUtxos!.length, equals(1));
+      expect(buildResult.deficitAmount, isNull);
+      expect(buildResult.minimumFeeRate, equals(changeResult.minimumFeeRate));
+    });
+
+    test('External 1 / change short with new feeRate / manual UTXO add / add enough UTXO later', () async {
+      // Step 1: additionalSpendable 없이 rbfBuilder 생성 (change=547 있음, 최소 수수료는 충분)
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(false, 100000 - 141 - 547)],
+        changeAmount: 547,
+        fee: 141,
+        vSize: 141,
+        // additionalSpendable: [] (기본값)
+      );
+
+      // Step 2: 초기 baseline 확인 — 성공 (change 547 >= additionalFee 141)
+      final RbfBuildResult firstResult = rbfBuilder.getBaselineTransaction();
+      expect(firstResult.isSuccess, isTrue);
+      expect(firstResult.isOnlyChangeOutputUsed, isTrue);
+      expect(firstResult.addedUtxos, isNull);
+      expect(firstResult.minimumFeeRate, equals(2.01));
+
+      // Step 3: feeRate을 5.0으로 높여 build 호출 → change 547로 부족하여 실패
+      // requiredFee = ceil(140.75 * 5.0) = 704, additionalFee = 704 - 141 = 563
+      // change 547이 563에서 16을 못 냄 → deficit = 16
+      // additionalSpendable 없음 → bottom: deficit = 16 + ceil(68 * 5.0) = 356
+      final RbfBuildResult buildResult1 = rbfBuilder.build(newFeeRate: 5.0);
+      expect(buildResult1.isFailure, isTrue);
+      expect(buildResult1.transaction, isNull);
+      expect(buildResult1.deficitAmount, equals(16 + 340)); // = 356
+      expect(buildResult1.minimumFeeRate, equals(firstResult.minimumFeeRate)); // 2.01
+
+      // Step 4: amount가 다른 2개의 UTXO를 추가
+      final smallUtxo = UtxoState(
+        transactionHash: creator.transactionHashes[2],
+        index: 0,
+        amount: 300,
+        blockHeight: 21000,
+        to: creator.receiveAddressList[2],
+        derivationPath: "m/84'/1'/0'/0/2",
+        timestamp: DateTime.now(),
+      );
+      final largeUtxo = UtxoState(
+        transactionHash: creator.transactionHashes[1],
+        index: 0,
+        amount: 1000,
+        blockHeight: 21000,
+        to: creator.receiveAddressList[1],
+        derivationPath: "m/84'/1'/0'/0/1",
+        timestamp: DateTime.now(),
+      );
+      
+      final RbfBuildResult changeResult = rbfBuilder.changeAdditionalSpendable([smallUtxo, largeUtxo]);
+
+      // baseline 재계산: change(547) >= additionalFee(141)이므로 여전히 change만으로 baseline 성공
+      // → 추가 UTXO들은 baseline에서 사용되지 않고, minimumFeeRate도 이전과 동일
+      expect(changeResult.isSuccess, isTrue);
+      expect(changeResult.isOnlyChangeOutputUsed, isTrue);
+      expect(changeResult.addedUtxos, isNull);
+      expect(changeResult.minimumFeeRate, equals(firstResult.minimumFeeRate)); // 2.01 동일!
+
+      // Step 5: 동일한 feeRate 5.0으로 다시 build → 성공
+      // change 547이 564 중 547 커버, deficit = 17
+      // UTXO[0](1000): deficit = 17 + 340 = 357, 1000 >= 357 → deficit = 0 (성공!)
+      // UTXO[1](300)은 사용되지 않음
+      final RbfBuildResult buildResult2 = rbfBuilder.build(newFeeRate: 5.0);
+      expect(buildResult2.isSuccess, isTrue);
+      expect(buildResult2.transaction, isNotNull);
+      expect(buildResult2.exception, isNull);
+      expect(buildResult2.addedUtxos, isNotNull);
+      expect(buildResult2.addedUtxos!.length, equals(1)); // 2개 중 1개만 사용
+      expect(buildResult2.addedUtxos![0].amount, equals(1000)); // 더 큰 UTXO만 사용
+      expect(buildResult2.deficitAmount, isNull);
+      expect(buildResult2.minimumFeeRate, equals(changeResult.minimumFeeRate));
+    });
   });
+
   // group('싱글시그지갑 - InputSum enough', () {
   //   test('External 1 / change / InputSum enough', () async {
   //     final rbfBuilder = createRbfBuilder(
