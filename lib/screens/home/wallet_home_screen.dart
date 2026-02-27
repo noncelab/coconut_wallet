@@ -117,7 +117,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   late WalletHomeViewModel _viewModel;
-  late final List<Future<Object?> Function()> _dropdownActions;
+  late final Map<String, VoidCallback> _dropdownActions;
 
   bool _isFirstLoad = true;
   bool _isWalletListLoading = false;
@@ -327,42 +327,45 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _carouselController = CarouselSliderController();
     _pageIndicatorController = ScrollController();
 
-    _dropdownActions = [
-      () => Navigator.pushNamed(context, '/transaction-draft'),
-      () => CommonBottomSheets.showCustomHeightBottomSheet(
-        context: context,
-        child: const GlossaryBottomSheet(),
-        heightRatio: 0.9,
-      ),
-      () => Navigator.pushNamed(context, '/p2p-calculator'),
-      () => Navigator.pushNamed(context, '/mnemonic-word-list'),
-      () => showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return CoconutPopup(
-            languageCode: context.read<PreferenceProvider>().language,
-            title: t.alert.tutorial.title,
-            description: t.alert.tutorial.description,
-            onTapRight: () async {
-              launchURL(TUTORIAL_URL, defaultMode: false);
-              Navigator.of(context).pop();
+    _dropdownActions = {
+      t.transaction_draft.title: () => Navigator.pushNamed(context, '/transaction-draft'),
+      t.glossary:
+          () => CommonBottomSheets.showCustomHeightBottomSheet(
+            context: context,
+            child: const GlossaryBottomSheet(),
+            heightRatio: 0.9,
+          ),
+      t.utility.p2p_calculator.calculator: () => Navigator.pushNamed(context, '/p2p-calculator'),
+      t.mnemonic_wordlist: () => Navigator.pushNamed(context, '/mnemonic-word-list'),
+      t.tutorial:
+          () => showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return CoconutPopup(
+                languageCode: context.read<PreferenceProvider>().language,
+                title: t.alert.tutorial.title,
+                description: t.alert.tutorial.description,
+                onTapRight: () async {
+                  launchURL(TUTORIAL_URL, defaultMode: false);
+                  Navigator.of(context).pop();
+                },
+                onTapLeft: () {
+                  Navigator.of(context).pop();
+                },
+                rightButtonText: t.alert.tutorial.btn_view,
+                rightButtonColor: CoconutColors.cyan,
+                leftButtonText: t.close,
+              );
             },
-            onTapLeft: () {
-              Navigator.of(context).pop();
-            },
-            rightButtonText: t.alert.tutorial.btn_view,
-            rightButtonColor: CoconutColors.cyan,
-            leftButtonText: t.close,
-          );
-        },
-      ),
-      _navigateToWalletHomeEdit,
-      () => CommonBottomSheets.showCustomHeightBottomSheet(
-        context: context,
-        child: const SettingsScreen(),
-        heightRatio: 0.9,
-      ),
-    ];
+          ),
+      t.home_screen_settings: _navigateToWalletHomeEdit,
+      t.app_settings:
+          () => CommonBottomSheets.showCustomHeightBottomSheet(
+            context: context,
+            child: const SettingsScreen(),
+            heightRatio: 0.9,
+          ),
+    };
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_dropdownButtonKey.currentContext != null) {
@@ -1896,7 +1899,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               thickDividerIndexList: [_getThickDividerIndex(showGlossary)],
               onSelected: ((index, selectedText) {
                 _setDropdownMenuVisiblility(false);
-                _handleDropdownSelection(index, showGlossary);
+                _handleDropdownSelection(showGlossary, selectedText);
               }),
             ),
           );
@@ -1906,39 +1909,25 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   /// 용어집 표시 여부에 따른 Thick Divider 인덱스 계산
+  /// CoconutPulldownMenuGroup이 끝나는 지점의 인덱스를 반환
   int _getThickDividerIndex(bool showGlossary) {
     if (NetworkType.currentNetworkType.isTestnet) {
-      // 테스트넷: 용어집, 니모닉, 튜토리얼 → 인덱스 2
-      // 테스트넷 (용어집 없음): 니모닉, 튜토리얼 → 인덱스 1
-      return showGlossary ? 2 : 1;
+      // 테스트넷: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) + 튜토리얼(4) → 그룹 끝 인덱스 4
+      // 테스트넷 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) + 튜토리얼(3) → 그룹 끝 인덱스 3
+      return showGlossary ? 4 : 3;
     } else {
-      // 메인넷: 용어집, 니모닉 → 인덱스 1
-      // 메인넷 (용어집 없음): 니모닉 → 인덱스 0
-      return showGlossary ? 1 : 0;
+      // 메인넷: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) → 그룹 끝 인덱스 3
+      // 메인넷 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) → 그룹 끝 인덱스 2
+      return showGlossary ? 3 : 2;
     }
   }
 
-  /// 드롭다운 선택 처리 (인덱스 조정 포함)
-  void _handleDropdownSelection(int index, bool showGlossary) {
-    int adjustedIndex = index;
-
-    if (adjustedIndex == 0) {
-      // 임시저장 트랜잭션
-      _dropdownActions[adjustedIndex].call();
-      return;
+  /// 드롭다운 선택 처리 (selectedText 기반)
+  void _handleDropdownSelection(bool showGlossary, String selectedText) {
+    final action = _dropdownActions[selectedText];
+    if (action != null) {
+      action();
     }
-
-    // 용어집이 없는 경우 인덱스 조정
-    if (!showGlossary) {
-      adjustedIndex++;
-    }
-
-    // 메인넷에서 튜토리얼 항목이 없는 경우 추가 조정
-    if (!NetworkType.currentNetworkType.isTestnet && adjustedIndex >= 2) {
-      adjustedIndex++;
-    }
-
-    _dropdownActions[adjustedIndex].call();
   }
 
   Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType) {
