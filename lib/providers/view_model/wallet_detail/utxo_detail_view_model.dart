@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
-import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
@@ -103,66 +102,6 @@ class UtxoDetailViewModel extends ChangeNotifier {
   String getOutputAddress(int index) => TransactionUtil.getOutputAddress(_transaction, index);
   int getOutputAmount(int index) => TransactionUtil.getOutputAmount(_transaction, index);
 
-  void updateUtxoTags(
-    String utxoId,
-    List<String> tagNamesToApply,
-    List<UtxoTag> updatedTagList,
-    UtxoTagApplyEditMode editMode,
-  ) {
-    final addedTags =
-        updatedTagList
-            .where((updatedTag) => !_utxoTagList.any((currentTag) => currentTag.name == updatedTag.name))
-            .toList();
-    final removedTags =
-        _utxoTagList
-            .where((currentTag) => !updatedTagList.any((updatedTag) => updatedTag.name == currentTag.name))
-            .toList();
-
-    switch (editMode) {
-      case UtxoTagApplyEditMode.add:
-        if (addedTags.isNotEmpty) {
-          for (int i = 0; i < addedTags.length; i++) {
-            _tagProvider.addUtxoTag(_walletId, addedTags[i]);
-          }
-        }
-        break;
-      case UtxoTagApplyEditMode.delete:
-        if (removedTags.isNotEmpty) {
-          for (int i = 0; i < removedTags.length; i++) {
-            _tagProvider.deleteUtxoTag(_walletId, removedTags[i]);
-          }
-        }
-        break;
-      case UtxoTagApplyEditMode.changeAppliedTags:
-        _tagProvider.updateUtxoTagIdList(walletId: _walletId, utxoId: utxoId, tagNamesToApply: tagNamesToApply);
-        break;
-      case UtxoTagApplyEditMode.update:
-        final List<UtxoTag> modifiedTags = [];
-        final currentTagsById = {for (var tag in _utxoTagList) tag.id: tag};
-        final updatedTagsById = {for (var tag in updatedTagList) tag.id: tag};
-
-        for (String id in currentTagsById.keys) {
-          if (updatedTagsById.containsKey(id)) {
-            final currentTag = currentTagsById[id]!;
-            final updatedTag = updatedTagsById[id]!;
-
-            if (currentTag.name != updatedTag.name || currentTag.colorIndex != updatedTag.colorIndex) {
-              modifiedTags.add(updatedTag);
-            }
-          }
-        }
-        if (modifiedTags.isNotEmpty) {
-          for (var modifiedTag in modifiedTags) {
-            _tagProvider.updateUtxoTag(_walletId, modifiedTag);
-          }
-        }
-    }
-
-    _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    _appliedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxoId);
-    notifyListeners();
-  }
-
   void _initUtxoInOutputList() {
     if (_transaction == null) return;
 
@@ -173,9 +112,10 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _utxoOutputMaxCount = outputCount <= kOutputMaxCount ? outputCount : kOutputMaxCount;
   }
 
-  List<UtxoTag> refreshTagList() {
+  void refreshTagList() {
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    return _utxoTagList;
+    _appliedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
+    notifyListeners();
   }
 
   @override
