@@ -358,100 +358,40 @@ class TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor = tagColorPalette[tag.colorIndex];
+    final backgroundColor = foregroundColor.withOpacity(0.18);
 
-    Color backgroundColor = CoconutColors.gray800;
-    Color borderColor = CoconutColors.gray600;
-    Color textColor = CoconutColors.gray600;
-    double borderWidth = 0.5;
-    FontWeight fontWeight = FontWeight.normal;
-    Widget iconWidget = const SizedBox.shrink(key: ValueKey('empty'));
-
-    bool isGradientMode = false;
-    Gradient? activeGradient;
-
-    if (isDeletionMode) {
-      backgroundColor = CoconutColors.gray800;
-      borderColor = CoconutColors.gray600;
-      textColor = CoconutColors.gray300;
-      iconWidget = const Padding(
-        padding: EdgeInsets.only(right: 4.0),
-        child: Icon(Icons.close, key: ValueKey('delete'), size: 16, color: CoconutColors.white),
-      );
-    } else {
-      switch (applyState) {
-        case TagApplyState.original:
-          isGradientMode = true;
-          borderWidth = 1.0;
-          backgroundColor = CoconutColors.gray800;
-          activeGradient = LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [CoconutColors.backgroundColorPaletteDark[tag.colorIndex], foregroundColor],
-          );
-          textColor = Colors.white;
-          iconWidget = Padding(
-            padding: const EdgeInsets.only(right: 4.0),
-            child: SvgPicture.asset(
-              'assets/svg/circle-minus.svg',
-              key: const ValueKey('original'),
-              width: 16,
-              height: 16,
-              colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-            ),
-          );
-          break;
-        case TagApplyState.checked:
-          backgroundColor = CoconutColors.backgroundColorPaletteDark[tag.colorIndex];
-          borderColor = foregroundColor;
-          borderWidth = 1.0;
-          textColor = foregroundColor;
-          fontWeight = FontWeight.w600;
-          iconWidget = Padding(
-            padding: const EdgeInsets.only(right: 4.0),
-            child: SvgPicture.asset(
-              'assets/svg/circle-check.svg',
-              key: const ValueKey('check'),
-              width: 16,
-              height: 16,
-              colorFilter: ColorFilter.mode(foregroundColor, BlendMode.srcIn),
-            ),
-          );
-          break;
-        case TagApplyState.unchecked:
-          backgroundColor = CoconutColors.gray800;
-          borderColor = CoconutColors.gray600;
-          textColor = CoconutColors.gray600;
-          iconWidget = Padding(
-            padding: const EdgeInsets.only(right: 4.0),
-            child: SvgPicture.asset(
-              'assets/svg/circle.svg',
-              key: const ValueKey('unchecked'),
-              width: 16,
-              height: 16,
-              colorFilter: const ColorFilter.mode(CoconutColors.gray600, BlendMode.srcIn),
-            ),
-          );
-          break;
-      }
-    }
+    final style = _getStyle(foregroundColor);
 
     Widget innerContent = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AnimatedSwitcher(duration: const Duration(milliseconds: 200), child: iconWidget),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Padding(padding: const EdgeInsets.only(right: 4.0), child: style.icon),
+        ),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 200),
-          style: CoconutTypography.body3_12.copyWith(color: textColor, fontWeight: fontWeight),
+          style: CoconutTypography.body3_12.copyWith(color: style.textColor, fontWeight: style.fontWeight),
           child: Text('#${tag.name}'),
         ),
       ],
     );
 
-    if (isGradientMode && activeGradient != null) {
-      innerContent = ShaderMask(
+    Widget chipForeground = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: style.borderColor, width: 0.5),
+      ),
+      child: innerContent,
+    );
+
+    if (style.gradient != null) {
+      chipForeground = ShaderMask(
         blendMode: BlendMode.srcIn,
-        shaderCallback: (bounds) => activeGradient!.createShader(bounds),
-        child: innerContent,
+        shaderCallback: (bounds) => style.gradient!.createShader(bounds),
+        child: chipForeground,
       );
     }
 
@@ -461,26 +401,81 @@ class TagChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-
-        padding: isGradientMode ? EdgeInsets.all(borderWidth) : EdgeInsets.zero,
-
-        decoration:
-            isGradientMode
-                ? BoxDecoration(gradient: activeGradient, borderRadius: BorderRadius.circular(20))
-                : BoxDecoration(
-                  color: backgroundColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: borderColor, width: borderWidth),
-                ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isGradientMode ? backgroundColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(isGradientMode ? 20 - borderWidth : 20),
-          ),
-          child: innerContent,
-        ),
+        decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(20)),
+        child: chipForeground,
       ),
     );
   }
+
+  _ChipStyle _getStyle(Color foregroundColor) {
+    if (isDeletionMode) {
+      return _ChipStyle(
+        borderColor: foregroundColor,
+        textColor: foregroundColor,
+        icon: const Icon(Icons.close, key: ValueKey('delete'), size: 16, color: CoconutColors.white),
+      );
+    }
+
+    switch (applyState) {
+      case TagApplyState.original:
+        return _ChipStyle(
+          borderColor: Colors.white,
+          textColor: Colors.white,
+          icon: SvgPicture.asset(
+            'assets/svg/circle-minus.svg',
+            key: const ValueKey('original'),
+            width: 16,
+            height: 16,
+            colorFilter: ColorFilter.mode(foregroundColor.withOpacity(0.6), BlendMode.srcIn),
+          ),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [CoconutColors.backgroundColorPaletteDark[tag.colorIndex], foregroundColor],
+          ),
+        );
+      case TagApplyState.checked:
+        return _ChipStyle(
+          borderColor: foregroundColor,
+          textColor: foregroundColor,
+          fontWeight: FontWeight.w600,
+          icon: SvgPicture.asset(
+            'assets/svg/circle-check.svg',
+            key: const ValueKey('check'),
+            width: 16,
+            height: 16,
+            colorFilter: ColorFilter.mode(foregroundColor, BlendMode.srcIn),
+          ),
+        );
+      case TagApplyState.unchecked:
+        final opacColor = foregroundColor.withOpacity(0.4);
+        return _ChipStyle(
+          borderColor: opacColor,
+          textColor: opacColor,
+          icon: SvgPicture.asset(
+            'assets/svg/circle.svg',
+            key: const ValueKey('unchecked'),
+            width: 16,
+            height: 16,
+            colorFilter: ColorFilter.mode(opacColor, BlendMode.srcIn),
+          ),
+        );
+    }
+  }
+}
+
+class _ChipStyle {
+  final Color borderColor;
+  final Color textColor;
+  final FontWeight fontWeight;
+  final Widget icon;
+  final Gradient? gradient;
+
+  _ChipStyle({
+    required this.borderColor,
+    required this.textColor,
+    this.fontWeight = FontWeight.normal,
+    required this.icon,
+    this.gradient,
+  });
 }
