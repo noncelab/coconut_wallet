@@ -438,7 +438,6 @@ class TagChip extends StatelessWidget {
         return _ChipStyle(
           borderColor: foregroundColor,
           textColor: foregroundColor,
-          fontWeight: FontWeight.w600,
           icon: SvgPicture.asset(
             'assets/svg/circle-check.svg',
             key: const ValueKey('check'),
