@@ -729,6 +729,7 @@ transaction_fee_bumping_screen:
   recommended_fees_is_null: "手数料を取得中..."
   recommended_fee_less_than_pending_tx_fee: "既存手数料より高い手数料を指定してください"
   recommended_fee_less_than_network_fee: "少なくとも推奨手数料を指定してください"
+  please_select_more_utxo: "${amount}以上の価値のあるUTXOを選択してください"
   dialog:
     fee_alert_title: "通知"
     fee_alert_description: "設定した総手数料が0.01 BTCを超えています。それでも続行しますか？"

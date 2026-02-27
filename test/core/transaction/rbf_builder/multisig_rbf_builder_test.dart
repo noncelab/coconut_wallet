@@ -1,12 +1,11 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
-import 'package:coconut_wallet/core/transaction/rbf_builder.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
-import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../mock/wallet_mock.dart';
 import 'setup_util.dart';
@@ -14,9 +13,9 @@ import 'setup_util.dart';
 void main() {
   MultisigWalletListItem multiWallet = WalletMock.createMultiSigWalletItem();
   final creator = RbfBuilderCreator(multiWallet);
-  group('싱글시그지갑 - getBaselineTransaction', () {
+  group('멀티시그지갑 - getBaselineTransaction', () {
     test('External 1 / change enough', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(false, 1000)],
         changeAmount: 98811,
@@ -48,7 +47,7 @@ void main() {
     });
 
     test('External 1 / change NotEnough / no additional UTXO', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(false, 99890)],
         changeAmount: 0,
@@ -67,7 +66,7 @@ void main() {
     });
 
     test('External 1 / change NotEnough / not enough additional UTXO', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(false, 99890)],
         changeAmount: 0,
@@ -87,7 +86,7 @@ void main() {
     });
 
     test('External 1 / change NotEnough / enough additional UTXO', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(false, 99890)],
         changeAmount: 0,
@@ -110,7 +109,7 @@ void main() {
 
   group('멀티시그지갑 - changeAdditionalSpendable', () {
     test('External 1 / change NotEnough / not enough additional UTXO', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(false, 99890)],
         changeAmount: 0,
@@ -138,7 +137,7 @@ void main() {
 
   group('멀티시그지갑 - build', () {
     test('External 1 / feeRate too low', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(true, 5000)],
         changeAmount: 94859,
@@ -153,7 +152,7 @@ void main() {
     });
 
     test('External 1 / change enough', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(true, 5000)],
         changeAmount: 94859,
@@ -168,7 +167,7 @@ void main() {
       final baselineTxFee =
           baselineResult.transaction!.totalInputAmount -
           baselineResult.transaction!.outputs.fold(0, (s, o) => s + o.amount);
-      final int pendingTxFee = rbfBuilder.pendingTx.fee;
+      final int pendingTxFee = pendingTx.fee;
       final double baselineVSize = baselineResult.transaction!.estimateVirtualByte(AddressType.p2wpkh);
 
       expect(
@@ -178,7 +177,7 @@ void main() {
     });
 
     test('External 1 / change NotEnough / enough additional UTXO', () async {
-      final rbfBuilder = creator.createRbfBuilder(
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(false, 99890)],
         changeAmount: 0,
@@ -194,7 +193,7 @@ void main() {
       final baselineTxFee =
           baselineResult.transaction!.totalInputAmount -
           baselineResult.transaction!.outputs.fold(0, (s, o) => s + o.amount);
-      final int pendingTxFee = rbfBuilder.pendingTx.fee;
+      final int pendingTxFee = pendingTx.fee;
       final double baselineVSize = baselineResult.transaction!.estimateVirtualByte(AddressType.p2wpkh);
 
       expect(

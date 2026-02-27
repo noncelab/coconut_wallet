@@ -732,6 +732,7 @@ transaction_fee_bumping_screen:
   recommended_fees_is_null: "Obteniendo comisiones..." 
   recommended_fee_less_than_pending_tx_fee: "Por favor, especifique una comisión superior a la comisión existente"  
   recommended_fee_less_than_network_fee: "Por favor, especifique al menos la comisión recomendada" 
+  please_select_more_utxo: "Por favor, seleccione UTXOs por valor de al menos ${amount}"
   dialog:
     fee_alert_title: "Aviso"
     fee_alert_description: "La comisión total que estableció es superior a 0.01 BTC. ¿Quieres continuar de todas formas?"  

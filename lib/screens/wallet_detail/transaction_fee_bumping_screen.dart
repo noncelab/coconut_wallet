@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,6 +15,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -167,7 +169,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                           showGradient: true,
                           gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),
                           isActive:
-                              !viewModel.insufficientUtxos &&
+                              !viewModel.isFeeBumpingImpossible &&
+                              !viewModel.isUtxoInsufficient &&
                               !_isEstimatedFeeTooLow &&
                               _textEditingController.text.isNotEmpty &&
                               viewModel.isNetworkOn,
@@ -184,9 +187,19 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                         ),
                                         CoconutLayout.spacing_100h,
                                       ],
-                                      if (_viewModel.insufficientUtxos) ...[
+                                      if (_viewModel.isFeeBumpingImpossible) ...[
                                         Text(
                                           t.transaction_fee_bumping_screen.insufficient_balance_error,
+                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                          textScaler: const TextScaler.linear(1.0),
+                                        ),
+                                      ] else if (_viewModel.deficitSats != null) ...[
+                                        Text(
+                                          t.transaction_fee_bumping_screen.please_select_more_utxo(
+                                            amount: BalanceFormatUtil.formatSatoshiToReadableBitcoin(
+                                              _viewModel.deficitSats!,
+                                            ),
+                                          ),
                                           style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
                                           textScaler: const TextScaler.linear(1.0),
                                         ),
@@ -265,7 +278,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               _isLoading = false;
             });
             WidgetsBinding.instance.addPostFrameCallback((_) async {
-              if (_viewModel.insufficientUtxos) {
+              if (_viewModel.isUtxoInsufficient) {
                 _showInsufficientUtxoToast(context);
               }
             });
@@ -310,7 +323,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     }
 
     if (input.isEmpty) {
-      _viewModel.initializeBumpingTransaction(0);
+      if (_isRbf) {
+        _viewModel.onRbfFeeRateChanged(null);
+      } else {
+        _viewModel.initializeBumpingTransaction(0);
+      }
+
       setState(() {
         _isEstimatedFeeTooLow = false;
         _isEstimatedFeeTooHigh = false;
@@ -318,12 +336,19 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       return;
     }
 
-    _textEditingController.text = filterNumericInput(input, decimalPlaces: 2);
-    _textEditingController.selection = TextSelection.collapsed(offset: _textEditingController.text.length);
+    final filteredText = filterNumericInput(input, decimalPlaces: 2);
+    _textEditingController.value = TextEditingValue(
+      text: filteredText,
+      selection: TextSelection.collapsed(offset: filteredText.length), // 커서를 맨 끝으로 이동
+    );
 
-    double? value = double.tryParse(_textEditingController.text);
+    double? feeRate = double.tryParse(_textEditingController.text);
 
-    if (value == null) {
+    if (feeRate == null) {
+      if (_isRbf) {
+        _viewModel.onRbfFeeRateChanged(null);
+      }
+
       setState(() {
         _isEstimatedFeeTooLow = true;
         _isEstimatedFeeTooHigh = false;
@@ -332,10 +357,35 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       return;
     }
 
-    bool isFeeTooLow = _viewModel.isFeeRateTooLow(value);
+    if (_isRbf) {
+      if (feeRate < _viewModel.recommendFeeRate!) {
+        _viewModel.onRbfFeeRateChanged(null);
+        setState(() {
+          _isEstimatedFeeTooLow = true;
+          _isEstimatedFeeTooHigh = false;
+        });
+        return;
+      }
 
-    await _viewModel.initializeBumpingTransaction(value).then((_) {
-      if (_viewModel.insufficientUtxos) {
+      final RbfBuildResult rbfResult = _viewModel.onRbfFeeRateChanged(feeRate)!;
+
+      setState(() {
+        _isEstimatedFeeTooLow = false;
+        if (rbfResult.isSuccess) {
+          _isEstimatedFeeTooHigh = rbfResult.estimatedFee! >= 1000000;
+        } else {
+          _isEstimatedFeeTooHigh = false;
+        }
+      });
+      return;
+    }
+
+    // 아래는 CPFP
+
+    bool isFeeTooLow = _viewModel.isFeeRateTooLow(feeRate);
+
+    await _viewModel.initializeBumpingTransaction(feeRate).then((_) {
+      if (_viewModel.isUtxoInsufficient) {
         if (mounted) {
           _showInsufficientUtxoToast(context);
         }
@@ -343,7 +393,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     });
 
     setState(() {
-      _isEstimatedFeeTooHigh = _viewModel.getTotalEstimatedFee(value) >= 1000000;
+      _isEstimatedFeeTooHigh = _viewModel.getTotalEstimatedFee(feeRate) >= 1000000;
       _isEstimatedFeeTooLow = isFeeTooLow;
     });
   }
@@ -475,7 +525,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           Text(
             t.transaction_fee_bumping_screen.new_fee,
             style: CoconutTypography.body2_14_Bold.setColor(
-              _getNewFeeTextColor(isError: _isEstimatedFeeTooLow || _viewModel.insufficientUtxos),
+              _getNewFeeTextColor(isError: _isEstimatedFeeTooLow || _viewModel.isUtxoInsufficient),
             ),
           ),
           Row(
@@ -735,9 +785,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     if (!viewModel.isAdditionalInputRequired) {
       child = const SizedBox.shrink(key: ValueKey('empty'));
     } else {
-      int balanceInt = viewModel.selectedUtxoList.fold(0, (sum, item) => sum + item.amount);
+      int selectedUtxoSum = viewModel.selectedUtxoList.fold(0, (sum, item) => sum + item.amount);
 
-      String selectedUtxoAmountText = viewModel.currentUnit.displayBitcoinAmount(balanceInt, withUnit: true);
+      String selectedUtxoAmountText = viewModel.currentUnit.displayBitcoinAmount(selectedUtxoSum, withUnit: true);
 
       if (!viewModel.isUtxoSelectionAuto) {
         if (viewModel.selectedUtxoList.isNotEmpty) {

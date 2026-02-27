@@ -1,5 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_preparer.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -24,6 +26,7 @@ import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -41,6 +44,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
   final int _walletId;
   final PreferenceProvider _preferenceProvider;
   final WalletPreferencesRepository _walletPreferencesRepository;
+
+  late final List<UtxoState> _availableUtxos;
+
   Transaction? _bumpingTransaction;
   late WalletListItemBase _walletListItemBase;
   late bool? _isNetworkOn;
@@ -58,11 +64,38 @@ class FeeBumpingViewModel extends ChangeNotifier {
   bool _isUtxoSelectionAuto = true;
   List<UtxoState> _selectedUtxoList = [];
   double _lastInputFeeRate = 0.0;
+  double? _lastInputFeeRateRbf;
 
-  bool _isAdditionalInputRequired = false;
-  bool get isAdditionalInputRequired => _isAdditionalInputRequired;
+  //bool _isAdditionalInputRequired = false;
+  bool get isAdditionalInputRequired {
+    Logger.log('--> deficitAmount: ${_rbfBuildResult?.deficitAmount}');
+    Logger.log('--> addedUtxo length: ${_rbfBuildResult?.addedUtxos?.length}');
+    return (_rbfBuildResult != null && _rbfBuildResult?.deficitAmount != null && _rbfBuildResult!.deficitAmount! > 0) ||
+        _rbfBuildResult?.addedUtxos != null;
+  }
 
   List<Utxo>? _cachedRbfInputUtxos;
+
+  RbfBuilder? _rbfBuilder;
+  RbfBuildResult? _rbfBuildResult;
+  RbfBuildResult? _rbfBaseline;
+
+  int? get deficitSats {
+    if (isRbf) {
+      if (_rbfBuildResult?.deficitAmount == null) return null;
+      return _rbfBuildResult!.deficitAmount;
+    } else {
+      throw UnimplementedError();
+    }
+  }
+
+  bool get isFeeBumpingImpossible {
+    if (isRbf) {
+      return _rbfBaseline != null && _rbfBaseline!.deficitAmount != null && _availableUtxos.isEmpty;
+    } else {
+      throw UnimplementedError;
+    }
+  }
 
   FeeBumpingViewModel(
     this._type,
@@ -80,7 +113,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
   ) {
     _walletListItemBase = _walletProvider.getWalletById(_walletId);
     _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(_walletId);
+    _availableUtxos = _utxoRepository.getUtxosByStatus(_walletId, UtxoStatus.unspent);
   }
+
+  bool get isRbf => _type == FeeBumpingType.rbf;
 
   double? get recommendFeeRate => _recommendedFeeRate;
   String? get recommendFeeRateDescription => _recommendedFeeRateDescription;
@@ -96,38 +132,115 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   WalletListItemBase get walletListItemBase => _walletListItemBase;
 
-  bool _insufficientUtxos = false;
-  bool get insufficientUtxos => _insufficientUtxos;
+  bool _isUtxoInsufficient = false;
+  bool get isUtxoInsufficient {
+    if (isRbf) {
+      if (_rbfBuildResult == null) return false;
+      return _rbfBuildResult!.deficitAmount != null;
+    } else {
+      return _isUtxoInsufficient;
+    }
+  }
 
   BitcoinUnit get currentUnit => _preferenceProvider.currentUnit;
 
   bool get isUtxoSelectionAuto => _isUtxoSelectionAuto;
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
+  List<UtxoState> get availableUtxos => _availableUtxos;
 
   void toggleUtxoSelectionAuto(bool value) {
-    _isUtxoSelectionAuto = value;
+    _isUtxoSelectionAuto = !_isUtxoSelectionAuto;
     if (_isUtxoSelectionAuto) {
       _selectedUtxoList = [];
     }
-    // 모드 변경 시 기존 수수료율로 재계산
-    if (_lastInputFeeRate > 0) {
-      initializeBumpingTransaction(_lastInputFeeRate);
+    if (_type == FeeBumpingType.rbf) {
+      assert(_rbfBuilder != null);
+      _updateAdditionalSpendable(_isUtxoSelectionAuto ? _availableUtxos : []);
+    } else {
+      // 모드 변경 시 기존 수수료율로 재계산
+      if (_lastInputFeeRate > 0) {
+        initializeBumpingTransaction(_lastInputFeeRate);
+      }
+    }
+
+    notifyListeners();
+  }
+
+  void _updateRbfBaseline(RbfBuildResult result) {
+    _rbfBaseline = result;
+    _recommendedFeeRate = _rbfBaseline!.minimumFeeRate;
+    // notifyListeners();
+  }
+
+  void _updateAdditionalSpendable(List<UtxoState> utxos) {
+    if (_type == FeeBumpingType.rbf) {
+      _updateRbfBaseline(_rbfBuilder!.changeAdditionalSpendable(utxos));
+      if (_lastInputFeeRateRbf != null && _lastInputFeeRateRbf! > 0) {
+        _rbfBuildResult = _rbfBuilder!.build(newFeeRate: _lastInputFeeRateRbf!);
+      }
     }
     notifyListeners();
   }
 
+  /// UTXO 수동 선택일 때만 호출됨
   void updateSelectedUtxos(List<UtxoState> list) {
     _selectedUtxoList = list;
 
-    if (_lastInputFeeRate > 0) {
-      initializeBumpingTransaction(_lastInputFeeRate);
+    if (_type == FeeBumpingType.rbf) {
+      _updateRbfBaseline(_rbfBuilder!.changeAdditionalSpendable(_selectedUtxoList));
+      if (_lastInputFeeRateRbf != null && _lastInputFeeRateRbf! > 0) {
+        _rbfBuildResult = _rbfBuilder!.build(newFeeRate: _lastInputFeeRateRbf!);
+      }
+    } else {
+      if (_lastInputFeeRate > 0) {
+        initializeBumpingTransaction(_lastInputFeeRate);
+      }
     }
     notifyListeners();
+  }
+
+  Future<RbfBuilder> _initRbfBuilder() async {
+    final txResult = await _nodeProvider.getTransaction(_pendingTx.transactionHash);
+    if (txResult.isFailure) {
+      throw Exception('Failed to get transaction');
+    }
+
+    final preparer = RbfPreparer.fromPendingTx(
+      pendingTx: _pendingTx,
+      rawTx: txResult.value,
+      getUtxos: (String utxoId) {
+        return _utxoRepository.getUtxoState(_walletId, utxoId);
+      },
+      isMyAddress:
+          (String address, {bool isChange = false}) =>
+              _walletProvider.containsAddress(_walletId, address, isChange: isChange),
+      getDerivationPath: (String address) => _addressRepository.getDerivationPath(_walletId, address),
+    );
+
+    return RbfBuilder(
+      preparer: preparer,
+      walletListItemBase: _walletListItemBase,
+      nextChangeAddress: _addressRepository.getChangeAddress(walletId),
+      additionalSpendable: _isUtxoSelectionAuto ? _availableUtxos : [],
+    );
   }
 
   Future<void> initialize() async {
     await _fetchRecommendedFees(); // _isFeeFetchSuccess로 성공 여부 기록함
     if (_isFeeFetchSuccess == true) {
+      // 만약 RBF면 RbfPreparer을 생성하고 RbfBuilder를 생성한다.
+      if (_type == FeeBumpingType.rbf) {
+        _recommendedFeeRateDescription = t.transaction_fee_bumping_screen.recommend_fee_info_rbf; // TODO: 안내 문구 변경해야함
+        /// "새로 생성한 트랜잭션의 크기 1vB당 최소 1sat 이상의 추가 수수료가 필요해요.
+        /// 만약 계산된 최소 수수료율이 현재 네트워크의 느린 전송 수수료보다 낮다면, 느린 전송 수수료를 추천해요. 단, 거래 크기가 증가하면 수수료율(sat/vB)는 기존보다 낮을 수 있어요."
+        _rbfBuilder = await _initRbfBuilder();
+        _updateRbfBaseline(_rbfBuilder!.getBaselineTransaction());
+        _isInitializedSuccess = true;
+        return;
+      }
+
+      // 만약 CPFP면 CPFPPreparer을 생성하고 CpfpBuilder를 생성한다.
+
       double initialFee = _feeInfos[2].satsPerVb!.toDouble();
       _lastInputFeeRate = initialFee;
 
@@ -141,13 +254,25 @@ class FeeBumpingViewModel extends ChangeNotifier {
           _type == FeeBumpingType.cpfp
               ? _getRecommendedFeeRateDescriptionForCpfp()
               : t.transaction_fee_bumping_screen.recommend_fee_info_rbf; // TODO: 안내 문구 변경해야함
-      /// "새 거래의 총 수수료는 기존 거래보다 커야 해요. 일반적으로 새 거래 크기 1vB당 최소 1sat 이상의 추가 수수료가 필요해요.
-      /// 만약 계산된 최소 수수료가 현재 네트워크의 느린 전송 수수료보다 낮다면, 느린 전송 수수료를 추천해요. 단, 거래 크기가 증가하면 수수료율(sat/vB)는 기존보다 낮을 수 있어요."
+      /// "새로 생성한 트랜잭션의 크기 1vB당 최소 1sat 이상의 추가 수수료가 필요해요.
+      /// 만약 계산된 최소 수수료율이 현재 네트워크의 느린 전송 수수료보다 낮다면, 느린 전송 수수료를 추천해요. 단, 거래 크기가 증가하면 수수료율(sat/vB)는 기존보다 낮을 수 있어요."
       _isInitializedSuccess = true;
     } else {
       _isInitializedSuccess = false;
     }
     notifyListeners();
+  }
+
+  RbfBuildResult? onRbfFeeRateChanged(double? newFeeRate) {
+    assert(_rbfBuilder != null);
+    _lastInputFeeRateRbf = newFeeRate;
+    if (newFeeRate == null) {
+      _rbfBuildResult = null;
+      return _rbfBuildResult;
+    }
+
+    _rbfBuildResult = _rbfBuilder!.build(newFeeRate: newFeeRate);
+    return _rbfBuildResult;
   }
 
   bool isFeeRateTooLow(double feeRate) {
@@ -163,18 +288,39 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   Future<bool> prepareToSend(double newTxFeeRate) async {
-    assert(_bumpingTransaction != null);
-    try {
-      await initializeBumpingTransaction(newTxFeeRate);
-      _updateSendInfoProvider(newTxFeeRate, _type);
+    if (isRbf) {
+      _sendInfoProvider.setWalletId(_walletId);
+      _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
+      _sendInfoProvider.setTxWaitingForSign(
+        Psbt.fromTransaction(_rbfBuildResult!.transaction!, _walletListItemBase.walletBase).serialize(),
+      );
+      _sendInfoProvider.setFeeBumpfingType(_type);
+      _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
       return true;
-    } catch (e) {
-      return false;
+    } else {
+      assert(_bumpingTransaction != null);
+      try {
+        await initializeBumpingTransaction(newTxFeeRate);
+        _updateSendInfoProvider(newTxFeeRate, _type);
+        return true;
+      } catch (e) {
+        return false;
+      }
     }
+  }
+
+  int? getTotalEstimatedFeeOfRbf() {
+    if (_rbfBuildResult == null) return null;
+    if (_rbfBuildResult!.isFailure) return null;
+    return _rbfBuildResult!.estimatedFee;
   }
 
   // 수수료 입력 시 예상 총 수수료 계산
   int getTotalEstimatedFee(double newFeeRate) {
+    if (_type == FeeBumpingType.rbf) {
+      return getTotalEstimatedFeeOfRbf() ?? 0;
+    }
+
     assert(_bumpingTransaction != null);
 
     if (newFeeRate == 0) {
@@ -236,10 +382,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
   // 새 수수료로 트랜잭션 생성
   Future<void> initializeBumpingTransaction(double newFeeRate) async {
     _lastInputFeeRate = newFeeRate;
-    _isAdditionalInputRequired = false;
+    //_isAdditionalInputRequired = false;
 
     if (newFeeRate < 0) {
-      _insufficientUtxos = false;
+      _isUtxoInsufficient = false;
       _bumpingTransaction = null;
       notifyListeners();
       return;
@@ -349,11 +495,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
     bool isInsufficient = inputSum < outputSum + requiredFee;
     bool isChangeSufficient = hasChange && changeAmount >= requiredFee;
 
-    if (isInsufficient && !isChangeSufficient) {
-      _isAdditionalInputRequired = true;
-    } else {
-      _isAdditionalInputRequired = false;
-    }
+    // if (isInsufficient && !isChangeSufficient) {
+    //   _isAdditionalInputRequired = true;
+    // } else {
+    //   _isAdditionalInputRequired = false;
+    // }
 
     if (inputSum < outputSum + requiredFee) {
       debugPrint('RBF:: ❌ input이 부족함');
@@ -743,7 +889,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   void _setInsufficientUtxo(bool value) {
-    _insufficientUtxos = value;
+    _isUtxoInsufficient = value;
     notifyListeners();
   }
 

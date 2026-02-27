@@ -1,6 +1,7 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
-import 'package:coconut_wallet/core/transaction/rbf_builder.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_preparer.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/output_analysis.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
@@ -75,7 +76,7 @@ class RbfBuilderCreator {
     }
   }
 
-  RbfBuilder createRbfBuilder({
+  (TransactionRecord, RbfBuilder) createRbfBuilder({
     required List<int> inputAmounts,
     required List<Tuple<bool, int>> recipients,
     required int changeAmount,
@@ -129,7 +130,7 @@ class RbfBuilderCreator {
       outputAddressList.add(TransactionAddress(changeAddressList[0], changeAmount));
     }
 
-    final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
+    final pendingTx = TransactionRecordMock.createMockTransactionRecord(
       inputAddressList: inputAddressList,
       outputAddressList: outputAddressList,
       amount: recipients.fold(0, (sum, recipient) => sum + recipient.item2),
@@ -137,15 +138,25 @@ class RbfBuilderCreator {
       vSize: vSize,
     );
 
-    return RbfBuilder(
+    // Create RbfPreparer directly
+    final preparer = RbfPreparer(
       pendingTx: pendingTx,
-      walletListItemBase: _walletListItemBase,
-      isMyAddress: isMyAddress,
       inputUtxos: inputUtxos,
-      nextChangeAddress: WalletAddress(changeAddressList[1], "$derivationPathPrefix/1/1", 1, true, false, 0, 0, 0),
-      getDerivationPath: getDerivationPath,
-      dustLimit: dustLimit,
-      additionalSpendable: additionalUtxos,
+      outputAnalysis: OutputAnalysis.fromPendingTx(
+        pendingTx: pendingTx,
+        isMyAddress: isMyAddress,
+        getDerivationPath: (address) => getDerivationPath(_walletListItemBase.id, address),
+      ),
+    );
+
+    return (
+      pendingTx,
+      RbfBuilder(
+        preparer: preparer,
+        walletListItemBase: _walletListItemBase,
+        nextChangeAddress: WalletAddress(changeAddressList[1], "$derivationPathPrefix/1/1", 1, true, false, 0, 0, 0),
+        additionalSpendable: additionalUtxos,
+      ),
     );
   }
 }

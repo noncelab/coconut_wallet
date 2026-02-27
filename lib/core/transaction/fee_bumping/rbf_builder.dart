@@ -1,8 +1,11 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_preparer.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/output_analysis.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -26,6 +29,12 @@ class RbfBuildResult {
   bool get isSuccess => transaction != null;
   bool get isFailure => transaction == null;
 
+  int? get estimatedFee {
+    if (transaction == null) return null;
+    final totalOutputAmount = transaction!.outputs.fold(0, (sum, output) => sum + output.amount);
+    return transaction!.totalInputAmount - totalOutputAmount;
+  }
+
   RbfBuildResult({
     required this.minimumFeeRate,
     this.transaction,
@@ -41,24 +50,17 @@ class RbfBuildResult {
 class RbfBuilder {
   static const double incrementalRelayFeeRate = 1.0; // 1 sat/vB (Bitcoin Core 기본값)
 
-  final TransactionRecord pendingTx;
   final WalletListItemBase walletListItemBase;
-  final int dustLimit;
-  final List<UtxoState> inputUtxos;
-
-  final bool Function(String address, {bool isChange}) isMyAddress;
-
   final WalletAddress nextChangeAddress;
 
-  final String Function(int walletId, String address) getDerivationPath;
-
+  late final TransactionRecord _pendingTx;
+  late final List<UtxoState> _inputUtxos;
   late final int _vSizeIncreasePerInput;
   late final int _vSizeChangeOutput;
   late List<UtxoState> _additionalSpendable;
-  //late double _minimumFeeRate;
 
   /// ----------- Output -----------
-  late final _OutputAnalysis _outputAnalysis;
+  late final OutputAnalysis _outputAnalysis;
 
   List<TransactionAddress> get nonChangeOutputs => [..._outputAnalysis.externalOutputs, ..._outputAnalysis.selfOutputs];
 
@@ -83,7 +85,7 @@ class RbfBuilder {
   /// ----------- Input -----------
   int? _inputSum;
   int get inputSum {
-    _inputSum ??= inputUtxos.fold<int>(0, (sum, utxo) => sum + utxo.amount);
+    _inputSum ??= _inputUtxos.fold<int>(0, (sum, utxo) => sum + utxo.amount);
     return _inputSum!;
   }
 
@@ -91,20 +93,14 @@ class RbfBuilder {
   RbfBuildResult? _cachedBaseline;
 
   RbfBuilder({
-    required this.pendingTx,
+    required RbfPreparer preparer,
     required this.walletListItemBase,
-    required this.isMyAddress,
-    required this.inputUtxos,
     required this.nextChangeAddress,
-    required this.getDerivationPath,
-    required this.dustLimit,
     List<UtxoState> additionalSpendable = const [],
   }) {
-    _outputAnalysis = _OutputAnalysis.fromPendingTx(
-      outputs: pendingTx.outputAddressList,
-      isMyAddress: isMyAddress,
-      getDerivationPath: (address) => getDerivationPath(walletListItemBase.id, address),
-    );
+    _pendingTx = preparer.pendingTx;
+    _outputAnalysis = preparer.outputAnalysis;
+    _inputUtxos = preparer.inputUtxos;
 
     if (walletListItemBase.walletType == WalletType.singleSignature) {
       _vSizeIncreasePerInput = 68;
@@ -115,7 +111,6 @@ class RbfBuilder {
       _vSizeChangeOutput = 43;
     }
     _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
-    //_minimumFeeRate = getBaselineTransaction().minimumFeeRate;
   }
 
   double _calculateMinimumFeeRate(double newTxVSize) {
@@ -123,7 +118,7 @@ class RbfBuilder {
   }
 
   int _calculateMinimumRbfFee({required double newTxVSize}) {
-    return pendingTx.fee + (newTxVSize * incrementalRelayFeeRate).ceil();
+    return _pendingTx.fee + (newTxVSize * incrementalRelayFeeRate).ceil();
   }
 
   int _calculateMinAdditionalFee({required double newTxSize}) {
@@ -177,10 +172,10 @@ class RbfBuilder {
   RbfBuildResult getBaselineTransaction({bool isForce = false}) {
     if (!isForce && _cachedBaseline != null) return _cachedBaseline!;
 
-    double newTxVSize = pendingTx.vSize;
+    double newTxVSize = _pendingTx.vSize;
     if (changeOutput == null) {
       // RBF 최소 수수료율을 구할 때는 changeOutput이 있다고 가정하고 보수적으로 계산
-      newTxVSize += _vSizeChangeOutput * pendingTx.feeRate;
+      newTxVSize += _vSizeChangeOutput * _pendingTx.feeRate;
     }
 
     int additionalFee = _calculateMinAdditionalFee(newTxSize: newTxVSize);
@@ -263,7 +258,7 @@ class RbfBuilder {
       }
 
       final int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
-      final int additionalFee = requiredFee - pendingTx.fee;
+      final int additionalFee = requiredFee - _pendingTx.fee;
       int deficitAmount = additionalFee;
       if (changeOutput != null) {
         if (changeOutput!.amount >= deficitAmount) {
@@ -349,7 +344,7 @@ class RbfBuilder {
     final changeDerivationPath = changeOutput == null ? nextChangeAddress.derivationPath : changeOutputDerivationPath!;
 
     return TransactionBuilder(
-      availableUtxos: [...inputUtxos, ...additionalUtxos],
+      availableUtxos: [..._inputUtxos, ...additionalUtxos],
       recipients: recipients,
       feeRate: newFeeRate,
       changeDerivationPath: changeDerivationPath,
@@ -367,7 +362,7 @@ class RbfBuilder {
     final changeDerivationPath = changeOutput == null ? nextChangeAddress.derivationPath : changeOutputDerivationPath!;
 
     return TransactionBuilder(
-      availableUtxos: [...inputUtxos, ...additionalUtxos],
+      availableUtxos: [..._inputUtxos, ...additionalUtxos],
       recipients: recipients,
       feeRate: newFeeRate,
       changeDerivationPath: changeDerivationPath,
@@ -376,55 +371,6 @@ class RbfBuilder {
       isUtxoFixed: true,
     ).build();
   }
-}
-
-class _OutputAnalysis {
-  final List<TransactionAddress> externalOutputs; // 남의 주소
-  final List<TransactionAddress> selfOutputs; // 내 receiving 주소
-  final TransactionAddress? changeOutput; // 내 change 주소
-  final String? changeDerivationPath;
-
-  _OutputAnalysis._(this.externalOutputs, this.selfOutputs, this.changeOutput, this.changeDerivationPath);
-
-  factory _OutputAnalysis.fromPendingTx({
-    required List<TransactionAddress> outputs,
-    required bool Function(String address, {bool isChange}) isMyAddress,
-    required String Function(String address) getDerivationPath,
-  }) {
-    // change output 찾기
-    final changeIndex = outputs.lastIndexWhere((output) => isMyAddress(output.address, isChange: true));
-    TransactionAddress? changeOutput;
-    String? changeDerivationPath;
-    if (changeIndex != -1) {
-      changeOutput = outputs[changeIndex];
-      changeDerivationPath = getDerivationPath(changeOutput.address);
-      if (changeDerivationPath.isEmpty) {
-        throw const InvalidChangeOutputException();
-      }
-    }
-
-    // change output 을 제외한 나머지를 self/external로 분류
-    final List<TransactionAddress> selfOutputs = [];
-    final List<TransactionAddress> externalOutputs = [];
-    for (int i = 0; i < outputs.length; i++) {
-      if (i == changeIndex) continue;
-      if (isMyAddress(outputs[i].address)) {
-        selfOutputs.add(outputs[i]);
-      } else {
-        externalOutputs.add(outputs[i]);
-      }
-    }
-
-    return _OutputAnalysis._(externalOutputs, selfOutputs, changeOutput, changeDerivationPath);
-  }
-
-  int get externalSum => externalOutputs.fold(0, (s, o) => s + o.amount);
-  int get selfSum => selfOutputs.fold(0, (s, o) => s + o.amount);
-  int get nonChangeSum => externalSum + selfSum;
-
-  Map<String, int> get recipientMap => {
-    for (final o in [...externalOutputs, ...selfOutputs]) o.address: o.amount,
-  };
 }
 
 class _AdjustedRecipients {

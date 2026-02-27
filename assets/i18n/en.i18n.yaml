@@ -729,6 +729,7 @@ transaction_fee_bumping_screen:
   recommended_fees_is_null: "Fetching fees..."
   recommended_fee_less_than_pending_tx_fee: "Please specify a fee higher than the existing fee"
   recommended_fee_less_than_network_fee: "Please specify at least the recommended fee"
+  please_select_more_utxo: "Please select UTXOs worth at least ${amount}"
   dialog:
     fee_alert_title: "Notice"
     fee_alert_description: "The total fee you set is over 0.01 BTC. Do you want to continue anyway?"
