@@ -1909,15 +1909,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   }
 
   /// 용어집 표시 여부에 따른 Thick Divider 인덱스 계산
+  /// CoconutPulldownMenuGroup이 끝나는 지점의 인덱스를 반환
   int _getThickDividerIndex(bool showGlossary) {
     if (NetworkType.currentNetworkType.isTestnet) {
-      // 테스트넷: 용어집, 니모닉, 튜토리얼 → 인덱스 2
-      // 테스트넷 (용어집 없음): 니모닉, 튜토리얼 → 인덱스 1
-      return showGlossary ? 2 : 1;
+      // 테스트넷: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) + 튜토리얼(4) → 그룹 끝 인덱스 4
+      // 테스트넷 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) + 튜토리얼(3) → 그룹 끝 인덱스 3
+      return showGlossary ? 4 : 3;
     } else {
-      // 메인넷: 용어집, 니모닉 → 인덱스 1
-      // 메인넷 (용어집 없음): 니모닉 → 인덱스 0
-      return showGlossary ? 1 : 0;
+      // 메인넷: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) → 그룹 끝 인덱스 3
+      // 메인넷 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) → 그룹 끝 인덱스 2
+      return showGlossary ? 3 : 2;
     }
   }
 
