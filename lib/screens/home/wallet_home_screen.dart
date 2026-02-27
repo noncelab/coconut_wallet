@@ -328,16 +328,16 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     _pageIndicatorController = ScrollController();
 
     _dropdownActions = {
-      t.transaction_draft.title: () => Navigator.pushNamed(context, '/transaction-draft'),
-      t.glossary:
+      'transaction_draft': () => Navigator.pushNamed(context, '/transaction-draft'),
+      'glossary':
           () => CommonBottomSheets.showCustomHeightBottomSheet(
             context: context,
             child: const GlossaryBottomSheet(),
             heightRatio: 0.9,
           ),
-      t.utility.p2p_calculator.calculator: () => Navigator.pushNamed(context, '/p2p-calculator'),
-      t.mnemonic_wordlist: () => Navigator.pushNamed(context, '/mnemonic-word-list'),
-      t.tutorial:
+      'p2p_calculator': () => Navigator.pushNamed(context, '/p2p-calculator'),
+      'mnemonic_wordlist': () => Navigator.pushNamed(context, '/mnemonic-word-list'),
+      'tutorial':
           () => showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -358,8 +358,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               );
             },
           ),
-      t.home_screen_settings: _navigateToWalletHomeEdit,
-      t.app_settings:
+      'home_screen_settings': _navigateToWalletHomeEdit,
+      'app_settings':
           () => CommonBottomSheets.showCustomHeightBottomSheet(
             context: context,
             child: const SettingsScreen(),
@@ -1924,10 +1924,23 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   /// 드롭다운 선택 처리 (selectedText 기반)
   void _handleDropdownSelection(bool showGlossary, String selectedText) {
-    final action = _dropdownActions[selectedText];
+    String actionKey = _getActionKeyFromSelectedText(selectedText);
+    final action = _dropdownActions[actionKey];
     if (action != null) {
       action();
     }
+  }
+
+  /// 선택된 텍스트에서 액션 키를 추출
+  String _getActionKeyFromSelectedText(String selectedText) {
+    if (selectedText == t.transaction_draft.title) return 'transaction_draft';
+    if (selectedText == t.glossary) return 'glossary';
+    if (selectedText == t.utility.p2p_calculator.calculator) return 'p2p_calculator';
+    if (selectedText == t.mnemonic_wordlist) return 'mnemonic_wordlist';
+    if (selectedText == t.tutorial) return 'tutorial';
+    if (selectedText == t.home_screen_settings) return 'home_screen_settings';
+    if (selectedText == t.app_settings) return 'app_settings';
+    return '';
   }
 
   Widget _buildWalletIconShrinkButton(VoidCallback onPressed, WalletImportSource scanType) {

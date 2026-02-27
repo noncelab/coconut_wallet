@@ -476,7 +476,6 @@ class BroadcastingViewModel extends ChangeNotifier {
     }
   }
 
-  // 삭제 실패 시 안내..??
   Future<void> deleteSignedDraft() async {
     final signedDraftIdToDelete = _signedDraftId ?? _savedDraftId;
     assert(signedDraftIdToDelete != null);
