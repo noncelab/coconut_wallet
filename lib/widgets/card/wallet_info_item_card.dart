@@ -62,6 +62,18 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   @override
   void initState() {
     super.initState();
+    _updateFromWalletItem();
+  }
+
+  @override
+  void didUpdateWidget(covariant WalletInfoItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.walletItem != widget.walletItem) {
+      _updateFromWalletItem();
+    }
+  }
+
+  void _updateFromWalletItem() {
     walletItem = widget.walletItem;
     if (walletItem is MultisigWalletListItem) {
       /// 멀티 시그

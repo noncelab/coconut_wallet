@@ -24,7 +24,22 @@ class WalletInfoViewModel extends ChangeNotifier {
   late int _multisigRequiredSignerCount;
   late WalletListItemBase _walletItemBase;
 
-  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider, bool _isMultisig) {
+  final bool _isMultisig;
+
+  WalletInfoViewModel(this._walletId, this._authProvider, this._walletProvider, this._nodeProvider, this._isMultisig) {
+    _loadWalletData();
+    _walletProvider.addListener(_onWalletProviderChanged);
+  }
+
+  void _onWalletProviderChanged() {
+    if (!_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
+      return;
+    }
+    _loadWalletData();
+    notifyListeners();
+  }
+
+  void _loadWalletData() {
     final walletItemBase = _walletProvider.getWalletById(_walletId);
     _walletItemBase = walletItemBase;
     _walletName = walletItemBase.name;
@@ -34,9 +49,15 @@ class WalletInfoViewModel extends ChangeNotifier {
       _multisigTotalSignerCount = multisigItem.signers.length;
       _multisigRequiredSignerCount = multisigItem.requiredSignatureCount;
     } else {
-      final singlesigItem = walletItemBase as SinglesigWalletListItem;
-      _extendedPublicKey = (singlesigItem.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
+      _extendedPublicKey =
+          (walletItemBase.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
     }
+  }
+
+  @override
+  void dispose() {
+    _walletProvider.removeListener(_onWalletProviderChanged);
+    super.dispose();
   }
 
   bool get isSetPin => _authProvider.isSetPin;

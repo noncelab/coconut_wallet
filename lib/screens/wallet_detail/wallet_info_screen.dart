@@ -313,7 +313,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<String?> _showMfpInputBottomSheet() async {
-    final result = await showModalBottomSheet(
+    final result = await showModalBottomSheet<String>(
       context: context,
       builder: (context) {
         return Padding(
@@ -330,6 +330,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       enableDrag: true,
       useSafeArea: true,
     );
+
+    if (result != null && result.isNotEmpty && mounted) {
+      await context.read<WalletProvider>().updateWalletDescriptor(widget.id, result);
+    }
 
     return result;
   }
