@@ -20,6 +20,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/appbar/wallet_detail_title_widget.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
@@ -402,12 +403,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _onTapSend() {
-    if (!_viewModel.isMultisigWallet && _viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder) {
-      CoconutToast.showToast(
-        isVisibleIcon: true,
-        context: context,
-        text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send,
-      );
+    if (!_viewModel.isMultisigWallet &&
+        (_viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder ||
+            isWalletWithoutMfp(_viewModel.walletListBaseItem))) {
+      showNoMfpDialog(context, () {
+        Navigator.of(context).pop();
+        Navigator.pushNamed(
+          context,
+          '/wallet-info',
+          arguments: {'id': widget.id, 'isMultisig': false, 'entryPoint': widget.entryPoint, 'showMfpInput': true},
+        );
+      });
       return;
     }
     if (!_checkStateAndShowToast()) return;

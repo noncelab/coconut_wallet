@@ -29,7 +29,14 @@ class WalletInfoScreen extends StatefulWidget {
   final int id;
   final bool isMultisig;
   final String entryPoint;
-  const WalletInfoScreen({super.key, required this.id, required this.isMultisig, required this.entryPoint});
+  final bool showMfpInput;
+  const WalletInfoScreen({
+    super.key,
+    required this.id,
+    required this.isMultisig,
+    required this.entryPoint,
+    this.showMfpInput = false,
+  });
 
   @override
   State<WalletInfoScreen> createState() => _WalletInfoScreenState();
@@ -294,9 +301,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _initializeTooltipPosition();
       _setOverlayLoading(false);
+      if (widget.showMfpInput) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        await _showMfpInputBottomSheet();
+      }
     });
   }
 

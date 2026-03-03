@@ -637,10 +637,6 @@ settings_screen:
       toast:
         copy_success: "ログをコピーしました。"
 
-# lib/screens/wallet_detail
-wallet_detail_screen:
-  toast:
-    no_mfp_wallet_cant_send: "マスターフィンガープリントのないウォレットは送信できません"
 address_list_screen:
   wallet_name: "$nameのアドレス"
   address_index: "アドレス - $index"
@@ -953,6 +949,11 @@ alert:
     try_again: "$count 後にもう一度お試しください。"
   fee_bumping:
     not_enough_amount: "$bumpingTypeを実行するための残高が不足しています。\n現在の残高を確認してください。"
+  without_mfp:
+    title: "マスターフィンガープリントを追加"
+    description: "トランザクションを送信するには、まずマスターフィンガープリントを追加する必要があります。追加した後、再び送信することができます。"
+    skip_button: "後で"
+    confirm_button: "追加"
 
 third_party:
   keystone: "Keystone"

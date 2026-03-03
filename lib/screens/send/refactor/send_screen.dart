@@ -22,6 +22,7 @@ import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -162,14 +163,45 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       });
     }
 
-    // MFP 없는 지갑이 선택된 경우 Toast 메시지 출력 하기
+    // MFP 없는 지갑이 선택된 경우 다이얼로그 출력
     if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        CoconutToast.showToast(
-          isVisibleIcon: true,
-          context: context,
-          text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send,
-        );
+        showNoMfpDialog(context, () {
+          Navigator.of(context).pop(); // 다이얼로그 닫기
+          final walletId = widget.walletId!;
+          final isFromWalletDetail = widget.sendEntryPoint == SendEntryPoint.walletDetail;
+
+          if (isFromWalletDetail) {
+            Navigator.of(context).pop(); // sendScreen 닫기 → wallet-detail로 복귀
+            Navigator.pushNamed(
+              context,
+              '/wallet-info',
+              arguments: {
+                'id': walletId,
+                'isMultisig': false,
+                'entryPoint': kEntryPointWalletHome,
+                'showMfpInput': true,
+              },
+            );
+          } else {
+            Navigator.of(context).pop(); // sendScreen 닫기
+            Navigator.pushNamed(
+              context,
+              '/wallet-detail',
+              arguments: {'id': walletId, 'entryPoint': kEntryPointWalletHome},
+            );
+            Navigator.pushNamed(
+              context,
+              '/wallet-info',
+              arguments: {
+                'id': walletId,
+                'isMultisig': false,
+                'entryPoint': kEntryPointWalletHome,
+                'showMfpInput': true,
+              },
+            );
+          }
+        });
       });
     } else if (_viewModel.incomingBalance > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
