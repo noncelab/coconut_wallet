@@ -8,6 +8,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
@@ -77,10 +78,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               id: widget.id,
                               walletItem: viewModel.walletItemBase,
                               onTooltipClicked: () {
-                                // 이미 툴팁이 보이고 있는 상태라면 토글
                                 if (_tooltipRemainingTime > 0) {
                                   _removeTooltip();
-
                                   return;
                                 }
                                 _removeTooltip();
@@ -102,6 +101,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     });
                                   });
                                 });
+                              },
+                              onShowMfpInputBottomSheet: () {
+                                _showMfpInputBottomSheet();
                               },
                               tooltipKey: _walletTooltipKey,
                               onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
@@ -296,6 +298,28 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       _initializeTooltipPosition();
       _setOverlayLoading(false);
     });
+  }
+
+  Future<String?> _showMfpInputBottomSheet() async {
+    final result = await showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: WalletAddMfpInputBottomSheet(
+            onComplete: (text) {
+              Navigator.pop(context, text);
+            },
+          ),
+        );
+      },
+      backgroundColor: CoconutColors.black,
+      isScrollControlled: true,
+      enableDrag: true,
+      useSafeArea: true,
+    );
+
+    return result;
   }
 
   void _initializeTooltipPosition() {

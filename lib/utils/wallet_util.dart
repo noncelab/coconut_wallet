@@ -2,6 +2,7 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:flutter/widgets.dart';
 
 bool isWalletWithoutMfp(WalletListItemBase? wallet) {
   if (wallet != null &&
