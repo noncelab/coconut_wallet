@@ -294,7 +294,7 @@ class CpfpBuilder {
       return CpfpBuildResult(
         exception: e,
         minimumFeeRate: _cachedBaseline!.minimumFeeRate,
-        packageFeeRate: 0,
+        packageFeeRate: _cachedBaseline!.packageFeeRate,
         estimatedVSize: _cachedBaseline!.estimatedVSize,
       );
     }
