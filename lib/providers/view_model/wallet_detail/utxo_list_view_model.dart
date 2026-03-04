@@ -47,8 +47,8 @@ class UtxoListViewModel extends ChangeNotifier {
 
   // UI State
   bool _isUtxoListLoadComplete = false;
-  String _selectedUtxoTagName = t.all;
-  late UtxoOrder _selectedUtxoOrder;
+  String _activeUtxoTagName = t.all;
+  late UtxoOrder _activeUtxoOrder;
 
   // Tag Data
   final Map<String, List<UtxoTag>> _utxoTagMap = {};
@@ -66,11 +66,12 @@ class UtxoListViewModel extends ChangeNotifier {
   bool get isUtxoListLoadComplete => _isUtxoListLoadComplete;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
 
-  UtxoOrder get selectedUtxoOrder => _selectedUtxoOrder;
-  String get selectedUtxoTagName => _selectedUtxoTagName;
+  UtxoOrder get activeUtxoOrder => _activeUtxoOrder;
+  String get activeUtxoTagName => _activeUtxoTagName;
   UtxoTagProvider get tagProvider => _tagProvider;
   List<UtxoState> get utxoList => _utxoList;
   List<UtxoTag> get utxoTagList => _utxoTagList;
+  List<UtxoState> get selectedUtxoList => _selectedUtxoList;
 
   String get utxoTagListKey => _utxoTagList.map((e) => e.name).join(':');
   WalletType get walletType => _walletListBaseItem.walletType;
@@ -117,8 +118,6 @@ class UtxoListViewModel extends ChangeNotifier {
     _updateFilteredUtxoList();
   }
 
-  List<UtxoState> get selectedUtxoList => _selectedUtxoList;
-
   int _calculateTotalAmountOfUtxoList(List<Utxo> utxos) {
     return utxos.fold<int>(0, (totalAmount, utxo) => totalAmount + utxo.amount);
   }
@@ -141,8 +140,8 @@ class UtxoListViewModel extends ChangeNotifier {
     _tagProvider.resetUtxoTagsUpdateState();
   }
 
-  void setSelectedUtxoTagName(String value) {
-    _selectedUtxoTagName = value;
+  void setActiveUtxoTagName(String value) {
+    _activeUtxoTagName = value;
     for (var utxo in _confirmedUtxoList) {
       _utxoTagMap[utxo.utxoId] = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
     }
@@ -172,13 +171,13 @@ class UtxoListViewModel extends ChangeNotifier {
   }
 
   void _updateFilteredUtxoList() {
-    if (_selectedUtxoTagName == t.all) {
+    if (_activeUtxoTagName == t.all) {
       // 모든 UTXO 표시
       _filteredUtxoList = List<UtxoState>.from(_confirmedUtxoList);
-    } else if (_selectedUtxoTagName == t.utxo_detail_screen.utxo_locked) {
+    } else if (_activeUtxoTagName == t.utxo_detail_screen.utxo_locked) {
       // 잠금된 UTXO만 표시
       _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isLocked).toList();
-    } else if (_selectedUtxoTagName == t.change) {
+    } else if (_activeUtxoTagName == t.change) {
       // 체인지 UTXO만 표시
       _filteredUtxoList = _confirmedUtxoList.where((utxo) => utxo.isChange).toList();
     } else {
@@ -186,7 +185,7 @@ class UtxoListViewModel extends ChangeNotifier {
       _filteredUtxoList =
           _confirmedUtxoList.where((utxo) {
             final tags = _utxoTagMap[utxo.utxoId];
-            return tags != null && tags.any((tag) => tag.name == _selectedUtxoTagName);
+            return tags != null && tags.any((tag) => tag.name == _activeUtxoTagName);
           }).toList();
     }
     notifyListeners();
@@ -201,10 +200,10 @@ class UtxoListViewModel extends ChangeNotifier {
     }
   }
 
-  void updateUtxoFilter(UtxoOrder selectedUtxoFilter) async {
-    _selectedUtxoOrder = selectedUtxoFilter;
-    await _preferenceProvider.setLastUtxoOrder(selectedUtxoFilter);
-    UtxoState.sortUtxo(_utxoList, selectedUtxoFilter);
+  void updateUtxoFilter(UtxoOrder activeUtxoFilter) async {
+    _activeUtxoOrder = activeUtxoFilter;
+    await _preferenceProvider.setLastUtxoOrder(activeUtxoFilter);
+    UtxoState.sortUtxo(_utxoList, activeUtxoFilter);
     notifyListeners();
   }
 
@@ -220,15 +219,12 @@ class UtxoListViewModel extends ChangeNotifier {
     _utxoList = _walletProvider.getUtxoList(_walletId);
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
-    final newUtxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    _utxoTagList = newUtxoTagList;
-
     for (var utxo in _utxoList) {
       final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
 
       utxo.tags = tags;
     }
-    UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
+    UtxoState.sortUtxo(_utxoList, _activeUtxoOrder);
     _isUtxoListLoadComplete = true;
     notifyListeners();
   }
@@ -279,7 +275,7 @@ class UtxoListViewModel extends ChangeNotifier {
     _isUtxoListLoadComplete = false;
     _utxoList = _walletProvider.getUtxoList(_walletId);
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
-    _selectedUtxoOrder = _preferenceProvider.utxoSortOrder;
+    _activeUtxoOrder = _preferenceProvider.utxoSortOrder;
 
     for (var utxo in _utxoList) {
       final tags = _tagProvider.getUtxoTagsByUtxoId(_walletId, utxo.utxoId);
@@ -287,7 +283,7 @@ class UtxoListViewModel extends ChangeNotifier {
       utxo.tags = tags;
     }
     _isUtxoListLoadComplete = true;
-    UtxoState.sortUtxo(_utxoList, _selectedUtxoOrder);
+    UtxoState.sortUtxo(_utxoList, _activeUtxoOrder);
   }
 
   List<String> getTimeString(int utxoIndex) {
@@ -322,13 +318,13 @@ class UtxoListViewModel extends ChangeNotifier {
 
       // selected 리스트 갱신
       if (status == UtxoStatus.locked) {
-        if (_selectedUtxoTagName == t.utxo_detail_screen.utxo_locked) {
+        if (_activeUtxoTagName == t.utxo_detail_screen.utxo_locked) {
           _selectedUtxoList = affectedUtxos;
         } else {
           _selectedUtxoList.removeWhere((u) => utxoIds.contains(u.utxoId));
         }
       } else if (status == UtxoStatus.unspent) {
-        if (_selectedUtxoTagName != t.utxo_detail_screen.utxo_locked) {
+        if (_activeUtxoTagName != t.utxo_detail_screen.utxo_locked) {
           _selectedUtxoList
             ..removeWhere((u) => utxoIds.contains(u.utxoId))
             ..addAll(affectedUtxos);
@@ -347,7 +343,7 @@ class UtxoListViewModel extends ChangeNotifier {
         );
 
       // 정렬 + 필터링
-      _sortConfirmedUtxoList(_selectedUtxoOrder);
+      _sortConfirmedUtxoList(_activeUtxoOrder);
       _updateFilteredUtxoList();
 
       // UI 갱신
