@@ -591,6 +591,7 @@ settings_screen:
   hide_balance: "残高を非表示"
   fiat: "法定通貨"
   language: "言語"
+  utxo_tier_theme: "コインの色"
   electrum_server: 
     server_address: "サーバーアドレス"
     port: "ポート"
@@ -647,6 +648,12 @@ address_list_screen:
   receiving: "受信"
   change: "おつり"
   show_only_unused_address: "未使用アドレスのみ表示"
+utxo_wallet_like_screen:
+  by_amount: "金額別"
+  by_tag: "タグ別"
+  interval_info_title: "区間案内"
+  view_mode_list: "リスト"
+  view_mode_grid: "グリッド"
 address_search_screen:
   address_placeholder: "アドレスを入力してください"
   address_not_found: "アドレスが見つかりません"
@@ -662,6 +669,8 @@ utxo_list_screen:
   utxo_locked_button: "使用ロック"
   utxo_unlocked_button: "使用可能にする"
   pending_utxo: "すでに送信中のUTXOは選択できません。"
+  reused_address_legend: "再利用アドレス警告"
+  reused_address: "再利用アドレスUTXOを優先してご利用ください"
 
 transaction_detail_screen:
   confirmation: "$height（$count確認）"

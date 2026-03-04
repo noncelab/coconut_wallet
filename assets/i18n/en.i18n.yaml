@@ -591,6 +591,7 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -647,6 +648,12 @@ address_list_screen:
   receiving: "Receiving"
   change: "Change"
   show_only_unused_address: "Show Only Unused Addresses"
+utxo_wallet_like_screen:
+  by_amount: "By Amount"
+  by_tag: "By Tag"
+  interval_info_title: "Interval Guide"
+  view_mode_list: "List"
+  view_mode_grid: "Grid"
 address_search_screen:
   address_placeholder: "Please enter the address"
   address_not_found: "Address not found"
@@ -662,6 +669,8 @@ utxo_list_screen:
   utxo_locked_button: "Lock"
   utxo_unlocked_button: "Unlock"
   pending_utxo: "UTXOs that are already being sent cannot be selected."
+  reused_address_legend: "Reused address warning"
+  reused_address: "Please use reused address UTXOs first"
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmations)"

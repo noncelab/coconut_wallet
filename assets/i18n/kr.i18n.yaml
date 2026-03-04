@@ -589,6 +589,7 @@ settings_screen:
   change_password: "비밀번호 바꾸기"
   fiat: "법정 화폐"
   language: "언어"
+  utxo_tier_theme: "코인 색상"
   locales:
     korean: "한국어"
     english: "English"
@@ -650,6 +651,12 @@ address_list_screen:
   receiving: "입금"
   change: "잔돈"
   show_only_unused_address: "사용 전 주소만 보기"
+utxo_wallet_like_screen:
+  by_amount: "금액별"
+  by_tag: "태그별"
+  interval_info_title: "구간 안내"
+  view_mode_list: "리스트"
+  view_mode_grid: "그리드"
 address_search_screen:
   address_placeholder: "주소를 입력해 주세요"
   address_not_found: "찾으시는 주소가 없어요"
@@ -665,6 +672,8 @@ utxo_list_screen:
   utxo_locked_button: "사용 잠금"
   utxo_unlocked_button: "사용 가능으로 전환"
   pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
+  reused_address_legend: "재사용 주소 경고"
+  reused_address: "재사용 주소 UTXO를 우선 사용해주세요"
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"

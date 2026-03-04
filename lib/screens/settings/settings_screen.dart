@@ -12,6 +12,7 @@ import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/utxo_tier_theme_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -190,21 +191,41 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 일반
                   _category(t.general),
-                  Selector<PreferenceProvider, String>(
-                    selector: (_, provider) => provider.language,
-                    builder: (context, language, child) {
-                      return _buildAnimatedButton(
-                        title: t.settings_screen.language,
-                        subtitle: _getCurrentLanguageDisplayName(language),
-                        onPressed: () async {
-                          CommonBottomSheets.showCustomHeightBottomSheet(
-                            context: context,
-                            heightRatio: 0.5,
-                            child: LanguageBottomSheet(),
+                  ButtonGroup(
+                    buttons: [
+                      Selector<PreferenceProvider, String>(
+                        selector: (_, provider) => provider.language,
+                        builder: (context, language, child) {
+                          return _buildAnimatedButton(
+                            title: t.settings_screen.language,
+                            subtitle: _getCurrentLanguageDisplayName(language),
+                            onPressed: () async {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.5,
+                                child: LanguageBottomSheet(),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
+                      ),
+                      Selector<PreferenceProvider, String>(
+                        selector: (_, provider) => provider.utxoTierTheme.name,
+                        builder: (context, themeName, child) {
+                          return _buildAnimatedButton(
+                            title: t.settings_screen.utxo_tier_theme,
+                            subtitle: themeName,
+                            onPressed: () async {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.6,
+                                child: const UtxoTierThemeBottomSheet(),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   CoconutLayout.spacing_400h,
 

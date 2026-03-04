@@ -25,6 +25,7 @@ class SharedPrefKeys {
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
+  static const String kUtxoTierThemeId = 'UTXO_TIER_THEME_ID';
 
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서

@@ -592,6 +592,7 @@ settings_screen:
   hide_balance: "Ocultar saldo"
   fiat: "Fiat"
   language: "Idioma"
+  utxo_tier_theme: "Color de moneda"
   electrum_server: 
     server_address: "Dirección del servidor"
     port: "Puerto"
@@ -650,6 +651,12 @@ address_list_screen:
   receiving: "Recibiendo"
   change: "Cambio"
   show_only_unused_address: "Mostrar solo direcciones sin usar"
+utxo_wallet_like_screen:
+  by_amount: "Por monto"
+  by_tag: "Por etiqueta"
+  interval_info_title: "Guía de intervalos"
+  view_mode_list: "Lista"
+  view_mode_grid: "Cuadrícula"
 address_search_screen:
   address_placeholder: "Por favor, ingrese la dirección"
   address_not_found: "Dirección no encontrada"
@@ -665,6 +672,8 @@ utxo_list_screen:
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
   pending_utxo: "Los UTXO que ya están en proceso de envío no se pueden seleccionar."
+  reused_address_legend: "Advertencia de dirección reutilizada"
+  reused_address: "Por favor, use primero los UTXOs de dirección reutilizada"
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmaciones)"
@@ -874,7 +883,7 @@ tooltip:
     scan_qr_below: "y escanea el código QR a continuación."
   address_receiving: "Esta es la dirección usada cuando recibes Bitcoin. En inglés, se llama Receiving o External."
   address_change: "Esta es la dirección donde recibes cambio cuando envías Bitcoin. En inglés, se llama Change."
-  utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."  
+  utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."
   faucet: "Prueba libremente con Bitcoin de prueba"
   multisig_wallet: "Esta es una billetera multifirma que requiere\n$count firmas de $total claves."  
   mfp: "Este es el valor único de la billetera.\nTambién llamado Huella Digital Maestra (MFP)."  
