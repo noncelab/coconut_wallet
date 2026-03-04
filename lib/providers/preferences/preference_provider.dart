@@ -568,10 +568,21 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
+  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
+
+  static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
+    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY],
+    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
+    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW],
+  };
+
   // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
   Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
-    _walletListVisibleFiats = fiats;
-    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, fiats.map((f) => f.code).join(','));
+    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
+    final sorted = order.where((f) => fiats.contains(f)).toList();
+    _walletListVisibleFiats = sorted;
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
     notifyListeners();
   }
 
