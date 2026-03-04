@@ -15,7 +15,6 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
@@ -213,16 +212,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
     return _viewModel;
   }
 
-  void onTogglePressed(FiatCode fiat) {
-    final visibleFiats = List<FiatCode>.from(_viewModel.visibleFiats);
-    if (visibleFiats.contains(fiat)) {
-      visibleFiats.remove(fiat);
-    } else {
-      visibleFiats.add(fiat);
-    }
-    _viewModel.setVisibleFiats(visibleFiats);
-  }
-
   Widget _buildEditModeHeader() {
     SvgPicture starIcon = SvgPicture.asset('assets/svg/star-small.svg', width: 16, height: 16);
     SvgPicture hamburgerIcon = SvgPicture.asset('assets/svg/hamburger.svg', width: 16, height: 16);
@@ -352,12 +341,10 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                                 : Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    for (var fiat in _viewModel.visibleFiats) ...[
-                                      Text(
-                                        _viewModel.getBitcoinPrice(totalBalance, fiat),
-                                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
-                                      ),
-                                    ],
+                                    Text(
+                                      _viewModel.getBitcoinPrice(totalBalance),
+                                      style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
+                                    ),
                                     // 홈 화면 총액 (애니메이션)
                                     AnimatedSwitcher(
                                       duration: const Duration(milliseconds: 300),
@@ -402,10 +389,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     title: '',
                     titlePadding: EdgeInsets.zero,
                     context: context,
-                    child: WalletListSettingsBottomSheet(
-                      visibleFiats: _viewModel.visibleFiats,
-                      onTogglePressed: (f) => onTogglePressed(f),
-                    ),
+                    child: const WalletListSettingsBottomSheet(),
                   );
                 },
                 icon: SvgPicture.asset('assets/svg/settings.svg', width: 16, height: 16),
@@ -439,16 +423,9 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
         Row(
           children: [
             const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                for (var fiat in _viewModel.visibleFiats) ...[
-                  Text(
-                    _viewModel.getBitcoinPrice(amount, fiat),
-                    style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                  ),
-                ],
-              ],
+            Text(
+              _viewModel.getBitcoinPrice(amount),
+              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
             ),
           ],
         ),
@@ -707,123 +684,45 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 }
 
 class WalletListSettingsBottomSheet extends StatelessWidget {
-  final List<FiatCode> visibleFiats;
-  final Function(FiatCode) onTogglePressed;
-  const WalletListSettingsBottomSheet({super.key, required this.visibleFiats, required this.onTogglePressed});
+  const WalletListSettingsBottomSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
     final prefProvider = context.watch<PreferenceProvider>();
 
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-      child: SafeArea(
-        child: AnimatedSize(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            child: Column(
-              children: [
-                SingleButton(
-                  customPadding: const EdgeInsets.fromLTRB(2, 10, 2, 16),
-                  title: t.wallet_list.bottom_sheet.hide_fiat_price,
-                  subtitle: t.wallet_list.bottom_sheet.hide_fiat_price_description,
-                  isVerticalSubtitle: true,
-                  backgroundColor: CoconutColors.black,
-                  rightElement: CoconutSwitch(
-                    isOn: prefProvider.isWalletListFiatHidden,
-                    scale: 0.8,
-                    activeColor: CoconutColors.gray100,
-                    trackColor: CoconutColors.gray600,
-                    thumbColor: CoconutColors.black,
-                    onChanged: (value) {
-                      prefProvider.setWalletListFiatHidden(value);
-                      vibrateExtraLight();
-                    },
-                  ),
-                ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(opacity: animation, child: child);
+    return SafeArea(
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Column(
+            children: [
+              SingleButton(
+                customPadding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+                title: t.wallet_list.bottom_sheet.hide_fiat_price,
+                subtitle: t.wallet_list.bottom_sheet.hide_fiat_price_description,
+                isVerticalSubtitle: true,
+                onPressed: () {
+                  prefProvider.setWalletListFiatHidden(!prefProvider.isWalletListFiatHidden);
+                },
+                backgroundColor: CoconutColors.black,
+                rightElement: CoconutSwitch(
+                  isOn: prefProvider.isWalletListFiatHidden,
+                  scale: 0.7,
+                  activeColor: CoconutColors.gray100,
+                  trackColor: CoconutColors.gray600,
+                  thumbColor: CoconutColors.black,
+                  onChanged: (value) {
+                    prefProvider.setWalletListFiatHidden(value);
                   },
-                  child:
-                      prefProvider.isWalletListFiatHidden
-                          ? const SizedBox.shrink()
-                          : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Divider(color: CoconutColors.gray700, height: 1),
-                              CoconutLayout.spacing_400h,
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 2),
-                                child: Column(
-                                  children: [
-                                    for (var fiat in prefProvider.orderedFiats) ...[
-                                      _buildFiatRow(fiat, onTogglePressed, prefProvider.walletListVisibleFiats),
-                                      CoconutLayout.spacing_400h,
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildFiatRow(FiatCode fiat, Function(FiatCode) onTogglePressed, List<FiatCode> currentVisibleFiats) {
-    final isVisible = currentVisibleFiats.contains(fiat);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: CoconutColors.gray800,
-                borderRadius: BorderRadius.circular(CoconutStyles.radius_50),
-              ),
-              width: 18,
-              height: 18,
-              child: Center(
-                child: Text(
-                  fiat.symbol,
-                  style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400).copyWith(height: 1.4),
-                ),
-              ),
-            ),
-            CoconutLayout.spacing_200w,
-            Text(fiat.name, style: CoconutTypography.body3_12_Bold.copyWith(height: 1.4)),
-          ],
-        ),
-        ShrinkAnimationButton(
-          defaultColor: isVisible ? CoconutColors.gray700 : CoconutColors.sky,
-          pressedColor: isVisible ? CoconutColors.gray800 : CoconutColors.cyanBlue,
-          borderRadius: 8,
-          child: Container(
-            constraints: const BoxConstraints(minWidth: 52),
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              isVisible ? t.hide : t.show,
-              textAlign: TextAlign.center,
-              style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white).copyWith(height: 1.4),
-            ),
-          ),
-          onPressed: () {
-            onTogglePressed(fiat);
-            vibrateExtraLight();
-          },
-        ),
-      ],
     );
   }
 }
