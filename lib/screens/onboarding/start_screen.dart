@@ -10,7 +10,7 @@ import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
-import 'package:coconut_wallet/widgets/custom_dialogs.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -79,20 +79,23 @@ class _StartScreenState extends State<StartScreen> {
 
   /// 업데이트 다이얼로그 표시
   Future<bool> _showUpdateDialog() async {
-    return (await CustomDialogs.showFutureCustomAlertDialog(
-          context,
-          title: t.alert.update.title,
-          message: t.alert.update.description,
-          onConfirm: () async {
-            await _viewModel.launchUpdate();
-            return true;
-          },
-          onCancel: () {
-            return false;
-          },
-          confirmButtonText: t.alert.update.btn_update,
-          confirmButtonColor: CoconutColors.primary,
-          cancelButtonText: t.alert.update.btn_do_later,
+    return (await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => CoconutPopup(
+                languageCode: context.read<PreferenceProvider>().language,
+                title: t.alert.update.title,
+                description: t.alert.update.description,
+                rightButtonText: t.alert.update.btn_update,
+                rightButtonColor: CoconutColors.primary,
+                leftButtonText: t.alert.update.btn_do_later,
+                onTapRight: () async {
+                  await _viewModel.launchUpdate();
+                  if (mounted) Navigator.pop(context, true);
+                },
+                onTapLeft: () => Navigator.pop(context, false),
+              ),
         )) ??
         false;
   }
