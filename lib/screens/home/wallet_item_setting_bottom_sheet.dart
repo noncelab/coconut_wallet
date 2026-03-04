@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -118,6 +119,7 @@ class _WalletItemSettingBottomSheetState extends State<WalletItemSettingBottomSh
             trackColor: CoconutColors.gray600,
             scale: 0.8,
             onChanged: (bool newValue) {
+              vibrateExtraLight();
               setState(() {
                 onChanged(newValue);
               });

@@ -59,7 +59,9 @@ class WalletListViewModel extends ChangeNotifier {
   bool get isEnglishOrSpanish => _preferenceProvider.language == 'en' || _preferenceProvider.language == 'es';
 
   bool get isWalletListFiatHidden => _preferenceProvider.isWalletListFiatHidden;
-  List<FiatCode> get visibleFiats => _preferenceProvider.walletListVisibleFiats;
+
+  late List<FiatCode> _visibleFiats;
+  List<FiatCode> get visibleFiats => _visibleFiats;
 
   WalletListViewModel(
     this._walletProvider,
@@ -73,6 +75,7 @@ class WalletListViewModel extends ChangeNotifier {
     _walletOrder = _preferenceProvider.walletOrder;
     _favoriteWalletIds = _preferenceProvider.favoriteWalletIds;
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+    _visibleFiats = _preferenceProvider.walletListVisibleFiats;
     _syncNodeStateStream = _nodeProvider.syncStateStream;
     _syncNodeStateSubscription = _syncNodeStateStream.listen(_handleNodeSyncState);
     _walletBalance = _walletProvider.fetchWalletBalanceMap().map(
@@ -87,8 +90,8 @@ class WalletListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  String getBitcoinPrice(int satoshiAmount) {
-    return _priceProvider.getFiatPrice(satoshiAmount);
+  String getBitcoinPrice(int satoshiAmount, FiatCode fiatCode) {
+    return _priceProvider.getFiatPrice(satoshiAmount, fiatCode: fiatCode);
   }
 
   void _onPreferenceChanged() {
@@ -159,6 +162,11 @@ class WalletListViewModel extends ChangeNotifier {
       _preferenceProvider.excludedFromTotalBalanceWalletIds.toSet(),
     )) {
       _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
+    }
+
+    /// 보여지는 통화 목록 변경 체크
+    if (!const ListEquality().equals(_visibleFiats, _preferenceProvider.walletListVisibleFiats)) {
+      _visibleFiats = _preferenceProvider.walletListVisibleFiats;
     }
 
     notifyListeners();
@@ -338,6 +346,12 @@ class WalletListViewModel extends ChangeNotifier {
 
   void setPincheckNotifier(bool value) {
     pinCheckNotifier.value = value;
+  }
+
+  void setVisibleFiats(List<FiatCode> fiats) {
+    _preferenceProvider.setWalletListVisibleFiats(fiats);
+    _visibleFiats = _preferenceProvider.walletListVisibleFiats;
+    notifyListeners();
   }
 
   @override
