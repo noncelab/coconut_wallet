@@ -68,6 +68,10 @@ class SharedPrefsRepository {
     await _sharedPrefs.setString(key, value);
   }
 
+  String? getStringOrNull(String key) {
+    return _sharedPrefs.getString(key);
+  }
+
   double? getDouble(String key) {
     return _sharedPrefs.getDouble(key);
   }

@@ -410,6 +410,9 @@ wallet_list:
     delete_description: "Swipe left on a wallet to delete it."
     finish: "Finish Editing"
     unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
+  bottom_sheet:
+    hide_fiat_price: "Hide Fiat Balance"
+    hide_fiat_price_description: "This screen will not display the fiat balance."
 
 # lib/screens/review
 negative_feedback_screen:

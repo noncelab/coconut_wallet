@@ -78,4 +78,8 @@ class SharedPrefKeys {
 
   /// 생일 아이콘 변경 날짜 (해당 기간 동안 한번만 변경하기 위해)
   static const String kEventIconChangedDate = 'EVENT_ICON_CHANGED_DATE';
+
+  /// 지갑 목록 화면 - 법정화폐 관련
+  static const String kWalletListFiatHidden = 'WALLET_LIST_FIAT_HIDDEN'; // 지갑 목록 화면의 법정화폐 숨김 여부
+  static const String kWalletListVisibleFiats = 'WALLET_LIST_VISIBLE_FIATS'; // 지갑 목록 화면에서 보여줄 법정화폐 목록
 }

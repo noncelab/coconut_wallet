@@ -262,7 +262,7 @@ wallet_home_screen:
       fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
       fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
       fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
-    hide_fiat_price: "법정 화폐 잔액 숨기기"
+    hide_fiat_price: "법정화폐 잔액 숨기기"
     hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요."
     category:
       total_balance: "잔액 합계"
@@ -410,6 +410,9 @@ wallet_list:
     delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
+  bottom_sheet:
+    hide_fiat_price: "법정화폐 잔액 숨기기"
+    hide_fiat_price_description: "이 화면에 법정화폐 잔액을 표시하지 않아요."
 
 # lib/screens/review
 negative_feedback_screen:
