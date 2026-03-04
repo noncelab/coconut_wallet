@@ -121,7 +121,7 @@ class SingleButton extends StatelessWidget {
                 child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
               ),
               if (isVerticalSubtitle) ...{
-                SizedBox(height: betweenGap),
+                CoconutLayout.spacing_100h,
                 FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle)),
               },
             ],

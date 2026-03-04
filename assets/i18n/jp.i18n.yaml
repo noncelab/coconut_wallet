@@ -411,9 +411,6 @@ wallet_list:
     delete_description: "ウォレットを左にスワイプして削除できます。"
     finish: "編集完了"
     unsaved_changes_confirm_exit: "未保存の変更があります。\n本当に終了しますか？"
-  bottom_sheet:
-    hide_fiat_price: "法定通貨残高を非表示"
-    hide_fiat_price_description: "この画面に法定通貨残高を表示しません。"
 
 # lib/screens/review
 negative_feedback_screen:

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
@@ -57,9 +56,6 @@ class WalletListViewModel extends ChangeNotifier {
 
   bool get isKorean => _preferenceProvider.language == 'kr';
   bool get isEnglishOrSpanish => _preferenceProvider.language == 'en' || _preferenceProvider.language == 'es';
-
-  bool get isWalletListFiatHidden => _preferenceProvider.isWalletListFiatHidden;
-  List<FiatCode> get visibleFiats => _preferenceProvider.walletListVisibleFiats;
 
   WalletListViewModel(
     this._walletProvider,
