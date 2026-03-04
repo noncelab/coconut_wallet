@@ -183,6 +183,10 @@ class CpfpBuilder {
 
   CpfpBuildResult changeAdditionalSpendable(List<UtxoState> utxos) {
     _additionalSpendable = [...utxos]..sort((a, b) => b.amount.compareTo(a.amount));
+    if (_cachedBaseline != null && _cachedBaseline!.isSuccess && _cachedBaseline!.addedUtxo == null) {
+      return _cachedBaseline!;
+    }
+    
     _cachedBaseline = getBaselineTransaction(isForce: true);
     return _cachedBaseline!;
   }
