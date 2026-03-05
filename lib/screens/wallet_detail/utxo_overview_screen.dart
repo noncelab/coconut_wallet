@@ -211,127 +211,102 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: _buildAppBar(context),
-      body: SafeArea(
-        child: Consumer<UtxoTagProvider>(
-          builder: (context, tagProvider, _) {
-            final utxoTagList = tagProvider.getUtxoTagList(widget.id);
-            return _isByAmount
-                ? Stack(
-                  children: [
-                    if (_viewModeIndex == 0 && _filteredBuckets.length > 1)
-                      Positioned(
-                        left: -8,
-                        top: 0,
-                        bottom: 0,
-                        width: 34,
-                        child: UtxoBucketScrollRail(
-                          key: _scrollRailKey,
-                          buckets: _filteredBuckets,
-                          scrollController: _scrollController,
-                          activeIndexListenable: _activeIndex,
-                          activeBucketY: _activeBucketY,
+      body: Consumer<UtxoTagProvider>(
+        builder: (context, tagProvider, _) {
+          final utxoTagList = tagProvider.getUtxoTagList(widget.id);
+          return _isByAmount
+              ? Stack(
+                children: [
+                  if (_viewModeIndex == 0 && _filteredBuckets.length > 1)
+                    Positioned(
+                      left: -8,
+                      top: 0,
+                      bottom: 0,
+                      width: 34,
+                      child: UtxoBucketScrollRail(
+                        key: _scrollRailKey,
+                        buckets: _filteredBuckets,
+                        scrollController: _scrollController,
+                        activeIndexListenable: _activeIndex,
+                        activeBucketY: _activeBucketY,
+                      ),
+                    ),
+                  CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: UtxoSummaryChart(
+                          buckets: _buckets,
+                          totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
+                          coinCount: viewModel.utxoList.length,
+                          availableCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.unspent).length,
+                          availableSats: viewModel.utxoList
+                              .where((u) => u.status == UtxoStatus.unspent)
+                              .fold<int>(0, (s, u) => s + u.amount),
+                          lockedCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.locked).length,
+                          lockedSats: viewModel.utxoList
+                              .where((u) => u.status == UtxoStatus.locked)
+                              .fold<int>(0, (s, u) => s + u.amount),
+                          currentUnit: _currentUnit,
+                          onBalanceTap: _toggleUnit,
+                          hasReusedAddresses: _reusedAddresses.isNotEmpty,
                         ),
                       ),
-                    CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: UtxoSummaryChart(
-                            buckets: _buckets,
-                            totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
-                            coinCount: viewModel.utxoList.length,
-                            availableCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.unspent).length,
-                            availableSats: viewModel.utxoList
-                                .where((u) => u.status == UtxoStatus.unspent)
-                                .fold<int>(0, (s, u) => s + u.amount),
-                            lockedCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.locked).length,
-                            lockedSats: viewModel.utxoList
-                                .where((u) => u.status == UtxoStatus.locked)
-                                .fold<int>(0, (s, u) => s + u.amount),
-                            currentUnit: _currentUnit,
-                            onBalanceTap: _toggleUnit,
-                            hasReusedAddresses: _reusedAddresses.isNotEmpty,
-                          ),
-                        ),
-                        SliverPersistentHeader(
-                          pinned: true,
-                          delegate: UtxoStickyFilterBarDelegate(
-                            height: _effectiveFilterBarHeight,
-                            selectedCount: _selectedUtxoIds.length,
-                            selectedTotalSats: _selectedTotalSats,
-                            currentUnit: _currentUnit,
-                            viewModeIndex: _viewModeIndex,
-                            lockFilterIndex: _lockFilterIndex,
-                            isSelectionMode: _isSelectionMode,
-                            onViewModeSelected: (index) {
-                              setState(() {
-                                _viewModeIndex = index;
-                                if (_isSelectionMode) {
-                                  _isSelectionMode = false;
-                                  _selectedUtxoIds.clear();
-                                  _selectionBarExiting = false;
-                                }
-                              });
-                            },
-                            onLockFilterSelected: (index) {
-                              setState(() {
-                                _lockFilterIndex = index;
-                                _updateFilteredBuckets();
-                              });
-                            },
-                            onExitSelectionMode: () {
-                              setState(() {
+                      SliverPersistentHeader(
+                        pinned: true,
+                        delegate: UtxoStickyFilterBarDelegate(
+                          height: _effectiveFilterBarHeight,
+                          selectedCount: _selectedUtxoIds.length,
+                          selectedTotalSats: _selectedTotalSats,
+                          currentUnit: _currentUnit,
+                          viewModeIndex: _viewModeIndex,
+                          lockFilterIndex: _lockFilterIndex,
+                          isSelectionMode: _isSelectionMode,
+                          onViewModeSelected: (index) {
+                            setState(() {
+                              _viewModeIndex = index;
+                              if (_isSelectionMode) {
                                 _isSelectionMode = false;
                                 _selectedUtxoIds.clear();
                                 _selectionBarExiting = false;
-                              });
-                            },
-                          ),
+                              }
+                            });
+                          },
+                          onLockFilterSelected: (index) {
+                            setState(() {
+                              _lockFilterIndex = index;
+                              _updateFilteredBuckets();
+                            });
+                          },
+                          onExitSelectionMode: () {
+                            setState(() {
+                              _isSelectionMode = false;
+                              _selectedUtxoIds.clear();
+                              _selectionBarExiting = false;
+                            });
+                          },
                         ),
-                        if (_viewModeIndex == 0)
-                          SliverPadding(
-                            padding: const EdgeInsets.only(left: 38),
-                            sliver: SliverList.builder(
-                              itemCount: _filteredBuckets.length,
-                              itemBuilder: (context, index) {
-                                final bucket = _filteredBuckets[index];
-                                return Padding(
-                                  key: _filteredBucketKeys[index],
-                                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                                  child: UtxoBucketCardRow(
-                                    bucket: bucket,
-                                    index: index,
-                                    currentUnit: _currentUnit,
-                                    activeIndexListenable: _activeIndex,
-                                    isSelectionMode: _isSelectionMode,
-                                    selectedUtxoIds: _selectedUtxoIds,
-                                    reusedAddresses: _reusedAddresses,
-                                    onTapUtxo: (u) {
-                                      if (_isSelectionMode) {
-                                        if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
-                                          CoconutToast.showToast(
-                                            context: context,
-                                            text: t.utxo_list_screen.pending_utxo,
-                                            isVisibleIcon: false,
-                                          );
-                                          return;
-                                        }
-                                        setState(() {
-                                          if (_selectedUtxoIds.contains(u.utxoId)) {
-                                            _selectedUtxoIds.remove(u.utxoId);
-                                          } else {
-                                            _selectedUtxoIds.add(u.utxoId);
-                                          }
-                                        });
-                                      } else {
-                                        Navigator.pushNamed(
-                                          context,
-                                          '/utxo-detail',
-                                          arguments: {'utxo': u, 'id': widget.id},
-                                        );
-                                      }
-                                    },
-                                    onLongPressUtxo: (u) {
+                      ),
+                      if (_viewModeIndex == 0)
+                        SliverPadding(
+                          padding: const EdgeInsets.only(left: 38),
+                          sliver: SliverList.builder(
+                            itemCount: _filteredBuckets.length,
+                            itemBuilder: (context, index) {
+                              final bucket = _filteredBuckets[index];
+                              return Padding(
+                                key: _filteredBucketKeys[index],
+                                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                                child: UtxoBucketCardRow(
+                                  bucket: bucket,
+                                  index: index,
+                                  currentUnit: _currentUnit,
+                                  activeIndexListenable: _activeIndex,
+                                  isSelectionMode: _isSelectionMode,
+                                  selectedUtxoIds: _selectedUtxoIds,
+                                  reusedAddresses: _reusedAddresses,
+                                  onTapUtxo: (u) {
+                                    if (_isSelectionMode) {
                                       if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
                                         CoconutToast.showToast(
                                           context: context,
@@ -341,40 +316,63 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                                         return;
                                       }
                                       setState(() {
-                                        _viewModeIndex = 1;
-                                        _isSelectionMode = true;
-                                        _selectedUtxoIds.add(u.utxoId);
+                                        if (_selectedUtxoIds.contains(u.utxoId)) {
+                                          _selectedUtxoIds.remove(u.utxoId);
+                                        } else {
+                                          _selectedUtxoIds.add(u.utxoId);
+                                        }
                                       });
-                                    },
-                                  ),
-                                );
-                              },
-                            ),
-                          )
-                        else
-                          _buildGridSliver(_currentUnit),
-                        const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                      ],
-                    ),
-                    Positioned.fill(
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: AnimatedSlide(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutCubic,
-                          offset:
-                              (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting
-                                  ? Offset.zero
-                                  : const Offset(0, 1),
-                          child: _buildSelectionBottomBar(),
-                        ),
+                                    } else {
+                                      Navigator.pushNamed(
+                                        context,
+                                        '/utxo-detail',
+                                        arguments: {'utxo': u, 'id': widget.id},
+                                      );
+                                    }
+                                  },
+                                  onLongPressUtxo: (u) {
+                                    if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
+                                      CoconutToast.showToast(
+                                        context: context,
+                                        text: t.utxo_list_screen.pending_utxo,
+                                        isVisibleIcon: false,
+                                      );
+                                      return;
+                                    }
+                                    setState(() {
+                                      _viewModeIndex = 1;
+                                      _isSelectionMode = true;
+                                      _selectedUtxoIds.add(u.utxoId);
+                                    });
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      else
+                        _buildGridSliver(_currentUnit),
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                    ],
+                  ),
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: AnimatedSlide(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        offset:
+                            (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting
+                                ? Offset.zero
+                                : const Offset(0, 1),
+                        child: _buildSelectionBottomBar(),
                       ),
                     ),
-                  ],
-                )
-                : _buildTagViewBody(utxoTagList);
-          },
-        ),
+                  ),
+                ],
+              )
+              : _buildTagViewBody(utxoTagList);
+        },
       ),
     );
   }
@@ -483,7 +481,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      padding: EdgeInsets.only(left: 16, right: 16, top: bottomInset, bottom: 8),
+      padding: EdgeInsets.only(left: 16, right: 16, top: 12 + bottomInset, bottom: 8 + bottomInset),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,

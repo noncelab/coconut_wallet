@@ -551,11 +551,35 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
     _expanded = [];
   }
 
+  /// UTXO 정렬: 1. pending 2. unspent 3. locked 마지막, 동일 상태 내 큰 금액 순
+  static void _sortUtxosForTagGrid(List<UtxoState> utxos) {
+    int statusOrder(UtxoState u) {
+      if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) return 0;
+      if (u.status == UtxoStatus.unspent) return 1;
+      return 2; // locked
+    }
+
+    utxos.sort((a, b) {
+      final orderA = statusOrder(a);
+      final orderB = statusOrder(b);
+      if (orderA != orderB) return orderA.compareTo(orderB);
+      return b.amount.compareTo(a.amount); // 금액 큰 순
+    });
+  }
+
   List<({UtxoTag? tag, List<UtxoState> utxos, bool isMultiTag, List<String>? multiTagNames, List<UtxoTag>? multiTags})>
   _groupUtxosByTag() {
-    final confirmedUtxos =
-        widget.utxoList.where((u) => u.status == UtxoStatus.unspent || u.status == UtxoStatus.locked).toList();
-    final utxoMap = {for (var u in confirmedUtxos) u.utxoId: u};
+    final displayableUtxos =
+        widget.utxoList
+            .where(
+              (u) =>
+                  u.status == UtxoStatus.unspent ||
+                  u.status == UtxoStatus.locked ||
+                  u.status == UtxoStatus.outgoing ||
+                  u.status == UtxoStatus.incoming,
+            )
+            .toList();
+    final utxoMap = {for (var u in displayableUtxos) u.utxoId: u};
 
     // utxoId -> 태그 개수
     final tagCountByUtxo = <String, int>{};
@@ -585,12 +609,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
       final utxos =
           ids.where((id) => singleTaggedIds.contains(id)).map((id) => utxoMap[id]).whereType<UtxoState>().toList();
       if (utxos.isNotEmpty) {
-        utxos.sort((a, b) {
-          final aUnlocked = a.status == UtxoStatus.unspent ? 0 : 1;
-          final bUnlocked = b.status == UtxoStatus.unspent ? 0 : 1;
-          if (aUnlocked != bUnlocked) return aUnlocked.compareTo(bUnlocked);
-          return 0;
-        });
+        _sortUtxosForTagGrid(utxos);
         result.add((tag: tag, utxos: utxos, isMultiTag: false, multiTagNames: null, multiTags: null));
       }
     }
@@ -624,25 +643,15 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
       for (final entry in groupByTagSet.entries) {
         final tagNames = entry.key.split(',');
         final utxos = entry.value;
-        utxos.sort((a, b) {
-          final aUnlocked = a.status == UtxoStatus.unspent ? 0 : 1;
-          final bUnlocked = b.status == UtxoStatus.unspent ? 0 : 1;
-          if (aUnlocked != bUnlocked) return aUnlocked.compareTo(bUnlocked);
-          return 0;
-        });
+        _sortUtxosForTagGrid(utxos);
         final multiTags = tagNames.map(findTag).whereType<UtxoTag>().toList();
         result.add((tag: null, utxos: utxos, isMultiTag: true, multiTagNames: tagNames, multiTags: multiTags));
       }
     }
 
-    final untagged = confirmedUtxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
+    final untagged = displayableUtxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
     if (untagged.isNotEmpty) {
-      untagged.sort((a, b) {
-        final aUnlocked = a.status == UtxoStatus.unspent ? 0 : 1;
-        final bUnlocked = b.status == UtxoStatus.unspent ? 0 : 1;
-        if (aUnlocked != bUnlocked) return aUnlocked.compareTo(bUnlocked);
-        return 0;
-      });
+      _sortUtxosForTagGrid(untagged);
       result.add((tag: null, utxos: untagged, isMultiTag: false, multiTagNames: null, multiTags: null));
     }
 

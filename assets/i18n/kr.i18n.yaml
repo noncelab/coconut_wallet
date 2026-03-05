@@ -686,7 +686,7 @@ utxo_list_screen:
   utxo_unlocked_button: "잠금 해제"
   pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
   reused_address_legend: "재사용 주소 경고"
-  reused_address: "재사용 주소 UTXO를 우선 사용해주세요"
+  reused_address: "재사용 주소 UTXO를 우선 사용해 주세요"
 
 transaction_detail_screen:
   confirmation: "$height ($count승인)"
