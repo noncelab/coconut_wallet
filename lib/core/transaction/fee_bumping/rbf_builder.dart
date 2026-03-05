@@ -7,7 +7,6 @@ import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_excepti
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/output_analysis.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -102,14 +101,13 @@ class RbfBuilder {
     _outputAnalysis = preparer.outputAnalysis;
     _inputUtxos = preparer.inputUtxos;
 
-    if (walletListItemBase.walletType == WalletType.singleSignature) {
-      _vSizeIncreasePerInput = 68;
-      _vSizeChangeOutput = 31;
-    } else {
-      final wallet = walletListItemBase as MultisigWalletListItem;
-      _vSizeIncreasePerInput = p2wshMultisigInputVSize(m: wallet.requiredSignatureCount, n: wallet.signers.length);
-      _vSizeChangeOutput = 43;
-    }
+    _vSizeIncreasePerInput = estimateVSizePerInput(
+      isMultisig: walletListItemBase.walletType != WalletType.singleSignature,
+      requiredSignatureCount: walletListItemBase.multisigConfig?.requiredSignature,
+      totalSignerCount: walletListItemBase.multisigConfig?.totalSigner,
+    );
+    _vSizeChangeOutput = walletListItemBase.walletType == WalletType.singleSignature ? 31 : 43;
+    _assertAllUnspent(additionalSpendable);
     _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
   }
 
@@ -245,6 +243,7 @@ class RbfBuilder {
   }
 
   RbfBuildResult changeAdditionalSpendable(List<UtxoState> utxos) {
+    _assertAllUnspent(utxos);
     _additionalSpendable = [...utxos]..sort((a, b) => b.amount.compareTo(a.amount));
     _cachedBaseline = getBaselineTransaction(isForce: true);
     return _cachedBaseline!;
@@ -370,6 +369,14 @@ class RbfBuilder {
       isFeeSubtractedFromAmount: true,
       isUtxoFixed: true,
     ).build();
+  }
+
+  static void _assertAllUnspent(List<UtxoState> utxos) {
+    for (final utxo in utxos) {
+      if (utxo.status != UtxoStatus.unspent) {
+        throw ArgumentError('additionalSpendable contains a non-unspent UTXO: ${utxo.transactionHash}:${utxo.index}');
+      }
+    }
   }
 }
 

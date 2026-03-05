@@ -130,7 +130,7 @@ class CpfpBuilderCreator {
         preparer: preparer,
         walletListItemBase: _walletListItemBase,
         nextReceiveAddress: nextReceiveAddress,
-        mininumFeeRate: minimumNetworkFeeRate,
+        minimumFeeRate: minimumNetworkFeeRate,
         additionalSpendable: additionalUtxos,
       ),
     );

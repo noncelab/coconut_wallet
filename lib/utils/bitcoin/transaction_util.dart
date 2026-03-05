@@ -14,6 +14,18 @@ bool isRawTransactionHexString(String data) {
   }
 }
 
+/// 지갑 타입에 따라 input 1개 추가 시 증가하는 vSize(vbytes)를 반환합니다.
+///
+/// - singleSignature (P2WPKH): 68 vbytes
+/// - multisig (P2WSH): [p2wshMultisigInputVSize] 계산 결과
+int estimateVSizePerInput({required bool isMultisig, int? requiredSignatureCount, int? totalSignerCount}) {
+  if (!isMultisig) return 68;
+  if (requiredSignatureCount == null || totalSignerCount == null) {
+    throw ArgumentError('requiredSignatureCount and totalSignerCount are required for multisig');
+  }
+  return p2wshMultisigInputVSize(m: requiredSignatureCount, n: totalSignerCount);
+}
+
 /// Returns the *virtual size* (vbytes) added by **one P2WSH bare multisig input**
 /// for a standard m-of-n witnessScript:
 ///   OP_m <33B pubkey>...<33B pubkey> OP_n OP_CHECKMULTISIG

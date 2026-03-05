@@ -285,8 +285,8 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
-      expect(result.addedUtxo, isNotNull);
-      expect(result.addedUtxo!.length, equals(1));
+      expect(result.addedInputs, isNotNull);
+      expect(result.addedInputs!.length, equals(1));
       expect(result.packageFeeRate, greaterThanOrEqualTo(2.0));
       // parentFee(50) < parentVSize(100) * minimumFeeRate(2.0) → CPFP 필요
       expect(result.isCpfpNeeded, isTrue);
@@ -306,9 +306,9 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.transaction, isNotNull);
-      expect(result.addedUtxo, isNotNull);
-      expect(result.addedUtxo!.length, equals(1));
-      expect(result.addedUtxo![0].amount, equals(20000));
+      expect(result.addedInputs, isNotNull);
+      expect(result.addedInputs!.length, equals(1));
+      expect(result.addedInputs![0].amount, equals(20000));
       expect(result.packageFeeRate, greaterThanOrEqualTo(2.0));
       // parentFee(50) < parentVSize(100) * minimumFeeRate(2.0) → CPFP 필요
       expect(result.isCpfpNeeded, isTrue);

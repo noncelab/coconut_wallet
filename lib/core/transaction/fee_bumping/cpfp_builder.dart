@@ -10,7 +10,6 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
@@ -28,7 +27,7 @@ class CpfpBuildResult {
 
   final double estimatedVSize;
   final Exception? exception;
-  final List<UtxoState>? addedUtxo;
+  final List<UtxoState>? addedInputs;
   final int? deficitAmount;
 
   /// 부모 tx의 수수료율이 이미 최소 네트워크 수수료율을 충족하는 경우 false
@@ -50,7 +49,7 @@ class CpfpBuildResult {
     this.isCpfpNeeded = true,
     this.transaction,
     this.exception,
-    this.addedUtxo,
+    this.addedInputs,
     this.deficitAmount,
   });
 }
@@ -60,7 +59,7 @@ class CpfpBuilder {
 
   /// child tx의 단일 output 주소 (sweep 대상)
   final WalletAddress nextReceiveAddress;
-  final double mininumFeeRate;
+  final double minimumFeeRate;
 
   late final TransactionRecord _pendingTx;
   late final List<UtxoState> _receivedUtxos;
@@ -79,17 +78,17 @@ class CpfpBuilder {
     required CpfpPreparer preparer,
     required this.walletListItemBase,
     required this.nextReceiveAddress,
-    required this.mininumFeeRate,
+    required this.minimumFeeRate,
     List<UtxoState> additionalSpendable = const [],
   }) {
     _pendingTx = preparer.pendingTx;
     _receivedUtxos = [...preparer.receivedUtxos]..sort((a, b) => b.amount.compareTo(a.amount));
-    if (walletListItemBase.walletType == WalletType.singleSignature) {
-      _vSizeIncreasePerInput = 68;
-    } else {
-      final wallet = walletListItemBase as MultisigWalletListItem;
-      _vSizeIncreasePerInput = p2wshMultisigInputVSize(m: wallet.requiredSignatureCount, n: wallet.signers.length);
-    }
+    _vSizeIncreasePerInput = estimateVSizePerInput(
+      isMultisig: walletListItemBase.walletType != WalletType.singleSignature,
+      requiredSignatureCount: walletListItemBase.multisigConfig?.requiredSignature,
+      totalSignerCount: walletListItemBase.multisigConfig?.totalSigner,
+    );
+    _assertAllUnspent(additionalSpendable);
     _additionalSpendable = [...additionalSpendable]..sort((a, b) => b.amount.compareTo(a.amount));
   }
 
@@ -123,10 +122,10 @@ class CpfpBuilder {
   /// 패키지(부모+자식)가 네트워크 최소 수수료율을 만족하기 위한 child tx 최소 수수료 (sats)
   /// 부모가 이미 충분히 또는 초과 납부한 경우, 자식 트랜잭션의 최소 수수료를 반환
   double _calculateMinimumChildFee(double childVSize) {
-    final packageMinFee = (parentVSize + childVSize) * mininumFeeRate;
+    final packageMinFee = (parentVSize + childVSize) * minimumFeeRate;
     // child가 부담해야 할 몫 (parent가 이미 낸 수수료 차감)
     final childShareOfPackageMin = packageMinFee - parentFee;
-    final childOwnMin = childVSize * mininumFeeRate;
+    final childOwnMin = childVSize * minimumFeeRate;
     Logger.log('childShareOfPackageMin: $childShareOfPackageMin / childOwnMin: $childOwnMin');
     // 두 조건 중 큰 값 (parent 초과 납부 시 childShareOfPackageMin < 0 가능 → childOwnMin 적용)
     return max(childShareOfPackageMin, childOwnMin);
@@ -142,7 +141,7 @@ class CpfpBuilder {
     if (!isForce && _cachedBaseline != null) return _cachedBaseline!;
 
     final List<UtxoState> inputs = [];
-    final List<UtxoState> addedAdditionals = [];
+    final List<UtxoState> addedInputs = [];
     final allCandidates = [..._receivedUtxos, ..._additionalSpendable];
 
     TransactionBuildResult? txBuildResult;
@@ -152,7 +151,7 @@ class CpfpBuilder {
     for (final utxo in allCandidates) {
       inputs.add(utxo);
       if (!_receivedUtxos.contains(utxo)) {
-        addedAdditionals.add(utxo);
+        addedInputs.add(utxo);
       }
 
       final estimatedVSize =
@@ -177,13 +176,14 @@ class CpfpBuilder {
     }
 
     _baselineInputs = [...inputs];
-    _cachedBaseline = _buildResult(txBuildResult!, minimumChildFeeRate, inputs, addedAdditionals);
+    _cachedBaseline = _buildResult(txBuildResult!, minimumChildFeeRate, inputs, addedInputs);
     return _cachedBaseline!;
   }
 
   CpfpBuildResult changeAdditionalSpendable(List<UtxoState> utxos) {
+    _assertAllUnspent(utxos);
     _additionalSpendable = [...utxos]..sort((a, b) => b.amount.compareTo(a.amount));
-    if (_cachedBaseline != null && _cachedBaseline!.isSuccess && _cachedBaseline!.addedUtxo == null) {
+    if (_cachedBaseline != null && _cachedBaseline!.isSuccess && _cachedBaseline!.addedInputs == null) {
       return _cachedBaseline!;
     }
 
@@ -195,10 +195,10 @@ class CpfpBuilder {
     TransactionBuildResult txBuildResult,
     double minimumChildFeeRate,
     List<UtxoState> inputs,
-    List<UtxoState> addedAdditionals,
+    List<UtxoState> addedInputs,
   ) {
-    final addedUtxo = addedAdditionals.isEmpty ? null : addedAdditionals;
-    final isCpfpNeeded = parentFee < parentVSize * mininumFeeRate;
+    final addedUtxo = addedInputs.isEmpty ? null : addedInputs;
+    final isCpfpNeeded = parentFee < parentVSize * minimumFeeRate;
 
     if (txBuildResult.isSuccess) {
       final tx = txBuildResult.transaction!;
@@ -211,7 +211,7 @@ class CpfpBuilder {
 
       return CpfpBuildResult(
         transaction: tx,
-        addedUtxo: addedUtxo,
+        addedInputs: addedUtxo,
         isCpfpNeeded: isCpfpNeeded,
         minimumFeeRate: minimumChildFeeRate,
         packageFeeRate: packageFeeRate,
@@ -233,10 +233,10 @@ class CpfpBuilder {
     final deficitAmount = txBuildResult.estimatedFee - (inputSum - dustLimit);
 
     return CpfpBuildResult(
-      addedUtxo: addedUtxo,
+      addedInputs: addedUtxo,
       isCpfpNeeded: isCpfpNeeded,
       minimumFeeRate: recalculatedFeeRate,
-      packageFeeRate: mininumFeeRate,
+      packageFeeRate: minimumFeeRate,
       estimatedVSize: estimatedVSize,
       exception: const CpfpInsufficientFundsException(),
       deficitAmount: deficitAmount,
@@ -265,16 +265,16 @@ class CpfpBuilder {
         return _cachedBaseline!;
       }
 
-      // baseline과 동일한 inputs, addedAdditionals로 시작하여 나머지 candidates를 하나씩 추가하며 시도
+      // baseline과 동일한 inputs, addedInputs로 시작하여 나머지 candidates를 하나씩 추가하며 시도
       final inputs = [..._baselineInputs];
-      final addedAdditionals = [...?_cachedBaseline!.addedUtxo];
+      final addedInputs = [...?_cachedBaseline!.addedInputs];
       final remaining = [..._receivedUtxos, ..._additionalSpendable].where((utxo) => !inputs.contains(utxo));
       late TransactionBuildResult txBuildResult;
       for (final utxo in [null, ...remaining]) {
         if (utxo != null) {
           inputs.add(utxo);
           if (!_receivedUtxos.contains(utxo)) {
-            addedAdditionals.add(utxo);
+            addedInputs.add(utxo);
           }
         }
         txBuildResult = _trySweep(inputs, newFeeRate);
@@ -285,17 +285,17 @@ class CpfpBuilder {
             // actualVSize 기반 최소 feeRate가 newFeeRate보다 높으면 보정하여 재시도
             txBuildResult = _trySweep(inputs, correctedFeeRate);
             if (txBuildResult.isSuccess) {
-              return _buildResult(txBuildResult, _cachedBaseline!.minimumFeeRate, inputs, addedAdditionals);
+              return _buildResult(txBuildResult, _cachedBaseline!.minimumFeeRate, inputs, addedInputs);
             }
             // 보정 후 실패 시 다음 input 추가하여 계속 시도
           } else {
-            return _buildResult(txBuildResult, _cachedBaseline!.minimumFeeRate, inputs, addedAdditionals);
+            return _buildResult(txBuildResult, _cachedBaseline!.minimumFeeRate, inputs, addedInputs);
           }
         }
       }
 
       // 모든 candidates 소진 — 실패 결과에 deficitAmount 포함
-      return _buildResult(txBuildResult, _cachedBaseline!.minimumFeeRate, inputs, addedAdditionals);
+      return _buildResult(txBuildResult, _cachedBaseline!.minimumFeeRate, inputs, addedInputs);
     } on CpfpCreationException catch (e) {
       return CpfpBuildResult(
         exception: e,
@@ -303,6 +303,14 @@ class CpfpBuilder {
         packageFeeRate: _cachedBaseline!.packageFeeRate,
         estimatedVSize: _cachedBaseline!.estimatedVSize,
       );
+    }
+  }
+
+  static void _assertAllUnspent(List<UtxoState> utxos) {
+    for (final utxo in utxos) {
+      if (utxo.status != UtxoStatus.unspent) {
+        throw ArgumentError('additionalSpendable contains a non-unspent UTXO: ${utxo.transactionHash}:${utxo.index}');
+      }
     }
   }
 }
