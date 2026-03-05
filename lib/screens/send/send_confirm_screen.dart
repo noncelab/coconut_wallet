@@ -57,7 +57,7 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
                         children: [
                           SendAmountHeader(
                             amountText: totalSendAmountText,
-                            unitText: unitText,
+                            unit: _currentUnit,
                             satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
                             totalCostAmountText: totalCostText,
                             onTap: _toggleUnit,

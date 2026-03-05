@@ -430,7 +430,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             CoconutLayout.spacing_400h,
             SendAmountHeader(
               amountText: confirmText,
-              unitText: unitText,
+              unit: _currentUnit,
               satoshiAmount: amount ?? 0,
               totalCostAmountText: totalCostText,
               onTap: _toggleUnit,

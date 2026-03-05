@@ -195,7 +195,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
                   CoconutLayout.spacing_300w,
                   _buildProgressText(),
                 ],
-                if (_isScanningExtraData) _buildReadingExtraText(),
+                if (_isScanningExtraData) Expanded(child: _buildReadingExtraText()),
                 CoconutLayout.spacing_1300w,
               ],
             ),
@@ -218,10 +218,14 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
   Widget _buildReadingExtraText() {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: Text(
-        textAlign: TextAlign.center,
-        t.coconut_qr_scanner.reading_extra_data,
-        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.center,
+        child: Text(
+          textAlign: TextAlign.center,
+          t.coconut_qr_scanner.reading_extra_data,
+          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+        ),
       ),
     );
   }
