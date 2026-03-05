@@ -22,7 +22,7 @@ void main() {
         receivedAmounts: [10000],
         parentFee: 1000,
         parentVSize: 100.0,
-        minimumNetworkFeeRate: 1.0
+        minimumNetworkFeeRate: 1.0,
       );
 
       final CpfpBuildResult result = cpfpBuilder.getBaselineTransaction();
@@ -57,7 +57,7 @@ void main() {
         receivedAmounts: [10000],
         parentFee: 50,
         parentVSize: 100.0,
-        minimumNetworkFeeRate: 2.0
+        minimumNetworkFeeRate: 2.0,
       );
 
       final CpfpBuildResult result = cpfpBuilder.getBaselineTransaction();
@@ -85,12 +85,12 @@ void main() {
 
     test('2 outputs / both UTXOs used as inputs / success', () {
       // 수신 UTXO 2개 → child tx: 2 inputs, 1 output
-      // receivedAmounts 1개만으로 cpfp 트랜잭션 생성 가능 
+      // receivedAmounts 1개만으로 cpfp 트랜잭션 생성 가능
       final (pendingTx, cpfpBuilder) = creator.createCpfpBuilder(
         receivedAmounts: [5000, 4000],
         parentFee: 50,
         parentVSize: 150.0,
-        minimumNetworkFeeRate: 2.0
+        minimumNetworkFeeRate: 2.0,
       );
 
       final CpfpBuildResult result = cpfpBuilder.getBaselineTransaction();
@@ -117,7 +117,7 @@ void main() {
         receivedAmounts: [547],
         parentFee: 50,
         parentVSize: 100.0,
-        minimumNetworkFeeRate: 2.0
+        minimumNetworkFeeRate: 2.0,
       );
 
       final CpfpBuildResult result = cpfpBuilder.getBaselineTransaction();
@@ -140,7 +140,7 @@ void main() {
         receivedAmounts: [10000],
         parentFee: 1000,
         parentVSize: 100.0,
-        minimumNetworkFeeRate: 2.0
+        minimumNetworkFeeRate: 2.0,
       );
 
       final CpfpBuildResult baselineResult = cpfpBuilder.getBaselineTransaction();
@@ -161,7 +161,7 @@ void main() {
         receivedAmounts: [10000],
         parentFee: 50,
         parentVSize: 100.0,
-        minimumNetworkFeeRate: 2.0
+        minimumNetworkFeeRate: 2.0,
       );
 
       final CpfpBuildResult baselineResult = cpfpBuilder.getBaselineTransaction();
@@ -191,7 +191,7 @@ void main() {
         receivedAmounts: [10000],
         parentFee: 50,
         parentVSize: 100.0,
-        minimumNetworkFeeRate: 2.0
+        minimumNetworkFeeRate: 2.0,
       );
 
       final CpfpBuildResult baselineResult = cpfpBuilder.getBaselineTransaction();
@@ -213,7 +213,7 @@ void main() {
         receivedAmounts: [1000],
         parentFee: 50,
         parentVSize: 100.0,
-        minimumNetworkFeeRate: 1.0
+        minimumNetworkFeeRate: 1.0,
       );
 
       final CpfpBuildResult baselineResult = cpfpBuilder.getBaselineTransaction();
@@ -231,12 +231,12 @@ void main() {
 
     test('2 outputs / baseline use 1, build use 2 as inputs at high feeRate / success', () {
       // 수신 UTXO 2개 → child tx: 2 inputs, 1 output
-      // receivedAmounts 1개만으로 cpfp 트랜잭션 생성 가능 
+      // receivedAmounts 1개만으로 cpfp 트랜잭션 생성 가능
       final (pendingTx, cpfpBuilder) = creator.createCpfpBuilder(
         receivedAmounts: [5000, 4000],
         parentFee: 50,
         parentVSize: 150.0,
-        minimumNetworkFeeRate: 2.0
+        minimumNetworkFeeRate: 2.0,
       );
 
       final CpfpBuildResult result = cpfpBuilder.getBaselineTransaction();

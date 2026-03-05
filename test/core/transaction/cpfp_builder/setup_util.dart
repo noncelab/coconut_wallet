@@ -64,7 +64,7 @@ class CpfpBuilderCreator {
     required int parentFee,
     required double parentVSize,
     required double minimumNetworkFeeRate,
-    List<int> additionalSpendables = const []
+    List<int> additionalSpendables = const [],
   }) {
     // 부모 tx의 outputAddressList: 내 receive 주소들 (index 0~n-1)
     final List<TransactionAddress> outputAddressList = [];
@@ -136,10 +136,7 @@ class CpfpBuilderCreator {
     );
   }
 
-  List<UtxoState> createAdditionalUtxos({
-    required List<int> amounts,
-    int startAddressIndex = 3,
-  }) {
+  List<UtxoState> createAdditionalUtxos({required List<int> amounts, int startAddressIndex = 3}) {
     final List<UtxoState> utxos = [];
     for (int i = 0; i < amounts.length; i++) {
       final addressIndex = startAddressIndex + i;

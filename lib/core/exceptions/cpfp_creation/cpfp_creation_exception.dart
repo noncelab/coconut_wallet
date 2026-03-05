@@ -14,7 +14,9 @@ class CpfpFeeRateTooLowException extends CpfpCreationException {
 
 /// Exception thrown when the received UTXOs are insufficient to cover the child tx fee
 class CpfpInsufficientFundsException extends CpfpCreationException {
-  const CpfpInsufficientFundsException({super.message = 'Received UTXOs are insufficient to cover the child transaction fee.'});
+  const CpfpInsufficientFundsException({
+    super.message = 'Received UTXOs are insufficient to cover the child transaction fee.',
+  });
 }
 
 /// Exception thrown when no CPFP-eligible outputs are found in the pending transaction

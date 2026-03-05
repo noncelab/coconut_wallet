@@ -418,7 +418,7 @@ void main() {
         derivationPath: "m/84'/1'/0'/0/1",
         timestamp: DateTime.now(),
       );
-      
+
       final RbfBuildResult changeResult = rbfBuilder.changeAdditionalSpendable([smallUtxo, largeUtxo]);
 
       // baseline 재계산: change(547) >= additionalFee(141)이므로 여전히 change만으로 baseline 성공

@@ -24,12 +24,16 @@ class CpfpPreparer {
     for (int i = 0; i < pendingTx.outputAddressList.length; i++) {
       final output = pendingTx.outputAddressList[i];
       if (isMyAddress(output.address) || isMyAddress(output.address, isChange: true)) {
-        final utxo = incomingUtxos.where((u) =>
-          u.to == output.address &&
-          u.amount == output.amount &&
-          u.transactionHash == pendingTx.transactionHash &&
-          pendingTx.outputAddressList[u.index].address == u.to,
-        ).firstOrNull;
+        final utxo =
+            incomingUtxos
+                .where(
+                  (u) =>
+                      u.to == output.address &&
+                      u.amount == output.amount &&
+                      u.transactionHash == pendingTx.transactionHash &&
+                      pendingTx.outputAddressList[u.index].address == u.to,
+                )
+                .firstOrNull;
         if (utxo != null) {
           receivedUtxos.add(utxo);
         }

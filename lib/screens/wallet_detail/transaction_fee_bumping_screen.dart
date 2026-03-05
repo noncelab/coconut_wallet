@@ -177,7 +177,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
                             isActive:
                                 !viewModel.isFeeBumpingImpossible &&
-                              !viewModel.isUtxoInsufficient &&
+                                !viewModel.isUtxoInsufficient &&
                                 !_isEstimatedFeeTooLow &&
                                 _textEditingController.text.isNotEmpty &&
                                 viewModel.isNetworkOn,
@@ -187,49 +187,49 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                     : Column(
                                       children: [
                                         if (_isEstimatedFeeTooHigh) ...[
-                                        Text(
-                                          t.transaction_fee_bumping_screen.estimated_fee_too_high_error,
-                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                          textScaler: const TextScaler.linear(1.0),
-                                        ),
-                                        CoconutLayout.spacing_100h,
-                                      ],
-                                      if (_viewModel.isFeeBumpingImpossible) ...[
-                                        Text(
-                                          t.transaction_fee_bumping_screen.insufficient_balance_error,
-                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                          textScaler: const TextScaler.linear(1.0),
-                                        ),
-                                      ] else if (_viewModel.deficitSats != null) ...[
-                                        Text(
-                                          t.transaction_fee_bumping_screen.please_select_more_utxo(
-                                            amount: BalanceFormatUtil.formatSatoshiToReadableBitcoin(
-                                              _viewModel.deficitSats!,
+                                          Text(
+                                            t.transaction_fee_bumping_screen.estimated_fee_too_high_error,
+                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                            textScaler: const TextScaler.linear(1.0),
+                                          ),
+                                          CoconutLayout.spacing_100h,
+                                        ],
+                                        if (_viewModel.isFeeBumpingImpossible) ...[
+                                          Text(
+                                            t.transaction_fee_bumping_screen.insufficient_balance_error,
+                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                            textScaler: const TextScaler.linear(1.0),
+                                          ),
+                                        ] else if (_viewModel.deficitSats != null) ...[
+                                          Text(
+                                            t.transaction_fee_bumping_screen.please_select_more_utxo(
+                                              amount: BalanceFormatUtil.formatSatoshiToReadableBitcoin(
+                                                _viewModel.deficitSats!,
+                                              ),
                                             ),
+                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                            textScaler: const TextScaler.linear(1.0),
                                           ),
-                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                          textScaler: const TextScaler.linear(1.0),
-                                        ),
-                                      ] else if (_isEstimatedFeeTooLow) ...[
-                                        Text(
-                                          t.transaction_fee_bumping_screen.fee_rate_too_low_error,
-                                          style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                          textScaler: const TextScaler.linear(1.0),
-                                        ),
-                                      ] else ...[
-                                        Text(
-                                          t.transaction_fee_bumping_screen.estimated_fee(
-                                            fee:
-                                                viewModel
-                                                    .getTotalEstimatedFee(
-                                                      double.tryParse(_textEditingController.text) ?? 0.0,
-                                                    )
-                                                    .toThousandsSeparatedString(),
+                                        ] else if (_isEstimatedFeeTooLow) ...[
+                                          Text(
+                                            t.transaction_fee_bumping_screen.fee_rate_too_low_error,
+                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+                                            textScaler: const TextScaler.linear(1.0),
                                           ),
-                                          style: CoconutTypography.body2_14,
-                                          textScaler: const TextScaler.linear(1.0),
-                                        ),
-                                      ],
+                                        ] else ...[
+                                          Text(
+                                            t.transaction_fee_bumping_screen.estimated_fee(
+                                              fee:
+                                                  viewModel
+                                                      .getTotalEstimatedFee(
+                                                        double.tryParse(_textEditingController.text) ?? 0.0,
+                                                      )
+                                                      .toThousandsSeparatedString(),
+                                            ),
+                                            style: CoconutTypography.body2_14,
+                                            textScaler: const TextScaler.linear(1.0),
+                                          ),
+                                        ],
                                       ],
                                     ),
                           ),

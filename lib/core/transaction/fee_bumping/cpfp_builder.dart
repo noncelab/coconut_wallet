@@ -186,7 +186,7 @@ class CpfpBuilder {
     if (_cachedBaseline != null && _cachedBaseline!.isSuccess && _cachedBaseline!.addedUtxo == null) {
       return _cachedBaseline!;
     }
-    
+
     _cachedBaseline = getBaselineTransaction(isForce: true);
     return _cachedBaseline!;
   }
@@ -223,7 +223,7 @@ class CpfpBuilder {
     if (exception is! SendAmountTooLowException && exception is! InsufficientBalanceException) {
       throw exception ?? Exception('Unexpected transaction build failure');
     }
-    
+
     var estimatedVSize = _estimateVSize(inputs.length + 1);
     if (_cachedBaseline != null && _cachedBaseline!.isSuccess) {
       estimatedVSize = _cachedBaseline!.estimatedVSize + _vSizeIncreasePerInput;
@@ -257,7 +257,9 @@ class CpfpBuilder {
         throw const CpfpFeeRateTooLowException();
       }
 
-      Logger.log('[ build ] newFeeRate: $newFeeRate / _cachedBaseline!.minimumFeeRate: ${_cachedBaseline!.minimumFeeRate}');
+      Logger.log(
+        '[ build ] newFeeRate: $newFeeRate / _cachedBaseline!.minimumFeeRate: ${_cachedBaseline!.minimumFeeRate}',
+      );
       if (newFeeRate == _cachedBaseline!.minimumFeeRate) {
         Logger.log('[ build ] return _cachedBaseline');
         return _cachedBaseline!;
