@@ -112,7 +112,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                 maintainSize: false,
                                 maintainAnimation: false,
                                 maintainState: false,
-                                child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                                  child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                ),
                               ),
                               Expanded(
                                 child: SingleChildScrollView(
@@ -147,6 +150,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                             ),
                                           ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
                                             _buildFetchFailedWidget(),
+                                          CoconutLayout.spacing_2500h,
+                                          CoconutLayout.spacing_2500h,
                                         ],
                                       ),
                                     ),
