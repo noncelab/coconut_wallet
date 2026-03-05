@@ -386,7 +386,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       rightButtonClicked: () => _utxoListKey.currentState?._updateSelectedUtxos(lock: true),
       leftButtonRatio: 0.5,
       showGradient: true,
-      gradientPadding: const EdgeInsets.only(top: 0, bottom: 0, left: 0, right: 0),
       leftButtonBackgroundColor: CoconutColors.white,
       rightButtonBackgroundColor: CoconutColors.white,
       leftButtonTextColor: CoconutColors.black,

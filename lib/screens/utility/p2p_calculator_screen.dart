@@ -515,7 +515,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                               _buildBillRow(
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? _viewModel.fiatCode.code
-                                    : (_viewModel.currentUnit.isBasedOnSatoshi ? t.sats : t.btc),
+                                    : _viewModel.currentUnit.symbol,
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? input.toThousandsSeparatedString()
                                     : _viewModel.formatSatsResult(input),
@@ -525,7 +525,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                               // 결과값
                               _buildBillRow(
                                 _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? (_viewModel.currentUnit.isBasedOnSatoshi ? t.sats : t.btc)
+                                    ? _viewModel.currentUnit.symbol
                                     : _viewModel.fiatCode.code,
                                 _viewModel.inputAssetType == InputAssetType.fiat
                                     ? _viewModel.formatSatsResult(result)

@@ -152,6 +152,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
+          backgroundColor: CoconutColors.black,
           resizeToAvoidBottomInset: false,
           appBar: CoconutAppBar.build(
             backgroundColor: CoconutColors.black,

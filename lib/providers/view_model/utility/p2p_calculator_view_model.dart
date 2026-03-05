@@ -336,7 +336,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       return t.utility.p2p_calculator.copy_format(
         currency: _fiatCode.name,
         currencyAmount: fiatAmountStr,
-        btcUnit: _currentUnit.isBasedOnSatoshi ? t.sats : t.btc,
+        btcUnit: _currentUnit.symbol,
         btcAmount: btcAmountStr,
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
@@ -347,7 +347,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
       );
     } else {
       return t.utility.p2p_calculator.copy_format(
-        currency: _currentUnit.isBasedOnSatoshi ? t.sats : t.btc,
+        currency: _currentUnit.symbol,
         currencyAmount: btcAmountStr,
         btcUnit: _fiatCode.name,
         btcAmount: fiatAmountStr,
