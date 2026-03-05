@@ -76,6 +76,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 GestureDetector(
                   onTap: () => _removeUtxoOrderDropdown(),
                   child: Scaffold(
+                    backgroundColor: CoconutColors.black,
                     appBar: CoconutAppBar.build(
                       backgroundColor: CoconutColors.black,
                       title: t.utxo_selection_screen.title,
@@ -112,18 +113,20 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                               Expanded(
                                 child: Stack(
                                   children: [
-                                    SingleChildScrollView(
-                                      controller: _scrollController,
-                                      child: Column(
-                                        children: [
-                                          _buildUtxoList(viewModel),
-                                          CoconutLayout.spacing_400h,
-                                          const SizedBox(height: 50),
-                                        ],
+                                    Container(
+                                      color: CoconutColors.black,
+                                      child: SingleChildScrollView(
+                                        controller: _scrollController,
+                                        child: Column(
+                                          children: [
+                                            _buildUtxoList(viewModel),
+                                            CoconutLayout.spacing_400h,
+                                            const SizedBox(height: 50),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     FixedBottomButton(
-                                      buttonHeight: 50,
                                       onButtonClicked: () {
                                         vibrateLight();
                                         Navigator.pop(context, _viewModel.selectedUtxoList);
@@ -131,7 +134,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                       text: t.complete,
                                       isActive: _viewModel.hasSelectionChanged,
                                       showGradient: true,
-                                      gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
                                       horizontalPadding: 16,
                                       backgroundColor: CoconutColors.white,
                                     ),

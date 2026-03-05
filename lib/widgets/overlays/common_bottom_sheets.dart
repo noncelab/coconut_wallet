@@ -274,7 +274,7 @@ class CommonBottomSheets {
     double minChildSize = 0.5,
     double maxChildSize = 0.9,
     double? initialChildSize,
-    Color backgroundColor = CoconutColors.gray900,
+    Color backgroundColor = CoconutColors.black,
   }) async {
     return showDraggableBottomSheet<T>(
       context: context,
