@@ -50,29 +50,32 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
             body: SafeArea(
               child: Stack(
                 children: [
-                  SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        SendAmountHeader(
-                          amountText: totalSendAmountText,
-                          unitText: unitText,
-                          satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
-                          totalCostAmountText: totalCostText,
-                          onTap: _toggleUnit,
-                        ),
-                        CoconutLayout.spacing_300h,
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: _buildTransactionFlowCard(viewModel),
-                        ),
-                        CoconutLayout.spacing_500h,
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: _buildOutputDetailCard(viewModel),
-                        ),
-                        CoconutLayout.spacing_500h,
-                        CoconutLayout.spacing_2500h,
-                      ],
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, right: 10),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          SendAmountHeader(
+                            amountText: totalSendAmountText,
+                            unitText: unitText,
+                            satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
+                            totalCostAmountText: totalCostText,
+                            onTap: _toggleUnit,
+                          ),
+                          CoconutLayout.spacing_300h,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _buildTransactionFlowCard(viewModel),
+                          ),
+                          CoconutLayout.spacing_500h,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _buildOutputDetailCard(viewModel),
+                          ),
+                          CoconutLayout.spacing_500h,
+                          CoconutLayout.spacing_2500h,
+                        ],
+                      ),
                     ),
                   ),
                   FixedBottomButton(
