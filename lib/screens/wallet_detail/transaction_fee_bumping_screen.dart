@@ -167,7 +167,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             text: t.complete,
                             backgroundColor: _getNewFeeTextColor(),
                             showGradient: true,
-                            gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),
+                            gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
                             isActive:
                                 !viewModel.insufficientUtxos &&
                                 !_isEstimatedFeeTooLow &&
