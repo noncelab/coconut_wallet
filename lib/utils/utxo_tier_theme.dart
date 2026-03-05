@@ -203,10 +203,26 @@ class UtxoTierThemes {
     },
   );
 
+  static const monochrome = UtxoTierTheme(
+    id: 'monochrome',
+    name: 'Monochrome',
+    backgrounds: {
+      UtxoTier.dust: Color(0xFF374151),
+      UtxoTier.tiny: Color(0xFF4B5563),
+      UtxoTier.small: Color(0xFF6B7280),
+      UtxoTier.medium: Color(0xFF9CA3AF),
+      UtxoTier.large: Color(0xFFD1D5DB),
+      UtxoTier.huge: Color(0xFFE5E7EB),
+      UtxoTier.whole: Color(0xFFF3F4F6),
+      UtxoTier.whale: Color(0xFFF9FAFB),
+    },
+  );
+
   static const all = <UtxoTierTheme>[
     pastelWallet,
     slateCitrus,
     monoOrange,
+    monochrome,
     earthCopper,
     oceanDepths,
     synthwave,

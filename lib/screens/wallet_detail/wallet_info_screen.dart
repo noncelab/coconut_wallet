@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -14,9 +15,12 @@ import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
 import 'package:coconut_wallet/widgets/card/wallet_info_item_card.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
@@ -63,7 +67,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 child: Scaffold(
                   backgroundColor: CoconutColors.black,
                   appBar: CoconutAppBar.build(
-                    title: t.wallet_info_screen.title(name: viewModel.walletName),
+                    title: '', //t.wallet_info_screen.title(name: viewModel.walletName),
                     context: context,
                   ),
                   body: SafeArea(
@@ -129,6 +133,15 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                           } else ...{
                             CoconutLayout.spacing_800h,
                           },
+                          _WalletInfoStatsSection(
+                            walletId: widget.id,
+                            transactionCount: viewModel.transactionCount,
+                            utxoCount: viewModel.utxoCount,
+                            balanceSats: viewModel.walletBalance.total,
+                            currentUnit: context.read<PreferenceProvider>().currentUnit,
+                            targetSats: viewModel.targetSats,
+                            onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
+                          ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: ButtonGroup(
@@ -200,7 +213,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               rightElement: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: CoconutColors.white.withOpacity(0.1),
+                                  color: CoconutColors.white.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: SvgPicture.asset(
@@ -325,6 +338,45 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
+  void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    final btcString = viewModel.targetSats != null ? _satsToBtcInputString(viewModel.targetSats!) : '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => _TargetQuantitySettingBottomSheet(
+            initialBtcString: btcString,
+            onComplete: (text) {
+              final btc = double.tryParse(text);
+              if (btc == null || btc <= 0) {
+                if (text.isNotEmpty) {
+                  CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_invalid);
+                }
+                return false;
+              }
+              if (btc > 21_000_000) {
+                CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_max_exceeded);
+                return false;
+              }
+              final sats = UnitUtil.convertBitcoinToSatoshi(btc);
+              if (sats > 0) {
+                viewModel.setTargetSats(sats);
+                return true;
+              }
+              CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_invalid);
+              return false;
+            },
+          ),
+    );
+  }
+
+  static String _satsToBtcInputString(int sats) {
+    final btc = sats / 100000000.0;
+    return btc.toStringAsFixed(8).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  }
+
   Future<void> _deleteWalletAndGoToEntryPoint(BuildContext context, WalletInfoViewModel viewModel) async {
     Navigator.of(context).pop();
 
@@ -391,5 +443,401 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       heightRatio: 0.9,
       child: QrWithCopyTextScreen(qrData: extendedPublicKey, title: t.extended_public_key, showPulldownMenu: false),
     );
+  }
+}
+
+/// 트랜잭션 수, UTXO 수, 목표 수량 통계 카드
+class _WalletInfoStatsSection extends StatelessWidget {
+  final int walletId;
+  final int transactionCount;
+  final int utxoCount;
+  final int balanceSats;
+  final BitcoinUnit currentUnit;
+  final int? targetSats;
+  final VoidCallback onEditTargetTap;
+
+  const _WalletInfoStatsSection({
+    required this.walletId,
+    required this.transactionCount,
+    required this.utxoCount,
+    required this.balanceSats,
+    required this.currentUnit,
+    this.targetSats,
+    required this.onEditTargetTap,
+  });
+
+  static const int _maxBtcSats = 2100000000000000; // 21M BTC
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _StatCard(label: t.wallet_info_screen.transaction, value: '$transactionCount')),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ShrinkAnimationButton(
+                  defaultColor: CoconutColors.gray800,
+                  pressedColor: CoconutColors.gray750,
+                  borderRadius: 24,
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
+                  },
+                  child: _StatCard(label: t.wallet_info_screen.utxo, value: '$utxoCount'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ShrinkAnimationButton(
+            defaultColor: CoconutColors.gray800,
+            pressedColor: CoconutColors.gray750,
+            borderRadius: 24,
+            onPressed: onEditTargetTap,
+            child: _TargetQuantityCard(
+              balanceSats: balanceSats,
+              currentUnit: currentUnit,
+              targetSats: targetSats,
+              maxSats: _maxBtcSats,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatCard({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(24)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500)),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(value, style: CoconutTypography.heading3_21_NumberBold.setColor(CoconutColors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TargetQuantityCard extends StatelessWidget {
+  final int balanceSats;
+  final BitcoinUnit currentUnit;
+  final int? targetSats;
+  final int maxSats;
+
+  const _TargetQuantityCard({
+    required this.balanceSats,
+    required this.currentUnit,
+    this.targetSats,
+    required this.maxSats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveTarget = targetSats ?? maxSats;
+    final progress = effectiveTarget > 0 ? (balanceSats / effectiveTarget).clamp(0.0, 1.0) : 0.0;
+    final percent = (progress * 100).toStringAsFixed(1);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(24)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                t.wallet_info_screen.target_quantity,
+                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
+              ),
+              const SizedBox(width: 4),
+              SvgPicture.asset(
+                'assets/svg/edit-outlined.svg',
+                width: 12,
+                height: 12,
+                colorFilter: const ColorFilter.mode(CoconutColors.gray500, BlendMode.srcIn),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          targetSats == null
+              ? Text(
+                t.wallet_info_screen.target_not_set,
+                style: CoconutTypography.heading3_21.setColor(CoconutColors.gray500),
+              )
+              : _buildTargetProgressText(
+                percent: percent,
+                amountText: currentUnit.displayBitcoinAmount(effectiveTarget, withUnit: false),
+                unitSymbol: currentUnit.symbol,
+                isPrefixUnit: currentUnit.isPrefixSymbol,
+              ),
+          if (targetSats != null) ...[
+            SizedBox(
+              width: double.infinity,
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: CoconutColors.white,
+                  inactiveTrackColor: CoconutColors.gray600,
+                  thumbColor: CoconutColors.white,
+                  overlayColor: CoconutColors.white.withValues(alpha: 0.2),
+                  overlayShape: const _VerticalPaddingOverlayShape(),
+                  trackHeight: 6,
+                  trackShape: const _FullWidthSliderTrackShape(),
+                  thumbShape: const _ElongatedSliderThumbShape(),
+                ),
+                child: IgnorePointer(child: Slider(value: progress, onChanged: (_) {})),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTargetProgressText({
+    required String percent,
+    required String amountText,
+    required String unitSymbol,
+    required bool isPrefixUnit,
+  }) {
+    final whiteStyle = CoconutTypography.heading3_21_Number.setColor(CoconutColors.white);
+    final grayStyle = CoconutTypography.body1_16_Number.setColor(CoconutColors.gray400);
+
+    return RichText(
+      text: TextSpan(
+        style: whiteStyle,
+        children: [
+          TextSpan(text: percent, style: whiteStyle),
+          TextSpan(text: '%', style: grayStyle),
+          TextSpan(text: ' / ', style: whiteStyle),
+          if (isPrefixUnit) ...[
+            TextSpan(text: '$unitSymbol ', style: grayStyle),
+            TextSpan(text: amountText, style: whiteStyle),
+          ] else ...[
+            TextSpan(text: amountText, style: whiteStyle),
+            TextSpan(text: ' $unitSymbol', style: grayStyle),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _VerticalPaddingOverlayShape extends SliderComponentShape {
+  const _VerticalPaddingOverlayShape();
+
+  static const double _verticalPadding = 12;
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    return Size(_ElongatedSliderThumbShape.thumbWidth, _ElongatedSliderThumbShape.thumbHeight + _verticalPadding * 2);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+    final paint =
+        Paint()
+          ..color = (sliderTheme.overlayColor ?? sliderTheme.thumbColor ?? CoconutColors.white).withValues(
+            alpha: 0.12 * activationAnimation.value,
+          );
+    final size = getPreferredSize(true, isDiscrete);
+    final rect = Rect.fromCenter(center: center, width: size.width, height: size.height);
+    canvas.drawRRect(RRect.fromRectAndRadius(rect, Radius.circular(size.height / 2)), paint);
+  }
+}
+
+class _FullWidthSliderTrackShape extends RoundedRectSliderTrackShape {
+  const _FullWidthSliderTrackShape();
+
+  static const double _verticalPadding = 8;
+
+  @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final trackHeight = sliderTheme.trackHeight ?? 4;
+    final trackLeft = offset.dx;
+    final effectiveHeight = parentBox.size.height - _verticalPadding * 2;
+    final trackTop = offset.dy + _verticalPadding + (effectiveHeight - trackHeight) / 2;
+    final trackWidth = parentBox.size.width;
+    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
+  }
+}
+
+class _ElongatedSliderThumbShape extends SliderComponentShape {
+  const _ElongatedSliderThumbShape();
+
+  static const double thumbWidth = 27;
+  static const double thumbHeight = 12;
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) => const Size(thumbWidth, thumbHeight);
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+    const rect = Rect.fromLTWH(0, 0, thumbWidth, thumbHeight);
+    final paint =
+        Paint()
+          ..color = sliderTheme.thumbColor ?? CoconutColors.white
+          ..style = PaintingStyle.fill;
+    canvas.save();
+    canvas.translate(center.dx - thumbWidth / 2, center.dy - thumbHeight / 2);
+    canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(thumbHeight / 2)), paint);
+    canvas.restore();
+  }
+}
+
+class _TargetQuantitySettingBottomSheet extends StatefulWidget {
+  final String initialBtcString;
+  final bool Function(String text) onComplete;
+
+  const _TargetQuantitySettingBottomSheet({required this.initialBtcString, required this.onComplete});
+
+  @override
+  State<_TargetQuantitySettingBottomSheet> createState() => _TargetQuantitySettingBottomSheetState();
+}
+
+class _TargetQuantitySettingBottomSheetState extends State<_TargetQuantitySettingBottomSheet> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.text = widget.initialBtcString;
+      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
+      if (widget.initialBtcString.trim().isNotEmpty) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  bool get _isValueChanged {
+    final text = _controller.text.trim();
+    return text.isNotEmpty && text != widget.initialBtcString.trim();
+  }
+
+  void _handleComplete() {
+    FocusScope.of(context).unfocus();
+    final text = _controller.text.trim();
+    if (text.isNotEmpty) {
+      widget.onComplete(text);
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: CoconutBottomSheet(
+        useIntrinsicHeight: true,
+        appBar: CoconutAppBar.buildWithNext(
+          title: t.wallet_info_screen.target_set_title,
+          context: context,
+          onBackPressed: () => Navigator.pop(context),
+          onNextPressed: _handleComplete,
+          nextButtonTitle: t.done,
+          isBottom: true,
+          isActive: _isValueChanged,
+        ),
+        body: _buildBody(context),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 30),
+            child: CoconutTextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              onChanged: (_) => setState(() {}),
+              textInputType: const TextInputType.numberWithOptions(decimal: true),
+              textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')), _SingleDotInputFormatter()],
+              placeholderText: t.wallet_info_screen.target_set_placeholder,
+              backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
+              errorColor: CoconutColors.hotPink,
+              placeholderColor: CoconutColors.gray700,
+              activeColor: CoconutColors.white,
+              cursorColor: CoconutColors.white,
+              maxLength: 17,
+              isLengthVisible: false,
+              maxLines: 1,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SingleDotInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if ('.'.allMatches(newValue.text).length > 1) return oldValue;
+    return newValue;
   }
 }

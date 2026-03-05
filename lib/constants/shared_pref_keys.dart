@@ -52,6 +52,9 @@ class SharedPrefKeys {
   /// 보내기 화면 수신자 추가 카드 확인 여부
   static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
 
+  /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
+  static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
+
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
   static const String kElectrumServerName = 'ELECTRUM_SERVER_NAME';

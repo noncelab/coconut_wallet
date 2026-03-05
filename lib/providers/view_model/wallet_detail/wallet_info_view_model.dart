@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/bip/129/signer_bsms.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
@@ -17,6 +22,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final NodeProvider _nodeProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
+
+  StreamSubscription<WalletUpdateInfo>? _syncWalletStateSubscription;
 
   late String _walletName;
   late String _extendedPublicKey;
@@ -37,7 +44,26 @@ class WalletInfoViewModel extends ChangeNotifier {
       final singlesigItem = walletItemBase as SinglesigWalletListItem;
       _extendedPublicKey = (singlesigItem.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
     }
+
+    _prevWalletUpdateInfo = WalletUpdateInfo(_walletId);
+    _syncWalletStateSubscription = _nodeProvider.getWalletStateStream(_walletId).listen(_onWalletUpdateInfoChanged);
   }
+
+  void _onWalletUpdateInfoChanged(WalletUpdateInfo newInfo) {
+    final prev = _prevWalletUpdateInfo;
+    _prevWalletUpdateInfo = newInfo;
+
+    final balanceCompleted = prev.balance != WalletSyncState.completed && newInfo.balance == WalletSyncState.completed;
+    final txCompleted =
+        prev.transaction != WalletSyncState.completed && newInfo.transaction == WalletSyncState.completed;
+    final utxoCompleted = prev.utxo != WalletSyncState.completed && newInfo.utxo == WalletSyncState.completed;
+
+    if (balanceCompleted || txCompleted || utxoCompleted) {
+      notifyListeners();
+    }
+  }
+
+  late WalletUpdateInfo _prevWalletUpdateInfo;
 
   bool get isSetPin => _authProvider.isSetPin;
 
@@ -51,8 +77,21 @@ class WalletInfoViewModel extends ChangeNotifier {
       (_walletItemBase.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
           WalletAddService.masterFingerprintPlaceholder;
 
+  int get transactionCount => _walletProvider.getTransactionRecordList(_walletId).length;
+  int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+  Balance get walletBalance => _walletProvider.getWalletBalance(_walletId);
+
+  /// 지갑별 목표 수량 (sats). null이면 미설정
+  int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
+
+  Future<void> setTargetSats(int targetSats) async {
+    await _sharedPrefs.setWalletTargetSats(_walletId, targetSats);
+    notifyListeners();
+  }
+
   Future<void> deleteWallet() async {
     await _sharedPrefs.removeFaucetHistory(_walletId);
+    await _sharedPrefs.removeWalletTargetSats(_walletId);
 
     await _walletProvider.deleteWallet(_walletId);
     _nodeProvider.reconnect();
@@ -76,5 +115,11 @@ class WalletInfoViewModel extends ChangeNotifier {
   void updateWalletName(String updatedName) {
     _walletName = updatedName;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _syncWalletStateSubscription?.cancel();
+    super.dispose();
   }
 }

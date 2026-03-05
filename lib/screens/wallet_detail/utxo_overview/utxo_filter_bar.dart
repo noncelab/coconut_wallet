@@ -110,14 +110,14 @@ class _StickyFilterBar extends StatelessWidget {
                 icon: Icons.view_list_rounded,
                 isSelected: viewModeIndex == 0,
                 onTap: () => onViewModeSelected(0),
-                semanticLabel: t.utxo_wallet_like_screen.view_mode_list,
+                semanticLabel: t.utxo_overview_screen.view_mode_list,
                 isLeftChunk: true,
               ),
               _ViewModeChip(
                 icon: Icons.grid_view_rounded,
                 isSelected: viewModeIndex == 1,
                 onTap: () => onViewModeSelected(1),
-                semanticLabel: t.utxo_wallet_like_screen.view_mode_grid,
+                semanticLabel: t.utxo_overview_screen.view_mode_grid,
                 isRightChunk: true,
               ),
               const Spacer(),
@@ -274,6 +274,100 @@ class _FilterChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 태그 뷰 선택 모드 취소 바 - 도넛 차트 하단, 스크롤 시 앱바에 고정
+class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
+  final double height;
+  final int selectedCount;
+  final int selectedTotalSats;
+  final BitcoinUnit currentUnit;
+  final VoidCallback onExitSelectionMode;
+
+  UtxoTagSelectionBarDelegate({
+    required this.height,
+    required this.selectedCount,
+    required this.selectedTotalSats,
+    required this.currentUnit,
+    required this.onExitSelectionMode,
+  });
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return SizedBox(
+      height: height,
+      child: Material(
+        color: CoconutColors.black,
+        elevation: overlapsContent ? 4 : 0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(color: CoconutColors.white, shape: BoxShape.circle),
+                    child: SvgPicture.asset(
+                      'assets/svg/check.svg',
+                      width: 8,
+                      height: 8,
+                      colorFilter: const ColorFilter.mode(CoconutColors.black, BlendMode.srcIn),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$selectedCount coins • ${formatUtxoAmountForDisplay(selectedTotalSats, currentUnit)}',
+                    style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                    textScaler: const TextScaler.linear(1.0),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onExitSelectionMode,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(color: CoconutColors.gray150, borderRadius: BorderRadius.circular(20)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg/close.svg',
+                          width: 16,
+                          height: 16,
+                          colorFilter: const ColorFilter.mode(CoconutColors.black, BlendMode.srcIn),
+                        ),
+                        const SizedBox(width: 2),
+                        Text(t.cancel, style: CoconutTypography.caption_10_Bold.setColor(CoconutColors.black)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant UtxoTagSelectionBarDelegate oldDelegate) =>
+      height != oldDelegate.height ||
+      selectedCount != oldDelegate.selectedCount ||
+      selectedTotalSats != oldDelegate.selectedTotalSats ||
+      currentUnit != oldDelegate.currentUnit;
 }
 
 class UtxoSelectionBarButton extends StatelessWidget {

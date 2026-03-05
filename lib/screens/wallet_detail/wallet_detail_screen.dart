@@ -20,7 +20,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:coconut_wallet/widgets/appbar/wallet_detail_title_widget.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -121,11 +120,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return CoconutAppBar.build(
       entireWidgetKey: _appBarKey,
       backgroundColor: CoconutColors.black,
-      customTitle: WalletDetailTitleWidget(
-        walletName: _viewModel.walletName,
-        onTap: () => _navigateToWalletInfo(context),
-      ),
-      titlePadding: const EdgeInsets.all(8),
+      title: '',
       context: context,
       actionButtonList: [
         if (NetworkType.currentNetworkType.isTestnet)
@@ -138,13 +133,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           onPressed: () => _navigateToUtxoList(context),
           icon: SvgPicture.asset('assets/svg/coins.svg', width: 18, height: 18),
         ),
+        IconButton(
+          onPressed: () => _navigateToWalletInfo(context),
+          icon: SvgPicture.asset('assets/svg/wallet-outlined.svg', width: 18, height: 18),
+        ),
       ],
     );
   }
 
   void _navigateToUtxoList(BuildContext context) {
     // Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
-    Navigator.pushNamed(context, '/utxo-wallet-like', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': widget.id});
   }
 
   void _navigateToWalletInfo(BuildContext context) async {

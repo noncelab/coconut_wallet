@@ -453,15 +453,15 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
             ),
             if (widget.isSelected)
               Positioned(
-                top: isLarge ? -4 : -2,
-                right: isLarge ? -4 : -2,
+                top: isLarge ? 6 : 4,
+                right: isLarge ? 6 : 4,
                 child: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: EdgeInsets.all(isLarge ? 6 : 4),
                   decoration: const BoxDecoration(color: CoconutColors.white, shape: BoxShape.circle),
                   child: SvgPicture.asset(
                     'assets/svg/check.svg',
-                    width: isLarge ? 16 : 8,
-                    height: isLarge ? 16 : 8,
+                    width: isLarge ? 16 : 10,
+                    height: isLarge ? 16 : 10,
                     colorFilter: const ColorFilter.mode(CoconutColors.black, BlendMode.srcIn),
                   ),
                 ),
@@ -488,7 +488,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
                   decoration: BoxDecoration(
-                    color: CoconutColors.hotPink.withValues(alpha: 0.9),
+                    color: CoconutColors.hotPink.withValues(alpha: 0.8),
                     shape: BoxShape.circle,
                   ),
                   child: SvgPicture.asset(

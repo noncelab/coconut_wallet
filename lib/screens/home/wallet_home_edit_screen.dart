@@ -361,7 +361,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                               Navigator.pop(context);
                             }
                           },
-                          text: t.complete,
+                          text: t.done,
                         );
                       },
                     ),

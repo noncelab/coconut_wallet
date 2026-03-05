@@ -192,7 +192,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         Container(
           alignment: Alignment.center,
           child: CoconutUnderlinedButton(
-            text: _isSelectionMode ? t.complete : t.select,
+            text: _isSelectionMode ? t.done : t.select,
             textStyle: CoconutTypography.body2_14.setColor(CoconutColors.onPrimary(CoconutTheme.brightness())),
             onTap: _toggleSelectionMode,
           ),

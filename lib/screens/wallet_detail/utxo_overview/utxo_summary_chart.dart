@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -7,8 +5,11 @@ import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_chart_bubble.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -188,11 +189,30 @@ class _BarChart extends StatefulWidget {
   State<_BarChart> createState() => _BarChartState();
 }
 
+/// 태그 차트와 동일한 overlay 불투명도
+const double _overlayOpacity = 0.6;
+
 class _BarChartState extends State<_BarChart> {
   static const double _barMaxHeight = 80;
-  static const double _barOpacityDefault = 0.4;
-  static const double _barOpacityTapped = 1.0;
   int? _tappedBucketIndex;
+  Timer? _bubbleDismissTimer;
+
+  @override
+  void dispose() {
+    _bubbleDismissTimer?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleBubbleDismiss(int? tappedIndex) {
+    _bubbleDismissTimer?.cancel();
+    if (tappedIndex != null) {
+      _bubbleDismissTimer = Timer(const Duration(seconds: 3), () {
+        if (mounted && _tappedBucketIndex == tappedIndex) {
+          setState(() => _tappedBucketIndex = null);
+        }
+      });
+    }
+  }
 
   void _showIntervalInfoModal(BuildContext context, UtxoTierTheme tierTheme) {
     showModalBottomSheet<void>(
@@ -208,7 +228,7 @@ class _BarChartState extends State<_BarChart> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    t.utxo_wallet_like_screen.interval_info_title,
+                    t.utxo_overview_screen.interval_info_title,
                     style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                   ),
                   const SizedBox(height: 16),
@@ -311,20 +331,18 @@ class _BarChartState extends State<_BarChart> {
                       final heightRatio = count / maxCountClamped;
                       final barHeight = _barMaxHeight * heightRatio;
                       final isTapped = _tappedBucketIndex == index;
-                      final barAlpha = isTapped ? _barOpacityTapped : _barOpacityDefault;
-                      final color = widget.tierTheme.colorForSats(bucket.maxSats).withValues(alpha: barAlpha);
+                      var color = widget.tierTheme.colorForSats(bucket.maxSats);
+                      if (!isTapped) {
+                        color = Color.lerp(color, const Color(0xFF1D1D1D), _overlayOpacity)!;
+                      }
 
                       return Expanded(
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
-                            final tappedIndex = index;
-                            setState(() => _tappedBucketIndex = tappedIndex);
-                            Future.delayed(const Duration(seconds: 3), () {
-                              if (mounted && _tappedBucketIndex == tappedIndex) {
-                                setState(() => _tappedBucketIndex = null);
-                              }
-                            });
+                            final newIndex = _tappedBucketIndex == index ? null : index;
+                            setState(() => _tappedBucketIndex = newIndex);
+                            _scheduleBubbleDismiss(newIndex);
                           },
                           child: Stack(
                             clipBehavior: Clip.none,
@@ -403,16 +421,20 @@ class _BarChartState extends State<_BarChart> {
                                   ? LayoutBuilder(
                                     builder: (context, constraints) {
                                       final columnWidth = constraints.maxWidth;
+                                      final bucket = widget.buckets[index];
+                                      final balance = formatUtxoBalanceForTooltip(
+                                        bucket.utxos.fold<int>(0, (s, u) => s + u.amount),
+                                        widget.currentUnit,
+                                        isDustBucket: bucket.label == 'dust',
+                                      );
+                                      final text = t.utxo_overview_screen.amount_bubble_with_count(
+                                        count: bucket.utxos.length,
+                                        balance: balance,
+                                      );
                                       return OverflowBox(
                                         alignment: Alignment.center,
                                         maxWidth: columnWidth * 2,
-                                        child: _BalanceTooltip(
-                                          text: formatUtxoBalanceForTooltip(
-                                            widget.buckets[index].utxos.fold<int>(0, (s, u) => s + u.amount),
-                                            widget.currentUnit,
-                                            isDustBucket: widget.buckets[index].label == 'dust',
-                                          ),
-                                        ),
+                                        child: UtxoChartBubble(text: text),
                                       );
                                     },
                                   )
@@ -430,81 +452,3 @@ class _BarChartState extends State<_BarChart> {
   }
 }
 
-class _BalanceTooltip extends StatelessWidget {
-  final String text;
-
-  const _BalanceTooltip({required this.text});
-
-  static const _minWidth = 90.0;
-  static const _maxWidth = 120.0;
-  static const _minFontSize = 8.0;
-  static const _maxFontSize = 10.0;
-  static const _fontSizeRatio = 0.05;
-  static const _height = 32.0;
-  static const _radius = 10.0;
-  static const _arrowWidth = 12.0;
-  static const _arrowHeight = 6.0;
-
-  static Path _speechBubblePath(double width, double height) {
-    const r = _radius;
-    const aw = _arrowWidth;
-    const ah = _arrowHeight;
-    final bodyBottom = height - ah;
-
-    return Path()
-      ..moveTo(r, 0)
-      ..lineTo(width - r, 0)
-      ..arcToPoint(Offset(width, r), radius: const Radius.circular(r))
-      ..lineTo(width, bodyBottom - r)
-      ..arcToPoint(Offset(width - r, bodyBottom), radius: const Radius.circular(r))
-      ..lineTo(width / 2 + aw / 2, bodyBottom)
-      ..lineTo(width / 2, height)
-      ..lineTo(width / 2 - aw / 2, bodyBottom)
-      ..lineTo(r, bodyBottom)
-      ..arcToPoint(Offset(0, bodyBottom - r), radius: const Radius.circular(r))
-      ..lineTo(0, r)
-      ..arcToPoint(const Offset(r, 0), radius: const Radius.circular(r))
-      ..close();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final rawFontSize = screenWidth * _fontSizeRatio;
-    final fontSize = (rawFontSize.isNaN || !rawFontSize.isFinite ? _minFontSize : rawFontSize).clamp(
-      _minFontSize,
-      _maxFontSize,
-    );
-    final style = CoconutTypography.caption_10_Number.setColor(CoconutColors.white).copyWith(fontSize: fontSize);
-
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: _minWidth, maxWidth: _maxWidth, minHeight: _height + _arrowHeight),
-      child: SizedBox(
-        height: _height + _arrowHeight,
-        child: ClipPath(
-          clipper: _SpeechBubbleClipper(),
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: _height + _arrowHeight),
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4 + _arrowHeight),
-              decoration: BoxDecoration(color: CoconutColors.white.withValues(alpha: 0.08)),
-              alignment: Alignment.center,
-              child: Text(text, style: style, maxLines: 1, overflow: TextOverflow.visible, textAlign: TextAlign.center),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SpeechBubbleClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    return _BalanceTooltip._speechBubblePath(size.width, size.height);
-  }
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
-}

@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
+import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -12,23 +13,26 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_wallet_like/utxo_bucket_card_row.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_wallet_like/utxo_bucket_scroll_rail.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_wallet_like/utxo_filter_bar.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_wallet_like/utxo_summary_chart.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
+import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_filter_bar.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_chart.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_tag_chart.dart';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class UtxoWalletLikeScreen extends StatefulWidget {
+class UtxoOverviewScreen extends StatefulWidget {
   final int id; // wallet id
-  const UtxoWalletLikeScreen({super.key, required this.id});
+  const UtxoOverviewScreen({super.key, required this.id});
 
   @override
-  State<UtxoWalletLikeScreen> createState() => _UtxoWalletLikeScreenState();
+  State<UtxoOverviewScreen> createState() => _UtxoOverviewScreenState();
 }
 
-class _UtxoWalletLikeScreenState extends State<UtxoWalletLikeScreen> with TickerProviderStateMixin {
+class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProviderStateMixin {
   late UtxoListViewModel viewModel;
   BitcoinUnit _currentUnit = BitcoinUnit.btc;
 
@@ -171,15 +175,25 @@ class _UtxoWalletLikeScreenState extends State<UtxoWalletLikeScreen> with Ticker
       context: context,
       entireWidgetKey: _appBarKey,
       backgroundColor: CoconutColors.black,
-      customTitle: CoconutSegmentedControl(
-        labels: [t.utxo_wallet_like_screen.by_amount, t.utxo_wallet_like_screen.by_tag],
-        isSelected: [_isByAmount, !_isByAmount],
-        onPressed: (index) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() => _isByAmount = index == 0);
-          });
-        },
-        labelPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      customTitle: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 260),
+        child: CoconutSegmentedControl(
+          labels: [t.utxo_overview_screen.by_amount, t.utxo_overview_screen.by_tag],
+          isSelected: [_isByAmount, !_isByAmount],
+          onPressed: (index) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _isByAmount = index == 0;
+                  _isSelectionMode = false;
+                  _selectedUtxoIds.clear();
+                  _selectionBarExiting = false;
+                });
+              }
+            });
+          },
+          labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
       ),
       titlePadding: const EdgeInsets.symmetric(horizontal: 16),
       onBackPressed: () => Navigator.pop(context),
@@ -198,8 +212,10 @@ class _UtxoWalletLikeScreenState extends State<UtxoWalletLikeScreen> with Ticker
       backgroundColor: CoconutColors.black,
       appBar: _buildAppBar(context),
       body: SafeArea(
-        child:
-            _isByAmount
+        child: Consumer<UtxoTagProvider>(
+          builder: (context, tagProvider, _) {
+            final utxoTagList = tagProvider.getUtxoTagList(widget.id);
+            return _isByAmount
                 ? Stack(
                   children: [
                     if (_viewModeIndex == 0 && _filteredBuckets.length > 1)
@@ -247,7 +263,16 @@ class _UtxoWalletLikeScreenState extends State<UtxoWalletLikeScreen> with Ticker
                             viewModeIndex: _viewModeIndex,
                             lockFilterIndex: _lockFilterIndex,
                             isSelectionMode: _isSelectionMode,
-                            onViewModeSelected: (index) => setState(() => _viewModeIndex = index),
+                            onViewModeSelected: (index) {
+                              setState(() {
+                                _viewModeIndex = index;
+                                if (_isSelectionMode) {
+                                  _isSelectionMode = false;
+                                  _selectedUtxoIds.clear();
+                                  _selectionBarExiting = false;
+                                }
+                              });
+                            },
                             onLockFilterSelected: (index) {
                               setState(() {
                                 _lockFilterIndex = index;
@@ -347,14 +372,105 @@ class _UtxoWalletLikeScreenState extends State<UtxoWalletLikeScreen> with Ticker
                     ),
                   ],
                 )
-                : _buildTagView(),
+                : _buildTagViewBody(utxoTagList);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildTagView() {
-    return Center(
-      child: Text(t.utxo_wallet_like_screen.by_tag, style: CoconutTypography.body2_14.setColor(CoconutColors.gray500)),
+  Widget _buildTagViewBody(List<UtxoTag> utxoTagList) {
+    return Stack(
+      children: [
+        _buildTagView(utxoTagList),
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              offset:
+                  (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting
+                      ? Offset.zero
+                      : const Offset(0, 1),
+              child: _buildSelectionBottomBar(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static const double _tagSelectionBarHeight = 60.0;
+
+  Widget _buildTagView(List<UtxoTag> utxoTagList) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: UtxoTagChart(
+            utxoList: viewModel.utxoList,
+            utxoTagList: utxoTagList,
+            currentUnit: _currentUnit,
+            onBalanceTap: _toggleUnit,
+          ),
+        ),
+        if (_isSelectionMode)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: UtxoTagSelectionBarDelegate(
+              height: _tagSelectionBarHeight,
+              selectedCount: _selectedUtxoIds.length,
+              selectedTotalSats: _selectedTotalSats,
+              currentUnit: _currentUnit,
+              onExitSelectionMode: () {
+                setState(() {
+                  _isSelectionMode = false;
+                  _selectedUtxoIds.clear();
+                  _selectionBarExiting = false;
+                });
+              },
+            ),
+          ),
+        SliverToBoxAdapter(
+          child: UtxoTagGridSection(
+            key: ValueKey(utxoTagList.map((t) => t.id).join(',')),
+            utxoList: viewModel.utxoList,
+            utxoTagList: utxoTagList,
+            currentUnit: _currentUnit,
+            selectedUtxoIds: _selectedUtxoIds,
+            reusedAddresses: _reusedAddresses,
+            isSelectionMode: _isSelectionMode,
+            onUtxoTap: (u) {
+              if (_isSelectionMode) {
+                if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
+                  CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: false);
+                  return;
+                }
+                setState(() {
+                  if (_selectedUtxoIds.contains(u.utxoId)) {
+                    _selectedUtxoIds.remove(u.utxoId);
+                  } else {
+                    _selectedUtxoIds.add(u.utxoId);
+                  }
+                });
+              } else {
+                Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': u, 'id': widget.id});
+              }
+            },
+            onUtxoLongPress: (u) {
+              if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
+                CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: false);
+                return;
+              }
+              setState(() {
+                _isSelectionMode = true;
+                _selectedUtxoIds.add(u.utxoId);
+              });
+            },
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+      ],
     );
   }
 
@@ -377,32 +493,159 @@ class _UtxoWalletLikeScreenState extends State<UtxoWalletLikeScreen> with Ticker
         ),
       ),
       child:
-          isLockedFilter
-              ? UtxoSelectionBarButton(
-                iconPath: 'assets/svg/unlock.svg',
-                label: t.utxo_list_screen.utxo_unlocked_button,
-                onTap: () => _updateSelectedUtxosLock(lock: false),
-              )
-              : Row(
-                children: [
-                  Expanded(
-                    child: UtxoSelectionBarButton(
-                      iconPath: 'assets/svg/send.svg',
-                      label: t.send,
-                      onTap: _onSendPressed,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: UtxoSelectionBarButton(
-                      iconPath: 'assets/svg/lock.svg',
-                      label: t.utxo_list_screen.utxo_locked_button,
-                      onTap: () => _updateSelectedUtxosLock(lock: true),
-                    ),
-                  ),
-                ],
-              ),
+          _isByAmount
+              ? (isLockedFilter
+                  ? UtxoSelectionBarButton(
+                    iconPath: 'assets/svg/unlock.svg',
+                    label: t.utxo_list_screen.utxo_unlocked_button,
+                    onTap: () => _updateSelectedUtxosLock(lock: false),
+                  )
+                  : Builder(
+                    builder: (context) {
+                      final selectedUtxos =
+                          viewModel.utxoList.where((u) => _selectedUtxoIds.contains(u.utxoId)).toList();
+                      final hasLockedUtxo = selectedUtxos.any((u) => u.status == UtxoStatus.locked);
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Opacity(
+                              opacity: hasLockedUtxo ? 0.5 : 1,
+                              child: UtxoSelectionBarButton(
+                                iconPath: 'assets/svg/send.svg',
+                                label: t.send,
+                                onTap: _onSendPressed,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: UtxoSelectionBarButton(
+                              iconPath: 'assets/svg/lock.svg',
+                              label: t.utxo_list_screen.utxo_locked_button,
+                              onTap: () => _updateSelectedUtxosLock(lock: true),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ))
+              : _buildTagViewSelectionButtons(),
     );
+  }
+
+  Widget _buildTagViewSelectionButtons() {
+    final selectedUtxos = viewModel.utxoList.where((u) => _selectedUtxoIds.contains(u.utxoId)).toList();
+    final hasLockedUtxo = selectedUtxos.any((u) => u.status == UtxoStatus.locked);
+
+    return Row(
+      children: [
+        Expanded(
+          child: Opacity(
+            opacity: hasLockedUtxo ? 0.5 : 1,
+            child: UtxoSelectionBarButton(
+              iconPath: 'assets/svg/send.svg',
+              label: t.send,
+              onTap: () {
+                if (hasLockedUtxo) {
+                  CoconutToast.showToast(
+                    context: context,
+                    text: t.utxo_list_screen.send_locked_utxo,
+                    isVisibleIcon: true,
+                  );
+                  return;
+                }
+                _onTagViewSendPressed(selectedUtxos);
+              },
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: UtxoSelectionBarButton(
+            iconPath: 'assets/svg/tag.svg',
+            label: t.utxo_list_screen.tag_apply,
+            onTap: _showTagApplyBottomSheet,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _onTagViewSendPressed(List<UtxoState> selectedUtxos) {
+    if (selectedUtxos.isEmpty) return;
+    setState(() {
+      _isSelectionMode = false;
+      _selectedUtxoIds.clear();
+    });
+    Navigator.pushNamed(
+      context,
+      '/send',
+      arguments: {
+        'walletId': widget.id,
+        'sendEntryPoint': SendEntryPoint.walletDetail,
+        'selectedUtxoList': selectedUtxos,
+      },
+    );
+  }
+
+  List<String> _getCurrentTagsForUtxo(String utxoId) {
+    final utxo = viewModel.utxoList.where((u) => u.utxoId == utxoId).firstOrNull;
+    return utxo?.tags?.map((tag) => tag.name).toList() ?? [];
+  }
+
+  Future<void> _showTagApplyBottomSheet() async {
+    if (_selectedUtxoIds.isEmpty) return;
+
+    final selectedUtxoIds = _selectedUtxoIds.toList();
+    final result = await showModalBottomSheet<TagApplyResult>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: selectedUtxoIds),
+    );
+
+    if (result == null) return;
+    if (!mounted) return;
+
+    final mode = result.mode;
+    final tagStates = result.tagStates;
+
+    if (mode == UtxoTagApplyEditMode.add ||
+        mode == UtxoTagApplyEditMode.update ||
+        mode == UtxoTagApplyEditMode.delete) {
+      viewModel.refetchFromDB();
+      setState(() {
+        _selectedUtxoIds.clear();
+        _isSelectionMode = false;
+      });
+      return;
+    }
+
+    if (mode == UtxoTagApplyEditMode.changeAppliedTags) {
+      final tagProvider = context.read<UtxoTagProvider>();
+
+      await tagProvider.applyTagsToUtxos(
+        walletId: widget.id,
+        selectedUtxoIds: selectedUtxoIds,
+        tagStates: tagStates,
+        getCurrentTagsCallback: _getCurrentTagsForUtxo,
+      );
+
+      viewModel.refetchFromDB();
+      setState(() {
+        _selectedUtxoIds.clear();
+        _isSelectionMode = false;
+      });
+
+      if (mounted) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          text: t.utxo_list_screen.utxo_tag_updated,
+        );
+      }
+    }
   }
 
   Future<void> _updateSelectedUtxosLock({required bool lock}) async {
@@ -433,15 +676,25 @@ class _UtxoWalletLikeScreenState extends State<UtxoWalletLikeScreen> with Ticker
 
   void _onSendPressed() {
     if (_selectedUtxoIds.isEmpty) return;
+    final selectedUtxos = viewModel.utxoList.where((u) => _selectedUtxoIds.contains(u.utxoId)).toList();
+    final hasLockedUtxo = selectedUtxos.any((u) => u.status == UtxoStatus.locked);
+    if (hasLockedUtxo) {
+      CoconutToast.showToast(context: context, text: t.utxo_list_screen.send_locked_utxo, isVisibleIcon: true);
+      return;
+    }
+    setState(() {
+      _isSelectionMode = false;
+      _selectedUtxoIds.clear();
+    });
     Navigator.pushNamed(
       context,
       '/send',
-      arguments: {'walletId': widget.id, 'sendEntryPoint': SendEntryPoint.walletDetail},
+      arguments: {
+        'walletId': widget.id,
+        'sendEntryPoint': SendEntryPoint.walletDetail,
+        'selectedUtxoList': selectedUtxos,
+      },
     );
-    setState(() {
-      _selectedUtxoIds.clear();
-      _isSelectionMode = false;
-    });
   }
 
   static const double _gridMaxCoinExtent = 100.0;

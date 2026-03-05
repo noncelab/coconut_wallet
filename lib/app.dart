@@ -54,7 +54,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/utxo_wallet_like_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
@@ -374,8 +374,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                 '/utxo-list':
                     (context) => buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
-                '/utxo-wallet-like':
-                    (context) => buildLoadingScreenWithArgs(context, (args) => UtxoWalletLikeScreen(id: args['id'])),
+                '/utxo-overview':
+                    (context) => buildLoadingScreenWithArgs(context, (args) => UtxoOverviewScreen(id: args['id'])),
                 '/utxo-detail':
                     (context) => buildLoadingScreenWithArgs(
                       context,

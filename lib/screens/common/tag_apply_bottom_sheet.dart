@@ -114,7 +114,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
                 },
                 title: t.tag_bottom_sheet.title_apply_tag,
                 isActive: !_isDeletionMode,
-                nextButtonTitle: t.complete,
+                nextButtonTitle: t.done,
               ),
               body: Consumer<UtxoTagCrudViewModel>(
                 builder: (context, viewModel, child) {

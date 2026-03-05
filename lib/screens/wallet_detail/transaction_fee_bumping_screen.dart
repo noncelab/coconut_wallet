@@ -157,7 +157,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                           onButtonClicked: () async {
                             _onCompleteButtonPressed(context, viewModel);
                           },
-                          text: t.complete,
+                          text: t.done,
                           backgroundColor: _getNewFeeTextColor(),
                           showGradient: true,
                           gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),

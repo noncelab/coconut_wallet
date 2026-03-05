@@ -290,6 +290,7 @@ class WalletListViewModel extends ChangeNotifier {
     for (int i = 0; i < deletedWalletIds.length; i++) {
       int walletId = deletedWalletIds[i];
       await sharedPrefs.removeFaucetHistory(walletId);
+      await sharedPrefs.removeWalletTargetSats(walletId);
       await _walletProvider.deleteWallet(walletId);
     }
     _nodeProvider.reconnect();
