@@ -257,6 +257,7 @@ class _CoinStackState extends State<_CoinStack> {
                           compact: !isExp,
                           isFocused: isExp && i == currentIndex,
                           isSelected: widget.selectedUtxoIds.contains(widget.utxos[i].utxoId),
+                          isSelectionMode: widget.isSelectionMode,
                           currentUnit: widget.currentUnit,
                           isAddressReused: widget.reusedAddresses.contains(widget.utxos[i].to),
                           onTap: () => widget.onTap(widget.utxos[i]),
@@ -280,6 +281,7 @@ class UtxoCoinCard extends StatefulWidget {
   final bool compact;
   final bool isFocused;
   final bool isSelected;
+  final bool isSelectionMode;
   final BitcoinUnit currentUnit;
   final bool isAddressReused;
   final VoidCallback onTap;
@@ -292,6 +294,7 @@ class UtxoCoinCard extends StatefulWidget {
     this.compact = false,
     this.isFocused = true,
     this.isSelected = false,
+    this.isSelectionMode = false,
     required this.currentUnit,
     this.isAddressReused = false,
     required this.onTap,
@@ -451,6 +454,17 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                         ),
                       ),
             ),
+            if (widget.isSelectionMode && !widget.isSelected)
+              Positioned.fill(
+                child: isBill
+                    ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(color: CoconutColors.black.withValues(alpha: 0.5)),
+                    )
+                    : ClipOval(
+                      child: Container(color: CoconutColors.black.withValues(alpha: 0.5)),
+                    ),
+              ),
             if (widget.isSelected)
               Positioned(
                 top: isLarge ? 6 : 4,

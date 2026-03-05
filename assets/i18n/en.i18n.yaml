@@ -710,7 +710,7 @@ wallet_info_screen:
   utxo: "UTXO"
   target_quantity: "Target Quantity"
   target_progress: "$percent% / $target"
-  target_not_set: "No target set"
+  target_not_set_secondary: "We'll show your achievement rate when you set a target quantity"
   target_set_title: "Set Target"
   target_set_placeholder: "Please enter in BTC"
   target_set_invalid: "Please enter a valid value of 1 or more"

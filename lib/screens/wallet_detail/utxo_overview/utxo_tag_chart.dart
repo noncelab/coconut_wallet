@@ -748,6 +748,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                           compact: true,
                                           isFocused: true,
                                           isSelected: isSelected,
+                                          isSelectionMode: widget.isSelectionMode,
                                           currentUnit: widget.currentUnit,
                                           isAddressReused: widget.reusedAddresses.contains(utxo.to),
                                           onTap: () => widget.onUtxoTap(utxo),

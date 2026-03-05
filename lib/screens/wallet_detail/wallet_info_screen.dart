@@ -66,17 +66,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 onTapDown: (details) => _removeTooltip(),
                 child: Scaffold(
                   backgroundColor: CoconutColors.black,
-                  appBar: CoconutAppBar.build(
-                    title: '', //t.wallet_info_screen.title(name: viewModel.walletName),
-                    context: context,
-                  ),
+                  appBar: CoconutAppBar.build(title: '', context: context),
                   body: SafeArea(
                     child: SingleChildScrollView(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Padding(
-                            padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
+                            padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
                             child: WalletInfoItemCard(
                               id: widget.id,
                               walletItem: viewModel.walletItemBase,
@@ -487,7 +484,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
                   },
-                  child: _StatCard(label: t.wallet_info_screen.utxo, value: '$utxoCount'),
+                  child: _StatCard(label: t.wallet_info_screen.utxo, value: '$utxoCount', transparentBackground: true),
                 ),
               ),
             ],
@@ -503,6 +500,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
               currentUnit: currentUnit,
               targetSats: targetSats,
               maxSats: _maxBtcSats,
+              transparentBackground: true,
             ),
           ),
         ],
@@ -514,14 +512,18 @@ class _WalletInfoStatsSection extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String label;
   final String value;
+  final bool transparentBackground;
 
-  const _StatCard({required this.label, required this.value});
+  const _StatCard({required this.label, required this.value, this.transparentBackground = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(
+        color: transparentBackground ? Colors.transparent : CoconutColors.gray800,
+        borderRadius: BorderRadius.circular(24),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -542,12 +544,14 @@ class _TargetQuantityCard extends StatelessWidget {
   final BitcoinUnit currentUnit;
   final int? targetSats;
   final int maxSats;
+  final bool transparentBackground;
 
   const _TargetQuantityCard({
     required this.balanceSats,
     required this.currentUnit,
     this.targetSats,
     required this.maxSats,
+    this.transparentBackground = false,
   });
 
   @override
@@ -558,7 +562,10 @@ class _TargetQuantityCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: CoconutColors.gray800, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(
+        color: transparentBackground ? Colors.transparent : CoconutColors.gray800,
+        borderRadius: BorderRadius.circular(24),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -579,9 +586,19 @@ class _TargetQuantityCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           targetSats == null
-              ? Text(
-                t.wallet_info_screen.target_not_set,
-                style: CoconutTypography.heading3_21.setColor(CoconutColors.gray500),
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Stay humble, stack sats!',
+                    style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.gray500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    t.wallet_info_screen.target_not_set_secondary,
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray600),
+                  ),
+                ],
               )
               : _buildTargetProgressText(
                 percent: percent,

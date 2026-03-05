@@ -736,6 +736,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                   compact: true,
                   isFocused: true,
                   isSelected: isSelected,
+                  isSelectionMode: _isSelectionMode,
                   currentUnit: currentUnit,
                   isAddressReused: _reusedAddresses.contains(utxo.to),
                   onTap: () {

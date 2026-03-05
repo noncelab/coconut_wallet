@@ -713,7 +713,7 @@ wallet_info_screen:
   utxo: "UTXO"
   target_quantity: "목표 수량"
   target_progress: "$percent% / $target"
-  target_not_set: "목표 미설정"
+  target_not_set_secondary: "목표 수량을 설정하면 달성률을 보여드려요"
   target_set_title: "목표 설정"
   target_set_placeholder: "BTC로 입력해 주세요"
   target_set_invalid: "1 이상의 유효한 값을 입력해주세요"
