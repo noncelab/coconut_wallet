@@ -191,7 +191,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                         ),
                       } else ...{
                         FixedBottomButton(
-                          showGradient: false,
                           isActive: viewModel.isNetworkOn && viewModel.isInitDone,
                           onButtonClicked: () async {
                             _onBroadcastButtonClicked(viewModel);
