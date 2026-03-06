@@ -1891,7 +1891,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                     if (showGlossary) CoconutPulldownMenuItem(title: t.glossary),
                     CoconutPulldownMenuItem(title: t.utility.p2p_calculator.calculator),
                     CoconutPulldownMenuItem(title: t.mnemonic_wordlist),
-                    if (NetworkType.currentNetworkType.isTestnet) CoconutPulldownMenuItem(title: t.tutorial),
+                    CoconutPulldownMenuItem(title: t.tutorial),
                   ],
                 ),
                 CoconutPulldownMenuItem(title: t.home_screen_settings),
@@ -1901,7 +1901,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
               thickDividerIndexList: [_getThickDividerIndex(showGlossary)],
               onSelected: ((index, selectedText) {
                 _setDropdownMenuVisiblility(false);
-                _handleDropdownSelection(showGlossary, selectedText);
+                _handleDropdownSelection(selectedText);
               }),
             ),
           );
@@ -1913,19 +1913,13 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   /// 용어집 표시 여부에 따른 Thick Divider 인덱스 계산
   /// CoconutPulldownMenuGroup이 끝나는 지점의 인덱스를 반환
   int _getThickDividerIndex(bool showGlossary) {
-    if (NetworkType.currentNetworkType.isTestnet) {
-      // 테스트넷: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) + 튜토리얼(4) → 그룹 끝 인덱스 4
-      // 테스트넷 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) + 튜토리얼(3) → 그룹 끝 인덱스 3
-      return showGlossary ? 4 : 3;
-    } else {
-      // 메인넷: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) → 그룹 끝 인덱스 3
-      // 메인넷 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) → 그룹 끝 인덱스 2
-      return showGlossary ? 3 : 2;
-    }
+    // 테스트넷/메인넷 공통: 임시저장(0) + 용어집(1) + P2P계산기(2) + 니모닉(3) + 튜토리얼(4) → 그룹 끝 인덱스 4
+    // 테스트넷/메인넷 공통 (용어집 없음): 임시저장(0) + P2P계산기(1) + 니모닉(2) + 튜토리얼(3) → 그룹 끝 인덱스 3
+    return showGlossary ? 4 : 3;
   }
 
   /// 드롭다운 선택 처리 (selectedText 기반)
-  void _handleDropdownSelection(bool showGlossary, String selectedText) {
+  void _handleDropdownSelection(String selectedText) {
     String actionKey = _getActionKeyFromSelectedText(selectedText);
     final action = _dropdownActions[actionKey];
     if (action != null) {
