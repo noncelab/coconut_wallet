@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
@@ -77,6 +79,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
 
   late final SendViewModel _viewModel;
+  Timer? _ownAddressCheckTimer;
   final _recipientPageController = PageController();
   int _focusedPageIndex = 0;
 
@@ -204,6 +207,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _ownAddressCheckTimer?.cancel();
 
     _recipientPageController.dispose();
     _feeRateController.dispose();
@@ -1623,12 +1627,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Widget _buildBoard(BuildContext context) {
     return Selector<SendViewModel, bool>(
       selector: (_, viewModel) => viewModel.showAddressBoard,
-      builder: (context, data, child) {
+      builder: (context, showAddressBoard, child) {
         return Positioned(
           left: 16,
           right: 16,
-          top: !_viewModel.showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
-          child: !_viewModel.showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
+          top: !showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
+          child: !showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
         );
       },
     );
@@ -1828,7 +1832,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   void _addAddressField() {
     final controller = TextEditingController();
     final index = _addressControllerList.length;
-    addressTextListener() => _viewModel.setAddressText(controller.text, index);
+    addressTextListener() {
+      _viewModel.setAddressText(controller.text, index);
+      if (_viewModel.currentIndex == index && controller.text.length >= 26) {
+        _ownAddressCheckTimer?.cancel();
+        _ownAddressCheckTimer = Timer(const Duration(milliseconds: 300), () {
+          if (_viewModel.isOwnAddress(controller.text)) {
+            _viewModel.setShowAddressBoard(false);
+          }
+        });
+      }
+    }
 
     controller.addListener(addressTextListener);
     _addressTextListenerList.add(addressTextListener);
@@ -1840,7 +1854,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _feeRateController.text = _removeTrailingDot(_feeRateController.text);
         _amountController.text = _removeTrailingDot(_amountController.text);
 
-        final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null;
+        final isOwn = controller.text.length >= 26 && _viewModel.isOwnAddress(controller.text);
+        final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
