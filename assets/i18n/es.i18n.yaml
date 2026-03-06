@@ -638,12 +638,6 @@ settings_screen:
       toast:
         copy_success: "Registro copiado correctamente."
 
-    
-#lib/screens/wallet_detail
-wallet_detail_screen:
-  toast:
-    no_mfp_wallet_cant_send: "Las billeteras sin huella digital maestra no pueden enviar"
-
 address_list_screen:
   wallet_name: "Dirección de $name"
   address_index: "Dirección - $index"
@@ -957,6 +951,11 @@ alert:
     try_again: "Por favor, intenta nuevamente después de $count"
   fee_bumping:
     not_enough_amount: "Saldo insuficiente para ejecutar $bumpingType.\nPor favor, verifica tu saldo disponible actual."
+  without_mfp:
+    title: "Agregar huella digital maestra"
+    description: "Para enviar una transacción, primero debes agregar la huella digital maestra. Puedes agregarla y enviar la transacción nuevamente."
+    skip_button: "Más tarde"
+    confirm_button: "Agregar"
 
 third_party:
   keystone: "Keystone"

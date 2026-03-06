@@ -480,6 +480,21 @@ class WalletProvider extends ChangeNotifier {
     addToFavoriteWalletsUntilFive(walletId);
   }
 
+  Future<void> updateWalletDescriptor(int walletId, String newMfp) async {
+    final wallet = getWalletById(walletId);
+    final oldDescriptor = wallet.descriptor;
+
+    // MFP 교체 후 체크섬 재계산
+    final bodyWithOldChecksum = oldDescriptor.replaceFirst(RegExp(r'(?<=\[)[0-9a-fA-F]{8}'), newMfp);
+    final parsed = Descriptor.parse(bodyWithOldChecksum, ignoreChecksum: true);
+    final newDescriptor = parsed.serialize();
+
+    _walletRepository.updateMasterFingerprint(walletId, newDescriptor);
+
+    _setWalletItemList(await _fetchWalletListFromDB());
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     // ValueNotifier들 해제
