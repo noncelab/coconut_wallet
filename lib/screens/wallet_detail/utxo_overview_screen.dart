@@ -314,6 +314,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                     ),
                   CustomScrollView(
                     controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
                     slivers: [
                       SliverToBoxAdapter(
                         child: UtxoSummaryChart(
