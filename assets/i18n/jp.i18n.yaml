@@ -713,7 +713,7 @@ wallet_info_screen:
   target_not_set_secondary: "目標数量を設定すると達成率を表示します"
   target_set_title: "目標を設定"
   target_set_placeholder: "BTCで入力してください"
-  target_set_invalid: "1以上の有効な値を入力してください"
+  target_set_invalid: "0 BTCは目標に設定できません"
   target_set_max_exceeded: "2,100万BTC以下で入力してください"
   view_xpub: "拡張公開鍵を表示"
   duplicated_name: "名前が既に使用されています"

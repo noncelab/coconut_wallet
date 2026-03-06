@@ -716,7 +716,7 @@ wallet_info_screen:
   target_not_set_secondary: "Mostraremos tu tasa de logro cuando configures la cantidad objetivo"
   target_set_title: "Establecer objetivo"
   target_set_placeholder: "Introduzca en BTC"
-  target_set_invalid: "Introduzca un valor válido de 1 o más"
+  target_set_invalid: "No puedes establecer 0 BTC como objetivo"
   target_set_max_exceeded: "Introduzca 21 millones de BTC o menos"
   view_xpub: "Ver clave pública extendida"
   duplicated_name: "Nombre ya en uso"

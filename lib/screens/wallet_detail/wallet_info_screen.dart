@@ -527,7 +527,15 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500)),
+          Row(
+            children: [
+              Text(label, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500)),
+              const SizedBox(width: 4),
+              transparentBackground
+                  ? const Icon(Icons.keyboard_arrow_right_rounded, size: 20, color: CoconutColors.gray500)
+                  : const SizedBox.shrink(),
+            ],
+          ),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
@@ -607,22 +615,21 @@ class _TargetQuantityCard extends StatelessWidget {
                 isPrefixUnit: currentUnit.isPrefixSymbol,
               ),
           if (targetSats != null) ...[
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   activeTrackColor: CoconutColors.white,
                   inactiveTrackColor: CoconutColors.gray600,
-                  thumbColor: CoconutColors.white,
-                  overlayColor: CoconutColors.white.withValues(alpha: 0.2),
-                  overlayShape: const _VerticalPaddingOverlayShape(),
+                  overlayShape: SliderComponentShape.noOverlay,
                   trackHeight: 6,
-                  trackShape: const _FullWidthSliderTrackShape(),
-                  thumbShape: const _ElongatedSliderThumbShape(),
+                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),
                 ),
                 child: IgnorePointer(child: Slider(value: progress, onChanged: (_) {})),
               ),
             ),
+            const SizedBox(height: 8),
           ],
         ],
       ),
@@ -655,102 +662,6 @@ class _TargetQuantityCard extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _VerticalPaddingOverlayShape extends SliderComponentShape {
-  const _VerticalPaddingOverlayShape();
-
-  static const double _verticalPadding = 12;
-
-  @override
-  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
-    return Size(_ElongatedSliderThumbShape.thumbWidth, _ElongatedSliderThumbShape.thumbHeight + _verticalPadding * 2);
-  }
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset center, {
-    required Animation<double> activationAnimation,
-    required Animation<double> enableAnimation,
-    required bool isDiscrete,
-    required TextPainter labelPainter,
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required TextDirection textDirection,
-    required double value,
-    required double textScaleFactor,
-    required Size sizeWithOverflow,
-  }) {
-    final canvas = context.canvas;
-    final paint =
-        Paint()
-          ..color = (sliderTheme.overlayColor ?? sliderTheme.thumbColor ?? CoconutColors.white).withValues(
-            alpha: 0.12 * activationAnimation.value,
-          );
-    final size = getPreferredSize(true, isDiscrete);
-    final rect = Rect.fromCenter(center: center, width: size.width, height: size.height);
-    canvas.drawRRect(RRect.fromRectAndRadius(rect, Radius.circular(size.height / 2)), paint);
-  }
-}
-
-class _FullWidthSliderTrackShape extends RoundedRectSliderTrackShape {
-  const _FullWidthSliderTrackShape();
-
-  static const double _verticalPadding = 8;
-
-  @override
-  Rect getPreferredRect({
-    required RenderBox parentBox,
-    Offset offset = Offset.zero,
-    required SliderThemeData sliderTheme,
-    bool isEnabled = false,
-    bool isDiscrete = false,
-  }) {
-    final trackHeight = sliderTheme.trackHeight ?? 4;
-    final trackLeft = offset.dx;
-    final effectiveHeight = parentBox.size.height - _verticalPadding * 2;
-    final trackTop = offset.dy + _verticalPadding + (effectiveHeight - trackHeight) / 2;
-    final trackWidth = parentBox.size.width;
-    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
-  }
-}
-
-class _ElongatedSliderThumbShape extends SliderComponentShape {
-  const _ElongatedSliderThumbShape();
-
-  static const double thumbWidth = 27;
-  static const double thumbHeight = 12;
-
-  @override
-  Size getPreferredSize(bool isEnabled, bool isDiscrete) => const Size(thumbWidth, thumbHeight);
-
-  @override
-  void paint(
-    PaintingContext context,
-    Offset center, {
-    required Animation<double> activationAnimation,
-    required Animation<double> enableAnimation,
-    required bool isDiscrete,
-    required TextPainter labelPainter,
-    required RenderBox parentBox,
-    required SliderThemeData sliderTheme,
-    required TextDirection textDirection,
-    required double value,
-    required double textScaleFactor,
-    required Size sizeWithOverflow,
-  }) {
-    final canvas = context.canvas;
-    const rect = Rect.fromLTWH(0, 0, thumbWidth, thumbHeight);
-    final paint =
-        Paint()
-          ..color = sliderTheme.thumbColor ?? CoconutColors.white
-          ..style = PaintingStyle.fill;
-    canvas.save();
-    canvas.translate(center.dx - thumbWidth / 2, center.dy - thumbHeight / 2);
-    canvas.drawRRect(RRect.fromRectAndRadius(rect, const Radius.circular(thumbHeight / 2)), paint);
-    canvas.restore();
   }
 }
 
