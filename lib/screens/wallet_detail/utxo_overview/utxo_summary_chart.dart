@@ -150,12 +150,7 @@ class _AvailabilityChip extends StatelessWidget {
   final int sats;
   final String Function(int) formatBalance;
 
-  const _AvailabilityChip({
-    required this.label,
-    required this.count,
-    required this.sats,
-    required this.formatBalance,
-  });
+  const _AvailabilityChip({required this.label, required this.count, required this.sats, required this.formatBalance});
 
   @override
   Widget build(BuildContext context) {
@@ -179,11 +174,7 @@ class _BarChart extends StatefulWidget {
   final UtxoTierTheme tierTheme;
   final BitcoinUnit currentUnit;
 
-  const _BarChart({
-    required this.buckets,
-    required this.tierTheme,
-    required this.currentUnit,
-  });
+  const _BarChart({required this.buckets, required this.tierTheme, required this.currentUnit});
 
   @override
   State<_BarChart> createState() => _BarChartState();
@@ -235,11 +226,12 @@ class _BarChartState extends State<_BarChart> {
                   ...utxoBucketRanges.map((r) {
                     final isDustRange = r.max <= dustLimit;
                     final isWhale = r.label == 'whale';
-                    final rangeStr = isWhale
-                        ? '≥ 10 ${t.btc}'
-                        : (isDustRange
-                            ? '${r.min.toThousandsSeparatedString()} ~ ${r.max.toThousandsSeparatedString()} ${t.sats}'
-                            : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc)}');
+                    final rangeStr =
+                        isWhale
+                            ? '≥ 10 ${t.btc}'
+                            : (isDustRange
+                                ? '${r.min.toThousandsSeparatedString()} ~ ${r.max.toThousandsSeparatedString()} ${t.sats}'
+                                : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc)}');
                     final color = tierTheme.colorForSats(r.max);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -418,9 +410,8 @@ class _BarChartState extends State<_BarChart> {
                         child: Center(
                           child:
                               index == _tappedBucketIndex
-                                  ? LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final columnWidth = constraints.maxWidth;
+                                  ? Builder(
+                                    builder: (context) {
                                       final bucket = widget.buckets[index];
                                       final balance = formatUtxoBalanceForTooltip(
                                         bucket.utxos.fold<int>(0, (s, u) => s + u.amount),
@@ -433,8 +424,8 @@ class _BarChartState extends State<_BarChart> {
                                       );
                                       return OverflowBox(
                                         alignment: Alignment.center,
-                                        maxWidth: columnWidth * 2,
-                                        child: UtxoChartBubble(text: text),
+                                        maxWidth: 120,
+                                        child: UtxoChartBubble(text: text, maxWidth: 150),
                                       );
                                     },
                                   )
@@ -451,4 +442,3 @@ class _BarChartState extends State<_BarChart> {
     );
   }
 }
-

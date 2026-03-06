@@ -3,12 +3,14 @@ import 'dart:ui' as ui;
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/material.dart';
 
-/// 금액별/태그별 차트 공통 말풍선 위젯 (선택 시에만 노출)
+/// 금액별/태그별 차트 공통 말풍선 위젯
 class UtxoChartBubble extends StatelessWidget {
   final String text;
   final TextStyle? textStyle;
 
-  const UtxoChartBubble({super.key, required this.text, this.textStyle});
+  final double? maxWidth;
+
+  const UtxoChartBubble({super.key, required this.text, this.textStyle, this.maxWidth});
 
   static const double height = 32.0;
   static const double radius = 10.0;
@@ -39,8 +41,9 @@ class UtxoChartBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = textStyle ?? CoconutTypography.caption_10_Bold.setColor(CoconutColors.white);
+    final maxW = maxWidth ?? 180;
     return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 60, maxWidth: 130, minHeight: height + arrowHeight),
+      constraints: BoxConstraints(minWidth: 60, maxWidth: maxW, minHeight: height + arrowHeight),
       child: SizedBox(
         height: height + arrowHeight,
         child: ClipPath(

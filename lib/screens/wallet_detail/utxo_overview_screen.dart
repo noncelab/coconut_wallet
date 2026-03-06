@@ -155,6 +155,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     if (mounted) setState(() => _refreshBucketsFromViewModel());
   }
 
+  Future<void> _navigateToUtxoDetail(UtxoState utxo) async {
+    await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.id});
+    if (mounted) {
+      viewModel.refetchFromDB();
+    }
+  }
+
   void _toggleUnit() {
     setState(() => _currentUnit = _currentUnit.next);
   }
@@ -323,11 +330,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                                         }
                                       });
                                     } else {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/utxo-detail',
-                                        arguments: {'utxo': u, 'id': widget.id},
-                                      );
+                                      _navigateToUtxoDetail(u);
                                     }
                                   },
                                   onLongPressUtxo: (u) {
@@ -452,7 +455,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                   }
                 });
               } else {
-                Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': u, 'id': widget.id});
+                _navigateToUtxoDetail(u);
               }
             },
             onUtxoLongPress: (u) {
@@ -755,7 +758,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                         }
                       });
                     } else {
-                      Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.id});
+                      _navigateToUtxoDetail(utxo);
                     }
                   },
                   onLongPress: () {

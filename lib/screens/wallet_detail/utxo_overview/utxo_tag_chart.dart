@@ -12,6 +12,11 @@ import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:flutter/material.dart';
 
+String _truncateTagName(String name, int maxLen) {
+  if (name.length <= maxLen) return name;
+  return '${name.substring(0, maxLen)}...';
+}
+
 Color _pastelForTag(UtxoTag tag, [double blend = 0.20]) {
   final idx = tag.colorIndex.clamp(0, tagColorPalette.length - 1);
   final base = tagColorPalette[idx];
@@ -246,26 +251,51 @@ class _DonutChartState extends State<_DonutChart> {
     var angle = math.atan2(dy, dx);
     angle = (angle + math.pi / 2 + 2 * math.pi) % (2 * math.pi);
 
+    final capAngle = math.asin((_strokeWidth / 2) / radius);
+
     var startAngle = 0.0;
-    final gapAngle = _gap / radius;
+    const gapAngle = _gap / radius;
+    final candidates = <int>[];
+    final midAngles = <double>[];
+
     for (var i = 0; i < orderedSegments.length; i++) {
       final seg = orderedSegments[i];
       final ratio = seg.sats / widget.segmentTotalSats;
       final sweepAngle = 2 * math.pi * ratio - (i < orderedSegments.length - 1 ? _gap / radius : 0);
-      // untagged: gap 확장 없음. 태그: 앞/뒤 gap 포함 (untagged 바로 위 세그먼트 경계 터치 보정)
+      final midAngle = startAngle + sweepAngle / 2;
       final hitStart = i > 0 ? startAngle - gapAngle : startAngle;
-      final hitEnd = seg.isUntagged ? startAngle + sweepAngle : startAngle + sweepAngle + gapAngle;
-      if (angle >= hitStart && angle < hitEnd) {
-        return seg.isUntagged ? null : i;
+      var hitEnd = seg.isUntagged ? startAngle + sweepAngle : startAngle + sweepAngle + gapAngle;
+      if (!seg.isUntagged) {
+        hitEnd += capAngle;
+      }
+      final hitStartWithCap = !seg.isUntagged && i > 0 ? math.max(0.0, hitStart - capAngle) : hitStart;
+      final matches =
+          (angle >= hitStartWithCap && angle < hitEnd) || (hitEnd > 2 * math.pi && angle < hitEnd - 2 * math.pi);
+      if (matches && !seg.isUntagged) {
+        candidates.add(i);
+        midAngles.add(midAngle);
       }
       startAngle += sweepAngle + gapAngle;
     }
-    // 마지막 세그먼트와 첫 세그먼트 사이 gap(2π 근처)은 마지막 세그먼트로 인정
-    if (orderedSegments.isNotEmpty) {
-      final last = orderedSegments.last;
-      return last.isUntagged ? null : orderedSegments.length - 1;
+
+    if (candidates.isEmpty) return null;
+    // cap 확장으로 겹치는 영역: 터치 각도와 가장 가까운 세그먼트 중심 선택
+    var bestI = 0;
+    var bestDist = _angularDistance(angle, midAngles[0]);
+    for (var j = 1; j < candidates.length; j++) {
+      final d = _angularDistance(angle, midAngles[j]);
+      if (d < bestDist) {
+        bestDist = d;
+        bestI = j;
+      }
     }
-    return null;
+    return candidates[bestI];
+  }
+
+  static double _angularDistance(double a, double b) {
+    var d = (a - b).abs();
+    if (d > math.pi) d = 2 * math.pi - d;
+    return d;
   }
 
   @override
@@ -288,8 +318,14 @@ class _DonutChartState extends State<_DonutChart> {
       const labelDist = radius + _strokeWidth / 2 + _labelOffset;
       final dx = _size / 2 + labelDist * math.cos(midAngle);
       final dy = _size / 2 + labelDist * math.sin(midAngle) + labelYOffset;
+      const outerR = radius + _strokeWidth / 2;
+      const arcRadius = outerR * 0.8;
+      final arcCenterX = _size / 2 + arcRadius * math.cos(midAngle);
+      final arcCenterY = _size / 2 + arcRadius * math.sin(midAngle);
       if (ratio >= minVisibleRatio && !seg.isUntagged) {
-        labelPositions.add(_LabelPosition(seg: seg, dx: dx, dy: dy, index: i));
+        labelPositions.add(
+          _LabelPosition(seg: seg, dx: dx, dy: dy, arcCenterX: arcCenterX, arcCenterY: arcCenterY, index: i),
+        );
       }
       startAngle += sweepAngle + _gap / radius;
     }
@@ -305,12 +341,11 @@ class _DonutChartState extends State<_DonutChart> {
     }
 
     const padding = 12.0;
-    const bubbleW = 90.0;
-    const bubbleH = 38.0;
+    final stackW = _size + padding * 2;
 
     return SizedBox(
-      width: _size + padding * 2,
-      height: _size + padding * 2,
+      width: stackW,
+      height: stackW,
       child: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
@@ -367,16 +402,20 @@ class _DonutChartState extends State<_DonutChart> {
           ),
           if (selectedLp != null)
             Positioned(
-              left: padding + selectedLp.dx - bubbleW / 2,
-              top: padding + selectedLp.dy - bubbleH / 2,
-              width: bubbleW,
-              height: bubbleH,
+              left: padding + selectedLp.arcCenterX - 60,
+              top: padding + selectedLp.arcCenterY - (UtxoChartBubble.height + UtxoChartBubble.arrowHeight),
+              width: 120,
+              height: UtxoChartBubble.height + UtxoChartBubble.arrowHeight,
               child: IgnorePointer(
                 child: Center(
-                  child: UtxoChartBubble(
-                    text: t.utxo_overview_screen.tag_bubble_with_count(
-                      name: selectedLp.seg.displayName,
-                      count: selectedLp.seg.count,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: UtxoChartBubble(
+                      text: t.utxo_overview_screen.tag_bubble_with_count(
+                        name: _truncateTagName(selectedLp.seg.displayName, 8),
+                        count: selectedLp.seg.count,
+                      ),
+                      maxWidth: 120,
                     ),
                   ),
                 ),
@@ -392,12 +431,23 @@ class _LabelPosition {
   final _TagSegment seg;
   final double dx;
   final double dy;
+
+  /// 색칠된 도넛 세그먼트(호)의 중앙 - 말풍선 꼭지점이 가리킬 위치
+  final double arcCenterX;
+  final double arcCenterY;
   final int index;
 
-  const _LabelPosition({required this.seg, required this.dx, required this.dy, required this.index});
+  const _LabelPosition({
+    required this.seg,
+    required this.dx,
+    required this.dy,
+    required this.arcCenterX,
+    required this.arcCenterY,
+    required this.index,
+  });
 }
 
-/// 미분류 세그먼트를 배경과 동일하게 그려 도넛에서 보이지 않게 함
+/// 도넛 차트의 미분류 세그먼트를 색상
 const Color _untaggedInvisibleColor = Color(0xFF323232);
 
 /// Painter와 라벨 위치 계산에서 동일한 순서 사용: 미분류 먼저, 태그 나중
@@ -406,7 +456,6 @@ List<_TagSegment> _orderedSegmentsForDrawing(List<_TagSegment> segments) => [
   ...segments.where((s) => !s.isUntagged),
 ];
 
-/// overlay 적용 시 블렌딩할 어두운 색 (gray/black)
 const Color _overlayBlendColor = Color(0xFF1D1D1D);
 
 class _DonutChartPainter extends CustomPainter {
@@ -471,7 +520,6 @@ class _DonutChartPainter extends CustomPainter {
       overlayOpacity != oldDelegate.overlayOpacity;
 }
 
-/// utxo_item_card와 동일한 CoconutChip 태그 디자인
 class _TagSectionChip extends StatelessWidget {
   final String name;
   final UtxoTag? tag;
@@ -567,7 +615,17 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
     });
   }
 
-  List<({UtxoTag? tag, List<UtxoState> utxos, bool isMultiTag, List<String>? multiTagNames, List<UtxoTag>? multiTags})>
+  /// 단일 그룹: tag + utxos. 여러 태그 그룹: subGroups에 태그 조합별 (tags, utxos) 리스트
+  List<
+    ({
+      UtxoTag? tag,
+      List<UtxoState> utxos,
+      bool isMultiTag,
+      List<String>? multiTagNames,
+      List<UtxoTag>? multiTags,
+      List<({List<UtxoTag> tags, List<UtxoState> utxos})>? subGroups,
+    })
+  >
   _groupUtxosByTag() {
     final displayableUtxos =
         widget.utxoList
@@ -601,6 +659,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
             bool isMultiTag,
             List<String>? multiTagNames,
             List<UtxoTag>? multiTags,
+            List<({List<UtxoTag> tags, List<UtxoState> utxos})>? subGroups,
           })
         >[];
 
@@ -610,13 +669,12 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
           ids.where((id) => singleTaggedIds.contains(id)).map((id) => utxoMap[id]).whereType<UtxoState>().toList();
       if (utxos.isNotEmpty) {
         _sortUtxosForTagGrid(utxos);
-        result.add((tag: tag, utxos: utxos, isMultiTag: false, multiTagNames: null, multiTags: null));
+        result.add((tag: tag, utxos: utxos, isMultiTag: false, multiTagNames: null, multiTags: null, subGroups: null));
       }
     }
 
     final multiTagged = multiTaggedIds.map((id) => utxoMap[id]).whereType<UtxoState>().toList();
     if (multiTagged.isNotEmpty) {
-      // 태그 조합별로 그룹핑 (예: [A,B] → "#A #B", [A,C] → "#A #C")
       List<String> getTagNamesForUtxo(UtxoState u) {
         final tagsFromUtxo = u.tags;
         if (tagsFromUtxo != null && tagsFromUtxo.isNotEmpty) {
@@ -640,19 +698,37 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
         return null;
       }
 
+      final subGroups = <({List<UtxoTag> tags, List<UtxoState> utxos})>[];
+      final allMultiTaggedUtxos = <UtxoState>[];
       for (final entry in groupByTagSet.entries) {
         final tagNames = entry.key.split(',');
         final utxos = entry.value;
         _sortUtxosForTagGrid(utxos);
         final multiTags = tagNames.map(findTag).whereType<UtxoTag>().toList();
-        result.add((tag: null, utxos: utxos, isMultiTag: true, multiTagNames: tagNames, multiTags: multiTags));
+        subGroups.add((tags: multiTags, utxos: utxos));
+        allMultiTaggedUtxos.addAll(utxos);
       }
+      result.add((
+        tag: null,
+        utxos: allMultiTaggedUtxos,
+        isMultiTag: true,
+        multiTagNames: null,
+        multiTags: null,
+        subGroups: subGroups,
+      ));
     }
 
     final untagged = displayableUtxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
     if (untagged.isNotEmpty) {
       _sortUtxosForTagGrid(untagged);
-      result.add((tag: null, utxos: untagged, isMultiTag: false, multiTagNames: null, multiTags: null));
+      result.add((
+        tag: null,
+        utxos: untagged,
+        isMultiTag: false,
+        multiTagNames: null,
+        multiTags: null,
+        subGroups: null,
+      ));
     }
 
     return result;
@@ -694,20 +770,9 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                       },
                       child: Row(
                         children: [
-                          if (g.isMultiTag && (g.multiTags?.isNotEmpty ?? false))
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: g.multiTags!.map((tag) => _TagSectionChip(name: tag.name, tag: tag)).toList(),
-                            )
-                          else if (g.isMultiTag)
-                            _TagSectionChip(
-                              name:
-                                  (g.multiTagNames?.isNotEmpty ?? false)
-                                      ? g.multiTagNames!.map((n) => '#$n').join(' ')
-                                      : t.utxo_overview_screen.multi_tag,
-                              tag: null,
-                            )
+                          // 여러 태그: 미적용과 동일한 스타일의 단일 칩으로 표시 (overflow 방지)
+                          if (g.isMultiTag)
+                            _TagSectionChip(name: t.utxo_overview_screen.multi_tag, tag: null)
                           else
                             _TagSectionChip(name: g.tag?.name ?? t.utxo_overview_screen.untagged, tag: g.tag),
                           const SizedBox(width: 8),
@@ -741,6 +806,64 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                             );
                             final cellSize = (width - (crossAxisCount - 1) * _crossAxisSpacing) / crossAxisCount;
                             final coinSize = cellSize * 0.9;
+
+                            if (g.isMultiTag && (g.subGroups?.isNotEmpty ?? false)) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children:
+                                    g.subGroups!.map((sg) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 16),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 8),
+                                              child: Wrap(
+                                                spacing: 6,
+                                                runSpacing: 6,
+                                                children:
+                                                    sg.tags
+                                                        .map((tag) => _TagSectionChip(name: tag.name, tag: tag))
+                                                        .toList(),
+                                              ),
+                                            ),
+                                            Wrap(
+                                              spacing: _crossAxisSpacing,
+                                              runSpacing: _mainAxisSpacing,
+                                              children:
+                                                  sg.utxos.map((utxo) {
+                                                    final isSelected = widget.selectedUtxoIds.contains(utxo.utxoId);
+                                                    return SizedBox(
+                                                      width: cellSize,
+                                                      height: cellSize / 0.95,
+                                                      child: Center(
+                                                        child: UtxoCoinCard(
+                                                          utxo: utxo,
+                                                          size: coinSize,
+                                                          compact: true,
+                                                          isFocused: true,
+                                                          isSelected: isSelected,
+                                                          isSelectionMode: widget.isSelectionMode,
+                                                          currentUnit: widget.currentUnit,
+                                                          isAddressReused: widget.reusedAddresses.contains(utxo.to),
+                                                          onTap: () => widget.onUtxoTap(utxo),
+                                                          onLongPress:
+                                                              widget.onUtxoLongPress != null
+                                                                  ? () => widget.onUtxoLongPress!(utxo)
+                                                                  : null,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                              );
+                            }
+
                             return Wrap(
                               spacing: _crossAxisSpacing,
                               runSpacing: _mainAxisSpacing,
