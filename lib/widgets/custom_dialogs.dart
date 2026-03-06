@@ -4,46 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CustomDialogs {
-  static Future<bool?> showFutureCustomAlertDialog(
-    BuildContext context, {
-    required String title,
-    required String message,
-    required Future<bool> Function() onConfirm,
-    required bool Function() onCancel,
-    String confirmButtonText = '확인',
-    String cancelButtonText = '취소',
-    Color confirmButtonColor = CoconutColors.white,
-  }) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return CupertinoAlertDialog(
-          title: Padding(padding: const EdgeInsets.only(bottom: 8.0), child: Text(title, style: Styles.body1Bold)),
-          content: Text(message, style: Styles.body2, textAlign: TextAlign.center),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () {
-                bool result = onCancel();
-                Navigator.of(context, rootNavigator: true).pop(result);
-              },
-              child: Text(cancelButtonText, style: Styles.label),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () async {
-                await onConfirm();
-              },
-              child: Text(confirmButtonText, style: Styles.label.merge(TextStyle(color: confirmButtonColor))),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   static void showFullScreenDialog(BuildContext context, String title, Widget body) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(

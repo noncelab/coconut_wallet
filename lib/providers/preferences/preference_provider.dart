@@ -108,12 +108,39 @@ class PreferenceProvider extends ChangeNotifier {
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
+  // 지갑 목록 화면 - 법정화폐 숨기기 여부
+  late bool _isWalletListFiatHidden;
+  bool get isWalletListFiatHidden => _isWalletListFiatHidden;
+
+  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
+  late List<FiatCode> _walletListVisibleFiats;
+  List<FiatCode> get walletListVisibleFiats {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
+    if (stored == null) {
+      return [_selectedFiat];
+    }
+    if (stored.isEmpty) {
+      return [];
+    }
+    final fiats = stored.split(',').map((code) => FiatCode.values.firstWhere((f) => f.code == code)).toList();
+    final idx = fiats.indexOf(_selectedFiat);
+    if (idx > 0) {
+      fiats.removeAt(idx);
+      fiats.insert(0, _selectedFiat);
+    }
+    return fiats;
+  }
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
   }) : _featureSettingsProvider = featureSettingsProvider {
+    // 통화 설정 초기화
+    _initializeFiat();
+    _initializeLanguageFromSystem();
+
     _electrumServerProvider.addListener(notifyListeners);
     _blockExplorerProvider.addListener(notifyListeners);
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
@@ -138,10 +165,14 @@ class PreferenceProvider extends ChangeNotifier {
               orElse: () => UtxoOrder.byAmountDesc,
             )
             : UtxoOrder.byAmountDesc;
-
-    // 통화 설정 초기화
-    _initializeFiat();
-    _initializeLanguageFromSystem();
+    _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
+    _walletListVisibleFiats =
+        _sharedPrefs
+            .getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats)
+            ?.split(',')
+            .map((code) => FiatCode.values.firstWhere((f) => f.code == code))
+            .toList() ??
+        [_selectedFiat];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyLanguageSettingSync();
     });
@@ -527,6 +558,31 @@ class PreferenceProvider extends ChangeNotifier {
     _utxoSortOrder = utxoOrder;
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 법정화폐 숨기기 설정
+  Future<void> setWalletListFiatHidden(bool isHidden) async {
+    _isWalletListFiatHidden = isHidden;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, isHidden);
+    notifyListeners();
+  }
+
+  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
+  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
+
+  static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
+    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY],
+    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
+    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW],
+  };
+
+  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
+  Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
+    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
+    final sorted = order.where((f) => fiats.contains(f)).toList();
+    _walletListVisibleFiats = sorted;
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
     notifyListeners();
   }
 
