@@ -6,6 +6,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_chart_bubble.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_total_balance_header.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'dart:async';
@@ -59,17 +60,11 @@ class UtxoSummaryChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              t.utxo_list_screen.total_balance,
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400),
-            ),
-            GestureDetector(
-              onTap: onBalanceTap,
-              behavior: HitTestBehavior.opaque,
-              child: Text(
-                '$coinCount coins • ${formatUtxoAmountForDisplay(totalSats, currentUnit)}',
-                style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
-              ),
+            UtxoTotalBalanceHeader(
+              coinCount: coinCount,
+              totalSats: totalSats,
+              currentUnit: currentUnit,
+              onBalanceTap: onBalanceTap,
             ),
             const SizedBox(height: 12),
             Row(
@@ -123,7 +118,7 @@ class UtxoSummaryChart extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             t.utxo_list_screen.reused_address_legend,
-                            style: CoconutTypography.caption_10_Bold.setColor(CoconutColors.white),
+                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
                           ),
                         ],
                       ),
@@ -418,14 +413,11 @@ class _BarChartState extends State<_BarChart> {
                                         widget.currentUnit,
                                         isDustBucket: bucket.label == 'dust',
                                       );
-                                      final text = t.utxo_overview_screen.amount_bubble_with_count(
-                                        count: bucket.utxos.length,
-                                        balance: balance,
-                                      );
+                                      final text = balance;
                                       return OverflowBox(
                                         alignment: Alignment.center,
-                                        maxWidth: 120,
-                                        child: UtxoChartBubble(text: text, maxWidth: 150),
+                                        maxWidth: 100,
+                                        child: UtxoChartBubble(text: text, maxWidth: 100),
                                       );
                                     },
                                   )

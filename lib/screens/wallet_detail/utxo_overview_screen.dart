@@ -61,6 +61,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   late List<UtxoBucket> _filteredBuckets;
   late List<GlobalKey> _filteredBucketKeys;
 
+  /// 상세 화면 복귀 시 복원할 상태
+  String? _restoreUtxoId;
+  double? _restoreScrollOffset;
+  bool _isRestoringState = false;
+  final _restoredStateListenable = ValueNotifier<({int bucket, int card})?>(null);
+
   List<UtxoBucket> _computeFilteredBuckets() {
     final showAvailable = _lockFilterIndex == 0;
     return _buckets
@@ -76,15 +82,75 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
         .toList();
   }
 
-  void _updateFilteredBuckets() {
+  void _updateFilteredBuckets({bool preserveUiState = false}) {
     _filteredBuckets = _computeFilteredBuckets();
-    _filteredBucketKeys = List.generate(_filteredBuckets.length, (_) => GlobalKey());
-    _activeIndex.value = 0;
+    if (preserveUiState && _filteredBucketKeys.length == _filteredBuckets.length) {
+      // 키 유지 → 위젯 트리/State 보존
+    } else {
+      _filteredBucketKeys = List.generate(_filteredBuckets.length, (_) => GlobalKey());
+    }
+    if (!preserveUiState) {
+      _activeIndex.value = 0;
+    }
   }
 
   void _refreshBucketsFromViewModel() {
     _buckets = bucketize(viewModel.utxoList);
-    _updateFilteredBuckets();
+    final preserving = _restoreUtxoId != null;
+    _updateFilteredBuckets(preserveUiState: preserving);
+    _restoreStateAfterReturn();
+  }
+
+  void _restoreStateAfterReturn() {
+    final utxoId = _restoreUtxoId;
+    final scrollOffset = _restoreScrollOffset;
+    _restoreUtxoId = null;
+    _restoreScrollOffset = null;
+    if (utxoId == null) return;
+    if (!_isByAmount || _viewModeIndex != 0) return;
+
+    _isRestoringState = true;
+    final bucketIdx = _filteredBuckets.indexWhere((b) => b.utxos.any((u) => u.utxoId == utxoId));
+    if (bucketIdx >= 0) {
+      final bucket = _filteredBuckets[bucketIdx];
+      final cardIdx = bucket.utxos.indexWhere((u) => u.utxoId == utxoId);
+      final amount = cardIdx >= 0 ? bucket.utxos[cardIdx].amount : 0;
+      debugPrint('[UtxoOverview] 복원 시: bucketIdx=$bucketIdx, cardIdx=$cardIdx, amount=$amount, utxoId=$utxoId');
+      _activeIndex.value = bucketIdx;
+      if (cardIdx >= 0) {
+        _restoredStateListenable.value = (bucket: bucketIdx, card: cardIdx);
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_scrollController.hasClients) {
+          final pos = _scrollController.position;
+          final targetOffset =
+              scrollOffset != null
+                  ? scrollOffset.clamp(pos.minScrollExtent, pos.maxScrollExtent)
+                  : _scrollOffsetForBucket(bucketIdx, pos);
+          _scrollController.jumpTo(targetOffset);
+        }
+        setState(() {}); // 스크롤 후 리스트 rebuild 유도
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _updateBucketY(bucketIdx);
+          Future.delayed(const Duration(milliseconds: 350), () {
+            if (!mounted) return;
+            _updateBucketY(bucketIdx);
+            _restoredStateListenable.value = null;
+            setState(() => _isRestoringState = false);
+          });
+        });
+      });
+    } else {
+      _isRestoringState = false;
+    }
+  }
+
+  double _scrollOffsetForBucket(int bucketIdx, ScrollPosition pos) {
+    final filterBarH = _filterBarHeightAnim?.value ?? _filterBarBaseHeight;
+    final listStart = UtxoSummaryChart.estimatedHeight + filterBarH;
+    final target = listStart + bucketIdx * _itemHeight - (pos.viewportDimension - filterBarH) / 2 + _itemHeight / 2;
+    return target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
   }
 
   @override
@@ -156,6 +222,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   }
 
   Future<void> _navigateToUtxoDetail(UtxoState utxo) async {
+    _restoreUtxoId = utxo.utxoId;
+    _restoreScrollOffset = _scrollController.hasClients ? _scrollController.offset : null;
+    final bucketIdx = _filteredBuckets.indexWhere((b) => b.utxos.any((u) => u.utxoId == utxo.utxoId));
+    final cardIdx = bucketIdx >= 0 ? _filteredBuckets[bucketIdx].utxos.indexWhere((u) => u.utxoId == utxo.utxoId) : -1;
+    debugPrint(
+      '[UtxoOverview] 이동 전 저장: bucketIdx=$bucketIdx, cardIdx=$cardIdx, amount=${utxo.amount}, utxoId=${utxo.utxoId}',
+    );
     await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.id});
     if (mounted) {
       viewModel.refetchFromDB();
@@ -174,6 +247,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     _scrollController.dispose();
     _activeIndex.dispose();
     _activeBucketY.dispose();
+    _restoredStateListenable.dispose();
     super.dispose();
   }
 
@@ -309,6 +383,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                                   index: index,
                                   currentUnit: _currentUnit,
                                   activeIndexListenable: _activeIndex,
+                                  restoredStateListenable: _restoredStateListenable,
                                   isSelectionMode: _isSelectionMode,
                                   selectedUtxoIds: _selectedUtxoIds,
                                   reusedAddresses: _reusedAddresses,
@@ -348,6 +423,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                                       _selectedUtxoIds.add(u.utxoId);
                                     });
                                   },
+                                  setActiveIndex: (index) => _activeIndex.value = index,
                                 ),
                               );
                             },
@@ -355,7 +431,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                         )
                       else
                         _buildGridSliver(_currentUnit),
-                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                      const SliverToBoxAdapter(child: SizedBox(height: 48)),
                     ],
                   ),
                   Positioned.fill(
@@ -470,7 +546,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
             },
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        const SliverToBoxAdapter(child: SizedBox(height: 48)),
       ],
     );
   }
@@ -787,7 +863,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   static const double _itemHeight = 10 + UtxoBucketCardRow.rowHeight + 10; // padding + row + padding
 
   void _updateActiveBucket() {
-    if (!mounted || !_scrollController.hasClients) return;
+    if (!mounted || !_scrollController.hasClients || _isRestoringState) return;
 
     final count = _filteredBuckets.length;
     if (count == 0) return;

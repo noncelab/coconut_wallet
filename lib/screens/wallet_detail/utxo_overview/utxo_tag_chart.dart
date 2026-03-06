@@ -6,10 +6,10 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_chart_bubble.dart';
-import 'package:coconut_wallet/utils/colors_util.dart';
-import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_total_balance_header.dart';
 import 'package:flutter/material.dart';
 
 String _truncateTagName(String name, int maxLen) {
@@ -46,46 +46,84 @@ class UtxoTagChart extends StatelessWidget {
     this.onBalanceTap,
   });
 
-  /// 도넛 차트용: 각 태그별로 해당 태그가 적용된 모든 UTXO 집계 (multi-tag UTXO는 각 태그에 중복 집계)
-  /// - segments[].count: 말풍선용, 해당 태그가 적용된 UTXO 개수
-  /// - uniqueTaggedCount: 중앙 표시용, 태그 1개 이상 적용된 고유 UTXO 수
-  /// - actualTotalSats: 잔액 표시용, 전체 UTXO 금액 합 (중복 제외)
   static ({List<_TagSegment> segments, int coinCount, int uniqueTaggedCount, int actualTotalSats})
   _computeTagSegmentsForDonut(List<UtxoState> utxos, List<UtxoTag> tags) {
-    final confirmedUtxos = utxos.where((u) => u.status == UtxoStatus.unspent || u.status == UtxoStatus.locked).toList();
-    final utxoAmountMap = {for (var u in confirmedUtxos) u.utxoId: u.amount};
-    final actualTotalSats = confirmedUtxos.fold<int>(0, (s, u) => s + u.amount);
+    final utxoMap = {for (var u in utxos) u.utxoId: u};
+    final actualTotalSats = utxos.fold<int>(0, (s, u) => s + u.amount);
 
-    final segments = <_TagSegment>[];
-    final allTaggedUtxoIds = <String>{};
-
+    // utxoId -> 태그 개수
+    final tagCountByUtxo = <String, int>{};
     for (final tag in tags) {
-      final ids = tag.utxoIdList ?? [];
-      var sats = 0;
-      var count = 0;
-      for (final id in ids) {
-        allTaggedUtxoIds.add(id);
-        final amount = utxoAmountMap[id];
-        if (amount != null) {
-          sats += amount;
-          count += 1;
-        }
-      }
-      if (sats > 0) {
-        segments.add(_TagSegment(tag: tag, sats: sats, count: count));
+      for (final id in tag.utxoIdList ?? []) {
+        tagCountByUtxo[id] = (tagCountByUtxo[id] ?? 0) + 1;
       }
     }
 
-    final untaggedUtxos = confirmedUtxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
-    final untaggedSats = untaggedUtxos.fold<int>(0, (s, u) => s + u.amount);
-    final untaggedCount = untaggedUtxos.length;
-    if (untaggedSats > 0 && untaggedCount > 0) {
-      segments.add(_TagSegment(tag: null, sats: untaggedSats, count: untaggedCount));
+    final multiTaggedIds = tagCountByUtxo.entries.where((e) => e.value >= 2).map((e) => e.key).toSet();
+    final singleTaggedIds = tagCountByUtxo.entries.where((e) => e.value == 1).map((e) => e.key).toSet();
+    final allTaggedUtxoIds = tagCountByUtxo.keys.toSet();
+
+    final segments = <_TagSegment>[];
+
+    // 1. 단일 태그 그룹 (각 태그별 개별 색상)
+    for (final tag in tags) {
+      final ids = List<String>.from(tag.utxoIdList ?? []);
+      final count = ids.where((id) => singleTaggedIds.contains(id)).length;
+      if (count > 0) {
+        final sats = ids
+            .where((id) => singleTaggedIds.contains(id))
+            .fold<int>(0, (s, id) => s + (utxoMap[id]?.amount ?? 0));
+        segments.add(_TagSegment(tag: tag, sats: sats, count: count, isMultiTag: false, multiTags: null));
+      }
+    }
+
+    // 2. 다중 태그 그룹 (모두 합쳐 그라디언트)
+    if (multiTaggedIds.isNotEmpty) {
+      List<UtxoTag> getTagsForUtxo(UtxoState u) {
+        if (u.tags != null && u.tags!.isNotEmpty) {
+          return u.tags!;
+        }
+        return tags.where((t) => t.utxoIdList?.contains(u.utxoId) == true).toList();
+      }
+
+      final allMultiTags = <UtxoTag>{};
+      var multiSats = 0;
+      for (final id in multiTaggedIds) {
+        final u = utxoMap[id];
+        if (u != null) {
+          multiSats += u.amount;
+          allMultiTags.addAll(getTagsForUtxo(u));
+        }
+      }
+      final multiTagsList = allMultiTags.toList()..sort((a, b) => a.name.compareTo(b.name));
+      segments.add(
+        _TagSegment(
+          tag: null,
+          sats: multiSats,
+          count: multiTaggedIds.length,
+          isMultiTag: true,
+          multiTags: multiTagsList,
+        ),
+      );
+    }
+
+    // 3. 미적용
+    final untagged = utxos.where((u) => !allTaggedUtxoIds.contains(u.utxoId)).toList();
+    if (untagged.isNotEmpty) {
+      segments.add(
+        _TagSegment(
+          tag: null,
+          sats: untagged.fold<int>(0, (s, u) => s + u.amount),
+          count: untagged.length,
+          isMultiTag: false,
+          multiTags: null,
+        ),
+      );
     }
 
     return (
       segments: segments,
-      coinCount: confirmedUtxos.length,
+      coinCount: utxos.length,
       uniqueTaggedCount: allTaggedUtxoIds.length,
       actualTotalSats: actualTotalSats,
     );
@@ -95,9 +133,12 @@ class UtxoTagChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final result = _computeTagSegmentsForDonut(utxoList, utxoTagList);
     final segments = result.segments;
-    final segmentTotalSats = segments.fold<int>(0, (s, seg) => s + seg.sats);
+    final segmentTotalCount = segments.fold<int>(0, (s, seg) => s + seg.count);
 
-    if (segments.isEmpty || segmentTotalSats <= 0) {
+    final totalSats = utxoList.fold<int>(0, (s, u) => s + u.amount);
+    final coinCount = utxoList.length;
+
+    if (segments.isEmpty || segmentTotalCount <= 0) {
       return _buildEmptyState(context);
     }
 
@@ -115,25 +156,19 @@ class UtxoTagChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              t.utxo_list_screen.total_balance,
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray400),
-            ),
-            GestureDetector(
-              onTap: onBalanceTap,
-              behavior: HitTestBehavior.opaque,
-              child: Text(
-                '${result.coinCount} coins • ${formatUtxoAmountForDisplay(result.actualTotalSats, currentUnit)}',
-                style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
-              ),
+            UtxoTotalBalanceHeader(
+              coinCount: coinCount,
+              totalSats: totalSats,
+              currentUnit: currentUnit,
+              onBalanceTap: onBalanceTap,
             ),
             const SizedBox(height: 12),
             Center(
               child: _DonutChart(
                 segments: segments,
-                segmentTotalSats: segmentTotalSats,
+                segmentTotalCount: segmentTotalCount,
                 uniqueTaggedCount: result.uniqueTaggedCount,
-                totalCount: result.coinCount,
+                totalCount: coinCount,
                 currentUnit: currentUnit,
               ),
             ),
@@ -180,23 +215,35 @@ class _TagSegment {
   final UtxoTag? tag;
   final int sats;
   final int count;
+  final bool isMultiTag;
+  final List<UtxoTag>? multiTags;
 
-  const _TagSegment({required this.tag, required this.sats, required this.count});
+  const _TagSegment({
+    required this.tag,
+    required this.sats,
+    required this.count,
+    required this.isMultiTag,
+    this.multiTags,
+  });
 
-  String get displayName => tag?.name ?? t.utxo_overview_screen.untagged;
-  bool get isUntagged => tag == null;
+  String get displayName {
+    if (isMultiTag) return t.utxo_overview_screen.multi_tag;
+    return tag?.name ?? t.utxo_overview_screen.untagged;
+  }
+
+  bool get isUntagged => tag == null && !isMultiTag;
 }
 
 class _DonutChart extends StatefulWidget {
   final List<_TagSegment> segments;
-  final int segmentTotalSats;
+  final int segmentTotalCount;
   final int uniqueTaggedCount;
   final int totalCount;
   final BitcoinUnit currentUnit;
 
   const _DonutChart({
     required this.segments,
-    required this.segmentTotalSats,
+    required this.segmentTotalCount,
     required this.uniqueTaggedCount,
     required this.totalCount,
     required this.currentUnit,
@@ -251,8 +298,6 @@ class _DonutChartState extends State<_DonutChart> {
     var angle = math.atan2(dy, dx);
     angle = (angle + math.pi / 2 + 2 * math.pi) % (2 * math.pi);
 
-    final capAngle = math.asin((_strokeWidth / 2) / radius);
-
     var startAngle = 0.0;
     const gapAngle = _gap / radius;
     final candidates = <int>[];
@@ -260,17 +305,12 @@ class _DonutChartState extends State<_DonutChart> {
 
     for (var i = 0; i < orderedSegments.length; i++) {
       final seg = orderedSegments[i];
-      final ratio = seg.sats / widget.segmentTotalSats;
+      final ratio = seg.count / widget.segmentTotalCount;
       final sweepAngle = 2 * math.pi * ratio - (i < orderedSegments.length - 1 ? _gap / radius : 0);
       final midAngle = startAngle + sweepAngle / 2;
       final hitStart = i > 0 ? startAngle - gapAngle : startAngle;
-      var hitEnd = seg.isUntagged ? startAngle + sweepAngle : startAngle + sweepAngle + gapAngle;
-      if (!seg.isUntagged) {
-        hitEnd += capAngle;
-      }
-      final hitStartWithCap = !seg.isUntagged && i > 0 ? math.max(0.0, hitStart - capAngle) : hitStart;
-      final matches =
-          (angle >= hitStartWithCap && angle < hitEnd) || (hitEnd > 2 * math.pi && angle < hitEnd - 2 * math.pi);
+      final hitEnd = startAngle + sweepAngle + (seg.isUntagged ? 0 : gapAngle);
+      final matches = (angle >= hitStart && angle < hitEnd) || (hitEnd > 2 * math.pi && angle < hitEnd - 2 * math.pi);
       if (matches && !seg.isUntagged) {
         candidates.add(i);
         midAngles.add(midAngle);
@@ -279,7 +319,7 @@ class _DonutChartState extends State<_DonutChart> {
     }
 
     if (candidates.isEmpty) return null;
-    // cap 확장으로 겹치는 영역: 터치 각도와 가장 가까운 세그먼트 중심 선택
+
     var bestI = 0;
     var bestDist = _angularDistance(angle, midAngles[0]);
     for (var j = 1; j < candidates.length; j++) {
@@ -307,26 +347,21 @@ class _DonutChartState extends State<_DonutChart> {
     const radius = (_size - _strokeWidth) / 2;
     var startAngle = -math.pi / 2;
 
-    const minVisibleRatio = 0.02;
     const labelYOffset = -16.0;
     final labelPositions = <_LabelPosition>[];
     for (var i = 0; i < orderedSegments.length; i++) {
       final seg = orderedSegments[i];
-      final ratio = seg.sats / widget.segmentTotalSats;
+      final ratio = seg.count / widget.segmentTotalCount;
       final sweepAngle = 2 * math.pi * ratio - (i < orderedSegments.length - 1 ? _gap / radius : 0);
       final midAngle = startAngle + sweepAngle / 2;
       const labelDist = radius + _strokeWidth / 2 + _labelOffset;
       final dx = _size / 2 + labelDist * math.cos(midAngle);
       final dy = _size / 2 + labelDist * math.sin(midAngle) + labelYOffset;
-      const outerR = radius + _strokeWidth / 2;
-      const arcRadius = outerR * 0.8;
-      final arcCenterX = _size / 2 + arcRadius * math.cos(midAngle);
-      final arcCenterY = _size / 2 + arcRadius * math.sin(midAngle);
-      if (ratio >= minVisibleRatio && !seg.isUntagged) {
-        labelPositions.add(
-          _LabelPosition(seg: seg, dx: dx, dy: dy, arcCenterX: arcCenterX, arcCenterY: arcCenterY, index: i),
-        );
-      }
+      final arcCenterX = _size / 2 + radius * math.cos(startAngle);
+      final arcCenterY = _size / 2 + radius * math.sin(startAngle);
+      labelPositions.add(
+        _LabelPosition(seg: seg, dx: dx, dy: dy, arcCenterX: arcCenterX, arcCenterY: arcCenterY, index: i),
+      );
       startAngle += sweepAngle + _gap / radius;
     }
 
@@ -371,7 +406,7 @@ class _DonutChartState extends State<_DonutChart> {
                       size: const Size(_size, _size),
                       painter: _DonutChartPainter(
                         segments: segments,
-                        totalSats: widget.segmentTotalSats,
+                        totalCount: widget.segmentTotalCount,
                         strokeWidth: _strokeWidth,
                         gap: _gap,
                         selectedIndex: _selectedIndex,
@@ -400,7 +435,7 @@ class _DonutChartState extends State<_DonutChart> {
               ),
             ),
           ),
-          if (selectedLp != null)
+          if (selectedLp != null && !selectedLp.seg.isUntagged)
             Positioned(
               left: padding + selectedLp.arcCenterX - 60,
               top: padding + selectedLp.arcCenterY - (UtxoChartBubble.height + UtxoChartBubble.arrowHeight),
@@ -450,17 +485,18 @@ class _LabelPosition {
 /// 도넛 차트의 미분류 세그먼트를 색상
 const Color _untaggedInvisibleColor = Color(0xFF323232);
 
-/// Painter와 라벨 위치 계산에서 동일한 순서 사용: 미분류 먼저, 태그 나중
+/// Painter와 라벨 위치 계산: 미적용 먼저 → 다중 태그 → 단일 태그
 List<_TagSegment> _orderedSegmentsForDrawing(List<_TagSegment> segments) => [
   ...segments.where((s) => s.isUntagged),
-  ...segments.where((s) => !s.isUntagged),
+  ...segments.where((s) => s.isMultiTag),
+  ...segments.where((s) => !s.isUntagged && !s.isMultiTag),
 ];
 
 const Color _overlayBlendColor = Color(0xFF1D1D1D);
 
 class _DonutChartPainter extends CustomPainter {
   final List<_TagSegment> segments;
-  final int totalSats;
+  final int totalCount;
   final double strokeWidth;
   final double gap;
   final int? selectedIndex;
@@ -468,7 +504,7 @@ class _DonutChartPainter extends CustomPainter {
 
   _DonutChartPainter({
     required this.segments,
-    required this.totalSats,
+    required this.totalCount,
     required this.strokeWidth,
     required this.gap,
     this.selectedIndex,
@@ -477,35 +513,55 @@ class _DonutChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (totalSats <= 0) return;
+    if (totalCount <= 0) return;
 
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
     var startAngle = -math.pi / 2;
 
     final orderedSegments = _orderedSegmentsForDrawing(segments);
+    final rect = Rect.fromCircle(center: center, radius: radius + strokeWidth);
 
+    const minSweepAngle = 0.1; // ~5.7도, gap 차감 후 1/54(≈5.2°)가 되어도 시각적 표현 보장
     for (var i = 0; i < orderedSegments.length; i++) {
       final seg = orderedSegments[i];
-      final sweepAngle = 2 * math.pi * (seg.sats / totalSats) - (i < orderedSegments.length - 1 ? gap / radius : 0);
-
-      var color = seg.isUntagged ? _untaggedInvisibleColor : _colorForSegment(seg);
-
-      if (!seg.isUntagged && overlayOpacity > 0) {
-        final isSelected = selectedIndex == i;
-        if (isSelected) {
-          color = _pastelForTag(seg.tag!, 0.0);
-        } else {
-          color = Color.lerp(color, _overlayBlendColor, overlayOpacity)!;
-        }
-      }
+      var sweepAngle = 2 * math.pi * (seg.count / totalCount) - (i < orderedSegments.length - 1 ? gap / radius : 0);
+      sweepAngle = math.max(minSweepAngle, sweepAngle);
 
       final paint =
           Paint()
-            ..color = color
             ..style = PaintingStyle.stroke
             ..strokeWidth = strokeWidth
             ..strokeCap = StrokeCap.round;
+
+      if (seg.isUntagged) {
+        paint.color = _untaggedInvisibleColor;
+      } else if (seg.isMultiTag) {
+        final multiTags = seg.multiTags ?? [];
+        var colors = multiTags.isEmpty ? [CoconutColors.gray600] : multiTags.map((t) => _pastelForTag(t)).toList();
+        if (overlayOpacity > 0 && selectedIndex != i) {
+          colors = colors.map((c) => Color.lerp(c, _overlayBlendColor, overlayOpacity)!).toList();
+        } else if (overlayOpacity > 0 && selectedIndex == i && multiTags.isNotEmpty) {
+          colors = multiTags.map((t) => _pastelForTag(t, 0.0)).toList();
+        }
+        if (colors.length == 1) {
+          paint.color = colors.first;
+        } else {
+          paint.shader = SweepGradient(
+            center: Alignment.center,
+            startAngle: startAngle,
+            endAngle: startAngle + sweepAngle,
+            colors: colors,
+          ).createShader(rect);
+        }
+      } else {
+        var color = _colorForSegment(seg);
+        if (overlayOpacity > 0) {
+          final isSelected = selectedIndex == i;
+          color = isSelected ? _pastelForTag(seg.tag!, 0.0) : Color.lerp(color, _overlayBlendColor, overlayOpacity)!;
+        }
+        paint.color = color;
+      }
 
       canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweepAngle, false, paint);
       startAngle += sweepAngle + gap / radius;
@@ -515,7 +571,7 @@ class _DonutChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DonutChartPainter oldDelegate) =>
       segments != oldDelegate.segments ||
-      totalSats != oldDelegate.totalSats ||
+      totalCount != oldDelegate.totalCount ||
       selectedIndex != oldDelegate.selectedIndex ||
       overlayOpacity != oldDelegate.overlayOpacity;
 }

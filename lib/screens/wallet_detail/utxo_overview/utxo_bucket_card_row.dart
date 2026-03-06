@@ -17,11 +17,13 @@ class UtxoBucketCardRow extends StatelessWidget {
   final int index;
   final BitcoinUnit currentUnit;
   final ValueListenable<int> activeIndexListenable;
+  final ValueListenable<({int bucket, int card})?>? restoredStateListenable;
   final bool isSelectionMode;
   final Set<String> selectedUtxoIds;
   final Set<String> reusedAddresses;
   final void Function(UtxoState) onTapUtxo;
   final void Function(UtxoState)? onLongPressUtxo;
+  final void Function(int)? setActiveIndex;
 
   const UtxoBucketCardRow({
     super.key,
@@ -29,14 +31,83 @@ class UtxoBucketCardRow extends StatelessWidget {
     required this.index,
     required this.currentUnit,
     required this.activeIndexListenable,
+    this.restoredStateListenable,
     required this.isSelectionMode,
     required this.selectedUtxoIds,
     required this.reusedAddresses,
     required this.onTapUtxo,
     this.onLongPressUtxo,
+    this.setActiveIndex,
   });
 
   static const double rowHeight = 210 + 24 + 4 + 4;
+
+  Widget _buildCoinStack() {
+    if (restoredStateListenable != null) {
+      return ValueListenableBuilder<({int bucket, int card})?>(
+        valueListenable: restoredStateListenable!,
+        builder: (_, restored, __) {
+          final restoredMatch = restored != null && restored.bucket == index;
+          final initialFocusedCardIndex = (restored != null && restored.bucket == index) ? restored.card : null;
+
+          if (restored != null) {
+            debugPrint(
+              '[UtxoBucketCardRow] index=$index, restored=bucket=${restored.bucket} card=${restored.card}, '
+              'initialFocusedCardIndex=$initialFocusedCardIndex, match=${restored.bucket == index}',
+            );
+          }
+          return ValueListenableBuilder<int>(
+            valueListenable: activeIndexListenable,
+            builder: (_, active, __) {
+              final isExpanded = restoredMatch || active == index;
+              final scrollOffset = restoredMatch ? initialFocusedCardIndex!.toDouble() : null;
+              if (restoredMatch && active != index) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (activeIndexListenable.value != index) {
+                    setActiveIndex!(index);
+                  }
+                });
+              }
+
+              if (restoredMatch) {
+                debugPrint(
+                  '[UtxoBucketCardRow] index=$index, active=$active, isExpanded=$isExpanded, '
+                  'initialScrollOffset=$scrollOffset → _CoinStack',
+                );
+              }
+              return _CoinStack(
+                utxos: bucket.utxos,
+                currentUnit: currentUnit,
+                isExpanded: isExpanded,
+                isSelectionMode: isSelectionMode,
+                selectedUtxoIds: selectedUtxoIds,
+                reusedAddresses: reusedAddresses,
+                initialScrollOffset: scrollOffset,
+                onTap: onTapUtxo,
+                onLongPress: onLongPressUtxo,
+              );
+            },
+          );
+        },
+      );
+    }
+    return ValueListenableBuilder<int>(
+      valueListenable: activeIndexListenable,
+      builder: (_, active, __) {
+        return _CoinStack(
+          utxos: bucket.utxos,
+          currentUnit: currentUnit,
+          isExpanded: active == index,
+          isSelectionMode: isSelectionMode,
+          selectedUtxoIds: selectedUtxoIds,
+          reusedAddresses: reusedAddresses,
+          initialScrollOffset: null,
+          onTap: onTapUtxo,
+          onLongPress: onLongPressUtxo,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,23 +122,7 @@ class UtxoBucketCardRow extends StatelessWidget {
             builder: (_, active, __) => _Summary(bucket: bucket, currentUnit: currentUnit, isActive: active == index),
           ),
           const SizedBox(height: 8),
-          Expanded(
-            child: ValueListenableBuilder<int>(
-              valueListenable: activeIndexListenable,
-              builder: (_, active, __) {
-                return _CoinStack(
-                  utxos: bucket.utxos,
-                  currentUnit: currentUnit,
-                  isExpanded: active == index,
-                  isSelectionMode: isSelectionMode,
-                  selectedUtxoIds: selectedUtxoIds,
-                  reusedAddresses: reusedAddresses,
-                  onTap: onTapUtxo,
-                  onLongPress: onLongPressUtxo,
-                );
-              },
-            ),
-          ),
+          Expanded(child: _buildCoinStack()),
           const SizedBox(height: 24),
         ],
       ),
@@ -104,6 +159,7 @@ class _CoinStack extends StatefulWidget {
   final bool isSelectionMode;
   final Set<String> selectedUtxoIds;
   final Set<String> reusedAddresses;
+  final double? initialScrollOffset;
   final void Function(UtxoState) onTap;
   final void Function(UtxoState)? onLongPress;
 
@@ -114,6 +170,7 @@ class _CoinStack extends StatefulWidget {
     required this.isSelectionMode,
     required this.selectedUtxoIds,
     required this.reusedAddresses,
+    this.initialScrollOffset,
     required this.onTap,
     this.onLongPress,
   });
@@ -125,9 +182,16 @@ class _CoinStack extends StatefulWidget {
 }
 
 class _CoinStackState extends State<_CoinStack> {
-  double _scrollOffset = 0;
+  late double _scrollOffset;
 
   static const double _coinSize = _CoinStack.coinSize;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollOffset = widget.initialScrollOffset ?? 0;
+  }
+
   static const double _collapsedOverlap = 24.0;
   static const double _expandedOverlap = 55.0;
   static const double _leftOverlap = 20.0;
@@ -142,6 +206,8 @@ class _CoinStackState extends State<_CoinStack> {
     super.didUpdateWidget(oldWidget);
     if (!widget.isExpanded && oldWidget.isExpanded) {
       _scrollOffset = 0;
+    } else if (widget.initialScrollOffset != null && widget.isExpanded) {
+      _scrollOffset = widget.initialScrollOffset!;
     }
   }
 
@@ -456,14 +522,13 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
             ),
             if (widget.isSelectionMode && !widget.isSelected)
               Positioned.fill(
-                child: isBill
-                    ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(color: CoconutColors.black.withValues(alpha: 0.5)),
-                    )
-                    : ClipOval(
-                      child: Container(color: CoconutColors.black.withValues(alpha: 0.5)),
-                    ),
+                child:
+                    isBill
+                        ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(color: CoconutColors.black.withValues(alpha: 0.5)),
+                        )
+                        : ClipOval(child: Container(color: CoconutColors.black.withValues(alpha: 0.5))),
               ),
             if (widget.isSelected)
               Positioned(
@@ -497,8 +562,8 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
               ),
             if (widget.isAddressReused)
               Positioned(
-                top: isLarge ? 5 : 2,
-                left: isLarge ? 7 : 2,
+                top: isLarge ? 8 : 4,
+                left: isLarge ? 8 : 4,
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
                   decoration: BoxDecoration(
@@ -515,13 +580,12 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
               ),
             if (widget.utxo.isPending)
               Positioned(
-                bottom: isLarge ? 4 : 2,
-                left: isLarge ? 4 : 2,
+                bottom: isLarge ? 8 : 4,
+                left: isLarge ? 8 : 4,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: (widget.utxo.status == UtxoStatus.incoming ? CoconutColors.cyan : CoconutColors.primary)
-                        .withValues(alpha: 0.5),
+                    color: CoconutColors.gray700.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Lottie.asset(
