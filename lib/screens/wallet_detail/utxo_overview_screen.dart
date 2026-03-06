@@ -790,6 +790,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     if (!mounted || !_scrollController.hasClients) return;
 
     final count = _filteredBuckets.length;
+    if (count == 0) return;
     if (count <= 1) {
       if (_activeIndex.value != 0) _activeIndex.value = 0;
       _updateBucketY(0);
