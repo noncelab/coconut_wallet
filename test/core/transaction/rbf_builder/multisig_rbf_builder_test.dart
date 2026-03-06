@@ -30,7 +30,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.isOnlyChangeOutputUsed, isTrue);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos, isNull);
+      expect(result.addedInputs, isNull);
       expect(result.deficitAmount, isNull);
       expect(result.minimumFeeRate, equals(2.0));
 
@@ -61,7 +61,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.isOnlyChangeOutputUsed, isFalse);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos, isNull);
+      expect(result.addedInputs, isNull);
       expect(result.deficitAmount, isNotNull);
     });
 
@@ -81,7 +81,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.isOnlyChangeOutputUsed, isFalse);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos!.length, equals(1));
+      expect(result.addedInputs!.length, equals(1));
       expect(result.deficitAmount, isNotNull);
     });
 
@@ -101,7 +101,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.isOnlyChangeOutputUsed, isFalse);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos!.length, equals(1));
+      expect(result.addedInputs!.length, equals(1));
       expect(result.deficitAmount, isNull);
       expect(result.minimumFeeRate, equals(1.44));
     });

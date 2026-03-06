@@ -142,7 +142,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.isOnlyChangeOutputUsed, isTrue);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos, isNull);
+      expect(result.addedInputs, isNull);
       expect(result.deficitAmount, isNull);
       expect(result.minimumFeeRate, equals(2.01));
 
@@ -173,7 +173,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.isOnlyChangeOutputUsed, isFalse);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos, isNull);
+      expect(result.addedInputs, isNull);
       expect(result.deficitAmount, 141 + 68);
       expect(result.minimumFeeRate, equals(1.53)); // (110 + 141 + 68) / 209 = 319 / 209
     });
@@ -194,7 +194,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.isOnlyChangeOutputUsed, isFalse);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos!.length, equals(1));
+      expect(result.addedInputs!.length, equals(1));
       expect(result.deficitAmount, 141 + 68 + 68 - 100);
       expect(result.minimumFeeRate, equals(1.4));
     });
@@ -215,7 +215,7 @@ void main() {
       expect(result.transaction, isNotNull);
       expect(result.isOnlyChangeOutputUsed, isFalse);
       expect(result.isSelfOutputsUsed, isFalse);
-      expect(result.addedUtxos!.length, equals(1));
+      expect(result.addedInputs!.length, equals(1));
       expect(result.deficitAmount, isNull);
       expect(result.minimumFeeRate, equals(1.54));
     });
@@ -332,7 +332,7 @@ void main() {
       final RbfBuildResult firstResult = rbfBuilder.getBaselineTransaction();
       expect(firstResult.isFailure, isTrue);
       expect(firstResult.transaction, isNull);
-      expect(firstResult.addedUtxos, isNull); // 아무 UTXO도 시도하지 않음
+      expect(firstResult.addedInputs, isNull); // 아무 UTXO도 시도하지 않음
       expect(firstResult.deficitAmount, equals(141 + 68)); // = 209
       expect(firstResult.minimumFeeRate, equals(1.53));
 
@@ -352,8 +352,8 @@ void main() {
       expect(changeResult.transaction, isNotNull);
       expect(changeResult.isOnlyChangeOutputUsed, isFalse);
       expect(changeResult.isSelfOutputsUsed, isFalse);
-      expect(changeResult.addedUtxos, isNotNull);
-      expect(changeResult.addedUtxos!.length, equals(1));
+      expect(changeResult.addedInputs, isNotNull);
+      expect(changeResult.addedInputs!.length, equals(1));
       expect(changeResult.deficitAmount, isNull);
       // ⚠️ minimumFeeRate는 firstResult(1.53)보다 0.01 높은 1.54
       //    (getBaselineTransaction 계산값 1.53으로 빌드 후 getFeeRate()가 1.54 반환 — 정수 반올림)
@@ -365,8 +365,8 @@ void main() {
       expect(buildResult.isSuccess, isTrue);
       expect(buildResult.transaction, isNotNull);
       expect(buildResult.exception, isNull);
-      expect(buildResult.addedUtxos, isNotNull);
-      expect(buildResult.addedUtxos!.length, equals(1));
+      expect(buildResult.addedInputs, isNotNull);
+      expect(buildResult.addedInputs!.length, equals(1));
       expect(buildResult.deficitAmount, isNull);
       expect(buildResult.minimumFeeRate, equals(changeResult.minimumFeeRate));
     });
@@ -386,7 +386,7 @@ void main() {
       final RbfBuildResult firstResult = rbfBuilder.getBaselineTransaction();
       expect(firstResult.isSuccess, isTrue);
       expect(firstResult.isOnlyChangeOutputUsed, isTrue);
-      expect(firstResult.addedUtxos, isNull);
+      expect(firstResult.addedInputs, isNull);
       expect(firstResult.minimumFeeRate, equals(2.01));
 
       // Step 3: feeRate을 5.0으로 높여 build 호출 → change 547로 부족하여 실패
@@ -425,7 +425,7 @@ void main() {
       // → 추가 UTXO들은 baseline에서 사용되지 않고, minimumFeeRate도 이전과 동일
       expect(changeResult.isSuccess, isTrue);
       expect(changeResult.isOnlyChangeOutputUsed, isTrue);
-      expect(changeResult.addedUtxos, isNull);
+      expect(changeResult.addedInputs, isNull);
       expect(changeResult.minimumFeeRate, equals(firstResult.minimumFeeRate)); // 2.01 동일!
 
       // Step 5: 동일한 feeRate 5.0으로 다시 build → 성공
@@ -436,9 +436,9 @@ void main() {
       expect(buildResult2.isSuccess, isTrue);
       expect(buildResult2.transaction, isNotNull);
       expect(buildResult2.exception, isNull);
-      expect(buildResult2.addedUtxos, isNotNull);
-      expect(buildResult2.addedUtxos!.length, equals(1)); // 2개 중 1개만 사용
-      expect(buildResult2.addedUtxos![0].amount, equals(1000)); // 더 큰 UTXO만 사용
+      expect(buildResult2.addedInputs, isNotNull);
+      expect(buildResult2.addedInputs!.length, equals(1)); // 2개 중 1개만 사용
+      expect(buildResult2.addedInputs![0].amount, equals(1000)); // 더 큰 UTXO만 사용
       expect(buildResult2.deficitAmount, isNull);
       expect(buildResult2.minimumFeeRate, equals(changeResult.minimumFeeRate));
     });

@@ -21,7 +21,7 @@ class RbfBuildResult {
 
   final bool isOnlyChangeOutputUsed;
   final bool isSelfOutputsUsed;
-  final List<UtxoState>? addedUtxos;
+  final List<UtxoState>? addedInputs;
   final int? deficitAmount;
   final double estimatedVSize;
 
@@ -40,7 +40,7 @@ class RbfBuildResult {
     this.isOnlyChangeOutputUsed = false,
     this.isSelfOutputsUsed = false,
     this.exception,
-    this.addedUtxos,
+    this.addedInputs,
     this.deficitAmount,
     required this.estimatedVSize,
   });
@@ -221,7 +221,7 @@ class RbfBuilder {
         _cachedBaseline = RbfBuildResult(
           transaction: tx,
           minimumFeeRate: txBuildResult.getFeeRate(walletListItemBase)!,
-          addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+          addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
           estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
         );
         return _cachedBaseline!;
@@ -235,7 +235,7 @@ class RbfBuilder {
     deficitAmount += _vSizeIncreasePerInput;
     _cachedBaseline = RbfBuildResult(
       minimumFeeRate: _calculateMinimumFeeRate(newTxVSize),
-      addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+      addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
       deficitAmount: deficitAmount,
       estimatedVSize: newTxVSize,
     );
@@ -304,7 +304,7 @@ class RbfBuilder {
           return RbfBuildResult(
             transaction: tx,
             minimumFeeRate: _cachedBaseline!.minimumFeeRate,
-            addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+            addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
             estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
           );
         } else {
@@ -316,7 +316,7 @@ class RbfBuilder {
       deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
       return RbfBuildResult(
         minimumFeeRate: _cachedBaseline!.minimumFeeRate,
-        addedUtxos: addedUtxos.isEmpty ? null : addedUtxos,
+        addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
         deficitAmount: deficitAmount,
         estimatedVSize: newTxVSize,
       );

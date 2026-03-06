@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
@@ -18,7 +19,6 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
-import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
@@ -176,62 +176,14 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             showGradient: true,
                             gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
                             isActive:
+                                viewModel.unexpectedError == null &&
                                 !viewModel.isFeeBumpingImpossible &&
                                 !viewModel.isUtxoInsufficient &&
                                 !_isEstimatedFeeTooLow &&
                                 _textEditingController.text.isNotEmpty &&
-                                viewModel.isNetworkOn,
-                            subWidget:
-                                _textEditingController.text.isEmpty || _textEditingController.text == '0'
-                                    ? Container()
-                                    : Column(
-                                      children: [
-                                        if (_isEstimatedFeeTooHigh) ...[
-                                          Text(
-                                            t.transaction_fee_bumping_screen.estimated_fee_too_high_error,
-                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                            textScaler: const TextScaler.linear(1.0),
-                                          ),
-                                          CoconutLayout.spacing_100h,
-                                        ],
-                                        if (_viewModel.isFeeBumpingImpossible) ...[
-                                          Text(
-                                            t.transaction_fee_bumping_screen.insufficient_balance_error,
-                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                            textScaler: const TextScaler.linear(1.0),
-                                          ),
-                                        ] else if (_viewModel.deficitSats != null) ...[
-                                          Text(
-                                            t.transaction_fee_bumping_screen.please_select_more_utxo(
-                                              amount: BalanceFormatUtil.formatSatoshiToReadableBitcoin(
-                                                _viewModel.deficitSats!,
-                                              ),
-                                            ),
-                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                            textScaler: const TextScaler.linear(1.0),
-                                          ),
-                                        ] else if (_isEstimatedFeeTooLow) ...[
-                                          Text(
-                                            t.transaction_fee_bumping_screen.fee_rate_too_low_error,
-                                            style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
-                                            textScaler: const TextScaler.linear(1.0),
-                                          ),
-                                        ] else ...[
-                                          Text(
-                                            t.transaction_fee_bumping_screen.estimated_fee(
-                                              fee:
-                                                  viewModel
-                                                      .getTotalEstimatedFee(
-                                                        double.tryParse(_textEditingController.text) ?? 0.0,
-                                                      )
-                                                      .toThousandsSeparatedString(),
-                                            ),
-                                            style: CoconutTypography.body2_14,
-                                            textScaler: const TextScaler.linear(1.0),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
+                                viewModel.isNetworkOn &&
+                                viewModel.hasMfp,
+                            subWidget: _buildBottomStatusWidget(viewModel),
                           ),
                           if (_isLoading) const CoconutLoadingOverlay(),
                         ],
@@ -285,11 +237,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             setState(() {
               _isLoading = false;
             });
-            WidgetsBinding.instance.addPostFrameCallback((_) async {
-              if (_viewModel.isUtxoInsufficient) {
-                _showInsufficientUtxoToast(context);
-              }
-            });
+            // WidgetsBinding.instance.addPostFrameCallback((_) async {
+            //   if (_viewModel.isUtxoInsufficient) {
+            //     _showInsufficientUtxoToast(context);
+            //   }
+            // });
           }
         });
 
@@ -301,6 +253,14 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           _tooltipIconPosition = tooltipIconRenderBox.localToGlobal(Offset.zero);
           _tooltipIconSize = tooltipIconRenderBox.size;
         });
+      }
+
+      if (!_viewModel.hasMfp) {
+        CoconutToast.showToast(
+          isVisibleIcon: true,
+          context: context,
+          text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send,
+        );
       }
     });
   }
@@ -325,22 +285,107 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     }
   }
 
-  void _onFeeRateChanged(String input) async {
-    if (_viewModel.isInitializedSuccess == false) {
-      return;
+  Widget? _buildBottomStatusWidget(FeeBumpingViewModel viewModel) {
+    if (viewModel.isFeeBumpingImpossible) {
+      return _buildErrorText(t.transaction_fee_bumping_screen.insufficient_balance_error);
     }
 
-    if (input.isEmpty) {
-      if (_isRbf) {
-        _viewModel.onRbfFeeRateChanged(null);
-      } else {
-        _viewModel.initializeBumpingTransaction(0);
-      }
+    if (_textEditingController.text.isEmpty || _textEditingController.text == '0') {
+      return null;
+    }
 
+    // 빌드 에러 (fee 무관)
+    if (viewModel.unexpectedError != null) {
+      return _buildErrorText(viewModel.unexpectedError!.toString());
+    }
+
+    // Fee 관련 상태
+    return _buildFeeStatusWidget(viewModel);
+  }
+
+  Widget _buildFeeStatusWidget(FeeBumpingViewModel viewModel) {
+    if (_isEstimatedFeeTooHigh) {
+      return Column(
+        children: [
+          _buildErrorText(t.transaction_fee_bumping_screen.estimated_fee_too_high_error),
+          CoconutLayout.spacing_100h,
+        ],
+      );
+    }
+
+    if (viewModel.deficitSats != null) {
+      return _buildErrorText(
+        t.transaction_fee_bumping_screen.please_select_more_utxo(
+          amount: BalanceFormatUtil.formatSatoshiToReadableBitcoin(viewModel.deficitSats!),
+        ),
+      );
+    }
+
+    if (_isEstimatedFeeTooLow) {
+      return _buildErrorText(t.transaction_fee_bumping_screen.fee_rate_too_low_error);
+    }
+
+    return Text(
+      t.transaction_fee_bumping_screen.estimated_fee(
+        fee:
+            viewModel
+                .getTotalEstimatedFee(double.tryParse(_textEditingController.text) ?? 0.0)
+                .toThousandsSeparatedString(),
+      ),
+      style: CoconutTypography.body2_14,
+      textScaler: const TextScaler.linear(1.0),
+    );
+  }
+
+  Widget _buildErrorText(String message) {
+    return Text(
+      message,
+      style: CoconutTypography.body2_14.setColor(CoconutColors.hotPink),
+      textScaler: const TextScaler.linear(1.0),
+    );
+  }
+
+  void _handleFeeRateIsNull() {
+    _viewModel.onFeeRateIsNull();
+
+    setState(() {
+      _isEstimatedFeeTooLow = false;
+      _isEstimatedFeeTooHigh = false;
+    });
+  }
+
+  void _handleFeeRateIsUnderRecommended() {
+    _viewModel.onFeeRateIsNull();
+
+    setState(() {
+      _isEstimatedFeeTooLow = true;
+      _isEstimatedFeeTooHigh = false;
+    });
+  }
+
+  void _handleBuildResult(dynamic result) {
+    assert(result != null);
+    assert(result is RbfBuildResult || result is CpfpBuildResult);
+
+    if (result.isSuccess) {
+      setState(() {
+        _isEstimatedFeeTooLow = false;
+        if (result.estimatedFee != null) {
+          _isEstimatedFeeTooHigh = result.estimatedFee! >= 1000000;
+        } else {
+          _isEstimatedFeeTooHigh = false;
+        }
+      });
+    } else {
       setState(() {
         _isEstimatedFeeTooLow = false;
         _isEstimatedFeeTooHigh = false;
       });
+    }
+  }
+
+  void _onFeeRateChanged(String input) async {
+    if (_viewModel.isInitializedSuccess == false) {
       return;
     }
 
@@ -351,59 +396,18 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     );
 
     double? feeRate = double.tryParse(_textEditingController.text);
-
     if (feeRate == null) {
-      if (_isRbf) {
-        _viewModel.onRbfFeeRateChanged(null);
-      }
-
-      setState(() {
-        _isEstimatedFeeTooLow = true;
-        _isEstimatedFeeTooHigh = false;
-      });
-
+      _handleFeeRateIsNull();
       return;
     }
 
-    if (_isRbf) {
-      if (feeRate < _viewModel.recommendFeeRate!) {
-        _viewModel.onRbfFeeRateChanged(null);
-        setState(() {
-          _isEstimatedFeeTooLow = true;
-          _isEstimatedFeeTooHigh = false;
-        });
-        return;
-      }
-
-      final RbfBuildResult rbfResult = _viewModel.onRbfFeeRateChanged(feeRate)!;
-
-      setState(() {
-        _isEstimatedFeeTooLow = false;
-        if (rbfResult.isSuccess) {
-          _isEstimatedFeeTooHigh = rbfResult.estimatedFee! >= 1000000;
-        } else {
-          _isEstimatedFeeTooHigh = false;
-        }
-      });
+    if (feeRate < _viewModel.recommendFeeRate!) {
+      _handleFeeRateIsUnderRecommended();
       return;
     }
 
-    // 아래는 CPFP
-
-    bool isFeeTooLow = _viewModel.isFeeRateTooLow(feeRate);
-
-    await _viewModel.initializeBumpingTransaction(feeRate).then((_) {
-      if (_viewModel.isUtxoInsufficient) {
-        if (mounted) {
-          _showInsufficientUtxoToast(context);
-        }
-      }
-    });
-
-    setState(() {
-      _isEstimatedFeeTooHigh = _viewModel.getTotalEstimatedFee(feeRate) >= 1000000;
-      _isEstimatedFeeTooLow = isFeeTooLow;
-    });
+    final dynamic result = _viewModel.onFeeRateChanged(feeRate);
+    _handleBuildResult(result);
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
@@ -789,8 +793,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
   Widget _buildUtxoSelectionOptionWidget(FeeBumpingViewModel viewModel) {
     Widget child;
-
-    if (!viewModel.isAdditionalInputRequired) {
+    if (viewModel.isFeeBumpingImpossible) {
+      child = const SizedBox.shrink(key: ValueKey('empty'));
+    } else if (!viewModel.isAdditionalInputRequired && !viewModel.isUtxoInsufficient) {
       child = const SizedBox.shrink(key: ValueKey('empty'));
     } else {
       int selectedUtxoSum = viewModel.selectedUtxoList.fold(0, (sum, item) => sum + item.amount);
@@ -897,13 +902,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   }
 
   Widget _buildUtxoOption(FeeBumpingViewModel viewModel) {
-    bool isNonMpfWallet = isWalletWithoutMfp(_viewModel.walletListItemBase);
-
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
-        if (isNonMpfWallet) return;
-        viewModel.toggleUtxoSelectionAuto(!viewModel.isUtxoSelectionAuto);
+        viewModel.toggleUtxoSelectionAuto();
       },
       child: Row(
         children: [
@@ -929,12 +931,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
             child: CoconutSwitch(
               scale: 0.7,
               isOn: viewModel.isUtxoSelectionAuto,
-              activeColor: CoconutColors.white.withValues(alpha: isNonMpfWallet ? 0.3 : 1.0),
+              activeColor: CoconutColors.white.withValues(alpha: viewModel.hasMfp ? 1.0 : 0.3),
               trackColor: viewModel.isUtxoSelectionAuto ? CoconutColors.white : CoconutColors.gray600,
               thumbColor: viewModel.isUtxoSelectionAuto ? CoconutColors.black : CoconutColors.gray500,
-              onChanged: (isOn) {
-                if (isNonMpfWallet) return;
-                viewModel.toggleUtxoSelectionAuto(isOn);
+              onChanged: (_) {
+                viewModel.toggleUtxoSelectionAuto();
               },
             ),
           ),
@@ -967,15 +968,5 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     setState(() {
       _isRecommendFeePannelExpanded = !_isRecommendFeePannelExpanded;
     });
-  }
-
-  void _showInsufficientUtxoToast(BuildContext context) {
-    CoconutToast.showToast(
-      isVisibleIcon: true,
-      context: context,
-      text: t.transaction_fee_bumping_screen.toast.insufficient_utxo,
-      seconds: 10,
-    );
-    return;
   }
 }
