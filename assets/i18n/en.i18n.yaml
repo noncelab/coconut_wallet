@@ -714,7 +714,7 @@ transaction_fee_bumping_screen:
   new_fee: "New Fee"
   sats_vb: "sat/vB"
   recommend_fee: "Minimum fee: ${fee} sat/vB or higher"
-  recommend_fee_info_rbf: "Must be at least 1 sat/vB higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vB."
+  recommend_fee_info_rbf: "An additional fee of at least 1 sat per vB of the new transaction size is required.\nIf the calculated minimum fee rate is lower than the current network's slow transfer fee rate, we recommend the slow transfer fee rate.\nHowever, if the new transaction size increases, the recommended fee rate may be lower than before."
   recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, Recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "Recommended Fee"
   utxo_auto_selection: "Auto-select UTXO"
