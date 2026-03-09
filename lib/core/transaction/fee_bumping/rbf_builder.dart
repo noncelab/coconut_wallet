@@ -258,10 +258,6 @@ class RbfBuilder {
         throw const FeeRateTooLowException();
       }
 
-      // if (newFeeRate == _cachedBaseline!.minimumFeeRate && _cachedBaseline!.isSuccess) {
-      //   return _cachedBaseline!;
-      // }
-
       final int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
       final int additionalFee = requiredFee - _pendingTx.fee;
       int deficitAmount = additionalFee;
@@ -294,7 +290,7 @@ class RbfBuilder {
         addedUtxos.add(_additionalSpendable[i]);
         // getBaselineTransaction()에서 모자란 경우 임의로 한 번 더해줬기 때문에 맨 처음에는 아래 조건을 만족해야만 더함
         if (i != 0 || (i == 0 && _cachedBaseline!.deficitAmount == null)) {
-          newTxVSize += _vSizeIncreasePerInput * newFeeRate;
+          newTxVSize += _vSizeIncreasePerInput;
           deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
         }
         if (_additionalSpendable[i].amount >= deficitAmount) {
@@ -320,7 +316,7 @@ class RbfBuilder {
         }
       }
 
-      newTxVSize += _vSizeIncreasePerInput * newFeeRate;
+      newTxVSize += _vSizeIncreasePerInput;
       deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
       return RbfBuildResult(
         minimumFeeRate: _cachedBaseline!.minimumFeeRate,
