@@ -158,13 +158,30 @@ class RbfBuilder {
     return (txBuildResult: null, newRecipients: newRecipients, leftDeficit: leftDeficit);
   }
 
-  ({TransactionBuildResult? txBuildResult, List<UtxoState> addedUtxos, int? leftDeficit}) _tryWithAdditionalSpendable(
-    List<UtxoState> utxos,
-    int deficitAmount,
-    Map<String, int> recipitents,
-  ) {
-    // TODO:
-    return (txBuildResult: null, addedUtxos: [], leftDeficit: null);
+  ({List<UtxoState> addedUtxos, int remainingDeficit, double updatedVSize}) _selectAdditionalUtxos({
+    required int deficitAmount,
+    required double feeRatePerInput,
+    required double currentVSize,
+    bool skipFirstInputOverhead = false,
+  }) {
+    final List<UtxoState> addedUtxos = [];
+    int remaining = deficitAmount;
+    double vSize = currentVSize;
+
+    for (int i = 0; i < _additionalSpendable.length && remaining > 0; i++) {
+      addedUtxos.add(_additionalSpendable[i]);
+      if (!skipFirstInputOverhead || i != 0) {
+        vSize += _vSizeIncreasePerInput;
+        remaining += (_vSizeIncreasePerInput * feeRatePerInput).ceil();
+      }
+      if (_additionalSpendable[i].amount >= remaining) {
+        remaining = 0;
+      } else {
+        remaining -= _additionalSpendable[i].amount;
+      }
+    }
+
+    return (addedUtxos: addedUtxos, remainingDeficit: remaining, updatedVSize: vSize);
   }
 
   RbfBuildResult getBaselineTransaction({bool isForce = false}) {
@@ -203,17 +220,13 @@ class RbfBuilder {
 
     // TODO: self Output 조작을 우선 생략...
 
-    List<UtxoState> addedUtxos = [];
-    for (int i = 0; i < _additionalSpendable.length && deficitAmount > 0; i++) {
-      addedUtxos.add(_additionalSpendable[i]);
-      newTxVSize += _vSizeIncreasePerInput;
-      deficitAmount += _vSizeIncreasePerInput;
-      if (_additionalSpendable[i].amount >= deficitAmount) {
-        deficitAmount = 0;
-      } else {
-        deficitAmount -= _additionalSpendable[i].amount;
-      }
-    }
+    final (:addedUtxos, :remainingDeficit, :updatedVSize) = _selectAdditionalUtxos(
+      deficitAmount: deficitAmount,
+      feeRatePerInput: incrementalRelayFeeRate,
+      currentVSize: newTxVSize,
+    );
+    deficitAmount = remainingDeficit;
+    newTxVSize = updatedVSize;
 
     if (deficitAmount == 0) {
       final txBuildResult = _buildTransaction(_calculateMinimumFeeRate(newTxVSize), recipientMap, addedUtxos);
@@ -281,24 +294,16 @@ class RbfBuilder {
         }
       }
 
-      double newTxVSize = _cachedBaseline!.estimatedVSize;
-
       // TODO: self Output 조작을 우선 생략...
 
-      List<UtxoState> addedUtxos = [];
-      for (int i = 0; i < _additionalSpendable.length && deficitAmount > 0; i++) {
-        addedUtxos.add(_additionalSpendable[i]);
-        // getBaselineTransaction()에서 모자란 경우 임의로 한 번 더해줬기 때문에 맨 처음에는 아래 조건을 만족해야만 더함
-        if (i != 0 || (i == 0 && _cachedBaseline!.deficitAmount == null)) {
-          newTxVSize += _vSizeIncreasePerInput;
-          deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
-        }
-        if (_additionalSpendable[i].amount >= deficitAmount) {
-          deficitAmount = 0;
-        } else {
-          deficitAmount -= _additionalSpendable[i].amount;
-        }
-      }
+      // getBaselineTransaction()에서 모자란 경우 첫 번째 input의 overhead를 이미 반영했으므로 skip
+      final (:addedUtxos, :remainingDeficit, updatedVSize: newTxVSize) = _selectAdditionalUtxos(
+        deficitAmount: deficitAmount,
+        feeRatePerInput: newFeeRate,
+        currentVSize: _cachedBaseline!.estimatedVSize,
+        skipFirstInputOverhead: _cachedBaseline!.deficitAmount != null,
+      );
+      deficitAmount = remainingDeficit;
 
       if (deficitAmount == 0) {
         final txBuildResult = _buildTransaction(newFeeRate, recipientMap, addedUtxos);
@@ -316,13 +321,11 @@ class RbfBuilder {
         }
       }
 
-      newTxVSize += _vSizeIncreasePerInput;
-      deficitAmount += (_vSizeIncreasePerInput * newFeeRate).ceil();
       return RbfBuildResult(
         minimumFeeRate: _cachedBaseline!.minimumFeeRate,
         addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
-        deficitAmount: deficitAmount,
-        estimatedVSize: newTxVSize,
+        deficitAmount: deficitAmount + (_vSizeIncreasePerInput * newFeeRate).ceil(),
+        estimatedVSize: newTxVSize + _vSizeIncreasePerInput,
       );
     } on RbfCreationException catch (e) {
       return RbfBuildResult(
