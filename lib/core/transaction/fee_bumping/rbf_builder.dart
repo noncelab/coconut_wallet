@@ -192,8 +192,9 @@ class RbfBuilder {
             estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
           );
           return _cachedBaseline!;
-        } else {
-          throw 'RbfBuilder.getBaselineTransaction: _buildTransaction failed1 - ${txBuildResult.exception.toString()}';
+        } else if (txBuildResult.exception != null && txBuildResult.exception is! InsufficientBalanceException) {
+          // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
+          throw 'RbfBuilder.getBaselineTransaction / changeOutput is enough but failed creationg tx / ${txBuildResult.exception.toString()}';
         }
       } else {
         deficitAmount -= changeOutput!.amount;
@@ -225,8 +226,9 @@ class RbfBuilder {
           estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
         );
         return _cachedBaseline!;
-      } else {
-        throw 'RbfBuilder.getBaselineTransaction: _buildTransaction failed2 - ${txBuildResult.exception.toString()}';
+      } else if (txBuildResult.exception != null && txBuildResult.exception is! InsufficientBalanceException) {
+        // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
+        throw 'RbfBuilder.getBaselineTransaction / AdditionalSpendable enough but failed creationg tx / ${txBuildResult.exception.toString()}';
       }
     }
 
@@ -252,9 +254,13 @@ class RbfBuilder {
   RbfBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
     try {
-      if (_cachedBaseline!.minimumFeeRate > newFeeRate) {
+      if (newFeeRate < _cachedBaseline!.minimumFeeRate) {
         throw const FeeRateTooLowException();
       }
+
+      // if (newFeeRate == _cachedBaseline!.minimumFeeRate && _cachedBaseline!.isSuccess) {
+      //   return _cachedBaseline!;
+      // }
 
       final int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
       final int additionalFee = requiredFee - _pendingTx.fee;
@@ -270,8 +276,9 @@ class RbfBuilder {
               minimumFeeRate: _cachedBaseline!.minimumFeeRate,
               estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
             );
-          } else {
-            throw 'RbfBuild.build: _buildTransaction failed1 - ${txBuildResult.exception!.toString()}';
+          } else if (txBuildResult.exception != null && txBuildResult.exception is! InsufficientBalanceException) {
+            // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
+            throw 'RbfBuilder.build / changeOutput is enough but failed creationg tx / ${txBuildResult.exception.toString()}';
           }
         } else {
           deficitAmount -= changeOutput!.amount;
@@ -307,8 +314,9 @@ class RbfBuilder {
             addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
             estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
           );
-        } else {
-          throw 'RbfBuilder.getBaselineTransaction: _buildTransaction failed2 - ${txBuildResult.exception.toString()}';
+        } else if (txBuildResult.exception != null && txBuildResult.exception is! InsufficientBalanceException) {
+          // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
+          throw 'RbfBuilder.build / AdditionalSpendable enough but failed creationg tx / ${txBuildResult.exception.toString()}';
         }
       }
 
