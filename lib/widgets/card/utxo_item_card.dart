@@ -40,7 +40,7 @@ class UtxoItemCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelectionMode ? (isSelected ? CoconutColors.white : CoconutColors.borderGray) : Colors.transparent,
+            color: isSelectionMode ? CoconutColors.white.withValues(alpha: isSelected ? 1 : 0.2) : Colors.transparent,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
@@ -100,7 +100,7 @@ class UtxoItemCard extends StatelessWidget {
                           _buildPendingStatus(utxo.status),
                           const SizedBox(width: 4),
                         ] else if (utxo.status == UtxoStatus.locked) ...[
-                          SvgPicture.asset('assets/svg/lock.svg'),
+                          SvgPicture.asset('assets/svg/lock_simple.svg', width: 16, height: 16),
                           const SizedBox(width: 4),
                         ],
                         Text(

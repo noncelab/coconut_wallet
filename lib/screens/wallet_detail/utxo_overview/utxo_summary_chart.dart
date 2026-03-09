@@ -25,6 +25,7 @@ class UtxoSummaryChart extends StatelessWidget {
   final int lockedSats;
   final BitcoinUnit currentUnit;
   final VoidCallback? onBalanceTap;
+  final VoidCallback? onThemeSettingTap;
   final bool hasReusedAddresses;
 
   const UtxoSummaryChart({
@@ -38,6 +39,7 @@ class UtxoSummaryChart extends StatelessWidget {
     required this.lockedSats,
     required this.currentUnit,
     this.onBalanceTap,
+    this.onThemeSettingTap,
     this.hasReusedAddresses = false,
   });
 
@@ -89,7 +91,12 @@ class UtxoSummaryChart extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _BarChart(buckets: buckets, tierTheme: tierTheme, currentUnit: currentUnit),
+            _BarChart(
+              buckets: buckets,
+              tierTheme: tierTheme,
+              currentUnit: currentUnit,
+              onThemeSettingTap: onThemeSettingTap,
+            ),
             if (hasReusedAddresses) ...[
               const SizedBox(height: 12),
               Tooltip(
@@ -168,8 +175,9 @@ class _BarChart extends StatefulWidget {
   final List<UtxoBucket> buckets;
   final UtxoTierTheme tierTheme;
   final BitcoinUnit currentUnit;
+  final VoidCallback? onThemeSettingTap;
 
-  const _BarChart({required this.buckets, required this.tierTheme, required this.currentUnit});
+  const _BarChart({required this.buckets, required this.tierTheme, required this.currentUnit, this.onThemeSettingTap});
 
   @override
   State<_BarChart> createState() => _BarChartState();
@@ -213,9 +221,30 @@ class _BarChartState extends State<_BarChart> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    t.utxo_overview_screen.interval_info_title,
-                    style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          t.utxo_overview_screen.interval_info_title,
+                          style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                        ),
+                      ),
+                      if (widget.onThemeSettingTap != null)
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              widget.onThemeSettingTap?.call();
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: const Padding(
+                              padding: EdgeInsets.all(8),
+                              child: Icon(Icons.palette_outlined, size: 22, color: CoconutColors.gray200),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   ...utxoBucketRanges.map((r) {
@@ -272,27 +301,6 @@ class _BarChartState extends State<_BarChart> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned(
-          top: -8,
-          right: -8,
-          child: SizedBox(
-            width: 26,
-            height: 26,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _showIntervalInfoModal(context, widget.tierTheme),
-                borderRadius: BorderRadius.circular(20),
-                splashColor: CoconutColors.gray500.withValues(alpha: 0.2),
-                highlightColor: CoconutColors.gray500.withValues(alpha: 0.1),
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(Icons.info_outline_rounded, size: 18, color: CoconutColors.gray500),
-                ),
-              ),
-            ),
-          ),
-        ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: const BoxDecoration(
@@ -428,6 +436,27 @@ class _BarChartState extends State<_BarChart> {
                   ),
                 ),
             ],
+          ),
+        ),
+        Positioned(
+          top: -8,
+          right: -8,
+          child: SizedBox(
+            width: 26,
+            height: 26,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _showIntervalInfoModal(context, widget.tierTheme),
+                borderRadius: BorderRadius.circular(20),
+                splashColor: CoconutColors.gray500.withValues(alpha: 0.2),
+                highlightColor: CoconutColors.gray500.withValues(alpha: 0.1),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.info_outline_rounded, size: 18, color: CoconutColors.gray500),
+                ),
+              ),
+            ),
           ),
         ),
       ],

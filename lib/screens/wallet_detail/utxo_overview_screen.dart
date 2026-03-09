@@ -16,6 +16,8 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/utxo_tier_theme_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_filter_bar.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_chart.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_tag_chart.dart';
@@ -325,6 +327,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                               .fold<int>(0, (s, u) => s + u.amount),
                           currentUnit: _currentUnit,
                           onBalanceTap: _toggleUnit,
+                          onThemeSettingTap: () {
+                            CommonBottomSheets.showCustomHeightBottomSheet(
+                              context: context,
+                              heightRatio: 0.6,
+                              child: const UtxoTierThemeBottomSheet(),
+                            );
+                          },
                           hasReusedAddresses: _reusedAddresses.isNotEmpty,
                         ),
                       ),
@@ -568,7 +577,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
           _isByAmount
               ? (isLockedFilter
                   ? UtxoSelectionBarButton(
-                    iconPath: 'assets/svg/unlock.svg',
+                    iconPath: 'assets/svg/unlock_simple.svg',
                     label: t.utxo_list_screen.utxo_unlocked_button,
                     onTap: () => _updateSelectedUtxosLock(lock: false),
                   )
@@ -592,7 +601,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                           const SizedBox(width: 8),
                           Expanded(
                             child: UtxoSelectionBarButton(
-                              iconPath: 'assets/svg/lock.svg',
+                              iconPath: 'assets/svg/lock_simple.svg',
                               label: t.utxo_list_screen.utxo_locked_button,
                               onTap: () => _updateSelectedUtxosLock(lock: true),
                             ),

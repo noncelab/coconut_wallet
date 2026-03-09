@@ -140,8 +140,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   void _navigateToUtxoList(BuildContext context) {
-    // Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
-    Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': widget.id});
+    Navigator.pushNamed(context, '/utxo-list', arguments: {'id': widget.id});
   }
 
   void _navigateToWalletInfo(BuildContext context) async {

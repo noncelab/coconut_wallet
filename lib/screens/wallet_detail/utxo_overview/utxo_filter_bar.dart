@@ -130,14 +130,14 @@ class _StickyFilterBar extends StatelessWidget {
                 )
               else ...[
                 _FilterChip(
-                  iconPath: 'assets/svg/unlock.svg',
+                  iconPath: 'assets/svg/unlock_simple.svg',
                   label: t.utxo_detail_screen.utxo_unlocked,
                   isSelected: lockFilterIndex == 0,
                   onTap: () => onLockFilterSelected(0),
                 ),
                 const SizedBox(width: 8),
                 _FilterChip(
-                  iconPath: 'assets/svg/lock.svg',
+                  iconPath: 'assets/svg/lock_simple.svg',
                   label: t.utxo_detail_screen.utxo_locked,
                   isSelected: lockFilterIndex == 1,
                   onTap: () => onLockFilterSelected(1),
@@ -151,7 +151,7 @@ class _StickyFilterBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(color: CoconutColors.white, shape: BoxShape.circle),
                   child: SvgPicture.asset(
                     'assets/svg/check.svg',
@@ -163,7 +163,7 @@ class _StickyFilterBar extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '$selectedCount coins • ${_formatSelectedTotal(selectedTotalSats)}',
-                  style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                  style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white),
                   textScaler: const TextScaler.linear(1.0),
                 ),
               ],

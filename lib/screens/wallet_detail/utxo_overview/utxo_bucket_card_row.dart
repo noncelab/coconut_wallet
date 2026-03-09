@@ -4,6 +4,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:flutter/foundation.dart';
@@ -363,7 +364,6 @@ class UtxoCoinCard extends StatefulWidget {
     bool isLarge,
     bool isFocused,
     Color iconColor,
-    Color textColor,
     UtxoState utxo,
     BitcoinUnit currentUnit,
   ) {
@@ -372,9 +372,9 @@ class UtxoCoinCard extends StatefulWidget {
       children: [
         Positioned.fill(
           child: Padding(
-            padding: EdgeInsets.all(size * 0.01),
+            padding: EdgeInsets.all(size * 0.2),
             child: Opacity(
-              opacity: isFocused ? 0.12 : 0.06,
+              opacity: isFocused ? 0.2 : 0.1,
               child: SvgPicture.asset(
                 'assets/svg/bitcoin.svg',
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
@@ -391,21 +391,21 @@ class UtxoCoinCard extends StatefulWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  formatUtxoAmountForDisplay(utxo.amount, currentUnit, forceSats: utxo.amount <= dustLimit),
+                  formatUtxoBalanceForTooltip(utxo.amount, currentUnit, isDustBucket: utxo.amount <= dustLimit),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: (isLarge ? CoconutTypography.body1_16_NumberBold : CoconutTypography.body2_14_NumberBold)
-                      .setColor(isFocused ? textColor : textColor.withValues(alpha: 0.55)),
+                  style: (isLarge ? CoconutTypography.heading4_18_NumberBold : CoconutTypography.body1_16_NumberBold)
+                      .setColor(CoconutColors.white.withValues(alpha: isFocused ? 1 : 0.4)),
                 ),
               ),
               if (isLarge) ...[
                 const SizedBox(height: 4),
                 Text(
-                  _formatDate(utxo.timestamp),
+                  DateTimeUtil.formatTimestamp(utxo.timestamp).join(' '),
                   textAlign: TextAlign.center,
                   style: CoconutTypography.caption_10.setColor(
-                    isFocused ? textColor : textColor.withValues(alpha: 0.55),
+                    CoconutColors.gray500.withValues(alpha: isFocused ? 1 : 0.4),
                   ),
                 ),
               ],
@@ -414,15 +414,6 @@ class UtxoCoinCard extends StatefulWidget {
         ),
       ],
     );
-  }
-
-  static String _formatDate(DateTime dt) {
-    final y = (dt.year % 100).toString().padLeft(2, '0');
-    final m = dt.month.toString().padLeft(2, '0');
-    final d = dt.day.toString().padLeft(2, '0');
-    final h = dt.hour.toString().padLeft(2, '0');
-    final min = dt.minute.toString().padLeft(2, '0');
-    return '$y.$m.$d $h:$min';
   }
 
   @override
@@ -443,10 +434,9 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     final bucketCol = tierTheme.colorForSats(widget.utxo.amount);
     final bgColor = widget.isFocused ? bucketCol : Color.lerp(const Color(0xFF1A1A1A), bucketCol, 0.68)!;
-    final fgColor = UtxoColorUtils.bestOn(bgColor);
-    final textColor = fgColor;
-    final iconColor = fgColor.withValues(alpha: 0.9);
+    final iconColor = bgColor;
     final shadowBlur = widget.isFocused ? 16.0 : 6.0;
+    final innerStrokeColor = bgColor.withValues(alpha: widget.isFocused ? 0.2 : 0.1);
     final coinBorder =
         widget.isAddressReused
             ? Border.all(color: CoconutColors.hotPink, width: 2)
@@ -471,7 +461,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
               decoration: BoxDecoration(
                 shape: isBill ? BoxShape.rectangle : BoxShape.circle,
                 borderRadius: isBill ? BorderRadius.circular(8) : null,
-                color: bgColor,
+                color: CoconutColors.gray900,
                 border: coinBorder,
                 boxShadow: [
                   BoxShadow(
@@ -486,25 +476,53 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                   isBill
                       ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: UtxoCoinCard._buildCardContent(
-                          widget.size,
-                          isLarge,
-                          widget.isFocused,
-                          iconColor,
-                          textColor,
-                          widget.utxo,
-                          widget.currentUnit,
+                        child: Stack(
+                          children: [
+                            UtxoCoinCard._buildCardContent(
+                              widget.size,
+                              isLarge,
+                              widget.isFocused,
+                              iconColor,
+                              widget.utxo,
+                              widget.currentUnit,
+                            ),
+                            Positioned.fill(
+                              child: Padding(
+                                padding: const EdgeInsets.all(5),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(color: innerStrokeColor, width: 4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       )
                       : ClipOval(
-                        child: UtxoCoinCard._buildCardContent(
-                          widget.size,
-                          isLarge,
-                          widget.isFocused,
-                          iconColor,
-                          textColor,
-                          widget.utxo,
-                          widget.currentUnit,
+                        child: Stack(
+                          children: [
+                            UtxoCoinCard._buildCardContent(
+                              widget.size,
+                              isLarge,
+                              widget.isFocused,
+                              iconColor,
+                              widget.utxo,
+                              widget.currentUnit,
+                            ),
+                            Positioned.fill(
+                              child: Padding(
+                                padding: const EdgeInsets.all(5),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: innerStrokeColor, width: 4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
             ),
@@ -523,12 +541,12 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                 top: isLarge ? 6 : 4,
                 right: isLarge ? 6 : 4,
                 child: Container(
-                  padding: EdgeInsets.all(isLarge ? 6 : 4),
+                  padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(color: CoconutColors.white, shape: BoxShape.circle),
                   child: SvgPicture.asset(
                     'assets/svg/check.svg',
-                    width: isLarge ? 16 : 10,
-                    height: isLarge ? 16 : 10,
+                    width: isLarge ? 16 : 8,
+                    height: isLarge ? 16 : 8,
                     colorFilter: const ColorFilter.mode(CoconutColors.black, BlendMode.srcIn),
                   ),
                 ),
@@ -541,7 +559,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(color: CoconutColors.black.withValues(alpha: 0.5), shape: BoxShape.circle),
                   child: SvgPicture.asset(
-                    'assets/svg/lock.svg',
+                    'assets/svg/lock_simple.svg',
                     width: isLarge ? 12 : 10,
                     height: isLarge ? 12 : 10,
                     colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),

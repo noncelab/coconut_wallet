@@ -565,12 +565,15 @@ class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/svg/${widget.isLocked ? 'lock' : 'unlock'}.svg',
+                  'assets/svg/${widget.isLocked ? 'lock' : 'unlock'}_simple.svg',
                   colorFilter: ColorFilter.mode(
                     isPressing ? CoconutColors.gray800 : CoconutColors.white,
                     BlendMode.srcIn,
                   ),
+                  width: 16,
+                  height: 16,
                 ),
+                CoconutLayout.spacing_50w,
                 Text(
                   widget.isLocked ? t.utxo_detail_screen.utxo_locked : t.utxo_detail_screen.utxo_unlocked,
                   style: CoconutTypography.body3_12.setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),
