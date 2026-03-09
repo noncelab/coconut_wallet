@@ -132,7 +132,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                     style: CoconutTypography.body3_12,
                                     children: [
                                       TextSpan(
-                                        text: "\n${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
+                                        text: " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
                                         style: CoconutTypography.body3_12,
                                       ),
                                       TextSpan(
