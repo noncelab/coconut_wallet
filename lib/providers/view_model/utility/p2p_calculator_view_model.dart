@@ -361,6 +361,12 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     }
   }
 
+  void toggleP2PMode() {
+    vibrateExtraLight();
+    _isOfflineMode = !_isOfflineMode;
+    notifyListeners();
+  }
+
   void copyAll(
     String btcPriceStr,
     String fiatAmountStr,
