@@ -50,12 +50,6 @@ class UtxoBucketCardRow extends StatelessWidget {
           final restoredMatch = restored != null && restored.bucket == index;
           final initialFocusedCardIndex = (restored != null && restored.bucket == index) ? restored.card : null;
 
-          if (restored != null) {
-            debugPrint(
-              '[UtxoBucketCardRow] index=$index, restored=bucket=${restored.bucket} card=${restored.card}, '
-              'initialFocusedCardIndex=$initialFocusedCardIndex, match=${restored.bucket == index}',
-            );
-          }
           return ValueListenableBuilder<int>(
             valueListenable: activeIndexListenable,
             builder: (_, active, __) {
@@ -69,12 +63,6 @@ class UtxoBucketCardRow extends StatelessWidget {
                 });
               }
 
-              if (restoredMatch) {
-                debugPrint(
-                  '[UtxoBucketCardRow] index=$index, active=$active, isExpanded=$isExpanded, '
-                  'initialScrollOffset=$scrollOffset → _CoinStack',
-                );
-              }
               return _CoinStack(
                 utxos: bucket.utxos,
                 currentUnit: currentUnit,

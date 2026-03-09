@@ -114,8 +114,6 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     if (bucketIdx >= 0) {
       final bucket = _filteredBuckets[bucketIdx];
       final cardIdx = bucket.utxos.indexWhere((u) => u.utxoId == utxoId);
-      final amount = cardIdx >= 0 ? bucket.utxos[cardIdx].amount : 0;
-      debugPrint('[UtxoOverview] 복원 시: bucketIdx=$bucketIdx, cardIdx=$cardIdx, amount=$amount, utxoId=$utxoId');
       _activeIndex.value = bucketIdx;
       if (cardIdx >= 0) {
         _restoredStateListenable.value = (bucket: bucketIdx, card: cardIdx);
@@ -224,11 +222,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   Future<void> _navigateToUtxoDetail(UtxoState utxo) async {
     _restoreUtxoId = utxo.utxoId;
     _restoreScrollOffset = _scrollController.hasClients ? _scrollController.offset : null;
-    final bucketIdx = _filteredBuckets.indexWhere((b) => b.utxos.any((u) => u.utxoId == utxo.utxoId));
-    final cardIdx = bucketIdx >= 0 ? _filteredBuckets[bucketIdx].utxos.indexWhere((u) => u.utxoId == utxo.utxoId) : -1;
-    debugPrint(
-      '[UtxoOverview] 이동 전 저장: bucketIdx=$bucketIdx, cardIdx=$cardIdx, amount=${utxo.amount}, utxoId=${utxo.utxoId}',
-    );
+
     await Navigator.pushNamed(context, '/utxo-detail', arguments: {'utxo': utxo, 'id': widget.id});
     if (mounted) {
       viewModel.refetchFromDB();

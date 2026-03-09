@@ -357,6 +357,16 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_max_exceeded);
                 return false;
               }
+              if (btc == 21_000_000) {
+                CoconutToast.showToast(
+                  context: context,
+                  text: t.wallet_info_screen.target_set_21m,
+                  isVisibleIcon: true,
+                  iconPath: 'assets/svg/pie.svg',
+                  iconSize: 16,
+                  iconRightPadding: 8,
+                );
+              }
               final sats = UnitUtil.convertBitcoinToSatoshi(btc);
               if (sats > 0) {
                 viewModel.setTargetSats(sats);
@@ -399,7 +409,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     } catch (e) {
       debugPrint('Delete wallet failed: $e');
       _setOverlayLoading(false);
-      if (mounted) {
+      if (context.mounted) {
         await showInfoDialog(context, languageCode, t.wallet_info_screen.error.delete, e.toString());
       }
     }
@@ -566,7 +576,7 @@ class _TargetQuantityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveTarget = targetSats ?? maxSats;
     final progress = effectiveTarget > 0 ? (balanceSats / effectiveTarget).clamp(0.0, 1.0) : 0.0;
-    final percent = (progress * 100).toStringAsFixed(1);
+    final percent = _formatProgressPercent(progress);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -662,6 +672,39 @@ class _TargetQuantityCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatProgressPercent(double progress) {
+    final percentValue = progress * 100;
+    if (percentValue == percentValue.truncateToDouble()) {
+      return percentValue.toStringAsFixed(0);
+    }
+
+    var decimalPlaces = 1;
+    var formatted = percentValue.toStringAsFixed(decimalPlaces);
+
+    while (decimalPlaces < 16 && _countNonZeroFractionDigits(formatted) < 2) {
+      decimalPlaces++;
+      formatted = percentValue.toStringAsFixed(decimalPlaces);
+    }
+
+    return formatted;
+  }
+
+  int _countNonZeroFractionDigits(String value) {
+    final dotIndex = value.indexOf('.');
+    if (dotIndex < 0 || dotIndex == value.length - 1) {
+      return 0;
+    }
+
+    var count = 0;
+    for (final char in value.substring(dotIndex + 1).split('')) {
+      if (char != '0') {
+        count++;
+      }
+    }
+
+    return count;
   }
 }
 
