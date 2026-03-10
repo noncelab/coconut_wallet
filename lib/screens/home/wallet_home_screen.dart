@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -1882,7 +1881,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             child: CoconutPulldownMenu(
               shadowColor: CoconutColors.white.withValues(alpha: 0.1),
               dividerColor: CoconutColors.black,
-              spreadRadius: 12,
               entries: [
                 CoconutPulldownMenuGroup(
                   groupTitle: t.tool,
