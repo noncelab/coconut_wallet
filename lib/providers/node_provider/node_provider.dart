@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -551,7 +552,10 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
-    await service.connect(server.host, server.port, ssl: server.ssl).timeout(const Duration(seconds: 3));
+    final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
+    final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
+
+    await service.connect(server.host, server.port, ssl: server.ssl).timeout(connectionTimeout);
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');
