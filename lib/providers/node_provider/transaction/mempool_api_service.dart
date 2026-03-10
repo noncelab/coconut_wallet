@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:http/http.dart' as http;
 
@@ -30,6 +32,23 @@ class MempoolApi {
       final hex = res.body.trim();
       if (hex.isEmpty) throw Exception('Empty tx hex');
       return hex;
+    }
+
+    throw Exception('HTTP ${res.statusCode}: ${res.body}');
+  }
+
+  Future<Map<String, dynamic>> fetchTx(String txid, {Duration timeout = const Duration(seconds: 15)}) async {
+    _validateTxid(txid);
+
+    final uri = _uri('/api/tx/$txid');
+    final res = await _client
+        .get(uri, headers: {'Accept': 'application/json', 'User-Agent': 'coconut-wallet/1.0'})
+        .timeout(timeout);
+
+    if (res.statusCode == 200) {
+      final body = res.body.trim();
+      if (body.isEmpty) throw Exception('Empty response');
+      return Map<String, dynamic>.from(jsonDecode(body) as Map);
     }
 
     throw Exception('HTTP ${res.statusCode}: ${res.body}');

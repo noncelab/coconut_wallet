@@ -349,7 +349,11 @@ class IsolateManager {
   }
 
   /// 간단한 작업의 경우 소켓 상태를 먼저 확인하고 작업을 수행합니다.
-  Future<Result<T>> _sendWithSocketCheck<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
+  Future<Result<T>> _sendWithSocketCheck<T>(
+    IsolateControllerCommand messageType,
+    List<dynamic> params, {
+    Duration? timeout,
+  }) async {
     try {
       if (_isSimpleCommand(messageType)) {
         Logger.log('IsolateManager: Checking socket status before fast command: $messageType');
@@ -361,22 +365,26 @@ class IsolateManager {
         }
       }
 
-      return await _send<T>(messageType, params);
+      return await _send<T>(messageType, params, commandTimeoutOverride: timeout);
     } catch (e) {
       Logger.error('IsolateManager: Error in _sendWithSocketCheck: $e');
       return Result.failure(ErrorCodes.nodeUnknown);
     }
   }
 
-  Future<Result<T>> _send<T>(IsolateControllerCommand messageType, List<dynamic> params) async {
+  Future<Result<T>> _send<T>(
+    IsolateControllerCommand messageType,
+    List<dynamic> params, {
+    Duration? commandTimeoutOverride,
+  }) async {
     try {
       // 초기화 상태 확인 및 대기
-      final timeout = _getTimeout();
+      final initTimeout = _getTimeout();
       if (!isInitialized) {
         if (_isolateReady != null && !_isolateReady!.isCompleted) {
           await _isolateReady!.future.timeout(
-            timeout,
-            onTimeout: () => throw TimeoutException('Isolate not ready', timeout),
+            initTimeout,
+            onTimeout: () => throw TimeoutException('Isolate not ready', initTimeout),
           );
         } else if (!isInitialized) {
           throw ErrorCodes.nodeIsolateError;
@@ -397,17 +405,23 @@ class IsolateManager {
 
       Result<dynamic> result;
       try {
-        final timeLimit = _getTimeoutForCommand(messageType);
+        final timeLimit = commandTimeoutOverride ?? _getTimeoutForCommand(messageType);
         final isSocketConnectionStatusMessage = messageType == IsolateControllerCommand.getSocketConnectionStatus;
 
         result = await mainFromIsolateReceivePort.first.timeout(
           timeLimit,
           onTimeout: () {
-            Logger.error('IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)');
+            if (messageType == IsolateControllerCommand.getTransactionRecord && params.length > 1) {
+              Logger.error(
+                'IsolateManager: getTransactionRecord timeout (txHash: ${params[1]}, limit: ${timeLimit.inMilliseconds}ms)',
+              );
+            } else {
+              Logger.error('IsolateManager: Command timeout: $messageType (${timeLimit.inMilliseconds}ms)');
+            }
             if (isSocketConnectionStatusMessage) {
               return Result.success(SocketConnectionStatus.terminated);
             }
-            return Result.failure(ErrorCodes.nodeIsolateError);
+            return Result<T>.failure(ErrorCodes.nodeIsolateError);
           },
         );
       } finally {
@@ -417,16 +431,20 @@ class IsolateManager {
       }
 
       if (result is Exception) {
-        return Result.failure(ErrorCodes.nodeUnknown);
+        Logger.error('IsolateManager: Received Exception from isolate ($messageType): $result');
+        return Result<T>.failure(ErrorCodes.nodeUnknown);
       }
 
+      if (result.isFailure) {
+        return Result<T>.failure(result.error);
+      }
       return result as Result<T>;
     } catch (e) {
-      Logger.error('IsolateManager: Error in _send: $e');
+      Logger.error('IsolateManager: Error in _send ($messageType): $e');
       if (e is TimeoutException) {
-        return Result.failure(ErrorCodes.nodeIsolateError);
+        return Result<T>.failure(ErrorCodes.nodeIsolateError);
       }
-      return Result.failure(ErrorCodes.nodeUnknown);
+      return Result<T>.failure(ErrorCodes.nodeUnknown);
     }
   }
 
@@ -471,8 +489,15 @@ class IsolateManager {
     }
   }
 
-  Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) {
-    return _send(IsolateControllerCommand.getTransactionRecord, [walletItem, txHash]);
+  Future<Result<TransactionRecord>> getTransactionRecord(
+    WalletListItemBase walletItem,
+    String txHash, {
+    Duration? timeout,
+  }) {
+    Logger.log(
+      'IsolateManager: getTransactionRecord called (txHash: $txHash, timeout: ${timeout?.inSeconds ?? "default"}s)',
+    );
+    return _send(IsolateControllerCommand.getTransactionRecord, [walletItem, txHash], commandTimeoutOverride: timeout);
   }
 
   /// isolate 연결만 종료하는 메서드

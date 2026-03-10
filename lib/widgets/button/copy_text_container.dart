@@ -15,6 +15,8 @@ class CopyTextContainer extends StatefulWidget {
   final String text;
   final String? copyText;
   final String? middleText;
+  final String? suffixText;
+  final TextStyle? suffixTextStyle;
   final String? toastMsg;
   final TextAlign? textAlign;
   final TextStyle? textStyle;
@@ -27,6 +29,8 @@ class CopyTextContainer extends StatefulWidget {
     required this.text,
     this.copyText,
     this.middleText,
+    this.suffixText,
+    this.suffixTextStyle,
     this.toastMsg,
     this.textAlign,
     this.textStyle,
@@ -104,35 +108,47 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       },
       child: Container(
         width: MediaQuery.sizeOf(context).width,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
           color: CoconutColors.gray850,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _buildTextContent()),
+            Row(
+              children: [
+                Expanded(child: _buildTextContent()),
 
-            if (widget.middleText != null) ...[
-              CoconutLayout.spacing_400w,
-              Text(widget.middleText!, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500)),
-              CoconutLayout.spacing_200w,
-            ] else ...[
-              CoconutLayout.spacing_400w,
-            ],
+                if (widget.middleText != null) ...[
+                  CoconutLayout.spacing_400w,
+                  Text(widget.middleText!, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500)),
+                  CoconutLayout.spacing_200w,
+                ] else ...[
+                  CoconutLayout.spacing_400w,
+                ],
 
-            if (widget.showButton)
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
-                  color: _buttonColor,
-                ),
-                child: SvgPicture.asset(
-                  'assets/svg/copy.svg',
-                  colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
-                ),
+                if (widget.showButton)
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(CoconutStyles.radius_100),
+                      color: _buttonColor,
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/svg/copy.svg',
+                      colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
+                    ),
+                  ),
+              ],
+            ),
+            if (widget.suffixText != null) ...[
+              CoconutLayout.spacing_100h,
+              Text(
+                widget.suffixText!,
+                style: widget.suffixTextStyle ?? CoconutTypography.body2_14.setColor(CoconutColors.gray500),
               ),
+            ],
           ],
         ),
       ),

@@ -506,8 +506,8 @@ send_confirm_screen:
     total: "Total $n"
     sentence: " is required."
   output_detail_title: "Output Details"
-  flow_input_title: "Input $index"
-  flow_output_title: "Output $index"
+  flow_input_title: "Input #$index"
+  flow_output_title: "Output #$index"
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
   bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
@@ -664,6 +664,7 @@ utxo_list_screen:
   pending_utxo: "UTXOs that are already being sent cannot be selected."
 
 transaction_detail_screen:
+  input_output_detail_title: "View Input/Output Details"
   confirmation: "$height ($count confirmations)"
   time_ago:
     just_now: just now

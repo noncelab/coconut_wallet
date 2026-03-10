@@ -15,11 +15,15 @@ import 'package:coconut_wallet/widgets/input_output_detail_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
+///내 지갑 주소의 output 터치 시 호출 (address, outputIndex, amount)
+typedef OnOutputTap = void Function(String address, int outputIndex, int amount);
+
 class TransactionInputOutputCard extends StatefulWidget {
   final TransactionRecord transaction;
   final bool Function(String address, int index) isSameAddress;
   final bool isForTransaction;
   final BitcoinUnit currentUnit;
+  final OnOutputTap? onOutputTap;
 
   const TransactionInputOutputCard({
     super.key,
@@ -27,6 +31,7 @@ class TransactionInputOutputCard extends StatefulWidget {
     required this.isSameAddress,
     required this.currentUnit,
     this.isForTransaction = true,
+    this.onOutputTap,
   });
 
   @override
@@ -47,6 +52,8 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   bool _canShowMoreOutputs = false;
   bool _canShowLessInputs = false;
   bool _canShowLessOutputs = false;
+
+  bool _isTxHashExpanded = false;
 
   int _inputCountToShow = 0;
   int _outputCountToShow = 0;
@@ -160,91 +167,129 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: CoconutColors.gray800),
+      padding: const EdgeInsets.fromLTRB(16, 20, 12, 20),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: CoconutColors.gray850),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 인풋을 조회할 수 없는 경우, 경고 메시지 표시
-          if (_inputAddressList.isEmpty) ...[
-            Row(
+          GestureDetector(
+            onTap: () => setState(() => _isTxHashExpanded = !_isTxHashExpanded),
+            behavior: HitTestBehavior.opaque,
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  children: [
-                    CoconutLayout.spacing_100h,
-                    SvgPicture.asset(
-                      'assets/svg/triangle-warning.svg',
-                      width: 14,
-                      colorFilter: const ColorFilter.mode(CoconutColors.warningYellow, BlendMode.srcIn),
-                    ),
-                  ],
-                ),
-                CoconutLayout.spacing_100w,
                 Expanded(
                   child: Text(
-                    t.errors.empty_input,
-                    softWrap: true,
-                    style: CoconutTypography.body2_14.copyWith(color: CoconutColors.warningYellow),
+                    t.transaction_detail_screen.input_output_detail_title,
+                    style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _isTxHashExpanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: SvgPicture.asset(
+                    'assets/svg/arrow-right-md.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                   ),
                 ),
               ],
             ),
-            CoconutLayout.spacing_200h,
-          ],
-          _buildAddressList(
-            list: _canShowMoreInputs ? _inputAddressList.sublist(0, _inputCountToShow) : _inputAddressList,
-            rowType: InputOutputRowType.input,
           ),
-          Visibility(
-            visible: _canShowMoreInputs,
-            child: Center(
-              child: CustomUnderlinedButton(
-                text: t.view_more,
-                onTap: _onTapViewMoreInputs,
-                fontSize: 12,
-                lineHeight: 14,
+
+          if (_isTxHashExpanded)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.only(right: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 인풋을 조회할 수 없는 경우, 경고 메시지 표시
+                  if (_inputAddressList.isEmpty) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            CoconutLayout.spacing_100h,
+                            SvgPicture.asset(
+                              'assets/svg/triangle-warning.svg',
+                              width: 14,
+                              colorFilter: const ColorFilter.mode(CoconutColors.warningYellow, BlendMode.srcIn),
+                            ),
+                          ],
+                        ),
+                        CoconutLayout.spacing_100w,
+                        Expanded(
+                          child: Text(
+                            t.errors.empty_input,
+                            softWrap: true,
+                            style: CoconutTypography.body2_14.copyWith(color: CoconutColors.warningYellow),
+                          ),
+                        ),
+                      ],
+                    ),
+                    CoconutLayout.spacing_200h,
+                  ],
+                  _buildAddressList(
+                    list: _canShowMoreInputs ? _inputAddressList.sublist(0, _inputCountToShow) : _inputAddressList,
+                    rowType: InputOutputRowType.input,
+                  ),
+                  Visibility(
+                    visible: _canShowMoreInputs,
+                    child: Center(
+                      child: CustomUnderlinedButton(
+                        text: t.view_more,
+                        onTap: _onTapViewMoreInputs,
+                        fontSize: 12,
+                        lineHeight: 14,
+                      ),
+                    ),
+                  ),
+                  Visibility(
+                    visible: _canShowLessInputs,
+                    child: Center(
+                      child: CustomUnderlinedButton(
+                        text: t.view_less,
+                        onTap: _onTapViewLessInputs,
+                        fontSize: 12,
+                        lineHeight: 14,
+                      ),
+                    ),
+                  ),
+                  if (_inputAddressList.isNotEmpty) _buildFee(widget.transaction.fee),
+                  _buildAddressList(
+                    list: _canShowMoreOutputs ? _outputAddressList.sublist(0, _outputCountToShow) : _outputAddressList,
+                    rowType: InputOutputRowType.output,
+                  ),
+                  Visibility(
+                    visible: _canShowMoreOutputs,
+                    child: Center(
+                      child: CustomUnderlinedButton(
+                        text: t.view_more,
+                        onTap: _onTapViewMoreOutputs,
+                        fontSize: 12,
+                        lineHeight: 14,
+                      ),
+                    ),
+                  ),
+                  Visibility(
+                    visible: _canShowLessOutputs,
+                    child: Center(
+                      child: CustomUnderlinedButton(
+                        text: t.view_less,
+                        onTap: _onTapViewLessOutputs,
+                        fontSize: 12,
+                        lineHeight: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          Visibility(
-            visible: _canShowLessInputs,
-            child: Center(
-              child: CustomUnderlinedButton(
-                text: t.view_less,
-                onTap: _onTapViewLessInputs,
-                fontSize: 12,
-                lineHeight: 14,
-              ),
-            ),
-          ),
-          if (_inputAddressList.isNotEmpty) _buildFee(widget.transaction.fee),
-          _buildAddressList(
-            list: _canShowMoreOutputs ? _outputAddressList.sublist(0, _outputCountToShow) : _outputAddressList,
-            rowType: InputOutputRowType.output,
-          ),
-          Visibility(
-            visible: _canShowMoreOutputs,
-            child: Center(
-              child: CustomUnderlinedButton(
-                text: t.view_more,
-                onTap: _onTapViewMoreOutputs,
-                fontSize: 12,
-                lineHeight: 14,
-              ),
-            ),
-          ),
-          Visibility(
-            visible: _canShowLessOutputs,
-            child: Center(
-              child: CustomUnderlinedButton(
-                text: t.view_less,
-                onTap: _onTapViewLessOutputs,
-                fontSize: 12,
-                lineHeight: 14,
-              ),
-            ),
-          ),
 
           /// balance 최대 너비 체크를 위함
           Offstage(child: Text(key: _balanceWidthKey, _minimumLongestText, style: CoconutTypography.body2_14_Number)),
@@ -266,7 +311,32 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
         ...filteredEntries.map((entry) {
           final originalIndex = entry.key; // UTXO의 인덱스에 해당하는 원본 인덱스 유지
           final item = entry.value;
+          final isCurrentAddress = widget.isSameAddress(item.address, originalIndex);
+          final isTappable =
+              rowType == InputOutputRowType.output &&
+              isCurrentAddress &&
+              widget.onOutputTap != null &&
+              widget.isForTransaction;
 
+          if (isTappable) {
+            return _TappableOutputRow(
+              onTap: () => widget.onOutputTap!(item.address, originalIndex, item.amount.abs()),
+              builder:
+                  (colorOverride) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: InputOutputDetailRow(
+                      address: item.address,
+                      balance: item.amount,
+                      balanceMaxWidth: balanceMaxWidth,
+                      rowType: rowType,
+                      isCurrentAddress: isCurrentAddress,
+                      transactionStatus: widget.isForTransaction ? _status : null,
+                      currentUnit: widget.currentUnit,
+                      colorOverride: colorOverride,
+                    ),
+                  ),
+            );
+          }
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
             child: InputOutputDetailRow(
@@ -274,7 +344,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
               balance: item.amount,
               balanceMaxWidth: balanceMaxWidth,
               rowType: rowType,
-              isCurrentAddress: widget.isSameAddress(item.address, originalIndex),
+              isCurrentAddress: isCurrentAddress,
               transactionStatus: widget.isForTransaction ? _status : null,
               currentUnit: widget.currentUnit,
             ),
@@ -374,5 +444,39 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
       _canShowLessOutputs = false;
       updateBalanceMaxWidth();
     });
+  }
+}
+
+class _TappableOutputRow extends StatefulWidget {
+  final VoidCallback onTap;
+  final Widget Function(Color? colorOverride) builder;
+
+  const _TappableOutputRow({required this.onTap, required this.builder});
+
+  @override
+  State<_TappableOutputRow> createState() => _TappableOutputRowState();
+}
+
+class _TappableOutputRowState extends State<_TappableOutputRow> {
+  bool _isPressed = false;
+
+  static const _shrinkDuration = Duration(milliseconds: 100);
+  static const _shrinkScale = 0.97;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedScale(
+        scale: _isPressed ? _shrinkScale : 1.0,
+        duration: _shrinkDuration,
+        curve: Curves.easeInOut,
+        child: widget.builder(_isPressed ? CoconutColors.gray500 : null),
+      ),
+    );
   }
 }

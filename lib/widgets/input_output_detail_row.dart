@@ -14,6 +14,7 @@ class InputOutputDetailRow extends StatelessWidget {
   final TransactionStatus? transactionStatus;
   final RowProperty rowProperty;
   final BitcoinUnit currentUnit;
+  final Color? colorOverride;
 
   InputOutputDetailRow({
     super.key,
@@ -24,13 +25,19 @@ class InputOutputDetailRow extends StatelessWidget {
     required this.currentUnit,
     this.isCurrentAddress,
     this.transactionStatus,
+    this.colorOverride,
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
   String get balanceText => currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
 
+  Color _resolveColor(Color base) => colorOverride ?? base;
+
   @override
   Widget build(BuildContext context) {
     bool shouldTrimText = (balanceMaxWidth != 0.0 ? balanceMaxWidth : 100.0) > MediaQuery.of(context).size.width * 0.3;
+    final leftColor = _resolveColor(rowProperty.leftItemColor);
+    final rightColor = _resolveColor(rowProperty.rightItemColor);
+    final svgColor = _resolveColor(rowProperty.svgColor);
     return Row(
       children: [
         Expanded(
@@ -40,11 +47,7 @@ class InputOutputDetailRow extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 shouldTrimText ? TextUtils.truncate(address, 14, 8, 6) : TextUtils.truncate(address, 19, 11, 8),
-                style: CoconutTypography.body2_14_Number.copyWith(
-                  color: rowProperty.leftItemColor,
-                  fontSize: 14,
-                  height: 16 / 14,
-                ),
+                style: CoconutTypography.body2_14_Number.copyWith(color: leftColor, fontSize: 14, height: 16 / 14),
                 textScaler: const TextScaler.linear(1.0),
                 maxLines: 1,
               ),
@@ -67,7 +70,7 @@ class InputOutputDetailRow extends StatelessWidget {
                         rowProperty.svgPath,
                         width: 16,
                         height: 12,
-                        colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
+                        colorFilter: ColorFilter.mode(svgColor, BlendMode.srcIn),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -82,10 +85,7 @@ class InputOutputDetailRow extends StatelessWidget {
                             child: Text(
                               textAlign: TextAlign.end,
                               balanceText,
-                              style: CoconutTypography.body2_14_Number.copyWith(
-                                color: rowProperty.rightItemColor,
-                                height: 16 / 14,
-                              ),
+                              style: CoconutTypography.body2_14_Number.copyWith(color: rightColor, height: 16 / 14),
                             ),
                           ),
                         ),
@@ -111,10 +111,7 @@ class InputOutputDetailRow extends StatelessWidget {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           balanceText,
-                          style: CoconutTypography.body2_14_Number.copyWith(
-                            color: rowProperty.rightItemColor,
-                            height: 16 / 14,
-                          ),
+                          style: CoconutTypography.body2_14_Number.copyWith(color: rightColor, height: 16 / 14),
                         ),
                       ),
                     ),
@@ -125,7 +122,7 @@ class InputOutputDetailRow extends StatelessWidget {
                   rowProperty.svgPath,
                   width: 16,
                   height: 12,
-                  colorFilter: ColorFilter.mode(rowProperty.svgColor, BlendMode.srcIn),
+                  colorFilter: ColorFilter.mode(svgColor, BlendMode.srcIn),
                 ),
               ],
             ),

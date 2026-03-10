@@ -360,6 +360,21 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.containsAddress(walletId, address, isChange: isChange);
   }
 
+  // 앱에 추가된 모든 지갑 중 해당 주소를 소유한 지갑 ID 반환, 없으면 null
+  int? findWalletIdContainingAddress(String address) {
+    for (final wallet in _walletItemList) {
+      if (_addressRepository.containsAddress(wallet.id, address)) {
+        return wallet.id;
+      }
+    }
+    return null;
+  }
+
+  // 앱에 추가된 모든 지갑 중 해당 주소가 하나라도 포함되는지 확인
+  bool containsAddressInAnyWallet(String address) {
+    return findWalletIdContainingAddress(address) != null;
+  }
+
   List<WalletAddress> filterChangeAddressesFromList(int walletId, List<String> addresses) {
     return _addressRepository.filterChangeAddressesFromList(walletId, addresses);
   }
