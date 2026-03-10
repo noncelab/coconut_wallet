@@ -288,7 +288,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
   Widget _buildTotalAmount(Map<int, AnimatedBalanceData> walletBalanceMap) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
         child: Stack(
           children: [
             Container(
@@ -755,7 +755,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                           : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Divider(color: CoconutColors.gray700, height: 1),
+                              const Divider(color: CoconutColors.gray800, height: 1),
                               CoconutLayout.spacing_400h,
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 2),
