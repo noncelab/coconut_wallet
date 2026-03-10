@@ -312,7 +312,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       await file.writeAsBytes(pngBytes);
 
       AppGuard.disablePrivacyScreen();
-      await Share.shareXFiles([XFile(file.path)], text: t.utility.p2p_calculator.transaction_bill);
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(file.path)], text: t.utility.p2p_calculator.transaction_bill),
+      );
     } catch (e) {
       debugPrint('Failed to capture and share: $e');
     } finally {
