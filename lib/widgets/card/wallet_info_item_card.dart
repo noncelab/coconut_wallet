@@ -59,6 +59,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             WalletAddService.masterFingerprintPlaceholder;
   }
 
+  bool _isExtendedPublicKey() {
+    return walletImportSource == WalletImportSource.extendedPublicKey;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -187,17 +191,18 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                   RegExp(r'[a-z]+'),
                                   (match) => match.group(0)!.toUpperCase(),
                                 ),
-                                iconKey: _isWithoutMfp() ? null : widget.tooltipKey,
+                                iconKey: _isWithoutMfp() || _isExtendedPublicKey() ? null : widget.tooltipKey,
                                 containerMargin: EdgeInsets.zero,
                                 containerPadding: EdgeInsets.zero,
                                 iconMargin: const EdgeInsets.only(left: 4),
-                                onTap: _isWithoutMfp() ? _onMfpEditTap : widget.onTooltipClicked,
+                                onTap:
+                                    _isWithoutMfp() || _isExtendedPublicKey() ? _onMfpEditTap : widget.onTooltipClicked,
                                 pressedTextStyle:
-                                    _isWithoutMfp()
+                                    _isWithoutMfp() || _isExtendedPublicKey()
                                         ? CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.gray500)
                                         : null,
                                 defaultIconBuilder:
-                                    _isWithoutMfp()
+                                    _isWithoutMfp() || _isExtendedPublicKey()
                                         ? (isPressed) => SvgPicture.asset(
                                           'assets/svg/edit-outlined.svg',
                                           width: 14,
@@ -208,7 +213,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                                         )
                                         : null,
                                 extraIcons:
-                                    _isWithoutMfp()
+                                    _isWithoutMfp() || _isExtendedPublicKey()
                                         ? [
                                           TooltipIconAction(
                                             key: widget.tooltipKey,
