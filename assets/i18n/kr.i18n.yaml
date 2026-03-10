@@ -954,8 +954,8 @@ alert:
     not_enough_amount: "$bumpingType를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요."
   without_mfp: 
     title: "마스터 핑거프린트 추가"
-    description: "트랜잭션을 보내려면 마스터 핑거프린트를 먼저 추가해 주세요. 추가한 뒤 보내기를 다시 진행할 수 있어요."
-    skip_button: "나중에"
+    description: "비트코인을 보내려면 마스터 핑거프린트를 먼저 추가해야 해요. 계속 하시겠어요?"
+    skip_button: "취소"
     confirm_button: "추가하기"
 
 third_party:

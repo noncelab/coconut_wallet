@@ -953,8 +953,8 @@ alert:
     not_enough_amount: "Saldo insuficiente para ejecutar $bumpingType.\nPor favor, verifica tu saldo disponible actual."
   without_mfp:
     title: "Agregar huella digital maestra"
-    description: "Para enviar una transacción, primero debes agregar la huella digital maestra. Puedes agregarla y enviar la transacción nuevamente."
-    skip_button: "Más tarde"
+    description: "Para enviar Bitcoin, primero debes agregar la huella digital maestra. ¿Quieres continuar?"
+    skip_button: "Cancelar"
     confirm_button: "Agregar"
 
 third_party:

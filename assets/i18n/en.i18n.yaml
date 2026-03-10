@@ -951,8 +951,8 @@ alert:
     not_enough_amount: "Insufficient balance to execute $bumpingType.\nPlease check your current available balance."
   without_mfp:
     title: "Add Master Fingerprint"
-    description: "To send a transaction, you need to add the Master Fingerprint first. You can add it and send the transaction again."
-    skip_button: "Later"
+    description: "To send Bitcoin, you need to add the Master Fingerprint first. Do you want to continue?"
+    skip_button: "Cancel"
     confirm_button: "Add"
 
 third_party:

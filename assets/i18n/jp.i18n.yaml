@@ -951,8 +951,8 @@ alert:
     not_enough_amount: "$bumpingTypeを実行するための残高が不足しています。\n現在の残高を確認してください。"
   without_mfp:
     title: "マスターフィンガープリントを追加"
-    description: "トランザクションを送信するには、まずマスターフィンガープリントを追加する必要があります。追加した後、再び送信することができます。"
-    skip_button: "後で"
+    description: "ビットコインを送信するには、まずマスターフィンガープリントを追加する必要があります。追加した後、再び送信することができます。"
+    skip_button: "キャンセル"
     confirm_button: "追加"
 
 third_party:
