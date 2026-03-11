@@ -11,8 +11,12 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -353,6 +357,37 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
   }
 
+  void _onSendButtonPressed(int satsAmount) {
+    if (_viewModel.wallets.length == 1) {
+      // _onSendButtonPressed(_viewModel.wallets[0].id);
+      return;
+    }
+    CommonBottomSheets.showDraggableBottomSheet(
+      context: context,
+      childBuilder:
+          (scrollController) => P2PSelectWalletBottomSheet(
+            showOnlyMfpWallets: false,
+            scrollController: scrollController,
+            currentUnit: _viewModel.currentUnit,
+            onWalletSelected: (walletId) {
+              debugPrint('satsAmount: $satsAmount');
+
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                context,
+                '/send',
+                arguments: {
+                  'walletId': walletId,
+                  'sendEntryPoint': SendEntryPoint.home,
+                  'transactionDraftId': null,
+                  'initialSatsFromP2P': satsAmount,
+                },
+              );
+            },
+          ),
+    );
+  }
+
   void _changeInputAsset() {
     final currentInput = _viewModel.inputAmount;
 
@@ -600,7 +635,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                   ],
                                 ),
                               ),
-                              CoconutLayout.spacing_900h,
+                              CoconutLayout.spacing_800h,
                             ],
                           ),
                         ),
@@ -613,6 +648,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         feeRateStr,
                         feeAmountStr,
                         feeSatsStr,
+                        _viewModel.inputAssetType == InputAssetType.fiat ? result : input,
                       ),
                       CoconutLayout.spacing_600h,
                     ],
@@ -677,71 +713,92 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     String feeRateStr,
     String feeAmountStr,
     String feeSatsStr,
+    int satsAmount,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ShrinkAnimationButton(
-          borderRadius: 8,
-          pressedColor: CoconutColors.gray850,
-          onPressed: () {
-            _viewModel.copyAll(
-              btcPriceStr,
-              fiatAmountStr,
-              btcAmountStr,
-              referenceDateTime,
-              feeRateStr,
-              feeAmountStr,
-              feeSatsStr,
-            );
-          },
-          child: Container(
-            width: 120,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset(
-                  'assets/svg/copy.svg',
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                  width: 14,
-                  height: 14,
-                ),
-                CoconutLayout.spacing_200w,
-                Text(
-                  t.utility.p2p_calculator.copy_all,
-                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                ),
-              ],
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Column(
+        children: [
+          CoconutUnderlinedButton(
+            text: t.utility.p2p_calculator.copy_all,
+            textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+            onTap: () {
+              _viewModel.copyAll(
+                btcPriceStr,
+                fiatAmountStr,
+                btcAmountStr,
+                referenceDateTime,
+                feeRateStr,
+                feeAmountStr,
+                feeSatsStr,
+              );
+            },
           ),
-        ),
-        CoconutLayout.spacing_300w,
-        ShrinkAnimationButton(
-          borderRadius: 8,
-          pressedColor: CoconutColors.gray850,
-          onPressed: () {
-            _captureAndShareBill();
-          },
-          child: Container(
-            width: 120,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SvgPicture.asset(
-                  'assets/svg/export.svg',
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                  width: 14,
-                  height: 14,
+          CoconutLayout.spacing_200h,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: ShrinkAnimationButton(
+                  borderRadius: 8,
+                  pressedColor: CoconutColors.gray850,
+                  onPressed: () {
+                    _onSendButtonPressed(satsAmount);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg/send-plane.svg',
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          width: 14,
+                          height: 14,
+                        ),
+                        CoconutLayout.spacing_200w,
+                        Text(
+                          t.utility.p2p_calculator.send,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                CoconutLayout.spacing_200w,
-                Text(t.utility.p2p_calculator.share, style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
-              ],
-            ),
+              ),
+              CoconutLayout.spacing_300w,
+              Expanded(
+                child: ShrinkAnimationButton(
+                  borderRadius: 8,
+                  pressedColor: CoconutColors.gray850,
+                  onPressed: () {
+                    _captureAndShareBill();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg/export.svg',
+                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          width: 14,
+                          height: 14,
+                        ),
+                        CoconutLayout.spacing_200w,
+                        Text(
+                          t.utility.p2p_calculator.share,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -756,6 +813,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             context.read<PreferenceProvider>(),
             context.read<ConnectivityProvider>(),
             context.read<PriceProvider>(),
+            context.read<WalletProvider>(),
           ),
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,

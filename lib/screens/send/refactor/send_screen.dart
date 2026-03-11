@@ -47,8 +47,15 @@ class SendScreen extends StatefulWidget {
   final int? walletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
+  final int? initialSatsFromP2P;
 
-  const SendScreen({super.key, this.walletId, required this.sendEntryPoint, this.transactionDraftId});
+  const SendScreen({
+    super.key,
+    this.walletId,
+    required this.sendEntryPoint,
+    this.transactionDraftId,
+    this.initialSatsFromP2P,
+  });
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -131,6 +138,25 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.sendEntryPoint,
       widget.transactionDraftId,
     );
+    if (widget.initialSatsFromP2P != null) {
+      final sats = widget.initialSatsFromP2P!;
+      debugPrint('sats: $sats');
+      // SendInfoProvider에도 BTC 단위로 저장 (기존 플로우와 일관성 유지)
+      final btcAmount = UnitUtil.convertSatoshiToBitcoin(sats);
+      context.read<SendInfoProvider>().setAmount(btcAmount);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // 1) UI 텍스트 필드에 표시
+        final amountText =
+            _viewModel.currentUnit.isBasedOnSatoshi
+                ? sats.toString()
+                : BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
+        debugPrint('amountText: $amountText');
+        _amountController.text = amountText;
+        // 2) ViewModel에는 항상 sats 기준으로 전달
+        _viewModel.setAmountText(sats, 0);
+      });
+    }
     _amountFocusNode.addListener(
       () => setState(() {
         if (!_amountFocusNode.hasFocus) {
@@ -193,12 +219,23 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             addressInputFieldRect.size.height -
             MediaQuery.of(context).padding.top -
             kToolbarHeight;
+        if (widget.initialSatsFromP2P == null) {
+          _amountController.text = _setAmountFromSendInfo();
+        }
       });
 
       if (widget.transactionDraftId != null) {
         _onDraftSelected(widget.transactionDraftId!);
       }
     });
+  }
+
+  String _setAmountFromSendInfo() {
+    final amount = context.read<SendInfoProvider>().amount;
+    if (amount != null) {
+      return amount.toString();
+    }
+    return '';
   }
 
   @override

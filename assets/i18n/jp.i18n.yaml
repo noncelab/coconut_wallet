@@ -192,8 +192,9 @@ utility:
     reference_price: "基準価格"
     reference_datetime: "基準日時"
     transaction_fee: "取引手数料"
-    copy_all: "全コピー"
+    copy_all: "全てをコピー"
     share: "共有"
+    send: "送信"
     copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[取引請求書]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n基準価格: $currencySymbol $referencePrice / BTC\n基準日時: $referenceTime\n取引手数料: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
 
 transaction_draft:

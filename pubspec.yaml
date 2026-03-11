@@ -295,6 +295,7 @@ flutter:
     - assets/svg/widget.svg
     - assets/svg/search-not-found.svg
     - assets/svg/remove-minus.svg
+    - assets/svg/send-plane.svg
 
   fonts:
     - family: SpaceGrotesk
