@@ -359,7 +359,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   void _onSendButtonPressed(int satsAmount) {
     if (_viewModel.wallets.length == 1) {
-      // _onSendButtonPressed(_viewModel.wallets[0].id);
+      final walletId = _viewModel.wallets[0].id;
+      Navigator.pushNamed(
+        context,
+        '/send',
+        arguments: {
+          'walletId': walletId,
+          'sendEntryPoint': SendEntryPoint.home,
+          'transactionDraftId': null,
+          'initialSatsFromP2P': satsAmount,
+        },
+      );
       return;
     }
     CommonBottomSheets.showDraggableBottomSheet(
