@@ -25,6 +25,9 @@ class TransactionInputOutputCard extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final OnOutputTap? onOutputTap;
 
+  /// UTXO가 현재 UTXO 셋에 존재할 때만 true. null이면 isSameAddress인 모든 출력에 대해 이동 가능.
+  final bool Function(String address, int outputIndex)? isOutputNavigable;
+
   const TransactionInputOutputCard({
     super.key,
     required this.transaction,
@@ -32,6 +35,7 @@ class TransactionInputOutputCard extends StatefulWidget {
     required this.currentUnit,
     this.isForTransaction = true,
     this.onOutputTap,
+    this.isOutputNavigable,
   });
 
   @override
@@ -312,9 +316,12 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
           final originalIndex = entry.key; // UTXO의 인덱스에 해당하는 원본 인덱스 유지
           final item = entry.value;
           final isCurrentAddress = widget.isSameAddress(item.address, originalIndex);
+          final isNavigable =
+              widget.isOutputNavigable == null || widget.isOutputNavigable!(item.address, originalIndex);
           final isTappable =
               rowType == InputOutputRowType.output &&
               isCurrentAddress &&
+              isNavigable &&
               widget.onOutputTap != null &&
               widget.isForTransaction;
 

@@ -321,11 +321,16 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
     return _buildOutputNodesDefault(context);
   }
 
+  bool _isInNavigableTargets(FlowOutputTapTarget target) {
+    final navigable = widget.navigableOutputTapTargets ?? [];
+    return navigable.any((n) => n.outputIndex == target.outputIndex && n.address == target.address);
+  }
+
   List<_FlowNode> _buildOutputNodesForReceiving(BuildContext context) {
     final List<_FlowNode> nodes = [];
     final ordered = widget.orderedOutputs!;
     final isOutputMine = widget.isOutputMine!;
-    final isNavigable = widget.onOutputTap != null && widget.isOutputMine != null;
+    final isNavigable = widget.onOutputTap != null;
 
     final ours = ordered.where((t) => isOutputMine(t.address)).toList();
     final ourIndices = {for (final t in ours) t.outputIndex};
@@ -337,23 +342,28 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
     if (ordered.length <= 4) {
       for (final target in ordered) {
         final isMine = isOutputMine(target.address);
+        final canNavigate = isMine && _isInNavigableTargets(target);
         nodes.add(
           _FlowNode(
             type: _FlowNodeType.output,
             title: _localizedOutputTitle(context, target.outputIndex),
             amount: target.amount,
-            tapTarget: isNavigable && isMine ? target : null,
+            tapTarget: isNavigable && canNavigate ? target : null,
+            isMyOutput: isMine,
           ),
         );
       }
     } else {
       // [출력 0, ..., 출력 30(내 출력), ..., 출력 32, 수수료] 형태로 트랜잭션 순서 유지 (0-based)
+      final first = ordered.first;
+      final canNavigateFirst = isOutputMine(first.address) && _isInNavigableTargets(first);
       nodes.add(
         _FlowNode(
           type: _FlowNodeType.output,
-          title: _localizedOutputTitle(context, ordered.first.outputIndex),
-          amount: ordered.first.amount,
-          tapTarget: isNavigable && isOutputMine(ordered.first.address) ? ordered.first : null,
+          title: _localizedOutputTitle(context, first.outputIndex),
+          amount: first.amount,
+          tapTarget: isNavigable && canNavigateFirst ? first : null,
+          isMyOutput: isOutputMine(first.address),
         ),
       );
 
@@ -361,12 +371,14 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       while (i < ordered.length - 1) {
         final target = ordered[i];
         if (ourIndices.contains(target.outputIndex)) {
+          final canNavigate = _isInNavigableTargets(target);
           nodes.add(
             _FlowNode(
               type: _FlowNodeType.output,
               title: _localizedOutputTitle(context, target.outputIndex),
               amount: target.amount,
-              tapTarget: isNavigable ? target : null,
+              tapTarget: isNavigable && canNavigate ? target : null,
+              isMyOutput: true,
             ),
           );
           i++;
@@ -380,12 +392,13 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
 
       if (ordered.length > 1) {
         final last = ordered.last;
+        final canNavigateLast = isOutputMine(last.address) && _isInNavigableTargets(last);
         nodes.add(
           _FlowNode(
             type: _FlowNodeType.output,
             title: _localizedOutputTitle(context, last.outputIndex),
             amount: last.amount,
-            tapTarget: isNavigable && isOutputMine(last.address) ? last : null,
+            tapTarget: isNavigable && canNavigateLast ? last : null,
           ),
         );
       }
@@ -642,7 +655,7 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
         status == TransactionStatus.self ||
         status == TransactionStatus.selfsending;
     if (isIncoming) {
-      if (node.tapTarget != null) return CoconutColors.cyanBlue;
+      if (node.isMyOutput == true) return CoconutColors.cyanBlue;
       return CoconutColors.gray500;
     } else if (isOutgoing) {
       if (node.type == _FlowNodeType.input) return CoconutColors.white;
@@ -745,5 +758,8 @@ class _FlowNode {
   final int? amount;
   final FlowOutputTapTarget? tapTarget;
 
-  const _FlowNode({required this.type, required this.title, required this.amount, this.tapTarget});
+  /// receiving 시 output node: 내 아웃풋 여부 (cyanblue 적용용)
+  final bool? isMyOutput;
+
+  const _FlowNode({required this.type, required this.title, required this.amount, this.tapTarget, this.isMyOutput});
 }

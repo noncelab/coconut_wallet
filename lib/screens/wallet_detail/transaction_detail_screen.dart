@@ -130,7 +130,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         ],
                         CoconutLayout.spacing_300h,
 
-                        _buildTxInputOutputDetail(tx, viewModel),
+                        _buildTxInputOutputDetail(context, tx, viewModel),
                         CoconutLayout.spacing_800h,
                         _buildTxId(tx, viewModel),
                         _buildFeeRate(tx),
@@ -500,7 +500,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     );
   }
 
-  Widget _buildTxInputOutputDetail(TransactionRecord tx, TransactionDetailViewModel viewModel) {
+  bool _isOutputNavigable(BuildContext context, TransactionRecord tx, String address, int outputIndex) {
+    final walletProvider = context.read<WalletProvider>();
+    if (!walletProvider.containsAddressInAnyWallet(address)) return false;
+    final walletId = walletProvider.findWalletIdContainingAddress(address);
+    if (walletId == null) return false;
+    final utxoId = getUtxoId(tx.transactionHash, outputIndex);
+    return walletProvider.getUtxoState(walletId, utxoId) != null;
+  }
+
+  Widget _buildTxInputOutputDetail(BuildContext context, TransactionRecord tx, TransactionDetailViewModel viewModel) {
     return Stack(
       children: [
         if (viewModel.previousTransactionIndex != viewModel.selectedTransactionIndex)
@@ -517,6 +526,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
               transaction: viewModel.transactionList![viewModel.previousTransactionIndex],
               isSameAddress: viewModel.isSameAddress,
               currentUnit: _currentUnit,
+              isOutputNavigable:
+                  (address, outputIndex) => _isOutputNavigable(
+                    context,
+                    viewModel.transactionList![viewModel.previousTransactionIndex],
+                    address,
+                    outputIndex,
+                  ),
               onOutputTap:
                   (address, outputIndex, amount) => _navigateToUtxoDetailFromFlow(
                     viewModel.transactionList![viewModel.previousTransactionIndex],
@@ -538,6 +554,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
             transaction: viewModel.transactionList![viewModel.selectedTransactionIndex],
             isSameAddress: viewModel.isSameAddress,
             currentUnit: _currentUnit,
+            isOutputNavigable:
+                (address, outputIndex) => _isOutputNavigable(
+                  context,
+                  viewModel.transactionList![viewModel.selectedTransactionIndex],
+                  address,
+                  outputIndex,
+                ),
             onOutputTap:
                 (address, outputIndex, amount) => _navigateToUtxoDetailFromFlow(
                   tx,
@@ -730,7 +753,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     final navigableOutputTapTargets = <FlowOutputTapTarget>[];
     final orderedOutputs = <FlowOutputTapTarget>[];
 
-    final isOutputMine = context.read<WalletProvider>().containsAddressInAnyWallet;
+    // output 중 navigable 목록 추출
+    // 내 주소 중 하나이고 utxo가 존재하는 output 추출
+    // 출력 노드 클릭 시 내 지갑 utxo 상세 화면으로 이동
+    final walletProvider = context.read<WalletProvider>();
+    final isOutputMine = walletProvider.containsAddressInAnyWallet;
     for (var i = 0; i < tx.outputAddressList.length; i++) {
       final output = tx.outputAddressList[i];
       final amount = output.amount.abs();
@@ -738,7 +765,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       orderedOutputs.add(target);
       if (isOutputMine(output.address)) {
         changeOutputAmounts.add(amount);
-        navigableOutputTapTargets.add(target);
+        final walletId = walletProvider.findWalletIdContainingAddress(output.address);
+        if (walletId != null) {
+          final utxoId = getUtxoId(tx.transactionHash, i);
+          final utxoState = walletProvider.getUtxoState(walletId, utxoId);
+          if (utxoState != null) {
+            navigableOutputTapTargets.add(target);
+          }
+        }
       } else {
         externalOutputAmounts.add(amount);
         externalOutputTapTargets.add(target);
