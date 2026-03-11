@@ -3,11 +3,18 @@ import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_excepti
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/packages/bc-ur-dart/lib/utils.dart';
 import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../../../mock/wallet_mock.dart';
 import 'setup_util.dart';
+
+void expectRbfMinimumCondition(RbfBuildResult result, TransactionRecord pendingTx) {
+  if (result.isSuccess) {
+    expect(result.estimatedFee, greaterThanOrEqualTo(pendingTx.fee + result.estimatedVSize));
+  }
+}
 
 void main() {
   SinglesigWalletListItem singleWallet = WalletMock.createSingleSigWalletItem();
@@ -120,7 +127,7 @@ void main() {
     // });
   });
 
-  group('싱글시그지갑 - getBaselineTransaction', () {
+  group('싱글시그지갑 - getBaselineTransaction - no selfOutput', () {
     test('External 1 / change enough', () async {
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
@@ -151,6 +158,8 @@ void main() {
 
       expect(calculatedFeeRate, equals(2.0));
       expect(changeAmount, equals(98718)); // 98859 - 141
+
+      expectRbfMinimumCondition(result, pendingTx);
     });
 
     test('External 1 / change NotEnough / no additional UTXO', () async {
@@ -213,6 +222,8 @@ void main() {
       expect(result.addedInputs!.length, equals(1));
       expect(result.deficitAmount, isNull);
       expect(result.minimumFeeRate, equals(1.54));
+
+      expectRbfMinimumCondition(result, pendingTx);
     });
 
     test('External 1 / changeAmount == additionalFee (정확히 일치) / 경계 조건', () async {
@@ -238,6 +249,7 @@ void main() {
       expect(result.addedInputs, isNull);
       expect(result.deficitAmount, isNull);
       expect(result.minimumFeeRate, equals(2.57)); // FreeRateUtils.ceilFeeRate(141*2 / 109.75)
+      expectRbfMinimumCondition(result, pendingTx);
     });
 
     test('External 1 / changeAmount == additionalFee - 1 (1 sat 부족) / 경계 조건', () async {
@@ -261,6 +273,81 @@ void main() {
       expect(result.deficitAmount, equals(1 + 68)); // = 69
       expect(result.minimumFeeRate, equals(1.68));
     });
+
+    test('selfOutput 1 / change insufficient / selfOutput partial reduction → getBaselineTransaction 성공', () async {
+      // 원본 tx: 1-in/2-out (selfOutput + change), vSize=141
+      // additionalFee = 141, changeOutput(100) < 141 → deficitAmount = 41
+      // selfOutput(99759) - 41 = 99718 > dustLimit(546) → partial reduction
+      // sweep tx 생성 후 실제 vSize=109.75로 작아짐
+      // RBF 최소 조건: fee >= 141 + 109.75 = 250.75
+      // requiredFeeRate = ceil(251/109.75) = 2.3으로 재빌드
+      // 결과 tx: 1-in/1-out, fee=252, vSize=109.75
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(true, 99759)],
+        changeAmount: 100,
+        fee: 141,
+        vSize: 141,
+      );
+
+      final RbfBuildResult result = rbfBuilder.getBaselineTransaction();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.isSelfOutputsUsed, isTrue);
+      expect(result.isOnlyChangeOutputUsed, isFalse);
+      expect(result.addedInputs, isNull);
+      expect(result.deficitAmount, isNull);
+      expect(result.minimumFeeRate, equals(2.3));
+
+      final tx = result.transaction!;
+      // selfOutput amount = 100000 - 252 = 99748
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 99748), isTrue);
+      // change output은 0 sat → 드롭됨
+      expect(tx.outputs.any((o) => o.getAddress() == creator.changeAddressList[0]), isFalse);
+      expectRbfMinimumCondition(result, pendingTx);
+    });
+
+    test(
+      'External 1 + selfOutput 1 / change insufficient / selfOutput full removal → getBaselineTransaction 성공',
+      () async {
+        // 원본 tx: 1-in/3-out (external + selfOutput + change), vSize=172
+        // additionalFee = 172, changeOutput(100) < 172 → deficitAmount = 72
+        // selfOutput(500) - 72 = 428 ≤ dustLimit(546) → full removal
+        // leftDeficit = 72 - (500 + ceil(31*1.0)=31) = -459 → 0
+        // vSizeReduced = 31, newTxVSize = 172 - 31 = 141
+        // newRecipients = {external: 1000} (selfOutput 제거됨)
+        // build at _calculateMinimumFeeRate(141) = 2.0:
+        //   tx: external(1000) + change(1741-1000-282=459), fee=282, 실제 vSize=140.75
+        //   getFeeRate = ceilFeeRate(282/140.75) = 2.01
+        final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+          inputAmounts: [1741],
+          recipients: [Tuple(false, 1000), Tuple(true, 500)],
+          changeAmount: 100,
+          fee: 141,
+          vSize: 172,
+        );
+
+        final RbfBuildResult result = rbfBuilder.getBaselineTransaction();
+
+        expect(result.isSuccess, isTrue);
+        expect(result.isSelfOutputsUsed, isTrue);
+        expect(result.isOnlyChangeOutputUsed, isFalse);
+        expect(result.addedInputs, isNull);
+        expect(result.deficitAmount, isNull);
+        expect(result.minimumFeeRate, equals(2.01));
+
+        final tx = result.transaction!;
+        // selfOutput은 제거되어 tx에 없어야 함
+        expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1]), isFalse);
+        // external output은 그대로 존재해야 함
+        expect(
+          tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[0] && o.amount == 1000),
+          isTrue,
+        );
+
+        expectRbfMinimumCondition(result, pendingTx);
+      },
+    );
   });
 
   group('싱글시그지갑 - changeAdditionalSpendable', () {
@@ -291,7 +378,7 @@ void main() {
     });
   });
 
-  group('싱글시그지갑 - build', () {
+  group('싱글시그지갑 - build - external only', () {
     test('External 1 / feeRate too low', () async {
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
@@ -316,6 +403,7 @@ void main() {
         vSize: 141,
       );
       final baselineResult = rbfBuilder.getBaselineTransaction();
+
       final buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate);
 
       expect(baselineResult.transaction, isNotNull);
@@ -670,189 +758,390 @@ void main() {
     });
   });
 
-  // group('싱글시그지갑 - InputSum enough', () {
-  //   test('External 1 / change / InputSum enough', () async {
-  //     final rbfBuilder = createRbfBuilder(
-  //       inputAmounts: [100000],
-  //       recipients: [Tuple(false, 1000)],
-  //       changeAmount: 98859,
-  //       fee: 141,
-  //       vSize: 141,
-  //       isMultiSig: false,
-  //     );
+  group('싱글시그지갑 - build - external + selfOutput', () {
+    test('Ex 1, Self 1 / no change / use enough selfOutput', () async {
+      // 원본 tx: 1-in/2-out (external + selfOutput), changeAmount=0, vSize=141
+      // changeOutput 없으므로 보수적 vSize 추정: newTxVSize = 141 + 31*1.0 = 172
+      // additionalFee = ceil(172 * 1.0) = 172, deficitAmount = 172
+      // selfOutput(98859) - 172 = 98687 > dustLimit(546) → partial reduction
+      // newRecipients = {ext: 1000, self: 98687}, deficit = 0
+      // build at _calculateMinimumFeeRate(172) = ceilFeeRate(313/172) = 1.82:
+      //   tx: ext(1000) + self(98687), change=0 → 드롭
+      //   결과 tx: 1-in/2-out, fee=313, vSize≈140.75
+      //   getFeeRate = ceilFeeRate(313/140.75) ≈ 2.23
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(true, 98859), Tuple(false, 1000)],
+        changeAmount: 0,
+        fee: 141,
+        vSize: 141,
+      );
 
-  //     final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(newFeeRate: 2.0, additionalSpendable: []);
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
 
-  //     expect(result.isSuccess, isTrue);
-  //     expect(result.transaction, isNotNull);
-  //     expect(result.isOnlyChangeOutputUsed, isTrue);
-  //     expect(result.isSelfOutputsUsed, isFalse);
-  //     expect(result.addedUtxos, isNull);
-  //     expect(result.deficitAmount, isNull);
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isTrue);
+      expect(baselineResult.isOnlyChangeOutputUsed, isFalse);
+      expect(baselineResult.addedInputs, isNull);
+      expect(baselineResult.deficitAmount, isNull);
+      expectRbfMinimumCondition(baselineResult, pendingTx);
 
-  //     final tx = result.transaction!;
-  //     final int totalInput = tx.totalInputAmount;
-  //     final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
-  //     final int actualFee = totalInput - totalOutput;
-  //     final double vByte = tx.estimateVirtualByte(AddressType.p2wpkh).ceil().toDouble();
-  //     final double calculatedFeeRate = actualFee / vByte;
-  //     final int changeAmount = totalInput - 1000 - actualFee;
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate);
 
-  //     expect(calculatedFeeRate, 2.0);
-  //     expect(changeAmount, equals(98718)); // 98859 - 141
-  //   });
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.isSelfOutputsUsed, isTrue);
+      expect(buildResult.addedInputs, isNull);
+      expect(buildResult.deficitAmount, isNull);
+      expect(buildResult.minimumFeeRate, equals(baselineResult.minimumFeeRate));
 
-  //   test('External 3 / InputSum enough', () async {
-  //     final rbfBuilder = createRbfBuilder(
-  //       inputAmounts: [200000],
-  //       recipients: [Tuple(false, 10000), Tuple(false, 20000), Tuple(false, 30000)],
-  //       changeAmount: 139859,
-  //       fee: 141,
-  //       vSize: 141,
-  //       isMultiSig: false,
-  //     );
+      // External output 금액 불변
+      final tx = buildResult.transaction!;
+      expect(tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[1] && o.amount == 1000), isTrue);
 
-  //     final RbfBuildResult result = await rbfBuilder.buildRbfTransaction(newFeeRate: 3.0, additionalSpendable: []);
+      // SelfOutput 감소 확인
+      final selfOutputInTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[1]).toList();
+      expect(selfOutputInTx.length, 1);
+      expect(selfOutputInTx.first.amount, lessThan(98859));
 
-  //     expect(result.isSuccess, isTrue);
-  //     expect(result.transaction, isNotNull);
-  //     expect(result.isOnlyChangeOutputUsed, isTrue);
-  //     expect(result.isSelfOutputsUsed, isFalse);
-  //     expect(result.addedUtxos, isNull);
-  //     expect(result.deficitAmount, isNull);
-  //     expect(rbfBuilder.nonChangeOutputs.length, 3);
-  //     expect(rbfBuilder.nonChangeOutputsSum, 60000);
+      // RBF 최소 수수료 규칙
+      expectRbfMinimumCondition(buildResult, pendingTx);
+    });
 
-  //     final tx = result.transaction!;
-  //     final int totalInput = tx.totalInputAmount;
-  //     final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
-  //     final int actualFee = totalInput - totalOutput;
-  //     final double vByte = tx.estimateVirtualByte(AddressType.p2wpkh).ceil().toDouble();
-  //     final double calculatedFeeRate = actualFee / vByte;
-  //     final int changeAmount = totalInput - 60000 - actualFee;
+    test('Ex 1, Self 2 / no change / use 2 enough selfOutputs', () async {
+      // 원본 tx: 1-in/3-out (external + selfOutput1 + selfOutput2), changeAmount=0, vSize=172
+      // changeOutput 없으므로 보수적 vSize 추정: newTxVSize = 172 + 31*1.0 = 203
+      // additionalFee = ceil(203 * 1.0) = 203, deficitAmount = 203
+      // selfOutput2(5000) - 203 = 4797 > dustLimit(546) → partial reduction
+      // newRecipients = {ext: 1000, self1: 10000, self2: 4797}, deficit = 0
+      // sweep tx 생성 후 실제 vSize 확인하여 RBF 최소 조건 만족하도록 재빌드
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [16000],
+        recipients: [Tuple(false, 13000), Tuple(true, 2000), Tuple(true, 1000)],
+        changeAmount: 0,
+        fee: 172,
+        vSize: 172,
+      );
 
-  //     expect(calculatedFeeRate, 3.0);
-  //     expect(changeAmount, equals(139391));
-  //   });
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
 
-  //   // TODO: sweep tx 테스트 코드
-  //   // TODO: batch sweep 테스트 코드
-  // });
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isTrue);
+      expect(baselineResult.isOnlyChangeOutputUsed, isFalse);
+      expect(baselineResult.addedInputs, isNull);
+      expect(baselineResult.deficitAmount, isNull);
+      expectRbfMinimumCondition(baselineResult, pendingTx);
 
-  // group('예외 상황', () {
-  //   test('newFeeRate가 pendingTx.feeRate보다 작으면 FeeRateTooLowException 발생', () async {
-  //     final rbfBuilder = createRbfBuilder(
-  //       inputAmounts: [100000],
-  //       recipients: [Tuple(false, 50000)],
-  //       changeAmount: 49000,
-  //       fee: 1000,
-  //       vSize: 100,
-  //       isMultiSig: false,
-  //     );
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate);
 
-  //     expect(
-  //       () => rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []),
-  //       throwsA(isA<FeeRateTooLowException>()),
-  //     );
-  //   });
-  // });
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.isSelfOutputsUsed, isTrue);
+      expect(buildResult.isOnlyChangeOutputUsed, isFalse);
+      expect(buildResult.addedInputs, isNull);
+      expect(buildResult.deficitAmount, isNull);
+      expect(buildResult.minimumFeeRate, equals(baselineResult.minimumFeeRate));
 
-  // group('싱글시그지갑 - InputSum not enough / selfOutput 사용', () {
-  //   test('selfOutput 1 / no change / selfOutput 1개의 amount를 차감하여 성공🟢', () async {
-  //     final rbfBuilder = createRbfBuilder(
-  //       inputAmounts: [50000],
-  //       recipients: [Tuple(true, 50000 - 110)],
-  //       changeAmount: 0,
-  //       fee: 110,
-  //       vSize: 110,
-  //       isMultiSig: false,
-  //     );
-  //     final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+      // External output 금액 불변
+      final tx = buildResult.transaction!;
+      expect(
+        tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[0] && o.amount == 13000),
+        isTrue,
+      );
+      // SelfOutput1은 그대로 유지
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 2000), isTrue);
+      expect(tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[2]).first.amount, lessThan(1000));
+      // SelfOutput2는 감소
+      final selfOutput2InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[2]).toList();
+      expect(selfOutput2InTx.first.amount, lessThan(1000));
 
-  //     expect(result.isSuccess, isTrue);
-  //     expect(result.transaction, isNotNull);
-  //     expect(result.isOnlyChangeOutputUsed, isFalse);
-  //     expect(result.isSelfOutputsUsed, isTrue);
-  //     expect(result.addedUtxos, isNull);
-  //     expect(result.deficitAmount, isNull);
+      // RBF 최소 수수료 규칙
+      expectRbfMinimumCondition(buildResult, pendingTx);
 
-  //     final tx = result.transaction!;
-  //     final int totalInput = tx.totalInputAmount;
-  //     final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
-  //     final int actualFee = totalInput - totalOutput;
+      // 수수료율 높이기
+      final RbfBuildResult buildResult2 = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate + 13);
 
-  //     expect(totalInput, 50000);
-  //     expect(totalOutput, greaterThanOrEqualTo(49450));
-  //     expect(actualFee, lessThanOrEqualTo(550));
-  //   });
+      expect(buildResult2.isSuccess, isTrue);
+      expect(buildResult2.transaction, isNotNull);
+      expect(buildResult2.exception, isNull);
+      expect(buildResult2.isSelfOutputsUsed, isTrue);
+      expect(buildResult2.isOnlyChangeOutputUsed, isFalse);
+      expect(buildResult2.addedInputs, isNull);
+      expect(buildResult2.deficitAmount, isNull);
+      expect(buildResult2.minimumFeeRate, equals(baselineResult.minimumFeeRate));
 
-  //   // test('selfOutput 1 / no change / selfOutput 1개의 amount를 차감하여 시도했지만 Input 부족🔴', () async {
-  //   //   final rbfBuilder = createRbfBuilder(
-  //   //     inputAmounts: [1000],
-  //   //     recipients: [Tuple(true, 1000 - 110)],
-  //   //     changeAmount: 0,
-  //   //     fee: 110,
-  //   //     vSize: 110,
-  //   //   );
-  //   //   final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+      // External output 금액 불변
+      final tx2 = buildResult2.transaction!;
+      expect(
+        tx2.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[0] && o.amount == 13000),
+        isTrue,
+      );
+      // Last SelfOutput은 사라짐
+      expect(tx2.outputs.length, equals(2));
+      // RBF 최소 수수료 규칙
+      expectRbfMinimumCondition(buildResult2, pendingTx);
 
-  //   //   expect(result.isSuccess, isFalse);
-  //   //   expect(result.transaction, isNull);
-  //   //   expect(result.isOnlyChangeOutputUsed, isFalse);
-  //   //   expect(result.isSelfOutputsUsed, isFalse);
-  //   //   expect(result.addedUtxos, isNull);
-  //   //   expect(result.deficitAmount, isNotNull);
-  //   //   print(result.deficitAmount);
-  //   // });
+      final RbfBuildResult failedResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate + 100);
 
-  //   test('selfOutput 1개의 amount를 차감하여 성공 / leftOutput > dustLimit', () async {
-  //     final rbfBuilder = createRbfBuilder(
-  //       inputAmounts: [50000],
-  //       recipients: [Tuple(true, 50000 - 110)],
-  //       changeAmount: 0,
-  //       fee: 110,
-  //       vSize: 110,
-  //       isMultiSig: false,
-  //     );
-  //     final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+      expect(failedResult.isSuccess, isFalse);
+      expect(failedResult.transaction, isNull);
+      expect(failedResult.exception, isNotNull);
+      expect(failedResult.isSelfOutputsUsed, isTrue);
+      expect(failedResult.isOnlyChangeOutputUsed, isFalse);
+      expect(failedResult.addedInputs, isNull);
+      expect(failedResult.deficitAmount, isNotNull);
+    });
 
-  //     expect(result.isSuccess, isTrue);
-  //     expect(result.transaction, isNotNull);
-  //     expect(result.isOnlyChangeOutputUsed, isFalse);
-  //     expect(result.isSelfOutputsUsed, isTrue);
-  //     expect(result.addedUtxos, isNull);
-  //     expect(result.deficitAmount, isNull);
-  //     expect(result.transaction!.estimateFee(5, AddressType.p2wpkh), greaterThan(110));
-  //   });
+    test('Ex 1, Self 2 / change NotEnough / use 1 enough selfOutput', () async {
+      // 원본 tx: 1-in/4-out (external + selfOutput1 + selfOutput2 + change), vSize=203
+      // changeAmount=100 < additionalFee=203 → deficitAmount = 103
+      // selfOutput2(900) - 103 = 797 > dustLimit(546) → partial reduction
+      // newRecipients = {ext: 13000, self1: 2000, self2: 797}, deficit = 0
+      // sweep tx 생성 후 실제 vSize 확인하여 RBF 최소 조건 만족하도록 재빌드
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [16000],
+        recipients: [Tuple(false, 13000), Tuple(true, 2000), Tuple(true, 900)],
+        changeAmount: 100,
+        fee: 172,
+        vSize: 203,
+      );
 
-  //   test('selfOutput 1개를 제거하여 성공 / 0 < leftOutput <= dustLimit', () async {
-  //     final rbfBuilder = createRbfBuilder(
-  //       inputAmounts: [50000],
-  //       recipients: [Tuple(true, 50000 - 110)],
-  //       changeAmount: 0,
-  //       fee: 110,
-  //       vSize: 110,
-  //       isMultiSig: false,
-  //     );
-  //     final result = await rbfBuilder.buildRbfTransaction(newFeeRate: 5.0, additionalSpendable: []);
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
 
-  //     expect(result.isSuccess, isTrue);
-  //     expect(result.transaction, isNotNull);
-  //     expect(result.isOnlyChangeOutputUsed, isFalse);
-  //     expect(result.isSelfOutputsUsed, isTrue);
-  //     expect(result.addedUtxos, isNull);
-  //     expect(result.deficitAmount, isNull);
-  //     expect(result.transaction!.estimateFee(5, AddressType.p2wpkh), greaterThan(110));
-  //   });
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isTrue);
+      expect(baselineResult.isOnlyChangeOutputUsed, isFalse);
+      expect(baselineResult.addedInputs, isNull);
+      expect(baselineResult.deficitAmount, isNull);
+      expectRbfMinimumCondition(baselineResult, pendingTx);
 
-  //   test('selfOutput 1개를 제거하여 성공 / leftOutput == 0', () async {});
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate);
 
-  //   test('selfOutput 1 제거 + selfOutput 2에서 amount 차감하여 성공 / leftOutput > dustLimit', () async {});
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.isSelfOutputsUsed, isTrue);
+      expect(buildResult.isOnlyChangeOutputUsed, isFalse);
+      expect(buildResult.addedInputs, isNull);
+      expect(buildResult.deficitAmount, isNull);
+      expect(buildResult.minimumFeeRate, equals(baselineResult.minimumFeeRate));
 
-  //   test('selfOutput 2 제거하여 성공 / 0 < leftOutput <= dustLimit', () async {});
+      final tx = buildResult.transaction!;
+      // External output 금액 불변
+      expect(
+        tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[0] && o.amount == 13000),
+        isTrue,
+      );
+      // SelfOutput1은 그대로 유지
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 2000), isTrue);
+      // SelfOutput2는 감소
+      final selfOutput2InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[2]).toList();
+      expect(selfOutput2InTx.length, 1);
+      expect(selfOutput2InTx.first.amount, lessThan(1000));
+      // Change output은 드롭됨
+      expect(tx.outputs.any((o) => o.getAddress() == creator.changeAddressList[0]), isFalse);
 
-  //   test('selfOutput 2 제거하여 성공 / leftOutput == 0', () async {});
+      expectRbfMinimumCondition(buildResult, pendingTx);
+    });
 
-  //   test('selfOutput 1개를 제거하여 성공 / 기존 수수료보다 새로운 수수료가 적어짐 / 수수료 조정하여 성공', () async {});
-  // });
+    test('Ex 1, Self 2 / change NotEnough / use 2 enough selfOutputs', () async {
+      // 원본 tx: 1-in/4-out (external + selfOutput1 + selfOutput2 + change), vSize=203
+      // changeAmount=50 < additionalFee=203 → deficitAmount = 153
+      // change(50) 먼저 사용 → leftDeficit = 103
+      // selfOutput2(550) - 103 = 447 < dustLimit(546) → full removal
+      // leftDeficit = 103 - (550 + 31) = -478 → 0, vSizeReduced = 31
+      // newTxVSize = 203 - 31 = 172
+      // selfOutput1(1000)에서 추가 차감 필요 없음 (deficit=0)
+      // 결과: external + selfOutput1 + change (selfOutput2 제거됨)
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [16000],
+        recipients: [Tuple(false, 13000), Tuple(true, 1000), Tuple(true, 550)],
+        changeAmount: 50,
+        fee: 172,
+        vSize: 203,
+      );
+
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
+
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isTrue);
+      expect(baselineResult.isOnlyChangeOutputUsed, isFalse);
+      expect(baselineResult.addedInputs, isNull);
+      expect(baselineResult.deficitAmount, isNull);
+      expectRbfMinimumCondition(baselineResult, pendingTx);
+
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate);
+
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.isSelfOutputsUsed, isTrue);
+      expect(buildResult.isOnlyChangeOutputUsed, isFalse);
+      expect(buildResult.addedInputs, isNull);
+      expect(buildResult.deficitAmount, isNull);
+      expect(buildResult.minimumFeeRate, equals(baselineResult.minimumFeeRate));
+
+      final tx = buildResult.transaction!;
+      // External output 금액 불변
+      expect(
+        tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[0] && o.amount == 13000),
+        isTrue,
+      );
+      // SelfOutput1은 그대로 유지
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 1000), isTrue);
+      // SelfOutput2는 제거됨 (dust limit 미만)
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[2]), isFalse);
+      // Change output은 남아있음 (selfOutput2 제거로 절약된 금액이 change로 이동)
+      final changeOutputs = tx.outputs.where((o) => o.getAddress() == creator.changeAddressList[0]).toList();
+      expect(changeOutputs.length, 1);
+      expect(changeOutputs.first.amount, greaterThan(50));
+
+      expectRbfMinimumCondition(buildResult, pendingTx);
+    });
+  });
+
+  // TODO: 여기부터 수정 !!!
+  group('싱글시그지갑 - build - external + selfOutput + additionalUtxos', () {
+    test('Ex1, Self2 / no change / use all selfOutputs + additionalUtxos', () async {
+      // 원본 tx: 1-in/2-out (external + selfOutput), changeAmount=0, vSize=141
+      // selfOutput이 작아서 제거되고 additionalUtxos 필수
+      // 입력 금액이 부족하여 additionalUtxos 사용
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [13000],
+        recipients: [Tuple(false, 12000), Tuple(true, 890)],
+        changeAmount: 0,
+        fee: 110,
+        vSize: 141,
+        additionalSpendable: [50000],
+      );
+
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
+
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isTrue);
+      expect(baselineResult.isOnlyChangeOutputUsed, isFalse);
+      expect(baselineResult.addedInputs, isNull);
+      expect(baselineResult.deficitAmount, isNull);
+      expectRbfMinimumCondition(baselineResult, pendingTx);
+
+      // baseline에서 이미 additionalUtxos 사용됨
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate + 5.5);
+
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.isSelfOutputsUsed, isTrue);
+      expect(buildResult.addedInputs, isNotNull);
+      expect(buildResult.deficitAmount, isNull);
+
+      final tx = buildResult.transaction!;
+      // External output 금액 불변
+      expect(
+        tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[0] && o.amount == 12000),
+        isTrue,
+      );
+      // 추가 input이 사용됨
+      expect(tx.inputs.length, equals(2));
+
+      expectRbfMinimumCondition(buildResult, pendingTx);
+    });
+
+    test('Ex1, Self2 / change NotEnough / use all selfOutputs + additionalUtxos', () async {
+      // 원본 tx: 1-in/2-out (external + change), vSize=141
+      // selfOutput이 없고 입력 금액이 부족하여 additionalUtxos 필수
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [13000],
+        recipients: [Tuple(false, 13000)],
+        changeAmount: 50,
+        fee: 110,
+        vSize: 141,
+        additionalSpendable: [3000],
+      );
+
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
+
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isFalse);
+      expect(baselineResult.isOnlyChangeOutputUsed, isFalse);
+      expect(baselineResult.addedInputs, isNotNull);
+      expect(baselineResult.addedInputs!.length, greaterThan(0));
+      expectRbfMinimumCondition(baselineResult, pendingTx);
+
+      // baseline에서 이미 additionalUtxos 사용됨
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate);
+
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.isSelfOutputsUsed, isFalse);
+      expect(buildResult.addedInputs, isNotNull);
+      expect(buildResult.deficitAmount, isNull);
+
+      final tx = buildResult.transaction!;
+      // External output 금액 불변
+      expect(
+        tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[0] && o.amount == 13000),
+        isTrue,
+      );
+      // 추가 input이 사용됨
+      expect(tx.inputs.length, greaterThan(1));
+
+      expectRbfMinimumCondition(buildResult, pendingTx);
+    });
+
+    test('Ex1, Self2 / change NotEnough / use all selfOutputs + additionalUtxos but failed', () async {
+      // 원본 tx: 1-in/2-out (external + change), vSize=141
+      // selfOutput이 없고 입력 금액 부족
+      // additionalUtxos가 있지만 매우 높은 feeRate에서는 부족
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [13000],
+        recipients: [Tuple(false, 13000)],
+        changeAmount: 50,
+        fee: 110,
+        vSize: 141,
+        additionalSpendable: [500],
+      );
+
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
+
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isFalse);
+      expect(baselineResult.addedInputs, isNotNull);
+      expectRbfMinimumCondition(baselineResult, pendingTx);
+
+      // 매우 높은 feeRate로 build 시도 - additionalUtxos로도 부족하여 실패
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate + 100.0);
+
+      expect(buildResult.isSuccess, isFalse);
+      expect(buildResult.transaction, isNull);
+      expect(buildResult.exception, isNotNull);
+      expect(buildResult.isSelfOutputsUsed, isFalse);
+      expect(buildResult.deficitAmount, isNotNull);
+      expect(buildResult.deficitAmount, greaterThan(0));
+    });
+  });
+
+  group('싱글시그지갑 - build - only selfOutputs', () {
+    test('Self1 / no change / use 1 enough selfOutput', () async {});
+    test('Self2 / no change / use 1 enough selfOutput', () async {});
+    test('Self2 / no change / use 2 enough selfOutput', () async {});
+
+    test('Self2 / change enough', () async {});
+
+    test('Self1 / change not Enough / use 1 enough selfOutput', () async {});
+    test('Self2 / change not Enough / use 2 enough selfOutputs', () async {});
+  });
+
+  group('싱글시그지갑 - build - only selfOutputs + additionalUtxos - Sweep', () {
+    test('Self1 / no change / use 1 enough additionalUtxo', () async {});
+    test('Self2 / no change / use 2 selfOutputs, 1 enough additionalUtxo', () async {});
+    test('Self2 / change enough', () async {});
+    test('Self1 / change not Enough / use 1 enough selfOutput', () async {});
+    test('Self2 / change not Enough / use 2 enough selfOutputs', () async {});
+
+    test('Self1 / change not Enough / use 1 selfOutput, 1 enough additionalUtxo', () async {});
+    test('Self2 / change not Enough / use 2 selfOutputs, 1 enough additionalUtxos', () async {});
+  });
 }
