@@ -106,7 +106,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Exception? get unexpectedError {
     if (isRbf) {
       final exception = _rbfBuildResult?.exception;
-      if (exception != null && exception is! RbfCreationException) {
+      if (exception != null && exception is UseChangeOutputFailureException || exception is! RbfCreationException) {
         return exception;
       }
     } else {
