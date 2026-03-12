@@ -138,11 +138,22 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   bool get isAdditionalInputRequired {
     if (isRbf) {
-      if (_rbfBaseline == null) return false;
-      return _rbfBaseline!.deficitAmount != null || _rbfBaseline!.addedInputs != null;
+      if (_rbfBaseline != null && (_rbfBaseline!.addedInputs != null || _rbfBaseline!.deficitAmount != null)) {
+        return true;
+      }
+      if (_rbfBuildResult != null && (_rbfBuildResult!.addedInputs != null || _rbfBuildResult!.deficitAmount != null)) {
+        return true;
+      }
+      return false;
     } else {
-      if (_cpfpBaseline == null) return false;
-      return _cpfpBaseline!.deficitAmount != null || _cpfpBaseline!.addedInputs != null;
+      if (_cpfpBaseline != null && (_cpfpBaseline!.addedInputs != null || _cpfpBaseline!.deficitAmount != null)) {
+        return true;
+      }
+      if (_cpfpBuildResult != null &&
+          (_cpfpBuildResult!.addedInputs != null || _cpfpBuildResult!.deficitAmount != null)) {
+        return true;
+      }
+      return false;
     }
   }
 
