@@ -2,11 +2,12 @@ import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomTweenButton extends StatefulWidget {
-  static const fixedBottomButtonDefaultHeight = 50.0;
-  static const fixedBottomButtonDefaultBottomPadding = 30.0;
+  static const fixedBottomButtonDefaultHeight = 55.0;
+  static const fixedBottomButtonDefaultBottomPadding = 22.0;
 
   const FixedBottomTweenButton({
     super.key,
@@ -70,7 +71,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
         widget.buttonHeight ??
         (Platform.isAndroid
             ? FixedBottomButton.fixedBottomButtonDefaultHeight
-            : FixedBottomButton.fixedBottomButtonDefaultHeight + 8);
+            : FixedBottomButton.fixedBottomButtonDefaultHeight + 3);
 
     return SizedBox(
       width: MediaQuery.sizeOf(context).width,
@@ -81,16 +82,24 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
               left: 0,
               right: 0,
               bottom: 0,
-              height: 100 + bottomInset,
               child: IgnorePointer(
                 ignoring: true,
                 child: Container(
-                  decoration: const BoxDecoration(
+                  padding:
+                      widget.gradientPadding ??
+                      EdgeInsets.only(left: 16, right: 16, bottom: 40, top: buttonHeight + bottomInset + 24),
+                  decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.transparent, CoconutColors.black],
-                      stops: [0.0, 0.75],
+                      colors: [
+                        Colors.transparent,
+                        CoconutColors.black.withValues(alpha: 0.1),
+                        CoconutColors.black.withValues(alpha: 0.4),
+                        CoconutColors.black.withValues(alpha: 0.7),
+                        CoconutColors.black,
+                      ],
+                      stops: const [0.0, 0.03, 0.07, 0.15, 0.23],
                     ),
                   ),
                 ),
@@ -109,40 +118,55 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                     // 왼쪽 버튼
                     SizedBox(
                       width: leftButtonWidth,
-                      child: CoconutButton(
+                      child: ShrinkAnimationButton(
                         onPressed: () {
                           widget.leftButtonClicked();
                         },
-                        disabledBackgroundColor: CoconutColors.gray800,
-                        disabledForegroundColor: CoconutColors.gray700,
-                        isActive: widget.isLeftButtonActive,
-                        height: buttonHeight,
-                        backgroundColor: widget.leftButtonBackgroundColor,
-                        foregroundColor: widget.leftButtonTextColor,
-                        pressedBackgroundColor: _getDarkerColor(widget.leftButtonBackgroundColor),
-                        pressedTextColor: widget.leftButtonTextColor,
-                        text: widget.leftText,
-                        //textStyle: CoconutTypography.body1_16_Bold,
+                        defaultColor: widget.leftButtonBackgroundColor,
+                        pressedColor: getDarkerColor(widget.leftButtonBackgroundColor),
+                        disabledColor: CoconutColors.gray800,
+                        borderRadius: 12,
+                        child: SizedBox(
+                          width: leftButtonWidth,
+                          height: buttonHeight,
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                widget.leftText,
+                                style: CoconutTypography.body1_16_Bold.setColor(
+                                  widget.isLeftButtonActive ? widget.leftButtonTextColor : CoconutColors.gray700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     SizedBox(width: widget.buttonSpacing),
                     // 오른쪽 버튼
                     SizedBox(
                       width: rightButtonWidth,
-                      child: CoconutButton(
+                      child: ShrinkAnimationButton(
                         onPressed: () {
                           widget.rightButtonClicked();
                         },
-                        disabledBackgroundColor: CoconutColors.gray800,
-                        disabledForegroundColor: CoconutColors.gray700,
-                        isActive: widget.isRightButtonActive,
-                        height: buttonHeight,
-                        backgroundColor: widget.rightButtonBackgroundColor,
-                        foregroundColor: widget.rightButtonTextColor,
-                        pressedBackgroundColor: _getDarkerColor(widget.rightButtonBackgroundColor),
-                        pressedTextColor: widget.rightButtonTextColor,
-                        text: widget.rightText,
-                        // textStyle: CoconutTypography.body1_16_Bold,
+                        defaultColor: widget.rightButtonBackgroundColor,
+                        pressedColor: getDarkerColor(widget.rightButtonBackgroundColor),
+                        disabledColor: CoconutColors.gray800,
+                        borderRadius: 12,
+                        child: SizedBox(
+                          width: rightButtonWidth,
+                          height: buttonHeight,
+                          child: Center(
+                            child: Text(
+                              widget.rightText,
+                              style: CoconutTypography.body1_16_Bold.setColor(
+                                widget.isRightButtonActive ? widget.rightButtonTextColor : CoconutColors.gray700,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -153,11 +177,5 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
         ],
       ),
     );
-  }
-
-  Color _getDarkerColor(Color color, [double amount = 0.15]) {
-    final hsl = HSLColor.fromColor(color);
-    final darker = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
-    return darker.toColor();
   }
 }

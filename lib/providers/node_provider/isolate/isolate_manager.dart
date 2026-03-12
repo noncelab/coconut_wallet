@@ -322,7 +322,7 @@ class IsolateManager {
       case IsolateControllerCommand.getTransactionRecord:
         return kIsolateResponseTimeout;
 
-      // 간단한 작업: .onion인 경우 30s, 그 외 3s
+      // 간단한 작업: .onion인 경우 kIsolateSimpleResponseTimeoutForOnion, 그 외 kIsolateSimpleResponseTimeout
       case IsolateControllerCommand.broadcast:
       case IsolateControllerCommand.getNetworkMinimumFeeRate:
       case IsolateControllerCommand.getLatestBlock:

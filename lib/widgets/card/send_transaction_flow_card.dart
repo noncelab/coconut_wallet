@@ -472,8 +472,20 @@ class _FlowNodeTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(node.title, style: isEllipsis ? Styles.body1.copyWith(color: CoconutColors.gray400) : titleStyle),
-            if (!isEllipsis) ...[const SizedBox(height: 4), Text(amountText, style: amountStyle)],
+            MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: Text(
+                node.title,
+                style: isEllipsis ? Styles.body1.copyWith(color: CoconutColors.gray400) : titleStyle,
+              ),
+            ),
+            if (!isEllipsis) ...[
+              const SizedBox(height: 4),
+              MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                child: Text(amountText, style: amountStyle),
+              ),
+            ],
           ],
         ),
       ),

@@ -63,11 +63,11 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
   }
 
   Widget _buildBtcBalance() {
-    return BitcoinAmountUnit(
-      currentUnit: widget.currentUnit,
-      unitStyle: CoconutTypography.heading4_18_Number,
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: BitcoinAmountUnit(
+        currentUnit: widget.currentUnit,
+        unitStyle: CoconutTypography.heading4_18_Number,
         child: AnimatedBalance(
           prevValue: widget.animatedBalanceData.previous,
           value: widget.animatedBalanceData.current,

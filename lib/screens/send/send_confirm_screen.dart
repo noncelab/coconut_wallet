@@ -6,7 +6,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_confirm_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/send_amount_header.dart';
@@ -51,29 +50,32 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
             body: SafeArea(
               child: Stack(
                 children: [
-                  SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        SendAmountHeader(
-                          amountText: totalSendAmountText,
-                          unitText: unitText,
-                          satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
-                          totalCostAmountText: totalCostText,
-                          onTap: _toggleUnit,
-                        ),
-                        CoconutLayout.spacing_300h,
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: _buildTransactionFlowCard(viewModel),
-                        ),
-                        CoconutLayout.spacing_500h,
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          child: _buildOutputDetailCard(viewModel),
-                        ),
-                        CoconutLayout.spacing_500h,
-                        CoconutLayout.spacing_2500h,
-                      ],
+                  Padding(
+                    padding: const EdgeInsets.only(left: 10, right: 10),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          SendAmountHeader(
+                            amountText: totalSendAmountText,
+                            unit: _currentUnit,
+                            satoshiAmount: UnitUtil.convertBitcoinToSatoshi(viewModel.totalSendAmount ?? 0),
+                            totalCostAmountText: totalCostText,
+                            onTap: _toggleUnit,
+                          ),
+                          CoconutLayout.spacing_300h,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _buildTransactionFlowCard(viewModel),
+                          ),
+                          CoconutLayout.spacing_500h,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _buildOutputDetailCard(viewModel),
+                          ),
+                          CoconutLayout.spacing_500h,
+                          CoconutLayout.spacing_2500h,
+                        ],
+                      ),
                     ),
                   ),
                   FixedBottomButton(

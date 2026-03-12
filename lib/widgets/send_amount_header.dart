@@ -1,12 +1,14 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:flutter/material.dart';
 
 class SendAmountHeader extends StatelessWidget {
   final String amountText;
-  final String unitText;
+  final BitcoinUnit unit;
   final int satoshiAmount;
   final VoidCallback? onTap;
   final TextStyle? fiatTextStyle;
@@ -17,7 +19,7 @@ class SendAmountHeader extends StatelessWidget {
   const SendAmountHeader({
     super.key,
     required this.amountText,
-    required this.unitText,
+    required this.unit,
     required this.satoshiAmount,
     required this.totalCostAmountText,
     this.onTap,
@@ -33,18 +35,23 @@ class SendAmountHeader extends StatelessWidget {
         Container(
           margin: EdgeInsets.only(top: topMargin),
           child: Center(
-            child: Text.rich(
-              TextSpan(text: amountText, children: <TextSpan>[TextSpan(text: ' $unitText', style: Styles.unit)]),
-              style: Styles.balance1,
-              textAlign: textAlign,
-              textScaler: const TextScaler.linear(1.0),
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: BitcoinAmountUnit(
+                  currentUnit: unit,
+                  unitStyle: Styles.unit,
+                  child: Text(amountText, style: Styles.balance1, textAlign: textAlign),
+                ),
+              ),
             ),
           ),
         ),
         FiatPrice(satoshiAmount: satoshiAmount, textStyle: fiatTextStyle),
         CoconutLayout.spacing_1000h,
         Text(
-          '${t.send_confirm_screen.total_cost.total(n: '$totalCostAmountText $unitText')}${t.send_confirm_screen.total_cost.sentence}',
+          '${t.send_confirm_screen.total_cost.total(n: '${unit.isPrefixSymbol ? unit.symbol : ''} $totalCostAmountText ${unit.isPrefixSymbol ? '' : unit.symbol}')}${t.send_confirm_screen.total_cost.sentence}',
           style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray400),
           textScaler: const TextScaler.linear(1.0),
         ),
