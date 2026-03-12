@@ -92,10 +92,6 @@ class RbfBuilder {
   List<TransactionAddress>? get externalOutputs =>
       _outputAnalysis.externalOutputs.isEmpty ? null : _outputAnalysis.externalOutputs;
 
-  // int get sendAmount {
-  //   return nonChangeOutputs.fold(0, (sum, output) => sum + output.amount);
-  // }
-
   /// ----------- Output -----------
   /// ----------- Input -----------
   int? _inputSum;
@@ -204,7 +200,6 @@ class RbfBuilder {
     for (; index >= 0; index--) {
       final selfOutput = selfOutputs![index];
       if (selfOutput.amount - leftDeficit >= dustLimit) {
-        // TODO: 테스트 필요 (externalOutputs == null인지 확인 없이 Sweep으로 처리해본다.)
         final (:result, :recipients) = _trySelfOutputReductionSweep(newRecipients, selfOutput, feeRate);
         if (result != null) {
           return (result: result, newRecipients: recipients!, remainingDeficit: 0, vSizeReduced: vSizeReduced);
@@ -220,13 +215,6 @@ class RbfBuilder {
           newRecipients[selfOutput.address] = lastSelfOutputAmount;
           leftDeficit -= (selfOutput.amount - lastSelfOutputAmount);
         }
-        //newRecipients.entries.first
-        // TODO: external output 없이 self output만 있는 경우 sweep tx 처리 필요
-        // TODO: 테스트 필요
-        //newRecipients = _createSweepRecipients(newRecipients, selfOutput);
-        // TODO: 여기서 값을 차감하는 것은 생략해야 할 것 같은데...
-        //leftDeficit -= feeSavedByOneRemoval;
-        //vSizeReduced += _vSizeChangeOutput;
         break;
       }
       // 전체 제거: output 금액 + output byte 제거로 절약되는 fee가 함께 deficit 감소에 기여
@@ -241,13 +229,12 @@ class RbfBuilder {
 
     if (leftDeficit == 0) {
       // newRecipients에서 남아있는 selfOutput 찾기
-      final remainingSelfOutput = selfOutputs!.cast<TransactionAddress?>().firstWhere(
+      final remainingLastSelfOutput = selfOutputs!.reversed.cast<TransactionAddress?>().firstWhere(
         (output) => newRecipients.containsKey(output!.address),
         orElse: () => null,
       );
-      if (remainingSelfOutput != null) {
-        // TODO: 테스트 필요
-        final (:result, :recipients) = _trySelfOutputReductionSweep(newRecipients, selfOutputs![index], feeRate);
+      if (remainingLastSelfOutput != null) {
+        final (:result, :recipients) = _trySelfOutputReductionSweep(newRecipients, remainingLastSelfOutput, feeRate);
         if (result != null) {
           // sweep은 마지막 recipients에서 수수료 차감되므로 recipients를 받아야함
           return (result: result, newRecipients: recipients!, remainingDeficit: 0, vSizeReduced: vSizeReduced);
@@ -298,14 +285,14 @@ class RbfBuilder {
       final minimumRequiredFee = _pendingTx.fee + actualVSize;
 
       if (!_meetsMinimumRbfFee(txBuildResult)) {
-        Logger.log('_trySelfOutputReductionSweep 재보정 시도');
+        Logger.log('_tryBuildTransactionWithFeeAdjusting 재보정 시도');
         final requiredFeeRate = FeeRateUtils.ceilFeeRate(minimumRequiredFee / actualVSize);
         final retryResult = _buildTransaction(requiredFeeRate, recipients, utxos ?? [], isSweep: isSweep);
         if (retryResult.isSuccess) {
-          Logger.log('_trySelfOutputReductionSweep 재보정 성공 🟢');
+          Logger.log('_tryBuildTransactionWithFeeAdjusting 재보정 성공 🟢');
           return retryResult;
         } else {
-          Logger.log('_trySelfOutputReductionSweep 재보정 실패 🔴');
+          Logger.log('_tryBuildTransactionWithFeeAdjusting 재보정 실패 🔴');
           return null;
         }
       }
@@ -313,48 +300,9 @@ class RbfBuilder {
       return txBuildResult;
     } else if (txBuildResult.exception != null &&
         txBuildResult.exception is! tx_creation_exception.InsufficientBalanceException) {
-      Logger.error('_tryBuildTransaction failed: ${txBuildResult.exception.toString()}');
+      Logger.error('_tryBuildTransactionWithFeeAdjusting failed: ${txBuildResult.exception.toString()}');
     }
     return null;
-  }
-
-  ({List<UtxoState> addedUtxos, int remainingDeficit, double updatedVSize}) _selectAdditionalUtxos({
-    required int deficitAmount,
-    required double feeRate,
-    required double currentVSize,
-    bool skipFirstInputOverhead = false,
-  }) {
-    final List<UtxoState> addedUtxos = [];
-    int remaining = deficitAmount;
-    double vSize = currentVSize;
-
-    if (_additionalSpendable.isNotEmpty) {
-      int i = 0;
-      do {
-        addedUtxos.add(_additionalSpendable[i]);
-        if (!skipFirstInputOverhead || i != 0) {
-          vSize += _vSizeIncreasePerInput;
-          remaining += (_vSizeIncreasePerInput * feeRate).ceil();
-        }
-        if (_additionalSpendable[i].amount >= remaining) {
-          remaining = 0;
-        } else {
-          remaining -= _additionalSpendable[i].amount;
-        }
-        i++;
-      } while (i < _additionalSpendable.length && remaining > 0);
-    }
-
-    return (addedUtxos: addedUtxos, remainingDeficit: remaining, updatedVSize: vSize);
-  }
-
-  bool _isSelfOutputUsed(Map<String, int> changedRecipients) {
-    return selfOutputs?.any((output) {
-          if (changedRecipients[output.address] == null) return true;
-          if (changedRecipients[output.address] != output.amount) return true;
-          return false;
-        }) ??
-        false;
   }
 
   ({RbfBuildResult? result, int remainingDeficit, List<UtxoState> addedUtxos, double estimatedTxSize})
@@ -380,12 +328,10 @@ class RbfBuilder {
       if (_additionalSpendable[i].amount >= remaining) {
         final finalFeeRate = isBaseline ? _calculateMinimumFeeRate(vSize) : feeRate;
         TransactionBuildResult? txBuildResult;
-        // TODO 만약 recipients가 selfOutput 1개로만 이루어진 경우 Sweep을 해야함
         if (externalOutputs == null && recipientMap.length == 1) {
-          final sweepRecipients = _createSweepRecipients(
-            recipientMap,
-            selfOutputs!.firstWhere((output) => output.address == recipientMap.keys.first),
-          );
+          final addedUtxosSum = addedUtxos.fold<int>(0, (sum, utxo) => sum + utxo.amount);
+          final sweepAddr = recipientMap.keys.first;
+          final sweepRecipients = {sweepAddr: inputSum + addedUtxosSum};
           txBuildResult = _tryBuildTransactionWithFeeAdjusting(
             sweepRecipients,
             finalFeeRate,
@@ -412,7 +358,7 @@ class RbfBuilder {
 
       remaining -= _additionalSpendable[0].amount;
       i++;
-    } while (i < _additionalSpendable.length && remaining > 0); // TODO: remaining <= 0 인데도 실패하는 경우가 있을까??
+    } while (i < _additionalSpendable.length && remaining > 0);
 
     return (result: null, remainingDeficit: remaining, addedUtxos: addedUtxos, estimatedTxSize: vSize);
   }
@@ -423,8 +369,8 @@ class RbfBuilder {
     required Map<String, int> recipientMap,
   }) {
     if (changeOutput!.amount >= deficitAmount) {
-      final txBuildResult = _buildTransaction(feeRate, recipientMap, []);
-      if (txBuildResult.isSuccess) {
+      final TransactionBuildResult? txBuildResult = _tryBuildTransactionWithFeeAdjusting(recipientMap, feeRate);
+      if (txBuildResult != null) {
         final tx = txBuildResult.transaction!;
         final result = RbfBuildResult(
           transaction: tx,
@@ -433,10 +379,9 @@ class RbfBuilder {
           estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
         );
         return (result: result, remainingDeficit: null);
-      } else if (txBuildResult.exception != null &&
-          txBuildResult.exception is! tx_creation_exception.InsufficientBalanceException) {
+      } else {
         // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
-        throw '⚠️ ChangeOutput is enough but failed creationg tx / ${txBuildResult.exception.toString()}';
+        throw '⚠️ ChangeOutput is enough but failed creationg tx';
       }
     }
 
@@ -505,59 +450,20 @@ class RbfBuilder {
       isSelfOutputsUsed: selfOutputs != null,
       exception: const InsufficientBalanceException(),
     );
+  }
 
-    // getBaselineTransaction()에서 모자란 경우 첫 번째 input의 overhead를 이미 반영했으므로 skip
-    final (:addedUtxos, :remainingDeficit, :updatedVSize) = _selectAdditionalUtxos(
-      deficitAmount: deficitAmount,
-      feeRate: isBaseline ? incrementalRelayFeeRate : newFeeRate,
-      currentVSize: newTxVSize,
-      skipFirstInputOverhead: isBaseline ? false : _cachedBaseline!.deficitAmount != null,
-    );
-    deficitAmount = remainingDeficit;
-    newTxVSize = updatedVSize;
-
-    if (deficitAmount == 0) {
-      bool isSweep = false;
-      // TODO: 테스트 필요
-      if (externalOutputs == null) {
-        final addedUtxosSum = addedUtxos.fold<int>(0, (sum, utxo) => sum + utxo.amount);
-        final lastEntry = effectiveRecipients.entries.last;
-        effectiveRecipients = {...effectiveRecipients, lastEntry.key: lastEntry.value + addedUtxosSum};
-        isSweep = true;
-      }
-      final txBuildResult = _buildTransaction(
-        isBaseline ? _calculateMinimumFeeRate(newTxVSize) : newFeeRate,
-        effectiveRecipients,
-        addedUtxos,
-        isSweep: isSweep,
-      );
-      if (txBuildResult.isSuccess) {
-        final tx = txBuildResult.transaction!;
-        return RbfBuildResult(
-          transaction: tx,
-          isSelfOutputsUsed: _isSelfOutputUsed(effectiveRecipients),
-          minimumFeeRate: isBaseline ? txBuildResult.getFeeRate(walletListItemBase)! : _cachedBaseline!.minimumFeeRate,
-          addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
-          estimatedVSize: tx.estimateVirtualByteForWallet(walletListItemBase),
-        );
-      } else if (txBuildResult.exception != null &&
-          txBuildResult.exception is! tx_creation_exception.InsufficientBalanceException) {
-        // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
-        throw 'AdditionalSpendable enough but failed creating tx / ${txBuildResult.exception.toString()}';
-      }
+  /// pendingTx를 이용해서 RBF에 필요한 임시 추가 수수료와 임시 최소 수수료율을 계산한다.
+  ({int initialAdditionalFee, double initialRbfFeeRate}) _getAdditionalFeeAndRate() {
+    double newTxVSize = _pendingTx.vSize;
+    if (changeOutput == null) {
+      // RBF 최소 수수료율을 구할 때는 changeOutput이 있다고 가정하고 보수적으로 계산
+      newTxVSize += _vSizeChangeOutput;
     }
 
-    // 추가 UTXO가 필요한 상황이어서 _vSizeIncreasePerInput을 필요한 곳에 더해줌
-    return RbfBuildResult(
-      minimumFeeRate:
-          isBaseline ? _calculateMinimumFeeRate(newTxVSize + _vSizeIncreasePerInput) : _cachedBaseline!.minimumFeeRate,
-      addedInputs: addedUtxos.isEmpty ? null : addedUtxos,
-      deficitAmount:
-          deficitAmount + (_vSizeIncreasePerInput * (isBaseline ? incrementalRelayFeeRate : newFeeRate)).ceil(),
-      estimatedVSize: newTxVSize + _vSizeIncreasePerInput,
-      isSelfOutputsUsed: selfOutputs != null,
-      exception: const InsufficientBalanceException(),
-    );
+    int additionalFee = _calculateMinAdditionalFee(newTxSize: newTxVSize);
+    int minimumFee = _calculateMinimumRbfFee(newTxVSize: newTxVSize);
+
+    return (initialAdditionalFee: additionalFee, initialRbfFeeRate: FeeRateUtils.ceilFeeRate(minimumFee / newTxVSize));
   }
 
   RbfBuildResult getBaselineTransaction({bool isForce = false}) {
@@ -566,15 +472,13 @@ class RbfBuilder {
     double newTxVSize = _pendingTx.vSize;
     if (changeOutput == null) {
       // RBF 최소 수수료율을 구할 때는 changeOutput이 있다고 가정하고 보수적으로 계산
-      newTxVSize += _vSizeChangeOutput * _pendingTx.feeRate;
+      newTxVSize += _vSizeChangeOutput;
     }
 
-    int additionalFee = _calculateMinAdditionalFee(newTxSize: newTxVSize);
-    int minimumFee = _calculateMinimumRbfFee(newTxVSize: newTxVSize);
-    int deficitAmount = additionalFee;
-    double minimumFeeRate = FeeRateUtils.ceilFeeRate(minimumFee / newTxVSize);
+    final (:initialAdditionalFee, :initialRbfFeeRate) = _getAdditionalFeeAndRate();
+    int deficitAmount = initialAdditionalFee;
 
-    _cachedBaseline = _buildRbf(deficitAmount, minimumFeeRate, newTxVSize, isBaseline: true);
+    _cachedBaseline = _buildRbf(deficitAmount, incrementalRelayFeeRate, newTxVSize, isBaseline: true);
     return _cachedBaseline!;
   }
 
@@ -586,30 +490,22 @@ class RbfBuilder {
 
   RbfBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
-    try {
-      if (newFeeRate < _cachedBaseline!.minimumFeeRate) {
-        throw const FeeRateTooLowException();
-      }
-
-      final int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
-      final int additionalFee = requiredFee - _pendingTx.fee;
-      int deficitAmount = additionalFee;
-
-      return _buildRbf(deficitAmount, newFeeRate, _cachedBaseline!.estimatedVSize, isBaseline: false);
-    } on RbfCreationException catch (e) {
-      return RbfBuildResult(
-        transaction: null,
-        exception: e,
-        minimumFeeRate: _cachedBaseline!.minimumFeeRate,
-        estimatedVSize: _cachedBaseline!.estimatedVSize,
-      );
+    if (newFeeRate < _cachedBaseline!.minimumFeeRate) {
+      throw const FeeRateTooLowException();
     }
-  }
 
-  // int _getEstimatedRequiredFee(double newFeeRate, Map<String, int> recipients) {
-  //   final txBuildResult = _buildTransaction(newFeeRate, recipients);
-  //   return txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0);
-  // }
+    int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
+    int additionalFee = requiredFee - _pendingTx.fee;
+    final (:initialAdditionalFee, :initialRbfFeeRate) = _getAdditionalFeeAndRate();
+    // self output 사용으로 _cachedBaseline.estimatedVSize가 처음 계산할 때보다 작아진 경우를 대비
+    // 적은 requiredFee로 RBF Tx 생성 시 잘못된 결과가 반환되기 때문
+    if (additionalFee < initialAdditionalFee) {
+      additionalFee = initialAdditionalFee;
+    }
+    int deficitAmount = additionalFee;
+
+    return _buildRbf(deficitAmount, newFeeRate, _cachedBaseline!.estimatedVSize, isBaseline: false);
+  }
 
   TransactionBuildResult _buildTransaction(
     double newFeeRate,
@@ -618,7 +514,7 @@ class RbfBuilder {
     bool isSweep = false,
   }) {
     Logger.log(
-      '_buildTx: $newFeeRate / recipients: ${recipients.length} / addedUtxo: ${additionalUtxos.length} / $isSweep',
+      '[_buildTx] feeRate: $newFeeRate / recipients: ${recipients.length} / addedUtxo: ${additionalUtxos.length} / isSweep: $isSweep',
     );
     final changeDerivationPath = changeOutput == null ? nextChangeAddress.derivationPath : changeOutputDerivationPath!;
 
