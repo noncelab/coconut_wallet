@@ -49,6 +49,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   WalletImportSource? walletImportSource;
 
   bool isItemTapped = false; // ui (edit 아이콘)
+  bool isCustomAccount = false;
 
   bool _isWithoutMfp() {
     if (isMultisig) {
@@ -61,6 +62,18 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
 
   bool _isExtendedPublicKey() {
     return walletImportSource == WalletImportSource.extendedPublicKey;
+  }
+
+  int _getAccountIndex(String derivationPath) {
+    try {
+      final segments = derivationPath.split('/');
+      if (segments.length > 3) {
+        return int.parse(segments[3].replaceAll("'", ""));
+      }
+    } catch (e) {
+      return 0;
+    }
+    return 0;
   }
 
   @override
@@ -96,6 +109,8 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       rightText = singlesigWallet.keyStore.masterFingerprint;
       rightSubText = singlesigWallet.derivationPath;
       walletImportSource = widget.walletItem.walletImportSource;
+
+      isCustomAccount = _getAccountIndex(singlesigWallet.derivationPath) != 0;
     }
     nameText = walletItem.name;
   }
@@ -255,13 +270,20 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   }
 
   void _onTap(BuildContext context, WalletImportSource? walletImportSource) {
-    if (walletImportSource == null || walletImportSource == WalletImportSource.coconutVault) {
+    final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
+
+    if (!isExternalWallet && !isCustomAccount) {
       return;
     }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => WalletInfoEditBottomSheet(id: widget.id, walletImportSource: walletImportSource),
+      builder:
+          (context) => WalletInfoEditBottomSheet(
+            id: widget.id,
+            walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+          ),
     ).then((result) {
       if (result != null) {
         var ellipsisName = result.length > 10 ? '${result.substring(0, 7)}...' : result;
@@ -278,6 +300,9 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   }
 
   Widget _buildIcon() {
+    final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
+    final bool shouldShowEditIcon = isExternalWallet || isCustomAccount;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -286,7 +311,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
           colorIndex: colorIndex,
           iconIndex: iconIndex,
         ),
-        if (walletImportSource != null && walletImportSource != WalletImportSource.coconutVault)
+        if (shouldShowEditIcon)
           Positioned(
             right: -3,
             bottom: -3,
