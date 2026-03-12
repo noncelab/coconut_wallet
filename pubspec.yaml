@@ -161,10 +161,14 @@ flutter:
     - assets/svg/eye.svg
     - assets/svg/eye-crossed.svg
     - assets/svg/wallet-icons/bank.svg
+    - assets/svg/wallet-icons/bitcoin-circle.svg
+    - assets/svg/wallet-icons/bitcoin.svg
     - assets/svg/wallet-icons/building.svg
     - assets/svg/wallet-icons/car.svg
     - assets/svg/wallet-icons/carrot.svg
     - assets/svg/wallet-icons/child-head.svg
+    - assets/svg/wallet-icons/coconut-drink.svg
+    - assets/svg/wallet-icons/coconut.svg
     - assets/svg/wallet-icons/couch.svg
     - assets/svg/wallet-icons/croissant.svg
     - assets/svg/wallet-icons/cursor-finger.svg
@@ -175,9 +179,15 @@ flutter:
     - assets/svg/wallet-icons/hamburger.svg
     - assets/svg/wallet-icons/hand-holding-heart.svg
     - assets/svg/wallet-icons/heart.svg
+    - assets/svg/wallet-icons/high-five.svg
     - assets/svg/wallet-icons/home-heart.svg
+    - assets/svg/wallet-icons/inheritance-1.svg
+    - assets/svg/wallet-icons/inheritance-2.svg
+    - assets/svg/wallet-icons/legacy-bitcoin.svg
+    - assets/svg/wallet-icons/legacy-heart.svg
     - assets/svg/wallet-icons/man-head.svg
     - assets/svg/wallet-icons/music.svg
+    - assets/svg/wallet-icons/palm-tree.svg
     - assets/svg/wallet-icons/paper-plane.svg
     - assets/svg/wallet-icons/paw.svg
     - assets/svg/wallet-icons/piggy-bank.svg
