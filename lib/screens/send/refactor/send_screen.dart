@@ -47,8 +47,15 @@ class SendScreen extends StatefulWidget {
   final int? walletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
+  final int? initialSatsFromP2P;
 
-  const SendScreen({super.key, this.walletId, required this.sendEntryPoint, this.transactionDraftId});
+  const SendScreen({
+    super.key,
+    this.walletId,
+    required this.sendEntryPoint,
+    this.transactionDraftId,
+    this.initialSatsFromP2P,
+  });
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -131,6 +138,20 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.sendEntryPoint,
       widget.transactionDraftId,
     );
+    if (widget.initialSatsFromP2P != null) {
+      final sats = widget.initialSatsFromP2P!;
+      final btcAmount = UnitUtil.convertSatoshiToBitcoin(sats);
+      context.read<SendInfoProvider>().setAmount(btcAmount);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final amountText =
+            _viewModel.currentUnit.isBasedOnSatoshi
+                ? sats.toString()
+                : BalanceFormatUtil.formatSatoshiToReadableBitcoin(sats);
+        _amountController.text = amountText;
+        _viewModel.setAmountText(sats, 0);
+      });
+    }
     _amountFocusNode.addListener(
       () => setState(() {
         if (!_amountFocusNode.hasFocus) {

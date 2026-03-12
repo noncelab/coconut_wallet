@@ -193,6 +193,10 @@ utility:
     transaction_fee: "Tarifa de Transacción"
     copy_all: "Copiar Todo"
     share: "Compartir"
+    send: "Enviar"
+    no_wallet: "No hay billeteras"
+    no_wallet_description: "Necesitas agregar una billetera antes de enviar Bitcoin.\nPor favor, agrega una billetera y vuelve a intentarlo."
+    add_wallet: "Agregar billetera"
     copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[Factura de Transacción]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nPrecio de Referencia: $currencySymbol $referencePrice / BTC\nFecha y Hora de Referencia: $referenceTime\nTarifa de Transacción: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
 
 transaction_draft:

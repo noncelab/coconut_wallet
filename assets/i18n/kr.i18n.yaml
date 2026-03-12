@@ -192,8 +192,12 @@ utility:
     reference_price: "기준 시세"
     reference_datetime: "기준 일시"
     transaction_fee: "거래 수수료"
-    copy_all: "전체 복사"
-    share: "공유"
+    copy_all: "전체 복사하기"
+    share: "공유하기"
+    send: "보내기"
+    no_wallet: "지갑이 없어요"
+    no_wallet_description: "비트코인을 보내려면 먼저 지갑을 추가해야 해요.\n지갑을 추가한 뒤 다시 시도해 주세요."
+    add_wallet: "지갑 추가하기"
     copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[거래 계산서]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n기준 시세: $currencySymbol $referencePrice / BTC\n기준 일시: $referenceTime\n거래 수수료: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
 
 transaction_draft:
