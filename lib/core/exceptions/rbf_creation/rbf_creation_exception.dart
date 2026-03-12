@@ -28,7 +28,7 @@ class UseChangeOutputFailureException extends RbfCreationException {
   UseChangeOutputFailureException({required this.changeAmount, required this.deficitAmount})
     : super(
         message:
-            'Change output should have been sufficient, but RBF transaction creation failed. '
+            'Change output is sufficient, but RBF transaction creation failed. '
             '(changeAmount: $changeAmount, deficitAmount: $deficitAmount)',
       );
 }

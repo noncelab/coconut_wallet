@@ -139,7 +139,7 @@ class RbfBuilder {
   /// SelfOutput 중 대상을 맨 뒤로 보내고 amount를 Sweep용으로 설정
   Map<String, int> _createSweepRecipients(Map<String, int> originalRecipients, TransactionAddress lastSelfOutput) {
     Map<String, int> newRecipients = Map.from(originalRecipients);
-    newRecipients.removeWhere((key, value) => key == lastSelfOutput.address && value == lastSelfOutput.amount);
+    newRecipients.removeWhere((key, value) => key == lastSelfOutput.address);
     int lastAmount = inputSum;
     for (int i = 0; i < newRecipients.length; i++) {
       lastAmount -= newRecipients.values.elementAt(i);
@@ -361,12 +361,13 @@ class RbfBuilder {
     return (result: null, remainingDeficit: remaining, addedUtxos: addedUtxos, estimatedTxSize: vSize);
   }
 
+  /// 트랜잭션 생성 시도 시 항상 맨 처음 호출된다고 가정
   ({RbfBuildResult? result, int? remainingDeficit}) _tryWithChangeOutput({
-    required int deficitAmount,
+    required int initialAdditionalFee,
     required double feeRate,
     required Map<String, int> recipientMap,
   }) {
-    if (changeOutput!.amount >= deficitAmount) {
+    if (changeOutput!.amount >= initialAdditionalFee) {
       final TransactionBuildResult? txBuildResult = _tryBuildTransactionWithFeeAdjusting(recipientMap, feeRate);
       if (txBuildResult != null) {
         final tx = txBuildResult.transaction!;
@@ -378,20 +379,32 @@ class RbfBuilder {
         );
         return (result: result, remainingDeficit: null);
       } else {
-        // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
-        throw UseChangeOutputFailureException(changeAmount: changeOutput!.amount, deficitAmount: deficitAmount);
+        final resultDeficit = txBuildResult!.estimatedFee - _pendingTx.fee;
+        if (resultDeficit > initialAdditionalFee) {
+          return (result: null, remainingDeficit: resultDeficit - initialAdditionalFee);
+        } else {
+          throw UseChangeOutputFailureException(
+            changeAmount: changeOutput!.amount,
+            deficitAmount: initialAdditionalFee,
+          );
+        }
       }
     }
 
-    return (result: null, remainingDeficit: deficitAmount - changeOutput!.amount);
+    return (result: null, remainingDeficit: initialAdditionalFee - changeOutput!.amount);
   }
 
-  RbfBuildResult _buildRbf(int initialDeficit, double newFeeRate, double initialVSize, {required bool isBaseline}) {
-    int deficitAmount = initialDeficit;
+  RbfBuildResult _buildRbf(
+    int initialAdditionalFee,
+    double newFeeRate,
+    double initialVSize, {
+    required bool isBaseline,
+  }) {
+    int deficitAmount = initialAdditionalFee;
     double newTxVSize = initialVSize;
     if (changeOutput != null) {
       final (:result, :remainingDeficit) = _tryWithChangeOutput(
-        deficitAmount: deficitAmount,
+        initialAdditionalFee: deficitAmount,
         feeRate: newFeeRate,
         recipientMap: recipientMap,
       );
