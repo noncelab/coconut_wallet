@@ -383,11 +383,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
                     ),
-                '/wallet-home-edit':
-                    (context) => buildLoadingScreenWithArgs(
-                      context,
-                      (args) => WalletHomeEditScreen(scrollController: args['scrollController']),
-                    ),
+                '/wallet-home-edit': (context) => const WalletHomeEditScreen(),
               },
             );
 
