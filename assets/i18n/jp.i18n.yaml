@@ -414,6 +414,7 @@ wallet_list:
   bottom_sheet:
     hide_fiat_price: "法定通貨残高を非表示"
     hide_fiat_price_description: "この画面に法定通貨残高を表示しません。"
+    visible: "表示中"
 
 # lib/screens/review
 negative_feedback_screen:

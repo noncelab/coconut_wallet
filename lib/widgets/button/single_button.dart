@@ -101,7 +101,11 @@ class SingleButton extends StatelessWidget {
 
   TextStyle get _resolvedSubtitleStyle {
     final baseStyle =
-        subtitle != null && subtitle!.containsCJK
+        subtitleStyle != null
+            ? subtitle != null && subtitle!.containsCJK
+                ? subtitleStyle!.copyWith(height: 1.3)
+                : subtitleStyle!
+            : subtitle != null && subtitle!.containsCJK
             ? CoconutTypography.body3_12.copyWith(height: 1.3)
             : CoconutTypography.body3_12_Number;
     return baseStyle.setColor(CoconutColors.gray400);

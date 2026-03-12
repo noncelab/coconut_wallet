@@ -723,21 +723,25 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             child: Column(
               children: [
                 SingleButton(
-                  customPadding: const EdgeInsets.fromLTRB(2, 10, 2, 16),
+                  customPadding: const EdgeInsets.fromLTRB(2, 0, 2, 16),
                   title: t.wallet_list.bottom_sheet.hide_fiat_price,
                   subtitle: t.wallet_list.bottom_sheet.hide_fiat_price_description,
                   isVerticalSubtitle: true,
                   backgroundColor: CoconutColors.black,
+                  onPressed: () {
+                    prefProvider.setWalletListFiatHidden(!prefProvider.isWalletListFiatHidden);
+                    vibrateExtraLight();
+                  },
                   rightElement: CoconutSwitch(
                     isOn: prefProvider.isWalletListFiatHidden,
-                    scale: 0.8,
+                    scale: 0.7,
                     activeColor: CoconutColors.gray100,
                     trackColor: CoconutColors.gray600,
-                    thumbColor: CoconutColors.black,
+                    thumbColor: CoconutColors.gray800,
                     onChanged: (value) {
                       prefProvider.setWalletListFiatHidden(value);
                       vibrateExtraLight();
@@ -803,11 +807,20 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
             ),
             CoconutLayout.spacing_200w,
             Text(fiat.name, style: CoconutTypography.body3_12_Bold.copyWith(height: 1.4)),
+            CoconutLayout.spacing_150w,
+            AnimatedOpacity(
+              opacity: isVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Text(
+                t.wallet_list.bottom_sheet.visible,
+                style: CoconutTypography.caption_10.copyWith(height: 1.4, color: CoconutColors.cyan),
+              ),
+            ),
           ],
         ),
         ShrinkAnimationButton(
-          defaultColor: isVisible ? CoconutColors.gray700 : CoconutColors.sky,
-          pressedColor: isVisible ? CoconutColors.gray800 : CoconutColors.cyanBlue,
+          defaultColor: CoconutColors.gray700,
+          pressedColor: CoconutColors.gray800,
           borderRadius: 8,
           child: Container(
             constraints: const BoxConstraints(minWidth: 52),
@@ -815,7 +828,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
             child: Text(
               isVisible ? t.hide : t.show,
               textAlign: TextAlign.center,
-              style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white).copyWith(height: 1.4),
+              style: CoconutTypography.body3_12.setColor(CoconutColors.white).copyWith(height: 1.4),
             ),
           ),
           onPressed: () {

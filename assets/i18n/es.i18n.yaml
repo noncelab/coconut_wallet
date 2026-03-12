@@ -413,6 +413,7 @@ wallet_list:
   bottom_sheet:
     hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
     hide_fiat_price_description: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio."
+    visible: "Visible"
 
 # lib/screens/review
 negative_feedback_screen:

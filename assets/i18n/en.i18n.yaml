@@ -413,6 +413,7 @@ wallet_list:
   bottom_sheet:
     hide_fiat_price: "Hide Fiat Balance"
     hide_fiat_price_description: "This screen will not display the fiat balance."
+    visible: "Visible"
 
 # lib/screens/review
 negative_feedback_screen:

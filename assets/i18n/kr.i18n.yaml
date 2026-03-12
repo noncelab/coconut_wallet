@@ -413,6 +413,7 @@ wallet_list:
   bottom_sheet:
     hide_fiat_price: "법정화폐 잔액 숨기기"
     hide_fiat_price_description: "이 화면에 법정화폐 잔액을 표시하지 않아요."
+    visible: "표시 중"
 
 # lib/screens/review
 negative_feedback_screen:
