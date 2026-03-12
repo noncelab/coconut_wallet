@@ -48,6 +48,13 @@ class OutputAnalysis {
   int get selfSum => selfOutputs.fold(0, (s, o) => s + o.amount);
   int get nonChangeSum => externalSum + selfSum;
 
+  bool get hasDuplicatedOutput {
+    final externalAddresses = externalOutputs.map((output) => output.address).toList();
+    final selfAddresses = selfOutputs.map((output) => output.address).toList();
+    return externalAddresses.toSet().length != externalAddresses.length ||
+        selfAddresses.toSet().length != selfAddresses.length;
+  }
+
   Map<String, int> get recipientMap => {
     for (final o in [...externalOutputs, ...selfOutputs]) o.address: o.amount,
   };

@@ -714,8 +714,8 @@ transaction_fee_bumping_screen:
   new_fee: "新しい手数料"
   sats_vb: "sat/vB"
   recommend_fee: "最小手数料: ${fee} sat/vB以上"
-  recommend_fee_info_rbf: "新しいトランザクションサイズの1vB当たり最低1sat以上の追加手数料が必要です。\n計算された最小手数料率が現在のネットワークの低速送信手数料率より低い場合は、低速送信手数料率を推奨します。\nただし、新しいトランザクションサイズが増加した場合、推奨手数料率は以前より低くなる可能性があります。"
-  recommend_fee_info_cpfp: "新しいトランザクションで不足している手数料を補う必要があります。\n • 新しいトランザクションサイズ = ${newTxSize} vB、推奨手数料率 = ${recommendedFeeRate} sat/vB\n • 必要総手数料 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 新しいトランザクション手数料 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 新しいトランザクション手数料率 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
+  recommend_fee_info_rbf: "新しいトランザクションのサイズ1 vBごとに、少なくとも1 sat以上の追加手数料が必要です。\n計算された最小手数料率が現在のネットワークの低速送金手数料率より低い場合は、低速手数料率を推奨します。\n新しいトランザクションのサイズが増えると、推奨手数料率は既存のものより低くなる場合があります。"
+  recommend_fee_info_cpfp: "新しいトランザクションで不足している手数料を補う必要があります。\n • 新しいトランザクションのサイズ = ${newTxSize} vB、推奨手数料率 = ${recommendedFeeRate} sat/vB\n • 必要な総手数料 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 新しいトランザクションの手数料 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 新しいトランザクションの手数料率 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "推奨手数料"
   utxo_auto_selection: "UTXO自動選択"
   utxo_auto_selection_description: "追加手数料が必要なため、UTXOを自動選択します。"
@@ -731,10 +731,12 @@ transaction_fee_bumping_screen:
   recommended_fee_less_than_network_fee: "少なくとも推奨手数料を指定してください"
   please_select_more_utxo: "${amount}以上の価値のあるUTXOを選択してください"
   dialog:
-    fee_alert_title: "通知"
-    fee_alert_description: "設定した総手数料が0.01 BTCを超えています。それでも続行しますか？"
+    fee_alert_title: "アラート"
+    fee_alert_description: "設定した合計手数料が0.01 BTCを超えています。それでも続行しますか？"
     confirmed_alert_title: "トランザクション完了"
     confirmed_alert_description: "保留中だったトランザクションが完了しました。"
+    rbf_duplicated_output_title: "重複アドレスを検出"
+    rbf_duplicated_output: "このトランザクションはサポートされていません。"
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 

@@ -714,8 +714,8 @@ transaction_fee_bumping_screen:
   new_fee: "New Fee"
   sats_vb: "sat/vB"
   recommend_fee: "Minimum fee: ${fee} sat/vB or higher"
-  recommend_fee_info_rbf: "An additional fee of at least 1 sat per vB of the new transaction size is required.\nIf the calculated minimum fee rate is lower than the current network's slow transfer fee rate, we recommend the slow transfer fee rate.\nHowever, if the new transaction size increases, the recommended fee rate may be lower than before."
-  recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, Recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
+  recommend_fee_info_rbf: "An additional fee of at least 1 sat for each 1 vB of the new transaction size is required.\nIf the calculated minimum fee rate is lower than the current network's slow fee rate, we recommend using the slow fee rate.\nIf the new transaction size increases, the recommended fee rate may be lower than the existing one."
+  recommend_fee_info_cpfp: "You need to make up the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "Recommended Fee"
   utxo_auto_selection: "Auto-select UTXO"
   utxo_auto_selection_description: "UTXOs are auto-selected due to additional fees required."
@@ -735,6 +735,8 @@ transaction_fee_bumping_screen:
     fee_alert_description: "The total fee you set is over 0.01 BTC. Do you want to continue anyway?"
     confirmed_alert_title: "Transaction Complete"
     confirmed_alert_description: "The transaction that was pending has been completed."
+    rbf_duplicated_output_title: "Duplicate Address Detected"
+    rbf_duplicated_output: "This transaction is not supported."
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 

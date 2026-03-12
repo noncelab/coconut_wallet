@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -214,13 +215,21 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         .onError((e, _) {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (mounted) {
+              String title = t.alert.error_occurs;
+              String description = t.alert.contact_admin(error: e.toString());
+
+              if (e is DuplicatedOutputException) {
+                title = t.transaction_fee_bumping_screen.dialog.rbf_duplicated_output_title;
+                description = t.transaction_fee_bumping_screen.dialog.rbf_duplicated_output;
+              }
+
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
                   return CoconutPopup(
                     languageCode: context.read<PreferenceProvider>().language,
-                    title: t.alert.error_occurs,
-                    description: t.alert.contact_admin(error: e.toString()),
+                    title: title,
+                    description: description,
                     onTapRight: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).pop();

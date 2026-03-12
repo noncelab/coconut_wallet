@@ -238,6 +238,10 @@ class FeeBumpingViewModel extends ChangeNotifier {
       getDerivationPath: (String address) => _addressRepository.getDerivationPath(_walletId, address),
     );
 
+    if (preparer.hasDuplicatedOutput) {
+      throw const DuplicatedOutputException();
+    }
+
     return RbfBuilder(
       preparer: preparer,
       walletListItemBase: _walletListItemBase,
@@ -396,10 +400,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _feeInfos[0].satsPerVb = recommendedFees.fastestFee?.toDouble();
     _feeInfos[1].satsPerVb = recommendedFees.halfHourFee?.toDouble();
     _feeInfos[2].satsPerVb = recommendedFees.hourFee?.toDouble();
-
-    _feeInfos[0].satsPerVb = 33;
-    _feeInfos[1].satsPerVb = 22;
-    _feeInfos[2].satsPerVb = 11;
 
     _isFeeFetchSuccess = true;
   }

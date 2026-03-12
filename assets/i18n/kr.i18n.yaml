@@ -717,7 +717,7 @@ transaction_fee_bumping_screen:
   new_fee: "새 수수료"
   sats_vb: "sat/vB"
   recommend_fee: "최소 수수료: ${fee} sat/vB 이상"
-  recommend_fee_info_rbf: "새 트랜잭션의 크기 1vB 당 최소 1sat 이상의 추가 수수료가 필요해요. \n만약 계산된 최소 수수료율이 현재 네트워크의 느린 전송 수수료율보다 낮다면, 느린 전송 수수료율을 추천해요. \n단, 새 거래의 크기가 증가하면 추천 수수료율은 기존보다 낮을 수 있어요."
+  recommend_fee_info_rbf: "새 트랜잭션의 크기 1vB 당 최소 1sat 이상의 추가 수수료가 필요해요. \n만약 계산된 최소 수수료율이 현재 네트워크의 느린 전송 수수료율보다 낮다면, 느린 전송 수수료율을 추천해요. \n새 거래의 크기가 증가하면 추천 수수료율은 기존보다 낮을 수 있어요."
   recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vB, 추천 수수료율 = ${recommendedFeeRate} sat/vB\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "추천 수수료"
   utxo_auto_selection: "UTXO 자동 선택"
@@ -739,6 +739,8 @@ transaction_fee_bumping_screen:
     fee_alert_description: "설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?"
     confirmed_alert_title: "거래 완료"
     confirmed_alert_description: "처리 대기 중이던 거래가 완료되었어요."
+    rbf_duplicated_output_title: "중복 주소 발견"
+    rbf_duplicated_output: "지원하지 않는 트랜잭션이에요."
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
 

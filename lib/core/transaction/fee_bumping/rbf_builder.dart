@@ -501,21 +501,30 @@ class RbfBuilder {
 
   RbfBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
-    if (newFeeRate < _cachedBaseline!.minimumFeeRate) {
-      throw const FeeRateTooLowException();
-    }
+    try {
+      if (newFeeRate < _cachedBaseline!.minimumFeeRate) {
+        throw const FeeRateTooLowException();
+      }
 
-    int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
-    int additionalFee = requiredFee - _pendingTx.fee;
-    final (:initialAdditionalFee, :initialRbfFeeRate) = _getAdditionalFeeAndRate();
-    // self output 사용으로 _cachedBaseline.estimatedVSize가 처음 계산할 때보다 작아진 경우를 대비
-    // 적은 requiredFee로 RBF Tx 생성 시 잘못된 결과가 반환되기 때문
-    if (additionalFee < initialAdditionalFee) {
-      additionalFee = initialAdditionalFee;
-    }
-    int deficitAmount = additionalFee;
+      int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
+      int additionalFee = requiredFee - _pendingTx.fee;
+      final (:initialAdditionalFee, :initialRbfFeeRate) = _getAdditionalFeeAndRate();
+      // self output 사용으로 _cachedBaseline.estimatedVSize가 처음 계산할 때보다 작아진 경우를 대비
+      // 적은 requiredFee로 RBF Tx 생성 시 잘못된 결과가 반환되기 때문
+      if (additionalFee < initialAdditionalFee) {
+        additionalFee = initialAdditionalFee;
+      }
+      int deficitAmount = additionalFee;
 
-    return _buildRbf(deficitAmount, newFeeRate, _cachedBaseline!.estimatedVSize, isBaseline: false);
+      return _buildRbf(deficitAmount, newFeeRate, _cachedBaseline!.estimatedVSize, isBaseline: false);
+    } on RbfCreationException catch (e) {
+      return RbfBuildResult(
+        transaction: null,
+        exception: e,
+        minimumFeeRate: _cachedBaseline!.minimumFeeRate,
+        estimatedVSize: _cachedBaseline!.estimatedVSize,
+      );
+    }
   }
 
   TransactionBuildResult _buildTransaction(

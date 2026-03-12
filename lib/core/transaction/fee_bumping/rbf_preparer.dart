@@ -39,4 +39,6 @@ class RbfPreparer {
 
     return RbfPreparer(pendingTx: pendingTx, inputUtxos: inputUtxoList, outputAnalysis: outputAnalysis);
   }
+
+  bool get hasDuplicatedOutput => outputAnalysis.hasDuplicatedOutput;
 }

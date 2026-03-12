@@ -32,3 +32,7 @@ class UseChangeOutputFailureException extends RbfCreationException {
             '(changeAmount: $changeAmount, deficitAmount: $deficitAmount)',
       );
 }
+
+class DuplicatedOutputException extends RbfCreationException {
+  const DuplicatedOutputException({super.message = 'RBF is not supported because duplicated outputs exist.'});
+}
