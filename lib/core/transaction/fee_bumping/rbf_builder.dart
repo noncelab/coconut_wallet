@@ -48,9 +48,10 @@ class RbfBuildResult {
     required this.estimatedVSize,
   });
 
-  RbfBuildResult copyWith({double? minimumFeeRate}) {
+  RbfBuildResult copyWithMinimumFeeRate({double? minimumFeeRate}) {
+    if (minimumFeeRate == null) return this;
     return RbfBuildResult(
-      minimumFeeRate: minimumFeeRate ?? this.minimumFeeRate,
+      minimumFeeRate: minimumFeeRate,
       transaction: transaction,
       isOnlyChangeOutputUsed: isOnlyChangeOutputUsed,
       isSelfOutputsUsed: isSelfOutputsUsed,
@@ -263,13 +264,14 @@ class RbfBuilder {
     return (result: null, newRecipients: newRecipients, remainingDeficit: leftDeficit, vSizeReduced: vSizeReduced);
   }
 
-  bool _meetsMinimumRbfFee(TransactionBuildResult txBuildResult) {
+  double? _getAdjustedRbfFeeRateIfNeeded(TransactionBuildResult txBuildResult) {
     assert(txBuildResult.isSuccess);
     final tx = txBuildResult.transaction!;
     final actualVSize = tx.estimateVirtualByteForWallet(walletListItemBase);
     final actualFee = tx.totalInputAmount - tx.outputs.fold(0, (sum, output) => sum + output.amount);
     final minimumRequiredFee = _pendingTx.fee + actualVSize;
-    return actualFee >= minimumRequiredFee;
+    if (actualFee >= minimumRequiredFee) return null;
+    return FeeRateUtils.ceilFeeRate(minimumRequiredFee / actualVSize);
   }
 
   TransactionBuildResult? _tryBuildTransactionWithFeeAdjusting(
@@ -280,14 +282,10 @@ class RbfBuilder {
   }) {
     final txBuildResult = _buildTransaction(feeRate, recipients, utxos ?? [], isSweep: isSweep);
     if (txBuildResult.isSuccess) {
-      final tx = txBuildResult.transaction!;
-      final actualVSize = tx.estimateVirtualByteForWallet(walletListItemBase);
-      final minimumRequiredFee = _pendingTx.fee + actualVSize;
-
-      if (!_meetsMinimumRbfFee(txBuildResult)) {
+      final adjustedFeeRate = _getAdjustedRbfFeeRateIfNeeded(txBuildResult);
+      if (adjustedFeeRate != null) {
         Logger.log('_tryBuildTransactionWithFeeAdjusting 재보정 시도');
-        final requiredFeeRate = FeeRateUtils.ceilFeeRate(minimumRequiredFee / actualVSize);
-        final retryResult = _buildTransaction(requiredFeeRate, recipients, utxos ?? [], isSweep: isSweep);
+        final retryResult = _buildTransaction(adjustedFeeRate, recipients, utxos ?? [], isSweep: isSweep);
         if (retryResult.isSuccess) {
           Logger.log('_tryBuildTransactionWithFeeAdjusting 재보정 성공 🟢');
           return retryResult;
@@ -356,7 +354,7 @@ class RbfBuilder {
         }
       }
 
-      remaining -= _additionalSpendable[0].amount;
+      remaining -= _additionalSpendable[i].amount;
       i++;
     } while (i < _additionalSpendable.length && remaining > 0);
 
@@ -381,7 +379,7 @@ class RbfBuilder {
         return (result: result, remainingDeficit: null);
       } else {
         // TODO: FixedBottomButon 윗부분에 붉은색으로 표기되도록 하기!!
-        throw '⚠️ ChangeOutput is enough but failed creationg tx';
+        throw UseChangeOutputFailureException(changeAmount: changeOutput!.amount, deficitAmount: deficitAmount);
       }
     }
 
@@ -398,7 +396,7 @@ class RbfBuilder {
         recipientMap: recipientMap,
       );
       if (result != null) {
-        return result.copyWith(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
+        return result.copyWithMinimumFeeRate(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
       } else {
         deficitAmount = remainingDeficit!;
       }
@@ -413,7 +411,7 @@ class RbfBuilder {
       );
 
       if (result != null) {
-        return result.copyWith(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
+        return result.copyWithMinimumFeeRate(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
       }
 
       effectiveRecipients = newRecipients;
@@ -432,7 +430,7 @@ class RbfBuilder {
       );
 
       if (result != null) {
-        return result.copyWith(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
+        return result.copyWithMinimumFeeRate(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
       }
 
       deficitAmount = remainingDeficit;

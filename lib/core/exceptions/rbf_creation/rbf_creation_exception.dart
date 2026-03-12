@@ -20,3 +20,15 @@ class InsufficientBalanceException extends RbfCreationException {
 class InvalidChangeOutputException extends RbfCreationException {
   const InvalidChangeOutputException({super.message = 'Invalid change output or derivation path finder.'});
 }
+
+class UseChangeOutputFailureException extends RbfCreationException {
+  final int changeAmount;
+  final int deficitAmount;
+
+  UseChangeOutputFailureException({required this.changeAmount, required this.deficitAmount})
+    : super(
+        message:
+            'Change output should have been sufficient, but RBF transaction creation failed. '
+            '(changeAmount: $changeAmount, deficitAmount: $deficitAmount)',
+      );
+}
