@@ -93,7 +93,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                 maintainSize: false,
                                 maintainAnimation: false,
                                 maintainState: false,
-                                child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                                  child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                ),
                               ),
                               SelectedUtxoAmountHeader(
                                 orderDropdownButtonKey: _orderDropdownButtonKey,

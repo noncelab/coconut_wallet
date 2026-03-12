@@ -112,7 +112,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                 maintainSize: false,
                                 maintainAnimation: false,
                                 maintainState: false,
-                                child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                                  child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                ),
                               ),
                               Expanded(
                                 child: SingleChildScrollView(
@@ -147,6 +150,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                             ),
                                           ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
                                             _buildFetchFailedWidget(),
+                                          CoconutLayout.spacing_2500h,
+                                          CoconutLayout.spacing_2500h,
                                         ],
                                       ),
                                     ),
@@ -162,7 +167,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             text: t.complete,
                             backgroundColor: _getNewFeeTextColor(),
                             showGradient: true,
-                            gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 150),
+                            gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
                             isActive:
                                 !viewModel.insufficientUtxos &&
                                 !_isEstimatedFeeTooLow &&

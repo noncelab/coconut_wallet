@@ -408,7 +408,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       child: CoconutPulldownMenu(
         shadowColor: CoconutColors.white.withValues(alpha: 0.1),
         dividerColor: CoconutColors.black,
-        spreadRadius: 12,
         entries: [
           CoconutPulldownMenuItem(
             title: t.send_screen.utxo_auto_selection,

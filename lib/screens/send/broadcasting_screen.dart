@@ -191,7 +191,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                         ),
                       } else ...{
                         FixedBottomButton(
-                          showGradient: false,
                           isActive: viewModel.isNetworkOn && viewModel.isInitDone,
                           onButtonClicked: () async {
                             _onBroadcastButtonClicked(viewModel);
@@ -333,12 +332,12 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   Widget _buildDonationBroadcastInfo(int? amount, bool isInitDone, bool isNetworkOn) {
     return Column(
       children: [
-        if (!isNetworkOn) NetworkErrorTooltip(isNetworkOn: isNetworkOn),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              if (!isNetworkOn) NetworkErrorTooltip(isNetworkOn: isNetworkOn),
               Padding(
                 padding: const EdgeInsets.only(left: 20, top: 20),
                 child: Column(
@@ -413,7 +412,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     bool isNetworkOn,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10, right: 10),
+      padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Column(
@@ -438,12 +437,9 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
               fiatTextStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray400),
             ),
             CoconutLayout.spacing_300h,
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: _buildTransactionFlowCard(viewModel)),
+            _buildTransactionFlowCard(viewModel),
             CoconutLayout.spacing_500h,
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: _buildOutputDetailCardSection(viewModel),
-            ),
+            _buildOutputDetailCardSection(viewModel),
             if (isSendingToMyAddress) ...[
               const SizedBox(height: 20),
               Text(
