@@ -13,6 +13,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
+import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -360,44 +361,81 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   void _onSendButtonPressed(int satsAmount) {
-    if (_viewModel.wallets.length == 1) {
-      final walletId = _viewModel.wallets[0].id;
-      Navigator.pushNamed(
-        context,
-        '/send',
-        arguments: {
-          'walletId': walletId,
-          'sendEntryPoint': SendEntryPoint.home,
-          'transactionDraftId': null,
-          'initialSatsFromP2P': satsAmount,
-        },
-      );
-      return;
-    }
-    CommonBottomSheets.showDraggableBottomSheet(
-      context: context,
-      childBuilder:
-          (scrollController) => P2PSelectWalletBottomSheet(
-            showOnlyMfpWallets: false,
-            scrollController: scrollController,
-            currentUnit: _viewModel.currentUnit,
-            onWalletSelected: (walletId) {
-              debugPrint('satsAmount: $satsAmount');
+    final walletLength = _viewModel.wallets.length;
+    switch (walletLength) {
+      case 0:
+        {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return CoconutPopup(
+                languageCode: context.read<PreferenceProvider>().language,
+                title: t.utility.p2p_calculator.no_wallet,
+                description: t.utility.p2p_calculator.no_wallet_description,
+                onTapRight: () {
+                  // popup 닫고 홈으로 이동
+                  Navigator.of(context).pop();
+                  Navigator.of(context).popUntil((route) => route.isFirst);
 
-              Navigator.pop(context);
-              Navigator.pushNamed(
-                context,
-                '/send',
-                arguments: {
-                  'walletId': walletId,
-                  'sendEntryPoint': SendEntryPoint.home,
-                  'transactionDraftId': null,
-                  'initialSatsFromP2P': satsAmount,
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    WalletHomeScreen.openAddWalletIfActive(); // 홈에서 지갑 추가 바텀시트 열기
+                  });
                 },
+                onTapLeft: () {
+                  Navigator.of(context).pop();
+                },
+                rightButtonText: t.utility.p2p_calculator.add_wallet,
+                leftButtonText: t.cancel,
               );
             },
-          ),
-    );
+          );
+          break;
+        }
+      case 1:
+        {
+          final walletId = _viewModel.wallets[0].id;
+          Navigator.pushNamed(
+            context,
+            '/send',
+            arguments: {
+              'walletId': walletId,
+              'sendEntryPoint': SendEntryPoint.home,
+              'transactionDraftId': null,
+              'initialSatsFromP2P': satsAmount,
+            },
+          );
+          break;
+        }
+
+      default:
+        {
+          CommonBottomSheets.showDraggableBottomSheet(
+            context: context,
+            childBuilder:
+                (scrollController) => P2PSelectWalletBottomSheet(
+                  showOnlyMfpWallets: false,
+                  scrollController: scrollController,
+                  currentUnit: _viewModel.currentUnit,
+                  onWalletSelected: (walletId) {
+                    debugPrint('satsAmount: $satsAmount');
+
+                    Navigator.pop(context);
+                    Navigator.pushNamed(
+                      context,
+                      '/send',
+                      arguments: {
+                        'walletId': walletId,
+                        'sendEntryPoint': SendEntryPoint.home,
+                        'transactionDraftId': null,
+                        'initialSatsFromP2P': satsAmount,
+                      },
+                    );
+                  },
+                ),
+          );
+          break;
+        }
+    }
   }
 
   void _changeInputAsset() {
