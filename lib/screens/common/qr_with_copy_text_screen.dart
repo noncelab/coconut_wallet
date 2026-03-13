@@ -1,8 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/qrcode_info.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -79,10 +77,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   int get _selectedIndex => _optionKeys.indexOf(_selectedKey);
 
   String get _displayTitle => _displayNames[_selectedKey] ?? _selectedKey;
-
-  double _calcQrWidth(BuildContext context) {
-    return MediaQuery.of(context).size.width * 0.76;
-  }
 
   String get _currentQrData {
     if (!widget.showPulldownMenu || widget.qrDataMap == null) {
@@ -171,7 +165,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final qrWidth = _calcQrWidth(context);
     final displayQrData = _currentQrData;
     final displayTextData = _currentTextData;
 
@@ -221,46 +214,19 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                 ),
 
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    CoconutLayout.spacing_300h,
-
-                    if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_300h],
-
-                    Center(
-                      child: Container(
-                        width: qrWidth,
-                        decoration: CoconutBoxDecoration.shadowBoxDecoration,
-                        child: QrImageView(
-                          data: displayQrData,
-                          padding: const EdgeInsets.all(16),
-                          backgroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                    CoconutLayout.spacing_500h,
-                    _buildCopyButton(displayTextData, qrWidth),
-                    CoconutLayout.spacing_1500h,
-                  ],
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                child: QrCodeInfo(
+                  qrcodeTopWidget: widget.qrcodeTopWidget,
+                  qrData: displayQrData,
+                  textData: displayTextData,
+                  textRichText: widget.textRichText,
+                  isAddress: widget.isAddress,
                 ),
               ),
+              if (widget.footer != null) widget.footer!,
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCopyButton(String textData, double qrWidth) {
-    return SizedBox(
-      width: qrWidth,
-      child: CopyTextContainer(
-        text: textData,
-        isAddress: widget.isAddress,
-        textStyle: CoconutTypography.body2_14_Number,
-        toastMsg: t.copied,
-        textRichText: widget.textRichText,
       ),
     );
   }

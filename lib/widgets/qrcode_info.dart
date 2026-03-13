@@ -5,10 +5,21 @@ import 'package:flutter/material.dart';
 
 class QrCodeInfo extends StatefulWidget {
   final String qrData;
+  final String? textData;
+  final RichText? textRichText;
   final Widget? qrcodeTopWidget;
   final bool isAddress;
+  final TextStyle? textStyle;
 
-  const QrCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget, this.isAddress = false});
+  const QrCodeInfo({
+    super.key,
+    required this.qrData,
+    this.textData,
+    this.textRichText,
+    this.qrcodeTopWidget,
+    this.isAddress = false,
+    this.textStyle,
+  });
 
   @override
   State<QrCodeInfo> createState() => _QrCodeInfoState();
@@ -26,8 +37,8 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: CopyTextContainer(
-            text: widget.qrData,
-            textStyle: CoconutTypography.body2_14,
+            text: widget.textData ?? widget.qrData,
+            textStyle: widget.textStyle ?? CoconutTypography.body2_14,
             isAddress: widget.isAddress,
           ),
         ),
