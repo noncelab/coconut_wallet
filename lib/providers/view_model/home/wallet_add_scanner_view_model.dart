@@ -47,7 +47,8 @@ class WalletAddScannerViewModel extends ChangeNotifier {
       case WalletImportSource.coldCard:
         _qrDataHandler = BbQrScanDataHandler();
         break;
-      case WalletImportSource.extendedPublicKey: // ExtendedPublicKey or Descriptor
+      case WalletImportSource.extendedPublicKey:
+      case WalletImportSource.descriptor:
         _qrDataHandler = ComposedScanDataHandler2();
         break;
     }
@@ -82,7 +83,7 @@ class WalletAddScannerViewModel extends ChangeNotifier {
         if (isExtendedPublicKey == true) {
           return _addExtendedPublicKeyWallet(additionInfo, masterFingerPrint);
         }
-        return _addDescriptorWallet(_walletImportSource, additionInfo);
+        return _addDescriptorWallet(additionInfo);
       } else if (additionInfo is Map<String, dynamic>) {
         return _addBbQrWallet(_walletImportSource, additionInfo);
       }
@@ -106,13 +107,13 @@ class WalletAddScannerViewModel extends ChangeNotifier {
     return await _walletProvider.syncFromThirdParty(wallet);
   }
 
-  Future<ResultOfSyncFromVault> _addDescriptorWallet(WalletImportSource walletImportSource, String descriptor) async {
+  Future<ResultOfSyncFromVault> _addDescriptorWallet(String descriptor) async {
     final name = getNextThirdPartyWalletName(
-      walletImportSource,
+      WalletImportSource.descriptor,
       _walletProvider.walletItemList.map((e) => e.name).toList(),
     );
     final wallet = _walletAddService.createWalletFromDescriptor(
-      walletImportSource: walletImportSource,
+      walletImportSource: WalletImportSource.descriptor,
       descriptor: descriptor,
       name: name,
     );

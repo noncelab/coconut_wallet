@@ -1,6 +1,9 @@
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:coconut_wallet/utils/descriptor_util.dart';
 import 'package:coconut_wallet/utils/hash_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:realm/realm.dart';
@@ -35,6 +38,11 @@ import 'package:realm/realm.dart';
 /// [addRealmTransactionDraft] (5 -> 6)
 /// 1. RealmTransactionDraft 추가
 /// 2. RealmWalletPreferences 에 manualUtxoSelectionWalletIds 필드 추가
+///
+/// [migrateExtendedPublicKeyToDescriptor] (6 -> 7)
+/// 1. RealmExternalWallet 중 walletImportSource가 extendedPublicKey인 지갑 중
+///    SingleSignatureWallet.keyStore.masterFingerprint가 00000000이 아닌 경우 descriptor로 마이그레이션
+///    (masterFingerprint가 placeholder면 xpub 기반, 실제 값이면 descriptor로 간주)
 void defaultMigration(Migration migration, int oldVersion) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');
@@ -47,10 +55,37 @@ void defaultMigration(Migration migration, int oldVersion) {
     if (oldVersion < 3) removeIsLatestTxBlockHeightZero(migration.newRealm);
     if (oldVersion < 4) addIsDeletedToUtxo(migration.newRealm);
     if (oldVersion < 5) migrationV5(migration);
+    if (oldVersion < 7) migrateExtendedPublicKeyToDescriptor(migration.newRealm);
   } catch (e, stackTrace) {
     Logger.error('Migration error: $e\n$stackTrace');
     rethrow;
   }
+}
+
+/// extendedPublicKey로 저장된 지갑 중 masterFingerprint가 00000000이 아닌 경우 descriptor로 마이그레이션
+/// SingleSignatureWallet.keyStore.masterFingerprint: xpub 추가 시 MFP 미입력이면 placeholder(00000000) 사용.
+void migrateExtendedPublicKeyToDescriptor(Realm realm) {
+  Logger.log('migrateExtendedPublicKeyToDescriptor migration start');
+  final externals = realm.all<RealmExternalWallet>().where((e) => e.walletImportSource == 'extendedPublicKey');
+  var migratedCount = 0;
+  for (var external in externals) {
+    final descriptor = external.walletBase?.descriptor ?? '';
+    if (descriptor.isEmpty) continue;
+    try {
+      final singleSigWallet = SingleSignatureWallet.fromDescriptor(
+        descriptor,
+        ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptor),
+      );
+      final mfp = singleSigWallet.keyStore.masterFingerprint.toLowerCase();
+      if (mfp != WalletAddService.masterFingerprintPlaceholder) {
+        external.walletImportSource = 'descriptor';
+        migratedCount++;
+      }
+    } catch (e) {
+      Logger.error('migrateExtendedPublicKeyToDescriptor: skip wallet ${external.id} - $e');
+    }
+  }
+  Logger.log('migrateExtendedPublicKeyToDescriptor migration end (migrated: $migratedCount)');
 }
 
 void migrationV5(Migration migration) {
