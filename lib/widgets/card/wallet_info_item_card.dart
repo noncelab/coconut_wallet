@@ -283,6 +283,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
           (context) => WalletInfoEditBottomSheet(
             id: widget.id,
             walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+            isCustomAccount: isCustomAccount,
           ),
     ).then((result) {
       if (result != null) {

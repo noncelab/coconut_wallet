@@ -100,6 +100,7 @@ electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
+name: "이름"
 
 relative_time:
   just_now: "방금 전"

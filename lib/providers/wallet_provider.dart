@@ -441,6 +441,29 @@ class WalletProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateWalletPalette(int id, int iconIndex, int colorIndex) async {
+    final wallet = getWalletById(id);
+
+    if (wallet is! SinglesigWalletListItem) {
+      throw Exception('해당 지갑은 싱글시그가 아닙니다. 멀티시그의 색상/아이콘은 변경할 수 없습니다.');
+    }
+
+    WatchOnlyWallet watchOnlyWallet = WatchOnlyWallet(
+      wallet.name,
+      colorIndex,
+      iconIndex,
+      wallet.descriptor,
+      null,
+      null,
+      wallet.walletImportSource.name,
+    );
+
+    _walletRepository.updateWalletUI(id, watchOnlyWallet);
+    _setWalletItemList(await _fetchWalletListFromDB());
+
+    notifyListeners();
+  }
+
   Balance getWalletBalance(int walletId) {
     // 간헐적으로 이미 삭제된 지갑의 balance를 불러오려고 하는 경우가 있음(성능 차이)
     if (walletItemList.firstWhereOrNull((w) => w.id == walletId) == null) {

@@ -100,6 +100,7 @@ electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
+name: "Name"
 
 relative_time:
   just_now: "Just now"

@@ -1,3 +1,4 @@
+
 # flutter pub run slang
 
 # t.glossary
@@ -100,6 +101,7 @@ electrum_server: "Servidor Electrum"
 block_explorer: "Explorador"
 log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
+name: "Nombre"
 
 relative_time:
   just_now: "Justo ahora"
