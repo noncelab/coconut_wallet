@@ -16,6 +16,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
 
@@ -114,22 +115,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
   late List<FiatCode> _walletListVisibleFiats;
-  List<FiatCode> get walletListVisibleFiats {
-    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
-    if (stored == null) {
-      return [_selectedFiat];
-    }
-    if (stored.isEmpty) {
-      return [];
-    }
-    final fiats = stored.split(',').map((code) => FiatCode.values.firstWhere((f) => f.code == code)).toList();
-    final idx = fiats.indexOf(_selectedFiat);
-    if (idx > 0) {
-      fiats.removeAt(idx);
-      fiats.insert(0, _selectedFiat);
-    }
-    return fiats;
-  }
+  List<FiatCode> get walletListVisibleFiats => _walletListVisibleFiats;
 
   PreferenceProvider(
     this._walletPreferencesRepository,
@@ -166,13 +152,7 @@ class PreferenceProvider extends ChangeNotifier {
             )
             : UtxoOrder.byAmountDesc;
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
-    _walletListVisibleFiats =
-        _sharedPrefs
-            .getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats)
-            ?.split(',')
-            .map((code) => FiatCode.values.firstWhere((f) => f.code == code))
-            .toList() ??
-        [_selectedFiat];
+    _walletListVisibleFiats = _loadWalletListVisibleFiats();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyLanguageSettingSync();
     });
@@ -346,6 +326,11 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
     await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
+    _walletListVisibleFiats = _sortWalletListVisibleFiats(_walletListVisibleFiats);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kWalletListVisibleFiats,
+      _walletListVisibleFiats.map((f) => f.code).join(','),
+    );
     notifyListeners();
   }
 
@@ -577,13 +562,42 @@ class PreferenceProvider extends ChangeNotifier {
     FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW],
   };
 
+  List<FiatCode> _loadWalletListVisibleFiats() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
+    if (stored == null) {
+      return [_selectedFiat];
+    }
+
+    final visibleFiats =
+        stored
+            .split(',')
+            .where((code) => code.isNotEmpty)
+            .map((code) => FiatCode.values.where((f) => f.code == code).firstOrNull)
+            .whereType<FiatCode>()
+            .toList();
+
+    if (visibleFiats.isEmpty && stored.isNotEmpty) {
+      return [_selectedFiat];
+    }
+
+    return _sortWalletListVisibleFiats(visibleFiats);
+  }
+
+  List<FiatCode> _sortWalletListVisibleFiats(List<FiatCode> fiats) {
+    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
+    return order.where((f) => fiats.contains(f)).toList();
+  }
+
   // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
   Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
-    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
-    final sorted = order.where((f) => fiats.contains(f)).toList();
+    final sorted = _sortWalletListVisibleFiats(fiats);
     _walletListVisibleFiats = sorted;
     await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
     notifyListeners();
+  }
+
+  void toggleWalletListFiatHidden() {
+    setWalletListFiatHidden(!_isWalletListFiatHidden);
   }
 
   @override

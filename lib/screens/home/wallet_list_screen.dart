@@ -305,7 +305,6 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                 builder: (context, data, child) {
                   final currentUnit = data.item1;
                   final excludedIds = data.item2;
-                  final favoriteIds = data.item3;
 
                   // 전체 총액
                   final totalBalance = walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b);
@@ -403,6 +402,7 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     titlePadding: EdgeInsets.zero,
                     context: context,
                     child: WalletListSettingsBottomSheet(
+                      viewModel: _viewModel,
                       visibleFiats: _viewModel.visibleFiats,
                       onTogglePressed: (f) => onTogglePressed(f),
                     ),
@@ -707,14 +707,19 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 }
 
 class WalletListSettingsBottomSheet extends StatelessWidget {
+  final WalletListViewModel viewModel;
   final List<FiatCode> visibleFiats;
   final Function(FiatCode) onTogglePressed;
-  const WalletListSettingsBottomSheet({super.key, required this.visibleFiats, required this.onTogglePressed});
+
+  const WalletListSettingsBottomSheet({
+    super.key,
+    required this.viewModel,
+    required this.visibleFiats,
+    required this.onTogglePressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final prefProvider = context.watch<PreferenceProvider>();
-
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
       child: SafeArea(
@@ -733,17 +738,17 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                   isVerticalSubtitle: true,
                   backgroundColor: CoconutColors.black,
                   onPressed: () {
-                    prefProvider.setWalletListFiatHidden(!prefProvider.isWalletListFiatHidden);
+                    viewModel.toggleWalletListFiatHidden();
                     vibrateExtraLight();
                   },
                   rightElement: CoconutSwitch(
-                    isOn: prefProvider.isWalletListFiatHidden,
+                    isOn: viewModel.isWalletListFiatHidden,
                     scale: 0.7,
                     activeColor: CoconutColors.gray100,
                     trackColor: CoconutColors.gray600,
                     thumbColor: CoconutColors.gray800,
                     onChanged: (value) {
-                      prefProvider.setWalletListFiatHidden(value);
+                      viewModel.setWalletListFiatHidden(value);
                       vibrateExtraLight();
                     },
                   ),
@@ -754,7 +759,7 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                     return FadeTransition(opacity: animation, child: child);
                   },
                   child:
-                      prefProvider.isWalletListFiatHidden
+                      viewModel.isWalletListFiatHidden
                           ? const SizedBox.shrink()
                           : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -765,8 +770,8 @@ class WalletListSettingsBottomSheet extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(horizontal: 2),
                                 child: Column(
                                   children: [
-                                    for (var fiat in prefProvider.orderedFiats) ...[
-                                      _buildFiatRow(fiat, onTogglePressed, prefProvider.walletListVisibleFiats),
+                                    for (var fiat in viewModel.orderedFiats) ...[
+                                      _buildFiatRow(fiat, onTogglePressed, viewModel.visibleFiats),
                                       CoconutLayout.spacing_400h,
                                     ],
                                   ],

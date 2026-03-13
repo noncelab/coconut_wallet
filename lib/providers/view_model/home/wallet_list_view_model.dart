@@ -63,6 +63,8 @@ class WalletListViewModel extends ChangeNotifier {
   late List<FiatCode> _visibleFiats;
   List<FiatCode> get visibleFiats => _visibleFiats;
 
+  List<FiatCode> get orderedFiats => _preferenceProvider.orderedFiats;
+
   WalletListViewModel(
     this._walletProvider,
     this._connectivityProvider,
@@ -351,6 +353,16 @@ class WalletListViewModel extends ChangeNotifier {
   void setVisibleFiats(List<FiatCode> fiats) {
     _preferenceProvider.setWalletListVisibleFiats(fiats);
     _visibleFiats = _preferenceProvider.walletListVisibleFiats;
+    notifyListeners();
+  }
+
+  void toggleWalletListFiatHidden() {
+    _preferenceProvider.toggleWalletListFiatHidden();
+    notifyListeners();
+  }
+
+  void setWalletListFiatHidden(bool isHidden) {
+    _preferenceProvider.setWalletListFiatHidden(isHidden);
     notifyListeners();
   }
 
