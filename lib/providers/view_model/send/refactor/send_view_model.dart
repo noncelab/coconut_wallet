@@ -281,6 +281,13 @@ class SendViewModel extends ChangeNotifier {
     return _isMaxMode && _recipientList[index].amount == '0';
   }
 
+  bool isOwnAddress(String address) {
+    for (WalletListItemBase walletItem in _walletProvider.walletItemList) {
+      if (_walletProvider.containsAddress(walletItem.id, address)) return true;
+    }
+    return false;
+  }
+
   SendViewModel(
     this._walletProvider,
     this._sendInfoProvider,
