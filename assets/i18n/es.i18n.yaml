@@ -592,6 +592,8 @@ settings_screen:
   hide_balance: "Ocultar saldo"
   fiat: "Fiat"
   language: "Idioma"
+  utxo_manual_selection: "Selección manual de UTXO"
+  utxo_manual_selection_description: "Selecciona UTXOs manualmente para enviar."
   electrum_server: 
     server_address: "Dirección del servidor"
     port: "Puerto"

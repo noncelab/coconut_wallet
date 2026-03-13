@@ -68,6 +68,10 @@ class PreferenceProvider extends ChangeNotifier {
   late String _language;
   String get language => _language;
 
+  /// UTXO 수동선택 모드 여부
+  late bool _isManualUtxoSelectionMode;
+  bool get isUtxoManualSelectionMode => _isManualUtxoSelectionMode;
+
   bool get isKorean => _language == "kr";
   bool get isEnglish => _language == "en";
   bool get isJapanese => _language == "jp";
@@ -138,6 +142,7 @@ class PreferenceProvider extends ChangeNotifier {
               orElse: () => UtxoOrder.byAmountDesc,
             )
             : UtxoOrder.byAmountDesc;
+    _isManualUtxoSelectionMode = _sharedPrefs.getBool(SharedPrefKeys.kIsManualUtxoSelectionMode);
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -527,6 +532,13 @@ class PreferenceProvider extends ChangeNotifier {
     _utxoSortOrder = utxoOrder;
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
+    notifyListeners();
+  }
+
+  // UTXO 수동선택 모드 여부
+  Future<void> setManualUtxoSelectionMode(bool isManual) async {
+    _isManualUtxoSelectionMode = isManual;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsManualUtxoSelectionMode, isManual);
     notifyListeners();
   }
 

@@ -589,6 +589,8 @@ settings_screen:
   change_password: "비밀번호 바꾸기"
   fiat: "법정 화폐"
   language: "언어"
+  utxo_manual_selection: "UTXO 수동 선택"
+  utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다."
   locales:
     korean: "한국어"
     english: "English"

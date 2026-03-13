@@ -591,6 +591,8 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  utxo_manual_selection: "UTXO Manual Selection"
+  utxo_manual_selection_description: "Select UTXOs manually for sending."
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
