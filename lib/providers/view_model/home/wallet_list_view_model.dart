@@ -357,7 +357,7 @@ class WalletListViewModel extends ChangeNotifier {
   }
 
   void toggleWalletListFiatHidden() {
-    _preferenceProvider.toggleWalletListFiatHidden();
+    _preferenceProvider.setWalletListFiatHidden(!_preferenceProvider.isWalletListFiatHidden);
     notifyListeners();
   }
 

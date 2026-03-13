@@ -401,10 +401,14 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
                     title: '',
                     titlePadding: EdgeInsets.zero,
                     context: context,
-                    child: WalletListSettingsBottomSheet(
-                      viewModel: _viewModel,
-                      visibleFiats: _viewModel.visibleFiats,
-                      onTogglePressed: (f) => onTogglePressed(f),
+                    child: ListenableBuilder(
+                      listenable: _viewModel,
+                      builder:
+                          (context, _) => WalletListSettingsBottomSheet(
+                            viewModel: _viewModel,
+                            visibleFiats: _viewModel.visibleFiats,
+                            onTogglePressed: (fiat) => onTogglePressed(fiat),
+                          ),
                     ),
                   );
                 },

@@ -596,10 +596,6 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleWalletListFiatHidden() {
-    setWalletListFiatHidden(!_isWalletListFiatHidden);
-  }
-
   @override
   void dispose() {
     _electrumServerProvider.removeListener(notifyListeners);
