@@ -75,7 +75,7 @@ class _MemoBottomSheetState extends State<MemoBottomSheet> {
                   CustomAppbarButton(
                     isActive: _isCompleteButtonEnabled,
                     isActivePrimaryColor: false,
-                    text: t.complete,
+                    text: t.done,
                     onPressed: () {
                       widget.onComplete(_updateMemo);
                       Navigator.pop(context);

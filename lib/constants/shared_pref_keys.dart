@@ -25,6 +25,7 @@ class SharedPrefKeys {
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
+  static const String kUtxoTierThemeId = 'UTXO_TIER_THEME_ID';
 
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
@@ -50,6 +51,9 @@ class SharedPrefKeys {
 
   /// 보내기 화면 수신자 추가 카드 확인 여부
   static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
+
+  /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
+  static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
 
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'

@@ -121,7 +121,7 @@ class _TagEditBottomSheetState extends State<TagEditBottomSheet> {
             CoconutLayout.spacing_800h,
             CoconutButton(
               onPressed: _createTag,
-              text: t.complete,
+              text: t.done,
               isActive: _isButtonActive,
               backgroundColor: CoconutColors.white,
             ),

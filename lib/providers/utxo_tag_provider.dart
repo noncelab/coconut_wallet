@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
@@ -145,15 +146,15 @@ class UtxoTagProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateUtxoTagIdList({required int walletId, required String utxoId, required List<String> selectedTagNames}) {
-    final updateUtxoTagListResult = _utxoRepository.updateUtxoTagList(walletId, utxoId, selectedTagNames);
+  void updateUtxoTagIdList({required int walletId, required String utxoId, required List<String> tagNamesToApply}) {
+    final updateUtxoTagListResult = _utxoRepository.updateUtxoTagList(walletId, utxoId, tagNamesToApply);
     if (updateUtxoTagListResult.isFailure) {
       Logger.log('-----------------------------------------------------------');
       Logger.log(
         'updateUtxoTagIdList('
         'walletId: $walletId,'
         'txHashIndex: $utxoId,'
-        'selectedTagNames: $selectedTagNames,'
+        'tagNamesToApply: $tagNamesToApply,'
         ')',
       );
       Logger.log(updateUtxoTagListResult.error);
@@ -161,5 +162,37 @@ class UtxoTagProvider extends ChangeNotifier {
 
     _isUpdatedTagList = true;
     notifyListeners();
+  }
+
+  List<String> calculateUpdatedTags({
+    required List<String> currentTagNames,
+    required Map<String, TagApplyState> tagStates,
+  }) {
+    final Set<String> updatedTagsSet = currentTagNames.toSet();
+
+    tagStates.forEach((tagName, state) {
+      if (state == TagApplyState.checked) {
+        updatedTagsSet.add(tagName);
+      } else if (state == TagApplyState.unchecked) {
+        updatedTagsSet.remove(tagName);
+      }
+    });
+
+    return updatedTagsSet.toList();
+  }
+
+  Future<void> applyTagsToUtxos({
+    required int walletId,
+    required List<String> selectedUtxoIds,
+    required Map<String, TagApplyState> tagStates,
+    required List<String> Function(String utxoId) getCurrentTagsCallback,
+  }) async {
+    for (final utxoId in selectedUtxoIds) {
+      final currentTagNames = getCurrentTagsCallback(utxoId);
+
+      final finalTags = calculateUpdatedTags(currentTagNames: currentTagNames, tagStates: tagStates);
+
+      updateUtxoTagIdList(walletId: walletId, utxoId: utxoId, tagNamesToApply: finalTags);
+    }
   }
 }

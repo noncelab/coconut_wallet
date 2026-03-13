@@ -134,7 +134,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                         vibrateLight();
                                         Navigator.pop(context, _viewModel.selectedUtxoList);
                                       },
-                                      text: t.complete,
+                                      text: t.done,
                                       isActive: _viewModel.hasSelectionChanged,
                                       showGradient: true,
                                       horizontalPadding: 16,

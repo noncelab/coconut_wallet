@@ -15,6 +15,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
@@ -108,6 +109,10 @@ class PreferenceProvider extends ChangeNotifier {
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
+  /// UTXO 구간별 색상 테마
+  late UtxoTierTheme _utxoTierTheme;
+  UtxoTierTheme get utxoTierTheme => _utxoTierTheme;
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
@@ -138,6 +143,7 @@ class PreferenceProvider extends ChangeNotifier {
               orElse: () => UtxoOrder.byAmountDesc,
             )
             : UtxoOrder.byAmountDesc;
+    _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
     // 통화 설정 초기화
     _initializeFiat();
@@ -252,6 +258,13 @@ class PreferenceProvider extends ChangeNotifier {
     if (_bitcoinUnit == unit) return;
     _bitcoinUnit = unit;
     await _sharedPrefs.setString(SharedPrefKeys.kBitcoinUnit, unit.storageKey);
+    notifyListeners();
+  }
+
+  Future<void> changeUtxoTierTheme(UtxoTierTheme theme) async {
+    if (_utxoTierTheme.id == theme.id) return;
+    _utxoTierTheme = theme;
+    await _sharedPrefs.setString(SharedPrefKeys.kUtxoTierThemeId, theme.id);
     notifyListeners();
   }
 
