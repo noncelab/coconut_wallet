@@ -75,22 +75,20 @@ class _TooltipButtonState extends State<TooltipButton> {
             crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                widget.text,
-                style: _isPressed ? (widget.pressedTextStyle ?? defaultTextStyle) : defaultTextStyle,
-              ),
+              Text(widget.text, style: _isPressed ? (widget.pressedTextStyle ?? defaultTextStyle) : defaultTextStyle),
               Container(
                 key: widget.iconKey,
                 margin: widget.iconMargin,
                 padding: widget.iconPadding,
                 color: Colors.transparent,
-                child: widget.defaultIconBuilder != null
-                    ? widget.defaultIconBuilder!(_isPressed)
-                    : Icon(
-                        Icons.info_outline_rounded,
-                        color: widget.isSelected ? CoconutColors.white : CoconutColors.gray500,
-                        size: 18,
-                      ),
+                child:
+                    widget.defaultIconBuilder != null
+                        ? widget.defaultIconBuilder!(_isPressed)
+                        : Icon(
+                          Icons.info_outline_rounded,
+                          color: widget.isSelected ? CoconutColors.white : CoconutColors.gray500,
+                          size: 18,
+                        ),
               ),
               if (widget.extraIcons != null)
                 for (final action in widget.extraIcons!)

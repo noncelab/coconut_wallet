@@ -49,8 +49,7 @@ class WalletInfoViewModel extends ChangeNotifier {
       _multisigTotalSignerCount = multisigItem.signers.length;
       _multisigRequiredSignerCount = multisigItem.requiredSignatureCount;
     } else {
-      _extendedPublicKey =
-          (walletItemBase.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
+      _extendedPublicKey = (walletItemBase.walletBase as SingleSignatureWallet).keyStore.extendedPublicKey.serialize();
     }
   }
 
