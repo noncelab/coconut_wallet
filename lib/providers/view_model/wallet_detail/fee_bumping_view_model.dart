@@ -25,6 +25,7 @@ import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.da
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -102,6 +103,15 @@ class FeeBumpingViewModel extends ChangeNotifier {
   int get walletId => _walletId;
 
   bool get hasMfp => !isWalletWithoutMfp(_walletListItemBase);
+
+  /// 빌드 결과에 서명 가능한 트랜잭션이 있는지 (prepareToSend 호출 가능 여부)
+  bool get hasValidTransaction {
+    if (isRbf) {
+      return _rbfBuildResult != null && _rbfBuildResult!.isSuccess;
+    } else {
+      return _cpfpBuildResult != null && _cpfpBuildResult!.isSuccess;
+    }
+  }
 
   Exception? get unexpectedError {
     if (isRbf) {
@@ -301,6 +311,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   void onFeeRateIsNull() {
+    Logger.log('[FeeBumping] onFeeRateIsNull: build result 초기화 (null로 설정)');
     _lastInputFeeRate = null;
     _rbfBuildResult = null;
     _cpfpBuildResult = null;
@@ -319,11 +330,17 @@ class FeeBumpingViewModel extends ChangeNotifier {
     assert(_rbfBuilder != null);
     _lastInputFeeRate = newFeeRate;
     if (newFeeRate == null) {
+      Logger.log('[FeeBumping] onRbfFeeRateChanged: newFeeRate=null → null 반환');
       _rbfBuildResult = null;
       return null;
     }
 
     _rbfBuildResult = _rbfBuilder!.build(newFeeRate: newFeeRate);
+    if (_rbfBuildResult!.isFailure) {
+      Logger.log(
+        '[FeeBumping] onRbfFeeRateChanged: build 실패 (transaction=null) feeRate=$newFeeRate exception=${_rbfBuildResult!.exception}',
+      );
+    }
     return _rbfBuildResult;
   }
 
@@ -331,11 +348,17 @@ class FeeBumpingViewModel extends ChangeNotifier {
     assert(_cpfpBuilder != null);
     _lastInputFeeRate = newFeeRate;
     if (newFeeRate == null) {
+      Logger.log('[FeeBumping] onCpfpFeeRateChanged: newFeeRate=null → null 반환');
       _cpfpBuildResult = null;
       return null;
     }
 
     _cpfpBuildResult = _cpfpBuilder!.build(newFeeRate: newFeeRate);
+    if (_cpfpBuildResult!.isFailure) {
+      Logger.log(
+        '[FeeBumping] onCpfpFeeRateChanged: build 실패 (transaction=null) feeRate=$newFeeRate exception=${_cpfpBuildResult!.exception}',
+      );
+    }
     return _cpfpBuildResult;
   }
 
@@ -352,6 +375,11 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   Future<bool> prepareToSend(double newTxFeeRate) async {
+    Logger.log(
+      '[FeeBumping] prepareToSend: newTxFeeRate=$newTxFeeRate hasValidTransaction=$hasValidTransaction '
+      'rbfBuildResult=${_rbfBuildResult != null} rbfSuccess=${_rbfBuildResult?.isSuccess} '
+      'cpfpBuildResult=${_cpfpBuildResult != null} cpfpSuccess=${_cpfpBuildResult?.isSuccess}',
+    );
     _sendInfoProvider.setWalletId(_walletId);
     _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     final transaction = isRbf ? _rbfBuildResult!.transaction! : _cpfpBuildResult!.transaction!;
@@ -364,24 +392,37 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   int? getTotalEstimatedFeeOfRbf() {
-    if (_rbfBuildResult == null) return null;
-    if (_rbfBuildResult!.isFailure) return null;
+    if (_rbfBuildResult == null) {
+      Logger.log('[FeeBumping] getTotalEstimatedFeeOfRbf: _rbfBuildResult==null → null 반환');
+      return null;
+    }
+    if (_rbfBuildResult!.isFailure) {
+      Logger.log('[FeeBumping] getTotalEstimatedFeeOfRbf: isFailure → null 반환');
+      return null;
+    }
     return _rbfBuildResult!.estimatedFee;
   }
 
   int? getTotalEstimatedFeeOfCpfp() {
-    if (_cpfpBuildResult == null) return null;
-    if (_cpfpBuildResult!.isFailure) return null;
+    if (_cpfpBuildResult == null) {
+      Logger.log('[FeeBumping] getTotalEstimatedFeeOfCpfp: _cpfpBuildResult==null → null 반환');
+      return null;
+    }
+    if (_cpfpBuildResult!.isFailure) {
+      Logger.log('[FeeBumping] getTotalEstimatedFeeOfCpfp: isFailure → null 반환');
+      return null;
+    }
     return _cpfpBuildResult!.estimatedFee;
   }
 
   // 수수료 입력 시 예상 총 수수료 계산
   int getTotalEstimatedFee(double newFeeRate) {
-    if (_type == FeeBumpingType.rbf) {
-      return getTotalEstimatedFeeOfRbf() ?? 0;
-    } else {
-      return getTotalEstimatedFeeOfCpfp() ?? 0;
+    final fee = _type == FeeBumpingType.rbf ? getTotalEstimatedFeeOfRbf() : getTotalEstimatedFeeOfCpfp();
+    if (fee == null) {
+      Logger.log('[FeeBumping] getTotalEstimatedFee: null → 0 반환 (type=$_type)');
+      return 0;
     }
+    return fee;
   }
 
   void setIsNetworkOn(bool? isNetworkOn) {

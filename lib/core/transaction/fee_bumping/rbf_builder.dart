@@ -296,9 +296,15 @@ class RbfBuilder {
       }
 
       return txBuildResult;
-    } else if (txBuildResult.exception != null &&
-        txBuildResult.exception is! tx_creation_exception.InsufficientBalanceException) {
-      Logger.error('_tryBuildTransactionWithFeeAdjusting failed: ${txBuildResult.exception.toString()}');
+    } else {
+      Logger.log(
+        '[RbfBuilder] _tryBuildTransactionWithFeeAdjusting 실패: isSuccess=false '
+        'exception=${txBuildResult.exception} estimatedFee=${txBuildResult.estimatedFee}',
+      );
+      if (txBuildResult.exception != null &&
+          txBuildResult.exception is! tx_creation_exception.InsufficientBalanceException) {
+        Logger.error('_tryBuildTransactionWithFeeAdjusting failed: ${txBuildResult.exception.toString()}');
+      }
     }
     return null;
   }
@@ -325,6 +331,9 @@ class RbfBuilder {
       }
       if (_additionalSpendable[i].amount >= remaining) {
         final finalFeeRate = isBaseline ? _calculateMinimumFeeRate(vSize) : feeRate;
+        Logger.log(
+          '[RbfBuilder] _tryWithAdditionalSpendable: UTXO ${i + 1}개 추가 (합계=${addedUtxos.fold<int>(0, (s, u) => s + u.amount)} sats) >= remaining($remaining) → 빌드 시도',
+        );
         TransactionBuildResult? txBuildResult;
         if (externalOutputs == null && recipientMap.length == 1) {
           final addedUtxosSum = addedUtxos.fold<int>(0, (sum, utxo) => sum + utxo.amount);
@@ -358,6 +367,9 @@ class RbfBuilder {
       i++;
     } while (i < _additionalSpendable.length && remaining > 0);
 
+    Logger.log(
+      '[RbfBuilder] _tryWithAdditionalSpendable: UTXO ${addedUtxos.length}개로 부족분 해결 불가 (remaining=$remaining, 추가가능=${_additionalSpendable.length}개)',
+    );
     return (result: null, remainingDeficit: remaining, addedUtxos: addedUtxos, estimatedTxSize: vSize);
   }
 
@@ -368,6 +380,9 @@ class RbfBuilder {
     required Map<String, int> recipientMap,
   }) {
     if (changeOutput!.amount >= initialAdditionalFee) {
+      Logger.log(
+        '[RbfBuilder] _tryWithChangeOutput: changeOutput.amount(${changeOutput!.amount}) >= initialAdditionalFee($initialAdditionalFee) → 트랜잭션 빌드 시도',
+      );
       final TransactionBuildResult? txBuildResult = _tryBuildTransactionWithFeeAdjusting(recipientMap, feeRate);
       if (txBuildResult != null) {
         final tx = txBuildResult.transaction!;
@@ -391,7 +406,11 @@ class RbfBuilder {
       }
     }
 
-    return (result: null, remainingDeficit: initialAdditionalFee - changeOutput!.amount);
+    final remaining = initialAdditionalFee - changeOutput!.amount;
+    Logger.log(
+      '[RbfBuilder] _tryWithChangeOutput: changeOutput.amount(${changeOutput!.amount}) < initialAdditionalFee($initialAdditionalFee) → 부족분=$remaining',
+    );
+    return (result: null, remainingDeficit: remaining);
   }
 
   RbfBuildResult _buildRbf(
@@ -400,40 +419,59 @@ class RbfBuilder {
     double initialVSize, {
     required bool isBaseline,
   }) {
+    Logger.log(
+      '[RbfBuilder] _buildRbf 시작: deficitAmount=$initialAdditionalFee feeRate=$newFeeRate estimatedVSize=$initialVSize isBaseline=$isBaseline',
+    );
     int deficitAmount = initialAdditionalFee;
     double newTxVSize = initialVSize;
     if (changeOutput != null) {
+      Logger.log('[RbfBuilder] 1단계 시도: _tryWithChangeOutput (changeOutput.amount=${changeOutput!.amount})');
       final (:result, :remainingDeficit) = _tryWithChangeOutput(
         initialAdditionalFee: deficitAmount,
         feeRate: newFeeRate,
         recipientMap: recipientMap,
       );
       if (result != null) {
+        Logger.log('[RbfBuilder] 1단계 성공: changeOutput으로 RBF 생성 완료');
         return result.copyWithMinimumFeeRate(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
       } else {
+        Logger.log('[RbfBuilder] 1단계 실패: changeOutput 부족 → remainingDeficit=$remainingDeficit');
         deficitAmount = remainingDeficit!;
       }
+    } else {
+      Logger.log('[RbfBuilder] 1단계 스킵: changeOutput 없음');
     }
 
     // selfOutput 조작: deficitAmount를 selfOutput 차감/제거로 줄임
     Map<String, int> effectiveRecipients = recipientMap;
     if (selfOutputs?.isNotEmpty == true) {
+      Logger.log(
+        '[RbfBuilder] 2단계 시도: _tryWithSelfOutputReduction (deficitAmount=$deficitAmount selfOutputs=${selfOutputs!.length}개)',
+      );
       final (:result, :newRecipients, :remainingDeficit, :vSizeReduced) = _tryWithSelfOutputReduction(
         deficitAmount,
         newFeeRate,
       );
 
       if (result != null) {
+        Logger.log('[RbfBuilder] 2단계 성공: selfOutput 조정으로 RBF 생성 완료');
         return result.copyWithMinimumFeeRate(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
       }
 
+      Logger.log('[RbfBuilder] 2단계 실패: selfOutput 조정으로 부족분 해결 불가 → remainingDeficit=$remainingDeficit');
       effectiveRecipients = newRecipients;
       deficitAmount = remainingDeficit;
       newTxVSize -= vSizeReduced;
+    } else {
+      Logger.log('[RbfBuilder] 2단계 스킵: selfOutputs 없음');
     }
 
     List<UtxoState> addedInputs = [];
     if (_additionalSpendable.isNotEmpty) {
+      final addedSum = _additionalSpendable.fold<int>(0, (s, u) => s + u.amount);
+      Logger.log(
+        '[RbfBuilder] 3단계 시도: _tryWithAdditionalSpendable (deficitAmount=$deficitAmount additionalSpendable=${_additionalSpendable.length}개 합계=$addedSum sats)',
+      );
       final (:result, :remainingDeficit, :addedUtxos, :estimatedTxSize) = _tryWithAdditionalSpendable(
         deficitAmount: deficitAmount,
         feeRate: newFeeRate,
@@ -443,14 +481,25 @@ class RbfBuilder {
       );
 
       if (result != null) {
+        Logger.log('[RbfBuilder] 3단계 성공: 추가 UTXO(${addedUtxos.length}개)로 RBF 생성 완료');
         return result.copyWithMinimumFeeRate(minimumFeeRate: isBaseline ? null : _cachedBaseline!.minimumFeeRate);
       }
 
+      final addedUtxosSum = addedUtxos.fold<int>(0, (s, u) => s + u.amount);
+      Logger.log(
+        '[RbfBuilder] 3단계 실패: 추가 UTXO(${addedUtxos.length}개, 합계=$addedUtxosSum sats)로 부족분 해결 불가 → remainingDeficit=$remainingDeficit',
+      );
       deficitAmount = remainingDeficit;
       newTxVSize = estimatedTxSize;
       addedInputs = addedUtxos;
+    } else {
+      Logger.log('[RbfBuilder] 3단계 스킵: additionalSpendable 없음');
     }
 
+    Logger.log(
+      '[RbfBuilder] _buildRbf 최종 실패: changeOutput/selfOutput/additionalSpendable 모두 실패 '
+      'deficitAmount=$deficitAmount addedInputs=${addedInputs.length}',
+    );
     return RbfBuildResult(
       minimumFeeRate:
           isBaseline ? _calculateMinimumFeeRate(newTxVSize + _vSizeIncreasePerInput) : _cachedBaseline!.minimumFeeRate,
@@ -478,8 +527,12 @@ class RbfBuilder {
   }
 
   RbfBuildResult getBaselineTransaction({bool isForce = false}) {
-    if (!isForce && _cachedBaseline != null) return _cachedBaseline!;
+    if (!isForce && _cachedBaseline != null) {
+      Logger.log('[RbfBuilder] getBaselineTransaction: 캐시 사용 (스킵)');
+      return _cachedBaseline!;
+    }
 
+    Logger.log('[RbfBuilder] getBaselineTransaction: baseline 빌드 시작 (feeRate=1.0)');
     double newTxVSize = _pendingTx.vSize;
     if (changeOutput == null) {
       // RBF 최소 수수료율을 구할 때는 changeOutput이 있다고 가정하고 보수적으로 계산
@@ -499,10 +552,18 @@ class RbfBuilder {
     return getBaselineTransaction(isForce: true);
   }
 
+  /// 수수료율 비교 시 소수 반올림 오차 허용
+  static const double _feeRateTolerance = 0.01;
+
   RbfBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
     try {
-      if (newFeeRate < _cachedBaseline!.minimumFeeRate) {
+      final minRate = _cachedBaseline!.minimumFeeRate;
+      if (newFeeRate < minRate - _feeRateTolerance) {
+        Logger.log(
+          '[RbfBuilder] build: FeeRateTooLowException (newFeeRate=$newFeeRate < minimumFeeRate=$minRate) '
+          '→ _buildRbf 호출 없이 실패 반환',
+        );
         throw const FeeRateTooLowException();
       }
 
@@ -516,8 +577,17 @@ class RbfBuilder {
       }
       int deficitAmount = additionalFee;
 
+      Logger.log(
+        '[RbfBuilder] build: RBF 수수료 요약'
+        ' | pendingTx.fee=${_pendingTx.fee}'
+        ' | requiredFee=$requiredFee (estimatedVSize=${_cachedBaseline!.estimatedVSize} * feeRate=$newFeeRate)'
+        ' | additionalFee(부족분)=$deficitAmount'
+        ' | initialAdditionalFee=$initialAdditionalFee',
+      );
+
       return _buildRbf(deficitAmount, newFeeRate, _cachedBaseline!.estimatedVSize, isBaseline: false);
     } on RbfCreationException catch (e) {
+      Logger.log('[RbfBuilder] build: RbfCreationException catch → transaction=null 반환 exception=$e');
       return RbfBuildResult(
         transaction: null,
         exception: e,
@@ -538,15 +608,20 @@ class RbfBuilder {
     );
     final changeDerivationPath = changeOutput == null ? nextChangeAddress.derivationPath : changeOutputDerivationPath!;
 
-    return TransactionBuilder(
-      availableUtxos: [..._inputUtxos, ...additionalUtxos],
-      recipients: recipients,
-      feeRate: newFeeRate,
-      changeDerivationPath: changeDerivationPath,
-      walletListItemBase: walletListItemBase,
-      isFeeSubtractedFromAmount: isSweep,
-      isUtxoFixed: true,
-    ).build();
+    final result =
+        TransactionBuilder(
+          availableUtxos: [..._inputUtxos, ...additionalUtxos],
+          recipients: recipients,
+          feeRate: newFeeRate,
+          changeDerivationPath: changeDerivationPath,
+          walletListItemBase: walletListItemBase,
+          isFeeSubtractedFromAmount: isSweep,
+          isUtxoFixed: true,
+        ).build();
+    if (!result.isSuccess) {
+      Logger.log('[_buildTx] TransactionBuilder.build 실패: exception=${result.exception}');
+    }
+    return result;
   }
 
   static void _assertAllUnspent(List<UtxoState> utxos) {

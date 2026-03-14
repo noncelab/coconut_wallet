@@ -249,11 +249,15 @@ class CpfpBuilder {
   /// 지정한 child tx 수수료율로 CPFP 트랜잭션 빌드
   ///
   /// [newFeeRate]: child tx 수수료율 (sat/vB). 패키지 수수료율이 아님.
+  /// 수수료율 비교 시 소수 반올림 오차 허용
+  static const double _feeRateTolerance = 0.01;
+
   CpfpBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
 
     try {
-      if (newFeeRate < _cachedBaseline!.minimumFeeRate) {
+      final minRate = _cachedBaseline!.minimumFeeRate;
+      if (newFeeRate < minRate - _feeRateTolerance) {
         throw const CpfpFeeRateTooLowException();
       }
 

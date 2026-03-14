@@ -18,6 +18,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -355,6 +356,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   }
 
   void _handleFeeRateIsNull() {
+    Logger.log('[FeeBumping] _handleFeeRateIsNull: feeRate 파싱 실패 또는 빈 입력 → onFeeRateIsNull 호출');
     _viewModel.onFeeRateIsNull();
 
     setState(() {
@@ -364,6 +366,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   }
 
   void _handleFeeRateIsUnderRecommended() {
+    Logger.log('[FeeBumping] _handleFeeRateIsUnderRecommended: feeRate < recommendFeeRate → onFeeRateIsNull 호출');
     _viewModel.onFeeRateIsNull();
 
     setState(() {
@@ -406,15 +409,18 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
     double? feeRate = double.tryParse(_textEditingController.text);
     if (feeRate == null) {
+      Logger.log('[FeeBumping] _onFeeRateChanged: input="$input" filtered="$filteredText" feeRate=null');
       _handleFeeRateIsNull();
       return;
     }
 
     if (feeRate < _viewModel.recommendFeeRate!) {
+      Logger.log('[FeeBumping] _onFeeRateChanged: feeRate=$feeRate < recommend=${_viewModel.recommendFeeRate}');
       _handleFeeRateIsUnderRecommended();
       return;
     }
 
+    Logger.log('[FeeBumping] _onFeeRateChanged: feeRate=$feeRate → onFeeRateChanged 호출');
     final dynamic result = _viewModel.onFeeRateChanged(feeRate);
     _handleBuildResult(result);
   }
