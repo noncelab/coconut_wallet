@@ -70,7 +70,7 @@ class PreferenceProvider extends ChangeNotifier {
 
   /// UTXO 수동선택 모드 여부
   late bool _isManualUtxoSelectionMode;
-  bool get isUtxoManualSelectionMode => _isManualUtxoSelectionMode;
+  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
 
   bool get isKorean => _language == "kr";
   bool get isEnglish => _language == "en";
@@ -454,6 +454,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// UTXO 수동 선택 지갑 목록에서 제거
+  @Deprecated('Manual UTXO Selection Mode 는 이제 앱 전체 설정으로 변경되어, 개별 지갑 설정이 제거되었습니다.')
   Future<void> removeManualUtxoSelectionWalletId(int walletId) async {
     final ids = _walletPreferencesRepository.getManualUtxoSelectionWalletIds();
     if (ids.contains(walletId)) {

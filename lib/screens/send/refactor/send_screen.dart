@@ -47,8 +47,15 @@ class SendScreen extends StatefulWidget {
   final int? walletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
+  final List<UtxoState>? initialSelectedUtxoList;
 
-  const SendScreen({super.key, this.walletId, required this.sendEntryPoint, this.transactionDraftId});
+  const SendScreen({
+    super.key,
+    this.walletId,
+    required this.sendEntryPoint,
+    this.transactionDraftId,
+    this.initialSelectedUtxoList,
+  });
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -130,6 +137,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.walletId,
       widget.sendEntryPoint,
       widget.transactionDraftId,
+      widget.initialSelectedUtxoList,
     );
     _amountFocusNode.addListener(
       () => setState(() {

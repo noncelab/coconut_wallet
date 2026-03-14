@@ -5,7 +5,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
-import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -295,6 +294,7 @@ class SendViewModel extends ChangeNotifier {
     int? walletId,
     SendEntryPoint sendEntryPoint,
     this._transactionDraftId,
+    List<UtxoState>? initialSelectedUtxoList,
   ) {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
@@ -310,6 +310,13 @@ class SendViewModel extends ChangeNotifier {
     }
 
     _recipientList = [RecipientInfo()];
+
+    if (walletId != null && initialSelectedUtxoList != null) {
+      _isUtxoSelectionAuto = false;
+      _selectedUtxoList = List<UtxoState>.from(initialSelectedUtxoList);
+      _buildTransaction();
+    }
+
     _setRecommendedFees().whenComplete(() {
       notifyListeners();
     });
@@ -367,7 +374,8 @@ class SendViewModel extends ChangeNotifier {
 
     // UTXO 모드 불러온 후 selectedUtxoList 필요 시 초기화
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
-    _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(_selectedWalletItem!.id);
+
+    _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
     if (_isUtxoSelectionAuto) {
       _selectAllUtxos();
     }

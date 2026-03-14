@@ -312,6 +312,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         walletId: args['walletId'],
                         sendEntryPoint: args['sendEntryPoint'],
                         transactionDraftId: args['transactionDraftId'],
+                        initialSelectedUtxoList: args['initialSelectedUtxoList'],
                       ),
                     ),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),

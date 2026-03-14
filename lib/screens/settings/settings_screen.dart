@@ -247,7 +247,7 @@ class _SettingsScreen extends State<SettingsScreen> {
                         subtitle: t.settings_screen.utxo_manual_selection_description,
                         isVerticalSubtitle: true,
                         rightElement: _buildSwitch(
-                          isOn: viewModel.isUtxoManualSelectionMode,
+                          isOn: viewModel.isManualUtxoSelectionMode,
                           onChanged: (isOn) async {
                             viewModel.setManualUtxoSelectionMode(isOn);
                             vibrateExtraLight();

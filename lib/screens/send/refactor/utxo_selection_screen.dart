@@ -23,12 +23,14 @@ class UtxoSelectionScreen extends StatefulWidget {
   final List<UtxoState> selectedUtxoList;
   final int walletId;
   final BitcoinUnit currentUnit;
+  final ScrollController? scrollController;
 
   const UtxoSelectionScreen({
     super.key,
     required this.currentUnit,
     required this.selectedUtxoList,
     required this.walletId,
+    this.scrollController,
   });
 
   @override
@@ -37,7 +39,8 @@ class UtxoSelectionScreen extends StatefulWidget {
 
 class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   final String allLabelName = t.all;
-  final ScrollController _scrollController = ScrollController();
+  late final ScrollController _scrollController;
+  late final bool _hasScrollController;
   late UtxoSelectionViewModel _viewModel;
 
   final List<UtxoOrder> _utxoOrderOptions = [
@@ -159,7 +162,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    if (_hasScrollController) {
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
@@ -167,6 +172,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   void initState() {
     try {
       super.initState();
+      _hasScrollController = widget.scrollController == null;
+      _scrollController = widget.scrollController ?? ScrollController();
 
       _viewModel = UtxoSelectionViewModel(
         Provider.of<WalletProvider>(context, listen: false),
