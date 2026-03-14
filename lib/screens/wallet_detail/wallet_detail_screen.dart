@@ -19,6 +19,7 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -427,17 +428,21 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       return;
     }
 
-    final result = await Navigator.pushNamed(
-      context,
-      '/utxo-selection',
-      arguments: {
-        'selectedUtxoList': const <UtxoState>[],
-        'walletId': _viewModel.walletId,
-        'currentUnit': _currentUnit,
-      },
+    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
+      context: context,
+      minChildSize: 0.6,
+      maxChildSize: 0.9,
+      initialChildSize: 0.9,
+      childBuilder:
+          (scrollController) => UtxoSelectionScreen(
+            selectedUtxoList: const <UtxoState>[],
+            walletId: _viewModel.walletId,
+            currentUnit: context.read<PreferenceProvider>().currentUnit,
+            scrollController: scrollController,
+          ),
     );
 
-    if (!mounted || result == null || result is! List) return;
+    if (!mounted || result == null) return;
 
     Navigator.pushNamed(
       context,
