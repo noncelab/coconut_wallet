@@ -343,7 +343,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
-                        selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
+                        selector:
+                            (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isManualUtxoSelectionMode),
                         builder: (context, data, child) {
                           return _buildDropdownMenu(
                             isSaved: data.item1,
@@ -380,12 +381,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         shadowColor: CoconutColors.white.withValues(alpha: 0.1),
         dividerColor: CoconutColors.black,
         entries: [
-          CoconutPulldownMenuItem(
-            title: t.send_screen.utxo_auto_selection,
-            hasSwitch: true,
-            switchValue: isUtxoSelectionAuto,
-            isDisabled: widget.walletId == null,
-          ),
           if (isSaved) ...[
             CoconutPulldownMenuItem(title: t.transaction_draft.update, isDisabled: !canGoNext), // 변경 사항 저장
           ] else ...[
@@ -406,9 +401,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             await _onLoadDraft();
           }
         }),
-        onSwitchChanged: (index, value) {
-          _viewModel.setIsUtxoSelectionAuto(value);
-        },
       ),
     );
   }
@@ -420,14 +412,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         selector:
             (_, viewModel) => Tuple5(
               viewModel.selectedWalletItem,
-              viewModel.isUtxoSelectionAuto,
+              viewModel.isManualUtxoSelectionMode,
               viewModel.selectedUtxoAmountSum,
               viewModel.selectedUtxoListLength,
               viewModel.currentUnit,
             ),
         builder: (context, data, child) {
           final selectedWalletItem = data.item1;
-          final isUtxoSelectionAuto = data.item2;
+          final isManualUtxoSelectionMode = data.item2;
           final selectedUtxoListLength = data.item4;
           final currentUnit = data.item5;
 
@@ -445,7 +437,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           }
 
           String amountText = currentUnit.displayBitcoinAmount(_viewModel.balance, withUnit: true);
-          if (!isUtxoSelectionAuto) {
+          if (isManualUtxoSelectionMode) {
             amountText += t.send_screen.n_utxos(count: selectedUtxoListLength);
           }
 
@@ -457,13 +449,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               ),
               CoconutLayout.spacing_50h,
               if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
-                _buildUtxoSelectionModeButton(isUtxoSelectionAuto, amountText, selectedUtxoListLength),
+                _buildUtxoSelectionModeContainer(isManualUtxoSelectionMode, amountText, selectedUtxoListLength),
             ],
           );
         },
       ),
       onTitlePressed: () {
-        if (!_viewModel.isSelectedWalletNull && !isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
+        if (!_viewModel.isSelectedWalletNull &&
+            !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
+            _viewModel.isManualUtxoSelectionMode) {
           _onUtxoSelectionModeButtonPressed();
         }
       },
@@ -498,7 +492,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context,
       '/utxo-selection',
       arguments: {
-        'selectedUtxoList': _viewModel.isUtxoSelectionAuto ? List<UtxoState>.empty() : _viewModel.selectedUtxoList,
+        'selectedUtxoList':
+            _viewModel.isManualUtxoSelectionMode ? _viewModel.selectedUtxoList : List<UtxoState>.empty(),
         'walletId': _viewModel.selectedWalletItem!.id,
         'currentUnit': _viewModel.currentUnit,
       },
@@ -509,26 +504,37 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     });
   }
 
-  Widget _buildUtxoSelectionModeButton(bool isUtxoSelectionAuto, String amountText, int selectedUtxoListLength) {
-    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
-    final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
+  Widget _buildUtxoSelectionModeContainer(
+    bool isManualUtxoSelectionMode,
+    String amountText,
+    int selectedUtxoListLength,
+  ) {
+    final bgColor =
+        !isManualUtxoSelectionMode || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
+    final fontStyle = isManualUtxoSelectionMode ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
-        isUtxoSelectionAuto
+        !isManualUtxoSelectionMode
             ? CoconutColors.white
             : selectedUtxoListLength == 0
             ? CoconutColors.white
             : CoconutColors.black;
-    final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
+    final text = isManualUtxoSelectionMode ? amountText : t.send_screen.utxo_auto_selection;
 
-    return ShrinkTapWrapper(
-      shrinkScale: 0.95,
-      onTap: _onUtxoSelectionModeButtonPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(4)),
-        child: Text(text, style: fontStyle.setColor(textColor)),
-      ),
-    );
+    return isManualUtxoSelectionMode
+        ? ShrinkTapWrapper(
+          shrinkScale: 0.95,
+          onTap: _onUtxoSelectionModeButtonPressed,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(4)),
+            child: Text(text, style: fontStyle.setColor(textColor)),
+          ),
+        )
+        : Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(4)),
+          child: Text(text, style: fontStyle.setColor(textColor)),
+        );
   }
 
   Widget _buildInvisibleAmountField() {

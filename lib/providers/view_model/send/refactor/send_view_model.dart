@@ -120,7 +120,7 @@ class SendViewModel extends ChangeNotifier {
   String get amountSumText => _currentUnit.displayBitcoinAmount(_amountSum, withUnit: true);
 
   WalletListItemBase? _selectedWalletItem;
-  late bool _isUtxoSelectionAuto;
+  late bool _isManualUtxoSelectionMode;
 
   bool _isFeeSubtractedFromSendAmount = false;
   bool _previousIsFeeSubtractedFromSendAmount = false;
@@ -142,7 +142,7 @@ class SendViewModel extends ChangeNotifier {
   WalletListItemBase? get selectedWalletItem => _selectedWalletItem;
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
-  bool get isUtxoSelectionAuto => _isUtxoSelectionAuto;
+  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
 
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
@@ -176,7 +176,7 @@ class SendViewModel extends ChangeNotifier {
   int _incomingBalance = 0;
 
   int get balance {
-    return _isUtxoSelectionAuto ? _confirmedBalance : selectedUtxoAmountSum;
+    return _isManualUtxoSelectionMode ? selectedUtxoAmountSum : _confirmedBalance;
   }
 
   int get incomingBalance => _incomingBalance;
@@ -306,13 +306,13 @@ class SendViewModel extends ChangeNotifier {
         _initializeWithSelectedWallet(walletIndex);
       }
     } else {
-      _isUtxoSelectionAuto = true;
+      _isManualUtxoSelectionMode = true;
     }
 
     _recipientList = [RecipientInfo()];
 
     if (walletId != null && initialSelectedUtxoList != null) {
-      _isUtxoSelectionAuto = false;
+      _isManualUtxoSelectionMode = true;
       _selectedUtxoList = List<UtxoState>.from(initialSelectedUtxoList);
       _buildTransaction();
     }
@@ -375,37 +375,16 @@ class SendViewModel extends ChangeNotifier {
     // UTXO 모드 불러온 후 selectedUtxoList 필요 시 초기화
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
 
-    _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
-    if (_isUtxoSelectionAuto) {
+    _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
+    if (_isManualUtxoSelectionMode) {
       _selectAllUtxos();
     }
     _initBalances(_allUtxos);
   }
 
   void setSelectedUtxoList(List<UtxoState> list) {
-    setIsUtxoSelectionAuto(false);
     _selectedUtxoList = list;
     _buildTransaction();
-  }
-
-  void setIsUtxoSelectionAuto(bool value) async {
-    final wasAuto = _isUtxoSelectionAuto;
-    _isUtxoSelectionAuto = value;
-
-    if (wasAuto != value) {
-      // 자동 → 수동 전환 시
-      if (wasAuto && !value) {
-        _selectedUtxoList = [];
-      } else {
-        _selectAllUtxos();
-      }
-
-      if (_selectedWalletItem != null) {
-        await _walletPreferencesRepository.toggleManualUtxoSelection(_selectedWalletItem!.id);
-      }
-
-      _buildTransaction();
-    }
   }
 
   /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
@@ -467,13 +446,13 @@ class SendViewModel extends ChangeNotifier {
 
     // 6. UTXO 선택 모드 및 목록 설정 (_getDraft에서 검증된 목록 활용)
     if (validatedUtxoList.isNotEmpty) {
-      _isUtxoSelectionAuto = false;
+      _isManualUtxoSelectionMode = false;
       _selectedUtxoList = validatedUtxoList;
     } else if (excludedUtxoStatus != null) {
-      _isUtxoSelectionAuto = false;
+      _isManualUtxoSelectionMode = false;
       _selectedUtxoList.clear();
     } else {
-      _isUtxoSelectionAuto = true;
+      _isManualUtxoSelectionMode = true;
       _selectAllUtxos();
     }
 
@@ -544,7 +523,7 @@ class SendViewModel extends ChangeNotifier {
       changeDerivationPath: _changeAddressDerivationPath,
       walletListItemBase: _selectedWalletItem!,
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
-      isUtxoFixed: !_isUtxoSelectionAuto,
+      isUtxoFixed: !_isManualUtxoSelectionMode,
     );
 
     _txBuildResult = _txBuilder!.build();
@@ -1086,7 +1065,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _selectAllUtxos() {
-    assert(_isUtxoSelectionAuto);
+    assert(_isManualUtxoSelectionMode);
     _selectedUtxoList = _allUtxos;
   }
 
@@ -1102,7 +1081,7 @@ class SendViewModel extends ChangeNotifier {
       recipients:
           _recipientList.map((r) => RecipientDraft.fromRecipientInfo(r.address, r.amount, _currentUnit)).toList(),
       bitcoinUnit: _currentUnit,
-      selectedUtxoIds: _isUtxoSelectionAuto ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+      selectedUtxoIds: _isManualUtxoSelectionMode ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
     );
 
     if (result.isSuccess) {
@@ -1126,7 +1105,7 @@ class SendViewModel extends ChangeNotifier {
       recipients:
           _recipientList.map((r) => RecipientDraft.fromRecipientInfo(r.address, r.amount, _currentUnit)).toList(),
       bitcoinUnit: _currentUnit,
-      selectedUtxoIds: _isUtxoSelectionAuto ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+      selectedUtxoIds: _isManualUtxoSelectionMode ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
     );
 
     if (result.isSuccess) {

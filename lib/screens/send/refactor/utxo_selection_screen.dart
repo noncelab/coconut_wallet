@@ -85,6 +85,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       title: t.utxo_selection_screen.title,
                       context: context,
                       onBackPressed: () => Navigator.pop(context),
+                      isBottom: true,
                     ),
                     body: SafeArea(
                       child: Stack(
