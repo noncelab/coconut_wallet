@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
@@ -32,7 +33,14 @@ class WalletInfoScreen extends StatefulWidget {
   final int id;
   final bool isMultisig;
   final String entryPoint;
-  const WalletInfoScreen({super.key, required this.id, required this.isMultisig, required this.entryPoint});
+  final bool showMfpInput;
+  const WalletInfoScreen({
+    super.key,
+    required this.id,
+    required this.isMultisig,
+    required this.entryPoint,
+    this.showMfpInput = false,
+  });
 
   @override
   State<WalletInfoScreen> createState() => _WalletInfoScreenState();
@@ -78,10 +86,8 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                               id: widget.id,
                               walletItem: viewModel.walletItemBase,
                               onTooltipClicked: () {
-                                // 이미 툴팁이 보이고 있는 상태라면 토글
                                 if (_tooltipRemainingTime > 0) {
                                   _removeTooltip();
-
                                   return;
                                 }
                                 _removeTooltip();
@@ -103,6 +109,9 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                                     });
                                   });
                                 });
+                              },
+                              onShowMfpInputBottomSheet: () {
+                                _showMfpInputBottomSheet();
                               },
                               tooltipKey: _walletTooltipKey,
                               onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
@@ -302,10 +311,41 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _initializeTooltipPosition();
       _setOverlayLoading(false);
+      if (widget.showMfpInput) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (!mounted) return;
+        await _showMfpInputBottomSheet();
+      }
     });
+  }
+
+  Future<String?> _showMfpInputBottomSheet() async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          child: WalletAddMfpInputBottomSheet(
+            onComplete: (text) {
+              Navigator.pop(context, text);
+            },
+          ),
+        );
+      },
+      backgroundColor: CoconutColors.black,
+      isScrollControlled: true,
+      enableDrag: true,
+      useSafeArea: true,
+    );
+
+    if (result != null && result.isNotEmpty && mounted) {
+      await context.read<WalletProvider>().updateWalletDescriptor(widget.id, result);
+    }
+
+    return result;
   }
 
   void _initializeTooltipPosition() {

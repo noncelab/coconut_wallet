@@ -347,6 +347,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         id: args['id'],
                         isMultisig: args['isMultisig'],
                         entryPoint: args['entryPoint'],
+                        showMfpInput: args['showMfpInput'] ?? false,
                       ),
                     ),
                 '/broadcasting-complete':

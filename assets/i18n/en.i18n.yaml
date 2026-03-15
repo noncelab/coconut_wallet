@@ -639,10 +639,6 @@ settings_screen:
       toast:
         copy_success: "Log copied successfully."
 
-# lib/screens/wallet_detail
-wallet_detail_screen:
-  toast:
-    no_mfp_wallet_cant_send: "Wallets without Master Fingerprint cannot send"
 address_list_screen:
   wallet_name: "$name's Address"
   address_index: "Address - $index"
@@ -986,6 +982,11 @@ alert:
     try_again: "Please try again after $count"
   fee_bumping:
     not_enough_amount: "Insufficient balance to execute $bumpingType.\nPlease check your current available balance."
+  without_mfp:
+    title: "Add Master Fingerprint"
+    description: "To send Bitcoin, you need to add the Master Fingerprint first. Do you want to continue?"
+    skip_button: "Cancel"
+    confirm_button: "Add"
 
 third_party:
   keystone: "Keystone"

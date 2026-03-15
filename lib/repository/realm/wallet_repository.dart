@@ -284,4 +284,19 @@ class WalletRepository extends BaseRepository {
 
     return realmWalletBalance;
   }
+
+  void updateMasterFingerprint(int walletId, String newDescriptor) {
+    final realmWalletBase = realm.find<RealmWalletBase>(walletId);
+    if (realmWalletBase == null) {
+      throw StateError('[updateMasterFingerprint] Wallet not found');
+    }
+
+    final oldDescriptor = realmWalletBase.descriptor;
+    realm.write(() {
+      realmWalletBase.descriptor = newDescriptor;
+    });
+
+    print('[updateMasterFingerprint] before: $oldDescriptor');
+    print('[updateMasterFingerprint] after : ${realm.find<RealmWalletBase>(walletId)?.descriptor}');
+  }
 }
