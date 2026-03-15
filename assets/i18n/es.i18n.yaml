@@ -411,6 +411,10 @@ wallet_list:
     delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
     finish: "Finalizar Edición"
     unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
+  bottom_sheet:
+    hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
+    hide_fiat_price_description: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio."
+    visible: "Visible"
 
 # lib/screens/review
 negative_feedback_screen:
