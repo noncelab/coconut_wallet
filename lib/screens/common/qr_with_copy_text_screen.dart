@@ -8,6 +8,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
 
   final String qrData;
 
+  // Data map used only when backing up a multisig wallet
   final Map<String, String>? qrDataMap;
   final Map<String, String>? textDataMap;
 

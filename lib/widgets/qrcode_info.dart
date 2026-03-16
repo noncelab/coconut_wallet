@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 
 class QrCodeInfo extends StatefulWidget {
   final String qrData;
+
+  // Text data used only when backing up a multisig wallet
   final String? textData;
   final RichText? textRichText;
+
   final Widget? qrcodeTopWidget;
   final bool isAddress;
   final TextStyle? textStyle;
