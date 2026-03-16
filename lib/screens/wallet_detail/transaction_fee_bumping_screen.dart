@@ -148,9 +148,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                             _buildRecommendFeeWidget(),
                                             CoconutLayout.spacing_300h,
                                             _buildCurrentMempoolFeesWidget(
-                                              viewModel.feeInfos[0].satsPerVb?.toInt() ?? 0,
-                                              viewModel.feeInfos[1].satsPerVb?.toInt() ?? 0,
-                                              viewModel.feeInfos[2].satsPerVb?.toInt() ?? 0,
+                                              viewModel.feeInfos[0].satsPerVb ?? 0,
+                                              viewModel.feeInfos[1].satsPerVb ?? 0,
+                                              viewModel.feeInfos[2].satsPerVb ?? 0,
                                             ),
                                             CoconutLayout.spacing_300h,
                                             _buildUtxoSelectionOptionWidget(viewModel),
@@ -650,7 +650,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     );
   }
 
-  Widget _buildCurrentMempoolFeesWidget(int fastestFeeSatsPerVb, int halfhourFeeSatsPerVb, int hourFeeSatsPerVb) {
+  Widget _buildCurrentMempoolFeesWidget(
+    double fastestFeeSatsPerVb,
+    double halfhourFeeSatsPerVb,
+    double hourFeeSatsPerVb,
+  ) {
     return Container(
       width: MediaQuery.sizeOf(context).width,
       padding: const EdgeInsets.all(CoconutLayout.defaultPadding),
