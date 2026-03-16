@@ -62,9 +62,6 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   bool _isRecommendFeePannelExpanded = false;
   bool _isRecommendFeePannelPressed = false;
 
-  bool _isEstimatedFeeTooLow = false;
-  bool _isEstimatedFeeTooHigh = false;
-
   bool _isLoading = false;
 
   final FocusNode _feeTextFieldFocusNode = FocusNode();
@@ -178,10 +175,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                             showGradient: true,
                             gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 95),
                             isActive:
+                                viewModel.hasValidTransaction &&
                                 viewModel.unexpectedError == null &&
                                 !viewModel.isFeeBumpingImpossible &&
                                 !viewModel.isUtxoInsufficient &&
-                                !_isEstimatedFeeTooLow &&
+                                !viewModel.isEstimatedFeeTooLow &&
                                 _textEditingController.text.isNotEmpty &&
                                 viewModel.isNetworkOn &&
                                 viewModel.hasMfp,
@@ -283,7 +281,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
   void _onCompleteButtonPressed(BuildContext context, FeeBumpingViewModel viewModel) async {
     _feeTextFieldFocusNode.unfocus();
-    if (_isEstimatedFeeTooLow) return;
+    if (viewModel.isEstimatedFeeTooLow) return;
     bool canContinue = await _showConfirmationDialog(context);
 
     if (!canContinue) return;
@@ -325,12 +323,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       );
     }
 
-    if (_isEstimatedFeeTooLow) {
+    if (viewModel.isEstimatedFeeTooLow) {
       return _buildErrorText(t.transaction_fee_bumping_screen.fee_rate_too_low_error);
     }
 
     final widgets = [];
-    if (_isEstimatedFeeTooHigh) {
+    if (viewModel.isEstimatedFeeTooHigh) {
       widgets.add(_buildErrorText(t.transaction_fee_bumping_screen.estimated_fee_too_high_error));
       widgets.add(CoconutLayout.spacing_100h);
     }
@@ -357,47 +355,6 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     );
   }
 
-  void _handleFeeRateIsNull() {
-    Logger.log('[FeeBumping] _handleFeeRateIsNull: feeRate 파싱 실패 또는 빈 입력 → onFeeRateIsNull 호출');
-    _viewModel.onFeeRateIsNull();
-
-    setState(() {
-      _isEstimatedFeeTooLow = false;
-      _isEstimatedFeeTooHigh = false;
-    });
-  }
-
-  void _handleFeeRateIsUnderRecommended() {
-    Logger.log('[FeeBumping] _handleFeeRateIsUnderRecommended: feeRate < recommendFeeRate → onFeeRateIsNull 호출');
-    _viewModel.onFeeRateIsNull();
-
-    setState(() {
-      _isEstimatedFeeTooLow = true;
-      _isEstimatedFeeTooHigh = false;
-    });
-  }
-
-  void _handleBuildResult(dynamic result) {
-    assert(result != null);
-    assert(result is RbfBuildResult || result is CpfpBuildResult);
-
-    if (result.isSuccess) {
-      setState(() {
-        _isEstimatedFeeTooLow = false;
-        if (result.estimatedFee != null) {
-          _isEstimatedFeeTooHigh = result.estimatedFee! >= 1000000;
-        } else {
-          _isEstimatedFeeTooHigh = false;
-        }
-      });
-    } else {
-      setState(() {
-        _isEstimatedFeeTooLow = false;
-        _isEstimatedFeeTooHigh = false;
-      });
-    }
-  }
-
   void _onFeeRateChanged(String input) async {
     if (_viewModel.isInitializedSuccess == false) {
       return;
@@ -410,21 +367,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     );
 
     double? feeRate = double.tryParse(_textEditingController.text);
-    if (feeRate == null) {
-      Logger.log('[FeeBumping] _onFeeRateChanged: input="$input" filtered="$filteredText" feeRate=null');
-      _handleFeeRateIsNull();
-      return;
-    }
 
-    if (feeRate < _viewModel.recommendFeeRate!) {
-      Logger.log('[FeeBumping] _onFeeRateChanged: feeRate=$feeRate < recommend=${_viewModel.recommendFeeRate}');
-      _handleFeeRateIsUnderRecommended();
-      return;
-    }
+    _viewModel.onFeeRateChanged(feeRate);
 
-    Logger.log('[FeeBumping] _onFeeRateChanged: feeRate=$feeRate → onFeeRateChanged 호출');
-    final dynamic result = _viewModel.onFeeRateChanged(feeRate);
-    _handleBuildResult(result);
+    return;
   }
 
   Future<bool> _showConfirmationDialog(BuildContext context) async {
@@ -432,7 +378,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       await TransactionUtil.showTransactionConfirmedDialog(context);
       return false;
     }
-    if (!_isEstimatedFeeTooHigh) return true;
+    if (!_viewModel.isEstimatedFeeTooHigh) return true;
     return await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
@@ -551,11 +497,20 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            t.transaction_fee_bumping_screen.new_fee,
-            style: CoconutTypography.body2_14_Bold.setColor(
-              _getNewFeeTextColor(isError: _isEstimatedFeeTooLow || _viewModel.isUtxoInsufficient),
-            ),
+          Selector<FeeBumpingViewModel, ({bool isEstimatedFeeTooLow, bool isUtxoInsufficient})>(
+            selector:
+                (_, viewModel) => (
+                  isEstimatedFeeTooLow: viewModel.isEstimatedFeeTooLow,
+                  isUtxoInsufficient: viewModel.isUtxoInsufficient,
+                ),
+            builder: (_, state, __) {
+              return Text(
+                t.transaction_fee_bumping_screen.new_fee,
+                style: CoconutTypography.body2_14_Bold.setColor(
+                  _getNewFeeTextColor(isError: state.isEstimatedFeeTooLow || state.isUtxoInsufficient),
+                ),
+              );
+            },
           ),
           Row(
             children: [
@@ -569,7 +524,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                     textInputType: const TextInputType.numberWithOptions(decimal: true),
                     errorColor: CoconutColors.hotPink,
                     activeColor: CoconutColors.white,
-                    backgroundColor: CoconutColors.white.withOpacity(0.15),
+                    backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
                     prefix: null,
                     fontFamily: 'SpaceGrotesk',
                     maxLines: 1,
@@ -608,7 +563,33 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text(t.transaction_fee_bumping_screen.recommend_fee(fee: _viewModel.recommendFeeRate!)),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 1000),
+                  switchInCurve: Curves.easeIn,
+                  switchOutCurve: Curves.easeOut,
+                  transitionBuilder: (child, animation) {
+                    final fadeAnimation = CurvedAnimation(parent: animation, curve: Curves.easeOut);
+
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, _) {
+                        final t = animation.value;
+                        final highlightStrength = 1 - ((t - 0.5).abs() * 2);
+                        final color = Color.lerp(CoconutColors.whiteLilac, CoconutColors.gray700, highlightStrength)!;
+
+                        return DefaultTextStyle.merge(
+                          style: TextStyle(color: color),
+                          child: FadeTransition(opacity: fadeAnimation, child: child),
+                        );
+                      },
+                    );
+                  },
+                  child: Text(
+                    t.transaction_fee_bumping_screen.recommend_fee(fee: _viewModel.recommendFeeRate!),
+                    key: ValueKey(_viewModel.recommendFeeRate),
+                    style: CoconutTypography.body2_14,
+                  ),
+                ),
               ),
             ),
             CoconutLayout.spacing_200w,

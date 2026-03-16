@@ -69,6 +69,9 @@ class FeeBumpingViewModel extends ChangeNotifier {
   CpfpBuildResult? _cpfpBuildResult;
   CpfpBuildResult? _cpfpBaseline;
 
+  bool _isEstimatedFeeTooLow = false;
+  bool _isEstimatedFeeTooHigh = false; // 0.01BTC 이상
+
   FeeBumpingViewModel(
     this._type,
     this._pendingTx,
@@ -185,6 +188,60 @@ class FeeBumpingViewModel extends ChangeNotifier {
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
   List<UtxoState> get availableUtxos => _availableUtxos;
 
+  bool get isEstimatedFeeTooLow => _isEstimatedFeeTooLow;
+  bool get isEstimatedFeeTooHigh => _isEstimatedFeeTooHigh;
+
+  void onFeeRateChanged(double? feeRate) {
+    if (feeRate == null) {
+      _handleFeeRateIsNull();
+      return;
+    }
+
+    if (feeRate < recommendFeeRate!) {
+      _handleFeeRateIsUnderRecommended();
+      return;
+    }
+
+    final dynamic result = isRbf ? onRbfFeeRateChanged(feeRate) : onCpfpFeeRateChanged(feeRate);
+
+    _handleBuildResult(result);
+  }
+
+  void _handleBuildResult(dynamic result) {
+    assert(result != null);
+    assert(result is RbfBuildResult || result is CpfpBuildResult);
+
+    if (result.isSuccess) {
+      _isEstimatedFeeTooLow = false;
+      if (result.estimatedFee != null) {
+        _isEstimatedFeeTooHigh = result.estimatedFee! >= 1000000;
+      } else {
+        _isEstimatedFeeTooHigh = false;
+      }
+    } else {
+      _isEstimatedFeeTooLow = false;
+      _isEstimatedFeeTooHigh = false;
+    }
+    notifyListeners();
+  }
+
+  void _handleFeeRateIsNull() {
+    _onFeeRateIsNull();
+
+    _isEstimatedFeeTooLow = false;
+    _isEstimatedFeeTooHigh = false;
+    notifyListeners();
+  }
+
+  void _handleFeeRateIsUnderRecommended() {
+    _rbfBuildResult = null;
+    _cpfpBuildResult = null;
+
+    _isEstimatedFeeTooLow = true;
+    _isEstimatedFeeTooHigh = false;
+    notifyListeners();
+  }
+
   void toggleUtxoSelectionAuto() {
     _isUtxoSelectionAuto = !_isUtxoSelectionAuto;
     if (_isUtxoSelectionAuto) {
@@ -211,34 +268,34 @@ class FeeBumpingViewModel extends ChangeNotifier {
   void _updateAdditionalSpendable(List<UtxoState> utxos) {
     if (_type == FeeBumpingType.rbf) {
       _updateRbfBaseline(_rbfBuilder!.changeAdditionalSpendable(utxos));
-      if (_lastInputFeeRate != null && _lastInputFeeRate! > 0) {
-        _rbfBuildResult = _rbfBuilder!.build(newFeeRate: _lastInputFeeRate!);
-      }
     } else {
       _updateCpfpBaseline(_cpfpBuilder!.changeAdditionalSpendable(utxos));
-      if (_lastInputFeeRate != null && _lastInputFeeRate! > 0) {
-        _cpfpBuildResult = _cpfpBuilder!.build(newFeeRate: _lastInputFeeRate!);
-      }
     }
+
+    _rebuildIfNeeded();
     notifyListeners();
+  }
+
+  void _rebuildIfNeeded() {
+    if (_lastInputFeeRate == null) return;
+    if (_lastInputFeeRate! <= 0) return;
+
+    if (_lastInputFeeRate! < recommendFeeRate!) {
+      _handleFeeRateIsUnderRecommended();
+      return;
+    }
+
+    if (_type == FeeBumpingType.rbf) {
+      _rbfBuildResult = _rbfBuilder!.build(newFeeRate: _lastInputFeeRate!);
+    } else {
+      _cpfpBuildResult = _cpfpBuilder!.build(newFeeRate: _lastInputFeeRate!);
+    }
   }
 
   /// UTXO 수동 선택일 때만 호출됨
   void updateSelectedUtxos(List<UtxoState> list) {
     _selectedUtxoList = list;
-
-    if (_type == FeeBumpingType.rbf) {
-      _updateRbfBaseline(_rbfBuilder!.changeAdditionalSpendable(_selectedUtxoList));
-      if (_lastInputFeeRate != null && _lastInputFeeRate! > 0) {
-        _rbfBuildResult = _rbfBuilder!.build(newFeeRate: _lastInputFeeRate!);
-      }
-    } else {
-      _updateCpfpBaseline(_cpfpBuilder!.changeAdditionalSpendable(_selectedUtxoList));
-      if (_lastInputFeeRate != null && _lastInputFeeRate! > 0) {
-        _cpfpBuildResult = _cpfpBuilder!.build(newFeeRate: _lastInputFeeRate!);
-      }
-    }
-    notifyListeners();
+    _updateAdditionalSpendable(_selectedUtxoList);
   }
 
   Future<RbfBuilder> _initRbfBuilder() async {
@@ -303,27 +360,18 @@ class FeeBumpingViewModel extends ChangeNotifier {
       }
 
       _isInitializedSuccess = true;
-      _lastInputFeeRate = initialFee;
     } else {
       _isInitializedSuccess = false;
     }
     notifyListeners();
   }
 
-  void onFeeRateIsNull() {
+  void _onFeeRateIsNull() {
     Logger.log('[FeeBumping] onFeeRateIsNull: build result 초기화 (null로 설정)');
     _lastInputFeeRate = null;
     _rbfBuildResult = null;
     _cpfpBuildResult = null;
     //notifyListeners();
-  }
-
-  dynamic onFeeRateChanged(double? newFeeRate) {
-    if (isRbf) {
-      return onRbfFeeRateChanged(newFeeRate);
-    } else {
-      return onCpfpFeeRateChanged(newFeeRate);
-    }
   }
 
   RbfBuildResult? onRbfFeeRateChanged(double? newFeeRate) {

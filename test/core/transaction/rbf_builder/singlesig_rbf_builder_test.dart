@@ -365,8 +365,17 @@ void main() {
       );
 
       final firstRbfResult = rbfBuilder.getBaselineTransaction();
-      final newUtxo = UtxoState(
+      final newUtxo1 = UtxoState(
         transactionHash: creator.transactionHashes[0],
+        index: 100,
+        amount: 100,
+        blockHeight: 21000,
+        to: creator.receiveAddressList[0],
+        derivationPath: "m/84'/1'/0'/0/0",
+        timestamp: DateTime.now(),
+      );
+      final newUtxo2 = UtxoState(
+        transactionHash: creator.transactionHashes[1],
         index: 100,
         amount: 1000,
         blockHeight: 21000,
@@ -375,9 +384,50 @@ void main() {
         timestamp: DateTime.now(),
       );
 
-      final RbfBuildResult changeResult = rbfBuilder.changeAdditionalSpendable([newUtxo]);
+      final RbfBuildResult changeResult = rbfBuilder.changeAdditionalSpendable([newUtxo1, newUtxo2]);
       expect(firstRbfResult.isFailure, isTrue);
       expect(changeResult.isSuccess, isTrue);
+      expect(
+        changeResult.minimumFeeRate,
+        greaterThanOrEqualTo(firstRbfResult.minimumFeeRate),
+      ); // 처음에 utxo 2개 추가 사용한다고 가정하지만, 실제로는 1개만 추가 사용
+    });
+
+    test('External 1 / change NotEnough / not enough additional UTXO', () async {
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [100000],
+        recipients: [Tuple(false, 99890)],
+        changeAmount: 0,
+        fee: 110,
+        vSize: 110,
+        additionalSpendable: [],
+      );
+      final firstRbfResult = rbfBuilder.getBaselineTransaction();
+      final newUtxo1 = UtxoState(
+        transactionHash: creator.transactionHashes[0],
+        index: 100,
+        amount: 100,
+        blockHeight: 21000,
+        to: creator.receiveAddressList[0],
+        derivationPath: "m/84'/1'/0'/0/0",
+        timestamp: DateTime.now(),
+      );
+      final newUtxo2 = UtxoState(
+        transactionHash: creator.transactionHashes[1],
+        index: 100,
+        amount: 1000,
+        blockHeight: 21000,
+        to: creator.receiveAddressList[0],
+        derivationPath: "m/84'/1'/0'/0/0",
+        timestamp: DateTime.now(),
+      );
+
+      final RbfBuildResult changeResult = rbfBuilder.changeAdditionalSpendable([newUtxo1, newUtxo2]);
+      expect(firstRbfResult.isFailure, isTrue);
+      expect(changeResult.isSuccess, isTrue);
+      expect(changeResult.minimumFeeRate, closeTo(firstRbfResult.minimumFeeRate, 0.02));
+      final RbfBuildResult rebuildResult = rbfBuilder.build(newFeeRate: firstRbfResult.minimumFeeRate);
+      expect(rebuildResult.isSuccess, isTrue);
     });
   });
 

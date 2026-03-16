@@ -553,19 +553,19 @@ class RbfBuilder {
   }
 
   /// 수수료율 비교 시 소수 반올림 오차 허용
-  static const double _feeRateTolerance = 0.01;
+  //static const double _feeRateTolerance = 0.01;
 
   RbfBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
     try {
-      final minRate = _cachedBaseline!.minimumFeeRate;
-      if (newFeeRate < minRate - _feeRateTolerance) {
-        Logger.log(
-          '[RbfBuilder] build: FeeRateTooLowException (newFeeRate=$newFeeRate < minimumFeeRate=$minRate) '
-          '→ _buildRbf 호출 없이 실패 반환',
-        );
-        throw const FeeRateTooLowException();
-      }
+      // final minRate = _cachedBaseline!.minimumFeeRate;
+      // if (newFeeRate < minRate - _feeRateTolerance) {
+      //   Logger.log(
+      //     '[RbfBuilder] build: FeeRateTooLowException (newFeeRate=$newFeeRate < minimumFeeRate=$minRate) '
+      //     '→ _buildRbf 호출 없이 실패 반환',
+      //   );
+      //   throw const FeeRateTooLowException();
+      // }
 
       int requiredFee = (_cachedBaseline!.estimatedVSize * newFeeRate).ceil();
       int additionalFee = requiredFee - _pendingTx.fee;

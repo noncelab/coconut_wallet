@@ -250,16 +250,16 @@ class CpfpBuilder {
   ///
   /// [newFeeRate]: child tx 수수료율 (sat/vB). 패키지 수수료율이 아님.
   /// 수수료율 비교 시 소수 반올림 오차 허용
-  static const double _feeRateTolerance = 0.01;
+  //static const double _feeRateTolerance = 0.01;
 
   CpfpBuildResult build({required double newFeeRate}) {
     _cachedBaseline ??= getBaselineTransaction();
 
     try {
-      final minRate = _cachedBaseline!.minimumFeeRate;
-      if (newFeeRate < minRate - _feeRateTolerance) {
-        throw const CpfpFeeRateTooLowException();
-      }
+      // final minRate = _cachedBaseline!.minimumFeeRate;
+      // if (newFeeRate < minRate - _feeRateTolerance) {
+      //   throw const CpfpFeeRateTooLowException();
+      // }
 
       Logger.log(
         '[ build ] newFeeRate: $newFeeRate / _cachedBaseline!.minimumFeeRate: ${_cachedBaseline!.minimumFeeRate}',
