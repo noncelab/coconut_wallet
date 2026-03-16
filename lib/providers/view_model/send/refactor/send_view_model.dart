@@ -16,7 +16,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -90,7 +89,6 @@ class SendViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
   final TransactionDraftRepository _transactionDraftRepository;
-  final WalletPreferencesRepository _walletPreferencesRepository;
   final UtxoRepository _utxoRepository;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
@@ -120,7 +118,7 @@ class SendViewModel extends ChangeNotifier {
   String get amountSumText => _currentUnit.displayBitcoinAmount(_amountSum, withUnit: true);
 
   WalletListItemBase? _selectedWalletItem;
-  late bool _isManualUtxoSelectionMode;
+  late bool _isUtxoSelectionAuto;
 
   bool _isFeeSubtractedFromSendAmount = false;
   bool _previousIsFeeSubtractedFromSendAmount = false;
@@ -142,7 +140,7 @@ class SendViewModel extends ChangeNotifier {
   WalletListItemBase? get selectedWalletItem => _selectedWalletItem;
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
-  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
+  bool get isUtxoSelectionAuto => _isUtxoSelectionAuto;
 
   RecommendedFeeFetchStatus _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
   RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
@@ -176,7 +174,7 @@ class SendViewModel extends ChangeNotifier {
   int _incomingBalance = 0;
 
   int get balance {
-    return _isManualUtxoSelectionMode ? selectedUtxoAmountSum : _confirmedBalance;
+    return _isUtxoSelectionAuto ? _confirmedBalance : selectedUtxoAmountSum;
   }
 
   int get incomingBalance => _incomingBalance;
@@ -286,7 +284,6 @@ class SendViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._transactionDraftRepository,
     this._utxoRepository,
-    this._walletPreferencesRepository,
     this._isNetworkOn,
     this._onAmountTextUpdate,
     this._onFeeRateTextUpdate,
@@ -306,15 +303,19 @@ class SendViewModel extends ChangeNotifier {
         _initializeWithSelectedWallet(walletIndex);
       }
     } else {
-      _isManualUtxoSelectionMode = true;
+      _isUtxoSelectionAuto = true;
     }
 
     _recipientList = [RecipientInfo()];
 
     if (walletId != null && initialSelectedUtxoList != null) {
-      _isManualUtxoSelectionMode = true;
-      _selectedUtxoList = List<UtxoState>.from(initialSelectedUtxoList);
-      _buildTransaction();
+      final hasSelectedUtxos = initialSelectedUtxoList.isNotEmpty;
+
+      _isUtxoSelectionAuto = !hasSelectedUtxos;
+      if (hasSelectedUtxos) {
+        _selectedUtxoList = List<UtxoState>.from(initialSelectedUtxoList);
+        _buildTransaction();
+      }
     }
 
     _setRecommendedFees().whenComplete(() {
@@ -375,46 +376,47 @@ class SendViewModel extends ChangeNotifier {
     // UTXO 모드 불러온 후 selectedUtxoList 필요 시 초기화
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
 
-    _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
-    if (_isManualUtxoSelectionMode) {
+    _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
+    if (_isUtxoSelectionAuto) {
       _selectAllUtxos();
     }
     _initBalances(_allUtxos);
   }
 
+  void setIsUtxoSelectionAutoTrue() {
+    _isUtxoSelectionAuto = true;
+    _selectAllUtxos();
+    notifyListeners();
+  }
+
   void setSelectedUtxoList(List<UtxoState> list) {
+    _isUtxoSelectionAuto = false;
     _selectedUtxoList = list;
     _buildTransaction();
   }
 
-  /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
-  /// 사용불가 UTXO는 제외하고 유효한 목록과 제외 상태를 함께 반환
-  (TransactionDraft, List<UtxoState>, SelectedUtxoExcludedStatus?) _getDraft(int draftId) {
-    assert(_selectedWalletItem != null);
-
+  TransactionDraft _getDraft(int draftId) {
     final draft = _transactionDraftRepository.getUnsignedTransactionDraft(draftId);
     if (draft == null) {
       throw StateError('Transaction draft not found: $draftId');
     }
-
-    // UTXO 상태 확인 및 유효한 UTXO 목록 반환 (사용불가 UTXO 제외)
-    final (validUtxoList, excludedStatus) = _utxoRepository.getValidatedSelectedUtxoList(
-      _selectedWalletItem!.id,
-      draft.selectedUtxoIds.toList(),
-    );
-
-    return (draft, validUtxoList, excludedStatus);
+    return draft;
   }
 
   /// TransactionDraft를 로드하여 SendViewModel 상태에 반영
   /// 사용불가 UTXO가 제외된 경우 해당 상태를 반환 (토스트 표시용)
   SelectedUtxoExcludedStatus? loadTransactionDraft(int draftId) {
-    final (draft, validatedUtxoList, excludedUtxoStatus) = _getDraft(draftId);
+    final draft = _getDraft(draftId);
 
     // 1. 지갑 선택 및 초기화
     final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == draft.walletId);
     if (walletIndex == -1) return null;
     _initializeWithSelectedWallet(walletIndex);
+
+    final (validatedUtxoList, excludedUtxoStatus) = _utxoRepository.getValidatedSelectedUtxoList(
+      _selectedWalletItem!.id,
+      draft.selectedUtxoIds.toList(),
+    );
 
     // 2. Draft ID 설정
     _sendInfoProvider.setUnsignedDraftId(draft.id);
@@ -446,13 +448,13 @@ class SendViewModel extends ChangeNotifier {
 
     // 6. UTXO 선택 모드 및 목록 설정 (_getDraft에서 검증된 목록 활용)
     if (validatedUtxoList.isNotEmpty) {
-      _isManualUtxoSelectionMode = false;
+      _isUtxoSelectionAuto = false;
       _selectedUtxoList = validatedUtxoList;
     } else if (excludedUtxoStatus != null) {
-      _isManualUtxoSelectionMode = false;
+      _isUtxoSelectionAuto = false;
       _selectedUtxoList.clear();
     } else {
-      _isManualUtxoSelectionMode = true;
+      _isUtxoSelectionAuto = true;
       _selectAllUtxos();
     }
 
@@ -523,7 +525,7 @@ class SendViewModel extends ChangeNotifier {
       changeDerivationPath: _changeAddressDerivationPath,
       walletListItemBase: _selectedWalletItem!,
       isFeeSubtractedFromAmount: _isFeeSubtractedFromSendAmount,
-      isUtxoFixed: !_isManualUtxoSelectionMode,
+      isUtxoFixed: !_isUtxoSelectionAuto,
     );
 
     _txBuildResult = _txBuilder!.build();
@@ -1065,7 +1067,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _selectAllUtxos() {
-    assert(_isManualUtxoSelectionMode);
+    assert(_isUtxoSelectionAuto);
     _selectedUtxoList = _allUtxos;
   }
 
@@ -1081,7 +1083,7 @@ class SendViewModel extends ChangeNotifier {
       recipients:
           _recipientList.map((r) => RecipientDraft.fromRecipientInfo(r.address, r.amount, _currentUnit)).toList(),
       bitcoinUnit: _currentUnit,
-      selectedUtxoIds: _isManualUtxoSelectionMode ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+      selectedUtxoIds: _isUtxoSelectionAuto ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
     );
 
     if (result.isSuccess) {
@@ -1105,7 +1107,7 @@ class SendViewModel extends ChangeNotifier {
       recipients:
           _recipientList.map((r) => RecipientDraft.fromRecipientInfo(r.address, r.amount, _currentUnit)).toList(),
       bitcoinUnit: _currentUnit,
-      selectedUtxoIds: _isManualUtxoSelectionMode ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
+      selectedUtxoIds: _isUtxoSelectionAuto ? null : _selectedUtxoList.map((utxo) => utxo.utxoId).toList(),
     );
 
     if (result.isSuccess) {

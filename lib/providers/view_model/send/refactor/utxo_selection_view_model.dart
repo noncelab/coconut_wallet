@@ -9,6 +9,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
 class UtxoSelectionViewModel extends ChangeNotifier {
@@ -19,6 +20,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   late int? _bitcoinPriceKrw;
   late bool? _isNetworkOn;
   late final int _walletId;
+  bool _isInitialized = false;
 
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
@@ -48,12 +50,23 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._isNetworkOn,
     this._walletId,
-    List<UtxoState> selectedUtxoList,
   ) {
+    _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
+    _priceProvider.addListener(_updateBitcoinPriceKrw);
+  }
+
+  void initialize(List<UtxoState> selectedUtxoList) {
+    if (_isInitialized) return;
+
     try {
-      // 모든 UTXO (locked 포함)를 리스트에 추가
+      _confirmedUtxoList.clear();
+      _filteredUtxoList.clear();
+      _utxoTagMap.clear();
+      _utxoTagList = [];
+      _selectedUtxoList = [];
+      _initialSelectedUtxoList.clear();
+
       _walletProvider.getUtxoList(_walletId).fold<int>(0, (sum, utxo) {
-        // unspent와 locked 모두 포함
         if (utxo.status == UtxoStatus.unspent || utxo.status == UtxoStatus.locked) {
           _confirmedUtxoList.add(utxo);
         }
@@ -65,20 +78,20 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
-      // 초기 선택 상태 저장
       _selectedUtxoList = List.from(selectedUtxoList);
       _initialSelectedUtxoList.addAll(selectedUtxoList);
-
-      _bitcoinPriceKrw = _priceProvider.bitcoinPriceKrw;
-      _priceProvider.addListener(_updateBitcoinPriceKrw);
+      _cachedSelectedUtxoAmountSum = null;
+      _isInitialized = true;
+      notifyListeners();
     } catch (e) {
-      print(e);
+      Logger.error(e);
     }
   }
 
   int? get bitcoinPriceKrw => _bitcoinPriceKrw;
   List<UtxoState> get confirmedUtxoList => _confirmedUtxoList;
   FeeInfo? get customFeeInfo => _customFeeInfo;
+  bool get isInitialized => _isInitialized;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
   bool get isNetworkOn => _isNetworkOn == true;
   List<UtxoState> get filteredUtxoList => _filteredUtxoList;

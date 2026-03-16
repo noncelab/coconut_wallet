@@ -471,6 +471,7 @@ send_screen:
     
 utxo_selection_screen:
   title: "UTXO 고르기"
+  skip: "건너뛰기"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO 선택"

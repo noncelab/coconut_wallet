@@ -472,6 +472,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "Select UTXOs"
+  skip: "skip"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "Select UTXOs"

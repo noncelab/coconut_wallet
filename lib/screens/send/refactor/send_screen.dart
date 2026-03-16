@@ -12,7 +12,6 @@ import 'package:coconut_wallet/providers/view_model/send/refactor/send_view_mode
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart' show TransactionDraftRepository;
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
@@ -129,7 +128,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context.read<PreferenceProvider>(),
       context.read<TransactionDraftRepository>(),
       context.read<UtxoRepository>(),
-      context.read<WalletPreferencesRepository>(),
       context.read<ConnectivityProvider>().isInternetOn,
       _onAmountTextUpdate,
       _onFeeRateTextUpdate,
@@ -343,8 +341,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       Selector<SendViewModel, Tuple4<bool, bool?, bool, bool>>(
-                        selector:
-                            (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isManualUtxoSelectionMode),
+                        selector: (_, vm) => Tuple4(vm.isSaved, vm.hasDrafts, vm.canGoNext, vm.isUtxoSelectionAuto),
                         builder: (context, data, child) {
                           return _buildDropdownMenu(
                             isSaved: data.item1,
@@ -412,14 +409,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         selector:
             (_, viewModel) => Tuple5(
               viewModel.selectedWalletItem,
-              viewModel.isManualUtxoSelectionMode,
+              viewModel.isUtxoSelectionAuto,
               viewModel.selectedUtxoAmountSum,
               viewModel.selectedUtxoListLength,
               viewModel.currentUnit,
             ),
         builder: (context, data, child) {
           final selectedWalletItem = data.item1;
-          final isManualUtxoSelectionMode = data.item2;
+          final isUtxoSelectionAuto = data.item2;
           final selectedUtxoListLength = data.item4;
           final currentUnit = data.item5;
 
@@ -437,7 +434,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           }
 
           String amountText = currentUnit.displayBitcoinAmount(_viewModel.balance, withUnit: true);
-          if (isManualUtxoSelectionMode) {
+          if (!isUtxoSelectionAuto) {
             amountText += t.send_screen.n_utxos(count: selectedUtxoListLength);
           }
 
@@ -449,7 +446,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               ),
               CoconutLayout.spacing_50h,
               if (!isWalletWithoutMfp(_viewModel.selectedWalletItem))
-                _buildUtxoSelectionModeContainer(isManualUtxoSelectionMode, amountText, selectedUtxoListLength),
+                _buildUtxoSelectionModeContainer(isUtxoSelectionAuto, amountText, selectedUtxoListLength),
             ],
           );
         },
@@ -457,7 +454,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       onTitlePressed: () {
         if (!_viewModel.isSelectedWalletNull &&
             !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-            _viewModel.isManualUtxoSelectionMode) {
+            !_viewModel.isUtxoSelectionAuto) {
           _onUtxoSelectionModeButtonPressed();
         }
       },
@@ -492,8 +489,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       context,
       '/utxo-selection',
       arguments: {
-        'selectedUtxoList':
-            _viewModel.isManualUtxoSelectionMode ? _viewModel.selectedUtxoList : List<UtxoState>.empty(),
+        'selectedUtxoList': _viewModel.isUtxoSelectionAuto ? List<UtxoState>.empty() : _viewModel.selectedUtxoList,
         'walletId': _viewModel.selectedWalletItem!.id,
         'currentUnit': _viewModel.currentUnit,
       },
@@ -504,23 +500,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     });
   }
 
-  Widget _buildUtxoSelectionModeContainer(
-    bool isManualUtxoSelectionMode,
-    String amountText,
-    int selectedUtxoListLength,
-  ) {
-    final bgColor =
-        !isManualUtxoSelectionMode || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
-    final fontStyle = isManualUtxoSelectionMode ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
+  Widget _buildUtxoSelectionModeContainer(bool isUtxoSelectionAuto, String amountText, int selectedUtxoListLength) {
+    final bgColor = isUtxoSelectionAuto || selectedUtxoListLength == 0 ? CoconutColors.gray700 : CoconutColors.primary;
+    final fontStyle = isUtxoSelectionAuto ? CoconutTypography.caption_10 : CoconutTypography.caption_10_Number;
     final textColor =
-        !isManualUtxoSelectionMode
+        isUtxoSelectionAuto
             ? CoconutColors.white
             : selectedUtxoListLength == 0
             ? CoconutColors.white
             : CoconutColors.black;
-    final text = isManualUtxoSelectionMode ? amountText : t.send_screen.utxo_auto_selection;
+    final text = isUtxoSelectionAuto ? t.send_screen.utxo_auto_selection : amountText;
 
-    return isManualUtxoSelectionMode
+    return !isUtxoSelectionAuto
         ? ShrinkTapWrapper(
           shrinkScale: 0.95,
           onTap: _onUtxoSelectionModeButtonPressed,
@@ -1232,43 +1223,125 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       CoconutLayout.spacing_200h,
-                      IgnorePointer(
-                        ignoring: index != _viewModel.lastIndex,
-                        child: Opacity(
-                          opacity: index == _viewModel.lastIndex ? 1.0 : 0.0,
-                          child: ShrinkAnimationButton(
-                            onPressed: () {
-                              _viewModel.setMaxMode(!_viewModel.isMaxMode);
-                              _clearFocus();
-                            },
-                            defaultColor: MyColors.grey,
-                            pressedColor: MyColors.grey.withValues(alpha: 0.8),
-                            borderRadius: 4.0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
+                      Selector<SendViewModel, Tuple3<int, bool, bool>>(
+                        selector:
+                            (_, viewModel) =>
+                                Tuple3(viewModel.lastIndex, viewModel.isMaxMode, viewModel.isUtxoSelectionAuto),
+                        builder: (context, data, child) {
+                          final isLastIndex = index == data.item1;
+                          final isMaxMode = data.item2;
+                          final isUtxoSelectionAuto = data.item3;
+
+                          return IgnorePointer(
+                            ignoring: !isLastIndex,
+                            child: Opacity(
+                              opacity: isLastIndex ? 1.0 : 0.0,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  SvgPicture.asset(
-                                    'assets/svg/broom.svg',
-                                    colorFilter: ColorFilter.mode(
-                                      CoconutColors.white.withValues(alpha: _viewModel.isMaxMode ? 1.0 : 0.3),
-                                      BlendMode.srcIn,
+                                  ShrinkAnimationButton(
+                                    onPressed: () {
+                                      _viewModel.setMaxMode(!isMaxMode);
+                                      _clearFocus();
+                                    },
+                                    defaultColor: MyColors.grey,
+                                    pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                    borderRadius: 4.0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SvgPicture.asset(
+                                            'assets/svg/broom.svg',
+                                            colorFilter: ColorFilter.mode(
+                                              CoconutColors.white.withValues(alpha: isMaxMode ? 1.0 : 0.3),
+                                              BlendMode.srcIn,
+                                            ),
+                                          ),
+                                          CoconutLayout.spacing_100w,
+                                          Text(
+                                            maxButtonText,
+                                            style: Styles.caption.merge(
+                                              TextStyle(
+                                                color: CoconutColors.white,
+                                                fontFamily: CustomFonts.text.getFontFamily,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  CoconutLayout.spacing_100w,
-                                  Text(
-                                    maxButtonText,
-                                    style: Styles.caption.merge(
-                                      TextStyle(color: CoconutColors.white, fontFamily: CustomFonts.text.getFontFamily),
-                                    ),
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 220),
+                                    transitionBuilder: (child, animation) {
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: SizeTransition(
+                                          sizeFactor: animation,
+                                          axis: Axis.horizontal,
+                                          axisAlignment: -1,
+                                          child: child,
+                                        ),
+                                      );
+                                    },
+                                    child:
+                                        !isUtxoSelectionAuto
+                                            ? Row(
+                                              key: const ValueKey('manual_utxo_button'),
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                CoconutLayout.spacing_300w,
+                                                ShrinkAnimationButton(
+                                                  onPressed: () {
+                                                    _viewModel.setIsUtxoSelectionAutoTrue();
+                                                    _clearFocus();
+                                                  },
+                                                  defaultColor: MyColors.grey,
+                                                  pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                                  borderRadius: 4.0,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 12.0,
+                                                      vertical: 4.5,
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        SvgPicture.asset(
+                                                          'assets/svg/arrow-reload.svg',
+                                                          width: 16,
+                                                          colorFilter: ColorFilter.mode(
+                                                            CoconutColors.white.withValues(alpha: 0.3),
+                                                            BlendMode.srcIn,
+                                                          ),
+                                                        ),
+                                                        CoconutLayout.spacing_100w,
+                                                        Text(
+                                                          t.select_wallet_with_options_bottom_sheet.select_utxo_auto,
+                                                          style: Styles.caption.merge(
+                                                            TextStyle(
+                                                              color: CoconutColors.white,
+                                                              fontFamily: CustomFonts.text.getFontFamily,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                            : const SizedBox(key: ValueKey('manual_utxo_button_empty')),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ],
                   );

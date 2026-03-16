@@ -84,6 +84,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       backgroundColor: CoconutColors.black,
                       title: t.utxo_selection_screen.title,
                       context: context,
+                      actionButtonList: [
+                        CoconutUnderlinedButton(
+                          text: t.utxo_selection_screen.skip,
+                          textStyle: CoconutTypography.body2_14,
+                          onTap: () {
+                            _viewModel.deselectAllUtxo();
+                            Navigator.pop(context, _viewModel.selectedUtxoList);
+                          },
+                        ),
+                      ],
                       onBackPressed: () => Navigator.pop(context),
                       isBottom: true,
                     ),
@@ -118,34 +128,37 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                               ),
                               _buildUtxoTagList(viewModel),
                               Expanded(
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      color: CoconutColors.black,
-                                      child: SingleChildScrollView(
-                                        controller: _scrollController,
-                                        child: Column(
+                                child:
+                                    viewModel.isInitialized
+                                        ? Stack(
                                           children: [
-                                            _buildUtxoList(viewModel),
-                                            CoconutLayout.spacing_400h,
-                                            const SizedBox(height: 50),
+                                            Container(
+                                              color: CoconutColors.black,
+                                              child: SingleChildScrollView(
+                                                controller: _scrollController,
+                                                child: Column(
+                                                  children: [
+                                                    _buildUtxoList(viewModel),
+                                                    CoconutLayout.spacing_400h,
+                                                    const SizedBox(height: 50),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            FixedBottomButton(
+                                              onButtonClicked: () {
+                                                vibrateLight();
+                                                Navigator.pop(context, _viewModel.selectedUtxoList);
+                                              },
+                                              text: t.complete,
+                                              isActive: _viewModel.hasSelectionChanged,
+                                              showGradient: true,
+                                              horizontalPadding: 16,
+                                              backgroundColor: CoconutColors.white,
+                                            ),
                                           ],
-                                        ),
-                                      ),
-                                    ),
-                                    FixedBottomButton(
-                                      onButtonClicked: () {
-                                        vibrateLight();
-                                        Navigator.pop(context, _viewModel.selectedUtxoList);
-                                      },
-                                      text: t.complete,
-                                      isActive: _viewModel.hasSelectionChanged,
-                                      showGradient: true,
-                                      horizontalPadding: 16,
-                                      backgroundColor: CoconutColors.white,
-                                    ),
-                                  ],
-                                ),
+                                        )
+                                        : const Center(child: CircularProgressIndicator()),
                               ),
                             ],
                           ),
@@ -183,7 +196,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
-        widget.selectedUtxoList,
       );
 
       _scrollController.addListener(() {
@@ -193,6 +205,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted) {
+          _viewModel.initialize(widget.selectedUtxoList);
+        }
+
         RenderBox orderDropdownButtonRenderBox =
             _orderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
 
