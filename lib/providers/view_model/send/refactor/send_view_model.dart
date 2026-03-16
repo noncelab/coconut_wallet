@@ -590,10 +590,10 @@ class SendViewModel extends ChangeNotifier {
       return false;
     }
 
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee?.toDouble();
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee?.toDouble();
-    feeInfos[2].satsPerVb = recommendedFees.hourFee?.toDouble();
-    _minimumFeeRate = recommendedFees.hourFee?.toDouble();
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee;
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
+    feeInfos[2].satsPerVb = recommendedFees.hourFee;
+    _minimumFeeRate = recommendedFees.hourFee;
 
     final defaultFeeRate = recommendedFees.halfHourFee?.toString();
     if (defaultFeeRate != null && _transactionDraftId == null) {

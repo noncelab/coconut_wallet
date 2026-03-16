@@ -371,7 +371,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       child: CoconutPulldownMenu(
         shadowColor: CoconutColors.white.withValues(alpha: 0.1),
         dividerColor: CoconutColors.black,
-        spreadRadius: 12,
         entries: [
           CoconutPulldownMenuItem(
             title: t.send_screen.utxo_auto_selection,
@@ -627,10 +626,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
     final child = Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         border: Border.all(width: 1, color: CoconutColors.gray700),
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -640,12 +639,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             height: 12,
             colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
           ),
-          CoconutLayout.spacing_150w,
+          CoconutLayout.spacing_100w,
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
             child: Text(
-              "${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
+              "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
               style: CoconutTypography.body2_14.setColor(CoconutColors.white),
             ),
           ),
@@ -658,7 +657,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         borderRadius: 8,
         onTap: () {
           if (isFetching) return;
-          _feeRateController.text = sats.toString();
+          _feeRateController.text = sats != null ? sats.toStringAsFixed(1) : '';
           _clearFocus();
         },
         child:

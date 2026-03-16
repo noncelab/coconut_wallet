@@ -91,16 +91,15 @@ class NetworkService {
       feeEconomy = feeEconomy > 0 ? feeEconomy : 0;
 
       // 3. BTC/kB 단위를 sat/vB로 변환
-      int fastestFee = feeFast > 0 ? _convertFeeToSatPerVByte(feeFast) : 0;
-      int halfHourFee = feeHalfHour > 0 ? _convertFeeToSatPerVByte(feeHalfHour) : 0;
-      int hourFee = feeHour > 0 ? _convertFeeToSatPerVByte(feeHour) : 0;
-      int economyFee = feeEconomy > 0 ? _convertFeeToSatPerVByte(feeEconomy) : 0;
+      double fastestFee = feeFast > 0 ? _convertFeeToSatPerVByte(feeFast) : 0;
+      double halfHourFee = feeHalfHour > 0 ? _convertFeeToSatPerVByte(feeHalfHour) : 0;
+      double hourFee = feeHour > 0 ? _convertFeeToSatPerVByte(feeHour) : 0;
+      double economyFee = feeEconomy > 0 ? _convertFeeToSatPerVByte(feeEconomy) : 0;
 
       // 4. 최소 수수료 (minimumFee)는 mempool 내에서 지불되고 있는 가장 낮은 fee rate (sat/vB)
-      int minimumFee = 0;
+      double minimumFee = 0;
       if (histogram.isNotEmpty) {
-        // 예시 결과에서 histogram은 내림차순 정렬되어 있으므로 마지막 요소의 fee가 최소값임.
-        minimumFee = (histogram.last[0] as num).toInt();
+        minimumFee = RecommendedFee.truncateTo2Decimals((histogram.last[0] as num).toDouble());
       }
 
       // 5. 만약 estimatefee 결과가 0(즉, -1인 경우)라면 최소 수수료 또는 기본값 1로 대체
@@ -117,9 +116,9 @@ class NetworkService {
   }
 
   /// blockchain.estimatefee가 반환하는 BTC/kB 단위를 sat/vB 단위로 변환합니다.
-  int _convertFeeToSatPerVByte(double feeBtcPerKb) {
+  double _convertFeeToSatPerVByte(double feeBtcPerKb) {
     // 1 BTC = 1e8 sat, 1 kB = 1000 vB → 변환 계수는 1e8/1000 = 100000
-    return (feeBtcPerKb * 100000).round();
+    return RecommendedFee.truncateTo2Decimals(feeBtcPerKb * 100000);
   }
 
   /// 트랜잭션을 브로드캐스트합니다.
