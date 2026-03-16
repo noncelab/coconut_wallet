@@ -505,6 +505,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   }
 
   String _getRecommendedFeeRateDescriptionForCpfp(CpfpBuildResult baseline) {
+    assert(_feeInfos[2].satsPerVb != null);
     assert(_recommendedFeeRate != null);
 
     // 기다리면 블록에 담길 트랜잭션
@@ -512,15 +513,16 @@ class FeeBumpingViewModel extends ChangeNotifier {
       return t.transaction_fee_bumping_screen.recommended_fee_less_than_network_fee;
     }
 
-    final totalRequiredFee = (_pendingTx.vSize + baseline.estimatedVSize) * _recommendedFeeRate!;
+    final totalRequiredFee = (_pendingTx.vSize + baseline.estimatedVSize) * _feeInfos[2].satsPerVb!;
+    final requiredNewTxFee = totalRequiredFee - _pendingTx.fee;
     String inequalitySign = baseline.minimumFeeRate % 1 == 0 ? "=" : "≈";
     return t.transaction_fee_bumping_screen.recommend_fee_info_cpfp(
       newTxSize: _formatNumber(baseline.estimatedVSize),
-      recommendedFeeRate: _formatNumber(_recommendedFeeRate!),
+      recommendedFeeRate: _formatNumber(_feeInfos[2].satsPerVb!),
       originalTxSize: _formatNumber(_pendingTx.vSize),
       originalFee: _pendingTx.fee,
       totalRequiredFee: _formatNumber(totalRequiredFee),
-      newTxFee: _formatNumber(baseline.estimatedVSize * baseline.minimumFeeRate),
+      newTxFee: _formatNumber(requiredNewTxFee),
       newTxFeeRate: _formatNumber(baseline.minimumFeeRate),
       inequalitySign: inequalitySign,
     );
