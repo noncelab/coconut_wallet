@@ -32,6 +32,7 @@ yes: "Yes"
 delete: "Delete"
 delete_label: "Delete"
 complete: "Complete"
+done: "Done"
 close: "Close"
 next: "Next"
 modify: "Modify"
@@ -411,6 +412,10 @@ wallet_list:
     delete_description: "Swipe left on a wallet to delete it."
     finish: "Finish Editing"
     unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
+  bottom_sheet:
+    hide_fiat_price: "Hide Fiat Balance"
+    hide_fiat_price_description: "This screen will not display the fiat balance."
+    visible: "Visible"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -592,6 +597,7 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -644,6 +650,20 @@ address_list_screen:
   receiving: "Receiving"
   change: "Change"
   show_only_unused_address: "Show Only Unused Addresses"
+utxo_overview_screen:
+  by_amount: "Amount"
+  by_tag: "Tag"
+  interval_info_title: "Interval Guide"
+  view_mode_list: "List"
+  view_mode_grid: "Grid"
+  no_tag_applied: "No tags applied"
+  no_tag_applied_desc: "Apply tags to UTXOs to see the breakdown by tag."
+  total: "Total"
+  untagged: "Untagged"
+  tagged: "Tagged"
+  multi_tag: "2+ Tags"
+  tag_bubble_with_count: "$name • $count"
+  amount_bubble_with_count: "$count • $balance"
 address_search_screen:
   address_placeholder: "Please enter the address"
   address_not_found: "Address not found"
@@ -656,9 +676,15 @@ address_search_screen:
   change_address: "Change Address"
 utxo_list_screen:
   total_balance: "Total Balance"
+  tag_apply: "Apply tag"
+  utxo_select_required: "Please select a UTXO first."
+  utxo_tag_updated: "UTXO tag has been successfully updated."
+  send_locked_utxo: "Locked UTXOs cannot be sent."
   utxo_locked_button: "Lock"
   utxo_unlocked_button: "Unlock"
   pending_utxo: "UTXOs that are already being sent cannot be selected."
+  reused_address_legend: "Reused address warning"
+  reused_address: "Please use reused address UTXOs first"
 
 transaction_detail_screen:
   confirmation: "$height ($count confirmations)"
@@ -681,6 +707,16 @@ utxo_tag_screen:
   add_tag: "Press the + button to create your first tag"
 wallet_info_screen:
   title: "$name Information"
+  transaction: "Transaction"
+  utxo: "UTXO"
+  target_quantity: "Target Quantity"
+  target_progress: "$percent% / $target"
+  target_not_set_secondary: "We'll show your achievement rate when you set a target quantity"
+  target_set_title: "Set Target"
+  target_set_placeholder: "Please enter in BTC"
+  target_set_invalid: "You can’t set 0 BTC as a target"
+  target_set_21m: "It’s the sats race!!!"
+  target_set_max_exceeded: "Please enter 21 million BTC or less"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
   view_descriptor: "View Descriptor"
@@ -766,6 +802,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "Add Tag"
   title_edit_tag: "Edit Tag"
+  title_apply_tag: "Apply Tag"
   tag_list: "Tag List"
   add_new_tag: "Add Tag"
   delete_tag: "Delete Tag"

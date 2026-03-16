@@ -145,6 +145,7 @@ flutter:
     - assets/svg/arrow-right-md.svg
     - assets/svg/arrow-back.svg
     - assets/svg/send.svg
+    - assets/svg/tag.svg
     - assets/svg/settings.svg
     - assets/svg/receive.svg
     - assets/svg/back.svg
@@ -250,11 +251,15 @@ flutter:
     - assets/svg/arrow-circle-down.svg
     - assets/svg/text-field-clear.svg
     - assets/svg/question-mark.svg
+    - assets/svg/circle.svg
     - assets/svg/circle-arrow-right.svg
     - assets/svg/circle-pick.svg
     - assets/svg/circle-check.svg
+    - assets/svg/circle-check-filled.svg
+    - assets/svg/circle-check-outline.svg
     - assets/svg/circle-info.svg
     - assets/svg/circle-help.svg
+    - assets/svg/circle-minus.svg
     - assets/svg/circle-warning.svg
     - assets/svg/caret-down.svg
     - assets/svg/row-divider.svg
@@ -277,6 +282,8 @@ flutter:
     - assets/svg/zpub.svg
     - assets/svg/copy.svg
     - assets/svg/lock.svg
+    - assets/svg/lock_simple.svg
+    - assets/svg/unlock_simple.svg
     - assets/svg/unlock.svg
     - assets/svg/pen.svg
     - assets/svg/cloud-disconnected.svg
@@ -306,6 +313,9 @@ flutter:
     - assets/svg/widget.svg
     - assets/svg/search-not-found.svg
     - assets/svg/remove-minus.svg
+    - assets/svg/bitcoin.svg
+    - assets/svg/wallet-outlined.svg
+    - assets/svg/pie.svg
 
   fonts:
     - family: SpaceGrotesk

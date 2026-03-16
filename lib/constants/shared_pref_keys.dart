@@ -25,6 +25,7 @@ class SharedPrefKeys {
   static const String kHideTermsShortcut = "IS_OPEN_TERMS_SCREEN";
   static const String kNextIdField = 'nextId';
   static const String kUtxoSortOrder = 'UTXO_SORT_ORDER';
+  static const String kUtxoTierThemeId = 'UTXO_TIER_THEME_ID';
 
   /// Home Features
   static const String kWalletOrder = "WALLET_ORDER"; // 지갑 순서
@@ -50,6 +51,9 @@ class SharedPrefKeys {
 
   /// 보내기 화면 수신자 추가 카드 확인 여부
   static const String kHasSeenAddRecipientCard = "HAS_SEEN_ADD_RECIPIENT_CARD";
+
+  /// 지갑별 목표 수량 (sats) - Map<walletId, targetSats> JSON
+  static const String kWalletTargetSatsMap = "WALLET_TARGET_SATS_MAP";
 
   // Electrum
   /// [DefaultElectrumServer.serverName] 또는 'CUSTOM'
@@ -78,4 +82,8 @@ class SharedPrefKeys {
 
   /// 생일 아이콘 변경 날짜 (해당 기간 동안 한번만 변경하기 위해)
   static const String kEventIconChangedDate = 'EVENT_ICON_CHANGED_DATE';
+
+  /// 지갑 목록 화면 - 법정화폐 관련
+  static const String kWalletListFiatHidden = 'WALLET_LIST_FIAT_HIDDEN'; // 지갑 목록 화면의 법정화폐 숨김 여부
+  static const String kWalletListVisibleFiats = 'WALLET_LIST_VISIBLE_FIATS'; // 지갑 목록 화면에서 보여줄 법정화폐 목록
 }

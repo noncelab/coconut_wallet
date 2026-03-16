@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
@@ -48,8 +50,15 @@ class SendScreen extends StatefulWidget {
   final int? walletId;
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
+  final List<UtxoState>? selectedUtxoList;
 
-  const SendScreen({super.key, this.walletId, required this.sendEntryPoint, this.transactionDraftId});
+  const SendScreen({
+    super.key,
+    this.walletId,
+    required this.sendEntryPoint,
+    this.transactionDraftId,
+    this.selectedUtxoList,
+  });
 
   @override
   State<SendScreen> createState() => _SendScreenState();
@@ -78,6 +87,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   double get feeBoardHeight => _viewModel.isMaxMode ? 100 : 154;
 
   late final SendViewModel _viewModel;
+  Timer? _ownAddressCheckTimer;
   final _recipientPageController = PageController();
   int _focusedPageIndex = 0;
 
@@ -132,6 +142,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.sendEntryPoint,
       widget.transactionDraftId,
     );
+
+    if (widget.selectedUtxoList != null && widget.selectedUtxoList!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _viewModel.setIsUtxoSelectionAuto(false);
+        _viewModel.setSelectedUtxoList(widget.selectedUtxoList!);
+      });
+    }
+
     _amountFocusNode.addListener(
       () => setState(() {
         if (!_amountFocusNode.hasFocus) {
@@ -236,6 +255,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _ownAddressCheckTimer?.cancel();
 
     _recipientPageController.dispose();
     _feeRateController.dispose();
@@ -243,12 +263,13 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     _amountController.dispose();
     _amountFocusNode.dispose();
 
-    for (var focusNode in _addressFocusNodeList) {
-      focusNode.dispose();
-    }
-    for (var controller in _addressControllerList) {
-      controller.dispose();
-    }
+    for (var focusNode in _addressFocusNodeList) focusNode.dispose();
+    for (var controller in _addressControllerList) controller.dispose();
+
+    _addressFocusNodeList.clear();
+    _addressControllerList.clear();
+    _addressTextListenerList.clear();
+
     super.dispose();
   }
 
@@ -579,20 +600,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFinalButton(BuildContext context) {
-    return Selector<SendViewModel, Tuple4<String, bool, bool, int?>>(
-      selector:
-          (_, viewModel) => Tuple4(
-            viewModel.finalErrorMessage,
-            viewModel.isReadyToSend,
-            viewModel.isFeeRateLowerThanMin,
-            viewModel.unintendedDustFee,
-          ),
+    return Selector<SendViewModel, (String, bool, bool, int?)>(
+      selector: (_, vm) => (vm.finalErrorMessage, vm.isReadyToSend, vm.isFeeRateLowerThanMin, vm.unintendedDustFee),
       builder: (context, data, child) {
-        final finalErrorMessage = data.item1; // error
-        final isReadyToSend = data.item2;
-        final isFeeRateLowerThanMin = data.item3; // warning
-        final unintendedDustFee = data.item4; // info
-
+        final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee) = data;
         final finalButtonMessages = [];
 
         /// errorMessage가 있으면 errorMessage만 표기
@@ -646,7 +657,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               },
               isActive:
                   !isWalletWithoutMfp(_viewModel.selectedWalletItem) && isReadyToSend && finalErrorMessage.isEmpty,
-              text: t.complete,
+              text: t.done,
               backgroundColor: CoconutColors.gray100,
               pressedBackgroundColor: CoconutColors.gray500,
             ),
@@ -1654,12 +1665,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   Widget _buildBoard(BuildContext context) {
     return Selector<SendViewModel, bool>(
       selector: (_, viewModel) => viewModel.showAddressBoard,
-      builder: (context, data, child) {
+      builder: (context, showAddressBoard, child) {
         return Positioned(
           left: 16,
           right: 16,
-          top: !_viewModel.showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
-          child: !_viewModel.showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
+          top: !showAddressBoard ? kPageViewHeight : _addressInputFieldBottomDy,
+          child: !showAddressBoard ? _buildFeeBoard(context) : _buildAddressBoard(context),
         );
       },
     );
@@ -1859,7 +1870,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   void _addAddressField() {
     final controller = TextEditingController();
     final index = _addressControllerList.length;
-    addressTextListener() => _viewModel.setAddressText(controller.text, index);
+    addressTextListener() {
+      _viewModel.setAddressText(controller.text, index);
+      if (_viewModel.currentIndex == index && controller.text.length >= 26) {
+        _ownAddressCheckTimer?.cancel();
+        _ownAddressCheckTimer = Timer(const Duration(milliseconds: 300), () {
+          if (_viewModel.isOwnAddress(controller.text)) {
+            _viewModel.setShowAddressBoard(false);
+          }
+        });
+      }
+    }
 
     controller.addListener(addressTextListener);
     _addressTextListenerList.add(addressTextListener);
@@ -1871,16 +1892,20 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         _feeRateController.text = _removeTrailingDot(_feeRateController.text);
         _amountController.text = _removeTrailingDot(_amountController.text);
 
-        final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null;
+        final isOwn = controller.text.length >= 26 && _viewModel.isOwnAddress(controller.text);
+        final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
           _viewModel.validateAllFieldsOnFocusLost();
         } else {
           Future.delayed(const Duration(milliseconds: 1000), () {
-            final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
+            if (!mounted) return;
+            final context = _viewMoreButtonKey.currentContext;
+            if (context == null) return;
+            final viewMoreButtonRect = context.findRenderObject() as RenderBox?;
+            if (viewMoreButtonRect == null) return;
             final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
-            final viewMoreButtonHeight = viewMoreButtonRect.size.height;
-            final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
+            final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonRect.size.height;
             bool isViewMoreButtonVisible =
                 viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
             if (!isViewMoreButtonVisible) {
@@ -1895,21 +1920,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         if (_isDropdownMenuVisible) {
           _setDropdownMenuVisiblility(false);
         }
-        Future.delayed(const Duration(milliseconds: 1000), () {
-          final viewMoreButtonRect = _viewMoreButtonKey.currentContext?.findRenderObject() as RenderBox;
-          final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);
-          final viewMoreButtonHeight = viewMoreButtonRect.size.height;
-          final viewMoreButtonBottom = viewMoreButtonPosition.dy + viewMoreButtonHeight;
-          bool isViewMoreButtonVisible =
-              viewMoreButtonBottom < MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom;
-          if (!isViewMoreButtonVisible) {
-            _screenScrollController.animateTo(
-              _screenScrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
-          }
-        });
       }),
     );
     _addressFocusNodeList.add(focusNode);
@@ -1979,16 +1989,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       }
     }
 
-    // 각 컨트롤러의 텍스트를 recipientList의 address로 업데이트
-    // 리스너를 모두 제거한 후 텍스트를 설정하고, 나중에 다시 추가
     for (int i = 0; i < recipientListLength; i++) {
       if (i < _addressControllerList.length) {
         _addressControllerList[i].removeListener(_addressTextListenerList[i]);
-      }
-    }
 
-    for (int i = 0; i < recipientListLength; i++) {
-      if (i < _addressControllerList.length) {
         final address = _viewModel.recipientList[i].address;
         if (_addressControllerList[i].text != address) {
           _addressControllerList[i].text = address;

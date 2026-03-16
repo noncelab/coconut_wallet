@@ -232,7 +232,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                             backgroundColor: CoconutColors.white,
                             foregroundColor: CoconutColors.black,
                             pressedTextColor: CoconutColors.black,
-                            text: t.complete,
+                            text: t.done,
                           ),
                         ),
                       ],

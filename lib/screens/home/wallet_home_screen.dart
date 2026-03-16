@@ -312,7 +312,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Future<void> _navigateToWalletHomeEdit() async {
     _viewModel.captureEnabledFeaturesSnapshot();
-    await Navigator.pushNamed(context, '/wallet-home-edit', arguments: {'scrollController': _scrollController});
+    await Navigator.pushNamed(context, '/wallet-home-edit');
     if (context.mounted) {
       _viewModel.refreshEnabledFeaturesData();
     }

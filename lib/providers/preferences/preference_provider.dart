@@ -15,7 +15,9 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:tuple/tuple.dart';
 
@@ -108,12 +110,27 @@ class PreferenceProvider extends ChangeNotifier {
   late UtxoOrder _utxoSortOrder;
   UtxoOrder get utxoSortOrder => _utxoSortOrder;
 
+  /// UTXO 구간별 색상 테마
+  late UtxoTierTheme _utxoTierTheme;
+  UtxoTierTheme get utxoTierTheme => _utxoTierTheme;
+  // 지갑 목록 화면 - 법정화폐 숨기기 여부
+  late bool _isWalletListFiatHidden;
+  bool get isWalletListFiatHidden => _isWalletListFiatHidden;
+
+  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록
+  late List<FiatCode> _walletListVisibleFiats;
+  List<FiatCode> get walletListVisibleFiats => _walletListVisibleFiats;
+
   PreferenceProvider(
     this._walletPreferencesRepository,
     this._electrumServerProvider,
     this._blockExplorerProvider, {
     FeatureSettingsProvider? featureSettingsProvider,
   }) : _featureSettingsProvider = featureSettingsProvider {
+    // 통화 설정 초기화
+    _initializeFiat();
+    _initializeLanguageFromSystem();
+
     _electrumServerProvider.addListener(notifyListeners);
     _blockExplorerProvider.addListener(notifyListeners);
     _fakeBalanceTotalBtc = _sharedPrefs.getIntOrNull(SharedPrefKeys.kFakeBalanceTotal);
@@ -138,10 +155,10 @@ class PreferenceProvider extends ChangeNotifier {
               orElse: () => UtxoOrder.byAmountDesc,
             )
             : UtxoOrder.byAmountDesc;
+    _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
-    // 통화 설정 초기화
-    _initializeFiat();
-    _initializeLanguageFromSystem();
+    _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
+    _walletListVisibleFiats = _loadWalletListVisibleFiats();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyLanguageSettingSync();
     });
@@ -255,6 +272,13 @@ class PreferenceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> changeUtxoTierTheme(UtxoTierTheme theme) async {
+    if (_utxoTierTheme.id == theme.id) return;
+    _utxoTierTheme = theme;
+    await _sharedPrefs.setString(SharedPrefKeys.kUtxoTierThemeId, theme.id);
+    notifyListeners();
+  }
+
   @Deprecated('changeBitcoinUnit를 사용하세요')
   Future<void> changeIsBtcUnit(bool isBtcUnit) async {
     await changeBitcoinUnit(isBtcUnit ? BitcoinUnit.btc : BitcoinUnit.sats);
@@ -315,6 +339,11 @@ class PreferenceProvider extends ChangeNotifier {
   Future<void> changeFiat(FiatCode fiatCode) async {
     _selectedFiat = fiatCode;
     await _sharedPrefs.setString(SharedPrefKeys.kSelectedFiat, fiatCode.code);
+    _walletListVisibleFiats = _sortWalletListVisibleFiats(_walletListVisibleFiats);
+    await _sharedPrefs.setString(
+      SharedPrefKeys.kWalletListVisibleFiats,
+      _walletListVisibleFiats.map((f) => f.code).join(','),
+    );
     notifyListeners();
   }
 
@@ -527,6 +556,56 @@ class PreferenceProvider extends ChangeNotifier {
     _utxoSortOrder = utxoOrder;
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
+    notifyListeners();
+  }
+
+  // 지갑 목록 화면 법정화폐 숨기기 설정
+  Future<void> setWalletListFiatHidden(bool isHidden) async {
+    _isWalletListFiatHidden = isHidden;
+    await _sharedPrefs.setBool(SharedPrefKeys.kWalletListFiatHidden, isHidden);
+    notifyListeners();
+  }
+
+  /// selectedFiat 기준으로 정렬된 전체 법정화폐 목록
+  List<FiatCode> get orderedFiats => _fiatOrder[_selectedFiat] ?? FiatCode.values.toList();
+
+  static const Map<FiatCode, List<FiatCode>> _fiatOrder = {
+    FiatCode.KRW: [FiatCode.KRW, FiatCode.USD, FiatCode.JPY],
+    FiatCode.USD: [FiatCode.USD, FiatCode.KRW, FiatCode.JPY],
+    FiatCode.JPY: [FiatCode.JPY, FiatCode.USD, FiatCode.KRW],
+  };
+
+  List<FiatCode> _loadWalletListVisibleFiats() {
+    final stored = _sharedPrefs.getStringOrNull(SharedPrefKeys.kWalletListVisibleFiats);
+    if (stored == null) {
+      return [_selectedFiat];
+    }
+
+    final visibleFiats =
+        stored
+            .split(',')
+            .where((code) => code.isNotEmpty)
+            .map((code) => FiatCode.values.where((f) => f.code == code).firstOrNull)
+            .whereType<FiatCode>()
+            .toList();
+
+    if (visibleFiats.isEmpty && stored.isNotEmpty) {
+      return [_selectedFiat];
+    }
+
+    return _sortWalletListVisibleFiats(visibleFiats);
+  }
+
+  List<FiatCode> _sortWalletListVisibleFiats(List<FiatCode> fiats) {
+    final order = _fiatOrder[_selectedFiat] ?? FiatCode.values;
+    return order.where((f) => fiats.contains(f)).toList();
+  }
+
+  // 지갑 목록 화면 - '보기' 설정된 법정화폐 목록 설정
+  Future<void> setWalletListVisibleFiats(List<FiatCode> fiats) async {
+    final sorted = _sortWalletListVisibleFiats(fiats);
+    _walletListVisibleFiats = sorted;
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletListVisibleFiats, sorted.map((f) => f.code).join(','));
     notifyListeners();
   }
 
