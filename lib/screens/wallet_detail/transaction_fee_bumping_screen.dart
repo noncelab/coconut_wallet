@@ -300,7 +300,8 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       return _buildErrorText(t.transaction_fee_bumping_screen.insufficient_balance_error);
     }
 
-    if (_textEditingController.text.isEmpty || _textEditingController.text == '0') {
+    final double? feeInput = double.tryParse(_textEditingController.text);
+    if (_textEditingController.text.isEmpty || feeInput == null || feeInput == 0) {
       return null;
     }
 
@@ -310,18 +311,11 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
     }
 
     // Fee 관련 상태
-    return _buildFeeStatusWidget(viewModel);
+    return _buildFeeStatusWidget(viewModel, feeInput);
   }
 
-  Widget _buildFeeStatusWidget(FeeBumpingViewModel viewModel) {
-    if (_isEstimatedFeeTooHigh) {
-      return Column(
-        children: [
-          _buildErrorText(t.transaction_fee_bumping_screen.estimated_fee_too_high_error),
-          CoconutLayout.spacing_100h,
-        ],
-      );
-    }
+  Widget _buildFeeStatusWidget(FeeBumpingViewModel viewModel, double feeInput) {
+    assert(feeInput > 0);
 
     if (viewModel.deficitSats != null) {
       return _buildErrorText(
@@ -335,15 +329,23 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       return _buildErrorText(t.transaction_fee_bumping_screen.fee_rate_too_low_error);
     }
 
-    return Text(
-      t.transaction_fee_bumping_screen.estimated_fee(
-        fee:
-            viewModel
-                .getTotalEstimatedFee(double.tryParse(_textEditingController.text) ?? 0.0)
-                .toThousandsSeparatedString(),
-      ),
-      style: CoconutTypography.body2_14,
-      textScaler: const TextScaler.linear(1.0),
+    final widgets = [];
+    if (_isEstimatedFeeTooHigh) {
+      widgets.add(_buildErrorText(t.transaction_fee_bumping_screen.estimated_fee_too_high_error));
+      widgets.add(CoconutLayout.spacing_100h);
+    }
+
+    return Column(
+      children: [
+        ...widgets,
+        Text(
+          t.transaction_fee_bumping_screen.estimated_fee(
+            fee: viewModel.getTotalEstimatedFee(feeInput).toThousandsSeparatedString(),
+          ),
+          style: CoconutTypography.body2_14,
+          textScaler: const TextScaler.linear(1.0),
+        ),
+      ],
     );
   }
 
