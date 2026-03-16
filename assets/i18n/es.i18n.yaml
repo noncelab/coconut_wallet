@@ -103,6 +103,7 @@ block_explorer: "Explorador"
 log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
 name: "Nombre"
+account: "Cuenta"
 
 relative_time:
   just_now: "Justo ahora"

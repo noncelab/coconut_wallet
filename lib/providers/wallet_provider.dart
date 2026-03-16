@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -323,7 +324,7 @@ class WalletProvider extends ChangeNotifier {
     }
 
     if (accountNumStr != null) {
-      String newName = "$baseName account $accountNumStr";
+      String newName = "$baseName ${t.account} $accountNumStr";
       int suffix = 2;
       String finalName = newName;
 
