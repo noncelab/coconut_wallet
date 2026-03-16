@@ -15,6 +15,7 @@ class InputOutputDetailRow extends StatelessWidget {
   final RowProperty rowProperty;
   final BitcoinUnit currentUnit;
   final Color? colorOverride;
+  final Color Function(Color base)? colorTransform;
 
   InputOutputDetailRow({
     super.key,
@@ -26,11 +27,16 @@ class InputOutputDetailRow extends StatelessWidget {
     this.isCurrentAddress,
     this.transactionStatus,
     this.colorOverride,
+    this.colorTransform,
   }) : rowProperty = getRowProperty(rowType, transactionStatus, isCurrentAddress ?? false);
 
   String get balanceText => currentUnit.displayBitcoinAmount(balance.abs(), forceEightDecimals: true);
 
-  Color _resolveColor(Color base) => colorOverride ?? base;
+  Color _resolveColor(Color base) {
+    if (colorOverride != null) return colorOverride!;
+    if (colorTransform != null) return colorTransform!(base);
+    return base;
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -641,6 +641,12 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
 
   static const _shrinkDuration = Duration(milliseconds: 100);
 
+  Color _darkenColor(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    final darkened = hsl.withLightness((hsl.lightness - 0.12).clamp(0.0, 1.0));
+    return darkened.toColor();
+  }
+
   Color _resolveTextColor(_FlowNode node, bool isChange, bool isEllipsis) {
     if (isEllipsis) return CoconutColors.gray400;
     final status = widget.transactionStatus;
@@ -682,7 +688,7 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
 
     var textColor = _resolveTextColor(node, isChange, isEllipsis);
     if (isTappable && _isPressed) {
-      textColor = CoconutColors.gray500;
+      textColor = _darkenColor(textColor);
     }
 
     final titleStyle = CoconutTypography.body2_14.copyWith(color: textColor, height: 1.2);

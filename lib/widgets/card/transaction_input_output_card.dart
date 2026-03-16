@@ -329,7 +329,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
             return _TappableOutputRow(
               onTap: () => widget.onOutputTap!(item.address, originalIndex, item.amount.abs()),
               builder:
-                  (colorOverride) => Padding(
+                  (colorTransform) => Padding(
                     padding: const EdgeInsets.only(bottom: 8.0),
                     child: InputOutputDetailRow(
                       address: item.address,
@@ -339,7 +339,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
                       isCurrentAddress: isCurrentAddress,
                       transactionStatus: widget.isForTransaction ? _status : null,
                       currentUnit: widget.currentUnit,
-                      colorOverride: colorOverride,
+                      colorTransform: colorTransform,
                     ),
                   ),
             );
@@ -456,7 +456,7 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
 
 class _TappableOutputRow extends StatefulWidget {
   final VoidCallback onTap;
-  final Widget Function(Color? colorOverride) builder;
+  final Widget Function(Color Function(Color base)? colorTransform) builder;
 
   const _TappableOutputRow({required this.onTap, required this.builder});
 
@@ -470,6 +470,12 @@ class _TappableOutputRowState extends State<_TappableOutputRow> {
   static const _shrinkDuration = Duration(milliseconds: 100);
   static const _shrinkScale = 0.97;
 
+  Color _darkenColor(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    final darkened = hsl.withLightness((hsl.lightness - 0.12).clamp(0.0, 1.0));
+    return darkened.toColor();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -482,7 +488,7 @@ class _TappableOutputRowState extends State<_TappableOutputRow> {
         scale: _isPressed ? _shrinkScale : 1.0,
         duration: _shrinkDuration,
         curve: Curves.easeInOut,
-        child: widget.builder(_isPressed ? CoconutColors.gray500 : null),
+        child: widget.builder(_isPressed ? _darkenColor : null),
       ),
     );
   }
