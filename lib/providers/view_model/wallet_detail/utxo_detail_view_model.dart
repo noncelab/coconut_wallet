@@ -131,10 +131,9 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
     _isFetchingFromMempool = true;
     _safeNotifyListeners();
+    final mempoolApi = MempoolApi();
     try {
-      final mempoolApi = MempoolApi();
       final txJson = await mempoolApi.fetchTx(_txHash);
-      mempoolApi.close();
 
       if (_disposed) return;
 
@@ -149,15 +148,13 @@ class UtxoDetailViewModel extends ChangeNotifier {
     } catch (e) {
       Logger.error('[_fetchTransactionFromMempool] Failed to fetch tx from mempool: $_txHash, error=$e');
     } finally {
+      mempoolApi.close();
       _isFetchingFromMempool = false;
       if (!_disposed) _safeNotifyListeners();
     }
   }
 
-  TransactionRecord? _transactionRecordFromMempoolResponse(
-    Map<String, dynamic> txJson,
-    TransactionRecord? existingTx,
-  ) {
+  TransactionRecord? _transactionRecordFromMempoolResponse(Map<String, dynamic> txJson, TransactionRecord? existingTx) {
     try {
       final txid = txJson['txid'] as String? ?? _txHash;
       final vin = txJson['vin'] as List<dynamic>? ?? [];
@@ -234,12 +231,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     }
   }
 
-  TransactionType _determineTransactionType(
-    int selfInputCount,
-    int selfOutputCount,
-    int inputCount,
-    int outputCount,
-  ) {
+  TransactionType _determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
     if (selfInputCount == 0) return TransactionType.received;
     if (selfOutputCount < outputCount) return TransactionType.sent;
     if (selfOutputCount == outputCount && selfInputCount == inputCount) return TransactionType.self;
