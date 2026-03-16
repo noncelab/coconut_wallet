@@ -62,12 +62,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
     _utxoId = _utxo.utxoId;
     _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
     _selectedUtxoTagList = _tagProvider.getUtxoTagsByUtxoId(_walletId, _utxoId);
-
-    _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash);
-
-    _dateString = _transaction != null ? DateTimeUtil.formatTimestamp(_transaction!.timestamp) : ['-', '-'];
-
-    _initUtxoInOutputList();
+    _syncTransactionDisplayState();
 
     if (_transaction != null && _transaction!.inputAddressList.isEmpty && !_isFetchingFromMempool) {
       _fetchTransactionFromMempoolAndUpdate();
@@ -112,10 +107,14 @@ class UtxoDetailViewModel extends ChangeNotifier {
 
   TransactionRecord? get transaction => _transaction;
 
-  void refreshTransaction() {
+  void _syncTransactionDisplayState() {
     _transaction = _txProvider.getTransaction(_walletId, _utxo.transactionHash);
     _dateString = _transaction != null ? DateTimeUtil.formatTimestamp(_transaction!.timestamp) : ['-', '-'];
     _initUtxoInOutputList();
+  }
+
+  void refreshTransaction() {
+    _syncTransactionDisplayState();
     if (_transaction != null && _transaction!.inputAddressList.isEmpty && !_isFetchingFromMempool) {
       _fetchTransactionFromMempoolAndUpdate();
     }
@@ -141,9 +140,7 @@ class UtxoDetailViewModel extends ChangeNotifier {
       final txRecord = _transactionRecordFromMempoolResponse(txJson, currentTx);
       if (txRecord != null) {
         await _txProvider.updateTransaction(_walletId, _txHash, txRecord);
-        _transaction = _txProvider.getTransaction(_walletId, _txHash);
-        _dateString = _transaction != null ? DateTimeUtil.formatTimestamp(_transaction!.timestamp) : ['-', '-'];
-        _initUtxoInOutputList();
+        _syncTransactionDisplayState();
       }
     } catch (e) {
       Logger.error('[_fetchTransactionFromMempool] Failed to fetch tx from mempool: $_txHash, error=$e');
