@@ -1,7 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
-import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
-import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -18,7 +16,6 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/widgets/bubble_clipper.dart';
@@ -261,14 +258,6 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           _tooltipIconPosition = tooltipIconRenderBox.localToGlobal(Offset.zero);
           _tooltipIconSize = tooltipIconRenderBox.size;
         });
-      }
-
-      if (!_viewModel.hasMfp) {
-        CoconutToast.showToast(
-          isVisibleIcon: true,
-          context: context,
-          text: t.wallet_detail_screen.toast.no_mfp_wallet_cant_send,
-        );
       }
     });
   }

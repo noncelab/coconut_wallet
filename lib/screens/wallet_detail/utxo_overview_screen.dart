@@ -564,7 +564,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 12 + bottomInset, bottom: 8 + bottomInset),
+      padding: EdgeInsets.only(left: 16, right: 16, top: 40 + bottomInset, bottom: 8 + bottomInset),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,

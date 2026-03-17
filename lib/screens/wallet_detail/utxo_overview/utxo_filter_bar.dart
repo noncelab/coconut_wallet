@@ -393,8 +393,8 @@ class UtxoSelectionBarButton extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 iconPath,
-                width: 18,
-                height: 18,
+                width: 20,
+                height: 20,
                 colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
               ),
               const SizedBox(width: 8),
