@@ -295,9 +295,17 @@ class UtxoRepository extends BaseRepository {
 
     if (utxosToDelete.isEmpty) return;
 
+    final deletedIds = utxosToDelete.map((e) => e.id).toList();
+
     await realm.writeAsync(() {
       for (var utxo in utxosToDelete) {
         utxo.isDeleted = true;
+      }
+
+      final tags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
+      for (var tag in tags) {
+        if (tag.utxoIdList.isEmpty) continue;
+        tag.utxoIdList.removeWhere((id) => deletedIds.contains(id));
       }
     });
   }
@@ -310,9 +318,17 @@ class UtxoRepository extends BaseRepository {
 
     if (utxosToDelete.isEmpty) return;
 
+    final deletedIds = utxosToDelete.map((e) => e.id).toList();
+
     await realm.writeAsync(() {
       for (var utxo in utxosToDelete) {
         utxo.isDeleted = true;
+      }
+
+      final tags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
+      for (var tag in tags) {
+        if (tag.utxoIdList.isEmpty) continue;
+        tag.utxoIdList.removeWhere((id) => deletedIds.contains(id));
       }
     });
   }

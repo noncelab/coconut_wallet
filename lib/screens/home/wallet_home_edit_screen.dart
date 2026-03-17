@@ -20,8 +20,7 @@ enum FakeBalanceInputError {
 }
 
 class WalletHomeEditScreen extends StatefulWidget {
-  const WalletHomeEditScreen({super.key, required this.scrollController});
-  final ScrollController scrollController;
+  const WalletHomeEditScreen({super.key});
 
   @override
   State<WalletHomeEditScreen> createState() => _WalletHomeEditScreenState();
@@ -30,16 +29,17 @@ class WalletHomeEditScreen extends StatefulWidget {
 class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with TickerProviderStateMixin {
   final TextEditingController _textEditingController = TextEditingController();
   late WalletHomeEditViewModel _viewModel;
+  late final ScrollController _scrollController;
 
   GlobalKey fixedBottomButtonKey = GlobalKey();
   Size _fixedBottomButtonSize = const Size(0, 0);
 
   final FocusNode _textFieldFocusNode = FocusNode();
-  bool _showFakeBalanceInput = false;
   bool _isRenderComplete = false;
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // 하단 버튼 사이즈 계산
@@ -65,18 +65,12 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
         }
       }
 
-      if (_viewModel.tempIsFakeBalanceActive) {
-        setState(() {
-          _showFakeBalanceInput = true;
-        });
-      }
-
       _textFieldFocusNode.addListener(() {
         if (_textFieldFocusNode.hasFocus) {
-          if (widget.scrollController.hasClients) {
+          if (_scrollController.hasClients) {
             debugPrint('animateTo: ${_fixedBottomButtonSize.height}');
 
-            widget.scrollController.animateTo(
+            _scrollController.animateTo(
               _fixedBottomButtonSize.height,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -118,6 +112,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _textEditingController.dispose();
     _textFieldFocusNode.dispose();
     super.dispose();
@@ -126,18 +121,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
   WalletHomeEditViewModel _createViewModel() {
     _viewModel = WalletHomeEditViewModel(context.read<WalletProvider>(), context.read<PreferenceProvider>());
     return _viewModel;
-  }
-
-  void _onFakeBalanceToggleChanged(bool value) {
-    if (value) {
-      setState(() {
-        _showFakeBalanceInput = true;
-      });
-    } else {
-      setState(() {
-        _showFakeBalanceInput = false;
-      });
-    }
   }
 
   @override
@@ -152,6 +135,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
+          backgroundColor: CoconutColors.black,
           resizeToAvoidBottomInset: false,
           appBar: CoconutAppBar.build(
             backgroundColor: CoconutColors.black,
@@ -196,7 +180,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                     height: MediaQuery.sizeOf(context).height,
                     color: CoconutColors.black,
                     child: SingleChildScrollView(
-                      controller: widget.scrollController,
+                      controller: _scrollController,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -231,7 +215,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         }
                                         viewModel.setTempIsBalanceHidden(!viewModel.tempIsBalanceHidden);
                                       },
-                                      betweenGap: 16,
                                       backgroundColor: CoconutColors.black,
                                       rightElement: CoconutSwitch(
                                         isOn: viewModel.tempIsBalanceHidden,
@@ -250,7 +233,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                       subtitle: t.wallet_home_screen.edit.fake_balance.fake_balance_input_description,
                                       subtitleStyle: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
                                       customPadding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-                                      betweenGap: 16,
                                       onPressed: () async {
                                         if (_textFieldFocusNode.hasFocus) {
                                           FocusScope.of(context).unfocus();
@@ -258,7 +240,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         }
 
                                         viewModel.setTempFakeBalanceActive(!viewModel.tempIsFakeBalanceActive);
-                                        _onFakeBalanceToggleChanged(viewModel.tempIsFakeBalanceActive);
                                       },
                                       backgroundColor: Colors.transparent,
                                       rightElement: CoconutSwitch(
@@ -269,7 +250,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         thumbColor: CoconutColors.gray800,
                                         onChanged: (value) {
                                           viewModel.setTempFakeBalanceActive(value);
-                                          _onFakeBalanceToggleChanged(value);
                                         },
                                       ),
                                     ),
@@ -287,7 +267,6 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         }
                                         viewModel.setTempIsFiatBalanceHidden(!viewModel.tempIsFiatBalanceHidden);
                                       },
-                                      betweenGap: 16,
                                       backgroundColor: CoconutColors.black,
                                       rightElement: CoconutSwitch(
                                         isOn: viewModel.tempIsFiatBalanceHidden,
@@ -361,7 +340,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                               Navigator.pop(context);
                             }
                           },
-                          text: t.complete,
+                          text: t.done,
                         );
                       },
                     ),

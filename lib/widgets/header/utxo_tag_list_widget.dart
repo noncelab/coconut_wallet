@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class UtxoTagListWidget extends StatelessWidget {
-  final String selectedUtxoTagName;
+  final String activeUtxoTagName;
   final Function(String) onTagSelected;
 
-  const UtxoTagListWidget({super.key, required this.selectedUtxoTagName, required this.onTagSelected});
+  const UtxoTagListWidget({super.key, required this.activeUtxoTagName, required this.onTagSelected});
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class UtxoTagListWidget extends StatelessWidget {
         return CustomTagHorizontalSelector(
           key: ValueKey('tag_list_$tagListKey'),
           tags: utxoTagList.map((e) => e.name).toList(),
-          selectedName: selectedUtxoTagName,
+          selectedName: activeUtxoTagName,
           onSelectedTag: onTagSelected,
         );
       },

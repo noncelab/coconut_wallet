@@ -1,7 +1,12 @@
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 bool isWalletWithoutMfp(WalletListItemBase? wallet) {
   if (wallet != null &&
@@ -20,5 +25,26 @@ bool hasMfpWallet(List<WalletListItemBase> walletItemList) {
         wallet is MultisigWalletListItem ||
         (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint !=
             WalletAddService.masterFingerprintPlaceholder,
+  );
+}
+
+void showNoMfpDialog(BuildContext context, VoidCallback onTapConfirm) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return CoconutPopup(
+        languageCode: context.read<PreferenceProvider>().language,
+        title: t.alert.without_mfp.title,
+        description: t.alert.without_mfp.description,
+        leftButtonText: t.alert.without_mfp.skip_button,
+        rightButtonText: t.alert.without_mfp.confirm_button,
+        onTapLeft: () {
+          Navigator.of(context).pop();
+        },
+        onTapRight: () {
+          onTapConfirm();
+        },
+      );
+    },
   );
 }

@@ -101,7 +101,11 @@ class SingleButton extends StatelessWidget {
 
   TextStyle get _resolvedSubtitleStyle {
     final baseStyle =
-        subtitle != null && subtitle!.containsCJK
+        subtitleStyle != null
+            ? subtitle != null && subtitle!.containsCJK
+                ? subtitleStyle!.copyWith(height: 1.3)
+                : subtitleStyle!
+            : subtitle != null && subtitle!.containsCJK
             ? CoconutTypography.body3_12.copyWith(height: 1.3)
             : CoconutTypography.body3_12_Number;
     return baseStyle.setColor(CoconutColors.gray400);
@@ -121,7 +125,7 @@ class SingleButton extends StatelessWidget {
                 child: Text(title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
               ),
               if (isVerticalSubtitle) ...{
-                CoconutLayout.spacing_100h,
+                SizedBox(height: betweenGap),
                 FittedBox(fit: BoxFit.scaleDown, child: Text(subtitle!, style: _resolvedSubtitleStyle)),
               },
             ],

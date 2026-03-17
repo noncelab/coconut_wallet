@@ -77,11 +77,13 @@ class IsolateController {
           isolateToMainSendPort.send(Result.success(_electrumService.connectionStatus));
           break;
         case IsolateControllerCommand.getTransactionRecord:
+          final txHash = params[1] as String;
+          Logger.log('IsolateController: getTransactionRecord executing in isolate (txHash: $txHash)');
           isolateToMainSendPort.send(await _transactionRecordService.getTransactionRecord(params[0], params[1]));
           break;
       }
     } catch (e, stack) {
-      Logger.error('Error in isolate processing: $e');
+      Logger.error('IsolateController: Error in $messageType: $e');
       Logger.error(stack);
       isolateToMainSendPort.send(Exception('Error in isolate processing: $e'));
     }

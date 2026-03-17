@@ -75,7 +75,7 @@ class _AppGuardState extends State<AppGuard> {
     _screenListener.watch();
   }
 
-  void _handleAppLifecycleState(AppLifecycleState state) {
+  Future<void> _handleAppLifecycleState(AppLifecycleState state) async {
     /// 안드로이드에서 앱 실행 시 홈화면 시작 후, inactive -> resume이 항상 한번 실행되면서 PrivacyScreen이 보이는 문제
     if (Platform.isAndroid && !_isFirstInactiveSkipped) {
       _isFirstInactiveSkipped = true;
@@ -84,14 +84,18 @@ class _AppGuardState extends State<AppGuard> {
     Logger.log('AppGuard: AppLifecycleState: $state / AppGuard._isPrivacyEnabled: ${AppGuard._isPrivacyEnabled}');
     switch (state) {
       case AppLifecycleState.resumed:
+        await _connectivityProvider.refreshConnectivity();
         if (_isPaused) {
           setState(() {
             _isPaused = false;
           });
           _authProvider.checkDeviceBiometrics();
+          _priceProvider.initWebSocketService(force: true);
+        } else {
+          _authProvider.checkDeviceBiometrics();
           _priceProvider.initWebSocketService();
-          _handleReconnect();
         }
+        _handleNodeProviderReconnect();
         break;
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
@@ -102,7 +106,7 @@ class _AppGuardState extends State<AppGuard> {
           _isPaused = true;
         });
         _priceProvider.disposeWebSocketService();
-        _handleDisconnect();
+        _handleNodeProviderDisconnect();
         break;
       case AppLifecycleState.inactive:
         setState(() {
@@ -112,7 +116,8 @@ class _AppGuardState extends State<AppGuard> {
     }
   }
 
-  void _handleReconnect() {
+  /// NodeProvider 재연결
+  void _handleNodeProviderReconnect() {
     // 1. 이미 초기화되어 있고 연결이 정상인 경우 재연결하지 않음
     if (_nodeProvider.isInitialized &&
         !_nodeProvider.hasConnectionError &&
@@ -128,7 +133,8 @@ class _AppGuardState extends State<AppGuard> {
     }
   }
 
-  void _handleDisconnect() {
+  /// NodeProvider 연결 해제
+  void _handleNodeProviderDisconnect() {
     // 1. 네트워크가 끊어진 경우 연결 해제
     if (!_connectivityProvider.isInternetOn) {
       Logger.log('AppGuard: Network disconnected, closing connection');

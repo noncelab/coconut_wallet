@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
+import 'package:coconut_wallet/constants/isolate_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -20,7 +22,6 @@ import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:flutter/foundation.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 
 class NodeProvider extends ChangeNotifier {
   final IsolateManager _isolateManager;
@@ -126,7 +127,11 @@ class NodeProvider extends ChangeNotifier {
         _currentBlockController.add(result.value);
       }
     } else {
-      Logger.error('NodeProvider: 블록 높이 업데이트 실패 - ${result.error}');
+      final wasConnected = !_hasConnectionError;
+      _setConnectionError(true);
+      if (wasConnected) {
+        Logger.error('NodeProvider: 블록 높이 업데이트 실패 - ${result.error}');
+      }
       if (_isWalletLoaded && isInitialized && _isFirstInitialization) {
         _stateManager?.setNodeSyncStateToFailed();
       }
@@ -424,8 +429,17 @@ class NodeProvider extends ChangeNotifier {
     return _isolateManager.getSocketConnectionStatus();
   }
 
-  Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) async {
-    return _isolateManager.getTransactionRecord(walletItem, txHash);
+  Future<Result<TransactionRecord>> getTransactionRecord(
+    WalletListItemBase walletItem,
+    String txHash, {
+    Duration? timeout,
+  }) async {
+    Logger.log('NodeProvider: getTransactionRecord called (txHash: $txHash)');
+    final result = await _isolateManager.getTransactionRecord(walletItem, txHash, timeout: timeout);
+    if (result.isFailure) {
+      Logger.error('NodeProvider.getTransactionRecord failed (txHash: $txHash) - error: ${result.error}');
+    }
+    return result;
   }
 
   Future<void> reconnect() async {
@@ -551,7 +565,10 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<void> _establishSocketConnection(ElectrumService service, ElectrumServer server) async {
-    await service.connect(server.host, server.port, ssl: server.ssl).timeout(const Duration(seconds: 3));
+    final isOnionHost = server.host.trim().toLowerCase().endsWith('.onion');
+    final connectionTimeout = isOnionHost ? kIsolateInitTimeoutForOnion : kIsolateInitTimeout;
+
+    await service.connect(server.host, server.port, ssl: server.ssl).timeout(connectionTimeout);
 
     if (service.connectionStatus != SocketConnectionStatus.connected) {
       throw Exception('Socket connection failed');

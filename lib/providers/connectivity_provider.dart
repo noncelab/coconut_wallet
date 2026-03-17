@@ -60,6 +60,12 @@ class ConnectivityProvider extends ChangeNotifier {
     }
   }
 
+  /// 앱 재개 시 네트워크 상태 재확인
+  /// 백그라운드 중 connectivity 상태가 stale할 수 있어 foreground 복귀 시 호출
+  Future<void> refreshConnectivity() async {
+    await _checkInitialConnectivity();
+  }
+
   Future<void> _checkInitialVpnStatus() async {
     try {
       final status = await _vpnDetector.isVpnActive();

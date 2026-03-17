@@ -5,7 +5,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
-import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -279,6 +278,13 @@ class SendViewModel extends ChangeNotifier {
   bool isAmountInsufficient(int index) {
     if (index != lastIndex) return false;
     return _isMaxMode && _recipientList[index].amount == '0';
+  }
+
+  bool isOwnAddress(String address) {
+    for (WalletListItemBase walletItem in _walletProvider.walletItemList) {
+      if (_walletProvider.containsAddress(walletItem.id, address)) return true;
+    }
+    return false;
   }
 
   SendViewModel(
@@ -590,10 +596,10 @@ class SendViewModel extends ChangeNotifier {
       return false;
     }
 
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee?.toDouble();
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee?.toDouble();
-    feeInfos[2].satsPerVb = recommendedFees.hourFee?.toDouble();
-    _minimumFeeRate = recommendedFees.hourFee?.toDouble();
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee;
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
+    feeInfos[2].satsPerVb = recommendedFees.hourFee;
+    _minimumFeeRate = recommendedFees.hourFee;
 
     final defaultFeeRate = recommendedFees.halfHourFee?.toString();
     if (defaultFeeRate != null && _transactionDraftId == null) {

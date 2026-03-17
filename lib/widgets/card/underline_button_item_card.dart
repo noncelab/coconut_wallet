@@ -1,12 +1,15 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/widgets/button/custom_underlined_button.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
+const _divider = Divider(color: CoconutColors.gray800);
 
 class UnderlineButtonItemCard extends StatelessWidget {
   final String label;
   final Widget child;
   final String? underlineButtonLabel;
   final VoidCallback? onTapUnderlineButton;
+  final bool? showDivider;
 
   const UnderlineButtonItemCard({
     super.key,
@@ -14,19 +17,20 @@ class UnderlineButtonItemCard extends StatelessWidget {
     required this.child,
     this.underlineButtonLabel,
     this.onTapUnderlineButton,
+    this.showDivider = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 2),
+      padding: const EdgeInsets.only(left: 2, right: 2, bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Text(label, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray400)),
-              const SizedBox(width: 4),
+              Text(label, style: CoconutTypography.body2_14.copyWith(color: CoconutColors.gray400, height: 1.0)),
+              CoconutLayout.spacing_100w,
               if (underlineButtonLabel != null)
                 Expanded(
                   child: Align(
@@ -39,14 +43,16 @@ class UnderlineButtonItemCard extends StatelessWidget {
                         }
                       },
                       fontSize: 12,
-                      lineHeight: 18,
+                      lineHeight: 12,
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 4),
+          CoconutLayout.spacing_100h,
           child,
+          CoconutLayout.spacing_300h,
+          if (showDivider == true) _divider,
         ],
       ),
     );

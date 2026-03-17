@@ -32,6 +32,7 @@ yes: "はい"
 delete: "削除"
 delete_label: "削除"
 complete: "完了"
+done: "完了"
 close: "閉じる"
 next: "次へ"
 modify: "変更"
@@ -411,6 +412,10 @@ wallet_list:
     delete_description: "ウォレットを左にスワイプして削除できます。"
     finish: "編集完了"
     unsaved_changes_confirm_exit: "未保存の変更があります。\n本当に終了しますか？"
+  bottom_sheet:
+    hide_fiat_price: "法定通貨残高を非表示"
+    hide_fiat_price_description: "この画面に法定通貨残高を表示しません。"
+    visible: "表示中"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -505,8 +510,8 @@ send_confirm_screen:
     total: "合計$n"
     sentence: "が必要です"
   output_detail_title: "出力詳細を見る"
-  flow_input_title: "入力 $index"
-  flow_output_title: "出力 $index"
+  flow_input_title: "入力 #$index"
+  flow_output_title: "出力 #$index"
 signed_psbt_scanner_screen:
   title: "署名済みトランザクションをスキャン"
   bbqr_mode_switching: "BBQRモードに切り替え中。\nしばらくお待ちください。"
@@ -591,6 +596,7 @@ settings_screen:
   hide_balance: "残高を非表示"
   fiat: "法定通貨"
   language: "言語"
+  utxo_tier_theme: "コインの色"
   electrum_server: 
     server_address: "サーバーアドレス"
     port: "ポート"
@@ -637,16 +643,26 @@ settings_screen:
       toast:
         copy_success: "ログをコピーしました。"
 
-# lib/screens/wallet_detail
-wallet_detail_screen:
-  toast:
-    no_mfp_wallet_cant_send: "マスターフィンガープリントのないウォレットは送信できません"
 address_list_screen:
   wallet_name: "$nameのアドレス"
   address_index: "アドレス - $index"
   receiving: "受信"
   change: "おつり"
   show_only_unused_address: "未使用アドレスのみ表示"
+utxo_overview_screen:
+  by_amount: "金額別"
+  by_tag: "タグ別"
+  interval_info_title: "区間案内"
+  view_mode_list: "リスト"
+  view_mode_grid: "グリッド"
+  no_tag_applied: "適用されたタグがありません"
+  no_tag_applied_desc: "UTXOにタグを適用すると、タグ別の内訳を確認できます。"
+  total: "合計"
+  untagged: "未分類"
+  tagged: "タグ適用"
+  multi_tag: "2つ以上のタグ"
+  tag_bubble_with_count: "$name • $count個"
+  amount_bubble_with_count: "$count個 • $balance"
 address_search_screen:
   address_placeholder: "アドレスを入力してください"
   address_not_found: "アドレスが見つかりません"
@@ -659,11 +675,18 @@ address_search_screen:
   change_address: "おつりアドレス"
 utxo_list_screen:
   total_balance: "総残高"
+  tag_apply: "タグを適用"
+  utxo_select_required: "まずUTXOを選択してください。"
+  utxo_tag_updated: "UTXOのタグが正常に更新されました。"
+  send_locked_utxo: "使用がロックされたUTXOは送信できません。"
   utxo_locked_button: "使用ロック"
-  utxo_unlocked_button: "使用可能にする"
+  utxo_unlocked_button: "ロック解除"
   pending_utxo: "すでに送信中のUTXOは選択できません。"
+  reused_address_legend: "再利用アドレス警告"
+  reused_address: "再利用アドレスUTXOを優先してご利用ください"
 
 transaction_detail_screen:
+  input_output_detail_title: "入出力詳細を見る"
   confirmation: "$height（$count確認）"
   time_ago:
     just_now: たった今
@@ -684,6 +707,16 @@ utxo_tag_screen:
   add_tag: "+ボタンを押して最初のタグを作成"
 wallet_info_screen:
   title: "$name情報"
+  transaction: "トランザクション"
+  utxo: "UTXO"
+  target_quantity: "目標数量"
+  target_progress: "$percent% / $target"
+  target_not_set_secondary: "目標数量を設定すると達成率を表示します"
+  target_set_title: "目標を設定"
+  target_set_placeholder: "BTC単位で入力してください"
+  target_set_invalid: "0 BTCは目標に設定できません"
+  target_set_21m: "サトシ積み上げ競争だ!!!"
+  target_set_max_exceeded: "2,100万BTC以下で入力してください"
   view_xpub: "拡張公開鍵を表示"
   duplicated_name: "名前が既に使用されています"
   view_descriptor: "ディスクリプタを表示"
@@ -714,20 +747,31 @@ transaction_fee_bumping_screen:
   new_fee: "新しい手数料"
   sats_vb: "sat/vB"
   recommend_fee: "最小手数料: ${fee} sat/vB以上"
-  recommend_fee_info_rbf: "既存手数料より少なくとも1 sat/vB高くする必要があります。\nただし、（既存手数料 + 1）が低速送信手数料より低い場合は、低速送信手数料を推奨します。\n注意: 新しいトランザクションサイズが増加した場合、推奨手数料と既存手数料の差が1 sat/vB未満に見える場合があります。"
-  recommend_fee_info_cpfp: "新しいトランザクションで不足している手数料を補う必要があります。\n • 新しいトランザクションサイズ = ${newTxSize} vB、推奨手数料率 = ${recommendedFeeRate} sat/vB\n • 必要総手数料 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 新しいトランザクション手数料 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 新しいトランザクション手数料率 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
+  recommend_fee_info_rbf: "新しいトランザクションのサイズ1 vBごとに、少なくとも1 sat以上の追加手数料が必要です。\n計算された最小手数料率が現在のネットワークの低速送金手数料率より低い場合は、低速手数料率を推奨します。\n新しいトランザクションのサイズが増えると、推奨手数料率は既存のものより低くなる場合があります。"
+  recommend_fee_info_cpfp: "新しいトランザクションで不足している手数料を補う必要があります。\n • 新しいトランザクションのサイズ = ${newTxSize} vB、推奨手数料率 = ${recommendedFeeRate} sat/vB\n • 必要な総手数料 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 新しいトランザクションの手数料 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 新しいトランザクションの手数料率 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "推奨手数料"
+  utxo_auto_selection: "UTXO自動選択"
+  utxo_auto_selection_description: "追加手数料が必要なため、UTXOを自動選択します。"
+  n_utxos: " • ${count}個選択済み"
+  no_utxos_selected: " • 選択が必要です"
   estimated_fee: "推定総手数料約${fee} sats"
   estimated_fee_too_high_error: "推定総手数料が0.01 BTCを超えています！"
+  fee_rate_too_low_error: "手数料が不足しています！"
+  insufficient_balance_error: "残高が不足しています！"
   recommended_fees_fetch_error: "推奨手数料を取得できません！"
   recommended_fees_is_null: "手数料を取得中..."
   recommended_fee_less_than_pending_tx_fee: "既存手数料より高い手数料を指定してください"
   recommended_fee_less_than_network_fee: "少なくとも推奨手数料を指定してください"
+  please_select_more_utxo: "${amount}以上の価値のあるUTXOを選択してください"
   dialog:
-    fee_alert_title: "通知"
-    fee_alert_description: "設定した総手数料が0.01 BTCを超えています。それでも続行しますか？"
+    fee_alert_title: "アラート"
+    fee_alert_description: "設定した合計手数料が0.01 BTCを超えています。それでも続行しますか？"
     confirmed_alert_title: "トランザクション完了"
     confirmed_alert_description: "保留中だったトランザクションが完了しました。"
+    rbf_duplicated_output_title: "重複アドレスを検出"
+    rbf_duplicated_output: "このトランザクションはサポートされていません。"
+    utxo_not_found_title: "UTXOが見つかりません"
+    utxo_not_found: "トランザクションで使用されたUTXOが見つかりません。"
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 
@@ -769,6 +813,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "タグ追加"
   title_edit_tag: "タグ編集"
+  title_apply_tag: "タグを適用"
   tag_list: "タグ一覧"
   add_new_tag: "タグ追加"
   delete_tag: "タグ削除"
@@ -953,6 +998,11 @@ alert:
     try_again: "$count 後にもう一度お試しください。"
   fee_bumping:
     not_enough_amount: "$bumpingTypeを実行するための残高が不足しています。\n現在の残高を確認してください。"
+  without_mfp:
+    title: "マスターフィンガープリントを追加"
+    description: "ビットコインを送信するには、まずマスターフィンガープリントを追加する必要があります。追加した後、再び送信することができます。"
+    skip_button: "キャンセル"
+    confirm_button: "追加"
 
 third_party:
   keystone: "Keystone"

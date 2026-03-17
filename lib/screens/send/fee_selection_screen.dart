@@ -89,7 +89,7 @@ class _FeeSelectionScreenState extends State<FeeSelectionScreen> {
             onBackPressed: () {
               Navigator.pop(context);
             },
-            nextButtonTitle: t.complete,
+            nextButtonTitle: t.done,
             onNextPressed: _onDone,
             isBottom: true,
           ),

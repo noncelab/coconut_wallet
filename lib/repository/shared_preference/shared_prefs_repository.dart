@@ -68,6 +68,10 @@ class SharedPrefsRepository {
     await _sharedPrefs.setString(key, value);
   }
 
+  String? getStringOrNull(String key) {
+    return _sharedPrefs.getString(key);
+  }
+
   double? getDouble(String key) {
     return _sharedPrefs.getDouble(key);
   }
@@ -117,6 +121,41 @@ class SharedPrefsRepository {
     }
     final Map<String, dynamic> decodedData = json.decode(encodedData);
     return decodedData.map((key, value) => MapEntry(int.parse(key), FaucetRecord.fromJson(value)));
+  }
+
+  /// 지갑별 목표 수량 (sats)------------------------------------------------------
+  int? getWalletTargetSats(int walletId) {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletTargetSatsMap);
+    if (encodedData == null || encodedData.isEmpty) return null;
+    try {
+      final Map<String, dynamic> decoded = json.decode(encodedData);
+      final value = decoded[walletId.toString()];
+      return value is int ? value : (value != null ? int.tryParse(value.toString()) : null);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setWalletTargetSats(int walletId, int targetSats) async {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletTargetSatsMap);
+    final Map<String, int> map =
+        encodedData != null && encodedData.isNotEmpty
+            ? (json.decode(encodedData) as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, v is int ? v : int.parse(v.toString())),
+            )
+            : {};
+    map[walletId.toString()] = targetSats;
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
+  }
+
+  Future<void> removeWalletTargetSats(int walletId) async {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletTargetSatsMap);
+    if (encodedData == null || encodedData.isEmpty) return;
+    final Map<String, int> map = (json.decode(encodedData) as Map<String, dynamic>).map(
+      (k, v) => MapEntry(k, v is int ? v : int.parse(v.toString())),
+    );
+    map.remove(walletId.toString());
+    await _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map));
   }
 
   /// 사용자 서버 정보-------------------------------------------------------------

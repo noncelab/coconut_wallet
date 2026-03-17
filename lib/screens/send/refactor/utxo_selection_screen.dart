@@ -76,6 +76,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                 GestureDetector(
                   onTap: () => _removeUtxoOrderDropdown(),
                   child: Scaffold(
+                    backgroundColor: CoconutColors.black,
                     appBar: CoconutAppBar.build(
                       backgroundColor: CoconutColors.black,
                       title: t.utxo_selection_screen.title,
@@ -92,7 +93,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                 maintainSize: false,
                                 maintainAnimation: false,
                                 maintainState: false,
-                                child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+                                  child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                ),
                               ),
                               SelectedUtxoAmountHeader(
                                 orderDropdownButtonKey: _orderDropdownButtonKey,
@@ -112,26 +116,27 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                               Expanded(
                                 child: Stack(
                                   children: [
-                                    SingleChildScrollView(
-                                      controller: _scrollController,
-                                      child: Column(
-                                        children: [
-                                          _buildUtxoList(viewModel),
-                                          CoconutLayout.spacing_400h,
-                                          const SizedBox(height: 50),
-                                        ],
+                                    Container(
+                                      color: CoconutColors.black,
+                                      child: SingleChildScrollView(
+                                        controller: _scrollController,
+                                        child: Column(
+                                          children: [
+                                            _buildUtxoList(viewModel),
+                                            CoconutLayout.spacing_400h,
+                                            const SizedBox(height: 50),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     FixedBottomButton(
-                                      buttonHeight: 50,
                                       onButtonClicked: () {
                                         vibrateLight();
                                         Navigator.pop(context, _viewModel.selectedUtxoList);
                                       },
-                                      text: t.complete,
+                                      text: t.done,
                                       isActive: _viewModel.hasSelectionChanged,
                                       showGradient: true,
-                                      gradientPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 40, top: 110),
                                       horizontalPadding: 16,
                                       backgroundColor: CoconutColors.white,
                                     ),
