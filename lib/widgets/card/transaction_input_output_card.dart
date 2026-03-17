@@ -25,7 +25,7 @@ class TransactionInputOutputCard extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final OnOutputTap? onOutputTap;
 
-  /// UTXO가 현재 UTXO 셋에 존재할 때만 true. null이면 isSameAddress인 모든 출력에 대해 이동 가능.
+  /// 내 지갑 중 하나의 주소이고 UTXO가 유효할 때 true. null이면 이동 불가.
   final bool Function(String address, int outputIndex)? isOutputNavigable;
 
   const TransactionInputOutputCard({
@@ -317,10 +317,9 @@ class _TransactionInputOutputCard extends State<TransactionInputOutputCard> {
           final item = entry.value;
           final isCurrentAddress = widget.isSameAddress(item.address, originalIndex);
           final isNavigable =
-              widget.isOutputNavigable == null || widget.isOutputNavigable!(item.address, originalIndex);
+              widget.isOutputNavigable != null && widget.isOutputNavigable!(item.address, originalIndex);
           final isTappable =
               rowType == InputOutputRowType.output &&
-              isCurrentAddress &&
               isNavigable &&
               widget.onOutputTap != null &&
               widget.isForTransaction;

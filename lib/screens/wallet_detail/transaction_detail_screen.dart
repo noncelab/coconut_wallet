@@ -755,18 +755,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
     // isOutputMine: output 중 navigable 목록 추출
     // isOutputToMyWallet: flow 색상 추출 시 현재 지갑 주소 여부 확인 필요
-    // incoming: utxo 존재 시에만 navigable, walletId 주소만 cyan
-    // outgoing: 내 지갑 주소 & utxo 존재에만 navigable, walletId 주소만 white
+    // 내 지갑 주소 & utxo 존재 시에만 navigable
     final walletProvider = context.read<WalletProvider>();
     final isOutputMine = walletProvider.containsAddressInAnyWallet;
     final isOutputToMyWallet = walletProvider.containsAddress;
-    final status = viewModel.transactionStatus;
-    final isIncoming = status == TransactionStatus.received || status == TransactionStatus.receiving;
-    final isOutgoing =
-        status == TransactionStatus.sent ||
-        status == TransactionStatus.sending ||
-        status == TransactionStatus.self ||
-        status == TransactionStatus.selfsending;
     FlowOutputTapTarget? changeTapTarget;
 
     for (var i = 0; i < tx.outputAddressList.length; i++) {
@@ -774,6 +766,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       final amount = output.amount.abs();
       final isChangeOutput =
           isOutputMine(output.address) && walletProvider.containsAddress(widget.id, output.address, isChange: true);
+
       final target = FlowOutputTapTarget(
         address: output.address,
         amount: amount,
@@ -792,21 +785,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         if (walletId != null) {
           final utxoId = getUtxoId(tx.transactionHash, i);
           final utxoState = walletProvider.getUtxoState(walletId, utxoId);
-          if (isIncoming) {
-            if (utxoState != null) {
-              if (isChangeOutput) {
-                changeTapTarget = target;
-              } else {
-                navigableOutputTapTargets.add(target);
-              }
-            }
-          } else if (isOutgoing) {
-            if (utxoState != null) {
-              if (isChangeOutput) {
-                changeTapTarget = target;
-              } else {
-                navigableOutputTapTargets.add(target);
-              }
+          if (utxoState != null) {
+            if (isChangeOutput) {
+              changeTapTarget = target;
+            } else {
+              navigableOutputTapTargets.add(target);
             }
           }
         }
