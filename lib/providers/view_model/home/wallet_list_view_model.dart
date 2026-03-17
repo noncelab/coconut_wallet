@@ -125,7 +125,7 @@ class WalletListViewModel extends ChangeNotifier {
         }
         updateWalletBalances();
       } else if (syncState == NodeSyncState.failed) {
-        if (!_nodeProvider.isServerChanging) {
+        if (!_nodeProvider.isServerChanging && WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
           vibrateLightDouble();
         }
       }
