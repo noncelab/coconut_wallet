@@ -603,6 +603,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Selector<SendViewModel, (String, bool, bool, int?)>(
       selector: (_, vm) => (vm.finalErrorMessage, vm.isReadyToSend, vm.isFeeRateLowerThanMin, vm.unintendedDustFee),
       builder: (context, data, child) {
+        debugPrint('vm.unintendedDustFee: ${data.$4}');
         final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee) = data;
         final finalButtonMessages = [];
 
@@ -634,19 +635,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         return Stack(
           alignment: Alignment.center,
           children: [
-            ...finalButtonMessages.asMap().entries.map(
-              (entry) => Positioned(
-                bottom:
-                    FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-                    FixedBottomButton.fixedBottomButtonDefaultHeight +
-                    12 +
-                    ((finalButtonMessages.length - 1 - entry.key) * 20),
-                child: Text(entry.value.message, style: CoconutTypography.body3_12.setColor(entry.value.textColor)),
-              ),
-            ),
             FixedBottomButton(
               showGradient: false,
               isVisibleAboveKeyboard: false,
+              subWidget:
+                  finalButtonMessages.isNotEmpty
+                      ? Column(
+                        children:
+                            finalButtonMessages.asMap().entries.map((entry) {
+                              return Text(
+                                entry.value.message,
+                                style: CoconutTypography.body3_12.setColor(entry.value.textColor),
+                              );
+                            }).toList(),
+                      )
+                      : null,
               onButtonClicked: () {
                 FocusScope.of(context).unfocus();
                 if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
