@@ -40,7 +40,7 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
   Widget build(BuildContext context) {
     const arrowOffset = 20.0;
     return Visibility(
-      visible: true,
+      visible: widget.isVisible,
       child: Positioned(
         top: widget.iconPosition.dy + widget.iconSize.height - 12,
         right: widget.width - widget.iconPosition.dx - widget.iconSize.width + 4 - arrowOffset,
