@@ -770,6 +770,8 @@ transaction_fee_bumping_screen:
     confirmed_alert_description: "The transaction that was pending has been completed."
     rbf_duplicated_output_title: "Duplicate Address Detected"
     rbf_duplicated_output: "This transaction is not supported."
+    utxo_not_found_title: "UTXO Not Found"
+    utxo_not_found: "Cannot find the UTXO used in the transaction."
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 

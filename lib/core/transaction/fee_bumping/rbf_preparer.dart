@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/output_analysis.dart';
@@ -25,7 +26,7 @@ class RbfPreparer {
     for (var input in tx.inputs) {
       var utxo = getUtxos(getUtxoId(input.transactionHash, input.index));
       if (utxo == null) {
-        throw ArgumentError('Input UTXO not found. id: ${getUtxoId(input.transactionHash, input.index)}');
+        throw UtxoNotFoundException(utxoId: getUtxoId(input.transactionHash, input.index));
       }
       inputUtxoList.add(utxo);
     }

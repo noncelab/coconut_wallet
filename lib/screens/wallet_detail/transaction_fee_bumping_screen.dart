@@ -210,6 +210,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               if (e is DuplicatedOutputException) {
                 title = t.transaction_fee_bumping_screen.dialog.rbf_duplicated_output_title;
                 description = t.transaction_fee_bumping_screen.dialog.rbf_duplicated_output;
+              } else if (e is UtxoNotFoundException) {
+                title = t.transaction_fee_bumping_screen.dialog.utxo_not_found_title;
+                description = t.transaction_fee_bumping_screen.dialog.utxo_not_found;
               }
 
               showDialog(

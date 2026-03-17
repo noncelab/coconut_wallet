@@ -770,6 +770,8 @@ transaction_fee_bumping_screen:
     confirmed_alert_description: "保留中だったトランザクションが完了しました。"
     rbf_duplicated_output_title: "重複アドレスを検出"
     rbf_duplicated_output: "このトランザクションはサポートされていません。"
+    utxo_not_found_title: "UTXOが見つかりません"
+    utxo_not_found: "トランザクションで使用されたUTXOが見つかりません。"
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 

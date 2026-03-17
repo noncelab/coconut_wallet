@@ -36,3 +36,9 @@ class UseChangeOutputFailureException extends RbfCreationException {
 class DuplicatedOutputException extends RbfCreationException {
   const DuplicatedOutputException({super.message = 'RBF is not supported because duplicated outputs exist.'});
 }
+
+class UtxoNotFoundException extends RbfCreationException {
+  final String utxoId;
+
+  UtxoNotFoundException({required this.utxoId}) : super(message: 'UTXO not found: $utxoId');
+}

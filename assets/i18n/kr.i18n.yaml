@@ -774,6 +774,8 @@ transaction_fee_bumping_screen:
     confirmed_alert_description: "처리 대기 중이던 거래가 완료되었어요."
     rbf_duplicated_output_title: "중복 주소 발견"
     rbf_duplicated_output: "지원하지 않는 트랜잭션이에요."
+    utxo_not_found_title: "UTXO 없음"
+    utxo_not_found: "거래에 사용한 UTXO를 찾을 수 없어요."
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
 

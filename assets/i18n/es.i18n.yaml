@@ -771,6 +771,8 @@ transaction_fee_bumping_screen:
     confirmed_alert_description: "La transacción que estaba pendiente ha sido completada."
     rbf_duplicated_output_title: "Dirección duplicada detectada"
     rbf_duplicated_output: "Esta transacción no es compatible."
+    utxo_not_found_title: "UTXO no encontrado"
+    utxo_not_found: "No se puede encontrar el UTXO utilizado en la transacción."
   toast:
     insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
 
