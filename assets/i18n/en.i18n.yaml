@@ -713,7 +713,7 @@ wallet_info_screen:
   target_progress: "$percent% / $target"
   target_not_set_secondary: "We'll show your achievement rate when you set a target quantity"
   target_set_title: "Set Target"
-  target_set_placeholder: "Please enter in BTC"
+  target_set_placeholder: "Please enter in BTC unit"
   target_set_invalid: "You can’t set 0 BTC as a target"
   target_set_21m: "It’s the sats race!!!"
   target_set_max_exceeded: "Please enter 21 million BTC or less"

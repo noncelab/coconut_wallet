@@ -714,7 +714,7 @@ wallet_info_screen:
   target_progress: "$percent% / $target"
   target_not_set_secondary: "Mostraremos tu tasa de logro cuando configures la cantidad objetivo"
   target_set_title: "Establecer objetivo"
-  target_set_placeholder: "Introduzca en BTC"
+  target_set_placeholder: "Introduzca en unidad BTC"
   target_set_invalid: "No puedes establecer 0 BTC como objetivo"
   target_set_21m: "¡Es la carrera por los sats!"
   target_set_max_exceeded: "Introduzca 21 millones de BTC o menos"
