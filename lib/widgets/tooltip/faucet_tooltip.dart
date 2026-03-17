@@ -38,11 +38,12 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
 
   @override
   Widget build(BuildContext context) {
+    const arrowOffset = 20.0;
     return Visibility(
-      visible: widget.isVisible,
+      visible: true,
       child: Positioned(
         top: widget.iconPosition.dy + widget.iconSize.height - 12,
-        right: widget.width - widget.iconPosition.dx - widget.iconSize.width + 4,
+        right: widget.width - widget.iconPosition.dx - widget.iconSize.width + 4 - arrowOffset,
         child: AnimatedOpacity(
           opacity: _isOpacity ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 1000),
@@ -51,7 +52,7 @@ class _FaucetTooltipState extends State<FaucetTooltip> {
               widget.onTapRemove();
             },
             child: ClipPath(
-              clipper: RightTriangleBubbleClipper(),
+              clipper: RightTriangleBubbleClipper(arrowOffset: arrowOffset),
               child: Container(
                 padding: const EdgeInsets.only(top: 25, left: 18, right: 18, bottom: 10),
                 color: const Color.fromRGBO(179, 240, 255, 1), // CDS에 없는 색상
