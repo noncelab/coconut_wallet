@@ -1585,7 +1585,7 @@ const _clock = Package(
   dependencies: [],
 );
 
-/// coconut_design_system 0.9.11
+/// coconut_design_system 0.9.13
 const _coconut_design_system = Package(
   name: 'coconut_design_system',
   description:
@@ -1593,7 +1593,7 @@ const _coconut_design_system = Package(
   homepage: 'https://www.noncelab.com',
   repository: 'https://github.com/noncelab/coconut_design_system',
   authors: [],
-  version: '0.9.11',
+  version: '0.9.13',
   license: '''MIT License
 
 Copyright 2025 Nonce Lab
@@ -8865,7 +8865,7 @@ SOFTWARE.''',
   dependencies: [PackageRef('flutter')],
 );
 
-/// share_plus 10.1.4
+/// share_plus 11.1.0
 const _share_plus = Package(
   name: 'share_plus',
   description:
@@ -8873,7 +8873,7 @@ const _share_plus = Package(
   homepage: 'https://github.com/fluttercommunity/plus_plugins',
   repository: 'https://github.com/fluttercommunity/plus_plugins/tree/main/packages/share_plus/share_plus',
   authors: [],
-  version: '10.1.4',
+  version: '11.1.0',
   license: '''Copyright 2017, the Flutter project authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -8920,14 +8920,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.''',
   ],
 );
 
-/// share_plus_platform_interface 5.0.2
+/// share_plus_platform_interface 6.1.0
 const _share_plus_platform_interface = Package(
   name: 'share_plus_platform_interface',
   description: 'A common platform interface for the share_plus plugin.',
   homepage: 'https://github.com/fluttercommunity/plus_plugins',
   repository: 'https://github.com/fluttercommunity/plus_plugins/tree/main/packages/',
   authors: [],
-  version: '5.0.2',
+  version: '6.1.0',
   license: '''Copyright 2017 The Chromium Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
