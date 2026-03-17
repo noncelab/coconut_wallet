@@ -1055,7 +1055,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                 maxLines: 1,
                                 height: 22,
                                 textInputAction: TextInputAction.done,
-                                textInputType: TextInputType.number,
+                                textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                                 onChanged: _handleFeeInputChanged,
                                 textAlign: TextAlign.end,
                                 isVisibleBorder: false,
