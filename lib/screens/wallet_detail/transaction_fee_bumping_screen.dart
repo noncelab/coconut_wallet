@@ -121,43 +121,36 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                               Expanded(
                                 child: SingleChildScrollView(
                                   physics: const AlwaysScrollableScrollPhysics(),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-                                    margin: const EdgeInsets.symmetric(vertical: 30),
-                                    height:
-                                        MediaQuery.sizeOf(context).height -
-                                        kToolbarHeight -
-                                        MediaQuery.of(context).padding.top -
-                                        60,
-                                    child: SingleChildScrollView(
-                                      child: Column(
-                                        children: [
-                                          _buildPendingTxFeeWidget(),
-                                          CoconutLayout.spacing_200h,
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(horizontal: 3),
-                                            child: Divider(color: CoconutColors.gray800, height: 1),
-                                          ),
-                                          CoconutLayout.spacing_500h,
-                                          _buildBumpingFeeTextFieldWidget(),
-                                          CoconutLayout.spacing_400h,
-                                          if (viewModel.isInitializedSuccess == true) ...[
-                                            _buildRecommendFeeWidget(),
-                                            CoconutLayout.spacing_300h,
-                                            _buildCurrentMempoolFeesWidget(
-                                              viewModel.feeInfos[0].satsPerVb ?? 0,
-                                              viewModel.feeInfos[1].satsPerVb ?? 0,
-                                              viewModel.feeInfos[2].satsPerVb ?? 0,
-                                            ),
-                                            CoconutLayout.spacing_300h,
-                                            _buildUtxoSelectionOptionWidget(viewModel),
-                                          ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
-                                            _buildFetchFailedWidget(),
-                                          CoconutLayout.spacing_2500h,
-                                          CoconutLayout.spacing_2500h,
-                                        ],
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: CoconutLayout.defaultPadding,
+                                    vertical: 30,
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      _buildPendingTxFeeWidget(),
+                                      CoconutLayout.spacing_200h,
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 3),
+                                        child: Divider(color: CoconutColors.gray800, height: 1),
                                       ),
-                                    ),
+                                      CoconutLayout.spacing_500h,
+                                      _buildBumpingFeeTextFieldWidget(),
+                                      CoconutLayout.spacing_400h,
+                                      if (viewModel.isInitializedSuccess == true) ...[
+                                        _buildRecommendFeeWidget(),
+                                        CoconutLayout.spacing_300h,
+                                        _buildCurrentMempoolFeesWidget(
+                                          viewModel.feeInfos[0].satsPerVb ?? 0,
+                                          viewModel.feeInfos[1].satsPerVb ?? 0,
+                                          viewModel.feeInfos[2].satsPerVb ?? 0,
+                                        ),
+                                        CoconutLayout.spacing_300h,
+                                        _buildUtxoSelectionOptionWidget(viewModel),
+                                      ] else if (viewModel.didFetchRecommendedFeesSuccessfully == false)
+                                        _buildFetchFailedWidget(),
+                                      CoconutLayout.spacing_2500h,
+                                      CoconutLayout.spacing_2500h,
+                                    ],
                                   ),
                                 ),
                               ),

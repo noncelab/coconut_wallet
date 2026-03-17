@@ -14,6 +14,7 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
 
@@ -47,6 +48,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
   String get mempoolHost => _blockExplorerProvider.blockExplorerUrl;
   bool get isFetchingFromMempool => _isFetchingFromMempool;
   List<UtxoTag> get appliedUtxoTagList => _appliedUtxoTagList;
+  String get walletName => _walletProvider.getWalletById(_walletId).name;
+  String get walletNameDisplay => TextUtils.ellipsisIfLonger(walletName, maxLength: 15);
 
   UtxoDetailViewModel(
     this._walletId,

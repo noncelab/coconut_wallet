@@ -36,6 +36,8 @@ class SendTransactionFlowCard extends StatefulWidget {
   // 앱 내 등록된 지갑의 utxo 상세 화면으로 이동 가능한 주소 목록
   final List<FlowOutputTapTarget>? navigableOutputTapTargets;
   final bool Function(String address)? isOutputMine;
+  final int? walletId;
+  final bool Function(int walletId, String address)? isOutputToMyWallet;
   final void Function(FlowOutputTapTarget target)? onOutputTap;
   final TransactionStatus? transactionStatus;
 
@@ -53,6 +55,8 @@ class SendTransactionFlowCard extends StatefulWidget {
     this.externalOutputTapTargets,
     this.navigableOutputTapTargets,
     this.isOutputMine,
+    this.walletId,
+    this.isOutputToMyWallet,
     this.onOutputTap,
     this.transactionStatus,
     this.orderedOutputs,
@@ -194,6 +198,8 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
               node: nodes[index],
               currentUnit: widget.currentUnit,
               isLeft: isLeft,
+              walletId: widget.walletId,
+              isOutputToMyWallet: widget.isOutputToMyWallet,
               onOutputTap: widget.onOutputTap,
               transactionStatus: widget.transactionStatus,
             ),
@@ -350,20 +356,23 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
             amount: target.amount,
             tapTarget: isNavigable && canNavigate ? target : null,
             isMyOutput: isMine,
+            outputAddress: isMine ? target.address : null,
           ),
         );
       }
     } else {
       // [출력 0, ..., 출력 30(내 출력), ..., 출력 32, 수수료] 형태로 트랜잭션 순서 유지 (0-based)
       final first = ordered.first;
-      final canNavigateFirst = isOutputMine(first.address) && _isInNavigableTargets(first);
+      final isMineFirst = isOutputMine(first.address);
+      final canNavigateFirst = isMineFirst && _isInNavigableTargets(first);
       nodes.add(
         _FlowNode(
           type: _FlowNodeType.output,
           title: _localizedOutputTitle(context, first.outputIndex),
           amount: first.amount,
           tapTarget: isNavigable && canNavigateFirst ? first : null,
-          isMyOutput: isOutputMine(first.address),
+          isMyOutput: isMineFirst,
+          outputAddress: isMineFirst ? first.address : null,
         ),
       );
 
@@ -379,6 +388,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
               amount: target.amount,
               tapTarget: isNavigable && canNavigate ? target : null,
               isMyOutput: true,
+              outputAddress: target.address,
             ),
           );
           i++;
@@ -392,13 +402,15 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
 
       if (ordered.length > 1) {
         final last = ordered.last;
-        final canNavigateLast = isOutputMine(last.address) && _isInNavigableTargets(last);
+        final isMineLast = isOutputMine(last.address);
+        final canNavigateLast = isMineLast && _isInNavigableTargets(last);
         nodes.add(
           _FlowNode(
             type: _FlowNodeType.output,
             title: _localizedOutputTitle(context, last.outputIndex),
             amount: last.amount,
             tapTarget: isNavigable && canNavigateLast ? last : null,
+            outputAddress: isMineLast ? last.address : null,
           ),
         );
       }
@@ -620,7 +632,9 @@ class _FlowNodeTile extends StatefulWidget {
   final _FlowNode node;
   final BitcoinUnit currentUnit;
   final bool isLeft;
+  final int? walletId;
   final void Function(FlowOutputTapTarget target)? onOutputTap;
+  final bool Function(int walletId, String address)? isOutputToMyWallet;
   final TransactionStatus? transactionStatus;
 
   const _FlowNodeTile({
@@ -628,7 +642,9 @@ class _FlowNodeTile extends StatefulWidget {
     required this.node,
     required this.currentUnit,
     required this.isLeft,
+    this.walletId,
     this.onOutputTap,
+    this.isOutputToMyWallet,
     this.transactionStatus,
   });
 
@@ -660,12 +676,27 @@ class _FlowNodeTileState extends State<_FlowNodeTile> {
         status == TransactionStatus.sending ||
         status == TransactionStatus.self ||
         status == TransactionStatus.selfsending;
+
     if (isIncoming) {
-      if (node.isMyOutput == true) return CoconutColors.cyanBlue;
+      final address = node.tapTarget?.address ?? node.outputAddress;
+      if (address != null &&
+          widget.walletId != null &&
+          widget.isOutputToMyWallet != null &&
+          widget.isOutputToMyWallet!(widget.walletId!, address)) {
+        return CoconutColors.cyan;
+      }
       return CoconutColors.gray500;
     } else if (isOutgoing) {
       if (node.type == _FlowNodeType.input) return CoconutColors.white;
-      if (node.type == _FlowNodeType.fee || node.type == _FlowNodeType.output) return CoconutColors.primary;
+      if (node.type == _FlowNodeType.fee) return CoconutColors.primary;
+      if (node.type == _FlowNodeType.output) {
+        if (node.tapTarget == null) return CoconutColors.primary;
+        final isCurrentWallet =
+            widget.walletId != null &&
+            widget.isOutputToMyWallet != null &&
+            widget.isOutputToMyWallet!(widget.walletId!, node.tapTarget!.address);
+        return isCurrentWallet ? CoconutColors.white : CoconutColors.primary;
+      }
       if (isChange && node.tapTarget != null) return CoconutColors.white;
     }
     return CoconutColors.white;
@@ -764,8 +795,16 @@ class _FlowNode {
   final int? amount;
   final FlowOutputTapTarget? tapTarget;
 
-  /// receiving 시 output node: 내 아웃풋 여부 (cyanblue 적용용)
   final bool? isMyOutput;
 
-  const _FlowNode({required this.type, required this.title, required this.amount, this.tapTarget, this.isMyOutput});
+  final String? outputAddress;
+
+  const _FlowNode({
+    required this.type,
+    required this.title,
+    required this.amount,
+    this.tapTarget,
+    this.isMyOutput,
+    this.outputAddress,
+  });
 }
