@@ -635,16 +635,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         return Stack(
           alignment: Alignment.center,
           children: [
-            ...finalButtonMessages.asMap().entries.map(
-              (entry) => Positioned(
-                bottom:
-                    FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-                    FixedBottomButton.fixedBottomButtonDefaultHeight +
-                    12 +
-                    ((finalButtonMessages.length - 1 - entry.key) * 20),
-                child: Text(entry.value.message, style: CoconutTypography.body3_12.setColor(entry.value.textColor)),
-              ),
-            ),
             FixedBottomButton(
               showGradient: false,
               isVisibleAboveKeyboard: false,
