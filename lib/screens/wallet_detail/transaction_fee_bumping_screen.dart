@@ -349,7 +349,7 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
       return;
     }
 
-    final filteredText = filterNumericInput(input, decimalPlaces: 2);
+    final filteredText = filterNumericInput(input, decimalPlaces: 2, integerPlaces: 4);
     _textEditingController.value = TextEditingValue(
       text: filteredText,
       selection: TextSelection.collapsed(offset: filteredText.length), // 커서를 맨 끝으로 이동
