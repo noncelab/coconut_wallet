@@ -312,130 +312,88 @@ class _BarChartState extends State<_BarChart> {
               bottomRight: Radius.circular(24),
             ),
           ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children:
-                    widget.buckets.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final bucket = entry.value;
-                      final count = bucket.utxos.length;
-                      final heightRatio = count / maxCountClamped;
-                      final barHeight = _barMaxHeight * heightRatio;
-                      final isTapped = _tappedBucketIndex == index;
-                      var color = widget.tierTheme.colorForSats(bucket.maxSats);
-                      if (!isTapped) {
-                        color = Color.lerp(color, const Color(0xFF1D1D1D), _overlayOpacity)!;
-                      }
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children:
+                widget.buckets.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final bucket = entry.value;
+                  final count = bucket.utxos.length;
+                  final heightRatio = count / maxCountClamped;
+                  final barHeight = _barMaxHeight * heightRatio;
+                  final isTapped = _tappedBucketIndex == index;
+                  var color = widget.tierTheme.colorForSats(bucket.maxSats);
+                  if (!isTapped) {
+                    color = Color.lerp(color, const Color(0xFF1D1D1D), _overlayOpacity)!;
+                  }
 
-                      return Expanded(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            final newIndex = _tappedBucketIndex == index ? null : index;
-                            setState(() => _tappedBucketIndex = newIndex);
-                            _scheduleBubbleDismiss(newIndex);
-                          },
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      height: _barMaxHeight,
-                                      alignment: Alignment.bottomCenter,
-                                      child: Container(
-                                        width: double.infinity,
-                                        height: barHeight.clamp(4.0, _barMaxHeight),
-                                        decoration: BoxDecoration(
-                                          color: color,
-                                          borderRadius: const BorderRadius.all(Radius.circular(12)),
-                                        ),
-                                      ),
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        final newIndex = _tappedBucketIndex == index ? null : index;
+                        setState(() => _tappedBucketIndex = newIndex);
+                        _scheduleBubbleDismiss(newIndex);
+                      },
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  height: _barMaxHeight,
+                                  alignment: Alignment.bottomCenter,
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: barHeight.clamp(4.0, _barMaxHeight),
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      borderRadius: const BorderRadius.all(Radius.circular(12)),
                                     ),
-                                    Transform.translate(
-                                      offset: const Offset(0, -4),
-                                      child: Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          color: CoconutColors.gray800,
-                                          borderRadius: BorderRadius.circular(999),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: CoconutColors.black.withValues(alpha: 0.4),
-                                              blurRadius: 4,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                          '$count',
-                                          style: CoconutTypography.caption_10_NumberBold.setColor(CoconutColors.white),
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      bucket.label,
-                                      style: CoconutTypography.caption_10.setColor(CoconutColors.gray500),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                                Transform.translate(
+                                  offset: const Offset(0, -4),
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      color: CoconutColors.gray800,
+                                      borderRadius: BorderRadius.circular(999),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: CoconutColors.black.withValues(alpha: 0.4),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '$count',
+                                      style: CoconutTypography.caption_10_NumberBold.setColor(CoconutColors.white),
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  bucket.label,
+                                  style: CoconutTypography.caption_10.setColor(CoconutColors.gray500),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }).toList(),
-              ),
-              if (_tappedBucketIndex != null)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: _barMaxHeight + 24,
-                  height: 38,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(
-                      widget.buckets.length,
-                      (index) => Expanded(
-                        child: Center(
-                          child:
-                              index == _tappedBucketIndex
-                                  ? Builder(
-                                    builder: (context) {
-                                      final bucket = widget.buckets[index];
-                                      final balance = formatUtxoBalanceForTooltip(
-                                        bucket.utxos.fold<int>(0, (s, u) => s + u.amount),
-                                        widget.currentUnit,
-                                        isDustBucket: bucket.label == 'dust',
-                                      );
-                                      final text = balance;
-                                      return OverflowBox(
-                                        alignment: Alignment.center,
-                                        maxWidth: 100,
-                                        child: UtxoChartBubble(text: text, maxWidth: 100),
-                                      );
-                                    },
-                                  )
-                                  : const SizedBox.shrink(),
-                        ),
+                        ],
                       ),
                     ),
-                  ),
-                ),
-            ],
+                  );
+                }).toList(),
           ),
         ),
         Positioned(
@@ -459,6 +417,42 @@ class _BarChartState extends State<_BarChart> {
             ),
           ),
         ),
+        if (_tappedBucketIndex != null)
+          Positioned(
+            left: 16,
+            right: 16,
+            top: -8,
+            height: 38,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(
+                widget.buckets.length,
+                (index) => Expanded(
+                  child: Center(
+                    child:
+                        index == _tappedBucketIndex
+                            ? Builder(
+                              builder: (context) {
+                                final bucket = widget.buckets[index];
+                                final balance = formatUtxoBalanceForTooltip(
+                                  bucket.utxos.fold<int>(0, (s, u) => s + u.amount),
+                                  widget.currentUnit,
+                                  isDustBucket: bucket.label == 'dust',
+                                );
+                                return OverflowBox(
+                                  alignment: Alignment.center,
+                                  maxWidth: 100,
+                                  child: UtxoChartBubble(text: balance, maxWidth: 100),
+                                );
+                              },
+                            )
+                            : const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
