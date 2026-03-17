@@ -603,6 +603,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Selector<SendViewModel, (String, bool, bool, int?)>(
       selector: (_, vm) => (vm.finalErrorMessage, vm.isReadyToSend, vm.isFeeRateLowerThanMin, vm.unintendedDustFee),
       builder: (context, data, child) {
+        debugPrint('vm.unintendedDustFee: ${data.$4}');
         final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee) = data;
         final finalButtonMessages = [];
 
@@ -647,6 +648,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             FixedBottomButton(
               showGradient: false,
               isVisibleAboveKeyboard: false,
+              subWidget:
+                  finalButtonMessages.isNotEmpty
+                      ? Column(
+                        children:
+                            finalButtonMessages.asMap().entries.map((entry) {
+                              return Text(
+                                entry.value.message,
+                                style: CoconutTypography.body3_12.setColor(entry.value.textColor),
+                              );
+                            }).toList(),
+                      )
+                      : null,
               onButtonClicked: () {
                 FocusScope.of(context).unfocus();
                 if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
