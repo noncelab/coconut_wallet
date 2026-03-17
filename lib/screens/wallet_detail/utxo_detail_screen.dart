@@ -365,8 +365,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   Widget _buildAddress() {
-    List<String> path = widget.utxo.derivationPath.split('/');
-    int changeIndex = path.length - 2;
+    final path = widget.utxo.derivationPath.split('/');
 
     return Column(
       children: [
@@ -380,7 +379,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               CopyTextContainer(
                 text: widget.utxo.to,
                 textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-                suffixText: path.join('/'),
+                suffixText: '${path.join('/')} · ${_viewModel.walletNameDisplay}',
                 suffixTextStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
               ),
             ],
