@@ -102,31 +102,6 @@ void main() {
       expect(rbfBuilder.changeOutput!.amount, 193859);
       expect(rbfBuilder.inputSum, 200000);
     });
-    // test('Invalid getDerivationPath 함수 전달 시 InvalidChangeOutputException 발생', () {
-    //   final List<TransactionAddress> inputAddressList = [TransactionAddress(creator.receiveAddressList[0], 100000)];
-    //   final List<TransactionAddress> outputAddressList = [
-    //     TransactionAddress(creator.externalWalletAddressList[0], 1000),
-    //     TransactionAddress(creator.changeAddressList[0], 98859),
-    //   ];
-    //   final TransactionRecord pendingTx = TransactionRecordMock.createMockTransactionRecord(
-    //     inputAddressList: inputAddressList,
-    //     outputAddressList: outputAddressList,
-    //     amount: 1000,
-    //   );
-
-    //   expect(
-    //     () {
-    //       return RbfPreparer.fromPendingTx(
-    //         pendingTx: pendingTx,
-    //         rawTx: '', // Mock raw transaction
-    //         getUtxos: (utxoId) => null, // Mock getUtxos that returns null
-    //         isMyAddress: creator.isMyAddress,
-    //         getDerivationPath: (address) => '', // Invalid empty derivation path
-    //       );
-    //     },
-    //     throwsA(isA<InvalidChangeOutputException>()),
-    //   );
-    // });
   });
 
   group('싱글시그지갑 - getBaselineTransaction - no selfOutput', () {
@@ -1041,6 +1016,56 @@ void main() {
       // Change output 없음
       final changeOutputs = tx.outputs.where((o) => o.getAddress() == creator.changeAddressList[0]).toList();
       expect(changeOutputs.length, 0);
+      expectRbfMinimumCondition(buildResult, pendingTx);
+    });
+
+    test('Ex 1, Self 2 / change enough but left under dustlimit / sweep', () async {
+      // 원본 tx: 1-in/4-out (external + selfOutput1 + selfOutput2 + change), vSize=210
+      // changeAmount= 1979
+      // first changeAmount = 1979 - 1652 = 328, 328 < 547
+      // selfOutput2의 amount를 (5000 - 2000)으로 만든 후 Sweep으로 트랜잭션 생성, 3000 - 1374 = 1626
+      final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
+        inputAmounts: [5000],
+        recipients: [Tuple(true, 1000), Tuple(false, 1000), Tuple(true, 1000)],
+        changeAmount: 1979,
+        fee: 21,
+        vSize: 210,
+      );
+
+      final RbfBuildResult baselineResult = rbfBuilder.getBaselineTransaction();
+
+      expect(baselineResult.isSuccess, isTrue);
+      expect(baselineResult.isSelfOutputsUsed, isFalse);
+      expect(baselineResult.isOnlyChangeOutputUsed, isTrue);
+      expect(baselineResult.addedInputs, isNull);
+      expect(baselineResult.deficitAmount, isNull);
+      expectRbfMinimumCondition(baselineResult, pendingTx);
+
+      final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: 8);
+
+      expect(buildResult.isSuccess, isTrue);
+      expect(buildResult.estimatedFee, equals(1374));
+      expect(buildResult.transaction, isNotNull);
+      expect(buildResult.exception, isNull);
+      expect(buildResult.isSelfOutputsUsed, isFalse);
+      expect(buildResult.isOnlyChangeOutputUsed, isTrue);
+      expect(buildResult.addedInputs, isNull);
+      expect(buildResult.deficitAmount, isNull);
+      expect(buildResult.minimumFeeRate, equals(baselineResult.minimumFeeRate));
+
+      final tx = buildResult.transaction!;
+      // External output 금액 불변
+      expect(tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[1] && o.amount == 1000), isTrue);
+      // SelfOutput1은 그대로 유지
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 1000), isTrue);
+      // SelfOutput2는 늘어남
+      final selfOutput2InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[2]).toList();
+      expect(selfOutput2InTx.length, 1);
+      expect(selfOutput2InTx.first.amount, greaterThan(1000));
+      expect(selfOutput2InTx.first.amount, 1626);
+      // Change output은 드롭됨
+      expect(tx.outputs.any((o) => o.getAddress() == creator.changeAddressList[0]), isFalse);
+
       expectRbfMinimumCondition(buildResult, pendingTx);
     });
   });

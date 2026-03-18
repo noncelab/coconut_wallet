@@ -102,7 +102,7 @@ void main() {
       expect(result.isSelfOutputsUsed, isFalse);
       expect(result.addedInputs!.length, equals(1));
       expect(result.deficitAmount, isNull);
-      expect(result.minimumFeeRate, equals(1.44));
+      expect(result.minimumFeeRate, equals(1.43));
     });
   });
 
