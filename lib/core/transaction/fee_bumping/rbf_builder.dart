@@ -125,7 +125,7 @@ class RbfBuilder {
   }
 
   double _calculateMinimumFeeRate(double newTxVSize) {
-    return FeeRateUtils.ceilFeeRate(_calculateMinimumRbfFee(newTxVSize: newTxVSize) / newTxVSize);
+    return FeeRateUtils.roundToTwoDecimals(_calculateMinimumRbfFee(newTxVSize: newTxVSize) / newTxVSize);
   }
 
   int _calculateMinimumRbfFee({required double newTxVSize}) {
@@ -271,7 +271,7 @@ class RbfBuilder {
     final actualFee = tx.totalInputAmount - tx.outputs.fold(0, (sum, output) => sum + output.amount);
     final minimumRequiredFee = _pendingTx.fee + actualVSize;
     if (actualFee >= minimumRequiredFee) return null;
-    return FeeRateUtils.ceilFeeRate(minimumRequiredFee / actualVSize);
+    return FeeRateUtils.roundToTwoDecimals(minimumRequiredFee / actualVSize);
   }
 
   TransactionBuildResult? _tryBuildTransactionWithFeeAdjusting(
@@ -523,7 +523,10 @@ class RbfBuilder {
     int additionalFee = _calculateMinAdditionalFee(newTxSize: newTxVSize);
     int minimumFee = _calculateMinimumRbfFee(newTxVSize: newTxVSize);
 
-    return (initialAdditionalFee: additionalFee, initialRbfFeeRate: FeeRateUtils.ceilFeeRate(minimumFee / newTxVSize));
+    return (
+      initialAdditionalFee: additionalFee,
+      initialRbfFeeRate: FeeRateUtils.roundToTwoDecimals(minimumFee / newTxVSize),
+    );
   }
 
   RbfBuildResult getBaselineTransaction({bool isForce = false}) {

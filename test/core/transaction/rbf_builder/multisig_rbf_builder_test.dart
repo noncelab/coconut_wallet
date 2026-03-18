@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -39,7 +38,7 @@ void main() {
       final int totalOutput = tx.outputs.fold(0, (sum, out) => sum + out.amount);
       final int actualFee = totalInput - totalOutput;
       final double vByte = tx.estimateVirtualByteForWallet(multiWallet);
-      final double calculatedFeeRate = FeeRateUtils.ceilFeeRate(actualFee / vByte);
+      final double calculatedFeeRate = FeeRateUtils.roundToTwoDecimals(actualFee / vByte);
       final int changeAmount = totalInput - 1000 - actualFee;
 
       expect(calculatedFeeRate, equals(2.0));
@@ -136,7 +135,7 @@ void main() {
   });
 
   group('멀티시그지갑 - build', () {
-    test('External 1 / feeRate too low', () async {
+    test('External 1 / put low feeRate', () async {
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(true, 5000)],
@@ -145,10 +144,10 @@ void main() {
         vSize: 141,
       );
       final baselineResult = rbfBuilder.getBaselineTransaction();
-      final buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate - 0.01);
-
-      expect(buildResult.exception, isNotNull);
-      expect(buildResult.exception, isA<FeeRateTooLowException>());
+      final buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate - 0.5);
+      expect(buildResult.minimumFeeRate, equals(baselineResult.minimumFeeRate));
+      expect(buildResult.isSuccess, isTrue);
+      // 적은 수수료율을 입력해서 트랜잭션 생성을 성공했지만 RBF 최소 조건을 충족하지 못해 보정된 결과가 반환됨
     });
 
     test('External 1 / change enough', () async {
@@ -171,8 +170,8 @@ void main() {
       final double baselineVSize = baselineResult.transaction!.estimateVirtualByte(AddressType.p2wpkh);
 
       expect(
-        FeeRateUtils.ceilFeeRate(baselineTxFee / baselineVSize),
-        greaterThanOrEqualTo(FeeRateUtils.ceilFeeRate((pendingTxFee + baselineVSize) / baselineVSize)),
+        FeeRateUtils.roundToTwoDecimals(baselineTxFee / baselineVSize),
+        greaterThanOrEqualTo(FeeRateUtils.roundToTwoDecimals((pendingTxFee + baselineVSize) / baselineVSize)),
       );
     });
 
@@ -197,8 +196,8 @@ void main() {
       final double baselineVSize = baselineResult.transaction!.estimateVirtualByte(AddressType.p2wpkh);
 
       expect(
-        FeeRateUtils.ceilFeeRate(baselineTxFee / baselineVSize), // 1.54
-        greaterThanOrEqualTo(FeeRateUtils.ceilFeeRate((pendingTxFee + baselineVSize) / baselineVSize)), // 1.53
+        FeeRateUtils.roundToTwoDecimals(baselineTxFee / baselineVSize), // 1.54
+        greaterThanOrEqualTo(FeeRateUtils.roundToTwoDecimals((pendingTxFee + baselineVSize) / baselineVSize)), // 1.53
       );
     });
   });

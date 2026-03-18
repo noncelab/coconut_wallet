@@ -159,7 +159,7 @@ void main() {
       final int changeAmount = totalInput - 1000 - actualFee;
 
       expect(calculatedFeeRate, closeTo(2.01, 0.02));
-      expect(changeAmount, equals(98717)); // 98859 - 142
+      expect(changeAmount, equals(98718)); // 98859 - 141
 
       expectRbfMinimumCondition(result, pendingTx);
     });
@@ -224,7 +224,7 @@ void main() {
       expect(result.isSelfOutputsUsed, isFalse);
       expect(result.addedInputs!.length, equals(1));
       expect(result.deficitAmount, isNull);
-      expect(result.minimumFeeRate, equals(1.54));
+      expect(result.minimumFeeRate, equals(1.53));
 
       expectRbfMinimumCondition(result, pendingTx);
     });
@@ -274,7 +274,7 @@ void main() {
       expect(result.transaction, isNull);
       expect(result.addedInputs, isNull);
       expect(result.deficitAmount, equals(1 + 68)); // = 69
-      expect(result.minimumFeeRate, equals(1.68));
+      expect(result.minimumFeeRate, equals(1.67));
     });
 
     test('selfOutput 1 / change insufficient / selfOutput partial reduction → getBaselineTransaction 성공', () async {
@@ -283,8 +283,8 @@ void main() {
       // selfOutput(99759) - 41 = 99718 > dustLimit(546) → partial reduction
       // sweep tx 생성 후 실제 vSize=109.75로 작아짐
       // RBF 최소 조건: fee >= 141 + 109.75 = 250.75
-      // requiredFeeRate = ceil(251/109.75) = 2.3으로 재빌드
-      // 결과 tx: 1-in/1-out, fee=252, vSize=109.75
+      // requiredFeeRate = ceil(251/109.75) = 2.29으로 재빌드
+      // 결과 tx: 1-in/1-out, fee=251, vSize=109.75
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [100000],
         recipients: [Tuple(true, 99759)],
@@ -300,11 +300,11 @@ void main() {
       expect(result.isOnlyChangeOutputUsed, isFalse);
       expect(result.addedInputs, isNull);
       expect(result.deficitAmount, isNull);
-      expect(result.minimumFeeRate, equals(2.3));
+      expect(result.minimumFeeRate, equals(2.29));
 
       final tx = result.transaction!;
-      // selfOutput amount = 100000 - 252 = 99748
-      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 99748), isTrue);
+      // selfOutput amount = 100000 - 251 = 99749
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 99749), isTrue);
       // change output은 0 sat → 드롭됨
       expect(tx.outputs.any((o) => o.getAddress() == creator.changeAddressList[0]), isFalse);
       expectRbfMinimumCondition(result, pendingTx);
@@ -337,7 +337,7 @@ void main() {
         expect(result.isOnlyChangeOutputUsed, isFalse);
         expect(result.addedInputs, isNull);
         expect(result.deficitAmount, isNull);
-        expect(result.minimumFeeRate, equals(2.24));
+        expect(result.minimumFeeRate, equals(2.22));
 
         final tx = result.transaction!;
         // selfOutput은 제거되어 tx에 없어야 함
@@ -441,10 +441,10 @@ void main() {
         vSize: 141,
       );
       final baselineResult = rbfBuilder.getBaselineTransaction();
-      final buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate - 0.01);
-
-      expect(buildResult.exception, isNotNull);
-      expect(buildResult.exception, isA<FeeRateTooLowException>());
+      final buildResult = rbfBuilder.build(newFeeRate: baselineResult.minimumFeeRate - 0.5);
+      expect(buildResult.minimumFeeRate, equals(baselineResult.minimumFeeRate));
+      expect(buildResult.isSuccess, isTrue);
+      // 적은 수수료율을 입력해서 트랜잭션 생성을 성공했지만 RBF 최소 조건을 충족하지 못해 보정된 결과가 반환됨
     });
 
     test('External 1 / change enough', () async {
@@ -468,8 +468,8 @@ void main() {
       final double baselineVSize = baselineResult.transaction!.estimateVirtualByte(AddressType.p2wpkh);
 
       expect(
-        FeeRateUtils.ceilFeeRate(baselineTxFee / baselineVSize),
-        closeTo(FeeRateUtils.ceilFeeRate((pendingTxFee + baselineVSize) / baselineVSize), 0.02),
+        FeeRateUtils.roundToTwoDecimals(baselineTxFee / baselineVSize),
+        closeTo(FeeRateUtils.roundToTwoDecimals((pendingTxFee + baselineVSize) / baselineVSize), 0.02),
       );
     });
 
@@ -495,8 +495,8 @@ void main() {
       final double baselineVSize = baselineResult.transaction!.estimateVirtualByte(AddressType.p2wpkh);
 
       expect(
-        FeeRateUtils.ceilFeeRate(baselineTxFee / baselineVSize), // 1.54
-        greaterThanOrEqualTo(FeeRateUtils.ceilFeeRate((pendingTxFee + baselineVSize) / baselineVSize)), // 1.53
+        FeeRateUtils.roundToTwoDecimals(baselineTxFee / baselineVSize), // 1.54
+        greaterThanOrEqualTo(FeeRateUtils.roundToTwoDecimals((pendingTxFee + baselineVSize) / baselineVSize)), // 1.53
       );
     });
 
@@ -540,7 +540,7 @@ void main() {
       expect(changeResult.deficitAmount, isNull);
       // ⚠️ minimumFeeRate는 firstResult(1.53)보다 0.01 높은 1.54
       //    (getBaselineTransaction 계산값 1.53으로 빌드 후 getFeeRate()가 1.54 반환 — 정수 반올림)
-      expect(changeResult.minimumFeeRate, equals(1.54));
+      expect(changeResult.minimumFeeRate, equals(1.53));
       expect(changeResult.minimumFeeRate, greaterThanOrEqualTo(firstResult.minimumFeeRate));
 
       // Step 4: build() 호출 → isSuccess 확인
@@ -780,7 +780,7 @@ void main() {
       final RbfBuildResult firstBaseline = rbfBuilder.getBaselineTransaction();
       expect(firstBaseline.isFailure, isTrue);
       expect(firstBaseline.deficitAmount, equals(69));
-      expect(firstBaseline.minimumFeeRate, equals(1.68));
+      expect(firstBaseline.minimumFeeRate, equals(1.67));
 
       final newUtxo = UtxoState(
         transactionHash: creator.transactionHashes[1],
