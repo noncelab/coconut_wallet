@@ -375,29 +375,26 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
     final btcString = viewModel.targetSats != null ? _satsToBtcInputString(viewModel.targetSats!) : '';
+    final parentContext = context;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder:
-          (context) => _TargetQuantitySettingBottomSheet(
+          (bottomSheetContext) => _TargetQuantitySettingBottomSheet(
             initialBtcString: btcString,
             onComplete: (text) {
               final btc = double.tryParse(text);
               if (btc == null || btc <= 0) {
                 if (text.isNotEmpty) {
-                  CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_invalid);
+                  CoconutToast.showWarningToast(context: parentContext, text: t.wallet_info_screen.target_set_invalid);
                 }
-                return false;
-              }
-              if (btc > 21_000_000) {
-                CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_max_exceeded);
                 return false;
               }
               if (btc == 21_000_000) {
                 CoconutToast.showToast(
-                  context: context,
+                  context: parentContext,
                   text: t.wallet_info_screen.target_set_21m,
                   isVisibleIcon: true,
                   iconPath: 'assets/svg/pie.svg',
@@ -410,7 +407,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 viewModel.setTargetSats(sats);
                 return true;
               }
-              CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_invalid);
+              CoconutToast.showWarningToast(context: parentContext, text: t.wallet_info_screen.target_set_invalid);
               return false;
             },
           ),
