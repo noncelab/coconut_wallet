@@ -349,15 +349,12 @@ class _WalletAddScannerScreenState extends State<WalletAddScannerScreen> with Wi
                     : _buildDefaultToolTip(),
           ),
           if (widget.importSource == WalletImportSource.extendedPublicKey && _clipboardContentAvailable)
-            Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
-              child: FixedBottomButton(
-                onButtonClicked: _handleClipboardImport,
-                text: t.wallet_add_scanner_screen.paste.paste_button,
-                showGradient: false,
-                backgroundColor: CoconutColors.white,
-                textColor: CoconutColors.black,
-              ),
+            FixedBottomButton(
+              onButtonClicked: _handleClipboardImport,
+              text: t.wallet_add_scanner_screen.paste.paste_button,
+              showGradient: false,
+              backgroundColor: CoconutColors.white,
+              textColor: CoconutColors.black,
             ),
         ],
       ),
