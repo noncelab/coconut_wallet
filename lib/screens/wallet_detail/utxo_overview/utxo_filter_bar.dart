@@ -371,6 +371,8 @@ class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
 }
 
 class UtxoSelectionBarButton extends StatelessWidget {
+  static const double height = 36;
+
   final String iconPath;
   final String label;
   final VoidCallback onTap;
@@ -385,7 +387,7 @@ class UtxoSelectionBarButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          height: 36,
+          height: height,
           alignment: Alignment.center,
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -393,8 +395,8 @@ class UtxoSelectionBarButton extends StatelessWidget {
             children: [
               SvgPicture.asset(
                 iconPath,
-                width: 18,
-                height: 18,
+                width: 20,
+                height: 20,
                 colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
               ),
               const SizedBox(width: 8),

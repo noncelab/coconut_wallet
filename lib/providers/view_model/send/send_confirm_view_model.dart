@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';

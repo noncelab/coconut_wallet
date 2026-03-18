@@ -75,190 +75,188 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 child: Scaffold(
                   backgroundColor: CoconutColors.black,
                   appBar: CoconutAppBar.build(title: '', context: context),
-                  body: SafeArea(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
-                            child: WalletInfoItemCard(
-                              id: widget.id,
-                              walletItem: viewModel.walletItemBase,
-                              onTooltipClicked: () {
-                                if (_tooltipRemainingTime > 0) {
-                                  _removeTooltip();
-                                  return;
-                                }
+                  body: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+                          child: WalletInfoItemCard(
+                            id: widget.id,
+                            walletItem: viewModel.walletItemBase,
+                            onTooltipClicked: () {
+                              if (_tooltipRemainingTime > 0) {
                                 _removeTooltip();
+                                return;
+                              }
+                              _removeTooltip();
 
-                                Future.delayed(const Duration(milliseconds: 50), () {
+                              Future.delayed(const Duration(milliseconds: 50), () {
+                                setState(() {
+                                  _tooltipRemainingTime = kTooltipDuration;
+                                });
+
+                                _tooltipTimer?.cancel();
+                                _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
                                   setState(() {
-                                    _tooltipRemainingTime = kTooltipDuration;
-                                  });
-
-                                  _tooltipTimer?.cancel();
-                                  _tooltipTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-                                    setState(() {
-                                      if (_tooltipRemainingTime > 0) {
-                                        _tooltipRemainingTime--;
-                                      } else {
-                                        _removeTooltip();
-                                        timer.cancel();
-                                      }
-                                    });
+                                    if (_tooltipRemainingTime > 0) {
+                                      _tooltipRemainingTime--;
+                                    } else {
+                                      _removeTooltip();
+                                      timer.cancel();
+                                    }
                                   });
                                 });
-                              },
-                              onShowMfpInputBottomSheet: () {
-                                _showMfpInputBottomSheet();
-                              },
-                              tooltipKey: _walletTooltipKey,
-                              onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
-                            ),
+                              });
+                            },
+                            onShowMfpInputBottomSheet: () {
+                              _showMfpInputBottomSheet();
+                            },
+                            tooltipKey: _walletTooltipKey,
+                            onNameChanged: (updatedName) => viewModel.updateWalletName(updatedName),
                           ),
-                          if (widget.isMultisig) ...{
-                            Container(
-                              margin: const EdgeInsets.only(top: 8, bottom: 32),
-                              child: ListView.separated(
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                itemCount: viewModel.multisigTotalSignerCount,
-                                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                                itemBuilder: (context, index) {
-                                  return MultisigSignerCard(
-                                    index: index,
-                                    signer: viewModel.getSigner(index),
-                                    masterFingerprint: viewModel.getSignerMasterFingerprint(index),
-                                    derivationPath: viewModel.getSignerBsms(index).derivationPath,
-                                  );
-                                },
-                              ),
-                            ),
-                          } else ...{
-                            CoconutLayout.spacing_800h,
-                          },
-                          _WalletInfoStatsSection(
-                            walletId: widget.id,
-                            transactionCount: viewModel.transactionCount,
-                            utxoCount: viewModel.utxoCount,
-                            balanceSats: viewModel.walletBalance.total,
-                            currentUnit: context.read<PreferenceProvider>().currentUnit,
-                            targetSats: viewModel.targetSats,
-                            onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: ButtonGroup(
-                              buttons: [
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.view_all_addresses,
-                                  onPressed: () {
-                                    _removeTooltip();
-                                    Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
-                                  },
-                                ),
-                                if (!widget.isMultisig) ...{
-                                  SingleButton(
-                                    enableShrinkAnim: true,
-                                    title: t.wallet_info_screen.view_xpub,
-                                    onPressed: () async {
-                                      _removeTooltip();
-                                      _handleAuthFlow(
-                                        onComplete: () {
-                                          _showExtendedBottomSheet(viewModel.extendedPublicKey);
-                                        },
-                                      );
-                                    },
-                                  ),
-                                },
-                                if (widget.isMultisig) ...{
-                                  SingleButton(
-                                    enableShrinkAnim: true,
-                                    title: t.wallet_info_screen.view_wallet_backup_data,
-                                    onPressed: () {
-                                      _removeTooltip();
-
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/wallet-backup-data',
-                                        arguments: {'id': widget.id, 'walletName': viewModel.walletName},
-                                      );
-                                    },
-                                  ),
-                                },
-                                SingleButton(
-                                  enableShrinkAnim: true,
-                                  title: t.tag_manage_label,
-                                  onPressed: () {
-                                    _removeTooltip();
-                                    Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          Center(
-                            child: Container(
-                              width: 65,
-                              height: 1,
-                              margin: const EdgeInsets.symmetric(vertical: 20),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(1),
-                                color: CoconutColors.white,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: SingleButton(
-                              enableShrinkAnim: true,
-                              title: t.delete_label,
-                              rightElement: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: CoconutColors.white.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: SvgPicture.asset(
-                                  'assets/svg/trash.svg',
-                                  width: 16,
-                                  colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
-                                ),
-                              ),
-                              onPressed: () {
-                                _removeTooltip();
-                                showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return CoconutPopup(
-                                      languageCode: context.read<PreferenceProvider>().language,
-                                      title: t.alert.wallet_delete.confirm_delete,
-                                      description: t.alert.wallet_delete.confirm_delete_description,
-                                      onTapRight: () {
-                                        _handleAuthFlow(
-                                          onComplete: () async {
-                                            await _deleteWalletAndGoToEntryPoint(context, viewModel);
-                                          },
-                                        );
-                                      },
-                                      onTapLeft: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                      rightButtonText: t.delete,
-                                      rightButtonColor: CoconutColors.hotPink,
-                                      leftButtonText: t.cancel,
-                                    );
-                                  },
+                        ),
+                        if (widget.isMultisig) ...{
+                          Container(
+                            margin: const EdgeInsets.only(top: 8, bottom: 32),
+                            child: ListView.separated(
+                              physics: const NeverScrollableScrollPhysics(),
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: viewModel.multisigTotalSignerCount,
+                              separatorBuilder: (context, index) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                return MultisigSignerCard(
+                                  index: index,
+                                  signer: viewModel.getSigner(index),
+                                  masterFingerprint: viewModel.getSignerMasterFingerprint(index),
+                                  derivationPath: viewModel.getSignerBsms(index).derivationPath,
                                 );
                               },
                             ),
                           ),
-                          CoconutLayout.spacing_2500h,
-                        ],
-                      ),
+                        } else ...{
+                          CoconutLayout.spacing_800h,
+                        },
+                        _WalletInfoStatsSection(
+                          walletId: widget.id,
+                          transactionCount: viewModel.transactionCount,
+                          utxoCount: viewModel.utxoCount,
+                          balanceSats: viewModel.walletBalance.total,
+                          currentUnit: context.read<PreferenceProvider>().currentUnit,
+                          targetSats: viewModel.targetSats,
+                          onEditTargetTap: () => _showTargetSettingBottomSheet(context, viewModel),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: ButtonGroup(
+                            buttons: [
+                              SingleButton(
+                                enableShrinkAnim: true,
+                                title: t.view_all_addresses,
+                                onPressed: () {
+                                  _removeTooltip();
+                                  Navigator.pushNamed(context, '/address-list', arguments: {'id': widget.id});
+                                },
+                              ),
+                              if (!widget.isMultisig) ...{
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.wallet_info_screen.view_xpub,
+                                  onPressed: () async {
+                                    _removeTooltip();
+                                    _handleAuthFlow(
+                                      onComplete: () {
+                                        _showExtendedBottomSheet(viewModel.extendedPublicKey);
+                                      },
+                                    );
+                                  },
+                                ),
+                              },
+                              if (widget.isMultisig) ...{
+                                SingleButton(
+                                  enableShrinkAnim: true,
+                                  title: t.wallet_info_screen.view_wallet_backup_data,
+                                  onPressed: () {
+                                    _removeTooltip();
+
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/wallet-backup-data',
+                                      arguments: {'id': widget.id, 'walletName': viewModel.walletName},
+                                    );
+                                  },
+                                ),
+                              },
+                              SingleButton(
+                                enableShrinkAnim: true,
+                                title: t.tag_manage_label,
+                                onPressed: () {
+                                  _removeTooltip();
+                                  Navigator.pushNamed(context, '/utxo-tag', arguments: {'id': widget.id});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        Center(
+                          child: Container(
+                            width: 65,
+                            height: 1,
+                            margin: const EdgeInsets.symmetric(vertical: 20),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(1),
+                              color: CoconutColors.white,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SingleButton(
+                            enableShrinkAnim: true,
+                            title: t.delete_label,
+                            rightElement: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: CoconutColors.white.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/svg/trash.svg',
+                                width: 16,
+                                colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+                              ),
+                            ),
+                            onPressed: () {
+                              _removeTooltip();
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return CoconutPopup(
+                                    languageCode: context.read<PreferenceProvider>().language,
+                                    title: t.alert.wallet_delete.confirm_delete,
+                                    description: t.alert.wallet_delete.confirm_delete_description,
+                                    onTapRight: () {
+                                      _handleAuthFlow(
+                                        onComplete: () async {
+                                          await _deleteWalletAndGoToEntryPoint(context, viewModel);
+                                        },
+                                      );
+                                    },
+                                    onTapLeft: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    rightButtonText: t.delete,
+                                    rightButtonColor: CoconutColors.hotPink,
+                                    leftButtonText: t.cancel,
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                        CoconutLayout.spacing_2500h,
+                      ],
                     ),
                   ),
                 ),
@@ -377,29 +375,26 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
     final btcString = viewModel.targetSats != null ? _satsToBtcInputString(viewModel.targetSats!) : '';
+    final parentContext = context;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder:
-          (context) => _TargetQuantitySettingBottomSheet(
+          (bottomSheetContext) => _TargetQuantitySettingBottomSheet(
             initialBtcString: btcString,
             onComplete: (text) {
               final btc = double.tryParse(text);
               if (btc == null || btc <= 0) {
                 if (text.isNotEmpty) {
-                  CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_invalid);
+                  CoconutToast.showWarningToast(context: parentContext, text: t.wallet_info_screen.target_set_invalid);
                 }
-                return false;
-              }
-              if (btc > 21_000_000) {
-                CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_max_exceeded);
                 return false;
               }
               if (btc == 21_000_000) {
                 CoconutToast.showToast(
-                  context: context,
+                  context: parentContext,
                   text: t.wallet_info_screen.target_set_21m,
                   isVisibleIcon: true,
                   iconPath: 'assets/svg/pie.svg',
@@ -412,7 +407,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 viewModel.setTargetSats(sats);
                 return true;
               }
-              CoconutToast.showWarningToast(context: context, text: t.wallet_info_screen.target_set_invalid);
+              CoconutToast.showWarningToast(context: parentContext, text: t.wallet_info_screen.target_set_invalid);
               return false;
             },
           ),
@@ -827,7 +822,11 @@ class _TargetQuantitySettingBottomSheetState extends State<_TargetQuantitySettin
               focusNode: _focusNode,
               onChanged: (_) => setState(() {}),
               textInputType: const TextInputType.numberWithOptions(decimal: true),
-              textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')), _SingleDotInputFormatter()],
+              textInputFormatter: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                _SingleDotInputFormatter(),
+                _BtcTargetInputFormatter(),
+              ],
               placeholderText: t.wallet_info_screen.target_set_placeholder,
               backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
               errorColor: CoconutColors.hotPink,
@@ -850,5 +849,30 @@ class _SingleDotInputFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if ('.'.allMatches(newValue.text).length > 1) return oldValue;
     return newValue;
+  }
+}
+
+/// 소수점 이하 8자리, 최대 2,100만 BTC까지 입력 가능하도록 제한
+class _BtcTargetInputFormatter extends TextInputFormatter {
+  static const int _maxDecimalPlaces = 8;
+  static const double _maxBtc = 21_000_000;
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    var text = newValue.text.replaceAll(RegExp(r'[^0-9.]'), '');
+    if (text.isEmpty) return newValue;
+
+    final parts = text.split('.');
+    if (parts.length > 2) return oldValue;
+
+    final decPart = parts.length > 1 ? parts[1] : '';
+
+    if (decPart.length > _maxDecimalPlaces) return oldValue;
+
+    final btc = double.tryParse(text);
+    if (btc != null && btc > _maxBtc) return oldValue;
+
+    final offset = newValue.selection.baseOffset.clamp(0, text.length);
+    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: offset));
   }
 }

@@ -30,6 +30,7 @@ class P2PCalculatorScreen extends StatefulWidget {
 class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
   static const double _maxBtc = 21000000;
   static const int _maxSats = 2100000000000000; // 21M BTC
+  final GlobalKey _shareButtonKey = GlobalKey();
   final Color _keyboardToolbarColor = const Color(0xFF2E2E2E);
 
   late P2PCalculatorViewModel _viewModel;
@@ -311,12 +312,22 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
       final file = File('${directory.path}/transaction_bill.png');
       await file.writeAsBytes(pngBytes);
 
+      // 버튼 위치 계산
+      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final Rect sharePositionOrigin =
+          box != null ? box.localToGlobal(Offset.zero) & box.size : const Rect.fromLTWH(0, 400, 300, 50); // fallback
+
       AppGuard.disablePrivacyScreen();
       await SharePlus.instance.share(
-        ShareParams(files: [XFile(file.path)], text: t.utility.p2p_calculator.transaction_bill),
+        ShareParams(
+          files: [XFile(file.path)],
+          text: t.utility.p2p_calculator.transaction_bill,
+          sharePositionOrigin: sharePositionOrigin,
+        ),
       );
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('Failed to capture and share: $e');
+      debugPrint('Stack: $stack');
     } finally {
       AppGuard.enablePrivacyScreen();
     }
@@ -687,6 +698,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
         ),
         CoconutLayout.spacing_300w,
         ShrinkAnimationButton(
+          key: _shareButtonKey,
           borderRadius: 8,
           pressedColor: CoconutColors.gray850,
           onPressed: () {
@@ -1055,7 +1067,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> {
                                 maxLines: 1,
                                 height: 22,
                                 textInputAction: TextInputAction.done,
-                                textInputType: TextInputType.number,
+                                textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
                                 onChanged: _handleFeeInputChanged,
                                 textAlign: TextAlign.end,
                                 isVisibleBorder: false,

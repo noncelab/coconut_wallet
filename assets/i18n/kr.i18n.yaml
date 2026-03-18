@@ -511,8 +511,8 @@ send_confirm_screen:
     total: "총 $n"
     sentence: "가 소요됩니다"
   output_detail_title: "출력 상세 보기"
-  flow_input_title: "입력 $index"
-  flow_output_title: "출력 $index"
+  flow_input_title: "입력 #$index"
+  flow_output_title: "출력 #$index"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
   bbqr_mode_switching: "BBQR 모드로 전환 중이에요.\n잠시만 기다려주세요."
@@ -691,6 +691,7 @@ utxo_list_screen:
   reused_address: "재사용 주소 UTXO를 우선 사용해 주세요"
 
 transaction_detail_screen:
+  input_output_detail_title: "입출력 상세 보기"
   confirmation: "$height ($count승인)"
   time_ago:
     just_now: 방금 전
@@ -717,9 +718,8 @@ wallet_info_screen:
   target_progress: "$percent% / $target"
   target_not_set_secondary: "목표 수량을 설정하면 달성률을 보여드려요"
   target_set_title: "목표 설정"
-  target_set_placeholder: "BTC로 입력해 주세요"
+  target_set_placeholder: "BTC 단위로 입력해 주세요"
   target_set_invalid: "0 BTC는 목표로 지정할 수 없어요"
-  target_set_max_exceeded: "2,100만 BTC 이하로 입력해주세요"
   target_set_21m: "지분 전쟁이다!!!"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
@@ -751,20 +751,32 @@ transaction_fee_bumping_screen:
   new_fee: "새 수수료"
   sats_vb: "sat/vB"
   recommend_fee: "최소 수수료: ${fee} sat/vB 이상"
-  recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vB 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vB 미만으로 보일 수 있어요."
+  recommend_fee_info_rbf: "새 트랜잭션의 크기 1vB 당 최소 1sat 이상의 추가 수수료가 필요해요. \n만약 계산된 최소 수수료율이 현재 네트워크의 느린 전송 수수료율보다 낮다면, 느린 전송 수수료율을 추천해요. \n새 거래의 크기가 증가하면 추천 수수료율은 기존보다 낮을 수 있어요."
   recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vB, 추천 수수료율 = ${recommendedFeeRate} sat/vB\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "추천 수수료"
+  utxo_auto_selection: "UTXO 자동 선택"
+  utxo_auto_selection_description: "추가 수수료가 필요하여 UTXO를 자동 선택해요"
+  n_utxos: " • ${count}개 선택"
+  no_utxos_selected: " • 선택 필요"
   estimated_fee: "예상 총 수수료 약 ${fee} sats"
   estimated_fee_too_high_error: "예상 총 수수료가 0.01 BTC 이상이에요!"
+  fee_rate_too_low_error: "수수료가 부족해요!"
+  insufficient_balance_error: "잔액이 부족해요!"
   recommended_fees_fetch_error: "추천 수수료를 조회할 수 없어요!"
   recommended_fees_is_null: "수수료를 조회하는 중이에요"
   recommended_fee_less_than_pending_tx_fee: "기존 수수료보다 큰 수수료를 지정해 주세요"
   recommended_fee_less_than_network_fee: "추천 수수료 이상으로 지정해 주세요"
+  
+  please_select_more_utxo: "${amount} 이상의 UTXO를 선택해 주세요"
   dialog:
     fee_alert_title: "알림"
     fee_alert_description: "설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?"
     confirmed_alert_title: "거래 완료"
     confirmed_alert_description: "처리 대기 중이던 거래가 완료되었어요."
+    rbf_duplicated_output_title: "중복 주소 발견"
+    rbf_duplicated_output: "지원하지 않는 트랜잭션이에요."
+    utxo_not_found_title: "UTXO 없음"
+    utxo_not_found: "거래에 사용한 UTXO를 찾을 수 없어요."
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
 

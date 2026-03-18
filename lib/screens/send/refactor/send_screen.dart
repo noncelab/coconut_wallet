@@ -603,6 +603,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     return Selector<SendViewModel, (String, bool, bool, int?)>(
       selector: (_, vm) => (vm.finalErrorMessage, vm.isReadyToSend, vm.isFeeRateLowerThanMin, vm.unintendedDustFee),
       builder: (context, data, child) {
+        debugPrint('vm.unintendedDustFee: ${data.$4}');
         final (finalErrorMessage, isReadyToSend, isFeeRateLowerThanMin, unintendedDustFee) = data;
         final finalButtonMessages = [];
 
@@ -634,19 +635,21 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         return Stack(
           alignment: Alignment.center,
           children: [
-            ...finalButtonMessages.asMap().entries.map(
-              (entry) => Positioned(
-                bottom:
-                    FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-                    FixedBottomButton.fixedBottomButtonDefaultHeight +
-                    12 +
-                    ((finalButtonMessages.length - 1 - entry.key) * 20),
-                child: Text(entry.value.message, style: CoconutTypography.body3_12.setColor(entry.value.textColor)),
-              ),
-            ),
             FixedBottomButton(
               showGradient: false,
               isVisibleAboveKeyboard: false,
+              subWidget:
+                  finalButtonMessages.isNotEmpty
+                      ? Column(
+                        children:
+                            finalButtonMessages.asMap().entries.map((entry) {
+                              return Text(
+                                entry.value.message,
+                                style: CoconutTypography.body3_12.setColor(entry.value.textColor),
+                              );
+                            }).toList(),
+                      )
+                      : null,
               onButtonClicked: () {
                 FocusScope.of(context).unfocus();
                 if (isWalletWithoutMfp(_viewModel.selectedWalletItem)) return;
@@ -669,10 +672,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
     final child = Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
         border: Border.all(width: 1, color: CoconutColors.gray700),
-        borderRadius: const BorderRadius.all(Radius.circular(6)),
+        borderRadius: const BorderRadius.all(Radius.circular(8)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -682,12 +685,12 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             height: 12,
             colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
           ),
-          CoconutLayout.spacing_150w,
+          CoconutLayout.spacing_100w,
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
             child: Text(
-              "${sats ?? "-"} ${t.send_screen.fee_rate_suffix}",
+              "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
               style: CoconutTypography.body2_14.setColor(CoconutColors.white),
             ),
           ),
@@ -700,7 +703,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         borderRadius: 8,
         onTap: () {
           if (isFetching) return;
-          _feeRateController.text = sats.toString();
+          _feeRateController.text = sats != null ? sats.toStringAsFixed(1) : '';
           _clearFocus();
         },
         child:
