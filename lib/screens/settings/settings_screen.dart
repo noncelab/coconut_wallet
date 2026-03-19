@@ -258,6 +258,12 @@ class _SettingsScreen extends State<SettingsScreen> {
                           },
                         ),
                       ),
+                      _buildAnimatedButton(
+                        title: t.log_viewer,
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/log-viewer');
+                        },
+                      ),
                     ],
                   ),
 
