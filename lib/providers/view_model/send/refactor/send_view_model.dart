@@ -512,8 +512,6 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _setEstimatedFee(int? estimatedFee) {
-    if (_estimatedFee == estimatedFee) return;
-
     _estimatedFee = estimatedFee;
 
     if (_isMaxMode) {
