@@ -599,7 +599,7 @@ settings_screen:
   fiat: "Fiat"
   language: "Idioma"
   utxo_manual_selection: "Selección manual de UTXO"
-  utxo_manual_selection_description: "Selecciona UTXOs manualmente para enviar."
+  utxo_manual_selection_description: "Selecciona UTXOs manualmente para enviar"
   utxo_tier_theme: "Color de moneda"
   electrum_server: 
     server_address: "Dirección del servidor"

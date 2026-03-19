@@ -596,7 +596,7 @@ settings_screen:
   fiat: "법정 화폐"
   language: "언어"
   utxo_manual_selection: "UTXO 수동 선택"
-  utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다."
+  utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다"
   utxo_tier_theme: "코인 색상"
   locales:
     korean: "한국어"

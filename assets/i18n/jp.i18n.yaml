@@ -598,7 +598,7 @@ settings_screen:
   fiat: "法定通貨"
   language: "言語"
   utxo_manual_selection: "UTXO 数手動選択"
-  utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します。"
+  utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
   utxo_tier_theme: "コインの色"
   electrum_server: 
     server_address: "サーバーアドレス"
