@@ -860,6 +860,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
             walletId: targetId,
             currentUnit: context.read<PreferenceProvider>().currentUnit,
             scrollController: scrollController,
+            showSkipButton: true,
           ),
     );
 

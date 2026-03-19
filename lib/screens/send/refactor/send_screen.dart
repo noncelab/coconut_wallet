@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart' show TransactionDraftRepository;
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -497,11 +498,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         },
       ),
       onTitlePressed: () {
-        if (!_viewModel.isSelectedWalletNull &&
-            !isWalletWithoutMfp(_viewModel.selectedWalletItem) &&
-            !_viewModel.isUtxoSelectionAuto) {
-          _onUtxoSelectionModeButtonPressed();
-        }
+        _onUtxoSelectionModeButtonPressed();
       },
       context: context,
       isBottom: true,
@@ -528,21 +525,26 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _onUtxoSelectionModeButtonPressed() {
+  void _onUtxoSelectionModeButtonPressed() async {
     _setDropdownMenuVisiblility(false);
-    Navigator.pushNamed(
-      context,
-      '/utxo-selection',
-      arguments: {
-        'selectedUtxoList': _viewModel.isUtxoSelectionAuto ? List<UtxoState>.empty() : _viewModel.selectedUtxoList,
-        'walletId': _viewModel.selectedWalletItem!.id,
-        'currentUnit': _viewModel.currentUnit,
-      },
-    ).then((result) {
-      if (result != null && result is List) {
-        _viewModel.setSelectedUtxoList(List<UtxoState>.from(result));
-      }
-    });
+    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
+      context: context,
+      minChildSize: 0.6,
+      maxChildSize: 0.9,
+      initialChildSize: 0.9,
+      childBuilder:
+          (scrollController) => UtxoSelectionScreen(
+            selectedUtxoList: _viewModel.selectedUtxoList,
+            walletId: _viewModel.selectedWalletItem!.id,
+            currentUnit: _viewModel.currentUnit,
+            scrollController: scrollController,
+            showSkipButton: false,
+          ),
+    );
+    if (result != null) {
+      _viewModel.setIsUtxoSelectionAuto(false);
+      _viewModel.setSelectedUtxoList(List<UtxoState>.from(result));
+    }
   }
 
   Widget _buildUtxoSelectionModeContainer(bool isUtxoSelectionAuto, String amountText, int selectedUtxoListLength) {
@@ -1334,7 +1336,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                 CoconutLayout.spacing_300w,
                                                 ShrinkAnimationButton(
                                                   onPressed: () {
-                                                    _viewModel.setIsUtxoSelectionAutoTrue();
+                                                    _viewModel.setIsUtxoSelectionAuto(true);
                                                     _clearFocus();
                                                   },
                                                   defaultColor: MyColors.grey,

@@ -390,9 +390,9 @@ class SendViewModel extends ChangeNotifier {
     _initBalances(_allUtxos);
   }
 
-  void setIsUtxoSelectionAutoTrue() {
-    _isUtxoSelectionAuto = true;
-    _selectAllUtxos();
+  void setIsUtxoSelectionAuto(bool value) {
+    _isUtxoSelectionAuto = value;
+    if (value) _selectAllUtxos();
     notifyListeners();
   }
 

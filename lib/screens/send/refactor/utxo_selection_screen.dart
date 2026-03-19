@@ -24,6 +24,7 @@ class UtxoSelectionScreen extends StatefulWidget {
   final int walletId;
   final BitcoinUnit currentUnit;
   final ScrollController? scrollController;
+  final bool showSkipButton;
 
   const UtxoSelectionScreen({
     super.key,
@@ -31,6 +32,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     required this.selectedUtxoList,
     required this.walletId,
     this.scrollController,
+    this.showSkipButton = false,
   });
 
   @override
@@ -85,14 +87,15 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       title: t.utxo_selection_screen.title,
                       context: context,
                       actionButtonList: [
-                        CoconutUnderlinedButton(
-                          text: t.utxo_selection_screen.skip,
-                          textStyle: CoconutTypography.body2_14,
-                          onTap: () {
-                            _viewModel.deselectAllUtxo();
-                            Navigator.pop(context, _viewModel.selectedUtxoList);
-                          },
-                        ),
+                        if (widget.showSkipButton)
+                          CoconutUnderlinedButton(
+                            text: t.utxo_selection_screen.skip,
+                            textStyle: CoconutTypography.body2_14,
+                            onTap: () {
+                              _viewModel.deselectAllUtxo();
+                              Navigator.pop(context, _viewModel.selectedUtxoList);
+                            },
+                          ),
                       ],
                       onBackPressed: () => Navigator.pop(context),
                       isBottom: true,

@@ -442,6 +442,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             walletId: _viewModel.walletId,
             currentUnit: context.read<PreferenceProvider>().currentUnit,
             scrollController: scrollController,
+            showSkipButton: true,
           ),
     );
 
