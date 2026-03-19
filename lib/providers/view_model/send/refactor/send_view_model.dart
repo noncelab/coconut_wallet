@@ -298,7 +298,7 @@ class SendViewModel extends ChangeNotifier {
     int? walletId,
     SendEntryPoint sendEntryPoint,
     this._transactionDraftId,
-    List<UtxoState>? initialSelectedUtxoList,
+    List<UtxoState>? selectedUtxoList,
   ) {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
@@ -315,12 +315,12 @@ class SendViewModel extends ChangeNotifier {
 
     _recipientList = [RecipientInfo()];
 
-    if (walletId != null && initialSelectedUtxoList != null) {
-      final hasSelectedUtxos = initialSelectedUtxoList.isNotEmpty;
+    if (walletId != null && selectedUtxoList != null) {
+      final hasSelectedUtxos = selectedUtxoList.isNotEmpty;
 
       _isUtxoSelectionAuto = !hasSelectedUtxos;
       if (hasSelectedUtxos) {
-        _selectedUtxoList = List<UtxoState>.from(initialSelectedUtxoList);
+        _selectedUtxoList = List<UtxoState>.from(selectedUtxoList);
         _buildTransaction();
       }
     }

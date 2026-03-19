@@ -867,7 +867,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Navigator.pushNamed(
       context,
       '/send',
-      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialSelectedUtxoList': result},
+      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'selectedUtxoList': result},
     );
   }
 
