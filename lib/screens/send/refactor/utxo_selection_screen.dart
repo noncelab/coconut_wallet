@@ -53,6 +53,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   ];
 
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
+  final GlobalKey _dropdownLayerKey = GlobalKey();
   bool _isOrderDropdownVisible = false; // 필터 드롭다운
   late Offset _orderDropdownButtonPosition;
 
@@ -66,10 +67,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // 네트워크 알림 툴팁이 생성되면 위젯이 밀리기 때문에 드롭다운 버튼 위치를 다시 계산
-            RenderBox orderDropdownButtonRenderBox =
-                _orderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
-
-            _orderDropdownButtonPosition = orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
+            _updateOrderDropdownButtonPosition();
           });
         }
         return viewModel;
@@ -102,6 +100,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     ),
                     body: SafeArea(
                       child: Stack(
+                        key: _dropdownLayerKey,
                         children: [
                           Column(
                             children: [
@@ -212,10 +211,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           _viewModel.initialize(widget.selectedUtxoList);
         }
 
-        RenderBox orderDropdownButtonRenderBox =
-            _orderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
-
-        _orderDropdownButtonPosition = orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        _updateOrderDropdownButtonPosition();
       });
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -242,6 +238,21 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     setState(() {
       _isOrderDropdownVisible = false;
     });
+  }
+
+  void _updateOrderDropdownButtonPosition() {
+    final buttonContext = _orderDropdownButtonKey.currentContext;
+    final dropdownLayerContext = _dropdownLayerKey.currentContext;
+    if (buttonContext == null || dropdownLayerContext == null) return;
+
+    final buttonRenderBox = buttonContext.findRenderObject();
+    final dropdownLayerRenderBox = dropdownLayerContext.findRenderObject();
+    if (buttonRenderBox is! RenderBox || dropdownLayerRenderBox is! RenderBox) return;
+
+    _orderDropdownButtonPosition = buttonRenderBox.localToGlobal(
+      Offset(0, buttonRenderBox.size.height),
+      ancestor: dropdownLayerRenderBox,
+    );
   }
 
   void _selectAll() {
@@ -298,8 +309,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   Widget _buildUtxoOrderDropdown(UtxoSelectionViewModel viewModel) {
     if (_isOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
-        top: _orderDropdownButtonPosition.dy - kToolbarHeight,
-        left: 16,
+        top: _orderDropdownButtonPosition.dy,
+        left: _orderDropdownButtonPosition.dx,
         child: _utxoOrderDropdownMenu(),
       );
     }
