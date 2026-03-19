@@ -37,7 +37,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
 
       final CpfpBuildResult buildResult = cpfpBuilder.build(newFeeRate: result.minimumFeeRate);
@@ -68,7 +68,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
     });
 
@@ -94,7 +94,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
     });
 
@@ -120,7 +120,7 @@ void main() {
   });
 
   group('멀티시그지갑 - build', () {
-    test('feeRate too low / CpfpFeeRateTooLowException', () {
+    test('baseline.minimumFeeRate보다 작은 수수료율 입력', () {
       final (pendingTx, cpfpBuilder) = creator.createCpfpBuilder(
         receivedAmounts: [50000],
         parentFee: 1000,
@@ -133,11 +133,7 @@ void main() {
       expect(baselineResult.isCpfpNeeded, isFalse);
 
       final CpfpBuildResult buildResult = cpfpBuilder.build(newFeeRate: baselineResult.minimumFeeRate - 0.01);
-
-      expect(buildResult.isFailure, isTrue);
-      expect(buildResult.transaction, isNull);
-      expect(buildResult.exception, isNotNull);
-      expect(buildResult.exception, isA<CpfpFeeRateTooLowException>());
+      expect(buildResult.isSuccess, isTrue); // 네트워크 상 최소 추천 수수료율을 기준으로 minimumFeeRate을 계산했기 때문에 더 작은 값을 입력해도 상관없음
     });
 
     test('minimumFeeRate / success / packageFeeRate is correct', () {
@@ -164,7 +160,7 @@ void main() {
       final double childVSize = buildResult.estimatedVSize;
       expect(
         buildResult.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
     });
 
@@ -229,7 +225,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
 
       // 높은 feeRate로 빌드 → 1개 input의 금액(5000)으로 부족하여 2번째 input 추가
@@ -293,7 +289,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
     });
   });

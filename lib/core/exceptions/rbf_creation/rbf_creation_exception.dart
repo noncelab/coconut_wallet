@@ -8,10 +8,6 @@ class RbfCreationException implements Exception {
   String toString() => message;
 }
 
-class FeeRateTooLowException extends RbfCreationException {
-  const FeeRateTooLowException({super.message = 'Fee rate is too low.'});
-}
-
 /// Exception thrown when there is not enough amount for transaction
 class InsufficientBalanceException extends RbfCreationException {
   const InsufficientBalanceException({super.message = 'Not enough balance for sending.'});
