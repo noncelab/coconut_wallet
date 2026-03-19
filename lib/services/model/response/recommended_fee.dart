@@ -1,46 +1,42 @@
 class RecommendedFee {
-  final int? _fastestFee;
-  final int? _halfHourFee;
-  final int? _hourFee;
-  final int? _economyFee;
-  final int? _minimumFee;
+  final double? _fastestFee;
+  final double? _halfHourFee;
+  final double? _hourFee;
+  final double? _economyFee;
+  final double? _minimumFee;
 
   RecommendedFee(this._fastestFee, this._halfHourFee, this._hourFee, this._economyFee, this._minimumFee);
 
-  int? get fastestFee => _fastestFee;
+  double? get fastestFee => _fastestFee;
 
-  int? get halfHourFee => _halfHourFee;
+  double? get halfHourFee => _halfHourFee;
 
-  int? get hourFee => _hourFee;
+  double? get hourFee => _hourFee;
 
-  int? get economyFee => _economyFee;
+  double? get economyFee => _economyFee;
 
-  int? get minimumFee => _minimumFee;
+  double? get minimumFee => _minimumFee;
+
+  // 소수점 2자리부터 버림
+  static double truncateTo2Decimals(double value) {
+    return (value * 100).truncateToDouble() / 100;
+  }
+
+  static double? parseAndTruncate(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return truncateTo2Decimals(value.toDouble());
+    if (value is double) return truncateTo2Decimals(value);
+    if (value is String) return truncateTo2Decimals(double.parse(value));
+    return null;
+  }
 
   factory RecommendedFee.fromJson(Map<String, dynamic> json) {
-    int parseIntSafely(dynamic value, String fieldName) {
-      if (value == null) {
-        throw FormatException('$fieldName is null');
-      }
-      if (value is int) {
-        return value;
-      }
-      if (value is String) {
-        return int.parse(value);
-      }
-      throw FormatException('$fieldName has invalid type: ${value.runtimeType}');
-    }
-
-    try {
-      return RecommendedFee(
-        parseIntSafely(json['fastestFee'], 'fastestFee'),
-        parseIntSafely(json['halfHourFee'], 'halfHourFee'),
-        parseIntSafely(json['hourFee'], 'hourFee'),
-        parseIntSafely(json['economyFee'], 'economyFee'),
-        parseIntSafely(json['minimumFee'], 'minimumFee'),
-      );
-    } catch (e) {
-      throw FormatException('Failed to parse RecommendedFee: $e');
-    }
+    return RecommendedFee(
+      parseAndTruncate(json['fastestFee']),
+      parseAndTruncate(json['halfHourFee']),
+      parseAndTruncate(json['hourFee']),
+      parseAndTruncate(json['economyFee']),
+      parseAndTruncate(json['minimumFee']),
+    );
   }
 }

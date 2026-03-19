@@ -54,6 +54,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_backup_data_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_receive_address_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_detail_screen.dart';
@@ -312,7 +313,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         walletId: args['walletId'],
                         sendEntryPoint: args['sendEntryPoint'],
                         transactionDraftId: args['transactionDraftId'],
-                        initialSelectedUtxoList: args['initialSelectedUtxoList'],
+                        selectedUtxoList: args['selectedUtxoList'],
                       ),
                     ),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
@@ -346,6 +347,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         id: args['id'],
                         isMultisig: args['isMultisig'],
                         entryPoint: args['entryPoint'],
+                        showMfpInput: args['showMfpInput'] ?? false,
                       ),
                     ),
                 '/broadcasting-complete':
@@ -373,6 +375,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                     ),
                 '/utxo-list':
                     (context) => buildLoadingScreenWithArgs(context, (args) => UtxoListScreen(id: args['id'])),
+                '/utxo-overview':
+                    (context) => buildLoadingScreenWithArgs(context, (args) => UtxoOverviewScreen(id: args['id'])),
                 '/utxo-detail':
                     (context) => buildLoadingScreenWithArgs(
                       context,
@@ -384,11 +388,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                       context,
                       (args) => TransactionDraftScreen(isSignedTabActive: args['isSignedTabActive']),
                     ),
-                '/wallet-home-edit':
-                    (context) => buildLoadingScreenWithArgs(
-                      context,
-                      (args) => WalletHomeEditScreen(scrollController: args['scrollController']),
-                    ),
+                '/wallet-home-edit': (context) => const WalletHomeEditScreen(),
               },
             );
 

@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 class UtxoOrderDropdown extends StatelessWidget {
   final bool isVisible;
   final double positionTop;
-  final UtxoOrder selectedOption;
+  final UtxoOrder activeOption;
   final Function onOptionSelected;
   final bool isSelectionMode;
   const UtxoOrderDropdown({
     super.key,
     required this.isVisible,
     required this.positionTop,
-    required this.selectedOption,
+    required this.activeOption,
     required this.onOptionSelected,
     required this.isSelectionMode,
   });
@@ -37,22 +37,22 @@ class UtxoOrderDropdown extends StatelessWidget {
               onSelected: (index, filterName) {
                 switch (index) {
                   case 0: // 큰 금액순
-                    if (selectedOption != UtxoOrder.byAmountDesc) {
+                    if (activeOption != UtxoOrder.byAmountDesc) {
                       onOptionSelected(UtxoOrder.byAmountDesc);
                     }
                     break;
                   case 1: // 작은 금액순
-                    if (selectedOption != UtxoOrder.byAmountAsc) {
+                    if (activeOption != UtxoOrder.byAmountAsc) {
                       onOptionSelected(UtxoOrder.byAmountAsc);
                     }
                     break;
                   case 2: // 최신순
-                    if (selectedOption != UtxoOrder.byTimestampDesc) {
+                    if (activeOption != UtxoOrder.byTimestampDesc) {
                       onOptionSelected(UtxoOrder.byTimestampDesc);
                     }
                     break;
                   case 3: // 오래된 순
-                    if (selectedOption != UtxoOrder.byTimestampAsc) {
+                    if (activeOption != UtxoOrder.byTimestampAsc) {
                       onOptionSelected(UtxoOrder.byTimestampAsc);
                     }
                     break;
@@ -66,7 +66,7 @@ class UtxoOrderDropdown extends StatelessWidget {
   }
 
   int _getIndexBySelectedFilter() {
-    switch (selectedOption) {
+    switch (activeOption) {
       case UtxoOrder.byAmountDesc:
         return 0;
       case UtxoOrder.byAmountAsc:

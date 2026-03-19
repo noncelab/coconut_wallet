@@ -29,6 +29,9 @@ const kRecenctTransactionDays = 1;
 /// 기간 직접 입력(days==0) 시 범위가 없을 때 사용할 기본 분석 기간(일)
 const kAnalysisPeriodFallbackDays = 30;
 
+/// 에러 표시 지연 상수
+const kErrorDisplayDelayDuration = Duration(seconds: 5);
+
 class WalletHomeViewModel extends ChangeNotifier {
   WalletProvider _walletProvider;
   late final PreferenceProvider _preferenceProvider;
@@ -38,6 +41,11 @@ class WalletHomeViewModel extends ChangeNotifier {
   final Stream<NodeSyncState> _syncNodeStateStream;
   NodeSyncState _nodeSyncState = NodeSyncState.syncing;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
+
+  /// syncing/init → failed 전환 시 에러 표시 지연용
+  DateTime? _failedFromSyncingOrInitAt;
+  Timer? _errorDisplayDelayTimer;
+  final DateTime _viewModelCreatedAt = DateTime.now();
 
   void _onCurrentBlockChanged() {
     // 블록이 바뀌면 tx 상태가 바뀌었을 수 있으므로 최근 tx·분석 갱신
@@ -50,7 +58,6 @@ class WalletHomeViewModel extends ChangeNotifier {
   late bool _isBalanceHidden;
   late bool _isFiatBalanceHidden;
   late final bool _isReviewScreenVisible;
-  // late bool? _isNetworkOn;
 
   Map<int, AnimatedBalanceData> _walletBalance = {};
   Map<int, dynamic> _fakeBalanceMap = {};
@@ -164,6 +171,18 @@ class WalletHomeViewModel extends ChangeNotifier {
     if (_nodeSyncState == NodeSyncState.completed) {
       updateWalletBalancesAndRecentTxs();
     }
+    // hasConnectionError가 stream보다 먼저 설정될 수 있음 - 이 경우에도 지연 시작
+    if (_nodeProvider.hasConnectionError &&
+        (_nodeSyncState == NodeSyncState.syncing || _nodeSyncState == NodeSyncState.init) &&
+        !_isFirstLoaded &&
+        _failedFromSyncingOrInitAt == null) {
+      _failedFromSyncingOrInitAt = DateTime.now();
+      _errorDisplayDelayTimer?.cancel();
+      _errorDisplayDelayTimer = Timer(kErrorDisplayDelayDuration, () {
+        _clearErrorDisplayDelay();
+        notifyListeners();
+      });
+    }
     notifyListeners();
   }
 
@@ -171,7 +190,25 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool get isBalanceHidden => _isBalanceHidden;
   bool get isFiatBalanceHidden => _isFiatBalanceHidden;
   bool get isReviewScreenVisible => _isReviewScreenVisible;
-  bool get shouldShowLoadingIndicator => !_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing;
+
+  /// 에러 표시 지연 중인지 여부
+  /// hasConnectionError가 stream보다 먼저 설정되거나 앱 최초 구동 시 지연 시작
+  bool get _isInErrorDisplayDelay {
+    if (!_isFirstLoaded && (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError)) {
+      final now = DateTime.now();
+      if (_failedFromSyncingOrInitAt != null &&
+          now.difference(_failedFromSyncingOrInitAt!) < kErrorDisplayDelayDuration) {
+        return true;
+      }
+      if (now.difference(_viewModelCreatedAt) < kErrorDisplayDelayDuration) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool get shouldShowLoadingIndicator =>
+      (!_isFirstLoaded && _nodeSyncState == NodeSyncState.syncing) || _isInErrorDisplayDelay;
   List<WalletListItemBase> get walletItemList {
     // 지갑 목록을 가져오고, 순서가 설정되어 있다면 그 순서대로 정렬
     // 홈에서는 즐겨찾기가 되어있는 지갑만 보여야 하기 때문에 필터링 작업도 수행
@@ -222,6 +259,10 @@ class WalletHomeViewModel extends ChangeNotifier {
     }
 
     if (_nodeSyncState == NodeSyncState.failed || _nodeProvider.hasConnectionError) {
+      // 에러 표시 지연 중인 경우 온라인 상태로 간주
+      if (_isInErrorDisplayDelay) {
+        return NetworkStatus.online;
+      }
       if (_connectivityProvider.isVpnActive) {
         if (_connectivityProvider.isInternetOff) {
           return NetworkStatus.offline;
@@ -238,6 +279,12 @@ class WalletHomeViewModel extends ChangeNotifier {
     return _walletProvider.getWalletById(walletId);
   }
 
+  void _clearErrorDisplayDelay() {
+    _errorDisplayDelayTimer?.cancel();
+    _errorDisplayDelayTimer = null;
+    _failedFromSyncingOrInitAt = null;
+  }
+
   void _handleNodeSyncState(NodeSyncState syncState) {
     Logger.log('DEBUG - _handleNodeSyncState called with: $syncState');
     if (_nodeSyncState != syncState) {
@@ -246,8 +293,21 @@ class WalletHomeViewModel extends ChangeNotifier {
           _isFirstLoaded = true;
         }
         updateWalletBalancesAndRecentTxs();
+        _clearErrorDisplayDelay();
       } else if (syncState == NodeSyncState.failed) {
-        // vibrateLightDouble(); 네트워크 동기화 실패시 진동 - 제거 요청됨
+        final wasSyncingOrInit = _nodeSyncState == NodeSyncState.syncing || _nodeSyncState == NodeSyncState.init;
+        if (wasSyncingOrInit) {
+          _failedFromSyncingOrInitAt = DateTime.now();
+          _errorDisplayDelayTimer?.cancel();
+          _errorDisplayDelayTimer = Timer(kErrorDisplayDelayDuration, () {
+            _clearErrorDisplayDelay();
+            notifyListeners();
+          });
+        } else {
+          _clearErrorDisplayDelay();
+        }
+      } else if (syncState == NodeSyncState.syncing || syncState == NodeSyncState.init) {
+        _clearErrorDisplayDelay();
       }
       _nodeSyncState = syncState;
       // Logger.log('DEBUG - _nodeSyncState updated to: $_nodeSyncState');
@@ -608,6 +668,7 @@ class WalletHomeViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    _errorDisplayDelayTimer?.cancel();
     _syncNodeStateSubscription?.cancel();
     _nodeProvider.removeListener(_onNodeProviderChanged);
     _nodeProvider.currentBlockNotifier.removeListener(_onCurrentBlockChanged);

@@ -214,7 +214,7 @@ class ElectrumService {
     return response.result;
   }
 
-  Future<String> getTransaction(String txHash, {bool? verbose}) async {
+  Future<String> getTransaction(String txHash, {bool? verbose, Duration timeout = const Duration(seconds: 5)}) async {
     try {
       var response = await _call(_BlockchainTransactionGetReq(txHash, verbose: verbose), (json, {int? id}) {
         // verbose 모드일 때 서버는 Map을 반환하고, 그렇지 않을 때는 String을 반환합니다.
@@ -222,13 +222,17 @@ class ElectrumService {
           return ElectrumResponse(result: jsonEncode(json));
         }
         return ElectrumResponse(result: json as String);
-      }, timeout: const Duration(seconds: 5));
+      }, timeout: timeout);
       return response.result;
     } catch (e) {
-      final mempoolApi = MempoolApi();
-      final txHex = await mempoolApi.fetchTxHex(txHash);
-      mempoolApi.close();
-      return txHex;
+      try {
+        final mempoolApi = MempoolApi();
+        final txHex = await mempoolApi.fetchTxHex(txHash);
+        mempoolApi.close();
+        return txHex;
+      } catch (mempoolError) {
+        rethrow;
+      }
     }
   }
 
@@ -264,16 +268,17 @@ class ElectrumService {
 
     try {
       List<Transaction?> fetchedTransactionsNullable = await Future.wait(futures);
-      List<Transaction> fetchedTransactions = fetchedTransactionsNullable.whereType<Transaction>().toList();
+      List<Transaction> fetchedPreviousTransactions = fetchedTransactionsNullable.whereType<Transaction>().toList();
 
       if (existingTxList != null && existingTxList.isNotEmpty) {
-        fetchedTransactions.addAll(existingTxList);
+        fetchedPreviousTransactions.addAll(existingTxList);
       }
 
       List<Transaction> previousTransactions = [];
 
       for (var input in transaction.inputs) {
-        final matchingTx = fetchedTransactions.where((tx) => tx.transactionHash == input.transactionHash).toList();
+        final matchingTx =
+            fetchedPreviousTransactions.where((tx) => tx.transactionHash == input.transactionHash).toList();
 
         if (matchingTx.isNotEmpty) {
           previousTransactions.add(matchingTx.first);

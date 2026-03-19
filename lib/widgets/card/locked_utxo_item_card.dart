@@ -102,7 +102,7 @@ class _UtxoSelectableCardState extends State<LockedUtxoItemCard> {
             ),
           ),
           SvgPicture.asset(
-            'assets/svg/lock.svg',
+            'assets/svg/lock_simple.svg',
             width: 24,
             height: 24,
             colorFilter: ColorFilter.mode(CoconutColors.white.withValues(alpha: 0.3), BlendMode.srcIn),

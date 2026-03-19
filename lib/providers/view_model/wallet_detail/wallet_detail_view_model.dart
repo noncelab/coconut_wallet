@@ -113,6 +113,9 @@ class WalletDetailViewModel extends ChangeNotifier {
     _balance = _getBalance();
     _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
 
+    // WalletProvider 변경 감지 리스너
+    _walletProvider.addListener(_onWalletProviderChanged);
+
     // UpbitConnectModel 변경 감지 리스너
     _priceProvider.addListener(_updateBitcoinPrice);
 
@@ -256,9 +259,18 @@ class WalletDetailViewModel extends ChangeNotifier {
   void dispose() {
     _syncWalletStateSubscription?.cancel();
     _nodeSyncStateSubscription?.cancel();
+    _walletProvider.removeListener(_onWalletProviderChanged);
     _priceProvider.removeListener(_updateBitcoinPrice);
     _txProvider.removeListener(_onTransactionProviderChanged);
     super.dispose();
+  }
+
+  void _onWalletProviderChanged() {
+    if (!_walletProvider.walletItemList.any((w) => w.id == _walletId)) {
+      return;
+    }
+    _walletListBaseItem = _walletProvider.getWalletById(_walletId);
+    notifyListeners();
   }
 
   // ----------> Faucet 메소드 시작

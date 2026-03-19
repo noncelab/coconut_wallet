@@ -89,7 +89,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                       () => Navigator.pop(context, _textEditingController.text.trim()),
                     );
                   },
-                  nextButtonTitle: t.complete,
+                  nextButtonTitle: t.done,
                   isBottom: true,
                   isActive: _textEditingController.text.isNotEmpty && canUpdateName,
                 ),

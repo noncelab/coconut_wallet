@@ -360,6 +360,21 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.containsAddress(walletId, address, isChange: isChange);
   }
 
+  // 앱에 추가된 모든 지갑 중 해당 주소를 소유한 지갑 ID 반환, 없으면 null
+  int? findWalletIdContainingAddress(String address) {
+    for (final wallet in _walletItemList) {
+      if (_addressRepository.containsAddress(wallet.id, address)) {
+        return wallet.id;
+      }
+    }
+    return null;
+  }
+
+  // 앱에 추가된 모든 지갑 중 해당 주소가 하나라도 포함되는지 확인
+  bool containsAddressInAnyWallet(String address) {
+    return findWalletIdContainingAddress(address) != null;
+  }
+
   List<WalletAddress> filterChangeAddressesFromList(int walletId, List<String> addresses) {
     return _addressRepository.filterChangeAddressesFromList(walletId, addresses);
   }
@@ -397,7 +412,11 @@ class WalletProvider extends ChangeNotifier {
     final dateRange = Tuple2<DateTime, DateTime>(start, end);
 
     for (int walletId in walletIds) {
-      final pendingTxs = _transactionRepository.getUnconfirmedTransactionRecordList(walletId, excludeReplaced: true);
+      final pendingTxs =
+          _transactionRepository
+              .getUnconfirmedTransactionRecordList(walletId, excludeReplaced: true)
+              .where((tx) => tx.createdAt.isAfter(start))
+              .toList();
       final confirmedTxs = getConfirmedTransactionRecordListWithinDateRange([walletId], dateRange);
 
       if (pendingTxs.isNotEmpty || confirmedTxs.isNotEmpty) {
@@ -478,6 +497,21 @@ class WalletProvider extends ChangeNotifier {
 
     // 5개 이하라면 즐겨찾기 목록에 추가
     addToFavoriteWalletsUntilFive(walletId);
+  }
+
+  Future<void> updateWalletDescriptor(int walletId, String newMfp) async {
+    final wallet = getWalletById(walletId);
+    final oldDescriptor = wallet.descriptor;
+
+    // MFP 교체 후 체크섬 재계산
+    final bodyWithOldChecksum = oldDescriptor.replaceFirst(RegExp(r'(?<=\[)[0-9a-fA-F]{8}'), newMfp);
+    final parsed = Descriptor.parse(bodyWithOldChecksum, ignoreChecksum: true);
+    final newDescriptor = parsed.serialize();
+
+    _walletRepository.updateMasterFingerprint(walletId, newDescriptor);
+
+    _setWalletItemList(await _fetchWalletListFromDB());
+    notifyListeners();
   }
 
   @override

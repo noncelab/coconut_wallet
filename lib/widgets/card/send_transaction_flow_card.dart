@@ -2,10 +2,27 @@ import 'dart:math';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+class FlowOutputTapTarget {
+  final String address;
+  final int amount;
+  final int outputIndex;
+  final bool isChange;
+
+  const FlowOutputTapTarget({
+    required this.address,
+    required this.amount,
+    required this.outputIndex,
+    this.isChange = false,
+  });
+}
+
+enum SendTransactionFlowCardMode { plain, navigable }
 
 class SendTransactionFlowCard extends StatefulWidget {
   final List<int?> inputAmounts;
@@ -13,6 +30,19 @@ class SendTransactionFlowCard extends StatefulWidget {
   final List<int> changeOutputAmounts;
   final int? fee;
   final BitcoinUnit currentUnit;
+  final SendTransactionFlowCardMode mode;
+  final List<FlowOutputTapTarget>? externalOutputTapTargets;
+
+  // 앱 내 등록된 지갑의 utxo 상세 화면으로 이동 가능한 주소 목록
+  final List<FlowOutputTapTarget>? navigableOutputTapTargets;
+  final bool Function(String address)? isOutputMine;
+  final int? walletId;
+  final bool Function(int walletId, String address)? isOutputToMyWallet;
+  final void Function(FlowOutputTapTarget target)? onOutputTap;
+  final TransactionStatus? transactionStatus;
+
+  // 트랜잭션 출력 순서대로 정렬된 전체 목록. mode==navigable && received/receiving 시 내 출력 우선 표시에 사용.
+  final List<FlowOutputTapTarget>? orderedOutputs;
 
   const SendTransactionFlowCard({
     super.key,
@@ -21,6 +51,15 @@ class SendTransactionFlowCard extends StatefulWidget {
     required this.changeOutputAmounts,
     required this.fee,
     required this.currentUnit,
+    this.mode = SendTransactionFlowCardMode.plain,
+    this.externalOutputTapTargets,
+    this.navigableOutputTapTargets,
+    this.isOutputMine,
+    this.walletId,
+    this.isOutputToMyWallet,
+    this.onOutputTap,
+    this.transactionStatus,
+    this.orderedOutputs,
   });
 
   @override
@@ -84,7 +123,7 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureAnchors());
 
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: MyColors.transparentWhite_06),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: CoconutColors.gray850),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: SizedBox(
         key: _paintAreaKey,
@@ -159,6 +198,10 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
               node: nodes[index],
               currentUnit: widget.currentUnit,
               isLeft: isLeft,
+              walletId: widget.walletId,
+              isOutputToMyWallet: widget.isOutputToMyWallet,
+              onOutputTap: widget.onOutputTap,
+              transactionStatus: widget.transactionStatus,
             ),
           );
         }),
@@ -230,73 +273,231 @@ class _SendTransactionFlowCardState extends State<SendTransactionFlowCard> with 
       return [];
     }
 
+    final isZeroBased = widget.mode == SendTransactionFlowCardMode.navigable;
+    final offset = isZeroBased ? 0 : 1;
+
     if (widget.inputAmounts.length <= 5) {
       return List.generate(
         widget.inputAmounts.length,
         (index) => _FlowNode(
           type: _FlowNodeType.input,
-          title: _localizedInputTitle(context, index + 1),
+          title: _localizedInputTitle(context, index + offset),
           amount: widget.inputAmounts[index],
         ),
       );
     }
 
     return [
-      _FlowNode(type: _FlowNodeType.input, title: _localizedInputTitle(context, 1), amount: widget.inputAmounts[0]),
-      _FlowNode(type: _FlowNodeType.input, title: _localizedInputTitle(context, 2), amount: widget.inputAmounts[1]),
-      _FlowNode(type: _FlowNodeType.input, title: _localizedInputTitle(context, 3), amount: widget.inputAmounts[2]),
+      _FlowNode(
+        type: _FlowNodeType.input,
+        title: _localizedInputTitle(context, 0 + offset),
+        amount: widget.inputAmounts[0],
+      ),
+      _FlowNode(
+        type: _FlowNodeType.input,
+        title: _localizedInputTitle(context, 1 + offset),
+        amount: widget.inputAmounts[1],
+      ),
+      _FlowNode(
+        type: _FlowNodeType.input,
+        title: _localizedInputTitle(context, 2 + offset),
+        amount: widget.inputAmounts[2],
+      ),
       const _FlowNode(type: _FlowNodeType.ellipsis, title: '...', amount: null),
       _FlowNode(
         type: _FlowNodeType.input,
-        title: _localizedInputTitle(context, widget.inputAmounts.length),
+        title: _localizedInputTitle(context, widget.inputAmounts.length - 1 + offset),
         amount: widget.inputAmounts.last,
       ),
     ];
   }
 
   List<_FlowNode> _buildOutputNodes(BuildContext context) {
-    final List<_FlowNode> nodes = [];
-    final bool hasChange = widget.changeOutputAmounts.isNotEmpty;
-    // Show all external outputs when (external output rows + change row) <= 4.
-    final int outputAndChangeRowCount = widget.externalOutputAmounts.length + (hasChange ? 1 : 0);
-    final bool shouldShowAllExternal = outputAndChangeRowCount <= 4;
+    final useOrderedReceivingLogic =
+        widget.mode == SendTransactionFlowCardMode.navigable &&
+        widget.transactionStatus != null &&
+        (widget.transactionStatus == TransactionStatus.received ||
+            widget.transactionStatus == TransactionStatus.receiving) &&
+        widget.orderedOutputs != null &&
+        widget.isOutputMine != null;
 
-    if (shouldShowAllExternal) {
-      for (int i = 0; i < widget.externalOutputAmounts.length; i++) {
+    if (useOrderedReceivingLogic) {
+      return _buildOutputNodesForReceiving(context);
+    }
+    return _buildOutputNodesDefault(context);
+  }
+
+  bool _isInNavigableTargets(FlowOutputTapTarget target) {
+    final navigable = widget.navigableOutputTapTargets ?? [];
+    return navigable.any((n) => n.outputIndex == target.outputIndex && n.address == target.address);
+  }
+
+  List<_FlowNode> _buildOutputNodesForReceiving(BuildContext context) {
+    final List<_FlowNode> nodes = [];
+    final ordered = widget.orderedOutputs!;
+    final isOutputMine = widget.isOutputMine!;
+    final isNavigable = widget.onOutputTap != null;
+
+    final ours = ordered.where((t) => isOutputMine(t.address)).toList();
+    final ourIndices = {for (final t in ours) t.outputIndex};
+
+    // navigable 모드: 수수료를 가장 위에 표시
+    nodes.add(_FlowNode(type: _FlowNodeType.fee, title: t.fee, amount: widget.fee));
+
+    // 4개 이하면 전부 순서대로 표시
+    if (ordered.length <= 4) {
+      for (final target in ordered) {
+        final isMine = isOutputMine(target.address);
+        final canNavigate = isMine && _isInNavigableTargets(target);
         nodes.add(
           _FlowNode(
             type: _FlowNodeType.output,
-            title: _localizedOutputTitle(context, i + 1),
-            amount: widget.externalOutputAmounts[i],
+            title: _localizedOutputTitle(context, target.outputIndex),
+            amount: target.amount,
+            tapTarget: isNavigable && canNavigate ? target : null,
+            isMyOutput: isMine,
+            outputAddress: isMine ? target.address : null,
           ),
         );
       }
     } else {
+      // [출력 0, ..., 출력 30(내 출력), ..., 출력 32, 수수료] 형태로 트랜잭션 순서 유지 (0-based)
+      final first = ordered.first;
+      final isMineFirst = isOutputMine(first.address);
+      final canNavigateFirst = isMineFirst && _isInNavigableTargets(first);
       nodes.add(
         _FlowNode(
           type: _FlowNodeType.output,
-          title: _localizedOutputTitle(context, 1),
+          title: _localizedOutputTitle(context, first.outputIndex),
+          amount: first.amount,
+          tapTarget: isNavigable && canNavigateFirst ? first : null,
+          isMyOutput: isMineFirst,
+          outputAddress: isMineFirst ? first.address : null,
+        ),
+      );
+
+      int i = 1;
+      while (i < ordered.length - 1) {
+        final target = ordered[i];
+        if (ourIndices.contains(target.outputIndex)) {
+          final canNavigate = _isInNavigableTargets(target);
+          nodes.add(
+            _FlowNode(
+              type: _FlowNodeType.output,
+              title: _localizedOutputTitle(context, target.outputIndex),
+              amount: target.amount,
+              tapTarget: isNavigable && canNavigate ? target : null,
+              isMyOutput: true,
+              outputAddress: target.address,
+            ),
+          );
+          i++;
+        } else {
+          nodes.add(const _FlowNode(type: _FlowNodeType.ellipsis, title: '...', amount: null));
+          while (i < ordered.length - 1 && !ourIndices.contains(ordered[i].outputIndex)) {
+            i++;
+          }
+        }
+      }
+
+      if (ordered.length > 1) {
+        final last = ordered.last;
+        final isMineLast = isOutputMine(last.address);
+        final canNavigateLast = isMineLast && _isInNavigableTargets(last);
+        nodes.add(
+          _FlowNode(
+            type: _FlowNodeType.output,
+            title: _localizedOutputTitle(context, last.outputIndex),
+            amount: last.amount,
+            tapTarget: isNavigable && canNavigateLast ? last : null,
+            outputAddress: isMineLast ? last.address : null,
+          ),
+        );
+      }
+    }
+
+    return nodes;
+  }
+
+  List<_FlowNode> _buildOutputNodesDefault(BuildContext context) {
+    final List<_FlowNode> nodes = [];
+    final bool hasChange = widget.changeOutputAmounts.isNotEmpty;
+    final bool isNavigable =
+        widget.mode == SendTransactionFlowCardMode.navigable &&
+        widget.onOutputTap != null &&
+        widget.isOutputMine != null;
+    final externalTargets = widget.externalOutputTapTargets ?? [];
+    final navigableTargets = widget.navigableOutputTapTargets ?? [];
+
+    // navigable 모드: 수수료 노드 가장 먼저 표시
+    if (isNavigable) {
+      nodes.add(_FlowNode(type: _FlowNodeType.fee, title: t.fee, amount: widget.fee));
+    }
+
+    // Show all external outputs when (external output rows + change row) <= 4.
+    final int outputAndChangeRowCount = widget.externalOutputAmounts.length + (hasChange ? 1 : 0);
+    final bool shouldShowAllExternal = outputAndChangeRowCount <= 4;
+
+    final outputOffset = isNavigable ? 0 : 1;
+    if (shouldShowAllExternal) {
+      for (int i = 0; i < widget.externalOutputAmounts.length; i++) {
+        final target = i < externalTargets.length ? externalTargets[i] : null;
+        final isMine = isNavigable && target != null && widget.isOutputMine!(target.address);
+        final canNavigate = isMine && _isInNavigableTargets(target);
+        nodes.add(
+          _FlowNode(
+            type: _FlowNodeType.output,
+            title: _localizedOutputTitle(context, i + outputOffset),
+            amount: widget.externalOutputAmounts[i],
+            tapTarget: canNavigate ? target : null,
+          ),
+        );
+      }
+    } else {
+      // external output이 5개 이상일 때 화면에 보이는 첫 번째, 마지막 출력에 대한 탭 타겟
+      final firstTarget = externalTargets.isNotEmpty ? externalTargets.first : null;
+      final lastTarget = externalTargets.length > 1 ? externalTargets.last : null;
+      final canNavigateFirst =
+          isNavigable &&
+          firstTarget != null &&
+          widget.isOutputMine!(firstTarget.address) &&
+          _isInNavigableTargets(firstTarget);
+      final canNavigateLast =
+          isNavigable &&
+          lastTarget != null &&
+          widget.isOutputMine!(lastTarget.address) &&
+          _isInNavigableTargets(lastTarget);
+      nodes.add(
+        _FlowNode(
+          type: _FlowNodeType.output,
+          title: _localizedOutputTitle(context, 0 + outputOffset),
           amount: widget.externalOutputAmounts.first,
+          tapTarget: canNavigateFirst ? firstTarget : null,
         ),
       );
       nodes.add(const _FlowNode(type: _FlowNodeType.ellipsis, title: '...', amount: null));
       nodes.add(
         _FlowNode(
           type: _FlowNodeType.output,
-          title: _localizedOutputTitle(context, widget.externalOutputAmounts.length),
+          title: _localizedOutputTitle(context, widget.externalOutputAmounts.length - 1 + outputOffset),
           amount: widget.externalOutputAmounts.last,
+          tapTarget: canNavigateLast ? lastTarget : null,
         ),
       );
     }
 
-    nodes.add(_FlowNode(type: _FlowNodeType.fee, title: t.fee, amount: widget.fee));
+    if (!isNavigable) {
+      nodes.add(_FlowNode(type: _FlowNodeType.fee, title: t.fee, amount: widget.fee));
+    }
 
     if (hasChange) {
+      final navigableTarget = navigableTargets.isNotEmpty ? navigableTargets.first : null;
       nodes.add(
         _FlowNode(
           type: _FlowNodeType.change,
           title: t.change,
           amount: widget.changeOutputAmounts.fold<int>(0, (sum, amount) => sum + amount),
+          tapTarget: isNavigable && navigableTarget != null ? navigableTarget : null,
         ),
       );
     }
@@ -438,58 +639,178 @@ class _FlowConnectionPainter extends CustomPainter {
   }
 }
 
-class _FlowNodeTile extends StatelessWidget {
+class _FlowNodeTile extends StatefulWidget {
   final _FlowNode node;
   final BitcoinUnit currentUnit;
   final bool isLeft;
+  final int? walletId;
+  final void Function(FlowOutputTapTarget target)? onOutputTap;
+  final bool Function(int walletId, String address)? isOutputToMyWallet;
+  final TransactionStatus? transactionStatus;
 
-  const _FlowNodeTile({super.key, required this.node, required this.currentUnit, required this.isLeft});
+  const _FlowNodeTile({
+    super.key,
+    required this.node,
+    required this.currentUnit,
+    required this.isLeft,
+    this.walletId,
+    this.onOutputTap,
+    this.isOutputToMyWallet,
+    this.transactionStatus,
+  });
+
+  @override
+  State<_FlowNodeTile> createState() => _FlowNodeTileState();
+}
+
+class _FlowNodeTileState extends State<_FlowNodeTile> {
+  bool _isPressed = false;
+
+  static const _shrinkDuration = Duration(milliseconds: 100);
+
+  Color _darkenColor(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    final darkened = hsl.withLightness((hsl.lightness - 0.12).clamp(0.0, 1.0));
+    return darkened.toColor();
+  }
+
+  Color _resolveTextColor(_FlowNode node, bool isChange, bool isEllipsis) {
+    if (isEllipsis) return CoconutColors.gray400;
+    final status = widget.transactionStatus;
+    if (status == null) {
+      return isChange && node.tapTarget == null ? CoconutColors.cyan : CoconutColors.white;
+    }
+
+    final isIncoming = status == TransactionStatus.received || status == TransactionStatus.receiving;
+    final isOutgoing =
+        status == TransactionStatus.sent ||
+        status == TransactionStatus.sending ||
+        status == TransactionStatus.self ||
+        status == TransactionStatus.selfsending;
+    final isSelf = status == TransactionStatus.self || status == TransactionStatus.selfsending;
+
+    if (isIncoming) {
+      final address = node.tapTarget?.address ?? node.outputAddress;
+      if (address != null &&
+          widget.walletId != null &&
+          widget.isOutputToMyWallet != null &&
+          widget.isOutputToMyWallet!(widget.walletId!, address)) {
+        return CoconutColors.cyan;
+      }
+      return CoconutColors.gray500;
+    } else if (isOutgoing) {
+      if (node.type == _FlowNodeType.input) return CoconutColors.white;
+      if (node.type == _FlowNodeType.fee) return CoconutColors.primary;
+      if (node.type == _FlowNodeType.output) {
+        if (isSelf) return CoconutColors.white;
+        if (node.tapTarget == null) return CoconutColors.primary;
+        final isCurrentWallet =
+            widget.walletId != null &&
+            widget.isOutputToMyWallet != null &&
+            widget.isOutputToMyWallet!(widget.walletId!, node.tapTarget!.address);
+        return isCurrentWallet ? CoconutColors.white : CoconutColors.primary;
+      }
+      if (isChange) return CoconutColors.white;
+    }
+    return CoconutColors.white;
+  }
+
+  Color _resolveAmountColor(_FlowNode node, bool isChange, bool isEllipsis, Color titleColor) {
+    if (isEllipsis) return CoconutColors.gray400;
+    final status = widget.transactionStatus;
+    if (status == null) return titleColor;
+
+    final isSelf = status == TransactionStatus.self || status == TransactionStatus.selfsending;
+    if (isSelf && (node.type == _FlowNodeType.output || node.type == _FlowNodeType.change)) {
+      return CoconutColors.cyan;
+    }
+    return titleColor;
+  }
+
+  static const _shrinkScale = 0.97;
 
   @override
   Widget build(BuildContext context) {
+    final node = widget.node;
     final isEllipsis = node.type == _FlowNodeType.ellipsis;
     final isChange = node.type == _FlowNodeType.change;
+    final isTappable = node.tapTarget != null && widget.onOutputTap != null;
     final amountText =
         node.amount == null
             ? '-'
-            : currentUnit == BitcoinUnit.btc
+            : widget.currentUnit == BitcoinUnit.btc
             ? '${BalanceFormatUtil.formatSatoshiToReadableBitcoin(node.amount!)} BTC'
-            : currentUnit.displayBitcoinAmount(node.amount, withUnit: true, defaultWhenNull: '-');
+            : widget.currentUnit.displayBitcoinAmount(node.amount, withUnit: true, defaultWhenNull: '-');
 
-    final titleStyle = CoconutTypography.body2_14.copyWith(
-      color: isChange ? CoconutColors.cyan : CoconutColors.white,
-      height: 1.2,
-    );
-    final amountStyle = CoconutTypography.caption_10_Number.copyWith(
-      color: isChange ? CoconutColors.cyan : CoconutColors.white,
-    );
+    var titleColor = _resolveTextColor(node, isChange, isEllipsis);
+    var amountColor = _resolveAmountColor(node, isChange, isEllipsis, titleColor);
+    if (isTappable && _isPressed) {
+      titleColor = _darkenColor(titleColor);
+      amountColor = _darkenColor(amountColor);
+    }
 
-    return Align(
-      alignment: isLeft ? Alignment.centerLeft : Alignment.centerLeft,
-      child: SizedBox(
-        height: 58,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    final titleStyle = CoconutTypography.body2_14.copyWith(color: titleColor, height: 1.2);
+    final amountStyle = CoconutTypography.caption_10_Number.setColor(amountColor);
+
+    Widget innerContent = SizedBox(
+      height: 58,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+            child:
+                isTappable
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(node.title, style: titleStyle),
+                        const SizedBox(width: 4),
+                        SvgPicture.asset(
+                          'assets/svg/arrow-right.svg',
+                          width: 6,
+                          height: 10,
+                          colorFilter: ColorFilter.mode(titleColor, BlendMode.srcIn),
+                        ),
+                      ],
+                    )
+                    : Text(
+                      node.title,
+                      style:
+                          isEllipsis ? CoconutTypography.body1_16.copyWith(color: CoconutColors.gray400) : titleStyle,
+                    ),
+          ),
+          if (!isEllipsis) ...[
+            const SizedBox(height: 4),
             MediaQuery(
               data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-              child: Text(
-                node.title,
-                style: isEllipsis ? Styles.body1.copyWith(color: CoconutColors.gray400) : titleStyle,
-              ),
+              child: Text(amountText, style: amountStyle),
             ),
-            if (!isEllipsis) ...[
-              const SizedBox(height: 4),
-              MediaQuery(
-                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                child: Text(amountText, style: amountStyle),
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
+
+    Widget content = Align(alignment: widget.isLeft ? Alignment.centerLeft : Alignment.centerLeft, child: innerContent);
+
+    if (isTappable && node.tapTarget != null) {
+      final target = node.tapTarget!;
+      return GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: () => widget.onOutputTap!(target),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _isPressed ? _shrinkScale : 1.0,
+          duration: _shrinkDuration,
+          curve: Curves.easeInOut,
+          child: content,
+        ),
+      );
+    }
+    return content;
   }
 }
 
@@ -499,6 +820,18 @@ class _FlowNode {
   final _FlowNodeType type;
   final String title;
   final int? amount;
+  final FlowOutputTapTarget? tapTarget;
 
-  const _FlowNode({required this.type, required this.title, required this.amount});
+  final bool? isMyOutput;
+
+  final String? outputAddress;
+
+  const _FlowNode({
+    required this.type,
+    required this.title,
+    required this.amount,
+    this.tapTarget,
+    this.isMyOutput,
+    this.outputAddress,
+  });
 }

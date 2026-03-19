@@ -278,6 +278,13 @@ class SendViewModel extends ChangeNotifier {
     return _isMaxMode && _recipientList[index].amount == '0';
   }
 
+  bool isOwnAddress(String address) {
+    for (WalletListItemBase walletItem in _walletProvider.walletItemList) {
+      if (_walletProvider.containsAddress(walletItem.id, address)) return true;
+    }
+    return false;
+  }
+
   SendViewModel(
     this._walletProvider,
     this._sendInfoProvider,
@@ -579,10 +586,10 @@ class SendViewModel extends ChangeNotifier {
       return false;
     }
 
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee?.toDouble();
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee?.toDouble();
-    feeInfos[2].satsPerVb = recommendedFees.hourFee?.toDouble();
-    _minimumFeeRate = recommendedFees.hourFee?.toDouble();
+    feeInfos[0].satsPerVb = recommendedFees.fastestFee;
+    feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
+    feeInfos[2].satsPerVb = recommendedFees.hourFee;
+    _minimumFeeRate = recommendedFees.hourFee;
 
     final defaultFeeRate = recommendedFees.halfHourFee?.toString();
     if (defaultFeeRate != null && _transactionDraftId == null) {

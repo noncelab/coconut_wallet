@@ -10,9 +10,11 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_detail_view_model.dart';
+import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
@@ -22,16 +24,14 @@ import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
-import 'package:coconut_wallet/screens/common/tag_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
-
-const _divider = Divider(color: CoconutColors.gray800);
 
 class UtxoDetailScreen extends StatefulWidget {
   final int id;
@@ -124,6 +124,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           Provider.of<UtxoTagProvider>(context, listen: false),
           Provider.of<TransactionProvider>(context, listen: false),
           Provider.of<WalletProvider>(context, listen: false),
+          Provider.of<AddressRepository>(context, listen: false),
           Provider.of<NodeProvider>(context, listen: false).getWalletStateStream(widget.id),
           Provider.of<BlockExplorerProvider>(context, listen: false),
         );
@@ -140,29 +141,6 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  void _showTagBottomSheet(
-    BuildContext context,
-    List<UtxoTag> tags,
-    List<UtxoTag> selectedTags,
-    UtxoDetailViewModel viewModel,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: CoconutColors.black,
-      isScrollControlled: true,
-      builder:
-          (context) => TagBottomSheet(
-            walletId: widget.id,
-            utxoTags: tags,
-            selectedTagNames: selectedTags.map((e) => e.name).toList(),
-            onUpdate: (selectedNames, updatedTagList, updateMode) {
-              viewModel.updateUtxoTags(widget.utxo.utxoId, selectedNames, updatedTagList, updateMode);
-              viewModel.refreshTagList(widget.id);
-            },
-          ),
-    );
-  }
-
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: CoconutColors.black,
@@ -173,15 +151,16 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
           child: Selector<
             UtxoDetailViewModel,
-            Tuple5<TransactionRecord?, List<String>, List<UtxoTag>, List<UtxoTag>, UtxoStatus>
+            Tuple6<TransactionRecord?, List<String>, List<UtxoTag>, List<UtxoTag>, UtxoStatus, bool>
           >(
             selector:
-                (_, viewModel) => Tuple5(
+                (_, viewModel) => Tuple6(
                   viewModel.transaction,
                   viewModel.dateString,
                   viewModel.utxoTagList,
                   viewModel.selectedUtxoTagList,
                   viewModel.utxoStatus,
+                  viewModel.isFetchingFromMempool,
                 ),
             builder: (_, data, __) {
               final tx = data.item1;
@@ -189,6 +168,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               final tags = data.item3;
               final selectedTags = data.item4;
               final utxoStatus = data.item5;
+              final isFetchingFromMempool = data.item6;
 
               return Column(
                 children: [
@@ -233,18 +213,22 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                           }
                         },
                       ),
-                    TransactionInputOutputCard(
-                      transaction: tx,
-                      isSameAddress: (address, index) {
-                        return address == widget.utxo.to && index == widget.utxo.index;
-                      },
-                      isForTransaction: false,
-                      currentUnit: _currentUnit,
-                    ),
+                    if (isFetchingFromMempool && tx.inputAddressList.isEmpty)
+                      _buildTransactionInputOutputSkeleton()
+                    else
+                      TransactionInputOutputCard(
+                        transaction: tx,
+                        isSameAddress: (address, index) {
+                          return address == widget.utxo.to && index == widget.utxo.index;
+                        },
+                        isForTransaction: false,
+                        currentUnit: _currentUnit,
+                      ),
+                    CoconutLayout.spacing_800h,
                     _buildAddress(),
-                    _buildTxMemo(tx.memo),
                     _buildTagSection(context, tags, selectedTags),
-                    _buildTxId(),
+                    _buildTxId(context),
+                    _buildTxMemo(tx.memo),
                     _buildBlockHeight(),
                     CoconutLayout.spacing_1000h,
                     _buildBalanceWidthCheck(),
@@ -381,8 +365,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
   }
 
   Widget _buildAddress() {
-    List<String> path = widget.utxo.derivationPath.split('/');
-    int changeIndex = path.length - 2;
+    final path = widget.utxo.derivationPath.split('/');
 
     return Column(
       children: [
@@ -396,79 +379,47 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               CopyTextContainer(
                 text: widget.utxo.to,
                 textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        for (int i = 0; i < path.length; i++) ...[
-                          TextSpan(
-                            text: path[i],
-                            style:
-                                i == changeIndex && path[changeIndex] == '1'
-                                    ? CoconutTypography.body3_12_NumberBold.setColor(CoconutColors.gray200)
-                                    : CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                          ),
-                          if (i < path.length - 1)
-                            TextSpan(
-                              text: "/",
-                              style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                            ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  CoconutLayout.spacing_100w,
-                  if (path[changeIndex] == '1') ...{
-                    Text('(${t.change})', style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
-                  },
-                ],
+                suffixText: '${path.join('/')} · ${_viewModel.walletNameDisplay}',
+                suffixTextStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
               ),
             ],
           ),
         ),
-        _divider,
       ],
     );
   }
 
   Widget _buildTxMemo(String? memo) {
-    return Column(
-      children: [
-        UnderlineButtonItemCard(
-          label: t.tx_memo,
-          child: Text(
-            memo?.isNotEmpty == true ? memo! : '-',
-            style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
-          ),
-        ),
-        _divider,
-      ],
+    return UnderlineButtonItemCard(
+      label: t.tx_memo,
+      child: Text(
+        memo?.isNotEmpty == true ? memo! : '-',
+        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
+      ),
     );
   }
 
-  Widget _buildTxId() {
-    return Column(
-      children: [
-        UnderlineButtonItemCard(
-          label: t.tx_id,
-          underlineButtonLabel: t.view_tx_details,
-          onTapUnderlineButton: () {
-            Navigator.pushNamed(
-              context,
-              '/transaction-detail',
-              arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash},
-            );
-          },
-          child: CopyTextContainer(
+  Widget _buildTxId(BuildContext context) {
+    return UnderlineButtonItemCard(
+      label: t.tx_id,
+      underlineButtonLabel: t.view_tx_details,
+      onTapUnderlineButton: () async {
+        await Navigator.pushNamed(
+          context,
+          '/transaction-detail',
+          arguments: {'id': widget.id, 'txHash': widget.utxo.transactionHash},
+        );
+        if (!context.mounted) return;
+        context.read<UtxoDetailViewModel>().refreshTransaction();
+      },
+      child: Column(
+        children: [
+          CopyTextContainer(
             text: widget.utxo.transactionHash,
             textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
           ),
-        ),
-        _divider,
-      ],
+        ],
+      ),
     );
   }
 
@@ -476,6 +427,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     return UnderlineButtonItemCard(
       label: t.block_num,
       underlineButtonLabel: widget.utxo.status == UtxoStatus.unspent ? t.view_mempool : '',
+      showDivider: false,
       onTapUnderlineButton: () {
         widget.utxo.status == UtxoStatus.unspent
             ? launchUrl(Uri.parse("${_viewModel.mempoolHost}/block/${widget.utxo.blockHeight}"))
@@ -488,46 +440,101 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildTagSection(BuildContext context, List<UtxoTag> tags, List<UtxoTag> selectedTags) {
-    final viewModel = context.read<UtxoDetailViewModel>();
-    return Column(
-      children: [
-        UnderlineButtonItemCard(
-          label: t.tag,
-          underlineButtonLabel: t.edit,
-          onTapUnderlineButton: () => _showTagBottomSheet(context, tags, selectedTags, viewModel),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (selectedTags.isEmpty) ...{
-                Text('-', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
-              } else ...{
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: List.generate(selectedTags.length, (index) {
-                    Color foregroundColor =
-                        tagColorPalette[selectedTags[index]
-                            .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
-                    return IntrinsicWidth(
-                      child: CoconutChip(
-                        minWidth: 40,
-                        color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
-                        borderColor: foregroundColor,
-                        label: '#${selectedTags[index].name}',
-                        labelSize: 12,
-                        labelColor: foregroundColor,
-                      ),
-                    );
-                  }),
-                ),
-              },
-            ],
-          ),
+  Widget _buildTransactionInputOutputSkeleton() {
+    return Shimmer.fromColors(
+      baseColor: CoconutColors.gray850,
+      highlightColor: CoconutColors.gray800,
+      child: Container(
+        width: double.infinity,
+        height: 60,
+        decoration: BoxDecoration(
+          color: CoconutColors.gray850,
+          borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
         ),
-        _divider,
-      ],
+      ),
     );
+  }
+
+  Widget _buildTagSection(BuildContext context, List<UtxoTag> tags, List<UtxoTag> selectedTags) {
+    return UnderlineButtonItemCard(
+      label: t.tag,
+      underlineButtonLabel: t.edit,
+      onTapUnderlineButton: showTagBottomSheet, //() => _showTagBottomSheet(context, tags, selectedTags, viewModel),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (selectedTags.isEmpty) ...{
+            Text('-', style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white)),
+          } else ...{
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: List.generate(selectedTags.length, (index) {
+                Color foregroundColor =
+                    tagColorPalette[selectedTags[index]
+                        .colorIndex]; // colorIndex == 8(gray)일 때 화면상으로 잘 보이지 않기 때문에 gray400으로 설정
+                return IntrinsicWidth(
+                  child: CoconutChip(
+                    minWidth: 40,
+                    color: CoconutColors.backgroundColorPaletteDark[selectedTags[index].colorIndex],
+                    borderColor: foregroundColor,
+                    label: '#${selectedTags[index].name}',
+                    labelSize: 12,
+                    labelColor: foregroundColor,
+                  ),
+                );
+              }),
+            ),
+          },
+        ],
+      ),
+    );
+  }
+
+  Future<void> showTagBottomSheet() async {
+    final List<String> currentUtxoIds = [widget.utxo.utxoId];
+
+    final result = await showModalBottomSheet<TagApplyResult>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => TagApplyBottomSheet(walletId: widget.id, selectedUtxoIds: currentUtxoIds),
+    );
+
+    if (result == null) return;
+    if (!mounted) return;
+
+    final mode = result.mode;
+    final tagStates = result.tagStates;
+
+    if (mode == UtxoTagApplyEditMode.add ||
+        mode == UtxoTagApplyEditMode.update ||
+        mode == UtxoTagApplyEditMode.delete) {
+      _viewModel.refreshTagList();
+      return;
+    }
+
+    if (mode == UtxoTagApplyEditMode.changeAppliedTags) {
+      final tagProvider = context.read<UtxoTagProvider>();
+
+      await tagProvider.applyTagsToUtxos(
+        walletId: widget.id,
+        selectedUtxoIds: currentUtxoIds,
+        tagStates: tagStates,
+        getCurrentTagsCallback: (_) => _viewModel.appliedUtxoTagList.map((e) => e.name).toList(),
+      );
+
+      _viewModel.refreshTagList();
+
+      if (mounted) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/circle-info.svg',
+          text: t.utxo_list_screen.utxo_tag_updated,
+        );
+      }
+    }
   }
 }
 

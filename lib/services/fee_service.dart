@@ -33,11 +33,11 @@ class FeeService {
     );
 
     return RecommendedFee(
-      (response.data['fastestFee'] as num?)?.toInt(),
-      (response.data['halfHourFee'] as num?)?.toInt(),
-      (response.data['hourFee'] as num?)?.toInt(),
-      (response.data['economyFee'] as num?)?.toInt(),
-      (response.data['minimumFee'] as num?)?.toInt(),
+      RecommendedFee.parseAndTruncate(response.data['fastestFee']),
+      RecommendedFee.parseAndTruncate(response.data['halfHourFee']),
+      RecommendedFee.parseAndTruncate(response.data['hourFee']),
+      RecommendedFee.parseAndTruncate(response.data['economyFee']),
+      RecommendedFee.parseAndTruncate(response.data['minimumFee']),
     );
   }
 }

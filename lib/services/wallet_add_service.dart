@@ -36,16 +36,12 @@ class WalletAddService {
     );
   }
 
-  WatchOnlyWallet createWalletFromDescriptor({
-    required String descriptor,
-    required String name,
-    required WalletImportSource walletImportSource,
-  }) {
+  WatchOnlyWallet createWalletFromDescriptor({required String descriptor, required String name}) {
     final singleSigWallet = SingleSignatureWallet.fromDescriptor(
       descriptor,
       ignoreChecksum: !DescriptorUtil.hasDescriptorChecksum(descriptor),
     );
-    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, walletImportSource.name);
+    return WatchOnlyWallet(name, 0, 0, singleSigWallet.descriptor, null, null, WalletImportSource.descriptor.name);
   }
 
   WatchOnlyWallet createWalletFromUR({

@@ -32,6 +32,7 @@ yes: "Sí"
 delete: "Eliminar"
 delete_label: "Eliminar"
 complete: "Completar"
+done: "Listo"
 close: "Cerrar"
 next: "Siguiente"
 modify: "Modificar"
@@ -410,6 +411,10 @@ wallet_list:
     delete_description: "Desliza hacia la izquierda en una cartera para eliminarla."
     finish: "Finalizar Edición"
     unsaved_changes_confirm_exit: "Tienes cambios sin guardar.\n¿Estás seguro de que quieres salir?"
+  bottom_sheet:
+    hide_fiat_price: "Ocultar saldo en moneda fiduciaria"
+    hide_fiat_price_description: "No mostrar el saldo en moneda fiduciaria en la pantalla de inicio."
+    visible: "Visible"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -506,8 +511,8 @@ send_confirm_screen:
     total: "El total de $n"
     sentence: " es necesario."
   output_detail_title: "Detalles de salida"
-  flow_input_title: "Entrada $index"
-  flow_output_title: "Salida $index"
+  flow_input_title: "Entrada #$index"
+  flow_output_title: "Salida #$index"
 signed_psbt_scanner_screen:
   title: "Escanear transacción firmada"
   bbqr_mode_switching: "Cambiando a modo BBQR.\nPor favor, espere un momento."
@@ -595,6 +600,7 @@ settings_screen:
   language: "Idioma"
   utxo_manual_selection: "Selección manual de UTXO"
   utxo_manual_selection_description: "Selecciona UTXOs manualmente para enviar."
+  utxo_tier_theme: "Color de moneda"
   electrum_server: 
     server_address: "Dirección del servidor"
     port: "Puerto"
@@ -641,18 +647,26 @@ settings_screen:
       toast:
         copy_success: "Registro copiado correctamente."
 
-    
-#lib/screens/wallet_detail
-wallet_detail_screen:
-  toast:
-    no_mfp_wallet_cant_send: "Las billeteras sin huella digital maestra no pueden enviar"
-
 address_list_screen:
   wallet_name: "Dirección de $name"
   address_index: "Dirección - $index"
   receiving: "Recibiendo"
   change: "Cambio"
   show_only_unused_address: "Mostrar solo direcciones sin usar"
+utxo_overview_screen:
+  by_amount: "Monto"
+  by_tag: "Etiqueta"
+  interval_info_title: "Guía de intervalos"
+  view_mode_list: "Lista"
+  view_mode_grid: "Cuadrícula"
+  no_tag_applied: "No hay etiquetas aplicadas"
+  no_tag_applied_desc: "Aplica etiquetas a los UTXOs para ver el desglose por etiqueta."
+  total: "Total"
+  untagged: "Sin etiqueta"
+  tagged: "Etiquetado"
+  multi_tag: "2+ etiquetas"
+  tag_bubble_with_count: "$name • $count"
+  amount_bubble_with_count: "$count • $balance"
 address_search_screen:
   address_placeholder: "Por favor, ingrese la dirección"
   address_not_found: "Dirección no encontrada"
@@ -665,11 +679,18 @@ address_search_screen:
   change_address: "Dirección de cambio"
 utxo_list_screen:
   total_balance: "Saldo total"
+  tag_apply: "Aplicar etiqueta"
+  utxo_select_required: "Por favor, seleccione primero el UTXO."
+  utxo_tag_updated: "La etiqueta de UTXO se ha actualizado correctamente."
+  send_locked_utxo: "No se pueden enviar UTXO bloqueados para uso."
   utxo_locked_button: "Bloquear"
   utxo_unlocked_button: "Desbloquear"
   pending_utxo: "Los UTXO que ya están en proceso de envío no se pueden seleccionar."
+  reused_address_legend: "Advertencia de dirección reutilizada"
+  reused_address: "Por favor, use primero los UTXOs de dirección reutilizada"
 
 transaction_detail_screen:
+  input_output_detail_title: "Ver detalles de entrada/salida"
   confirmation: "$height ($count confirmaciones)"
   time_ago:
     just_now: Ahora mismo
@@ -690,6 +711,15 @@ utxo_tag_screen:
   add_tag: "Presiona el botón + para crear tu primera etiqueta"
 wallet_info_screen:
   title: "Información de $name"
+  transaction: "Transacción"
+  utxo: "UTXO"
+  target_quantity: "Cantidad objetivo"
+  target_progress: "$percent% / $target"
+  target_not_set_secondary: "Mostraremos tu tasa de logro cuando configures la cantidad objetivo"
+  target_set_title: "Establecer objetivo"
+  target_set_placeholder: "Introduzca en unidad BTC"
+  target_set_invalid: "No puedes establecer 0 BTC como objetivo"
+  target_set_21m: "¡Es la carrera por los sats!"
   view_xpub: "Ver clave pública extendida"
   duplicated_name: "Nombre ya en uso"
   view_descriptor: "Ver descriptor"
@@ -720,20 +750,31 @@ transaction_fee_bumping_screen:
   new_fee: "Nueva comisión"  
   sats_vb: "sat/vB"
   recommend_fee: "Comisión mínima: ${fee} sat/vB o superior"  
-  recommend_fee_info_rbf: "Debe ser al menos 1 sat/vB superior a la comisión existente.\nSin embargo, si (comisión existente + 1) es menor que la comisión de transferencia lenta, recomendamos la comisión de transferencia lenta.\nNota: Si el tamaño de la nueva transacción aumenta, la diferencia entre la comisión recomendada y la comisión existente puede aparecer menos de 1 sat/vB."  
-  recommend_fee_info_cpfp: "Necesitas complementar la comisión insuficiente con una nueva transacción.\n • Tamaño de la nueva transacción = ${newTxSize} vB, Comisión recomendada = ${recommendedFeeRate} sat/vB\n • Comisión total requerida = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • Comisión de la nueva transacción = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • Comisión de la nueva transacción = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"  
-  current_fee: "Comisión recomendada"  
+  recommend_fee_info_rbf: "Se requiere una comisión adicional de al menos 1 sat por cada 1 vB del tamaño de la nueva transacción.\nSi la tasa mínima calculada es menor que la tasa de comisión lenta de la red actual, recomendamos usar la tasa lenta.\nSi el tamaño de la nueva transacción aumenta, la tasa de comisión recomendada puede ser inferior a la existente."  
+  recommend_fee_info_cpfp: "Debes compensar la comisión insuficiente con una nueva transacción.\n • Tamaño de la nueva transacción = ${newTxSize} vB, tasa de comisión recomendada = ${recommendedFeeRate} sat/vB\n • Comisión total requerida = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • Comisión de la nueva transacción = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • Tasa de comisión de la nueva transacción = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"  
+  current_fee: "Comisión recomendada"
+  utxo_auto_selection: "Selección automática de UTXO"
+  utxo_auto_selection_description: "Se seleccionan automáticamente los UTXO debido a las comisiones adicionales."
+  n_utxos: " • ${count} seleccionados"
+  no_utxos_selected: " • Selección requerida"
   estimated_fee: "Comisión total estimada de ${fee} sats"  
-  estimated_fee_too_high_error: "¡La comisión total estimada es superior a 0.01 BTC!"  
+  estimated_fee_too_high_error: "¡La comisión total estimada es superior a 0.01 BTC!" 
+  fee_rate_too_low_error: "¡La comisión es demasiado baja!"
+  insufficient_balance_error: "¡Saldo insuficiente!"
   recommended_fees_fetch_error: "¡No se pueden obtener comisiones recomendadas!" 
   recommended_fees_is_null: "Obteniendo comisiones..." 
   recommended_fee_less_than_pending_tx_fee: "Por favor, especifique una comisión superior a la comisión existente"  
   recommended_fee_less_than_network_fee: "Por favor, especifique al menos la comisión recomendada" 
+  please_select_more_utxo: "Por favor, seleccione UTXOs por valor de al menos ${amount}"
   dialog:
     fee_alert_title: "Aviso"
     fee_alert_description: "La comisión total que estableció es superior a 0.01 BTC. ¿Quieres continuar de todas formas?"  
     confirmed_alert_title: "Transacción completada"
     confirmed_alert_description: "La transacción que estaba pendiente ha sido completada."
+    rbf_duplicated_output_title: "Dirección duplicada detectada"
+    rbf_duplicated_output: "Esta transacción no es compatible."
+    utxo_not_found_title: "UTXO no encontrado"
+    utxo_not_found: "No se puede encontrar el UTXO utilizado en la transacción."
   toast:
     insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
 
@@ -776,6 +817,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "Agregar etiqueta"
   title_edit_tag: "Editar etiqueta"
+  title_apply_tag: "Aplicar etiqueta"
   tag_list: "Lista de etiquetas"
   add_new_tag: "Agregar etiqueta"
   delete_tag: "Eliminar etiqueta"
@@ -877,7 +919,7 @@ tooltip:
     scan_qr_below: "y escanea el código QR a continuación."
   address_receiving: "Esta es la dirección usada cuando recibes Bitcoin. En inglés, se llama Receiving o External."
   address_change: "Esta es la dirección donde recibes cambio cuando envías Bitcoin. En inglés, se llama Change."
-  utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."  
+  utxo: "UTXO significa Unspent Transaction Output, es decir, saldo no utilizado. Bitcoin no tiene el concepto de saldo. Recuerda que el saldo mostrado en tu billetera es la suma de UTXOs."
   faucet: "Prueba libremente con Bitcoin de prueba"
   multisig_wallet: "Esta es una billetera multifirma que requiere\n$count firmas de $total claves."  
   mfp: "Este es el valor único de la billetera.\nTambién llamado Huella Digital Maestra (MFP)."  
@@ -960,6 +1002,11 @@ alert:
     try_again: "Por favor, intenta nuevamente después de $count"
   fee_bumping:
     not_enough_amount: "Saldo insuficiente para ejecutar $bumpingType.\nPor favor, verifica tu saldo disponible actual."
+  without_mfp:
+    title: "Agregar huella digital maestra"
+    description: "Para enviar Bitcoin, primero debes agregar la huella digital maestra. ¿Quieres continuar?"
+    skip_button: "Cancelar"
+    confirm_button: "Agregar"
 
 third_party:
   keystone: "Keystone"

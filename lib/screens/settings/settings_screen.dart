@@ -191,21 +191,25 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 일반
                   _category(t.general),
-                  Selector<PreferenceProvider, String>(
-                    selector: (_, provider) => provider.language,
-                    builder: (context, language, child) {
-                      return _buildAnimatedButton(
-                        title: t.settings_screen.language,
-                        subtitle: _getCurrentLanguageDisplayName(language),
-                        onPressed: () async {
-                          CommonBottomSheets.showCustomHeightBottomSheet(
-                            context: context,
-                            heightRatio: 0.5,
-                            child: LanguageBottomSheet(),
+                  ButtonGroup(
+                    buttons: [
+                      Selector<PreferenceProvider, String>(
+                        selector: (_, provider) => provider.language,
+                        builder: (context, language, child) {
+                          return _buildAnimatedButton(
+                            title: t.settings_screen.language,
+                            subtitle: _getCurrentLanguageDisplayName(language),
+                            onPressed: () async {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.5,
+                                child: LanguageBottomSheet(),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
+                      ),
+                    ],
                   ),
                   CoconutLayout.spacing_400h,
 
