@@ -1328,12 +1328,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                       padding: EdgeInsets.zero,
                       onPressed: () async {
                         _setDropdownMenuVisiblility(false);
+                        bool needToValidateAllFields = true;
                         if (controller.text.isEmpty) {
-                          await _showAddressScanner(index);
+                          final String? scannedData = await _showAddressScanner(index);
+                          if (scannedData == null) {
+                            needToValidateAllFields = false;
+                          }
                         } else {
                           controller.clear();
                         }
-                        _viewModel.validateAllFieldsOnFocusLost();
+                        if (needToValidateAllFields) {
+                          _viewModel.validateAllFieldsOnFocusLost();
+                        }
                       },
                       icon:
                           controller.text.isEmpty
@@ -1745,7 +1751,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     }
   }
 
-  Future<void> _showAddressScanner(int index) async {
+  Future<String?> _showAddressScanner(int index) async {
     final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
     final String? scannedData = await CommonBottomSheets.showBottomSheet_100(
       context: context,
@@ -1767,7 +1773,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 ],
                 onBackPressed: () {
                   _clearQrScanController();
-                  Navigator.of(sheetContext).pop<String>('');
+                  Navigator.of(sheetContext).pop<String?>(null);
                 },
               ),
               body: AddressQrScannerBody(
@@ -1802,6 +1808,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       }
     }
     _clearQrScanController();
+
+    return scannedData;
   }
 
   void _clearQrScanController() {
@@ -1899,6 +1907,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
+          // TODO: refactoring, input에 변화가 없을 때에도 focus out만 되면 불필요하게 호출됨
           _viewModel.validateAllFieldsOnFocusLost();
         } else {
           Future.delayed(const Duration(milliseconds: 1000), () {

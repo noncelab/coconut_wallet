@@ -628,6 +628,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _adjustLastReceiverAmount({int? recipientIndex}) {
+    assert(_isMaxMode);
     double amountSumExceptLast = _amountSumExceptLast;
     int estimatedFeeInSats = _estimatedFee ?? 0;
     int maxBalanceInSats = balance - _currentUnit.toSatoshi(amountSumExceptLast) - estimatedFeeInSats;
