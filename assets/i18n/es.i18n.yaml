@@ -717,7 +717,6 @@ wallet_info_screen:
   target_set_placeholder: "Introduzca en unidad BTC"
   target_set_invalid: "No puedes establecer 0 BTC como objetivo"
   target_set_21m: "¡Es la carrera por los sats!"
-  target_set_max_exceeded: "Introduzca 21 millones de BTC o menos"
   view_xpub: "Ver clave pública extendida"
   duplicated_name: "Nombre ya en uso"
   view_descriptor: "Ver descriptor"

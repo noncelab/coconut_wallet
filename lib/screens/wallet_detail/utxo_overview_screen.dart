@@ -435,7 +435,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                         )
                       else
                         _buildGridSliver(_currentUnit),
-                      const SliverToBoxAdapter(child: SizedBox(height: 48)),
+                      SliverToBoxAdapter(child: SizedBox(height: _selectionBarBottomPadding(context))),
                     ],
                   ),
                   Positioned.fill(
@@ -550,7 +550,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
             },
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 48)),
+        SliverToBoxAdapter(child: SizedBox(height: _selectionBarBottomPadding(context))),
       ],
     );
   }
@@ -564,7 +564,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      padding: EdgeInsets.only(left: 16, right: 16, top: 40 + bottomInset, bottom: 8 + bottomInset),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: _selectionBarTopPadding + bottomInset,
+        bottom: _selectionBarInnerBottomPadding + bottomInset,
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -865,6 +870,19 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   }
 
   static const double _itemHeight = 10 + UtxoBucketCardRow.rowHeight + 10; // padding + row + padding
+
+  static const double _baseBottomPadding = 48;
+  static const double _selectionBarTopPadding = 40;
+  static const double _selectionBarInnerBottomPadding = 8;
+  static double get _selectionBarContentHeight =>
+      _selectionBarTopPadding + UtxoSelectionBarButton.height + _selectionBarInnerBottomPadding;
+
+  double _selectionBarBottomPadding(BuildContext context) {
+    final showBar = (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting;
+    if (!showBar) return _baseBottomPadding;
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+    return _baseBottomPadding + _selectionBarContentHeight + bottomInset * 2;
+  }
 
   void _updateActiveBucket() {
     if (!mounted || !_scrollController.hasClients || _isRestoringState) return;

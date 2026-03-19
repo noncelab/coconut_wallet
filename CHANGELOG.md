@@ -1,3 +1,6 @@
+## mainnet 0.10.1, regtest 3.9.1
+* minor UI updates
+  
 ## mainnet 0.10.0, regtest 3.9.0
 ### Added
 * UTXO 태그 일괄 적용 기능 및 선택 후 보내기 화면 이동 플로우 제공

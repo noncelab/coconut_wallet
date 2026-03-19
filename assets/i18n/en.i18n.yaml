@@ -716,7 +716,6 @@ wallet_info_screen:
   target_set_placeholder: "Please enter in BTC unit"
   target_set_invalid: "You can’t set 0 BTC as a target"
   target_set_21m: "It’s the sats race!!!"
-  target_set_max_exceeded: "Please enter 21 million BTC or less"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
   view_descriptor: "View Descriptor"

@@ -718,7 +718,6 @@ wallet_info_screen:
   target_set_title: "목표 설정"
   target_set_placeholder: "BTC 단위로 입력해 주세요"
   target_set_invalid: "0 BTC는 목표로 지정할 수 없어요"
-  target_set_max_exceeded: "2,100만 BTC 이하로 입력해주세요"
   target_set_21m: "지분 전쟁이다!!!"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
