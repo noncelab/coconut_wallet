@@ -7,8 +7,15 @@ class QrCodeInfo extends StatefulWidget {
   final String qrData;
   final Widget? qrcodeTopWidget;
   final bool isAddress;
+  final ImageProvider? embedImage;
 
-  const QrCodeInfo({super.key, required this.qrData, this.qrcodeTopWidget, this.isAddress = false});
+  const QrCodeInfo({
+    super.key,
+    required this.qrData,
+    this.qrcodeTopWidget,
+    this.isAddress = false,
+    this.embedImage,
+  });
 
   @override
   State<QrCodeInfo> createState() => _QrCodeInfoState();
@@ -21,7 +28,7 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_400h],
-        AdaptiveQrImage(qrData: widget.qrData),
+        AdaptiveQrImage(qrData: widget.qrData, embedImage: widget.embedImage),
         const SizedBox(height: 32),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),

@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -6,6 +7,8 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/animated_bottom_action_overlay.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -24,6 +27,14 @@ class ReceiveAddressScreen extends StatefulWidget {
 class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   WalletListItemBase? _selectedWalletItem;
   WalletAddress? _receiveAddress;
+
+  ImageProvider get _qrEmbedImage {
+    final path =
+        NetworkType.currentNetworkType == NetworkType.regtest
+            ? 'assets/images/splash_logo_regtest.png'
+            : 'assets/images/splash_logo_mainnet.png';
+    return AssetImage(path);
+  }
 
   String get derivationPath {
     if (_receiveAddress == null) return "";
@@ -63,6 +74,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CoconutColors.black,
+      resizeToAvoidBottomInset: false,
       appBar: CoconutAppBar.build(
         title: t.receive,
         customTitle: Column(
@@ -88,7 +100,12 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
       body:
           _selectedWalletItem != null
               ? SafeArea(
-                child: SingleChildScrollView(
+                child: EnterInputAndShareBottomActionOverlay(
+                  onEnterAmountTap:
+                      () => ReceiveAmountBottomSheet.show(
+                        context: context,
+                        currentUnit: context.read<PreferenceProvider>().currentUnit,
+                      ),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                     child: Column(
@@ -114,7 +131,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                         Text(
                                           derivationPath,
                                           style: CoconutTypography.body2_14.setColor(
-                                            CoconutColors.white.withOpacity(0.7),
+                                            CoconutColors.white.withValues(alpha: 0.7),
                                           ),
                                         ),
                                       ],
@@ -127,7 +144,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
-                                      color: CoconutColors.white.withOpacity(0.15),
+                                      color: CoconutColors.white.withValues(alpha: 0.15),
                                     ),
                                     child: Text(t.view_all_addresses, style: CoconutTypography.body3_12),
                                   ),
@@ -136,6 +153,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                             ),
                           ),
                           qrData: receiveAddress,
+                          embedImage: _qrEmbedImage,
                           isAddress: true,
                         ),
                       ],

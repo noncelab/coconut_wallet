@@ -378,19 +378,23 @@ class _AddressListScreenState extends State<AddressListScreen> {
                             CommonBottomSheets.showCustomHeightBottomSheet(
                               context: context,
                               heightRatio: 0.9,
-                              child: QrWithCopyTextScreen(
-                                qrcodeTopWidget: Text(
-                                  addressList[index].derivationPath,
-                                  style: CoconutTypography.body2_14.merge(
-                                    TextStyle(color: CoconutColors.white.withOpacity(0.7)),
+                              childBuilder:
+                                  (scrollController) => QrWithCopyTextScreen(
+                                    scrollController: scrollController,
+                                    showBottomActions: true,
+                                    qrcodeTopWidget: Text(
+                                      addressList[index].derivationPath,
+                                      style: CoconutTypography.body2_14.merge(
+                                        TextStyle(color: CoconutColors.white.withOpacity(0.7)),
+                                      ),
+                                    ),
+                                    qrData: addressList[index].address,
+                                    isAddress: true,
+                                    title: t.address_list_screen.address_index(index: addressList[index].index),
+                                    isBottom: true,
+                                    showPulldownMenu: false,
+                                    showQrEmbedImage: true,
                                   ),
-                                ),
-                                qrData: addressList[index].address,
-                                isAddress: true,
-                                title: t.address_list_screen.address_index(index: addressList[index].index),
-                                isBottom: true,
-                                showPulldownMenu: false,
-                              ),
                             ).whenComplete(() => AppGuard.enablePrivacyScreen());
                           },
                           address: addressList[index].address,

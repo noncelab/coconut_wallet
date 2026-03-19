@@ -1,8 +1,13 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
+import 'package:coconut_wallet/widgets/animated_bottom_action_overlay.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:provider/provider.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -26,6 +31,11 @@ class QrWithCopyTextScreen extends StatefulWidget {
 
   final bool isBottom;
 
+  final double? receiveAmount;
+  final ScrollController? scrollController;
+  final bool showBottomActions;
+  final bool showQrEmbedImage;
+
   const QrWithCopyTextScreen({
     super.key,
     required this.title,
@@ -40,6 +50,10 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.actionButton,
     this.isAddress = false,
     this.isBottom = false,
+    this.receiveAmount,
+    this.scrollController,
+    this.showBottomActions = false,
+    this.showQrEmbedImage = false,
   });
 
   @override
@@ -79,6 +93,15 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   int get _selectedIndex => _optionKeys.indexOf(_selectedKey);
 
   String get _displayTitle => _displayNames[_selectedKey] ?? _selectedKey;
+
+  ImageProvider? get _qrEmbedImage {
+    if (!widget.showQrEmbedImage) return null;
+    final path =
+        NetworkType.currentNetworkType == NetworkType.regtest
+            ? 'assets/images/splash_logo_regtest.png'
+            : 'assets/images/splash_logo_mainnet.png';
+    return AssetImage(path);
+  }
 
   double _calcQrWidth(BuildContext context) {
     return MediaQuery.of(context).size.width * 0.76;
@@ -174,9 +197,11 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
     final qrWidth = _calcQrWidth(context);
     final displayQrData = _currentQrData;
     final displayTextData = _currentTextData;
+    final currentUnit = context.read<PreferenceProvider>().currentUnit;
 
     return Scaffold(
       backgroundColor: CoconutColors.black,
+      resizeToAvoidBottomInset: false,
       appBar: CoconutAppBar.build(
         title: widget.title,
         context: context,
@@ -188,7 +213,9 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         actionButtonList: widget.actionButton != null ? [widget.actionButton!] : [],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: EnterInputAndShareBottomActionOverlay(
+          scrollController: widget.scrollController,
+          showBottomActions: widget.showBottomActions,
           child: Column(
             children: [
               if (widget.tooltipDescription != null) ...[
@@ -219,34 +246,24 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     ),
                   ),
                 ),
-
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    CoconutLayout.spacing_300h,
-
-                    if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_300h],
-
-                    Center(
-                      child: Container(
-                        width: qrWidth,
-                        decoration: CoconutBoxDecoration.shadowBoxDecoration,
-                        child: QrImageView(
-                          data: displayQrData,
-                          padding: const EdgeInsets.all(16),
-                          backgroundColor: Colors.white,
-                        ),
-                      ),
+              Column(
+                children: [
+                  CoconutLayout.spacing_300h,
+                  if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_300h],
+                  Center(
+                    child: Container(
+                      width: qrWidth,
+                      decoration: CoconutBoxDecoration.shadowBoxDecoration,
+                      child: AdaptiveQrImage(qrData: displayQrData, embedImage: _qrEmbedImage, showFrame: false),
                     ),
-                    CoconutLayout.spacing_500h,
-                    _buildCopyButton(displayTextData, qrWidth),
-                    CoconutLayout.spacing_1500h,
-                  ],
-                ),
+                  ),
+                  CoconutLayout.spacing_500h,
+                  _buildCopyButton(displayTextData, qrWidth),
+                ],
               ),
             ],
           ),
+          onEnterAmountTap: () => ReceiveAmountBottomSheet.show(context: context, currentUnit: currentUnit),
         ),
       ),
     );
