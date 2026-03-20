@@ -964,12 +964,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     );
   }
 
-  Widget _buildPriceHeader({bool isVisible = true}) {
+  Widget _buildPriceHeader({bool isVisible = true, bool isFiatButtonVisible = true}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _buildCurrentPriceWidget(isVisible),
-        if (_viewModel.isNetworkOn)
+        if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
             pressedColor: _viewModel.isOfflineMode ? CoconutColors.gray750 : CoconutColors.gray850,
             onPressed: () async {
@@ -1087,37 +1087,24 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       fixedHeight: cardHeight,
     );
 
-    final flipStatus = _flipController.status;
-    final bool backFaceShouldShowOffline = flipStatus == AnimationStatus.reverse ? true : isOffline;
-
     // onTap이 동작해야 하는 조건:
     // - isOfflineMode인 경우에는 항상
     // - isOfflineMode가 아니면, inputAssetType이 fiat일 때만
     final bool shouldHandleUnitToggle = isOffline || viewModel.inputAssetType == InputAssetType.fiat;
 
-    final backContent =
-        backFaceShouldShowOffline
-            ? _buildOfflineCardWidget(
-              enablePremiumInput: false,
-              enableInput: false,
-              resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
-              isActive: hasInput,
-              prefix: viewModel.resultCardPrefix,
-              postfix: viewModel.resultCardPostfix,
-            )
-            : _buildResultCardWidget(
-              isActive: hasInput,
-              resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
-              prefix: viewModel.resultCardPrefix,
-              postfix: viewModel.resultCardPostfix,
-              onTap: shouldHandleUnitToggle ? _onBtcUnitToggle : null,
-            );
-
-    final backCard = _buildCardShell(
-      fixedHeight: cardHeight,
-      child: backContent,
-      onTap: shouldHandleUnitToggle ? _onBtcUnitToggle : null,
+    final backContent = _buildOfflineCardWidget(
+      enablePremiumInput: false,
+      enableInput: false,
+      resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
+      isActive: hasInput,
+      prefix: viewModel.resultCardPrefix,
+      postfix: viewModel.resultCardPostfix,
+      isFiatButtonVisible: false,
     );
+
+    // backCard: 오프라인 모드에서 뒤집힌 카드
+    final backCard = _buildCardShell(fixedHeight: cardHeight, child: backContent, onTap: null);
+
     final frontCardShell = _buildCardShell(
       fixedHeight: cardHeight,
       child: frontCard,
@@ -1434,6 +1421,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     required bool isActive,
     String? prefix,
     String? postfix,
+    bool isFiatButtonVisible = true,
   }) {
     return IgnorePointer(
       ignoring: !enableInput,
@@ -1489,7 +1477,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               ],
             ),
           ),
-          Positioned(left: 0, top: 0, right: 0, child: _buildPriceHeader()),
+          Positioned(left: 0, top: 0, right: 0, child: _buildPriceHeader(isFiatButtonVisible: isFiatButtonVisible)),
         ],
       ),
     );
