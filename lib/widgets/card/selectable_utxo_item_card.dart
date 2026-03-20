@@ -68,7 +68,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
         decoration: BoxDecoration(
           color: _isPressing ? MyColors.transparentWhite_10 : CoconutColors.black,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(width: 1, color: widget.isSelected ? CoconutColors.primary : MyColors.borderGrey),
+          border: Border.all(width: 1, color: widget.isSelected ? CoconutColors.white : MyColors.borderGrey),
         ),
         padding: const EdgeInsets.only(top: 23, bottom: 22, left: 18, right: 23),
         child: Row(
@@ -134,7 +134,7 @@ class _UtxoSelectableCardState extends State<SelectableUtxoItemCard> {
             SvgPicture.asset(
               'assets/svg/circle-check.svg',
               colorFilter: ColorFilter.mode(
-                widget.isSelected ? CoconutColors.primary : MyColors.transparentWhite_40,
+                widget.isSelected ? CoconutColors.white : MyColors.transparentWhite_40,
                 BlendMode.srcIn,
               ),
             ),

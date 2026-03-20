@@ -99,6 +99,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
     return Row(
       children: [
         CupertinoButton(
+          key: orderDropdownButtonKey,
           onPressed: onToggleOrderDropdown,
           minSize: 0,
           padding: const EdgeInsets.all(8),
@@ -107,7 +108,6 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
             children: [
               Text(
                 orderText,
-                key: orderDropdownButtonKey,
                 style: CoconutTypography.caption_10.setColor(CoconutColors.white),
               ),
               const SizedBox(width: 4),

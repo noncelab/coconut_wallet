@@ -70,6 +70,10 @@ class PreferenceProvider extends ChangeNotifier {
   late String _language;
   String get language => _language;
 
+  /// UTXO 수동선택 모드 여부
+  late bool _isManualUtxoSelectionMode;
+  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
+
   bool get isKorean => _language == "kr";
   bool get isEnglish => _language == "en";
   bool get isJapanese => _language == "jp";
@@ -155,6 +159,7 @@ class PreferenceProvider extends ChangeNotifier {
               orElse: () => UtxoOrder.byAmountDesc,
             )
             : UtxoOrder.byAmountDesc;
+    _isManualUtxoSelectionMode = _sharedPrefs.getBool(SharedPrefKeys.kIsManualUtxoSelectionMode);
     _utxoTierTheme = UtxoTierThemes.fromId(_sharedPrefs.getString(SharedPrefKeys.kUtxoTierThemeId));
 
     _isWalletListFiatHidden = _sharedPrefs.getBool(SharedPrefKeys.kWalletListFiatHidden);
@@ -478,6 +483,7 @@ class PreferenceProvider extends ChangeNotifier {
   }
 
   /// UTXO 수동 선택 지갑 목록에서 제거
+  @Deprecated('Manual UTXO Selection Mode 는 이제 앱 전체 설정으로 변경되어, 개별 지갑 설정이 제거되었습니다.')
   Future<void> removeManualUtxoSelectionWalletId(int walletId) async {
     final ids = _walletPreferencesRepository.getManualUtxoSelectionWalletIds();
     if (ids.contains(walletId)) {
@@ -556,6 +562,13 @@ class PreferenceProvider extends ChangeNotifier {
     _utxoSortOrder = utxoOrder;
     await _sharedPrefs.setString(SharedPrefKeys.kUtxoSortOrder, utxoOrder.name);
     vibrateExtraLight();
+    notifyListeners();
+  }
+
+  // UTXO 수동선택 모드 여부
+  Future<void> setManualUtxoSelectionMode(bool isManual) async {
+    _isManualUtxoSelectionMode = isManual;
+    await _sharedPrefs.setBool(SharedPrefKeys.kIsManualUtxoSelectionMode, isManual);
     notifyListeners();
   }
 

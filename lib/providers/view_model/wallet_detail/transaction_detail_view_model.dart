@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
@@ -44,8 +45,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
   TransactionStatus? _transactionStatus = TransactionStatus.receiving;
   bool _isSendType = false;
 
-  bool? _canBumpingTx;
-  bool get canBumpingTx => _canBumpingTx == true;
+  bool? _needsMfp;
+  bool get needsMfp => _needsMfp == true;
 
   bool _disposed = false;
   bool get isDisposed => _disposed;
@@ -69,19 +70,19 @@ class TransactionDetailViewModel extends ChangeNotifier {
     this._sendInfoProvider,
     this._blockExplorerProvider,
   ) {
-    _setCanBumpingTx();
+    setNeedsMfp();
     _initTransactionList();
   }
 
-  void _setCanBumpingTx() {
+  void setNeedsMfp() {
     final wallet = _walletProvider.getWalletById(_walletId);
     if (wallet is MultisigWalletListItem) {
-      _canBumpingTx = true;
+      _needsMfp = false;
       return;
     }
 
     final masterFingerprint = (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
-    _canBumpingTx = masterFingerprint != "00000000";
+    _needsMfp = masterFingerprint == WalletAddService.masterFingerprintPlaceholder;
   }
 
   BlockTimestamp? get currentBlock => _currentBlock;
