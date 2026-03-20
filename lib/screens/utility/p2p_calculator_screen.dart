@@ -39,6 +39,7 @@ class P2PCalculatorScreen extends StatefulWidget {
 class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerProviderStateMixin {
   static const double _maxBtc = 21000000;
   static const int _maxSats = 2100000000000000; // 21M BTC
+  static const double _offlineBottomCardSwapThreshold = 0.4;
   final Color _keyboardToolbarColor = const Color(0xFF2E2E2E);
 
   late P2PCalculatorViewModel _viewModel;
@@ -73,6 +74,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
     _lottieController = AnimationController(vsync: this);
     _flipController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _flipController.addListener(_onFlipChanged);
   }
 
   void _resetCalculator() {
@@ -86,6 +88,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   @override
   void dispose() {
     _lottieController.dispose();
+    _flipController.removeListener(_onFlipChanged);
     _flipController.dispose();
     _premiumController.dispose();
     _inputController.dispose();
@@ -95,6 +98,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _inputFocusNode.dispose();
     _inputMirrorFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onFlipChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   void _onPremiumFocusChanged() {
@@ -468,6 +476,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   void _onBtcUnitToggle() {
     final currentInput = _viewModel.inputAmount;
     final prevIsBasedOnSatoshi = _viewModel.currentUnit.isBasedOnSatoshi;
+    FocusScope.of(context).unfocus();
     // 단위 토글
     _viewModel.cycleBtcUnit();
 
@@ -1091,16 +1100,27 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     // - isOfflineMode인 경우에는 항상
     // - isOfflineMode가 아니면, inputAssetType이 fiat일 때만
     final bool shouldHandleUnitToggle = isOffline || viewModel.inputAssetType == InputAssetType.fiat;
+    final bool showOfflineBottomCard = isOffline && _flipController.value >= _offlineBottomCardSwapThreshold;
+    final bool showOfflineBackCard = _flipController.value >= _offlineBottomCardSwapThreshold;
 
-    final backContent = _buildOfflineCardWidget(
-      enablePremiumInput: false,
-      enableInput: false,
-      resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
-      isActive: hasInput,
-      prefix: viewModel.resultCardPrefix,
-      postfix: viewModel.resultCardPostfix,
-      isFiatButtonVisible: false,
-    );
+    final backContent =
+        showOfflineBackCard
+            ? _buildOfflineCardWidget(
+              enablePremiumInput: false,
+              enableInput: false,
+              resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
+              isActive: hasInput,
+              prefix: viewModel.resultCardPrefix,
+              postfix: viewModel.resultCardPostfix,
+              isFiatButtonVisible: false,
+            )
+            : _buildResultCardWidget(
+              isActive: hasInput,
+              resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
+              prefix: viewModel.resultCardPrefix,
+              postfix: viewModel.resultCardPostfix,
+              onTap: null,
+            );
 
     // backCard: 오프라인 모드에서 뒤집힌 카드
     final backCard = _buildCardShell(fixedHeight: cardHeight, child: backContent, onTap: null);
@@ -1150,7 +1170,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             _buildCardShell(
               fixedHeight: cardHeight,
               child:
-                  isOffline
+                  showOfflineBottomCard
                       ? _buildOfflineCardWidget(
                         enablePremiumInput: true,
                         enableInput: true,
@@ -1251,7 +1271,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               curve: Curves.easeInOut,
               constraints: BoxConstraints(minHeight: fixedHeight ?? 175),
               height: fixedHeight,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: CoconutColors.gray800),
               child: Center(
                 child: FittedBox(
@@ -1425,59 +1444,61 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }) {
     return IgnorePointer(
       ignoring: !enableInput,
-      child: Stack(
+      child: Column(
         children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 8,
-            child: _buildInputCardWidget(
-              controller: _inputController,
-              focusNode: enableInput ? _inputFocusNode : _inputMirrorFocusNode,
-              placeholderText: _viewModel.getPlaceholder(isInputCard: true),
-              prefix: _viewModel.inputCardPrefix,
-              postfix: _viewModel.inputCardPostfix,
-              hidePlaceholderOnFocus: false,
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 190,
-            child: _buildResultCardWidget(
-              isActive: isActive,
-              resultText: resultText,
-              prefix: prefix,
-              postfix: postfix,
-              onTap: _viewModel.inputAssetType == InputAssetType.fiat ? _onBtcUnitToggle : null,
-            ),
-          ),
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                enablePremiumInput
-                    ? Row(
-                      children: [
-                        _buildChangeInputAssetButton(),
-                        CoconutLayout.spacing_100w,
-                        _buildPremiumInputWidget(
-                          premiumFocusNode: _premiumFocusNode,
-                          premiumController: _premiumController,
-                        ),
-                      ],
-                    )
-                    : IgnorePointer(
-                      ignoring: true,
-                      child: _buildPremiumInputWidget(
-                        premiumFocusNode: _premiumFocusNode,
-                        premiumController: _premiumController,
-                      ),
+          _buildPriceHeader(isFiatButtonVisible: isFiatButtonVisible),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 12),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildInputCardWidget(
+                    controller: _inputController,
+                    focusNode: enableInput ? _inputFocusNode : _inputMirrorFocusNode,
+                    placeholderText: _viewModel.getPlaceholder(isInputCard: true),
+                    prefix: _viewModel.inputCardPrefix,
+                    postfix: _viewModel.inputCardPostfix,
+                    fixedHeight: 55,
+                    hidePlaceholderOnFocus: false,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      enablePremiumInput
+                          ? Row(
+                            children: [
+                              _buildChangeInputAssetButton(),
+                              CoconutLayout.spacing_100w,
+                              _buildPremiumInputWidget(
+                                premiumFocusNode: _premiumFocusNode,
+                                premiumController: _premiumController,
+                              ),
+                            ],
+                          )
+                          : IgnorePointer(
+                            ignoring: true,
+                            child: _buildPremiumInputWidget(
+                              premiumFocusNode: _premiumFocusNode,
+                              premiumController: _premiumController,
+                            ),
+                          ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
+                    child: _buildResultCardWidget(
+                      isActive: isActive,
+                      resultText: resultText,
+                      prefix: prefix,
+                      postfix: postfix,
+                      onTap: _viewModel.inputAssetType == InputAssetType.fiat ? _onBtcUnitToggle : null,
                     ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
-          Positioned(left: 0, top: 0, right: 0, child: _buildPriceHeader(isFiatButtonVisible: isFiatButtonVisible)),
         ],
       ),
     );
