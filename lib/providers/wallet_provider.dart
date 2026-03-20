@@ -231,6 +231,8 @@ class WalletProvider extends ChangeNotifier {
       );
     }
 
+    // 현재 wallet_add_scanner_view_model에서 getNextThirdPartyWalletName을 통해 중복 이름을 미리 처리해서
+    // _resolveWalletNameConflict가 호출되는 경우가 없음
     String? resolvedName = _resolveWalletNameConflict(
       desiredName: watchOnlyWallet.name,
       descriptor: watchOnlyWallet.descriptor,
