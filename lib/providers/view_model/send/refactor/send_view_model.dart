@@ -380,20 +380,15 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
-    // UTXO 모드 불러온 후 selectedUtxoList 필요 시 초기화
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
 
     _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
-    if (_isUtxoSelectionAuto) {
-      _selectAllUtxos();
-    }
     _initBalances(_allUtxos);
   }
 
   void setIsUtxoSelectionAuto(bool value) {
     _isUtxoSelectionAuto = value;
-    if (value) _selectAllUtxos();
-    notifyListeners();
+    _buildTransaction();
   }
 
   void setSelectedUtxoList(List<UtxoState> list) {
@@ -462,7 +457,6 @@ class SendViewModel extends ChangeNotifier {
       _selectedUtxoList.clear();
     } else {
       _isUtxoSelectionAuto = true;
-      _selectAllUtxos();
     }
 
     // 7. 수수료 차감 설정
@@ -502,8 +496,6 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _setEstimatedFee(int? estimatedFee) {
-    if (_estimatedFee == estimatedFee) return;
-
     _estimatedFee = estimatedFee;
 
     if (_isMaxMode) {
@@ -526,7 +518,7 @@ class SendViewModel extends ChangeNotifier {
 
     final feeRate = double.parse(_feeRateText);
     _txBuilder = TransactionBuilder(
-      availableUtxos: _selectedUtxoList,
+      availableUtxos: _isUtxoSelectionAuto ? _allUtxos : _selectedUtxoList,
       recipients: _getRecipientMapForTx(recipientMap),
       feeRate: feeRate,
       changeDerivationPath: _changeAddressDerivationPath,
@@ -620,6 +612,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _adjustLastReceiverAmount({int? recipientIndex}) {
+    assert(_isMaxMode);
     double amountSumExceptLast = _amountSumExceptLast;
     int estimatedFeeInSats = _estimatedFee ?? 0;
     int maxBalanceInSats = balance - _currentUnit.toSatoshi(amountSumExceptLast) - estimatedFeeInSats;
@@ -931,12 +924,6 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _updateIsAmountSumExceedsBalance(double amountSum) {
-    // 수수료가 아직 계산되지 않았으면 잔액 검증을 하지 않음
-    if (_estimatedFee == null && !_isFeeSubtractedFromSendAmount) {
-      _isAmountSumExceedsBalance = AmountError.none;
-      return;
-    }
-
     double total = _isFeeSubtractedFromSendAmount ? amountSum : amountSum + _estimatedFeeByUnit;
     double balanceInUnit = balance / _dustLimitDenominator;
     _isAmountSumExceedsBalance =
@@ -1071,11 +1058,6 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
     _sendInfoProvider.setUnsignedDraftId(_transactionDraftId);
-  }
-
-  void _selectAllUtxos() {
-    assert(_isUtxoSelectionAuto);
-    _selectedUtxoList = _allUtxos;
   }
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///

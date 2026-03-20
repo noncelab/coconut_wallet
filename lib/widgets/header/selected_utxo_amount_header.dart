@@ -106,10 +106,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                orderText,
-                style: CoconutTypography.caption_10.setColor(CoconutColors.white),
-              ),
+              Text(orderText, style: CoconutTypography.caption_10.setColor(CoconutColors.white)),
               const SizedBox(width: 4),
               SvgPicture.asset(
                 'assets/svg/arrow-down.svg',
