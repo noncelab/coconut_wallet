@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -75,7 +76,7 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
             padding: EdgeInsets.only(left: 8.0, right: showClearButton ? 0.0 : 4.0),
             child: Text(widget.currentUnit.symbol, style: CoconutTypography.body2_14_Bold),
           ),
-        if (showUnitSuffix && showClearButton) CoconutLayout.spacing_100w,
+        if (!showClearButton) CoconutLayout.spacing_400w,
         if (showClearButton)
           IconButton(
             iconSize: 18,
@@ -94,10 +95,14 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
 
   List<TextInputFormatter> _buildInputFormatters() {
     if (widget.currentUnit.isBtcUnit) {
-      return [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')), _SingleDotInputFormatter()];
+      return [
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+        _SingleDotInputFormatter(),
+        const BtcAmountInputFormatter(),
+      ];
     }
 
-    return [FilteringTextInputFormatter.digitsOnly];
+    return [FilteringTextInputFormatter.digitsOnly, const SatoshiAmountInputFormatter()];
   }
 
   @override
