@@ -930,12 +930,6 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _updateIsAmountSumExceedsBalance(double amountSum) {
-    // 수수료가 아직 계산되지 않았으면 잔액 검증을 하지 않음
-    if (_estimatedFee == null && !_isFeeSubtractedFromSendAmount) {
-      _isAmountSumExceedsBalance = AmountError.none;
-      return;
-    }
-
     double total = _isFeeSubtractedFromSendAmount ? amountSum : amountSum + _estimatedFeeByUnit;
     double balanceInUnit = balance / _dustLimitDenominator;
     _isAmountSumExceedsBalance =
