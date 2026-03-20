@@ -498,7 +498,9 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         },
       ),
       onTitlePressed: () {
-        _onUtxoSelectionModeButtonPressed();
+        if (!_viewModel.isSelectedWalletNull && !isWalletWithoutMfp(_viewModel.selectedWalletItem)) {
+          _onUtxoSelectionModeButtonPressed();
+        }
       },
       context: context,
       isBottom: true,
