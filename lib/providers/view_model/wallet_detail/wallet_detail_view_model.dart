@@ -126,13 +126,14 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevBalance = balance;
     // debugPrint('prev :: $_prevBalance');
 
-    // Faucet
     _setReceiveAddress();
     _walletName = walletBaseItem.name.length > 10 ? '${walletBaseItem.name.substring(0, 7)}...' : walletBaseItem.name;
-    _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    _checkFaucetRecord();
-
-    showFaucetTooltip();
+    // Faucet
+    if (NetworkType.currentNetworkType.isTestnet) {
+      _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
+      _checkFaucetRecord();
+      showFaucetTooltip();
+    }
   }
 
   void _setReceiveAddress() {
