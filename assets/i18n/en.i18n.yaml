@@ -199,6 +199,7 @@ utility:
     no_wallet_description: "You need to add a wallet before sending Bitcoin.\nPlease add a wallet and try again."
     add_wallet: "Add Wallet"
     copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[Transaction Bill]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nReference Price: $currencySymbol $referencePrice / BTC\nReference Datetime: $referenceTime\nTransaction Fee: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+    enter_amount_first: "Please enter the amount first"
     
 transaction_draft:
   title: "Temporary Transaction"

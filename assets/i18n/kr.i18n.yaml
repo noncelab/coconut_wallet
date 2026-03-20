@@ -199,7 +199,8 @@ utility:
     no_wallet_description: "비트코인을 보내려면 먼저 지갑을 추가해야 해요.\n지갑을 추가한 뒤 다시 시도해 주세요."
     add_wallet: "지갑 추가하기"
     copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[거래 계산서]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n기준 시세: $currencySymbol $referencePrice / BTC\n기준 일시: $referenceTime\n거래 수수료: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
-
+    enter_amount_first: "먼저 금액을 입력해 주세요"
+    
 transaction_draft:
   title: "임시 저장 트랜잭션"
   empty_message: "임시 저장된 트랜잭션이 없어요"

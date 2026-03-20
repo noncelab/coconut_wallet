@@ -199,6 +199,7 @@ utility:
     no_wallet_description: "ビットコインを送信する前に、ウォレットを追加してください。\nウォレットを追加した後、もう一度試してください。"
     add_wallet: "ウォレットを追加する"
     copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[取引請求書]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n基準価格: $currencySymbol $referencePrice / BTC\n基準日時: $referenceTime\n取引手数料: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+    enter_amount_first: "まず金額を入力してください"
 
 transaction_draft:
   title: "一時保存トランザクション"

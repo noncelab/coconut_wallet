@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -558,9 +559,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   void _onShowTransactionBill() {
-    if (!_viewModel.isNetworkOn) return;
+    if (!_viewModel.isNetworkOn) {
+      CoconutToast.showToast(context: context, text: t.errors.network_error);
+      return;
+    }
     final input = _viewModel.inputAmount;
-    if (input == null || input == 0) return;
+    if (input == null || input == 0) {
+      CoconutToast.showWarningToast(context: context, text: t.utility.p2p_calculator.enter_amount_first);
+      return;
+    }
 
     final int result = _viewModel.calculate(input);
     final referenceDateTime = DateTime.now();
@@ -595,6 +602,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         .replaceAll(RegExp(r'\.00$'), '')
         .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
     final feeSatsStr = feeSats.toThousandsSeparatedString();
+
+    vibrateLight();
 
     showDialog(
       context: context,
