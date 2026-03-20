@@ -279,6 +279,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder:
           (context) => WalletInfoEditBottomSheet(
             id: widget.id,

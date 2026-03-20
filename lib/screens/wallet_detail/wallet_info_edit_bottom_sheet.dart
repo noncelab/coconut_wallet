@@ -4,8 +4,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/icons_util.dart';
+import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/icon/svg_icon.dart';
-import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -61,6 +61,8 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
 
   int get _colorCount => CoconutColors.colorPalette.length;
 
+  bool get _canEditPalette => widget.isCustomAccount && widget.walletImportSource == WalletImportSource.coconutVault;
+
   @override
   void initState() {
     super.initState();
@@ -69,13 +71,13 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     _initialValue = viewModel.walletName;
     _textEditingController.text = viewModel.walletName;
 
-    if (widget.isCustomAccount) {
+    if (_canEditPalette) {
       _selectedIconIndex = viewModel.iconIndex;
       _selectedColorIndex = viewModel.colorIndex;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!widget.isCustomAccount) {
+      if (!_canEditPalette) {
         _textFieldFocusNode.requestFocus();
       }
     });
@@ -83,8 +85,8 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     _textEditingController.addListener(() {
       context.read<WalletInfoEditViewModel>().checkValidity(
         _textEditingController.text,
-        selectedIconIndex: widget.isCustomAccount ? _selectedIconIndex : null,
-        selectedColorIndex: widget.isCustomAccount ? _selectedColorIndex : null,
+        selectedIconIndex: _canEditPalette ? _selectedIconIndex : null,
+        selectedColorIndex: _canEditPalette ? _selectedColorIndex : null,
       );
     });
   }
@@ -110,8 +112,9 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
           child: Stack(
             children: [
               CoconutBottomSheet(
-                useIntrinsicHeight: !widget.isCustomAccount,
-                heightRatio: widget.isCustomAccount ? 0.9 : 0.95,
+                bottomMargin: 0,
+                useIntrinsicHeight: !_canEditPalette,
+                heightRatio: _canEditPalette ? 0.9 : 0.95,
                 appBar: CoconutAppBar.buildWithNext(
                   title: walletName,
                   context: context,
@@ -159,16 +162,20 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
         return SafeArea(
           child: SingleChildScrollView(
             child: Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 30),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                left: 16,
+                right: 16,
+                top: 30,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      CoconutLayout.spacing_100w,
                       _buildIcon(),
-                      CoconutLayout.spacing_500w,
+                      CoconutLayout.spacing_400w,
                       Expanded(
                         child: CoconutTextField(
                           controller: _textEditingController,
@@ -196,7 +203,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                       ),
                     ],
                   ),
-                  if (widget.isCustomAccount) ...[const SizedBox(height: 24), _buildPaletteGrid()],
+                  if (_canEditPalette) ...[const SizedBox(height: 8), _buildPaletteGrid()],
                 ],
               ),
             ),
@@ -207,30 +214,37 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
   }
 
   Widget _buildIcon() {
+    if (_canEditPalette) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: ColorUtil.getColor(_selectedColorIndex).backgroundColor,
+        ),
+        padding: const EdgeInsets.all(10),
+        child: SvgPicture.asset(
+          CustomIcons.getPathByIndex(_selectedIconIndex),
+          colorFilter: ColorFilter.mode(ColorUtil.getColor(_selectedColorIndex).color, BlendMode.srcIn),
+        ),
+      );
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: widget.isCustomAccount ? CoconutColors.black : CoconutColors.gray700,
-      ),
+      decoration: const BoxDecoration(shape: BoxShape.circle, color: CoconutColors.gray700),
       padding: const EdgeInsets.all(10),
-      child:
-          widget.isCustomAccount
-              ? WalletIcon(
-                walletImportSource: WalletImportSource.coconutVault,
-                iconIndex: _selectedIconIndex,
-                colorIndex: _selectedColorIndex,
-              )
-              : SvgPicture.asset(
-                widget.walletImportSource.externalWalletIconPath,
-                colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
-              ),
+      child: SvgPicture.asset(
+        widget.walletImportSource.externalWalletIconPath,
+        colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
+      ),
     );
   }
 
   Widget _buildPaletteGrid() {
     return GridView.builder(
+      padding: EdgeInsets.zero,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 5, crossAxisSpacing: 4.0),
@@ -291,7 +305,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
         margin: const EdgeInsets.all(11.5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(40.0),
-          border: Border.all(color: isSelected ? CoconutColors.gray500 : CoconutColors.black, width: 1.8),
+          border: Border.all(color: isSelected ? CoconutColors.white : CoconutColors.black, width: 1.8),
         ),
       ),
     );
