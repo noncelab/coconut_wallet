@@ -392,8 +392,7 @@ class SendViewModel extends ChangeNotifier {
 
   void setIsUtxoSelectionAuto(bool value) {
     _isUtxoSelectionAuto = value;
-    if (value) _selectAllUtxos();
-    notifyListeners();
+    _buildTransaction();
   }
 
   void setSelectedUtxoList(List<UtxoState> list) {
