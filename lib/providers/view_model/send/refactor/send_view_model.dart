@@ -524,7 +524,7 @@ class SendViewModel extends ChangeNotifier {
 
     final feeRate = double.parse(_feeRateText);
     _txBuilder = TransactionBuilder(
-      availableUtxos: _selectedUtxoList,
+      availableUtxos: _isUtxoSelectionAuto ? _allUtxos : _selectedUtxoList,
       recipients: _getRecipientMapForTx(recipientMap),
       feeRate: feeRate,
       changeDerivationPath: _changeAddressDerivationPath,
