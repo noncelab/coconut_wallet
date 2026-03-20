@@ -19,6 +19,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -1503,17 +1504,24 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 if (i > 0) const SizedBox(width: 3),
                 Flexible(
                   fit: FlexFit.tight,
-                  child: ShrinkAnimationButton(
-                    onPressed: () => _onToolbarButtonPressed(buttonData[i]['value']!),
-                    borderWidth: 1.2,
-                    borderGradientColors: const [CoconutColors.gray600, CoconutColors.gray600],
+                  child: RippleEffect(
                     borderRadius: 8,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        buttonData[i]['label']!,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                        textAlign: TextAlign.center,
+                    onTap: () {
+                      _onToolbarButtonPressed(buttonData[i]['value']!);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: CoconutColors.gray600, width: 1.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text(
+                          buttonData[i]['label']!,
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ),
