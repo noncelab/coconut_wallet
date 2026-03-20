@@ -380,13 +380,9 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
-    // UTXO 모드 불러온 후 selectedUtxoList 필요 시 초기화
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
 
     _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
-    if (_isUtxoSelectionAuto) {
-      _selectAllUtxos();
-    }
     _initBalances(_allUtxos);
   }
 
@@ -461,7 +457,6 @@ class SendViewModel extends ChangeNotifier {
       _selectedUtxoList.clear();
     } else {
       _isUtxoSelectionAuto = true;
-      _selectAllUtxos();
     }
 
     // 7. 수수료 차감 설정
@@ -1063,11 +1058,6 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
     _sendInfoProvider.setUnsignedDraftId(_transactionDraftId);
-  }
-
-  void _selectAllUtxos() {
-    assert(_isUtxoSelectionAuto);
-    _selectedUtxoList = _allUtxos;
   }
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///

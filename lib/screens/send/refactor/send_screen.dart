@@ -544,7 +544,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           ),
     );
     if (result != null) {
-      _viewModel.setIsUtxoSelectionAuto(false);
       _viewModel.setSelectedUtxoList(List<UtxoState>.from(result));
     }
   }
@@ -1363,7 +1362,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                                                         ),
                                                         CoconutLayout.spacing_100w,
                                                         Text(
-                                                          t.select_wallet_with_options_bottom_sheet.select_utxo_auto,
+                                                          t.send_screen.utxo_auto_selection,
                                                           style: Styles.caption.merge(
                                                             TextStyle(
                                                               color: CoconutColors.white,
