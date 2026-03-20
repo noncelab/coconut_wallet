@@ -28,7 +28,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   /// 수수료율 (%)
   double _feeRate = 1.0;
-  double get feeRate => _feeRate;
+  double get premiumRate => _feeRate;
 
   /// 위쪽 위젯 인풋 타입
   InputAssetType _inputAssetType = InputAssetType.fiat;
@@ -125,7 +125,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFeeRate(double rate) {
+  void setPremiumRate(double rate) {
     _feeRate = rate;
     notifyListeners();
   }
@@ -352,9 +352,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
         referenceTime: referenceDateTime,
-        transactionFeeRate: feeRateStr,
-        transactionFee: feeAmountStr,
-        feeToSats: feeSatsStr,
+        transactionPremiumRate: feeRateStr,
+        transactionPremium: feeAmountStr,
+        premiumToSats: feeSatsStr,
       );
     } else {
       return t.utility.p2p_calculator.copy_format(
@@ -365,9 +365,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
         referenceTime: referenceDateTime,
-        transactionFeeRate: feeRateStr,
-        transactionFee: feeAmountStr,
-        feeToSats: feeSatsStr,
+        transactionPremiumRate: feeRateStr,
+        transactionPremium: feeAmountStr,
+        premiumToSats: feeSatsStr,
       );
     }
   }

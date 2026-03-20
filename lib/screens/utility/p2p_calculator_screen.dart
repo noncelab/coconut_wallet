@@ -43,10 +43,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   late P2PCalculatorViewModel _viewModel;
 
-  late final TextEditingController _feeController;
+  late final TextEditingController _premiumController;
   late final TextEditingController _inputController;
 
-  late final FocusNode _feeFocusNode;
+  late final FocusNode _premiumFocusNode;
   late final FocusNode _inputFocusNode;
   late final FocusNode _inputMirrorFocusNode; // 오프라인 상단 더미 카드용
 
@@ -60,15 +60,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   @override
   void initState() {
     super.initState();
-    _feeController = TextEditingController(text: '1.0');
+    _premiumController = TextEditingController(text: '1.0');
     _inputController = TextEditingController();
     _scrollController = ScrollController();
 
-    _feeFocusNode = FocusNode();
+    _premiumFocusNode = FocusNode();
     _inputFocusNode = FocusNode();
     _inputMirrorFocusNode = FocusNode(debugLabel: 'offline_input_mirror');
 
-    _feeFocusNode.addListener(_onFeeFocusChanged);
+    _premiumFocusNode.addListener(_onPremiumFocusChanged);
     _inputFocusNode.addListener(_onInputFocusChanged);
 
     _lottieController = AnimationController(vsync: this);
@@ -78,7 +78,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   void _resetCalculator() {
     _isUpdatingController = true;
     _inputController.clear();
-    _feeController.text = '1.0';
+    _premiumController.text = '1.0';
     _isUpdatingController = false;
     _viewModel.resetInput();
   }
@@ -87,18 +87,18 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   void dispose() {
     _lottieController.dispose();
     _flipController.dispose();
-    _feeController.dispose();
+    _premiumController.dispose();
     _inputController.dispose();
-    _feeFocusNode.removeListener(_onFeeFocusChanged);
+    _premiumFocusNode.removeListener(_onPremiumFocusChanged);
     _inputFocusNode.removeListener(_onInputFocusChanged);
-    _feeFocusNode.dispose();
+    _premiumFocusNode.dispose();
     _inputFocusNode.dispose();
     _inputMirrorFocusNode.dispose();
     super.dispose();
   }
 
-  void _onFeeFocusChanged() {
-    if (_feeFocusNode.hasFocus) {
+  void _onPremiumFocusChanged() {
+    if (_premiumFocusNode.hasFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_scrollController.hasClients) return;
         _scrollController.animateTo(
@@ -108,7 +108,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         );
       });
     } else {
-      _formatFeeOnFocusLost();
+      _formatPremiumOnFocusLost();
     }
     setState(() {});
   }
@@ -143,32 +143,32 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     setState(() {});
   }
 
-  void _formatFeeOnFocusLost() {
-    var text = _feeController.text;
+  void _formatPremiumOnFocusLost() {
+    var text = _premiumController.text;
 
     if (text.isEmpty) {
-      _feeController.text = '0';
+      _premiumController.text = '0';
     } else if (text.endsWith('.')) {
-      _feeController.text = '${text}0';
+      _premiumController.text = '${text}0';
     } else if (!text.contains('.')) {
-      _feeController.text = '$text.0';
+      _premiumController.text = '$text.0';
     }
 
-    _viewModel.setFeeRate(double.tryParse(_feeController.text) ?? 0);
+    _viewModel.setPremiumRate(double.tryParse(_premiumController.text) ?? 0);
   }
 
-  void _handleFeeInputChanged(String value) {
+  void _handlePremiumInputChanged(String value) {
     var text = value;
 
     if (text == '.') {
-      _feeController.value = const TextEditingValue(text: '0.', selection: TextSelection.collapsed(offset: 2));
+      _premiumController.value = const TextEditingValue(text: '0.', selection: TextSelection.collapsed(offset: 2));
       return;
     }
 
     final regex = RegExp(r'^\d{0,2}(\.\d{0,1})?$');
     if (!regex.hasMatch(text)) {
-      final prevText = _viewModel.feeRate.toStringAsFixed(1);
-      _feeController.value = TextEditingValue(
+      final prevText = _viewModel.premiumRate.toStringAsFixed(1);
+      _premiumController.value = TextEditingValue(
         text: prevText,
         selection: TextSelection.collapsed(offset: prevText.length),
       );
@@ -190,12 +190,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       }
     }
 
-    if (text != _feeController.text) {
-      _feeController.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    if (text != _premiumController.text) {
+      _premiumController.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
     }
 
-    _viewModel.setFeeRate(double.tryParse(text) ?? 0);
-    _updateResultOnFeeChange();
+    _viewModel.setPremiumRate(double.tryParse(text) ?? 0);
+    _updateResultOnPremiumChange();
   }
 
   void _handleAmountInputChanged(String value) {
@@ -334,7 +334,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _isUpdatingController = false;
   }
 
-  void _updateResultOnFeeChange() {
+  void _updateResultOnPremiumChange() {
     setState(() {});
   }
 
@@ -584,25 +584,25 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         _viewModel.inputAssetType == InputAssetType.fiat
             ? _viewModel.formatSatsResult(result)
             : _viewModel.formatSatsResult(input);
-    final feeRateStr = '${_feeController.text}%';
+    final premiumRateStr = '${_premiumController.text}%';
 
-    final feeRate = double.tryParse(_feeController.text) ?? 0;
-    double feeAmount;
+    final premiumRate = double.tryParse(_premiumController.text) ?? 0;
+    double premiumAmount;
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      feeAmount = input * feeRate / 100;
+      premiumAmount = input * premiumRate / 100;
     } else {
-      feeAmount = result * feeRate / 100;
+      premiumAmount = result * premiumRate / 100;
     }
 
-    // feeAmount를 BTC 가격으로 변환하여 sats로 표시
+    // premiumAmount를 BTC 가격으로 변환하여 sats로 표시
     final btcPrice = _viewModel.btcPrice ?? 0;
-    final feeSats = btcPrice > 0 ? ((feeAmount / btcPrice) * 100000000).round() : 0;
+    final premiumSats = btcPrice > 0 ? ((premiumAmount / btcPrice) * 100000000).round() : 0;
 
-    final feeAmountStr = feeAmount
+    final premiumAmountStr = premiumAmount
         .toStringAsFixed(2)
         .replaceAll(RegExp(r'\.00$'), '')
         .replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},');
-    final feeSatsStr = feeSats.toThousandsSeparatedString();
+    final premiumSatsStr = premiumSats.toThousandsSeparatedString();
 
     vibrateLight();
 
@@ -678,8 +678,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                               ),
                               const SizedBox(height: 20),
                               _buildBillRow(
-                                t.utility.p2p_calculator.transaction_fee,
-                                '${_feeController.text} %',
+                                t.utility.p2p_calculator.transaction_premium,
+                                '${_premiumController.text} %',
                                 valueLineHeight: 1.0,
                               ),
                               const SizedBox(height: 2),
@@ -689,7 +689,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '${_viewModel.fiatCode.symbol} $feeAmountStr ($feeSatsStr sats)',
+                                      '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
                                       style: CoconutTypography.body3_12_Number.copyWith(color: CoconutColors.gray500),
                                     ),
                                   ],
@@ -705,9 +705,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                         fiatAmountStr,
                         btcAmountStr,
                         referenceDateTimeString,
-                        feeRateStr,
-                        feeAmountStr,
-                        feeSatsStr,
+                        premiumRateStr,
+                        premiumAmountStr,
+                        premiumSatsStr,
                         _viewModel.inputAssetType == InputAssetType.fiat ? result : input,
                       ),
                       CoconutLayout.spacing_600h,
@@ -770,9 +770,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     String fiatAmountStr,
     String btcAmountStr,
     String referenceDateTime,
-    String feeRateStr,
-    String feeAmountStr,
-    String feeSatsStr,
+    String premiumRateStr,
+    String premiumAmountStr,
+    String premiumSatsStr,
     int satsAmount,
   ) {
     return Padding(
@@ -788,9 +788,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 fiatAmountStr,
                 btcAmountStr,
                 referenceDateTime,
-                feeRateStr,
-                feeAmountStr,
-                feeSatsStr,
+                premiumRateStr,
+                premiumAmountStr,
+                premiumSatsStr,
               );
             },
           ),
@@ -1081,8 +1081,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       placeholderText: placeholder,
       prefix: viewModel.inputCardPrefix,
       postfix: viewModel.inputCardPostfix,
-      feeController: _feeController,
-      feeFocusNode: _feeFocusNode,
+      premiumController: _premiumController,
+      premiumFocusNode: _premiumFocusNode,
       onUnitToggle: viewModel.inputAssetType == InputAssetType.btc ? _onBtcUnitToggle : null,
       fixedHeight: cardHeight,
     );
@@ -1098,7 +1098,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     final backContent =
         backFaceShouldShowOffline
             ? _buildOfflineCardWidget(
-              enableFeeInput: false,
+              enablePremiumInput: false,
               enableInput: false,
               resultText: hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
               isActive: hasInput,
@@ -1165,7 +1165,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
               child:
                   isOffline
                       ? _buildOfflineCardWidget(
-                        enableFeeInput: true,
+                        enablePremiumInput: true,
                         enableInput: true,
                         resultText:
                             hasInput ? formatResultAmount(result) : viewModel.getPlaceholder(isInputCard: false),
@@ -1238,8 +1238,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     required TextEditingController controller,
     required FocusNode focusNode,
     required String placeholderText,
-    TextEditingController? feeController,
-    FocusNode? feeFocusNode,
+    TextEditingController? premiumController,
+    FocusNode? premiumFocusNode,
     String? prefix,
     String? postfix,
     VoidCallback? onUnitToggle,
@@ -1313,12 +1313,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 ),
               ),
             ),
-            if (feeController != null && feeFocusNode != null)
+            if (premiumController != null && premiumFocusNode != null)
               Positioned(
                 bottom: 20,
                 left: 0,
                 right: 0,
-                child: Center(child: _buildFeeInputWidget(feeFocusNode: feeFocusNode, feeController: feeController)),
+                child: Center(
+                  child: _buildPremiumInputWidget(
+                    premiumFocusNode: premiumFocusNode,
+                    premiumController: premiumController,
+                  ),
+                ),
               ),
           ],
         ),
@@ -1326,14 +1331,17 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     );
   }
 
-  Widget _buildFeeInputWidget({required FocusNode feeFocusNode, required TextEditingController feeController}) {
+  Widget _buildPremiumInputWidget({
+    required FocusNode premiumFocusNode,
+    required TextEditingController premiumController,
+  }) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onTap: () {
-        feeFocusNode.requestFocus();
-        final text = feeController.text;
+        premiumFocusNode.requestFocus();
+        final text = premiumController.text;
         if (text.isNotEmpty) {
-          feeController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
+          premiumController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
         }
       },
       child: Container(
@@ -1343,20 +1351,23 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('${t.utility.p2p_calculator.fee} ', style: CoconutTypography.body2_14.setColor(CoconutColors.white)),
+            Text(
+              '${t.utility.p2p_calculator.premium} ',
+              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+            ),
             IntrinsicWidth(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 10),
                 child: CoconutTextField(
                   enabled: _viewModel.isNetworkOn,
-                  controller: feeController,
-                  focusNode: feeFocusNode,
+                  controller: premiumController,
+                  focusNode: premiumFocusNode,
                   padding: EdgeInsets.zero,
                   maxLines: 1,
                   height: 22,
                   textInputAction: TextInputAction.done,
                   textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                  onChanged: _handleFeeInputChanged,
+                  onChanged: _handlePremiumInputChanged,
                   textAlign: TextAlign.end,
                   isVisibleBorder: false,
                 ),
@@ -1417,7 +1428,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   Widget _buildOfflineCardWidget({
-    required bool enableFeeInput,
+    required bool enablePremiumInput,
     required bool enableInput,
     required String resultText,
     required bool isActive,
@@ -1457,17 +1468,23 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                enableFeeInput
+                enablePremiumInput
                     ? Row(
                       children: [
                         _buildChangeInputAssetButton(),
                         CoconutLayout.spacing_100w,
-                        _buildFeeInputWidget(feeFocusNode: _feeFocusNode, feeController: _feeController),
+                        _buildPremiumInputWidget(
+                          premiumFocusNode: _premiumFocusNode,
+                          premiumController: _premiumController,
+                        ),
                       ],
                     )
                     : IgnorePointer(
                       ignoring: true,
-                      child: _buildFeeInputWidget(feeFocusNode: _feeFocusNode, feeController: _feeController),
+                      child: _buildPremiumInputWidget(
+                        premiumFocusNode: _premiumFocusNode,
+                        premiumController: _premiumController,
+                      ),
                     ),
               ],
             ),
@@ -1480,7 +1497,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   Widget _buildKeyboardToolbar() {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final hasFocus = _feeFocusNode.hasFocus || _inputFocusNode.hasFocus;
+    final hasFocus = _premiumFocusNode.hasFocus || _inputFocusNode.hasFocus;
 
     if (!hasFocus || keyboardHeight == 0) {
       return const SizedBox.shrink();
@@ -1535,13 +1552,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   void _onToolbarButtonPressed(String value) {
-    if (_feeFocusNode.hasFocus) {
-      final currentFee = double.tryParse(_feeController.text) ?? 0;
+    if (_premiumFocusNode.hasFocus) {
+      final currentPremium = double.tryParse(_premiumController.text) ?? 0;
       final addValue = double.tryParse(value) ?? 0;
-      final newFee = (currentFee + addValue).clamp(0.0, 99.9);
-      _feeController.text = newFee.toStringAsFixed(1);
-      _viewModel.setFeeRate(newFee);
-      _updateResultOnFeeChange();
+      final newPremium = (currentPremium + addValue).clamp(0.0, 99.9);
+      _premiumController.text = newPremium.toStringAsFixed(1);
+      _viewModel.setPremiumRate(newPremium);
+      _updateResultOnPremiumChange();
     } else if (_inputFocusNode.hasFocus) {
       final currentText = _inputController.text.replaceAll(RegExp(r'[^0-9.]'), '');
 
@@ -1563,9 +1580,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   /// Quick Add 버튼 데이터 반환
   List<Map<String, String>> _getQuickAddAmounts() {
-    final isFeeFocused = _feeFocusNode.hasFocus;
+    final isPremiumFocused = _premiumFocusNode.hasFocus;
     final isInputFocused = _inputFocusNode.hasFocus;
-    if (isFeeFocused) {
+    if (isPremiumFocused) {
       return [
         {'label': '+0.1 %', 'value': '0.1'},
         {'label': '+0.5 %', 'value': '0.5'},
