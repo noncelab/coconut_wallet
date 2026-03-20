@@ -971,13 +971,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         _buildCurrentPriceWidget(isVisible),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
-            pressedColor: _viewModel.isOfflineMode ? CoconutColors.gray750 : CoconutColors.gray850,
+            pressedColor: _viewModel.isOfflineMode ? CoconutColors.gray850 : CoconutColors.gray750,
             onPressed: () async {
               await _viewModel.onFiatUnitChange();
               _resetCalculator();
               _inputFocusNode.unfocus();
             },
-            defaultColor: _viewModel.isOfflineMode ? CoconutColors.gray700 : CoconutColors.gray800,
+            defaultColor: _viewModel.isOfflineMode ? CoconutColors.gray900 : CoconutColors.gray800,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               constraints: const BoxConstraints(minWidth: 60),
