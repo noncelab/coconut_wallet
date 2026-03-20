@@ -63,11 +63,13 @@ class WalletPreferencesRepository extends BaseRepository {
     }
   }
 
+  @Deprecated('Manual UTXO Selection Mode는 지갑 별 설정이 아닌 앱 전체 설정으로 변경되었습니다. 이 메서드는 더 이상 사용되지 않습니다.')
   List<int> getManualUtxoSelectionWalletIds() {
     final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;
     return prefs?.manualUtxoSelectionWalletIds.toList() ?? [];
   }
 
+  @Deprecated('Manual UTXO Selection Mode는 지갑 별 설정이 아닌 앱 전체 설정으로 변경되었습니다. 이 메서드는 더 이상 사용되지 않습니다.')
   Future<void> setManualUtxoSelectionWalletIds(List<int> ids) async {
     final prefs = realm.query<RealmWalletPreferences>('TRUEPREDICATE').firstOrNull;
     if (prefs != null) {
@@ -82,11 +84,13 @@ class WalletPreferencesRepository extends BaseRepository {
     }
   }
 
+  @Deprecated('Manual UTXO Selection Mode는 지갑 별 설정이 아닌 앱 전체 설정으로 변경되었습니다. 이 메서드는 더 이상 사용되지 않습니다.')
   bool isManualUtxoSelection(int walletId) {
     return getManualUtxoSelectionWalletIds().contains(walletId);
   }
 
   /// walletId의 UTXO 선택 모드 토글
+  @Deprecated('Manual UTXO Selection Mode는 지갑 별 설정이 아닌 앱 전체 설정으로 변경되었습니다. 이 메서드는 더 이상 사용되지 않습니다.')
   Future<void> toggleManualUtxoSelection(int walletId) async {
     final ids = getManualUtxoSelectionWalletIds();
     if (ids.contains(walletId)) {

@@ -477,6 +477,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "UTXO選択"
+  skip: "スキップ"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO選択"
@@ -596,6 +597,8 @@ settings_screen:
   hide_balance: "残高を非表示"
   fiat: "法定通貨"
   language: "言語"
+  utxo_manual_selection: "UTXO 数手動選択"
+  utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
   utxo_tier_theme: "コインの色"
   electrum_server: 
     server_address: "サーバーアドレス"
