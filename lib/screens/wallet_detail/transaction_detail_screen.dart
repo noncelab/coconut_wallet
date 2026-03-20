@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -23,6 +24,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
@@ -361,7 +363,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     if (_viewModel.transactionStatus == null || _viewModel.isSendType == null) {
       return Container();
     }
-    bool canBumpingTx = _viewModel.canBumpingTx;
 
     return Container(
       width: MediaQuery.sizeOf(context).width,
@@ -428,7 +429,30 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         return;
                       }
 
-                      if (!canBumpingTx) return;
+                      if (_viewModel.needsMfp) {
+                        final bool? result = await showNoMfpDialog(context, () {
+                          if (context.mounted) {
+                            Navigator.of(context).pop(true);
+                          }
+                        });
+
+                        if (result == false) {
+                          return;
+                        }
+
+                        await Navigator.pushNamed(
+                          context,
+                          '/wallet-info',
+                          arguments: {
+                            'id': widget.id,
+                            'isMultisig': false,
+                            'entryPoint': kEntryPointWalletHome,
+                            'showMfpInput': true,
+                          },
+                        );
+                        _viewModel.setNeedsMfp();
+                        return;
+                      }
 
                       _viewModel.clearSendInfo();
                       Navigator.pushNamed(
@@ -447,9 +471,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                       child: Text(
                         _viewModel.isSendType! ? t.quick_send : t.quick_receive,
                         style: CoconutTypography.body2_14.setColor(
-                          _viewModel.isSendType!
-                              ? CoconutColors.primary.withValues(alpha: canBumpingTx ? 1.0 : 0.5)
-                              : CoconutColors.cyan.withValues(alpha: canBumpingTx ? 1.0 : 0.5),
+                          _viewModel.isSendType! ? CoconutColors.primary : CoconutColors.cyan,
                         ),
                       ),
                     ),

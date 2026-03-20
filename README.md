@@ -15,12 +15,18 @@
 </p>
 
 <p align="center">
+  <a href="https://apps.apple.com/kr/app/%EC%BD%94%EC%BD%94%EB%84%9B-%EC%9B%94%EB%A0%9B-%EB%B9%84%ED%8A%B8%EC%BD%94%EC%9D%B8-%EC%A7%80%EA%B0%91/id6745778545">Download iOS App</a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="https://play.google.com/store/apps/details?id=onl.coconut.wallet">Download Android App</a>
+</p>
+
+<p align="center">
   Watch-only Bitcoin Wallet for iOS & Android
 </p>
 
 
-> **Try it risk-free!** A **regtest version** is available on both app stores, allowing you to practice air-gapped transactions with test bitcoin — no real funds required.</br>
-> [App Store](https://apps.apple.com/app/id6654902298) · [Google Play](https://play.google.com/store/apps/details?id=onl.coconut.wallet.regtest)
+> **Try it risk-free!** A **REGTEST VERSION** is available on both app stores, allowing you to practice air-gapped transactions with test bitcoin — no real funds required.</br>
+> [Download iOS App(ver.regtest)](https://apps.apple.com/app/id6654902298) · [Download Android App(ver.regtest)](https://play.google.com/store/apps/details?id=onl.coconut.wallet.regtest)
 
 ---
 

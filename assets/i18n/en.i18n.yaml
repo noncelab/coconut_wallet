@@ -479,6 +479,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "Select UTXOs"
+  skip: "skip"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "Select UTXOs"
@@ -598,6 +599,8 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  utxo_manual_selection: "UTXO Manual Selection"
+  utxo_manual_selection_description: "Select UTXOs manually for sending"
   utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"

@@ -30,7 +30,7 @@ class TransactionBuildResult {
   double? getFeeRate(WalletListItemBase wallet) {
     if (transaction == null) return null;
     final vSize = transaction!.estimateVirtualByteForWallet(wallet);
-    return FeeRateUtils.ceilFeeRate(estimatedFee / vSize);
+    return FeeRateUtils.roundToTwoDecimals(estimatedFee / vSize);
   }
 
   @override

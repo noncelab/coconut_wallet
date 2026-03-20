@@ -18,10 +18,10 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 version: 0.10.0+65
 app_versions:
-  ios_regtest: 3.9.0+0
-  ios_mainnet: 0.10.0+1
-  aos_regtest: 3.9.0+65
-  aos_mainnet: 0.10.0+60
+  ios_regtest: 3.9.1+0
+  ios_mainnet: 0.10.1+1
+  aos_regtest: 3.9.1+65
+  aos_mainnet: 0.10.1+62
 
 environment:
   sdk: ">=3.7.0 <4.0.0"
@@ -232,6 +232,7 @@ flutter:
     - assets/lottie/upside-down-hands.json
     - assets/lottie/thankyou-hearts.json
     - assets/lottie/swipe-left.json
+    - assets/lottie/fireworks.json
     - assets/images/hand-with-laid-heart.png
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
