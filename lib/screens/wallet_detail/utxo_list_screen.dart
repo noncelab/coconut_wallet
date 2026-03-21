@@ -18,6 +18,7 @@ import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
+import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/card/utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_header.dart';
 import 'package:coconut_wallet/widgets/header/utxo_list_sticky_header.dart';
@@ -26,7 +27,6 @@ import 'package:coconut_wallet/widgets/header/utxo_tag_list_widget.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
 
@@ -128,7 +128,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
               _buildScaffold(context),
               _buildStickyHeader(context),
               _buildUtxoOrderDropdown(),
-              if (_isSelectionMode) ...[_buildSelectionButtons()],
+              BottomActionBarSlide(isVisible: _isSelectionMode, child: _buildSelectionButtons()),
             ],
           ),
         ),
@@ -367,102 +367,76 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Widget _buildSelectionButtons() {
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return BottomActionBar(
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 40 + bottomPadding,
+        bottom: bottomPadding > 0 ? bottomPadding : 16,
+      ),
+      child: Row(
         children: [
-          Container(
-            height: 40,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, CoconutColors.black],
-              ),
+          Expanded(
+            child: _buildSelectionActionButton(
+              iconPath: 'assets/svg/send.svg',
+              text: t.send,
+              onTap:
+                  () => _handleActionUtxoSelected(() {
+                    final selectedUtxos = List<UtxoState>.from(viewModel.selectedUtxoList);
+                    final hasLockedUtxo = selectedUtxos.any((utxo) => utxo.status == UtxoStatus.locked);
+
+                    if (hasLockedUtxo) {
+                      CoconutToast.showToast(
+                        context: context,
+                        text: t.utxo_list_screen.send_locked_utxo,
+                        isVisibleIcon: true,
+                      );
+                      return;
+                    }
+
+                    setState(() {
+                      _isSelectionMode = false;
+                    });
+                    viewModel.deselectTaggedUtxo();
+                    _utxoListKey.currentState?._selectedUtxoIds.clear();
+
+                    Navigator.pushNamed(
+                      context,
+                      '/send',
+                      arguments: {
+                        'walletId': widget.id,
+                        'sendEntryPoint': SendEntryPoint.walletDetail,
+                        'selectedUtxoList': selectedUtxos,
+                      },
+                    );
+                  }),
             ),
           ),
-
-          Container(
-            color: CoconutColors.black,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildInvisibleActionArea(
-                          iconPath: 'assets/svg/send.svg',
-                          text: t.send,
-                          onTap:
-                              () => _handleActionUtxoSelected(() {
-                                final selectedUtxos = List<UtxoState>.from(viewModel.selectedUtxoList);
-                                final hasLockedUtxo = selectedUtxos.any((utxo) => utxo.status == UtxoStatus.locked);
-
-                                if (hasLockedUtxo) {
-                                  CoconutToast.showToast(
-                                    context: context,
-                                    text: t.utxo_list_screen.send_locked_utxo,
-                                    isVisibleIcon: true,
-                                  );
-                                  return;
-                                }
-
-                                setState(() {
-                                  _isSelectionMode = false;
-                                });
-                                viewModel.deselectTaggedUtxo();
-                                _utxoListKey.currentState?._selectedUtxoIds.clear();
-
-                                Navigator.pushNamed(
-                                  context,
-                                  '/send',
-                                  arguments: {
-                                    'walletId': widget.id,
-                                    'sendEntryPoint': SendEntryPoint.walletDetail,
-                                    'selectedUtxoList': selectedUtxos,
-                                  },
-                                );
-                              }),
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildInvisibleActionArea(
-                          iconPath: 'assets/svg/tag.svg',
-                          text: t.utxo_list_screen.tag_apply,
-                          onTap: () => _handleActionUtxoSelected(showTagBottomSheet),
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildInvisibleActionArea(
-                          iconPath: 'assets/svg/lock_simple.svg',
-                          text: t.utxo_list_screen.utxo_locked_button,
-                          onTap:
-                              () => _handleActionUtxoSelected(() {
-                                _utxoListKey.currentState?._updateSelectedUtxos(lock: true);
-                              }),
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildInvisibleActionArea(
-                          iconPath: 'assets/svg/unlock_simple.svg',
-                          text: t.utxo_list_screen.utxo_unlocked_button,
-                          onTap:
-                              () => _handleActionUtxoSelected(() {
-                                _utxoListKey.currentState?._updateSelectedUtxos(lock: false);
-                              }),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: bottomPadding > 0 ? bottomPadding : 16),
-              ],
+          Expanded(
+            child: _buildSelectionActionButton(
+              iconPath: 'assets/svg/tag.svg',
+              text: t.utxo_list_screen.tag_apply,
+              onTap: () => _handleActionUtxoSelected(showTagBottomSheet),
+            ),
+          ),
+          Expanded(
+            child: _buildSelectionActionButton(
+              iconPath: 'assets/svg/lock_simple.svg',
+              text: t.utxo_list_screen.utxo_locked_button,
+              onTap:
+                  () => _handleActionUtxoSelected(() {
+                    _utxoListKey.currentState?._updateSelectedUtxos(lock: true);
+                  }),
+            ),
+          ),
+          Expanded(
+            child: _buildSelectionActionButton(
+              iconPath: 'assets/svg/unlock_simple.svg',
+              text: t.utxo_list_screen.utxo_unlocked_button,
+              onTap:
+                  () => _handleActionUtxoSelected(() {
+                    _utxoListKey.currentState?._updateSelectedUtxos(lock: false);
+                  }),
             ),
           ),
         ],
@@ -470,30 +444,15 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
     );
   }
 
-  Widget _buildInvisibleActionArea({required String iconPath, required String text, required VoidCallback onTap}) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+  Widget _buildSelectionActionButton({required String iconPath, required String text, required VoidCallback onTap}) {
+    return BottomActionButton(
+      iconPath: iconPath,
+      label: text,
       onTap: onTap,
-      child: Container(
-        height: 64,
-        alignment: Alignment.center,
-        color: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(iconPath, width: 24, height: 24),
-            const SizedBox(height: 4),
-            Text(
-              text,
-              style: const TextStyle(color: CoconutColors.gray100, fontSize: 12, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
+      buttonLayout: BottomActionButtonLayout.vertical,
+      iconSize: 24,
+      spacing: 4,
+      textStyle: const TextStyle(color: CoconutColors.gray100, fontSize: 12, fontWeight: FontWeight.bold),
     );
   }
 
@@ -868,6 +827,19 @@ class _UtxoListState extends State<UtxoList> {
             } else {
               _openDetailPage(utxo, viewModel);
             }
+          },
+          // 요소 중 하나를 Long Press 하면 선택 모드로 진입
+          onLongPress: () {
+            if (isSelectionMode) return;
+            if (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming) {
+              CoconutToast.showToast(context: context, text: t.utxo_list_screen.pending_utxo, isVisibleIcon: true);
+              return;
+            }
+            setState(() {
+              _selectedUtxoIds.add(utxo.utxoId);
+              viewModel.addSelectUtxo(utxo);
+            });
+            widget.onSettingLockChanged?.call(true);
           },
         ),
       ),
