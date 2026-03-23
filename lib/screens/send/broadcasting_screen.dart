@@ -251,7 +251,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
 
   void _onBroadcastButtonClicked(BroadcastingViewModel viewModel) async {
     if (viewModel.isNetworkOn == false) {
-      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: ErrorCodes.networkError.message,
+        level: CoconutToastLevel.warning,
+      );
       return;
     }
     if (viewModel.feeBumpingType != null && viewModel.hasTransactionConfirmed()) {
@@ -374,7 +380,13 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 width: MediaQuery.sizeOf(context).width,
                 onPressed: () {
                   if (isNetworkOn == false) {
-                    CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+                    CoconutToast.showToast(
+                      context: context,
+                      isVisibleIcon: true,
+                      iconPath: 'assets/svg/triangle-warning.svg',
+                      text: ErrorCodes.networkError.message,
+                      level: CoconutToastLevel.warning,
+                    );
                     return;
                   }
                   if (isInitDone) {

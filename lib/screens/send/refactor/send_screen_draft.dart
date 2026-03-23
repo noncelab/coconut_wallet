@@ -60,7 +60,13 @@ extension _SendScreenDraft on _SendScreenState {
           excludedUtxoStatus == SelectedUtxoExcludedStatus.used
               ? t.send_screen.toast.draft_utxo_used
               : t.send_screen.toast.draft_utxo_locked;
-      CoconutToast.showWarningToast(context: context, text: toastMessage);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: toastMessage,
+        level: CoconutToastLevel.warning,
+      );
     }
 
     // recipientList와 _addressControllerList 동기화

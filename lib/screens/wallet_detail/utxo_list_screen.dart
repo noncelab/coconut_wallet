@@ -367,88 +367,101 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   Widget _buildSelectionButtons() {
     final double bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return BottomActionBar(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 40 + bottomPadding,
-        bottom: bottomPadding > 0 ? bottomPadding : 16,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildSelectionActionButton(
-              iconPath: 'assets/svg/send.svg',
-              text: t.send,
-              onTap:
-                  () => _handleActionUtxoSelected(() {
-                    final selectedUtxos = List<UtxoState>.from(viewModel.selectedUtxoList);
-                    final hasLockedUtxo = selectedUtxos.any((utxo) => utxo.status == UtxoStatus.locked);
+    return Consumer<UtxoListViewModel>(
+      builder: (context, vm, _) {
+        final hasLockedUtxo = vm.selectedUtxoList.any((utxo) => utxo.status == UtxoStatus.locked);
 
-                    if (hasLockedUtxo) {
-                      CoconutToast.showToast(
-                        context: context,
-                        text: t.utxo_list_screen.send_locked_utxo,
-                        isVisibleIcon: true,
-                      );
-                      return;
-                    }
+        return BottomActionBar(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 40 + bottomPadding,
+            bottom: bottomPadding > 0 ? bottomPadding : 16,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildSelectionActionButton(
+                  iconPath: 'assets/svg/send.svg',
+                  text: t.send,
+                  enabled: !hasLockedUtxo,
+                  onTap:
+                      () => _handleActionUtxoSelected(() {
+                        final currentSelectedUtxos = List<UtxoState>.from(viewModel.selectedUtxoList);
+                        final currentHasLocked = currentSelectedUtxos.any((utxo) => utxo.status == UtxoStatus.locked);
 
-                    setState(() {
-                      _isSelectionMode = false;
-                    });
-                    viewModel.deselectTaggedUtxo();
-                    _utxoListKey.currentState?._selectedUtxoIds.clear();
+                        if (currentHasLocked) {
+                          CoconutToast.showToast(
+                            context: context,
+                            text: t.utxo_list_screen.send_locked_utxo,
+                            isVisibleIcon: true,
+                          );
+                          return;
+                        }
 
-                    Navigator.pushNamed(
-                      context,
-                      '/send',
-                      arguments: {
-                        'walletId': widget.id,
-                        'sendEntryPoint': SendEntryPoint.walletDetail,
-                        'selectedUtxoList': selectedUtxos,
-                      },
-                    );
-                  }),
-            ),
+                        setState(() {
+                          _isSelectionMode = false;
+                        });
+                        viewModel.deselectTaggedUtxo();
+                        _utxoListKey.currentState?._selectedUtxoIds.clear();
+
+                        Navigator.pushNamed(
+                          context,
+                          '/send',
+                          arguments: {
+                            'walletId': widget.id,
+                            'sendEntryPoint': SendEntryPoint.walletDetail,
+                            'selectedUtxoList': currentSelectedUtxos,
+                          },
+                        );
+                      }),
+                ),
+              ),
+              Expanded(
+                child: _buildSelectionActionButton(
+                  iconPath: 'assets/svg/tag.svg',
+                  text: t.utxo_list_screen.tag_apply,
+                  onTap: () => _handleActionUtxoSelected(showTagBottomSheet),
+                ),
+              ),
+              Expanded(
+                child: _buildSelectionActionButton(
+                  iconPath: 'assets/svg/lock_simple.svg',
+                  text: t.utxo_list_screen.utxo_locked_button,
+                  onTap:
+                      () => _handleActionUtxoSelected(() {
+                        _utxoListKey.currentState?._updateSelectedUtxos(lock: true);
+                      }),
+                ),
+              ),
+              Expanded(
+                child: _buildSelectionActionButton(
+                  iconPath: 'assets/svg/unlock_simple.svg',
+                  text: t.utxo_list_screen.utxo_unlocked_button,
+                  onTap:
+                      () => _handleActionUtxoSelected(() {
+                        _utxoListKey.currentState?._updateSelectedUtxos(lock: false);
+                      }),
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            child: _buildSelectionActionButton(
-              iconPath: 'assets/svg/tag.svg',
-              text: t.utxo_list_screen.tag_apply,
-              onTap: () => _handleActionUtxoSelected(showTagBottomSheet),
-            ),
-          ),
-          Expanded(
-            child: _buildSelectionActionButton(
-              iconPath: 'assets/svg/lock_simple.svg',
-              text: t.utxo_list_screen.utxo_locked_button,
-              onTap:
-                  () => _handleActionUtxoSelected(() {
-                    _utxoListKey.currentState?._updateSelectedUtxos(lock: true);
-                  }),
-            ),
-          ),
-          Expanded(
-            child: _buildSelectionActionButton(
-              iconPath: 'assets/svg/unlock_simple.svg',
-              text: t.utxo_list_screen.utxo_unlocked_button,
-              onTap:
-                  () => _handleActionUtxoSelected(() {
-                    _utxoListKey.currentState?._updateSelectedUtxos(lock: false);
-                  }),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSelectionActionButton({required String iconPath, required String text, required VoidCallback onTap}) {
+  Widget _buildSelectionActionButton({
+    required String iconPath,
+    required String text,
+    required VoidCallback onTap,
+    bool enabled = true,
+  }) {
     return BottomActionButton(
       iconPath: iconPath,
       label: text,
       onTap: onTap,
+      enabled: enabled,
       buttonLayout: BottomActionButtonLayout.vertical,
       iconSize: 24,
       spacing: 4,
@@ -765,22 +778,34 @@ class _UtxoListState extends State<UtxoList> {
     if (_selectedUtxoIds.isEmpty) return;
 
     final viewModel = context.read<UtxoListViewModel>();
+    final selectedCount = _selectedUtxoIds.length;
 
     try {
-      final updatedCount = await viewModel.setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
+      final changedCount = await viewModel.setUtxoLockStatus(_selectedUtxoIds.toList(), lock);
 
       setState(() {
         _selectedUtxoIds.clear();
         widget.onSettingLockChanged?.call(false);
       });
 
-      if (updatedCount > 0) {
-        if (!mounted) return;
+      if (!mounted) return;
+
+      final toastText = _buildLockToastMessage(lock: lock, selectedCount: selectedCount, changedCount: changedCount);
+
+      if (changedCount == 0) {
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/triangle-warning.svg',
+          text: toastText,
+          level: CoconutToastLevel.warning,
+        );
+      } else {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
           iconPath: 'assets/svg/circle-info.svg',
-          text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+          text: toastText,
         );
       }
 
@@ -788,6 +813,23 @@ class _UtxoListState extends State<UtxoList> {
     } catch (e) {
       debugPrint('UTXO 상태 업데이트 실패: $e');
     }
+  }
+
+  String _buildLockToastMessage({required bool lock, required int selectedCount, required int changedCount}) {
+    if (changedCount == 0) {
+      if (selectedCount == 1) {
+        return lock ? t.utxo_detail_screen.utxo_already_locked : t.utxo_detail_screen.utxo_already_unlocked;
+      }
+      return lock ? t.utxo_detail_screen.utxo_all_already_locked : t.utxo_detail_screen.utxo_all_already_unlocked;
+    }
+
+    if (changedCount == 1) {
+      return lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg;
+    }
+
+    return lock
+        ? t.utxo_detail_screen.utxo_locked_count_toast_msg(count: changedCount)
+        : t.utxo_detail_screen.utxo_unlocked_count_toast_msg(count: changedCount);
   }
 
   // --------------------

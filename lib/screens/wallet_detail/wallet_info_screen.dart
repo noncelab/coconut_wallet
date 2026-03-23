@@ -389,7 +389,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               final btc = double.tryParse(text);
               if (btc == null || btc <= 0) {
                 if (text.isNotEmpty) {
-                  CoconutToast.showWarningToast(context: parentContext, text: t.wallet_info_screen.target_set_invalid);
+                  CoconutToast.showToast(
+                    context: parentContext,
+                    isVisibleIcon: true,
+                    iconPath: 'assets/svg/triangle-warning.svg',
+                    text: t.wallet_info_screen.target_set_invalid,
+                    level: CoconutToastLevel.warning,
+                  );
                 }
                 return false;
               }
@@ -408,7 +414,13 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 viewModel.setTargetSats(sats);
                 return true;
               }
-              CoconutToast.showWarningToast(context: parentContext, text: t.wallet_info_screen.target_set_invalid);
+              CoconutToast.showToast(
+                context: parentContext,
+                isVisibleIcon: true,
+                iconPath: 'assets/svg/triangle-warning.svg',
+                text: t.wallet_info_screen.target_set_invalid,
+                level: CoconutToastLevel.warning,
+              );
               return false;
             },
           ),

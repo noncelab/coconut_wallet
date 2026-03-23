@@ -425,7 +425,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                   child: GestureDetector(
                     onTap: () async {
                       if (!_viewModel.isNetworkOn) {
-                        CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+                        CoconutToast.showToast(
+                          context: context,
+                          isVisibleIcon: true,
+                          iconPath: 'assets/svg/triangle-warning.svg',
+                          text: ErrorCodes.networkError.message,
+                          level: CoconutToastLevel.warning,
+                        );
                         return;
                       }
 
@@ -690,7 +696,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                     originalMemo: txMemo ?? '',
                     onComplete: (memo) {
                       if (!viewModel.updateTransactionMemo(memo)) {
-                        CoconutToast.showWarningToast(context: context, text: t.toast.memo_update_failed);
+                        CoconutToast.showToast(
+                          context: context,
+                          isVisibleIcon: true,
+                          iconPath: 'assets/svg/triangle-warning.svg',
+                          text: t.toast.memo_update_failed,
+                          level: CoconutToastLevel.warning,
+                        );
                       }
                     },
                   ),

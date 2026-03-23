@@ -532,15 +532,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                       return Row(
                         children: [
                           Expanded(
-                            child: Opacity(
-                              opacity: hasLockedUtxo ? 0.5 : 1,
-                              child: BottomActionButton(
-                                iconPath: 'assets/svg/send.svg',
-                                label: t.send,
-                                onTap: _onSendPressed,
-                                buttonLayout: BottomActionButtonLayout.horizontal,
-                                textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                              ),
+                            child: BottomActionButton(
+                              iconPath: 'assets/svg/send.svg',
+                              label: t.send,
+                              onTap: _onSendPressed,
+                              enabled: !hasLockedUtxo,
+                              buttonLayout: BottomActionButtonLayout.horizontal,
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -568,25 +566,23 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     return Row(
       children: [
         Expanded(
-          child: Opacity(
-            opacity: hasLockedUtxo ? 0.5 : 1,
-            child: BottomActionButton(
-              iconPath: 'assets/svg/send.svg',
-              label: t.send,
-              onTap: () {
-                if (hasLockedUtxo) {
-                  CoconutToast.showToast(
-                    context: context,
-                    text: t.utxo_list_screen.send_locked_utxo,
-                    isVisibleIcon: true,
-                  );
-                  return;
-                }
-                _onTagViewSendPressed(selectedUtxos);
-              },
-              buttonLayout: BottomActionButtonLayout.horizontal,
-              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-            ),
+          child: BottomActionButton(
+            iconPath: 'assets/svg/send.svg',
+            label: t.send,
+            onTap: () {
+              if (hasLockedUtxo) {
+                CoconutToast.showToast(
+                  context: context,
+                  text: t.utxo_list_screen.send_locked_utxo,
+                  isVisibleIcon: true,
+                );
+                return;
+              }
+              _onTagViewSendPressed(selectedUtxos);
+            },
+            enabled: !hasLockedUtxo,
+            buttonLayout: BottomActionButtonLayout.horizontal,
+            textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
           ),
         ),
         const SizedBox(width: 8),
@@ -683,8 +679,9 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
   Future<void> _updateSelectedUtxosLock({required bool lock}) async {
     if (_selectedUtxoIds.isEmpty) return;
     final ids = _selectedUtxoIds.toList();
+    final selectedCount = ids.length;
     try {
-      final updatedCount = await viewModel.setUtxoLockStatus(ids, lock);
+      final changedCount = await viewModel.setUtxoLockStatus(ids, lock);
       if (mounted) {
         setState(() {
           _selectedUtxoIds.clear();
@@ -693,17 +690,48 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
           _refreshBucketsFromViewModel();
         });
       }
-      if (updatedCount > 0 && mounted) {
+      if (!mounted) return;
+
+      // 이 문맥에서는 selectedCount, changedCount가 같은 상태만 존재함
+      final toastText = _buildLockToastMessage(lock: lock, selectedCount: selectedCount, changedCount: changedCount);
+
+      if (changedCount == 0) {
+        // 정상 동작에서 이 토스트는 나타나지 않아야함.
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/triangle-warning.svg',
+          text: toastText,
+          level: CoconutToastLevel.warning,
+        );
+      } else {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
           iconPath: 'assets/svg/circle-info.svg',
-          text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+          text: toastText,
         );
       }
     } catch (e) {
       debugPrint('UTXO 상태 업데이트 실패: $e');
     }
+  }
+
+  String _buildLockToastMessage({required bool lock, required int selectedCount, required int changedCount}) {
+    if (changedCount == 0) {
+      if (selectedCount == 1) {
+        return lock ? t.utxo_detail_screen.utxo_already_locked : t.utxo_detail_screen.utxo_already_unlocked;
+      }
+      return lock ? t.utxo_detail_screen.utxo_all_already_locked : t.utxo_detail_screen.utxo_all_already_unlocked;
+    }
+
+    if (changedCount == 1) {
+      return lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg;
+    }
+
+    return lock
+        ? t.utxo_detail_screen.utxo_locked_count_toast_msg(count: changedCount)
+        : t.utxo_detail_screen.utxo_unlocked_count_toast_msg(count: changedCount);
   }
 
   void _onSendPressed() {

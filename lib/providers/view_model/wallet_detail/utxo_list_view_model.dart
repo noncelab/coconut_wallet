@@ -370,12 +370,15 @@ class UtxoListViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Sets the lock status of selected UTXOs and returns the updated count.
+  /// Sets the lock status of selected UTXOs.
+  /// Returns the number of UTXOs whose status actually changed.
   Future<int> setUtxoLockStatus(List<String> selectedIds, bool lock) async {
+    final newStatus = lock ? UtxoStatus.locked : UtxoStatus.unspent;
     final targetUtxoIds =
         utxoList
             .where((utxo) => selectedIds.contains(utxo.utxoId))
             .where((utxo) => !utxo.isPending)
+            .where((utxo) => utxo.status != newStatus)
             .map((utxo) => utxo.utxoId)
             .toList();
 
@@ -383,7 +386,6 @@ class UtxoListViewModel extends ChangeNotifier {
       return 0;
     }
 
-    final newStatus = lock ? UtxoStatus.locked : UtxoStatus.unspent;
     await updateSelectedUtxosStatus(targetUtxoIds, newStatus);
 
     clearUtxoList();

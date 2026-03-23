@@ -69,6 +69,7 @@ class BottomActionButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   final BottomActionButtonLayout buttonLayout;
+  final bool enabled;
   final double? height;
   final double iconSize;
   final double spacing;
@@ -81,6 +82,7 @@ class BottomActionButton extends StatefulWidget {
     required this.onTap,
     required this.buttonLayout,
     required this.textStyle,
+    this.enabled = true,
     this.height,
     this.iconSize = 20,
     this.spacing = 8,
@@ -100,7 +102,7 @@ class _BottomActionButtonState extends State<BottomActionButton> {
       child: InkWell(
         onTap: widget.onTap,
         onHighlightChanged: (isPressed) {
-          if (_isPressed == isPressed) return;
+          if (!widget.enabled || _isPressed == isPressed) return;
           setState(() => _isPressed = isPressed);
         },
         borderRadius: const BorderRadius.all(Radius.circular(12)),
@@ -108,7 +110,7 @@ class _BottomActionButtonState extends State<BottomActionButton> {
           width: double.infinity,
           height: widget.height ?? _defaultHeight,
           child: AnimatedScale(
-            scale: _isPressed ? 0.94 : 1,
+            scale: _isPressed && widget.enabled ? 0.94 : 1,
             duration: const Duration(milliseconds: 100),
             curve: Curves.easeOutCubic,
             child: Center(
@@ -136,7 +138,10 @@ class _BottomActionButtonState extends State<BottomActionButton> {
           ? BottomActionButton.horizontalHeight
           : BottomActionButton.verticalHeight;
 
-  Color get _foregroundColor => _isPressed ? CoconutColors.gray400 : CoconutColors.white;
+  Color get _foregroundColor {
+    if (!widget.enabled) return CoconutColors.gray600;
+    return _isPressed ? CoconutColors.gray400 : CoconutColors.white;
+  }
 
   Widget _buildIcon() {
     return SvgPicture.asset(

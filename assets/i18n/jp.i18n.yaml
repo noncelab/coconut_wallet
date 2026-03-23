@@ -704,8 +704,14 @@ utxo_detail_screen:
   address: "保有アドレス"
   utxo_locked: "コインロック済み"
   utxo_unlocked: "使用可能"
-  utxo_locked_toast_msg: "UTXOロック完了！このコインは自動的に使用されなくなります。"
-  utxo_unlocked_toast_msg: "UTXOアンロック完了！コインが使用可能状態に切り替わりました。"
+  utxo_locked_toast_msg: "ロック完了！このコインは自動的に使用されません。"
+  utxo_unlocked_toast_msg: "ロック解除完了！このコインは使用できます。"
+  utxo_already_locked: "すでにロック状態です。"
+  utxo_already_unlocked: "すでに使用可能な状態です。"
+  utxo_all_already_locked: "すべてのUTXOはすでにロック状態です。"
+  utxo_all_already_unlocked: "すべてのUTXOはすでに使用可能な状態です。"
+  utxo_locked_count_toast_msg: "$count個のUTXOがロックされました。"
+  utxo_unlocked_count_toast_msg: "$count個のUTXOがロック解除されました。"
 
 utxo_tag_screen:
   onboarding_title: "UTXOタグを管理できます"

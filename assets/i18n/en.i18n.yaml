@@ -704,8 +704,14 @@ utxo_detail_screen:
   address: "Holding Address"
   utxo_locked: "Locked"
   utxo_unlocked: "Spendable"
-  utxo_locked_toast_msg: "UTXO lock complete! This coin will no longer be used automatically."
-  utxo_unlocked_toast_msg: "UTXO unlock complete! Coin has been switched to available status."
+  utxo_locked_toast_msg: "Locked! This coin won't be used automatically."
+  utxo_unlocked_toast_msg: "Unlocked! This coin is now available to spend."
+  utxo_already_locked: "Already locked."
+  utxo_already_unlocked: "Already spendable."
+  utxo_all_already_locked: "All UTXOs are already locked."
+  utxo_all_already_unlocked: "All UTXOs are already spendable."
+  utxo_locked_count_toast_msg: "$count UTXOs have been locked."
+  utxo_unlocked_count_toast_msg: "$count UTXOs have been unlocked."
 
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"

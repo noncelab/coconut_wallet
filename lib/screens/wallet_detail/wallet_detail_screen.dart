@@ -381,17 +381,35 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _checkStateAndShowToast() {
     if (_viewModel.isNetworkOff) {
-      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: ErrorCodes.networkError.message,
+        level: CoconutToastLevel.warning,
+      );
       return false;
     }
 
     if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
-      CoconutToast.showWarningToast(context: context, text: t.errors.electrum_connection_failed);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: t.errors.electrum_connection_failed,
+        level: CoconutToastLevel.warning,
+      );
       return false;
     }
 
     if (_viewModel.isWalletSyncing) {
-      CoconutToast.showToast(isVisibleIcon: true, context: context, text: t.toast.fetching_onchain_data);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/circle-info.svg',
+        text: t.toast.fetching_onchain_data,
+        level: CoconutToastLevel.info,
+      );
       return false;
     }
 
@@ -502,7 +520,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               CoconutToast.showToast(isVisibleIcon: true, context: context, text: message);
             } else {
               vibrateMedium();
-              CoconutToast.showWarningToast(context: context, text: message);
+              CoconutToast.showToast(
+                context: context,
+                isVisibleIcon: true,
+                iconPath: 'assets/svg/triangle-warning.svg',
+                text: message,
+                level: CoconutToastLevel.warning,
+              );
             }
           });
         },

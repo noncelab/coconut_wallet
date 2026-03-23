@@ -706,8 +706,14 @@ utxo_detail_screen:
   address: "Dirección de retención"
   utxo_locked: "Bloqueado"
   utxo_unlocked: "Disponible"
-  utxo_locked_toast_msg: "¡UTXO bloqueado completamente! Esta moneda ya no se usará automáticamente."
-  utxo_unlocked_toast_msg: "¡UTXO desbloqueado completamente! La moneda ha sido cambiada a estado disponible."
+  utxo_locked_toast_msg: "¡Bloqueado! Esta moneda no se usará automáticamente."
+  utxo_unlocked_toast_msg: "¡Desbloqueado! Esta moneda ya está disponible para usar."
+  utxo_already_locked: "Ya está bloqueado."
+  utxo_already_unlocked: "Ya está disponible."
+  utxo_all_already_locked: "Todos los UTXOs ya están bloqueados."
+  utxo_all_already_unlocked: "Todos los UTXOs ya están disponibles."
+  utxo_locked_count_toast_msg: "$count UTXOs han sido bloqueados."
+  utxo_unlocked_count_toast_msg: "$count UTXOs han sido desbloqueados."
 
 utxo_tag_screen:
   onboarding_title: "Puedes gestionar etiquetas UTXO"

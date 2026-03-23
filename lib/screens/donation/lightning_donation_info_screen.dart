@@ -57,7 +57,13 @@ class _LightningDonationInfoScreenState extends State<LightningDonationInfoScree
       _hasLnInvoice = false;
       Logger.log(e);
       if (mounted) {
-        CoconutToast.showWarningToast(context: context, text: t.donation.ln_invoice_api_error);
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/triangle-warning.svg',
+          text: t.donation.ln_invoice_api_error,
+          level: CoconutToastLevel.warning,
+        );
       }
     }
   }
