@@ -49,6 +49,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   late final TextEditingController _inputController;
 
   late final FocusNode _premiumFocusNode;
+  late final FocusNode _premiumMirrorFocusNode;
   late final FocusNode _inputFocusNode;
   late final FocusNode _inputMirrorFocusNode; // 오프라인 상단 더미 카드용
 
@@ -67,6 +68,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _scrollController = ScrollController();
 
     _premiumFocusNode = FocusNode();
+    _premiumMirrorFocusNode = FocusNode(debugLabel: 'offline_premium_mirror')..canRequestFocus = false;
     _inputFocusNode = FocusNode();
     _inputMirrorFocusNode = FocusNode(debugLabel: 'offline_input_mirror');
 
@@ -96,6 +98,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _premiumFocusNode.removeListener(_onPremiumFocusChanged);
     _inputFocusNode.removeListener(_onInputFocusChanged);
     _premiumFocusNode.dispose();
+    _premiumMirrorFocusNode.dispose();
     _inputFocusNode.dispose();
     _inputMirrorFocusNode.dispose();
     super.dispose();
@@ -108,11 +111,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   void _onPremiumFocusChanged() {
     if (_premiumFocusNode.hasFocus) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!_scrollController.hasClients) return;
+        await Future.delayed(const Duration(milliseconds: 600));
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       });
@@ -1355,16 +1359,20 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   Widget _buildPremiumInputWidget({
     required FocusNode premiumFocusNode,
     required TextEditingController premiumController,
+    bool isInteractive = true,
   }) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onTap: () {
-        premiumFocusNode.requestFocus();
-        final text = premiumController.text;
-        if (text.isNotEmpty) {
-          premiumController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
-        }
-      },
+      onTap:
+          isInteractive
+              ? () {
+                premiumFocusNode.requestFocus();
+                final text = premiumController.text;
+                if (text.isNotEmpty) {
+                  premiumController.selection = TextSelection.fromPosition(TextPosition(offset: text.length));
+                }
+              }
+              : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: CoconutColors.gray900),
@@ -1382,7 +1390,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 child: CoconutTextField(
                   enabled: _viewModel.isNetworkOn,
                   controller: premiumController,
-                  focusNode: premiumFocusNode,
+                  focusNode: isInteractive ? premiumFocusNode : _premiumMirrorFocusNode,
                   padding: EdgeInsets.zero,
                   maxLines: 1,
                   height: 22,
@@ -1496,6 +1504,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                             child: _buildPremiumInputWidget(
                               premiumFocusNode: _premiumFocusNode,
                               premiumController: _premiumController,
+                              isInteractive: false,
                             ),
                           ),
                     ],
