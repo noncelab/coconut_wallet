@@ -24,6 +24,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
+  final Set<String> _selectedUtxoIdSet = {};
   FeeInfo? _customFeeInfo;
   final List<UtxoState> _filteredUtxoList = [];
 
@@ -64,6 +65,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       _utxoTagMap.clear();
       _utxoTagList = [];
       _selectedUtxoList = [];
+      _selectedUtxoIdSet.clear();
       _initialSelectedUtxoList.clear();
 
       _walletProvider.getUtxoList(_walletId).fold<int>(0, (sum, utxo) {
@@ -79,6 +81,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
 
       _selectedUtxoList = List.from(selectedUtxoList);
+      _selectedUtxoIdSet.addAll(selectedUtxoList.map((utxo) => utxo.utxoId));
       _initialSelectedUtxoList.addAll(selectedUtxoList);
       _cachedSelectedUtxoAmountSum = null;
       _isInitialized = true;
@@ -102,17 +105,20 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   }
 
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
+  Set<String> get selectedUtxoIdSet => _selectedUtxoIdSet;
   List<UtxoTag> get utxoTagList => _utxoTagList;
   Map<String, List<UtxoTag>> get utxoTagMap => _utxoTagMap;
 
   void addSelectedUtxoList(UtxoState utxo) {
     _selectedUtxoList.add(utxo);
+    _selectedUtxoIdSet.add(utxo.utxoId);
     _cachedSelectedUtxoAmountSum = null;
     notifyListeners();
   }
 
   void changeUtxoOrder(UtxoOrder orderEnum) async {
     _sortConfirmedUtxoList(orderEnum);
+    _updateFilteredUtxoList();
     _preferenceProvider.setLastUtxoOrder(orderEnum);
     notifyListeners();
   }
@@ -152,6 +158,9 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void setSelectedUtxoList(List<UtxoState> utxoList) {
     _selectedUtxoList = utxoList;
+    _selectedUtxoIdSet
+      ..clear()
+      ..addAll(utxoList.map((utxo) => utxo.utxoId));
     _cachedSelectedUtxoAmountSum = null;
     notifyListeners();
   }
@@ -182,10 +191,12 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void toggleUtxoSelection(UtxoState utxo) {
     _cachedSelectedUtxoAmountSum = null;
-    if (_selectedUtxoList.contains(utxo)) {
+    if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
       _selectedUtxoList.remove(utxo);
+      _selectedUtxoIdSet.remove(utxo.utxoId);
     } else {
       _selectedUtxoList.add(utxo);
+      _selectedUtxoIdSet.add(utxo.utxoId);
     }
     notifyListeners();
   }
@@ -201,6 +212,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void _clearUtxoList() {
     _selectedUtxoList = [];
+    _selectedUtxoIdSet.clear();
     _cachedSelectedUtxoAmountSum = 0;
     notifyListeners();
   }

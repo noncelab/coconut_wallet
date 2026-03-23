@@ -55,6 +55,11 @@ import 'package:collection/collection.dart';
 class WalletHomeScreen extends StatefulWidget {
   const WalletHomeScreen({super.key});
 
+  /// P2P 등 외부에서 홈의 "지갑 추가" 바텀시트를 띄울 때 호출.
+  static void openAddWalletIfActive() => _currentState?._onAddWalletPressed();
+
+  static _WalletHomeScreenState? _currentState;
+
   @override
   State<WalletHomeScreen> createState() => _WalletHomeScreenState();
 }
@@ -323,6 +328,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
+    WalletHomeScreen._currentState = this;
 
     _scrollController = ScrollController();
     _carouselController = CarouselSliderController();
@@ -398,6 +404,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   @override
   void dispose() {
+    if (WalletHomeScreen._currentState == this) {
+      WalletHomeScreen._currentState = null;
+    }
     _recentTransactionBannerTimer?.cancel();
     _scrollController.dispose();
     _pageIndicatorController.dispose();

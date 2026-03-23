@@ -134,19 +134,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                     viewModel.isInitialized
                                         ? Stack(
                                           children: [
-                                            Container(
-                                              color: CoconutColors.black,
-                                              child: SingleChildScrollView(
-                                                controller: _scrollController,
-                                                child: Column(
-                                                  children: [
-                                                    _buildUtxoList(viewModel),
-                                                    CoconutLayout.spacing_400h,
-                                                    const SizedBox(height: 50),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
+                                            Container(color: CoconutColors.black, child: _buildUtxoList(viewModel)),
                                             FixedBottomButton(
                                               onButtonClicked: () {
                                                 vibrateLight();
@@ -336,49 +324,41 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   }
 
   Widget _buildUtxoList(UtxoSelectionViewModel viewModel) {
+    final filteredUtxoList = viewModel.filteredUtxoList;
+
     return ListView.separated(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      padding: const EdgeInsets.only(top: 0, bottom: 30, left: 16, right: 16),
-      itemCount: viewModel.confirmedUtxoList.length,
+      key: ValueKey(viewModel.selectedUtxoTagName),
+      controller: _scrollController,
+      padding: const EdgeInsets.only(top: 0, bottom: 80, left: 16, right: 16),
+      itemCount: filteredUtxoList.length,
       separatorBuilder: (context, index) => const SizedBox(height: 0),
       itemBuilder: (context, index) {
-        final utxo = viewModel.confirmedUtxoList[index];
-        final utxoHasSelectedTag =
-            viewModel.selectedUtxoTagName == allLabelName ||
-            viewModel.utxoTagMap[utxo.utxoId]?.any((e) => e.name == viewModel.selectedUtxoTagName) == true;
+        final utxo = filteredUtxoList[index];
 
-        if (utxoHasSelectedTag) {
-          if (viewModel.selectedUtxoTagName != allLabelName && !utxoHasSelectedTag) {
-            return const SizedBox();
-          }
-
-          if (utxo.isLocked) {
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: LockedUtxoItemCard(
-                key: ValueKey(utxo.transactionHash),
-                utxo: utxo,
-                utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-                currentUnit: widget.currentUnit,
-              ),
-            );
-          }
+        if (utxo.isLocked) {
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
-            child: SelectableUtxoItemCard(
-              key: ValueKey(utxo.transactionHash),
-              currentUnit: widget.currentUnit,
+            child: LockedUtxoItemCard(
+              key: ValueKey(utxo.utxoId),
               utxo: utxo,
-              isSelectable: true,
-              isSelected: viewModel.selectedUtxoList.contains(utxo),
               utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-              onSelected: _toggleSelection,
+              currentUnit: widget.currentUnit,
             ),
           );
-        } else {
-          return const SizedBox();
         }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: SelectableUtxoItemCard(
+            key: ValueKey(utxo.utxoId),
+            currentUnit: widget.currentUnit,
+            utxo: utxo,
+            isSelectable: true,
+            isSelected: viewModel.selectedUtxoIdSet.contains(utxo.utxoId),
+            utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+            onSelected: _toggleSelection,
+          ),
+        );
       },
     );
   }
