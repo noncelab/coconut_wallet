@@ -160,6 +160,7 @@ class TransactionRecordService {
 
   /// 트랜잭션 레코드를 조회합니다.
   Future<Result<TransactionRecord>> getTransactionRecord(WalletListItemBase walletItem, String txHash) async {
+    Logger.log('TransactionRecordService: getTransactionRecord called (txHash: $txHash, walletId: ${walletItem.id})');
     try {
       final txRaw = await _electrumService.getTransaction(txHash);
       final tx = Transaction.parse(txRaw);
@@ -173,6 +174,7 @@ class TransactionRecordService {
         txDetails,
       );
 
+      Logger.log('TransactionRecordService: getTransactionRecord success (txHash: $txHash)');
       return Result.success(
         TransactionRecord.fromTransactions(
           transactionHash: tx.transactionHash,
@@ -187,7 +189,7 @@ class TransactionRecordService {
         ),
       );
     } catch (e) {
-      Logger.error('TransactionRecordService: Error in getTransactionRecord: $e');
+      Logger.error('TransactionRecordService: getTransactionRecord failed (txHash: $txHash): $e');
       return Result.failure(ErrorCodes.fetchTransactionsError);
     }
   }

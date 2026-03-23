@@ -11,6 +11,7 @@ class SettingsViewModel extends ChangeNotifier {
   bool get isSetBiometrics => _authProvider.isSetBiometrics;
   bool get isBalanceHidden => _preferenceProvider.isBalanceHidden;
   bool get canCheckBiometrics => _authProvider.canCheckBiometrics;
+  bool get isManualUtxoSelectionMode => _preferenceProvider.isManualUtxoSelectionMode;
 
   SettingsViewModel(this._authProvider, this._preferenceProvider);
 
@@ -28,5 +29,9 @@ class SettingsViewModel extends ChangeNotifier {
 
   void deletePin() {
     _authProvider.deletePin();
+  }
+
+  void setManualUtxoSelectionMode(bool value) {
+    _preferenceProvider.setManualUtxoSelectionMode(value);
   }
 }

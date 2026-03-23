@@ -32,6 +32,7 @@ yes: "Yes"
 delete: "Delete"
 delete_label: "Delete"
 complete: "Complete"
+done: "Done"
 close: "Close"
 next: "Next"
 modify: "Modify"
@@ -56,7 +57,7 @@ utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
 tag_manage: "Tag Management"
 tag_manage_label: "Tag Management"
-extended_public_key: "ExPub Key"
+extended_public_key: "Extended Public Key"
 tx_memo: "Tx Memo"
 tx_id: "Tx ID"
 block_num: "Block Number"
@@ -100,6 +101,8 @@ electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
+name: "Name"
+account: "Account"
 
 relative_time:
   just_now: "Just now"
@@ -415,6 +418,10 @@ wallet_list:
     delete_description: "Swipe left on a wallet to delete it."
     finish: "Finish Editing"
     unsaved_changes_confirm_exit: "You have unsaved changes.\nAre you sure you want to exit?"
+  bottom_sheet:
+    hide_fiat_price: "Hide Fiat Balance"
+    hide_fiat_price_description: "This screen will not display the fiat balance."
+    visible: "Visible"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -477,6 +484,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "Select UTXOs"
+  skip: "skip"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "Select UTXOs"
@@ -511,8 +519,8 @@ send_confirm_screen:
     total: "Total $n"
     sentence: " is required."
   output_detail_title: "Output Details"
-  flow_input_title: "Input $index"
-  flow_output_title: "Output $index"
+  flow_input_title: "Input #$index"
+  flow_output_title: "Output #$index"
 signed_psbt_scanner_screen:
   title: "Scan Signed Tx"
   bbqr_mode_switching: "Switching to BBQR mode.\nPlease wait a moment."
@@ -596,6 +604,9 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  utxo_manual_selection: "UTXO Manual Selection"
+  utxo_manual_selection_description: "Select UTXOs manually for sending"
+  utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"
     port: "Port"
@@ -642,16 +653,26 @@ settings_screen:
       toast:
         copy_success: "Log copied successfully."
 
-# lib/screens/wallet_detail
-wallet_detail_screen:
-  toast:
-    no_mfp_wallet_cant_send: "Wallets without Master Fingerprint cannot send"
 address_list_screen:
   wallet_name: "$name's Address"
   address_index: "Address - $index"
   receiving: "Receiving"
   change: "Change"
   show_only_unused_address: "Show Only Unused Addresses"
+utxo_overview_screen:
+  by_amount: "Amount"
+  by_tag: "Tag"
+  interval_info_title: "Interval Guide"
+  view_mode_list: "List"
+  view_mode_grid: "Grid"
+  no_tag_applied: "No tags applied"
+  no_tag_applied_desc: "Apply tags to UTXOs to see the breakdown by tag."
+  total: "Total"
+  untagged: "Untagged"
+  tagged: "Tagged"
+  multi_tag: "2+ Tags"
+  tag_bubble_with_count: "$name • $count"
+  amount_bubble_with_count: "$count • $balance"
 address_search_screen:
   address_placeholder: "Please enter the address"
   address_not_found: "Address not found"
@@ -664,11 +685,18 @@ address_search_screen:
   change_address: "Change Address"
 utxo_list_screen:
   total_balance: "Total Balance"
+  tag_apply: "Apply tag"
+  utxo_select_required: "Please select a UTXO first."
+  utxo_tag_updated: "UTXO tag has been successfully updated."
+  send_locked_utxo: "Locked UTXOs cannot be sent."
   utxo_locked_button: "Lock"
   utxo_unlocked_button: "Unlock"
   pending_utxo: "UTXOs that are already being sent cannot be selected."
+  reused_address_legend: "Reused address warning"
+  reused_address: "Please use reused address UTXOs first"
 
 transaction_detail_screen:
+  input_output_detail_title: "View Input/Output Details"
   confirmation: "$height ($count confirmations)"
   time_ago:
     just_now: just now
@@ -689,6 +717,15 @@ utxo_tag_screen:
   add_tag: "Press the + button to create your first tag"
 wallet_info_screen:
   title: "$name Information"
+  transaction: "Transaction"
+  utxo: "UTXO"
+  target_quantity: "Target Quantity"
+  target_progress: "$percent% / $target"
+  target_not_set_secondary: "We'll show your achievement rate when you set a target quantity"
+  target_set_title: "Set Target"
+  target_set_placeholder: "Please enter in BTC unit"
+  target_set_invalid: "You can’t set 0 BTC as a target"
+  target_set_21m: "It’s the sats race!!!"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
   view_descriptor: "View Descriptor"
@@ -719,20 +756,31 @@ transaction_fee_bumping_screen:
   new_fee: "New Fee"
   sats_vb: "sat/vB"
   recommend_fee: "Minimum fee: ${fee} sat/vB or higher"
-  recommend_fee_info_rbf: "Must be at least 1 sat/vB higher than the existing fee.\nHowever, if (existing fee + 1) is less than the slow transfer fee, we recommend the slow transfer fee.\nNote: If the new transaction size increases, the difference between recommended fee and existing fee may appear less than 1 sat/vB."
-  recommend_fee_info_cpfp: "You need to supplement the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, Recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
+  recommend_fee_info_rbf: "An additional fee of at least 1 sat for each 1 vB of the new transaction size is required.\nIf the calculated minimum fee rate is lower than the current network's slow fee rate, we recommend using the slow fee rate.\nIf the new transaction size increases, the recommended fee rate may be lower than the existing one."
+  recommend_fee_info_cpfp: "You need to make up the insufficient fee with a new transaction.\n • New transaction size = ${newTxSize} vB, recommended fee rate = ${recommendedFeeRate} sat/vB\n • Required total fee = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • New transaction fee = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • New transaction fee rate = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "Recommended Fee"
+  utxo_auto_selection: "Auto-select UTXO"
+  utxo_auto_selection_description: "UTXOs are auto-selected due to additional fees required."
+  n_utxos: " • ${count} selected"
+  no_utxos_selected: " • Selection required"
   estimated_fee: "Estimated total fee about ${fee} sats"
   estimated_fee_too_high_error: "Estimated total fee is over 0.01 BTC!"
+  fee_rate_too_low_error: "The fee is too low!"
+  insufficient_balance_error: "Insufficient balance!"
   recommended_fees_fetch_error: "Cannot fetch recommended fees!"
   recommended_fees_is_null: "Fetching fees..."
   recommended_fee_less_than_pending_tx_fee: "Please specify a fee higher than the existing fee"
   recommended_fee_less_than_network_fee: "Please specify at least the recommended fee"
+  please_select_more_utxo: "Please select UTXOs worth at least ${amount}"
   dialog:
     fee_alert_title: "Notice"
     fee_alert_description: "The total fee you set is over 0.01 BTC. Do you want to continue anyway?"
     confirmed_alert_title: "Transaction Complete"
     confirmed_alert_description: "The transaction that was pending has been completed."
+    rbf_duplicated_output_title: "Duplicate Address Detected"
+    rbf_duplicated_output: "This transaction is not supported."
+    utxo_not_found_title: "UTXO Not Found"
+    utxo_not_found: "Cannot find the UTXO used in the transaction."
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 
@@ -774,6 +822,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "Add Tag"
   title_edit_tag: "Edit Tag"
+  title_apply_tag: "Apply Tag"
   tag_list: "Tag List"
   add_new_tag: "Add Tag"
   delete_tag: "Delete Tag"
@@ -958,6 +1007,11 @@ alert:
     try_again: "Please try again after $count"
   fee_bumping:
     not_enough_amount: "Insufficient balance to execute $bumpingType.\nPlease check your current available balance."
+  without_mfp:
+    title: "Add Master Fingerprint"
+    description: "To send Bitcoin, you need to add the Master Fingerprint first. Do you want to continue?"
+    skip_button: "Cancel"
+    confirm_button: "Add"
 
 third_party:
   keystone: "Keystone"

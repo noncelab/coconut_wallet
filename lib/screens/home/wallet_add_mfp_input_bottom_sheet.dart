@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
@@ -5,9 +7,9 @@ import 'package:flutter_svg/svg.dart';
 
 class WalletAddMfpInputBottomSheet extends StatefulWidget {
   final Function(String) onComplete;
-  final VoidCallback onSkip;
+  final VoidCallback? onSkip;
 
-  const WalletAddMfpInputBottomSheet({super.key, required this.onComplete, required this.onSkip});
+  const WalletAddMfpInputBottomSheet({super.key, required this.onComplete, this.onSkip});
 
   @override
   State<WalletAddMfpInputBottomSheet> createState() => _WalletAddMfpInputBottomSheetState();
@@ -130,7 +132,7 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                                     style: CoconutTypography.body3_12,
                                     children: [
                                       TextSpan(
-                                        text: "\n${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
+                                        text: " ${t.wallet_add_scanner_screen.paste.mfp_description_texts[1]}",
                                         style: CoconutTypography.body3_12,
                                       ),
                                       TextSpan(
@@ -191,26 +193,29 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                     CoconutLayout.spacing_500h,
                     Row(
                       children: [
-                        Expanded(
-                          flex: 4,
-                          child: CoconutButton(
-                            onPressed: () {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                FocusScope.of(context).unfocus();
-                              });
-                              widget.onSkip();
-                            },
-                            textStyle: CoconutTypography.body2_14,
-                            disabledBackgroundColor: CoconutColors.gray800,
-                            disabledForegroundColor: CoconutColors.gray700,
-                            isActive: true,
-                            backgroundColor: CoconutColors.gray350,
-                            foregroundColor: CoconutColors.black,
-                            pressedTextColor: CoconutColors.black,
-                            text: t.wallet_add_scanner_screen.paste.mfp_skip,
+                        if (widget.onSkip != null) ...[
+                          Expanded(
+                            flex: 4,
+                            child: CoconutButton(
+                              onPressed: () {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  FocusScope.of(context).unfocus();
+                                });
+                                widget.onSkip?.call();
+                              },
+                              height: Platform.isAndroid ? 55 : 58,
+                              textStyle: CoconutTypography.body2_14,
+                              disabledBackgroundColor: CoconutColors.gray800,
+                              disabledForegroundColor: CoconutColors.gray700,
+                              isActive: true,
+                              backgroundColor: CoconutColors.gray350,
+                              foregroundColor: CoconutColors.black,
+                              pressedTextColor: CoconutColors.black,
+                              text: t.wallet_add_scanner_screen.paste.mfp_skip,
+                            ),
                           ),
-                        ),
-                        CoconutLayout.spacing_200w,
+                          CoconutLayout.spacing_200w,
+                        ],
                         Expanded(
                           flex: 6,
                           child: CoconutButton(
@@ -220,13 +225,14 @@ class _WalletAddMfpInputBottomSheetState extends State<WalletAddMfpInputBottomSh
                               });
                               widget.onComplete(_mfpController.text);
                             },
+                            height: Platform.isAndroid ? 55 : 58,
                             disabledBackgroundColor: CoconutColors.gray800,
                             disabledForegroundColor: CoconutColors.gray700,
                             isActive: _isButtonEnabled,
                             backgroundColor: CoconutColors.white,
                             foregroundColor: CoconutColors.black,
                             pressedTextColor: CoconutColors.black,
-                            text: t.complete,
+                            text: t.done,
                           ),
                         ),
                       ],

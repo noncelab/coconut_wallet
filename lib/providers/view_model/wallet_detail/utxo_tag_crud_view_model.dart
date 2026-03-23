@@ -58,6 +58,7 @@ class UtxoTagCrudViewModel extends ChangeNotifier {
     }
 
     final result = _tagProvider.deleteUtxoTag(_walletId, tagToDelete);
+    _setUtxoTagList();
     notifyListeners();
     return result;
   }

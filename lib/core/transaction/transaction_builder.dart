@@ -1,10 +1,12 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
+import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/utils/coconut_lib_exception_parser.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
+import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 class TransactionBuildResult {
@@ -24,6 +26,12 @@ class TransactionBuildResult {
     this.exception,
     this.unintendedDustFee,
   });
+
+  double? getFeeRate(WalletListItemBase wallet) {
+    if (transaction == null) return null;
+    final vSize = transaction!.estimateVirtualByteForWallet(wallet);
+    return FeeRateUtils.roundToTwoDecimals(estimatedFee / vSize);
+  }
 
   @override
   String toString() {
@@ -247,6 +255,8 @@ class TransactionBuilder {
           );
         }
         return tx;
+      } on TransactionCreationException catch (_) {
+        rethrow;
       } on Exception catch (e) {
         /// 보내는 수량 합 + 예상 수수료 > 잔액
         final int? estimatedFee = extractEstimatedFeeFromException(e);

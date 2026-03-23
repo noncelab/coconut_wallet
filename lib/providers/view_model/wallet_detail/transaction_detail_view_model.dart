@@ -2,9 +2,11 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
+import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_service.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
@@ -12,6 +14,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +37,7 @@ class TransactionDetailViewModel extends ChangeNotifier {
   Utxo? _currentUtxo;
   List<TransactionRecord>? _transactionList;
   List<FeeHistory> _feeBumpingHistoryList = [];
+  bool _isFetchingFromMempool = false;
 
   int _selectedTransactionIndex = 0; // RBF history chip 선택 인덱스
   int _previousTransactionIndex = 0; // 이전 인덱스 (애니메이션 방향 결정용)
@@ -41,8 +45,8 @@ class TransactionDetailViewModel extends ChangeNotifier {
   TransactionStatus? _transactionStatus = TransactionStatus.receiving;
   bool _isSendType = false;
 
-  bool? _canBumpingTx;
-  bool get canBumpingTx => _canBumpingTx == true;
+  bool? _needsMfp;
+  bool get needsMfp => _needsMfp == true;
 
   bool _disposed = false;
   bool get isDisposed => _disposed;
@@ -66,19 +70,19 @@ class TransactionDetailViewModel extends ChangeNotifier {
     this._sendInfoProvider,
     this._blockExplorerProvider,
   ) {
-    _setCanBumpingTx();
+    setNeedsMfp();
     _initTransactionList();
   }
 
-  void _setCanBumpingTx() {
+  void setNeedsMfp() {
     final wallet = _walletProvider.getWalletById(_walletId);
     if (wallet is MultisigWalletListItem) {
-      _canBumpingTx = true;
+      _needsMfp = false;
       return;
     }
 
     final masterFingerprint = (wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
-    _canBumpingTx = masterFingerprint != "00000000";
+    _needsMfp = masterFingerprint == WalletAddService.masterFingerprintPlaceholder;
   }
 
   BlockTimestamp? get currentBlock => _currentBlock;
@@ -101,6 +105,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
   List<FeeHistory>? get feeBumpingHistoryList => _feeBumpingHistoryList;
 
   TransactionStatus? get transactionStatus => _transactionStatus;
+
+  // inputAddressList가 비어 있어 멤풀에서 트랜잭션을 페칭 중인지 여부
+  bool get isFetchingFromMempool => _isFetchingFromMempool;
 
   void safeNotifyListeners() {
     if (!_disposed) notifyListeners();
@@ -187,11 +194,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
         _setPreviousTransactionIndex(0);
         _setSelectedTransactionIndex(0);
       }
-      // if (_initViewMoreButtons() == false) {
-      //   _showDialogNotifier.value = true;
-      // }
-      // _previousCanSeeMoreInputs ??= _transactionList![selectedTransactionIndex].canSeeMoreInputs;
-      // _previousCanSeeMoreOutputs ??= _transactionList![selectedTransactionIndex].canSeeMoreOutputs;
     }
     safeNotifyListeners();
   }
@@ -223,6 +225,17 @@ class TransactionDetailViewModel extends ChangeNotifier {
       debugPrint('❌ currentTransaction IS NULL');
       return;
     }
+
+    // DB에 저장된 트랜잭션에 input 주소 정보가 없는 경우
+    // 멤풀 API를 통해 트랜잭션 조회
+    if (currentTransaction.inputAddressList.isEmpty && !_isFetchingFromMempool) {
+      _fetchTransactionFromMempoolAndUpdate();
+      _transactionList = [currentTransaction];
+      _syncFeeHistoryList();
+      safeNotifyListeners();
+      return;
+    }
+
     _transactionList = [currentTransaction];
 
     debugPrint('🚀 [Transaction Initialization] 🚀');
@@ -328,21 +341,163 @@ class TransactionDetailViewModel extends ChangeNotifier {
         status == TransactionStatus.sent;
   }
 
+  Future<void> _fetchTransactionFromMempoolAndUpdate() async {
+    if (_disposed) return;
+
+    _isFetchingFromMempool = true;
+    safeNotifyListeners();
+    try {
+      final mempoolApi = MempoolApi();
+      final txJson = await mempoolApi.fetchTx(_txHash);
+      mempoolApi.close();
+
+      if (_disposed) return;
+
+      final currentTx = _txProvider.getTransactionRecord(_walletId, _txHash);
+      final txRecord = _transactionRecordFromMempoolResponse(txJson, currentTx);
+      if (txRecord != null) {
+        await _txProvider.updateTransaction(_walletId, _txHash, txRecord);
+        _initTransactionList();
+      }
+    } catch (e) {
+      Logger.error('[_fetchTransactionFromMempool] Failed to fetch tx from mempool: $_txHash, error=$e');
+    } finally {
+      _isFetchingFromMempool = false;
+      if (!_disposed) safeNotifyListeners();
+    }
+  }
+
+  TransactionRecord? _transactionRecordFromMempoolResponse(Map<String, dynamic> txJson, TransactionRecord? existingTx) {
+    try {
+      final txid = txJson['txid'] as String? ?? _txHash;
+      final vin = txJson['vin'] as List<dynamic>? ?? [];
+      final vout = txJson['vout'] as List<dynamic>? ?? [];
+      final fee = (txJson['fee'] as num?)?.toInt() ?? 0;
+      final weight = (txJson['weight'] as num?)?.toDouble() ?? 0;
+      final vSize = weight > 0 ? weight / 4 : 0.0;
+
+      final status = txJson['status'] as Map<String, dynamic>?;
+      final blockHeight = (status?['block_height'] as num?)?.toInt() ?? 0;
+      final blockTime = (status?['block_time'] as num?)?.toInt();
+      final timestamp =
+          blockTime != null
+              ? DateTime.fromMillisecondsSinceEpoch(blockTime * 1000, isUtc: true).toLocal()
+              : (existingTx?.timestamp ?? DateTime.now());
+
+      final inputAddressList = <TransactionAddress>[];
+      int selfInputCount = 0;
+      int amount = 0;
+
+      for (final input in vin) {
+        final prevout = input is Map ? input['prevout'] as Map<String, dynamic>? : null;
+        if (prevout == null) continue;
+
+        final address = prevout['scriptpubkey_address'] as String? ?? '';
+        final value = (prevout['value'] as num?)?.toInt() ?? 0;
+        inputAddressList.add(TransactionAddress(address, value));
+
+        if (_addressRepository.containsAddress(_walletId, address)) {
+          selfInputCount++;
+          amount -= value;
+        }
+      }
+
+      final outputAddressList = <TransactionAddress>[];
+      int selfOutputCount = 0;
+
+      for (final output in vout) {
+        final address = output is Map ? output['scriptpubkey_address'] as String? ?? '' : '';
+        final value = output is Map ? (output['value'] as num?)?.toInt() ?? 0 : 0;
+        outputAddressList.add(TransactionAddress(address, value));
+
+        if (_addressRepository.containsAddress(_walletId, address)) {
+          selfOutputCount++;
+          amount += value;
+        }
+      }
+
+      final txType = _determineTransactionType(
+        selfInputCount,
+        selfOutputCount,
+        inputAddressList.length,
+        outputAddressList.length,
+      );
+
+      return TransactionRecord(
+        txid,
+        timestamp,
+        blockHeight,
+        txType,
+        existingTx?.memo,
+        amount,
+        fee,
+        inputAddressList,
+        outputAddressList,
+        vSize,
+        existingTx?.createdAt ?? DateTime.now(),
+        rbfHistoryList: existingTx?.rbfHistoryList,
+        cpfpHistory: existingTx?.cpfpHistory,
+      );
+    } catch (e) {
+      Logger.error('[_transactionRecordFromMempoolResponse] Failed to parse: $e');
+      return null;
+    }
+  }
+
+  TransactionType _determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
+    if (selfInputCount == 0) return TransactionType.received;
+    if (selfOutputCount < outputCount) return TransactionType.sent;
+    if (selfOutputCount == outputCount && selfInputCount == inputCount) return TransactionType.self;
+    return TransactionType.received;
+  }
+
   Future<void> onRefresh() async {
-    Logger.log('Transaction Detail Force Refresh: $_txHash');
+    Logger.log('onRefresh: Transaction Detail Force Refresh (txHash: $_txHash)');
     final walletItem = _walletProvider.getWalletById(_walletId);
-    final updatedTxResult = await _nodeProvider.getTransactionRecord(walletItem, _txHash);
-
+    Logger.log('onRefresh: Calling getTransactionRecord (txHash: $_txHash, timeout: 10s)');
+    final updatedTxResult = await _nodeProvider.getTransactionRecord(
+      walletItem,
+      _txHash,
+      timeout: const Duration(seconds: 10),
+    );
     if (updatedTxResult.isSuccess) {
+      Logger.log('onRefresh: getTransactionRecord success');
       await _txProvider.updateTransaction(_walletId, _txHash, updatedTxResult.value);
-
       _initTransactionList();
       _setPreviousTransactionIndex(0);
       _setSelectedTransactionIndex(0);
-
       safeNotifyListeners();
     } else {
-      Logger.log('❌ updatedTxResult IS FAILED: ${updatedTxResult.error}');
+      Logger.error(
+        'onRefresh: getTransactionRecord failed - error: ${updatedTxResult.error}, falling back to mempool API',
+      );
+      await _fetchTransactionFromMempoolAndUpdate();
+      _setPreviousTransactionIndex(0);
+      _setSelectedTransactionIndex(0);
+      safeNotifyListeners();
     }
+
+    // try {
+    //   final walletItem = _walletProvider.getWalletById(_walletId);
+    //   final updatedTxResult = await _nodeProvider.getTransactionRecord(walletItem, _txHash);
+
+    //   if (updatedTxResult.isSuccess) {
+    //     await _txProvider.updateTransaction(_walletId, _txHash, updatedTxResult.value);
+    //     _initTransactionList();
+    //     _setPreviousTransactionIndex(0);
+    //     _setSelectedTransactionIndex(0);
+    //     safeNotifyListeners();
+    //   } else {
+    //     Logger.log('❌ updatedTxResult IS FAILED: ${updatedTxResult.error}, falling back to mempool API');
+    //     await _fetchTransactionFromMempoolAndUpdate();
+    //     _setPreviousTransactionIndex(0);
+    //     _setSelectedTransactionIndex(0);
+    //   }
+    // } catch (e) {
+    //   Logger.error('onRefresh: Error (${e.runtimeType}): $e, falling back to mempool API');
+    //   await _fetchTransactionFromMempoolAndUpdate();
+    //   _setPreviousTransactionIndex(0);
+    //   _setSelectedTransactionIndex(0);
+    // }
   }
 }

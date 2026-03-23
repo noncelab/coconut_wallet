@@ -32,6 +32,7 @@ yes: "네"
 delete: "삭제"
 delete_label: "삭제하기"
 complete: "완료"
+done: "완료"
 close: "닫기"
 next: "다음"
 modify: "변경"
@@ -100,6 +101,8 @@ electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
+name: "이름"
+account: "계정"
 
 relative_time:
   just_now: "방금 전"
@@ -267,7 +270,7 @@ wallet_home_screen:
       fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
       fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
       fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
-    hide_fiat_price: "법정 화폐 잔액 숨기기"
+    hide_fiat_price: "법정화폐 잔액 숨기기"
     hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요."
     category:
       total_balance: "잔액 합계"
@@ -389,8 +392,8 @@ wallet_add_scanner_screen:
     mfp_description_title: "마스터 핑거프린트(Master Fingerprint)"
     mfp_description_texts:
       - "마스터 핑거프린트는 서명기와 지갑을 정확히 매칭하는 8자리 식별자예요."
-      - "확장 공개키만으로는 이 값을 자동으로 알 수 없어 직접 입력이 필요합니다."
-      - "미입력 시 보내기를 사용할 수 없어요."
+      - "확장 공개키만으로는 이 값을 자동으로 알 수 없어 직접 입력이 필요해요."
+      - "미입력 시 비트코인을 보낼 수 없어요."
     mfp_input_placeholder: "마스터 핑거프린트 예시: f75f7ab5"
     mfp_skip: "건너뛰기"
     back_scan: "QR 스캔으로 돌아가기"
@@ -415,6 +418,10 @@ wallet_list:
     delete_description: "지갑을 왼쪽으로 스와이프하면 삭제할 수 있어요."
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
+  bottom_sheet:
+    hide_fiat_price: "법정화폐 잔액 숨기기"
+    hide_fiat_price_description: "이 화면에 법정화폐 잔액을 표시하지 않아요."
+    visible: "표시 중"
 
 # lib/screens/review
 negative_feedback_screen:
@@ -476,6 +483,7 @@ send_screen:
     
 utxo_selection_screen:
   title: "UTXO 고르기"
+  skip: "건너뛰기"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO 선택"
@@ -509,8 +517,8 @@ send_confirm_screen:
     total: "총 $n"
     sentence: "가 소요됩니다"
   output_detail_title: "출력 상세 보기"
-  flow_input_title: "입력 $index"
-  flow_output_title: "출력 $index"
+  flow_input_title: "입력 #$index"
+  flow_output_title: "출력 #$index"
 signed_psbt_scanner_screen:
   title: "서명 트랜잭션 읽기"
   bbqr_mode_switching: "BBQR 모드로 전환 중이에요.\n잠시만 기다려주세요."
@@ -594,6 +602,9 @@ settings_screen:
   change_password: "비밀번호 바꾸기"
   fiat: "법정 화폐"
   language: "언어"
+  utxo_manual_selection: "UTXO 수동 선택"
+  utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다"
+  utxo_tier_theme: "코인 색상"
   locales:
     korean: "한국어"
     english: "English"
@@ -644,17 +655,27 @@ settings_screen:
       copy: "로그 복사"
       toast:
         copy_success: "로그가 복사되었어요."
-    
-# lib/screens/wallet_detail
-wallet_detail_screen:
-  toast:
-    no_mfp_wallet_cant_send: "마스터 핑거프린트가 없는 지갑은 보내기를 할 수 없어요"
+
 address_list_screen:
   wallet_name: "$name의 주소"
   address_index: "주소 - $index"
   receiving: "입금"
   change: "잔돈"
   show_only_unused_address: "사용 전 주소만 보기"
+utxo_overview_screen:
+  by_amount: "금액별"
+  by_tag: "태그별"
+  interval_info_title: "구간 안내"
+  view_mode_list: "리스트"
+  view_mode_grid: "그리드"
+  no_tag_applied: "적용된 태그가 없어요"
+  no_tag_applied_desc: "UTXO에 태그를 적용하면 태그별 구성을 확인할 수 있어요."
+  total: "총액"
+  untagged: "미분류"
+  tagged: "태그 적용"
+  multi_tag: "2개 이상 태그"
+  tag_bubble_with_count: "$name • $count개"
+  amount_bubble_with_count: "$count개 • $balance"
 address_search_screen:
   address_placeholder: "주소를 입력해 주세요"
   address_not_found: "찾으시는 주소가 없어요"
@@ -667,11 +688,18 @@ address_search_screen:
   change_address: "잔돈 주소"
 utxo_list_screen:
   total_balance: "총 잔액"
+  tag_apply: "태그 적용"
+  utxo_select_required: "UTXO를 먼저 선택해 주세요."
+  utxo_tag_updated: "UTXO 태그가 성공적으로 업데이트되었습니다."
+  send_locked_utxo: "사용 잠금된 UTXO는 보낼 수 없어요."
   utxo_locked_button: "사용 잠금"
-  utxo_unlocked_button: "사용 가능으로 전환"
+  utxo_unlocked_button: "잠금 해제"
   pending_utxo: "이미 전송 중인 UTXO는 선택할 수 없어요."
+  reused_address_legend: "재사용 주소 경고"
+  reused_address: "재사용 주소 UTXO를 우선 사용해 주세요"
 
 transaction_detail_screen:
+  input_output_detail_title: "입출력 상세 보기"
   confirmation: "$height ($count승인)"
   time_ago:
     just_now: 방금 전
@@ -692,6 +720,15 @@ utxo_tag_screen:
   add_tag: "+ 버튼을 눌러 첫 태그를 만들어 보세요"
 wallet_info_screen:
   title: "$name 정보"
+  transaction: "트랜잭션"
+  utxo: "UTXO"
+  target_quantity: "목표 수량"
+  target_progress: "$percent% / $target"
+  target_not_set_secondary: "목표 수량을 설정하면 달성률을 보여드려요"
+  target_set_title: "목표 설정"
+  target_set_placeholder: "BTC 단위로 입력해 주세요"
+  target_set_invalid: "0 BTC는 목표로 지정할 수 없어요"
+  target_set_21m: "지분 전쟁이다!!!"
   view_xpub: "확장 공개키 보기"
   duplicated_name: "이미 사용중인 이름이에요"
   view_descriptor: "디스크립터 보기"
@@ -722,20 +759,32 @@ transaction_fee_bumping_screen:
   new_fee: "새 수수료"
   sats_vb: "sat/vB"
   recommend_fee: "최소 수수료: ${fee} sat/vB 이상"
-  recommend_fee_info_rbf: "기존 수수료 보다 1 sat/vB 이상 커야해요.\n하지만, (기존 수수료 + 1)값이 느린 전송 수수료 보다 작다면 느린 전송 수수료를 추천해요.\n단, 새 거래의 크기가 증가하면 추천 수수료와 기존 수수료 차이가 1 sat/vB 미만으로 보일 수 있어요."
+  recommend_fee_info_rbf: "새 트랜잭션의 크기 1vB 당 최소 1sat 이상의 추가 수수료가 필요해요. \n만약 계산된 최소 수수료율이 현재 네트워크의 느린 전송 수수료율보다 낮다면, 느린 전송 수수료율을 추천해요. \n새 거래의 크기가 증가하면 추천 수수료율은 기존보다 낮을 수 있어요."
   recommend_fee_info_cpfp: "새로운 거래로 부족한 수수료를 보충해야 해요.\n • 새 거래의 크기 = ${newTxSize} vB, 추천 수수료율 = ${recommendedFeeRate} sat/vB\n • 필요한 총 수수료 = (${originalTxSize} + ${newTxSize}) × ${recommendedFeeRate} = ${totalRequiredFee} sat\n • 새 거래의 수수료 = ${totalRequiredFee} - ${originalFee} = ${newTxFee} sat\n • 새 거래의 수수료율 = ${newTxFee} ÷ ${newTxSize} ${inequalitySign} ${newTxFeeRate} sat/vB"
   current_fee: "추천 수수료"
+  utxo_auto_selection: "UTXO 자동 선택"
+  utxo_auto_selection_description: "추가 수수료가 필요하여 UTXO를 자동 선택해요"
+  n_utxos: " • ${count}개 선택"
+  no_utxos_selected: " • 선택 필요"
   estimated_fee: "예상 총 수수료 약 ${fee} sats"
   estimated_fee_too_high_error: "예상 총 수수료가 0.01 BTC 이상이에요!"
+  fee_rate_too_low_error: "수수료가 부족해요!"
+  insufficient_balance_error: "잔액이 부족해요!"
   recommended_fees_fetch_error: "추천 수수료를 조회할 수 없어요!"
   recommended_fees_is_null: "수수료를 조회하는 중이에요"
   recommended_fee_less_than_pending_tx_fee: "기존 수수료보다 큰 수수료를 지정해 주세요"
   recommended_fee_less_than_network_fee: "추천 수수료 이상으로 지정해 주세요"
+  
+  please_select_more_utxo: "${amount} 이상의 UTXO를 선택해 주세요"
   dialog:
     fee_alert_title: "알림"
     fee_alert_description: "설정하신 총 수수료가 0.01 BTC 이상이에요. 그래도 계속 진행하시겠어요?"
     confirmed_alert_title: "거래 완료"
     confirmed_alert_description: "처리 대기 중이던 거래가 완료되었어요."
+    rbf_duplicated_output_title: "중복 주소 발견"
+    rbf_duplicated_output: "지원하지 않는 트랜잭션이에요."
+    utxo_not_found_title: "UTXO 없음"
+    utxo_not_found: "거래에 사용한 UTXO를 찾을 수 없어요."
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
 
@@ -777,6 +826,7 @@ security_self_check_bottom_sheet:
 tag_bottom_sheet:
   title_new_tag: "태그 추가"
   title_edit_tag: "태그 편집"
+  title_apply_tag: "태그 적용"
   tag_list: "태그 목록"
   add_new_tag: "태그 추가하기"
   delete_tag: "태그 삭제하기"
@@ -961,6 +1011,11 @@ alert:
     try_again: "$count 후에 다시 시도해 주세요"
   fee_bumping:
     not_enough_amount: "$bumpingType를 실행하기에 충분한 잔액이 없습니다.\n현재 사용 가능한 잔액을 확인해 주세요."
+  without_mfp: 
+    title: "마스터 핑거프린트 추가"
+    description: "비트코인을 보내려면 마스터 핑거프린트를 먼저 추가해야 해요. 계속 하시겠어요?"
+    skip_button: "취소"
+    confirm_button: "추가하기"
 
 third_party:
   keystone: "키스톤"

@@ -9,9 +9,11 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/home/analysis_period_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -317,7 +319,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   Future<void> _navigateToWalletHomeEdit() async {
     _viewModel.captureEnabledFeaturesSnapshot();
-    await Navigator.pushNamed(context, '/wallet-home-edit', arguments: {'scrollController': _scrollController});
+    await Navigator.pushNamed(context, '/wallet-home-edit');
     if (context.mounted) {
       _viewModel.refreshEnabledFeaturesData();
     }
@@ -834,7 +836,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Navigator.of(context).pushNamed("/receive-address", arguments: {"id": targetId});
   }
 
-  void _onTapSend(List<int> walletOrder) {
+  Future<void> _onTapSend(List<int> walletOrder) async {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
     if (firstWallet == null) {
       Navigator.pushNamed(context, '/send', arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home});
@@ -845,7 +847,38 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     final targetId = walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
 
     if (!_checkStateAndShowToast(targetId)) return;
-    Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
+
+    final isManualUtxoSelection = _viewModel.isManualUtxoSelectionMode;
+
+    // 자동선택 모드인 경우 보내기 화면으로 이동
+    if (!isManualUtxoSelection) {
+      Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
+      return;
+    }
+
+    if (!mounted) return;
+    // 수동선택 모드인 경우 UTXO 선택 화면으로 이동
+    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
+      context: context,
+      minChildSize: 0.6,
+      maxChildSize: 0.9,
+      initialChildSize: 0.9,
+      childBuilder:
+          (scrollController) => UtxoSelectionScreen(
+            selectedUtxoList: const <UtxoState>[],
+            walletId: targetId,
+            currentUnit: context.read<PreferenceProvider>().currentUnit,
+            scrollController: scrollController,
+            showSkipButton: true,
+          ),
+    );
+
+    if (!mounted || result == null) return;
+    Navigator.pushNamed(
+      context,
+      '/send',
+      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'selectedUtxoList': result},
+    );
   }
 
   Widget _buildViewAllWallets(int walletCount) {

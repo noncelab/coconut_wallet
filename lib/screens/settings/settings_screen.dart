@@ -12,6 +12,7 @@ import 'package:coconut_wallet/screens/settings/realm_debug_screen.dart';
 import 'package:coconut_wallet/screens/settings/unit_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/language_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -190,21 +191,25 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 일반
                   _category(t.general),
-                  Selector<PreferenceProvider, String>(
-                    selector: (_, provider) => provider.language,
-                    builder: (context, language, child) {
-                      return _buildAnimatedButton(
-                        title: t.settings_screen.language,
-                        subtitle: _getCurrentLanguageDisplayName(language),
-                        onPressed: () async {
-                          CommonBottomSheets.showCustomHeightBottomSheet(
-                            context: context,
-                            heightRatio: 0.5,
-                            child: LanguageBottomSheet(),
+                  ButtonGroup(
+                    buttons: [
+                      Selector<PreferenceProvider, String>(
+                        selector: (_, provider) => provider.language,
+                        builder: (context, language, child) {
+                          return _buildAnimatedButton(
+                            title: t.settings_screen.language,
+                            subtitle: _getCurrentLanguageDisplayName(language),
+                            onPressed: () async {
+                              CommonBottomSheets.showCustomHeightBottomSheet(
+                                context: context,
+                                heightRatio: 0.5,
+                                child: LanguageBottomSheet(),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
+                      ),
+                    ],
                   ),
                   CoconutLayout.spacing_400h,
 
@@ -239,11 +244,27 @@ class _SettingsScreen extends State<SettingsScreen> {
 
                   // 도구
                   _category(t.tool),
-                  _buildAnimatedButton(
-                    title: t.log_viewer,
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/log-viewer');
-                    },
+                  ButtonGroup(
+                    buttons: [
+                      SingleButton(
+                        title: t.settings_screen.utxo_manual_selection,
+                        subtitle: t.settings_screen.utxo_manual_selection_description,
+                        isVerticalSubtitle: true,
+                        rightElement: _buildSwitch(
+                          isOn: viewModel.isManualUtxoSelectionMode,
+                          onChanged: (isOn) async {
+                            viewModel.setManualUtxoSelectionMode(isOn);
+                            vibrateExtraLight();
+                          },
+                        ),
+                      ),
+                      _buildAnimatedButton(
+                        title: t.log_viewer,
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/log-viewer');
+                        },
+                      ),
+                    ],
                   ),
 
                   // 개발자 모드에서만 표시되는 디버그 섹션

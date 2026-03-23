@@ -23,12 +23,16 @@ class UtxoSelectionScreen extends StatefulWidget {
   final List<UtxoState> selectedUtxoList;
   final int walletId;
   final BitcoinUnit currentUnit;
+  final ScrollController? scrollController;
+  final bool showSkipButton;
 
   const UtxoSelectionScreen({
     super.key,
     required this.currentUnit,
     required this.selectedUtxoList,
     required this.walletId,
+    this.scrollController,
+    this.showSkipButton = false,
   });
 
   @override
@@ -37,7 +41,8 @@ class UtxoSelectionScreen extends StatefulWidget {
 
 class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   final String allLabelName = t.all;
-  final ScrollController _scrollController = ScrollController();
+  late final ScrollController _scrollController;
+  late final bool _hasScrollController;
   late UtxoSelectionViewModel _viewModel;
 
   final List<UtxoOrder> _utxoOrderOptions = [
@@ -48,6 +53,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   ];
 
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
+  final GlobalKey _dropdownLayerKey = GlobalKey();
   bool _isOrderDropdownVisible = false; // 필터 드롭다운
   late Offset _orderDropdownButtonPosition;
 
@@ -61,10 +67,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // 네트워크 알림 툴팁이 생성되면 위젯이 밀리기 때문에 드롭다운 버튼 위치를 다시 계산
-            RenderBox orderDropdownButtonRenderBox =
-                _orderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
-
-            _orderDropdownButtonPosition = orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
+            _updateOrderDropdownButtonPosition();
           });
         }
         return viewModel;
@@ -81,10 +84,23 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                       backgroundColor: CoconutColors.black,
                       title: t.utxo_selection_screen.title,
                       context: context,
+                      actionButtonList: [
+                        if (widget.showSkipButton)
+                          CoconutUnderlinedButton(
+                            text: t.utxo_selection_screen.skip,
+                            textStyle: CoconutTypography.body2_14,
+                            onTap: () {
+                              _viewModel.deselectAllUtxo();
+                              Navigator.pop(context, _viewModel.selectedUtxoList);
+                            },
+                          ),
+                      ],
                       onBackPressed: () => Navigator.pop(context),
+                      isBottom: true,
                     ),
                     body: SafeArea(
                       child: Stack(
+                        key: _dropdownLayerKey,
                         children: [
                           Column(
                             children: [
@@ -114,34 +130,37 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                               ),
                               _buildUtxoTagList(viewModel),
                               Expanded(
-                                child: Stack(
-                                  children: [
-                                    Container(
-                                      color: CoconutColors.black,
-                                      child: SingleChildScrollView(
-                                        controller: _scrollController,
-                                        child: Column(
+                                child:
+                                    viewModel.isInitialized
+                                        ? Stack(
                                           children: [
-                                            _buildUtxoList(viewModel),
-                                            CoconutLayout.spacing_400h,
-                                            const SizedBox(height: 50),
+                                            Container(
+                                              color: CoconutColors.black,
+                                              child: SingleChildScrollView(
+                                                controller: _scrollController,
+                                                child: Column(
+                                                  children: [
+                                                    _buildUtxoList(viewModel),
+                                                    CoconutLayout.spacing_400h,
+                                                    const SizedBox(height: 50),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            FixedBottomButton(
+                                              onButtonClicked: () {
+                                                vibrateLight();
+                                                Navigator.pop(context, _viewModel.selectedUtxoList);
+                                              },
+                                              text: t.complete,
+                                              isActive: _viewModel.hasSelectionChanged,
+                                              showGradient: true,
+                                              horizontalPadding: 16,
+                                              backgroundColor: CoconutColors.white,
+                                            ),
                                           ],
-                                        ),
-                                      ),
-                                    ),
-                                    FixedBottomButton(
-                                      onButtonClicked: () {
-                                        vibrateLight();
-                                        Navigator.pop(context, _viewModel.selectedUtxoList);
-                                      },
-                                      text: t.complete,
-                                      isActive: _viewModel.hasSelectionChanged,
-                                      showGradient: true,
-                                      horizontalPadding: 16,
-                                      backgroundColor: CoconutColors.white,
-                                    ),
-                                  ],
-                                ),
+                                        )
+                                        : const Center(child: CircularProgressIndicator()),
                               ),
                             ],
                           ),
@@ -159,7 +178,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    if (_hasScrollController) {
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
@@ -167,6 +188,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   void initState() {
     try {
       super.initState();
+      _hasScrollController = widget.scrollController == null;
+      _scrollController = widget.scrollController ?? ScrollController();
 
       _viewModel = UtxoSelectionViewModel(
         Provider.of<WalletProvider>(context, listen: false),
@@ -175,7 +198,6 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
-        widget.selectedUtxoList,
       );
 
       _scrollController.addListener(() {
@@ -185,10 +207,11 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        RenderBox orderDropdownButtonRenderBox =
-            _orderDropdownButtonKey.currentContext?.findRenderObject() as RenderBox;
+        if (mounted) {
+          _viewModel.initialize(widget.selectedUtxoList);
+        }
 
-        _orderDropdownButtonPosition = orderDropdownButtonRenderBox.localToGlobal(Offset.zero);
+        _updateOrderDropdownButtonPosition();
       });
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -215,6 +238,21 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     setState(() {
       _isOrderDropdownVisible = false;
     });
+  }
+
+  void _updateOrderDropdownButtonPosition() {
+    final buttonContext = _orderDropdownButtonKey.currentContext;
+    final dropdownLayerContext = _dropdownLayerKey.currentContext;
+    if (buttonContext == null || dropdownLayerContext == null) return;
+
+    final buttonRenderBox = buttonContext.findRenderObject();
+    final dropdownLayerRenderBox = dropdownLayerContext.findRenderObject();
+    if (buttonRenderBox is! RenderBox || dropdownLayerRenderBox is! RenderBox) return;
+
+    _orderDropdownButtonPosition = buttonRenderBox.localToGlobal(
+      Offset(0, buttonRenderBox.size.height),
+      ancestor: dropdownLayerRenderBox,
+    );
   }
 
   void _selectAll() {
@@ -271,8 +309,8 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   Widget _buildUtxoOrderDropdown(UtxoSelectionViewModel viewModel) {
     if (_isOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
       return Positioned(
-        top: _orderDropdownButtonPosition.dy - kToolbarHeight,
-        left: 16,
+        top: _orderDropdownButtonPosition.dy,
+        left: _orderDropdownButtonPosition.dx,
         child: _utxoOrderDropdownMenu(),
       );
     }

@@ -22,7 +22,7 @@ class UtxoListStickyHeader extends StatelessWidget {
 
   final AnimatedBalanceData animatedBalanceData;
   final int? totalCount;
-  final String selectedOption;
+  final String activeOption;
   final Function onTapDropdown;
   final Function removePopup;
   final BitcoinUnit currentUnit;
@@ -48,7 +48,7 @@ class UtxoListStickyHeader extends StatelessWidget {
     required this.enableDropdown,
     required this.animatedBalanceData,
     required this.totalCount,
-    required this.selectedOption,
+    required this.activeOption,
     required this.onTapDropdown,
     required this.removePopup,
     required this.currentUnit,
@@ -185,7 +185,7 @@ class UtxoListStickyHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    selectedOption,
+                    activeOption,
                     style: CoconutTypography.body3_12.setColor(
                       enableDropdown ? CoconutColors.white : CoconutColors.gray700,
                     ),

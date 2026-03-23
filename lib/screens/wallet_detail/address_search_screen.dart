@@ -332,7 +332,13 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       itemCount: addressList.length,
       itemBuilder:
           (context, index) => AddressItemCard(
-            onPressed: () {
+            onPressed: () async {
+              FocusManager.instance.primaryFocus?.unfocus();
+
+              await Future.delayed(const Duration(milliseconds: 150));
+
+              if (!context.mounted) return;
+
               CommonBottomSheets.showCustomHeightBottomSheet(
                 context: context,
                 heightRatio: 0.9,
@@ -345,6 +351,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
                   title: t.address_list_screen.address_index(index: index),
                   isBottom: true,
                   showPulldownMenu: false,
+                  isAddress: true,
                 ),
               );
             },

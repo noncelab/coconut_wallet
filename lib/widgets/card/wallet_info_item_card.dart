@@ -1,12 +1,13 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_edit_bottom_sheet.dart';
+import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/tooltip_button.dart';
 import 'package:coconut_wallet/widgets/icon/wallet_icon.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,7 @@ class WalletInfoItemCard extends StatefulWidget {
   final VoidCallback onTooltipClicked;
   final GlobalKey tooltipKey;
   final Function(String) onNameChanged;
-
+  final Function() onShowMfpInputBottomSheet;
   const WalletInfoItemCard({
     super.key,
     required this.id,
@@ -29,6 +30,7 @@ class WalletInfoItemCard extends StatefulWidget {
     required this.onTooltipClicked,
     required this.tooltipKey,
     required this.onNameChanged,
+    required this.onShowMfpInputBottomSheet,
   });
 
   @override
@@ -41,16 +43,54 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   late int colorIndex;
   late int iconIndex;
   late String rightText;
-  late String tooltipText;
+  late String rightSubText;
   late String nameText;
   late WalletListItemBase walletItem;
   WalletImportSource? walletImportSource;
 
   bool isItemTapped = false; // ui (edit 아이콘)
+  bool isCustomAccount = false;
+
+  bool _isWithoutMfp() {
+    if (isMultisig) {
+      return false;
+    }
+    return isWalletWithoutMfp(walletItem) ||
+        (walletItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint ==
+            WalletAddService.masterFingerprintPlaceholder;
+  }
+
+  bool _isExtendedPublicKey() {
+    return walletImportSource == WalletImportSource.extendedPublicKey;
+  }
+
+  int _getAccountIndex(String derivationPath) {
+    try {
+      final segments = derivationPath.split('/');
+      if (segments.length > 3) {
+        return int.parse(segments[3].replaceAll("'", ""));
+      }
+    } catch (e) {
+      return 0;
+    }
+    return 0;
+  }
 
   @override
   void initState() {
     super.initState();
+    _updateFromWalletItem();
+  }
+
+  @override
+  void didUpdateWidget(covariant WalletInfoItemCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.walletItem != widget.walletItem) {
+      _updateFromWalletItem();
+    }
+  }
+
+  void _updateFromWalletItem() {
     walletItem = widget.walletItem;
     if (walletItem is MultisigWalletListItem) {
       /// 멀티 시그
@@ -59,7 +99,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       colorIndex = multiWallet.colorIndex;
       iconIndex = multiWallet.iconIndex;
       rightText = '';
-      tooltipText = '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
+      rightSubText = '${multiWallet.requiredSignatureCount}/${multiWallet.signers.length}';
       isMultisig = true;
     } else {
       /// 싱글 시그
@@ -67,8 +107,10 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
       colorIndex = widget.walletItem.colorIndex;
       iconIndex = widget.walletItem.iconIndex;
       rightText = singlesigWallet.keyStore.masterFingerprint;
-      tooltipText = t.wallet_id;
+      rightSubText = singlesigWallet.derivationPath;
       walletImportSource = widget.walletItem.walletImportSource;
+
+      isCustomAccount = _getAccountIndex(singlesigWallet.derivationPath) != 0;
     }
     nameText = walletItem.name;
   }
@@ -148,20 +190,64 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (rightText.isNotEmpty)
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 120),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            rightText.replaceAllMapped(RegExp(r'[a-z]+'), (match) => match.group(0)!.toUpperCase()),
-                            style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
-                          ),
-                        ),
-                      );
-                    },
+                  Row(
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 150),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: TooltipButton(
+                                textStyle: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
+                                isSelected: false,
+                                text: rightText.replaceAllMapped(
+                                  RegExp(r'[a-z]+'),
+                                  (match) => match.group(0)!.toUpperCase(),
+                                ),
+                                iconKey: _isWithoutMfp() || _isExtendedPublicKey() ? null : widget.tooltipKey,
+                                containerMargin: EdgeInsets.zero,
+                                containerPadding: EdgeInsets.zero,
+                                iconMargin: const EdgeInsets.only(left: 4),
+                                onTap:
+                                    _isWithoutMfp() || _isExtendedPublicKey() ? _onMfpEditTap : widget.onTooltipClicked,
+                                pressedTextStyle:
+                                    _isWithoutMfp() || _isExtendedPublicKey()
+                                        ? CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.gray500)
+                                        : null,
+                                defaultIconBuilder:
+                                    _isWithoutMfp() || _isExtendedPublicKey()
+                                        ? (isPressed) => SvgPicture.asset(
+                                          'assets/svg/edit-outlined.svg',
+                                          width: 14,
+                                          colorFilter: ColorFilter.mode(
+                                            isPressed ? CoconutColors.gray700 : CoconutColors.gray500,
+                                            BlendMode.srcIn,
+                                          ),
+                                        )
+                                        : null,
+                                extraIcons:
+                                    _isWithoutMfp() || _isExtendedPublicKey()
+                                        ? [
+                                          TooltipIconAction(
+                                            key: widget.tooltipKey,
+                                            icon: const Icon(
+                                              Icons.info_outline_rounded,
+                                              color: CoconutColors.gray500,
+                                              size: 18,
+                                            ),
+                                            onTap: widget.onTooltipClicked,
+                                            margin: const EdgeInsets.only(left: 4),
+                                          ),
+                                        ]
+                                        : null,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 LayoutBuilder(
                   builder: (context, constraints) {
@@ -170,21 +256,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerRight,
-                        child: TooltipButton(
-                          isSelected: false,
-                          text: tooltipText,
-                          isLeft: true,
-                          iconKey: widget.tooltipKey,
-                          containerMargin: EdgeInsets.zero,
-                          containerPadding: EdgeInsets.zero,
-                          iconMargin: const EdgeInsets.only(left: 4),
-                          onTap: () {
-                            widget.onTooltipClicked();
-                          },
-                          onTapDown: (details) {
-                            widget.onTooltipClicked();
-                          },
-                        ),
+                        child: Text(rightSubText, style: CoconutTypography.body2_14.setColor(CoconutColors.gray400)),
                       ),
                     );
                   },
@@ -198,13 +270,22 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   }
 
   void _onTap(BuildContext context, WalletImportSource? walletImportSource) {
-    if (walletImportSource == null || walletImportSource == WalletImportSource.coconutVault) {
+    final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
+
+    if (!isExternalWallet && !isCustomAccount) {
       return;
     }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => WalletInfoEditBottomSheet(id: widget.id, walletImportSource: walletImportSource),
+      backgroundColor: Colors.transparent,
+      builder:
+          (context) => WalletInfoEditBottomSheet(
+            id: widget.id,
+            walletImportSource: walletImportSource ?? WalletImportSource.coconutVault,
+            isCustomAccount: isCustomAccount,
+          ),
     ).then((result) {
       if (result != null) {
         var ellipsisName = result.length > 10 ? '${result.substring(0, 7)}...' : result;
@@ -216,7 +297,14 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
     });
   }
 
+  void _onMfpEditTap() {
+    widget.onShowMfpInputBottomSheet();
+  }
+
   Widget _buildIcon() {
+    final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
+    final bool shouldShowEditIcon = isExternalWallet || isCustomAccount;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -225,7 +313,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
           colorIndex: colorIndex,
           iconIndex: iconIndex,
         ),
-        if (walletImportSource != null && walletImportSource != WalletImportSource.coconutVault)
+        if (shouldShowEditIcon)
           Positioned(
             right: -3,
             bottom: -3,
