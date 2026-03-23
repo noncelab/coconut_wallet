@@ -1,3 +1,4 @@
+
 # flutter pub run slang
 
 # t.glossary
@@ -101,6 +102,8 @@ electrum_server: "Servidor Electrum"
 block_explorer: "Explorador"
 log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
+name: "Nombre"
+account: "Cuenta"
 
 relative_time:
   just_now: "Justo ahora"
@@ -187,14 +190,19 @@ utility:
     binance_price: "Precio Binance"
     bitflyer_price: "Precio Bitflyer"
     offline_price_unavailable: "Precio no disponible"
-    fee: "Tarifa"
+    premium: "Prima"
     transaction_bill: "Factura de Transacción"
     reference_price: "Precio de Referencia"
     reference_datetime: "Fecha y Hora de Referencia"
-    transaction_fee: "Tarifa de Transacción"
+    transaction_premium: "Prima de Transacción"
     copy_all: "Copiar Todo"
     share: "Compartir"
-    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[Factura de Transacción]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nPrecio de Referencia: $currencySymbol $referencePrice / BTC\nFecha y Hora de Referencia: $referenceTime\nTarifa de Transacción: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+    send: "Enviar"
+    no_wallet: "No hay billeteras"
+    no_wallet_description: "Necesitas agregar una billetera antes de enviar Bitcoin.\nPor favor, agrega una billetera y vuelve a intentarlo."
+    add_wallet: "Agregar billetera"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionPremiumRate, transactionPremium, premiumToSats): "[Factura de Transacción]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nPrecio de Referencia: $currencySymbol $referencePrice / BTC\nFecha y Hora de Referencia: $referenceTime\nPrima de Transacción: $transactionPremiumRate / $currencySymbol $transactionPremium ($premiumToSats sats)"
+    enter_amount_first: "Ingrese usted primero la cantidad"
 
 transaction_draft:
   title: "Transacción temporal"
@@ -476,6 +484,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "Seleccionar UTXOs"
+  skip: "saltar"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "Seleccionar UTXO"
@@ -597,6 +606,8 @@ settings_screen:
   hide_balance: "Ocultar saldo"
   fiat: "Fiat"
   language: "Idioma"
+  utxo_manual_selection: "Selección manual de UTXO"
+  utxo_manual_selection_description: "Selecciona UTXOs manualmente para enviar"
   utxo_tier_theme: "Color de moneda"
   electrum_server: 
     server_address: "Dirección del servidor"
@@ -700,8 +711,14 @@ utxo_detail_screen:
   address: "Dirección de retención"
   utxo_locked: "Bloqueado"
   utxo_unlocked: "Disponible"
-  utxo_locked_toast_msg: "¡UTXO bloqueado completamente! Esta moneda ya no se usará automáticamente."
-  utxo_unlocked_toast_msg: "¡UTXO desbloqueado completamente! La moneda ha sido cambiada a estado disponible."
+  utxo_locked_toast_msg: "¡Bloqueado! Esta moneda no se usará automáticamente."
+  utxo_unlocked_toast_msg: "¡Desbloqueado! Esta moneda ya está disponible para usar."
+  utxo_already_locked: "Ya está bloqueado."
+  utxo_already_unlocked: "Ya está disponible."
+  utxo_all_already_locked: "Todos los UTXOs ya están bloqueados."
+  utxo_all_already_unlocked: "Todos los UTXOs ya están disponibles."
+  utxo_locked_count_toast_msg: "$count UTXOs han sido bloqueados."
+  utxo_unlocked_count_toast_msg: "$count UTXOs han sido desbloqueados."
 
 utxo_tag_screen:
   onboarding_title: "Puedes gestionar etiquetas UTXO"

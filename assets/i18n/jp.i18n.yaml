@@ -57,7 +57,7 @@ utxo_list: "UTXO一覧"
 wallet_id: "ウォレットID"
 tag_manage: "タグ管理"
 tag_manage_label: "タグ管理"
-extended_public_key: "ExPub Key"
+extended_public_key: "Extended Public Key"
 tx_memo: "Tx メモ"
 tx_id: "Tx ID"
 block_num: "ブロック番号"
@@ -101,6 +101,8 @@ electrum_server: "Electrum Server"
 block_explorer: "ブロックエクスプローラー"
 log_viewer: "ログビューアー"
 go_to_settings: "設定を開く"
+name: "名前"
+account: "アカウント"
 
 relative_time:
   just_now: "たった今"
@@ -188,14 +190,19 @@ utility:
     binance_price: "Binance 基準 時価"
     bitflyer_price: "Bitflyer 基準 時価"
     offline_price_unavailable: "時価を取得できません"
-    fee: "手数料"
+    premium: "保険料"
     transaction_bill: "取引請求書"
     reference_price: "基準価格"
     reference_datetime: "基準日時"
-    transaction_fee: "取引手数料"
-    copy_all: "全コピー"
+    transaction_premium: "取引プレミアム"
+    copy_all: "全てをコピー"
     share: "共有"
-    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[取引請求書]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n基準価格: $currencySymbol $referencePrice / BTC\n基準日時: $referenceTime\n取引手数料: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+    send: "送信"
+    no_wallet: "ウォレットがありません"
+    no_wallet_description: "ビットコインを送信する前に、ウォレットを追加してください。\nウォレットを追加した後、もう一度試してください。"
+    add_wallet: "ウォレットを追加する"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionPremiumRate, transactionPremium, premiumToSats): "[取引請求書]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n基準価格: $currencySymbol $referencePrice / BTC\n基準日時: $referenceTime\n取引プレミアム: $transactionPremiumRate / $currencySymbol $transactionPremium ($premiumToSats sats)"
+    enter_amount_first: "まず金額を入力してください"
 
 transaction_draft:
   title: "一時保存トランザクション"
@@ -477,6 +484,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "UTXO選択"
+  skip: "スキップ"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO選択"
@@ -596,6 +604,8 @@ settings_screen:
   hide_balance: "残高を非表示"
   fiat: "法定通貨"
   language: "言語"
+  utxo_manual_selection: "UTXO 数手動選択"
+  utxo_manual_selection_description: "送金に使用するUTXOを手動で選択します"
   utxo_tier_theme: "コインの色"
   electrum_server: 
     server_address: "サーバーアドレス"
@@ -699,8 +709,14 @@ utxo_detail_screen:
   address: "保有アドレス"
   utxo_locked: "コインロック済み"
   utxo_unlocked: "使用可能"
-  utxo_locked_toast_msg: "UTXOロック完了！このコインは自動的に使用されなくなります。"
-  utxo_unlocked_toast_msg: "UTXOアンロック完了！コインが使用可能状態に切り替わりました。"
+  utxo_locked_toast_msg: "ロック完了！このコインは自動的に使用されません。"
+  utxo_unlocked_toast_msg: "ロック解除完了！このコインは使用できます。"
+  utxo_already_locked: "すでにロック状態です。"
+  utxo_already_unlocked: "すでに使用可能な状態です。"
+  utxo_all_already_locked: "すべてのUTXOはすでにロック状態です。"
+  utxo_all_already_unlocked: "すべてのUTXOはすでに使用可能な状態です。"
+  utxo_locked_count_toast_msg: "$count個のUTXOがロックされました。"
+  utxo_unlocked_count_toast_msg: "$count個のUTXOがロック解除されました。"
 
 utxo_tag_screen:
   onboarding_title: "UTXOタグを管理できます"

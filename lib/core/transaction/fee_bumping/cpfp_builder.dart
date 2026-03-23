@@ -116,7 +116,7 @@ class CpfpBuilder {
   }
 
   double _calculateMinimumChildFeeRate(double childVSize) {
-    return FeeRateUtils.ceilFeeRate(_calculateMinimumChildFee(childVSize) / childVSize);
+    return FeeRateUtils.roundToTwoDecimals(_calculateMinimumChildFee(childVSize) / childVSize);
   }
 
   /// 패키지(부모+자식)가 네트워크 최소 수수료율을 만족하기 위한 child tx 최소 수수료 (sats)
@@ -204,7 +204,9 @@ class CpfpBuilder {
       final tx = txBuildResult.transaction!;
       final actualChildFee = tx.totalInputAmount - tx.outputs.fold<int>(0, (s, o) => s + o.amount);
       final actualChildVSize = tx.estimateVirtualByteForWallet(walletListItemBase);
-      final packageFeeRate = FeeRateUtils.ceilFeeRate((parentFee + actualChildFee) / (parentVSize + actualChildVSize));
+      final packageFeeRate = FeeRateUtils.roundToTwoDecimals(
+        (parentFee + actualChildFee) / (parentVSize + actualChildVSize),
+      );
       Logger.log(
         '[ Succeed ] actualChildFee: $actualChildFee, actualChildVSize: $actualChildVSize, packageFeeRate: $packageFeeRate',
       );

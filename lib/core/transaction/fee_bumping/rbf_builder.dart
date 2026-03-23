@@ -16,6 +16,7 @@ import 'package:coconut_wallet/utils/fee_rate_util.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart'
     as tx_creation_exception;
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:collection/collection.dart';
 
 class RbfBuildResult {
   final Transaction? transaction;
@@ -125,7 +126,7 @@ class RbfBuilder {
   }
 
   double _calculateMinimumFeeRate(double newTxVSize) {
-    return FeeRateUtils.ceilFeeRate(_calculateMinimumRbfFee(newTxVSize: newTxVSize) / newTxVSize);
+    return FeeRateUtils.roundToTwoDecimals(_calculateMinimumRbfFee(newTxVSize: newTxVSize) / newTxVSize);
   }
 
   int _calculateMinimumRbfFee({required double newTxVSize}) {
@@ -271,7 +272,7 @@ class RbfBuilder {
     final actualFee = tx.totalInputAmount - tx.outputs.fold(0, (sum, output) => sum + output.amount);
     final minimumRequiredFee = _pendingTx.fee + actualVSize;
     if (actualFee >= minimumRequiredFee) return null;
-    return FeeRateUtils.ceilFeeRate(minimumRequiredFee / actualVSize);
+    return FeeRateUtils.roundToTwoDecimals(minimumRequiredFee / actualVSize);
   }
 
   TransactionBuildResult? _tryBuildTransactionWithFeeAdjusting(
@@ -373,6 +374,16 @@ class RbfBuilder {
     return (result: null, remainingDeficit: remaining, addedUtxos: addedUtxos, estimatedTxSize: vSize);
   }
 
+  bool? _isChangeOutputUnderDustLimit(Transaction tx) {
+    assert(changeOutput != null); // _tryWithChangeOutput에서만 호출
+    final TransactionOutput? foundChangeOutput = tx.outputs.firstWhereOrNull(
+      (TransactionOutput output) => output.getAddress() == changeOutput!.address,
+    );
+    // coconut_lib change output의 dust 기준에 걸려 수수료로 전환된 경우
+    if (foundChangeOutput == null) return null;
+    return foundChangeOutput.amount <= dustLimit;
+  }
+
   /// 트랜잭션 생성 시도 시 항상 맨 처음 호출된다고 가정
   ({RbfBuildResult? result, int? remainingDeficit}) _tryWithChangeOutput({
     required int initialAdditionalFee,
@@ -383,9 +394,19 @@ class RbfBuilder {
       Logger.log(
         '[RbfBuilder] _tryWithChangeOutput: changeOutput.amount(${changeOutput!.amount}) >= initialAdditionalFee($initialAdditionalFee) → 트랜잭션 빌드 시도',
       );
-      final TransactionBuildResult? txBuildResult = _tryBuildTransactionWithFeeAdjusting(recipientMap, feeRate);
+      TransactionBuildResult? txBuildResult = _tryBuildTransactionWithFeeAdjusting(recipientMap, feeRate);
       if (txBuildResult != null) {
-        final tx = txBuildResult.transaction!;
+        Transaction tx = txBuildResult.transaction!;
+        // 잔돈이 앱 내에서 지정한 dustLimit보다 작을 수 있어서, selfOutput이 있는 경우 sweep
+        // coconut_lib은 지갑 타입 별로 다른 dustLimit을 적용하기 때문
+        if (selfOutputs?.isNotEmpty == true && _isChangeOutputUnderDustLimit(tx) == true) {
+          final sweepRecipients = _createSweepRecipients(recipientMap, selfOutputs!.last);
+          final sweepTxBuildResult = _tryBuildTransactionWithFeeAdjusting(sweepRecipients, feeRate, isSweep: true);
+          if (sweepTxBuildResult != null) {
+            tx = sweepTxBuildResult.transaction!;
+            txBuildResult = sweepTxBuildResult;
+          }
+        }
         final result = RbfBuildResult(
           transaction: tx,
           isOnlyChangeOutputUsed: true,
@@ -523,7 +544,10 @@ class RbfBuilder {
     int additionalFee = _calculateMinAdditionalFee(newTxSize: newTxVSize);
     int minimumFee = _calculateMinimumRbfFee(newTxVSize: newTxVSize);
 
-    return (initialAdditionalFee: additionalFee, initialRbfFeeRate: FeeRateUtils.ceilFeeRate(minimumFee / newTxVSize));
+    return (
+      initialAdditionalFee: additionalFee,
+      initialRbfFeeRate: FeeRateUtils.roundToTwoDecimals(minimumFee / newTxVSize),
+    );
   }
 
   RbfBuildResult getBaselineTransaction({bool isForce = false}) {

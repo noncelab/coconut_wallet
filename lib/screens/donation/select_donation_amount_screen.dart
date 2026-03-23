@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+@Deprecated('사용하지 않음')
 class SelectDonationAmountScreen extends StatefulWidget {
   final int walletListLength;
   const SelectDonationAmountScreen({super.key, required this.walletListLength});

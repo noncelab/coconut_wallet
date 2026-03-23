@@ -1,9 +1,11 @@
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fiat_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -18,6 +20,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final PreferenceProvider _preferenceProvider;
   final PriceProvider _priceProvider;
+  final WalletProvider _walletProvider;
 
   /// 현재 법정 화폐
   late FiatCode _fiatCode;
@@ -25,7 +28,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
 
   /// 수수료율 (%)
   double _feeRate = 1.0;
-  double get feeRate => _feeRate;
+  double get premiumRate => _feeRate;
 
   /// 위쪽 위젯 인풋 타입
   InputAssetType _inputAssetType = InputAssetType.fiat;
@@ -75,7 +78,15 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     return '${_fiatCode.symbol} ${fiatAmount.toThousandsSeparatedString()}';
   }
 
-  P2PCalculatorViewModel(this._preferenceProvider, this._connectivityProvider, this._priceProvider) {
+  /// WalletProvider 관련
+  List<WalletListItemBase> get wallets => _walletProvider.walletItemList;
+
+  P2PCalculatorViewModel(
+    this._preferenceProvider,
+    this._connectivityProvider,
+    this._priceProvider,
+    this._walletProvider,
+  ) {
     _connectivityProvider.addListener(_onConnectivityChanged);
     _priceProvider.addListener(_onPriceChanged);
 
@@ -114,7 +125,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFeeRate(double rate) {
+  void setPremiumRate(double rate) {
     _feeRate = rate;
     notifyListeners();
   }
@@ -341,9 +352,9 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
         referenceTime: referenceDateTime,
-        transactionFeeRate: feeRateStr,
-        transactionFee: feeAmountStr,
-        feeToSats: feeSatsStr,
+        transactionPremiumRate: feeRateStr,
+        transactionPremium: feeAmountStr,
+        premiumToSats: feeSatsStr,
       );
     } else {
       return t.utility.p2p_calculator.copy_format(
@@ -354,11 +365,17 @@ class P2PCalculatorViewModel extends ChangeNotifier {
         currencySymbol: _fiatCode.symbol,
         referencePrice: btcPriceStr,
         referenceTime: referenceDateTime,
-        transactionFeeRate: feeRateStr,
-        transactionFee: feeAmountStr,
-        feeToSats: feeSatsStr,
+        transactionPremiumRate: feeRateStr,
+        transactionPremium: feeAmountStr,
+        premiumToSats: feeSatsStr,
       );
     }
+  }
+
+  void toggleP2PMode() {
+    vibrateExtraLight();
+    _isOfflineMode = !_isOfflineMode;
+    notifyListeners();
   }
 
   void copyAll(

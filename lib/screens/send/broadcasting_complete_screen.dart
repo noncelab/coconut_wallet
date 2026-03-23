@@ -161,7 +161,13 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
     // 메모가 있는 경우 업데이트 시도
     final memo = _memoController.text.trim();
     if (memo.isNotEmpty && !context.read<TransactionProvider>().updateTransactionMemo(widget.id, widget.txHash, memo)) {
-      CoconutToast.showWarningToast(context: context, text: t.toast.memo_update_failed);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: t.toast.memo_update_failed,
+        level: CoconutToastLevel.warning,
+      );
       return;
     }
 

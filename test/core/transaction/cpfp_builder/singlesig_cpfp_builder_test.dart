@@ -40,7 +40,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
 
       final CpfpBuildResult buildResult = cpfpBuilder.build(newFeeRate: result.minimumFeeRate);
@@ -75,7 +75,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
 
       final CpfpBuildResult buildResult = cpfpBuilder.build(newFeeRate: result.minimumFeeRate);
@@ -107,7 +107,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
     });
 
@@ -149,11 +149,7 @@ void main() {
       expect(baselineResult.isCpfpNeeded, isFalse);
 
       final CpfpBuildResult buildResult = cpfpBuilder.build(newFeeRate: baselineResult.minimumFeeRate - 0.01);
-
-      expect(buildResult.isFailure, isTrue);
-      expect(buildResult.transaction, isNull);
-      expect(buildResult.exception, isNotNull);
-      expect(buildResult.exception, isA<CpfpFeeRateTooLowException>());
+      expect(buildResult.isSuccess, isTrue); // 네트워크 상 최소 추천 수수료율을 기준으로 minimumFeeRate을 계산했기 때문에 더 작은 값을 입력해도 상관없음
     });
 
     test('minimumFeeRate / success / packageFeeRate is correct', () {
@@ -181,7 +177,7 @@ void main() {
       final double childVSize = buildResult.estimatedVSize;
       expect(
         buildResult.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
     });
 
@@ -251,7 +247,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
 
       final CpfpBuildResult buildResult = cpfpBuilder.build(newFeeRate: result.minimumFeeRate + 40);
@@ -317,7 +313,7 @@ void main() {
       final double childVSize = result.estimatedVSize;
       expect(
         result.packageFeeRate,
-        equals(FeeRateUtils.ceilFeeRate((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
+        equals(FeeRateUtils.roundToTwoDecimals((pendingTx.fee + childFee) / (pendingTx.vSize + childVSize))),
       );
     });
   });

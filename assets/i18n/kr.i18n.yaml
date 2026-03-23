@@ -101,6 +101,8 @@ electrum_server: "일렉트럼 서버"
 block_explorer: "블록 익스플로러"
 log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
+name: "이름"
+account: "계정"
 
 relative_time:
   just_now: "방금 전"
@@ -188,15 +190,20 @@ utility:
     binance_price: "바이낸스 기준 시세"
     bitflyer_price: "비트플라이어 기준 시세"
     offline_price_unavailable: "시세를 가져올 수 없어요"
-    fee: "수수료"
+    premium: "프리미엄"
     transaction_bill: "거래 계산서"
     reference_price: "기준 시세"
     reference_datetime: "기준 일시"
-    transaction_fee: "거래 수수료"
-    copy_all: "전체 복사"
-    share: "공유"
-    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[거래 계산서]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n기준 시세: $currencySymbol $referencePrice / BTC\n기준 일시: $referenceTime\n거래 수수료: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
-
+    transaction_premium: "거래 프리미엄"
+    copy_all: "전체 복사하기"
+    share: "공유하기"
+    send: "보내기"
+    no_wallet: "지갑이 없어요"
+    no_wallet_description: "비트코인을 보내려면 먼저 지갑을 추가해야 해요.\n지갑을 추가한 뒤 다시 시도해 주세요."
+    add_wallet: "지갑 추가하기"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionPremiumRate, transactionPremium, premiumToSats): "[거래 계산서]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\n기준 시세: $currencySymbol $referencePrice / BTC\n기준 일시: $referenceTime\n거래 프리미엄: $transactionPremiumRate / $currencySymbol $transactionPremium ($premiumToSats sats)"
+    enter_amount_first: "먼저 금액을 입력해 주세요"
+    
 transaction_draft:
   title: "임시 저장 트랜잭션"
   empty_message: "임시 저장된 트랜잭션이 없어요"
@@ -476,6 +483,7 @@ send_screen:
     
 utxo_selection_screen:
   title: "UTXO 고르기"
+  skip: "건너뛰기"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "UTXO 선택"
@@ -594,6 +602,8 @@ settings_screen:
   change_password: "비밀번호 바꾸기"
   fiat: "법정 화폐"
   language: "언어"
+  utxo_manual_selection: "UTXO 수동 선택"
+  utxo_manual_selection_description: "송금에 사용할 UTXO를 직접 선택합니다"
   utxo_tier_theme: "코인 색상"
   locales:
     korean: "한국어"
@@ -702,8 +712,14 @@ utxo_detail_screen:
   address: "보유 주소"
   utxo_locked: "사용 잠금"
   utxo_unlocked: "사용 가능"
-  utxo_locked_toast_msg: "UTXO 잠금 완료! 이 코인은 더 이상 자동으로 사용되지 않아요."
-  utxo_unlocked_toast_msg: "UTXO 잠금 해제 완료! 코인이 사용 가능한 상태로 전환됐어요."
+  utxo_locked_toast_msg: "잠금 완료! 이 코인은 자동으로 사용되지 않아요."
+  utxo_unlocked_toast_msg: "잠금 해제 완료! 이 코인을 사용할 수 있어요."
+  utxo_already_locked: "이미 잠금 상태입니다."
+  utxo_already_unlocked: "이미 사용 가능한 상태입니다."
+  utxo_all_already_locked: "모든 UTXO가 이미 잠금 상태입니다."
+  utxo_all_already_unlocked: "모든 UTXO가 이미 사용 가능한 상태입니다."
+  utxo_locked_count_toast_msg: "UTXO $count개를 잠갔어요."
+  utxo_unlocked_count_toast_msg: "UTXO $count개를 잠금 해제했어요."
 
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"

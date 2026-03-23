@@ -57,7 +57,7 @@ utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
 tag_manage: "Tag Management"
 tag_manage_label: "Tag Management"
-extended_public_key: "ExPub Key"
+extended_public_key: "Extended Public Key"
 tx_memo: "Tx Memo"
 tx_id: "Tx ID"
 block_num: "Block Number"
@@ -101,6 +101,8 @@ electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
+name: "Name"
+account: "Account"
 
 relative_time:
   just_now: "Just now"
@@ -188,14 +190,19 @@ utility:
     binance_price: "Binance Price"
     bitflyer_price: "Bitflyer Price"
     offline_price_unavailable: "Price unavailable"
-    fee: "Fee"
+    premium: "Premium"
     transaction_bill: "Transaction Bill"
     reference_price: "Reference Price"
     reference_datetime: "Reference Datetime"
-    transaction_fee: "Transaction Fee"
+    transaction_premium: "Transaction Premium"
     copy_all: "Copy All"
     share: "Share"
-    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[Transaction Bill]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nReference Price: $currencySymbol $referencePrice / BTC\nReference Datetime: $referenceTime\nTransaction Fee: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+    send: "Send"
+    no_wallet: "No wallet"
+    no_wallet_description: "You need to add a wallet before sending Bitcoin.\nPlease add a wallet and try again."
+    add_wallet: "Add Wallet"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionPremiumRate, transactionPremium, premiumToSats): "[Transaction Bill]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nReference Price: $currencySymbol $referencePrice / BTC\nReference Datetime: $referenceTime\nTransaction Premium: $transactionPremiumRate / $currencySymbol $transactionPremium ($premiumToSats sats)"
+    enter_amount_first: "Please enter the amount first"
     
 transaction_draft:
   title: "Temporary Transaction"
@@ -477,6 +484,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "Select UTXOs"
+  skip: "skip"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "Select UTXOs"
@@ -596,6 +604,8 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  utxo_manual_selection: "UTXO Manual Selection"
+  utxo_manual_selection_description: "Select UTXOs manually for sending"
   utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"
@@ -699,8 +709,14 @@ utxo_detail_screen:
   address: "Holding Address"
   utxo_locked: "Locked"
   utxo_unlocked: "Spendable"
-  utxo_locked_toast_msg: "UTXO lock complete! This coin will no longer be used automatically."
-  utxo_unlocked_toast_msg: "UTXO unlock complete! Coin has been switched to available status."
+  utxo_locked_toast_msg: "Locked! This coin won't be used automatically."
+  utxo_unlocked_toast_msg: "Unlocked! This coin is now available to spend."
+  utxo_already_locked: "Already locked."
+  utxo_already_unlocked: "Already spendable."
+  utxo_all_already_locked: "All UTXOs are already locked."
+  utxo_all_already_unlocked: "All UTXOs are already spendable."
+  utxo_locked_count_toast_msg: "$count UTXOs have been locked."
+  utxo_unlocked_count_toast_msg: "$count UTXOs have been unlocked."
 
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"

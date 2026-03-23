@@ -16,7 +16,6 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
@@ -90,7 +89,6 @@ class SendViewModel extends ChangeNotifier {
   final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
   final TransactionDraftRepository _transactionDraftRepository;
-  final WalletPreferencesRepository _walletPreferencesRepository;
   final UtxoRepository _utxoRepository;
 
   // send_screen: _amountController, _feeRateController, _recipientPageController
@@ -293,7 +291,6 @@ class SendViewModel extends ChangeNotifier {
     this._preferenceProvider,
     this._transactionDraftRepository,
     this._utxoRepository,
-    this._walletPreferencesRepository,
     this._isNetworkOn,
     this._onAmountTextUpdate,
     this._onFeeRateTextUpdate,
@@ -301,6 +298,7 @@ class SendViewModel extends ChangeNotifier {
     int? walletId,
     SendEntryPoint sendEntryPoint,
     this._transactionDraftId,
+    List<UtxoState>? selectedUtxoList,
   ) {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
@@ -316,6 +314,17 @@ class SendViewModel extends ChangeNotifier {
     }
 
     _recipientList = [RecipientInfo()];
+
+    if (walletId != null && selectedUtxoList != null) {
+      final hasSelectedUtxos = selectedUtxoList.isNotEmpty;
+
+      _isUtxoSelectionAuto = !hasSelectedUtxos;
+      if (hasSelectedUtxos) {
+        _selectedUtxoList = List<UtxoState>.from(selectedUtxoList);
+        _buildTransaction();
+      }
+    }
+
     _setRecommendedFees().whenComplete(() {
       notifyListeners();
     });
@@ -371,69 +380,45 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_selectedWalletItem!.id);
     _changeAddressDerivationPath = _walletProvider.getChangeAddress(_selectedWalletItem!.id).derivationPath;
 
-    // UTXO 모드 불러온 후 selectedUtxoList 필요 시 초기화
     _allUtxos = _walletProvider.getUtxoList(_selectedWalletItem!.id);
-    _isUtxoSelectionAuto = !_walletPreferencesRepository.isManualUtxoSelection(_selectedWalletItem!.id);
-    if (_isUtxoSelectionAuto) {
-      _selectAllUtxos();
-    }
+
+    _isUtxoSelectionAuto = !_preferenceProvider.isManualUtxoSelectionMode;
     _initBalances(_allUtxos);
   }
 
+  void setIsUtxoSelectionAuto(bool value) {
+    _isUtxoSelectionAuto = value;
+    _buildTransaction();
+  }
+
   void setSelectedUtxoList(List<UtxoState> list) {
-    setIsUtxoSelectionAuto(false);
+    _isUtxoSelectionAuto = false;
     _selectedUtxoList = list;
     _buildTransaction();
   }
 
-  void setIsUtxoSelectionAuto(bool value) async {
-    final wasAuto = _isUtxoSelectionAuto;
-    _isUtxoSelectionAuto = value;
-
-    if (wasAuto != value) {
-      // 자동 → 수동 전환 시
-      if (wasAuto && !value) {
-        _selectedUtxoList = [];
-      } else {
-        _selectAllUtxos();
-      }
-
-      if (_selectedWalletItem != null) {
-        await _walletPreferencesRepository.toggleManualUtxoSelection(_selectedWalletItem!.id);
-      }
-
-      _buildTransaction();
-    }
-  }
-
-  /// TransactionDraft를 조회하고 UTXO 상태를 확인하여 반환
-  /// 사용불가 UTXO는 제외하고 유효한 목록과 제외 상태를 함께 반환
-  (TransactionDraft, List<UtxoState>, SelectedUtxoExcludedStatus?) _getDraft(int draftId) {
-    assert(_selectedWalletItem != null);
-
+  TransactionDraft _getDraft(int draftId) {
     final draft = _transactionDraftRepository.getUnsignedTransactionDraft(draftId);
     if (draft == null) {
       throw StateError('Transaction draft not found: $draftId');
     }
-
-    // UTXO 상태 확인 및 유효한 UTXO 목록 반환 (사용불가 UTXO 제외)
-    final (validUtxoList, excludedStatus) = _utxoRepository.getValidatedSelectedUtxoList(
-      _selectedWalletItem!.id,
-      draft.selectedUtxoIds.toList(),
-    );
-
-    return (draft, validUtxoList, excludedStatus);
+    return draft;
   }
 
   /// TransactionDraft를 로드하여 SendViewModel 상태에 반영
   /// 사용불가 UTXO가 제외된 경우 해당 상태를 반환 (토스트 표시용)
   SelectedUtxoExcludedStatus? loadTransactionDraft(int draftId) {
-    final (draft, validatedUtxoList, excludedUtxoStatus) = _getDraft(draftId);
+    final draft = _getDraft(draftId);
 
     // 1. 지갑 선택 및 초기화
     final walletIndex = _walletProvider.walletItemList.indexWhere((e) => e.id == draft.walletId);
     if (walletIndex == -1) return null;
     _initializeWithSelectedWallet(walletIndex);
+
+    final (validatedUtxoList, excludedUtxoStatus) = _utxoRepository.getValidatedSelectedUtxoList(
+      _selectedWalletItem!.id,
+      draft.selectedUtxoIds.toList(),
+    );
 
     // 2. Draft ID 설정
     _sendInfoProvider.setUnsignedDraftId(draft.id);
@@ -472,7 +457,6 @@ class SendViewModel extends ChangeNotifier {
       _selectedUtxoList.clear();
     } else {
       _isUtxoSelectionAuto = true;
-      _selectAllUtxos();
     }
 
     // 7. 수수료 차감 설정
@@ -512,8 +496,6 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _setEstimatedFee(int? estimatedFee) {
-    if (_estimatedFee == estimatedFee) return;
-
     _estimatedFee = estimatedFee;
 
     if (_isMaxMode) {
@@ -536,7 +518,7 @@ class SendViewModel extends ChangeNotifier {
 
     final feeRate = double.parse(_feeRateText);
     _txBuilder = TransactionBuilder(
-      availableUtxos: _selectedUtxoList,
+      availableUtxos: _isUtxoSelectionAuto ? _allUtxos : _selectedUtxoList,
       recipients: _getRecipientMapForTx(recipientMap),
       feeRate: feeRate,
       changeDerivationPath: _changeAddressDerivationPath,
@@ -630,6 +612,7 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _adjustLastReceiverAmount({int? recipientIndex}) {
+    assert(_isMaxMode);
     double amountSumExceptLast = _amountSumExceptLast;
     int estimatedFeeInSats = _estimatedFee ?? 0;
     int maxBalanceInSats = balance - _currentUnit.toSatoshi(amountSumExceptLast) - estimatedFeeInSats;
@@ -786,7 +769,7 @@ class SendViewModel extends ChangeNotifier {
     } else {
       _recipientList[recipientIndex].amount = UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
     }
-    notifyListeners();
+    _updateAmountValidationState(recipientIndex: recipientIndex);
   }
 
   void setFeeRateText(String feeRate) {
@@ -941,12 +924,6 @@ class SendViewModel extends ChangeNotifier {
   }
 
   void _updateIsAmountSumExceedsBalance(double amountSum) {
-    // 수수료가 아직 계산되지 않았으면 잔액 검증을 하지 않음
-    if (_estimatedFee == null && !_isFeeSubtractedFromSendAmount) {
-      _isAmountSumExceedsBalance = AmountError.none;
-      return;
-    }
-
     double total = _isFeeSubtractedFromSendAmount ? amountSum : amountSum + _estimatedFeeByUnit;
     double balanceInUnit = balance / _dustLimitDenominator;
     _isAmountSumExceedsBalance =
@@ -1081,11 +1058,6 @@ class SendViewModel extends ChangeNotifier {
     _sendInfoProvider.setFeeRate(double.parse(_feeRateText));
     _sendInfoProvider.setIsMaxMode(_isMaxMode);
     _sendInfoProvider.setUnsignedDraftId(_transactionDraftId);
-  }
-
-  void _selectAllUtxos() {
-    assert(_isUtxoSelectionAuto);
-    _selectedUtxoList = _allUtxos;
   }
 
   /// --------------- 임시 저장 / 불러오기 --------------- ///

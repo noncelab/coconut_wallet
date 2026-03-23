@@ -28,8 +28,8 @@ bool hasMfpWallet(List<WalletListItemBase> walletItemList) {
   );
 }
 
-void showNoMfpDialog(BuildContext context, VoidCallback onTapConfirm) {
-  showDialog(
+Future<bool?> showNoMfpDialog(BuildContext context, VoidCallback onTapConfirm) async {
+  return await showDialog(
     context: context,
     builder: (BuildContext context) {
       return CoconutPopup(
@@ -39,7 +39,7 @@ void showNoMfpDialog(BuildContext context, VoidCallback onTapConfirm) {
         leftButtonText: t.alert.without_mfp.skip_button,
         rightButtonText: t.alert.without_mfp.confirm_button,
         onTapLeft: () {
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(false);
         },
         onTapRight: () {
           onTapConfirm();

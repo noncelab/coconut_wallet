@@ -6,7 +6,6 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/utxo_amount_format_util.dart';
-import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -560,8 +559,8 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                   decoration: BoxDecoration(color: CoconutColors.black.withValues(alpha: 0.5), shape: BoxShape.circle),
                   child: SvgPicture.asset(
                     'assets/svg/lock_simple.svg',
-                    width: isLarge ? 12 : 10,
-                    height: isLarge ? 12 : 10,
+                    width: isLarge ? 16 : 12,
+                    height: isLarge ? 16 : 12,
                     colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                   ),
                 ),

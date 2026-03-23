@@ -17,6 +17,7 @@ import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_c
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_scroll_rail.dart';
 import 'package:coconut_wallet/screens/common/tag_apply_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/settings/utxo_tier_theme_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_filter_bar.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_summary_chart.dart';
@@ -34,7 +35,7 @@ class UtxoOverviewScreen extends StatefulWidget {
   State<UtxoOverviewScreen> createState() => _UtxoOverviewScreenState();
 }
 
-class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProviderStateMixin {
+class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
   late UtxoListViewModel viewModel;
   BitcoinUnit _currentUnit = BitcoinUnit.btc;
 
@@ -53,12 +54,11 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   bool _isSelectionMode = false;
   final Set<String> _selectedUtxoIds = {};
   bool _selectionBarExiting = false;
-  int _lastLockFilterForBar = 0;
+  final int _lastLockFilterForBar = 0;
 
-  static const double _filterBarBaseHeight = 60;
-  static const double _filterBarExpandedHeight = 88;
-  AnimationController? _filterBarAnimController;
-  Animation<double>? _filterBarHeightAnim;
+  static const double _filterBarBaseHeight = 58;
+  static const double _selectionSummaryRowHeight = 40;
+  static const double _filterBarExpandedHeight = _filterBarBaseHeight + _selectionSummaryRowHeight;
 
   late List<UtxoBucket> _filteredBuckets;
   late List<GlobalKey> _filteredBucketKeys;
@@ -147,7 +147,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   }
 
   double _scrollOffsetForBucket(int bucketIdx, ScrollPosition pos) {
-    final filterBarH = _filterBarHeightAnim?.value ?? _filterBarBaseHeight;
+    final filterBarH = _effectiveFilterBarHeight;
     final listStart = UtxoSummaryChart.estimatedHeight + filterBarH;
     final target = listStart + bucketIdx * _itemHeight - (pos.viewportDimension - filterBarH) / 2 + _itemHeight / 2;
     return target.clamp(pos.minScrollExtent, pos.maxScrollExtent);
@@ -173,42 +173,24 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
 
     viewModel.addListener(_onViewModelChanged);
     _scrollController.addListener(_updateActiveBucket);
-    final controller = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
-    _filterBarAnimController = controller;
-    _filterBarHeightAnim = Tween<double>(
-      begin: _filterBarBaseHeight,
-      end: _filterBarBaseHeight,
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut))..addListener(() {
-      if (mounted) setState(() {});
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateActiveBucket();
     });
   }
 
-  void _updateFilterBarHeight() {
-    final controller = _filterBarAnimController;
-    final anim = _filterBarHeightAnim;
-    if (controller == null || anim == null) return;
-    final showSummary = _isSelectionMode;
-    final targetHeight = showSummary ? _filterBarExpandedHeight : _filterBarBaseHeight;
-    if (anim.value != targetHeight) {
-      _filterBarHeightAnim = Tween<double>(
-        begin: anim.value,
-        end: targetHeight,
-      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
-      _filterBarHeightAnim!.addListener(() {
-        if (mounted) setState(() {});
-      });
-      controller.forward(from: 0);
-    }
-  }
+  double get _effectiveFilterBarHeight =>
+      _shouldShowAmountSelectionSummary ? _filterBarExpandedHeight : _filterBarBaseHeight;
+  double get _effectiveTagSelectionBarHeight => _isSelectionMode ? _filterBarBaseHeight : 0;
 
-  double get _effectiveFilterBarHeight {
-    final anim = _filterBarHeightAnim?.value ?? _filterBarBaseHeight;
-    return _isSelectionMode
-        ? anim.clamp(_filterBarExpandedHeight, _filterBarExpandedHeight)
-        : anim.clamp(_filterBarBaseHeight, _filterBarExpandedHeight);
+  bool get _shouldShowAmountSelectionSummary => _isByAmount && _viewModeIndex == 1 && _isSelectionMode;
+
+  void _exitSelectionMode() {
+    if (!mounted) return;
+    setState(() {
+      _isSelectionMode = false;
+      _selectedUtxoIds.clear();
+      _selectionBarExiting = false;
+    });
   }
 
   int get _selectedTotalSats {
@@ -239,7 +221,6 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   void dispose() {
     viewModel.removeListener(_onViewModelChanged);
     _scrollController.removeListener(_updateActiveBucket);
-    _filterBarAnimController?.dispose();
     _scrollController.dispose();
     _activeIndex.dispose();
     _activeBucketY.dispose();
@@ -279,184 +260,163 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
 
   @override
   Widget build(BuildContext context) {
-    final showSummary = _isSelectionMode;
-    final targetHeight = showSummary ? _filterBarExpandedHeight : _filterBarBaseHeight;
-    if (((_filterBarHeightAnim?.value ?? _filterBarBaseHeight) - targetHeight).abs() > 0.5) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _updateFilterBarHeight());
-    }
-
     return Scaffold(
       backgroundColor: CoconutColors.black,
       appBar: _buildAppBar(context),
       body: Consumer<UtxoTagProvider>(
         builder: (context, tagProvider, _) {
           final utxoTagList = tagProvider.getUtxoTagList(widget.id);
-          return _isByAmount
-              ? Stack(
-                children: [
-                  if (_viewModeIndex == 0 && _filteredBuckets.length > 1)
-                    Positioned(
-                      left: -8,
-                      top: 0,
-                      bottom: 0,
-                      width: 34,
-                      child: UtxoBucketScrollRail(
-                        key: _scrollRailKey,
-                        buckets: _filteredBuckets,
-                        scrollController: _scrollController,
-                        activeIndexListenable: _activeIndex,
-                        activeBucketY: _activeBucketY,
-                      ),
-                    ),
-                  CustomScrollView(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: UtxoSummaryChart(
-                          buckets: _buckets,
-                          totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
-                          coinCount: viewModel.utxoList.length,
-                          availableCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.unspent).length,
-                          availableSats: viewModel.utxoList
-                              .where((u) => u.status == UtxoStatus.unspent)
-                              .fold<int>(0, (s, u) => s + u.amount),
-                          lockedCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.locked).length,
-                          lockedSats: viewModel.utxoList
-                              .where((u) => u.status == UtxoStatus.locked)
-                              .fold<int>(0, (s, u) => s + u.amount),
-                          currentUnit: _currentUnit,
-                          onBalanceTap: _toggleUnit,
-                          onThemeSettingTap: () {
-                            CommonBottomSheets.showCustomHeightBottomSheet(
-                              context: context,
-                              heightRatio: 0.6,
-                              child: const UtxoTierThemeBottomSheet(),
-                            );
-                          },
-                          hasReusedAddresses: _reusedAddresses.isNotEmpty,
-                        ),
-                      ),
-                      SliverPersistentHeader(
-                        pinned: true,
-                        delegate: UtxoStickyFilterBarDelegate(
-                          height: _effectiveFilterBarHeight,
-                          selectedCount: _selectedUtxoIds.length,
-                          selectedTotalSats: _selectedTotalSats,
-                          currentUnit: _currentUnit,
-                          viewModeIndex: _viewModeIndex,
-                          lockFilterIndex: _lockFilterIndex,
-                          isSelectionMode: _isSelectionMode,
-                          onViewModeSelected: (index) {
-                            setState(() {
-                              _viewModeIndex = index;
-                              if (_isSelectionMode) {
-                                _isSelectionMode = false;
-                                _selectedUtxoIds.clear();
-                                _selectionBarExiting = false;
-                              }
-                            });
-                          },
-                          onLockFilterSelected: (index) {
-                            setState(() {
-                              _lockFilterIndex = index;
-                              _updateFilteredBuckets();
-                            });
-                          },
-                          onExitSelectionMode: () {
-                            setState(() {
-                              _isSelectionMode = false;
-                              _selectedUtxoIds.clear();
-                              _selectionBarExiting = false;
-                            });
-                          },
-                        ),
-                      ),
-                      if (_viewModeIndex == 0)
-                        SliverPadding(
-                          padding: const EdgeInsets.only(left: 38),
-                          sliver: SliverList.builder(
-                            itemCount: _filteredBuckets.length,
-                            itemBuilder: (context, index) {
-                              final bucket = _filteredBuckets[index];
-                              return Padding(
-                                key: _filteredBucketKeys[index],
-                                padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                                child: UtxoBucketCardRow(
-                                  bucket: bucket,
-                                  index: index,
-                                  currentUnit: _currentUnit,
-                                  activeIndexListenable: _activeIndex,
-                                  restoredStateListenable: _restoredStateListenable,
-                                  isSelectionMode: _isSelectionMode,
-                                  selectedUtxoIds: _selectedUtxoIds,
-                                  reusedAddresses: _reusedAddresses,
-                                  onTapUtxo: (u) {
-                                    if (_isSelectionMode) {
-                                      if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
-                                        CoconutToast.showToast(
-                                          context: context,
-                                          text: t.utxo_list_screen.pending_utxo,
-                                          isVisibleIcon: false,
-                                        );
-                                        return;
-                                      }
-                                      setState(() {
-                                        if (_selectedUtxoIds.contains(u.utxoId)) {
-                                          _selectedUtxoIds.remove(u.utxoId);
-                                        } else {
-                                          _selectedUtxoIds.add(u.utxoId);
-                                        }
-                                      });
-                                    } else {
-                                      _navigateToUtxoDetail(u);
-                                    }
-                                  },
-                                  onLongPressUtxo: (u) {
-                                    if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
-                                      CoconutToast.showToast(
-                                        context: context,
-                                        text: t.utxo_list_screen.pending_utxo,
-                                        isVisibleIcon: false,
-                                      );
-                                      return;
-                                    }
-                                    setState(() {
-                                      _viewModeIndex = 1;
-                                      _isSelectionMode = true;
-                                      _selectedUtxoIds.add(u.utxoId);
-                                    });
-                                  },
-                                  setActiveIndex: (index) => _activeIndex.value = index,
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                      else
-                        _buildGridSliver(_currentUnit),
-                      SliverToBoxAdapter(child: SizedBox(height: _selectionBarBottomPadding(context))),
-                    ],
-                  ),
-                  Positioned.fill(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: AnimatedSlide(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        offset:
-                            (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting
-                                ? Offset.zero
-                                : const Offset(0, 1),
-                        child: _buildSelectionBottomBar(),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-              : _buildTagViewBody(utxoTagList);
+          return _isByAmount ? _buildAmountViewBody() : _buildTagViewBody(utxoTagList);
         },
       ),
+    );
+  }
+
+  Widget _buildAmountViewBody() {
+    return Stack(
+      children: [
+        if (_viewModeIndex == 0 && _filteredBuckets.length > 1)
+          Positioned(
+            left: -8,
+            top: 0,
+            bottom: 0,
+            width: 34,
+            child: UtxoBucketScrollRail(
+              key: _scrollRailKey,
+              buckets: _filteredBuckets,
+              scrollController: _scrollController,
+              activeIndexListenable: _activeIndex,
+              activeBucketY: _activeBucketY,
+            ),
+          ),
+        CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: UtxoSummaryChart(
+                buckets: _buckets,
+                totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
+                coinCount: viewModel.utxoList.length,
+                availableCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.unspent).length,
+                availableSats: viewModel.utxoList
+                    .where((u) => u.status == UtxoStatus.unspent)
+                    .fold<int>(0, (s, u) => s + u.amount),
+                lockedCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.locked).length,
+                lockedSats: viewModel.utxoList
+                    .where((u) => u.status == UtxoStatus.locked)
+                    .fold<int>(0, (s, u) => s + u.amount),
+                currentUnit: _currentUnit,
+                onBalanceTap: _toggleUnit,
+                onThemeSettingTap: () {
+                  CommonBottomSheets.showCustomHeightBottomSheet(
+                    context: context,
+                    heightRatio: 0.6,
+                    child: const UtxoTierThemeBottomSheet(),
+                  );
+                },
+                hasReusedAddresses: _reusedAddresses.isNotEmpty,
+              ),
+            ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: UtxoAmountStickyFilterBarDelegate(
+                height: _effectiveFilterBarHeight,
+                selectedCount: _selectedUtxoIds.length,
+                selectedTotalSats: _selectedTotalSats,
+                currentUnit: _currentUnit,
+                viewModeIndex: _viewModeIndex,
+                lockFilterIndex: _lockFilterIndex,
+                isSelectionMode: _isSelectionMode,
+                onViewModeSelected: (index) {
+                  setState(() {
+                    _viewModeIndex = index;
+                    if (!_isSelectionMode) return;
+                    _isSelectionMode = false;
+                    _selectedUtxoIds.clear();
+                    _selectionBarExiting = false;
+                  });
+                },
+                onLockFilterSelected: (index) {
+                  setState(() {
+                    _lockFilterIndex = index;
+                    _updateFilteredBuckets();
+                  });
+                },
+                onExitSelectionMode: _exitSelectionMode,
+              ),
+            ),
+            if (_viewModeIndex == 0)
+              SliverPadding(
+                padding: const EdgeInsets.only(left: 38),
+                sliver: SliverList.builder(
+                  itemCount: _filteredBuckets.length,
+                  itemBuilder: (context, index) {
+                    final bucket = _filteredBuckets[index];
+                    return Padding(
+                      key: _filteredBucketKeys[index],
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                      child: UtxoBucketCardRow(
+                        bucket: bucket,
+                        index: index,
+                        currentUnit: _currentUnit,
+                        activeIndexListenable: _activeIndex,
+                        restoredStateListenable: _restoredStateListenable,
+                        isSelectionMode: _isSelectionMode,
+                        selectedUtxoIds: _selectedUtxoIds,
+                        reusedAddresses: _reusedAddresses,
+                        onTapUtxo: (u) {
+                          if (_isSelectionMode) {
+                            if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
+                              CoconutToast.showToast(
+                                context: context,
+                                text: t.utxo_list_screen.pending_utxo,
+                                isVisibleIcon: false,
+                              );
+                              return;
+                            }
+                            setState(() {
+                              if (_selectedUtxoIds.contains(u.utxoId)) {
+                                _selectedUtxoIds.remove(u.utxoId);
+                              } else {
+                                _selectedUtxoIds.add(u.utxoId);
+                              }
+                            });
+                          } else {
+                            _navigateToUtxoDetail(u);
+                          }
+                        },
+                        onLongPressUtxo: (u) {
+                          if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
+                            CoconutToast.showToast(
+                              context: context,
+                              text: t.utxo_list_screen.pending_utxo,
+                              isVisibleIcon: false,
+                            );
+                            return;
+                          }
+                          setState(() {
+                            _viewModeIndex = 1;
+                            _isSelectionMode = true;
+                            _selectedUtxoIds.add(u.utxoId);
+                          });
+                        },
+                        setActiveIndex: (index) => _activeIndex.value = index,
+                      ),
+                    );
+                  },
+                ),
+              )
+            else
+              _buildGridSliver(_currentUnit),
+            SliverToBoxAdapter(child: SizedBox(height: _selectionBarBottomPadding(context))),
+          ],
+        ),
+        BottomActionBarSlide(
+          isVisible: (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting,
+          child: _buildSelectionBottomBar(),
+        ),
+      ],
     );
   }
 
@@ -464,25 +424,13 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     return Stack(
       children: [
         _buildTagView(utxoTagList),
-        Positioned.fill(
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedSlide(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              offset:
-                  (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting
-                      ? Offset.zero
-                      : const Offset(0, 1),
-              child: _buildSelectionBottomBar(),
-            ),
-          ),
+        BottomActionBarSlide(
+          isVisible: (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting,
+          child: _buildSelectionBottomBar(),
         ),
       ],
     );
   }
-
-  static const double _tagSelectionBarHeight = 60.0;
 
   Widget _buildTagView(List<UtxoTag> utxoTagList) {
     return CustomScrollView(
@@ -495,23 +443,19 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
             onBalanceTap: _toggleUnit,
           ),
         ),
-        if (_isSelectionMode)
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: UtxoTagSelectionBarDelegate(
-              height: _tagSelectionBarHeight,
-              selectedCount: _selectedUtxoIds.length,
-              selectedTotalSats: _selectedTotalSats,
-              currentUnit: _currentUnit,
-              onExitSelectionMode: () {
-                setState(() {
-                  _isSelectionMode = false;
-                  _selectedUtxoIds.clear();
-                  _selectionBarExiting = false;
-                });
-              },
-            ),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: UtxoTagSelectionBarDelegate(
+            height: _effectiveTagSelectionBarHeight,
+            selectedCount: _selectedUtxoIds.length,
+            selectedTotalSats: _selectedTotalSats,
+            currentUnit: _currentUnit,
+            isSelectionMode: _isSelectionMode,
+            onExitSelectionMode: () {
+              _exitSelectionMode();
+            },
           ),
+        ),
         SliverToBoxAdapter(
           child: UtxoTagGridSection(
             key: ValueKey(utxoTagList.map((t) => t.id).join(',')),
@@ -563,28 +507,22 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     final isLockedFilter = lockFilter == 1;
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    return Container(
+    return BottomActionBar(
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
         top: _selectionBarTopPadding + bottomInset,
         bottom: _selectionBarInnerBottomPadding + bottomInset,
       ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Color(0xFF1D1D1D), Color(0xFF1D1D1D)],
-          stops: [0.0, 0.5, 1.0],
-        ),
-      ),
       child:
           _isByAmount
               ? (isLockedFilter
-                  ? UtxoSelectionBarButton(
+                  ? BottomActionButton(
                     iconPath: 'assets/svg/unlock_simple.svg',
                     label: t.utxo_list_screen.utxo_unlocked_button,
                     onTap: () => _updateSelectedUtxosLock(lock: false),
+                    buttonLayout: BottomActionButtonLayout.horizontal,
+                    textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                   )
                   : Builder(
                     builder: (context) {
@@ -594,21 +532,23 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
                       return Row(
                         children: [
                           Expanded(
-                            child: Opacity(
-                              opacity: hasLockedUtxo ? 0.5 : 1,
-                              child: UtxoSelectionBarButton(
-                                iconPath: 'assets/svg/send.svg',
-                                label: t.send,
-                                onTap: _onSendPressed,
-                              ),
+                            child: BottomActionButton(
+                              iconPath: 'assets/svg/send.svg',
+                              label: t.send,
+                              onTap: _onSendPressed,
+                              enabled: !hasLockedUtxo,
+                              buttonLayout: BottomActionButtonLayout.horizontal,
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: UtxoSelectionBarButton(
+                            child: BottomActionButton(
                               iconPath: 'assets/svg/lock_simple.svg',
                               label: t.utxo_list_screen.utxo_locked_button,
                               onTap: () => _updateSelectedUtxosLock(lock: true),
+                              buttonLayout: BottomActionButtonLayout.horizontal,
+                              textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                             ),
                           ),
                         ],
@@ -626,31 +566,33 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     return Row(
       children: [
         Expanded(
-          child: Opacity(
-            opacity: hasLockedUtxo ? 0.5 : 1,
-            child: UtxoSelectionBarButton(
-              iconPath: 'assets/svg/send.svg',
-              label: t.send,
-              onTap: () {
-                if (hasLockedUtxo) {
-                  CoconutToast.showToast(
-                    context: context,
-                    text: t.utxo_list_screen.send_locked_utxo,
-                    isVisibleIcon: true,
-                  );
-                  return;
-                }
-                _onTagViewSendPressed(selectedUtxos);
-              },
-            ),
+          child: BottomActionButton(
+            iconPath: 'assets/svg/send.svg',
+            label: t.send,
+            onTap: () {
+              if (hasLockedUtxo) {
+                CoconutToast.showToast(
+                  context: context,
+                  text: t.utxo_list_screen.send_locked_utxo,
+                  isVisibleIcon: true,
+                );
+                return;
+              }
+              _onTagViewSendPressed(selectedUtxos);
+            },
+            enabled: !hasLockedUtxo,
+            buttonLayout: BottomActionButtonLayout.horizontal,
+            textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: UtxoSelectionBarButton(
+          child: BottomActionButton(
             iconPath: 'assets/svg/tag.svg',
             label: t.utxo_list_screen.tag_apply,
             onTap: _showTagApplyBottomSheet,
+            buttonLayout: BottomActionButtonLayout.horizontal,
+            textStyle: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
           ),
         ),
       ],
@@ -737,8 +679,9 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   Future<void> _updateSelectedUtxosLock({required bool lock}) async {
     if (_selectedUtxoIds.isEmpty) return;
     final ids = _selectedUtxoIds.toList();
+    final selectedCount = ids.length;
     try {
-      final updatedCount = await viewModel.setUtxoLockStatus(ids, lock);
+      final changedCount = await viewModel.setUtxoLockStatus(ids, lock);
       if (mounted) {
         setState(() {
           _selectedUtxoIds.clear();
@@ -747,17 +690,48 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
           _refreshBucketsFromViewModel();
         });
       }
-      if (updatedCount > 0 && mounted) {
+      if (!mounted) return;
+
+      // 이 문맥에서는 selectedCount, changedCount가 같은 상태만 존재함
+      final toastText = _buildLockToastMessage(lock: lock, selectedCount: selectedCount, changedCount: changedCount);
+
+      if (changedCount == 0) {
+        // 정상 동작에서 이 토스트는 나타나지 않아야함.
+        CoconutToast.showToast(
+          context: context,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/triangle-warning.svg',
+          text: toastText,
+          level: CoconutToastLevel.warning,
+        );
+      } else {
         CoconutToast.showToast(
           context: context,
           isVisibleIcon: true,
           iconPath: 'assets/svg/circle-info.svg',
-          text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+          text: toastText,
         );
       }
     } catch (e) {
       debugPrint('UTXO 상태 업데이트 실패: $e');
     }
+  }
+
+  String _buildLockToastMessage({required bool lock, required int selectedCount, required int changedCount}) {
+    if (changedCount == 0) {
+      if (selectedCount == 1) {
+        return lock ? t.utxo_detail_screen.utxo_already_locked : t.utxo_detail_screen.utxo_already_unlocked;
+      }
+      return lock ? t.utxo_detail_screen.utxo_all_already_locked : t.utxo_detail_screen.utxo_all_already_unlocked;
+    }
+
+    if (changedCount == 1) {
+      return lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg;
+    }
+
+    return lock
+        ? t.utxo_detail_screen.utxo_locked_count_toast_msg(count: changedCount)
+        : t.utxo_detail_screen.utxo_unlocked_count_toast_msg(count: changedCount);
   }
 
   void _onSendPressed() {
@@ -875,7 +849,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
   static const double _selectionBarTopPadding = 40;
   static const double _selectionBarInnerBottomPadding = 8;
   static double get _selectionBarContentHeight =>
-      _selectionBarTopPadding + UtxoSelectionBarButton.height + _selectionBarInnerBottomPadding;
+      _selectionBarTopPadding + BottomActionButton.horizontalHeight + _selectionBarInnerBottomPadding;
 
   double _selectionBarBottomPadding(BuildContext context) {
     final showBar = (_isSelectionMode && _selectedUtxoIds.isNotEmpty) || _selectionBarExiting;
@@ -899,7 +873,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with TickerProv
     final minExtent = pos.minScrollExtent;
     final maxExtent = pos.maxScrollExtent;
     final pixels = pos.pixels;
-    final filterBarH = _filterBarHeightAnim?.value ?? _filterBarBaseHeight;
+    final filterBarH = _effectiveFilterBarHeight;
     final listStart = UtxoSummaryChart.estimatedHeight + filterBarH;
     // 스티키 헤더가 앱바에 붙었을 때(pinned) 리스트 영역은 헤더 아래에서 시작
     final contentCenter =

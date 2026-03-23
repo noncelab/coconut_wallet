@@ -8,10 +8,6 @@ class CpfpCreationException implements Exception {
   String toString() => message;
 }
 
-class CpfpFeeRateTooLowException extends CpfpCreationException {
-  const CpfpFeeRateTooLowException({super.message = 'Fee rate is too low.'});
-}
-
 /// Exception thrown when the received UTXOs are insufficient to cover the child tx fee
 class CpfpInsufficientFundsException extends CpfpCreationException {
   const CpfpInsufficientFundsException({
