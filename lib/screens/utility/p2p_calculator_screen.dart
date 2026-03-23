@@ -586,7 +586,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
     final input = _viewModel.inputAmount;
     if (input == null || input == 0) {
-      CoconutToast.showWarningToast(context: context, text: t.utility.p2p_calculator.enter_amount_first);
+      CoconutToast.showToast(
+        context: context,
+        text: t.utility.p2p_calculator.enter_amount_first,
+        level: CoconutToastLevel.warning,
+      );
       return;
     }
 
