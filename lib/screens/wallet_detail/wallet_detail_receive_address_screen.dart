@@ -7,6 +7,7 @@ import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/animated_bottom_action_overlay.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +28,7 @@ class ReceiveAddressScreen extends StatefulWidget {
 class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   WalletListItemBase? _selectedWalletItem;
   WalletAddress? _receiveAddress;
+  int? _enteredReceiveAmountSats;
 
   ImageProvider get _qrEmbedImage {
     final path =
@@ -49,6 +51,12 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   String get receiveAddress {
     if (_receiveAddress == null) return "";
     return _receiveAddress!.address;
+  }
+
+  String get qrData {
+    if (_receiveAddress == null) return '';
+    if (_enteredReceiveAmountSats == null) return _receiveAddress!.address;
+    return buildBip21UriFromWalletAddress(_receiveAddress!, amount: _enteredReceiveAmountSats);
   }
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
@@ -101,11 +109,18 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
           _selectedWalletItem != null
               ? SafeArea(
                 child: EnterInputAndShareBottomActionOverlay(
-                  onEnterAmountTap:
-                      () => ReceiveAmountBottomSheet.show(
-                        context: context,
-                        currentUnit: context.read<PreferenceProvider>().currentUnit,
-                      ),
+                  onEnterAmountTap: () async {
+                    final currentUnit = context.read<PreferenceProvider>().currentUnit;
+                    final sats = await ReceiveAmountBottomSheet.show(
+                      context: context,
+                      currentUnit: currentUnit,
+                      initialAmountSats: _enteredReceiveAmountSats,
+                    );
+                    if (!mounted || sats == null || sats == _enteredReceiveAmountSats) return;
+                    setState(() {
+                      _enteredReceiveAmountSats = sats;
+                    });
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                     child: Column(
@@ -152,7 +167,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                               ],
                             ),
                           ),
-                          qrData: receiveAddress,
+                          qrData: qrData,
                           embedImage: _qrEmbedImage,
                           isAddress: true,
                         ),

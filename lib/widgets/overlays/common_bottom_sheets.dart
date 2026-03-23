@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CommonBottomSheets {
-  static void showBottomSheet({
+  static Future<T?> showBottomSheet<T>({
     required String title,
     required BuildContext context,
     required Widget child,
@@ -18,7 +18,7 @@ class CommonBottomSheets {
     bool showDragHandle = false,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
-    showModalBottomSheet(
+    return showModalBottomSheet<T>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),

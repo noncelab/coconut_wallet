@@ -1,6 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -9,17 +11,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 
 class ReceiveAmountBottomSheet extends StatefulWidget {
-  const ReceiveAmountBottomSheet({super.key, required this.currentUnit});
+  const ReceiveAmountBottomSheet({super.key, required this.currentUnit, this.initialAmountSats});
 
   final BitcoinUnit currentUnit;
+  final int? initialAmountSats;
 
-  static void show({required BuildContext context, required BitcoinUnit currentUnit}) {
-    CommonBottomSheets.showBottomSheet(
+  static Future<int?> show({required BuildContext context, required BitcoinUnit currentUnit, int? initialAmountSats}) {
+    return CommonBottomSheets.showBottomSheet<int>(
       title: t.address_list_screen.set_amount,
       context: context,
       isCloseButton: true,
       showDragHandle: true,
-      child: ReceiveAmountBottomSheet(currentUnit: currentUnit),
+      child: ReceiveAmountBottomSheet(currentUnit: currentUnit, initialAmountSats: initialAmountSats),
     );
   }
 
@@ -31,11 +34,32 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
   final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
 
+  int? get _amountInSats {
+    final rawText = _amountController.text.trim().replaceAll(',', '');
+    if (rawText.isEmpty) return null;
+
+    final amount = double.tryParse(rawText);
+    if (amount == null) return null;
+    return widget.currentUnit.toSatoshi(amount);
+  }
+
   @override
   void initState() {
     super.initState();
+    _amountController.text = _buildInitialAmountText();
     _amountController.addListener(_onFieldChanged);
     _amountFocusNode.addListener(_onFieldChanged);
+  }
+
+  String _buildInitialAmountText() {
+    final initialAmountSats = widget.initialAmountSats;
+    if (initialAmountSats == null) return '';
+
+    if (widget.currentUnit.isBtcUnit) {
+      return UnitUtil.convertSatoshiToBitcoinString(initialAmountSats);
+    }
+
+    return initialAmountSats.toThousandsSeparatedString();
   }
 
   @override
@@ -138,7 +162,12 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
           FixedBottomButton(
             backgroundColor: CoconutColors.white,
             isVisibleAboveKeyboard: false,
-            onButtonClicked: () {},
+            isActive: _amountInSats != null,
+            onButtonClicked: () {
+              final amountInSats = _amountInSats;
+              if (amountInSats == null) return;
+              Navigator.pop(context, amountInSats);
+            },
             text: t.complete,
           ),
         ],
