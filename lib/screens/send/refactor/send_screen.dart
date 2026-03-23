@@ -145,6 +145,8 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.selectedUtxoList,
     );
     if (widget.initialSatsFromP2P != null) {
+      // initialSatsFromP2P가 있는 경우, 계산기에서 '보내기'를 실행한 경우이므로, UTXO 자동 선택 모드로 기본 설정합니다.
+      _viewModel.setIsUtxoSelectionAuto(true);
       final sats = widget.initialSatsFromP2P!;
       final btcAmount = UnitUtil.convertSatoshiToBitcoin(sats);
       context.read<SendInfoProvider>().setAmount(btcAmount);
