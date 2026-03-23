@@ -118,6 +118,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void changeUtxoOrder(UtxoOrder orderEnum) async {
     _sortConfirmedUtxoList(orderEnum);
+    _updateFilteredUtxoList();
     _preferenceProvider.setLastUtxoOrder(orderEnum);
     notifyListeners();
   }

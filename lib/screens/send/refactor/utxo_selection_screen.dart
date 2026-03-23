@@ -327,6 +327,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     final filteredUtxoList = viewModel.filteredUtxoList;
 
     return ListView.separated(
+      key: ValueKey(viewModel.selectedUtxoTagName),
       controller: _scrollController,
       padding: const EdgeInsets.only(top: 0, bottom: 80, left: 16, right: 16),
       itemCount: filteredUtxoList.length,
@@ -338,7 +339,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             child: LockedUtxoItemCard(
-              key: ValueKey(utxo.transactionHash),
+              key: ValueKey(utxo.utxoId),
               utxo: utxo,
               utxoTags: viewModel.utxoTagMap[utxo.utxoId],
               currentUnit: widget.currentUnit,
@@ -349,7 +350,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           child: SelectableUtxoItemCard(
-            key: ValueKey(utxo.transactionHash),
+            key: ValueKey(utxo.utxoId),
             currentUnit: widget.currentUnit,
             utxo: utxo,
             isSelectable: true,
