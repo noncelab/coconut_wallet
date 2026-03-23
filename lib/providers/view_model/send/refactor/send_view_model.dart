@@ -769,7 +769,7 @@ class SendViewModel extends ChangeNotifier {
     } else {
       _recipientList[recipientIndex].amount = UnitUtil.convertSatoshiToBitcoin(satoshi).toString();
     }
-    notifyListeners();
+    _updateAmountValidationState(recipientIndex: recipientIndex);
   }
 
   void setFeeRateText(String feeRate) {
