@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
@@ -8,7 +6,6 @@ enum SendEntryPoint { home, walletDetail }
 
 class SendInfoProvider {
   int? _walletId;
-  String? _recipientAddress;
   int? _estimatedFee;
   bool? _isMaxMode;
   bool? _isMultisig;
@@ -24,7 +21,6 @@ class SendInfoProvider {
   double? _feeRate;
 
   int? get walletId => _walletId;
-  String? get recipientAddress => _recipientAddress;
   int? get estimatedFee => _estimatedFee;
   bool? get isMaxMode => _isMaxMode;
   bool? get isMultisig => _isMultisig;
@@ -92,16 +88,14 @@ class SendInfoProvider {
 
   void clear() {
     _walletId =
-        _recipientAddress =
-            _estimatedFee =
-                _isMaxMode =
-                    _isMultisig =
-                        _transaction =
-                            _txWaitingForSign =
-                                _signedResult =
-                                    _isDonation =
-                                        _sendEntryPoint =
-                                            _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
+        _estimatedFee =
+            _isMaxMode =
+                _isMultisig =
+                    _transaction =
+                        _txWaitingForSign =
+                            _signedResult =
+                                _isDonation =
+                                    _sendEntryPoint = _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
   }
 
   Map<String, int>? getRecipientMap() {
