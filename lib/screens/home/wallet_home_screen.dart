@@ -373,6 +373,8 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
         _dropdownButtonSize = faucetRenderBox.size;
       }
 
+      if (!context.mounted) return;
+
       if (_viewModel.isReviewScreenVisible) {
         var animationController = BottomSheet.createAnimationController(this)..duration = const Duration(seconds: 2);
         await CommonBottomSheets.showBottomSheet_100(
@@ -825,18 +827,26 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     Navigator.of(context).pushNamed("/receive-address", arguments: {"id": targetId});
   }
 
-  void _onTapSend(List<int> walletOrder) {
+  Future<void> _onTapSend(List<int> walletOrder, {String? bitcoinUri, bool shouldBypassSyncCheck = false}) async {
     final firstWallet = _viewModel.walletItemList.firstOrNull;
     if (firstWallet == null) {
-      Navigator.pushNamed(context, '/send', arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home});
+      await Navigator.pushNamed(
+        context,
+        '/send',
+        arguments: {'walletId': null, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},
+      );
       return;
     }
 
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
     final targetId = walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
 
-    if (!_checkStateAndShowToast(targetId)) return;
-    Navigator.pushNamed(context, '/send', arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home});
+    if (!shouldBypassSyncCheck && !_checkStateAndShowToast(targetId)) return;
+    await Navigator.pushNamed(
+      context,
+      '/send',
+      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},
+    );
   }
 
   Widget _buildViewAllWallets(int walletCount) {

@@ -51,6 +51,7 @@ class SendScreen extends StatefulWidget {
   final SendEntryPoint sendEntryPoint;
   final int? transactionDraftId;
   final List<UtxoState>? selectedUtxoList;
+  final String? initialBitcoinUri;
 
   const SendScreen({
     super.key,
@@ -58,6 +59,7 @@ class SendScreen extends StatefulWidget {
     required this.sendEntryPoint,
     this.transactionDraftId,
     this.selectedUtxoList,
+    this.initialBitcoinUri,
   });
 
   @override
@@ -148,6 +150,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         if (!mounted) return;
         _viewModel.setIsUtxoSelectionAuto(false);
         _viewModel.setSelectedUtxoList(widget.selectedUtxoList!);
+      });
+    }
+
+    if (widget.initialBitcoinUri != null && widget.initialBitcoinUri!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _applyIncomingBitcoinUri(widget.initialBitcoinUri!, 0);
+        _viewModel.updateFeeBoardVisibility();
       });
     }
 
@@ -1782,26 +1792,31 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
 
     if (scannedData != null) {
-      if (scannedData.startsWith('bitcoin:')) {
-        final bip21Data = parseBip21Uri(scannedData);
-        _addressControllerList[index].text = bip21Data.address;
-        _viewModel.setAddressText(bip21Data.address, index);
-
-        if (bip21Data.amount != null) {
-          final amountText =
-              _viewModel.currentUnit.isBasedOnSatoshi
-                  ? bip21Data.amount!.toString()
-                  : BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!);
-          _amountController.text = amountText;
-          _viewModel.setAmountText(bip21Data.amount!, index);
-        }
-      } else {
-        final normalized = normalizeAddress(scannedData);
-        _addressControllerList[index].text = normalized;
-        _viewModel.setAddressText(normalized, index);
-      }
+      _applyIncomingBitcoinUri(scannedData, index);
     }
     _clearQrScanController();
+  }
+
+  void _applyIncomingBitcoinUri(String scannedData, int index) {
+    if (scannedData.startsWith('bitcoin:')) {
+      final bip21Data = parseBip21Uri(scannedData);
+      _addressControllerList[index].text = bip21Data.address;
+      _viewModel.setAddressText(bip21Data.address, index);
+
+      if (bip21Data.amount != null) {
+        final amountText =
+            _viewModel.currentUnit.isBasedOnSatoshi
+                ? bip21Data.amount!.toString()
+                : BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!);
+        _amountController.text = amountText;
+        _viewModel.setAmountText(bip21Data.amount!, index);
+      }
+      return;
+    }
+
+    final normalized = normalizeAddress(scannedData);
+    _addressControllerList[index].text = normalized;
+    _viewModel.setAddressText(normalized, index);
   }
 
   void _clearQrScanController() {
