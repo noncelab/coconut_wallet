@@ -422,7 +422,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return _txProvider.hasTransactionConfirmed(_walletId, transaction.transactionHash);
   }
 
-  Future<bool> prepareToSend(double newTxFeeRate) async {
+  bool prepareToSend(double newTxFeeRate) {
     Logger.log(
       '[FeeBumping] prepareToSend: newTxFeeRate=$newTxFeeRate hasValidTransaction=$hasValidTransaction '
       'rbfBuildResult=${_rbfBuildResult != null} rbfSuccess=${_rbfBuildResult?.isSuccess} '
@@ -431,9 +431,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_walletId);
     _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     final transaction = isRbf ? _rbfBuildResult!.transaction! : _cpfpBuildResult!.transaction!;
-    _sendInfoProvider.setTxWaitingForSign(
-      Psbt.fromTransaction(transaction, _walletListItemBase.walletBase).serialize(),
-    );
+    _sendInfoProvider.setTransaction(transaction);
     _sendInfoProvider.setFeeBumpfingType(_type);
     _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
     return true;

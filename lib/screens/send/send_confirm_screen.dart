@@ -161,15 +161,10 @@ class _SendConfirmScreenState extends State<SendConfirmScreen> {
         ..addAll(List<int?>.filled(inputCount, null));
     }
 
-    final externalOutputAmounts =
-        transaction.outputs.where((output) => output.isChangeOutput != true).map((output) => output.amount).toList();
-    final changeOutputAmounts =
-        transaction.outputs.where((output) => output.isChangeOutput == true).map((output) => output.amount).toList();
-
     return SendTransactionFlowCard(
       inputAmounts: inputAmounts,
-      externalOutputAmounts: externalOutputAmounts,
-      changeOutputAmounts: changeOutputAmounts,
+      externalOutputAmounts: viewModel.externalOutputAmounts,
+      changeOutputAmounts: viewModel.changeOutputAmounts,
       fee: viewModel.estimatedFee,
       currentUnit: _currentUnit,
     );

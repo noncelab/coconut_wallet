@@ -62,7 +62,7 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     if (singlesigWalletList.isEmpty) {
       return;
     }
-    _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
+    //_sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _isNetworkOn = isNetworkOn;
 
     RecommendedFee? result = await FeeService().getRecommendedFees();
@@ -262,10 +262,9 @@ class OnchainDonationInfoViewModel extends ChangeNotifier {
     debugPrint(estimatedFee.toString());
 
     _sendInfoProvider.setWalletId(walletId);
-    _sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
+    //_sendInfoProvider.setRecipientAddress(CoconutWalletApp.kDonationAddress);
     _sendInfoProvider.setIsDonation(true);
     _sendInfoProvider.setSendEntryPoint(SendEntryPoint.home);
-    _sendInfoProvider.setAmount(_amount.toDouble() - estimatedFee.toDouble());
     _sendInfoProvider.setEstimatedFee(estimatedFee);
     _sendInfoProvider.setWalletImportSource(walletImportSource);
     _sendInfoProvider.setIsMultisig(false);
