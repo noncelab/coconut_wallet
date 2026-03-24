@@ -585,7 +585,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   void _onShowTransactionBill() {
     if (!_viewModel.isNetworkOn) {
-      CoconutToast.showToast(context: context, text: t.errors.network_error);
+      CoconutToast.showToast(context: context, text: t.errors.network_error, isVisibleIcon: true);
       return;
     }
     final input = _viewModel.inputAmount;
@@ -593,7 +593,9 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       CoconutToast.showToast(
         context: context,
         text: t.utility.p2p_calculator.enter_amount_first,
+        iconPath: 'assets/svg/triangle-warning.svg',
         level: CoconutToastLevel.warning,
+        isVisibleIcon: true,
       );
       return;
     }
