@@ -14,9 +14,8 @@ import 'package:provider/provider.dart';
 class BroadcastingCompleteScreen extends StatefulWidget {
   final int id;
   final String txHash;
-  final bool isDonation;
 
-  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash, this.isDonation = false});
+  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash});
 
   @override
   State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
@@ -38,44 +37,9 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
         child: Scaffold(
           resizeToAvoidBottomInset: false,
           backgroundColor: CoconutColors.black,
-          body: SafeArea(
-            child: widget.isDonation ? _buildDonationCompleteScreen() : _buildBroadcastingCompleteScreen(),
-          ),
+          body: SafeArea(child: _buildBroadcastingCompleteScreen()),
         ),
       ),
-    );
-  }
-
-  Widget _buildDonationCompleteScreen() {
-    return Stack(
-      children: [
-        SizedBox(
-          width: MediaQuery.sizeOf(context).width,
-          height: MediaQuery.sizeOf(context).height,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CoconutLayout.spacing_2500h,
-              Lottie.asset('assets/lottie/thankyou-hearts.json'),
-              CoconutLayout.spacing_800h,
-              Text(t.donation.complete.thank_you, style: CoconutTypography.heading3_21_Bold),
-              CoconutLayout.spacing_500h,
-              Text(t.donation.complete.description, textAlign: TextAlign.center, style: CoconutTypography.body2_14),
-            ],
-          ),
-        ),
-        FixedBottomButton(
-          onButtonClicked: () {
-            Navigator.pop(context);
-          },
-          // 버튼 보이지 않을 때: 수수료 조회에 실패, 잔액이 충분한 지갑이 없음
-          // 비활성화 상태로 보일 때: 지갑 동기화 진행 중, 수수료 조회 중,
-          // 활성화 상태로 보일 때: 모든 지갑 동기화 완료, 지갑별 수수료 조회 성공
-          text: t.close,
-          backgroundColor: CoconutColors.gray100,
-          pressedBackgroundColor: CoconutColors.gray500,
-        ),
-      ],
     );
   }
 
@@ -134,7 +98,6 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
   @override
   void initState() {
     super.initState();
-    debugPrint('isSending: ${widget.isDonation}');
     _animationController = BottomSheet.createAnimationController(this);
     _animationController.duration = const Duration(seconds: 2);
     Provider.of<SendInfoProvider>(context, listen: false).clear();

@@ -674,10 +674,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 ),
                 CoconutLayout.spacing_500h,
                 _buildHeaderActions(),
-                // if (!Platform.isIOS && NetworkType.currentNetworkType == NetworkType.mainnet) ...[
-                //   CoconutLayout.spacing_400h,
-                //   _buildDonationBanner(),
-                // ],
               ],
             ),
           ),

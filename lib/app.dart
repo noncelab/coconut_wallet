@@ -71,7 +71,6 @@ enum AppEntryFlow { splash, main, pinCheck }
 class CoconutWalletApp extends StatefulWidget {
   static late String kMempoolHost;
   static late String kFaucetHost;
-  static late String kDonationAddress;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
 
@@ -336,11 +335,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/broadcasting-complete':
                     (context) => buildLoadingScreenWithArgs(
                       context,
-                      (args) => BroadcastingCompleteScreen(
-                        id: args['id'],
-                        txHash: args['txHash'],
-                        isDonation: args['isDonation'],
-                      ),
+                      (args) => BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash']),
                     ),
                 '/utxo-selection':
                     (context) => buildLoadingScreenWithArgs(

@@ -141,47 +141,6 @@ faucet_failed: "Solicitud fallida. Por favor, inténtelo de nuevo más tarde."
 bio_auth_required: "Autenticación biométrica requerida"
 can_use_after_add_wallet: "Puede usarlo después de agregar la billetera."
 
-donation:
-  coconut: "Apoyar a Coconut"
-  donate: "Donar"
-  supportImpactMessage: "Gracias a tu apoyo, podemos llevar el dinero libre a más personas."
-  encourageSupportMessage: "Ayúdanos a mantener el proyecto vivo."
-  coffee: "☕️ Un café"
-  late_meal: "🍜️ Una cena"
-  maintenance: "⚒️️ Mantenimiento"
-  support_heart: "🩷 Un corazón de apoyo"
-  onchain: "Donación onchain"
-  lightning: "Donación Lightning"
-  under_dust_error: "${dust}(dust) es mayor que el valor ingresado\n"
-  over_donation_max_value_error: "El máximo es de $value sats\n"
-  donation_wallet: "Billetera de donación"
-  total_donation_amount: "Total de donación"
-  donation_address: "Dirección de donación"
-  empty_enough_balance_wallet: "No hay una billetera con saldo suficiente"
-  unsigned_qr_tooltip: "Escanea el QR para firmar"
-  signed_qr_tooltip: "Escanea la transacción firmada"
-  user_messages: [
-    "Con cariño",
-    "Con apoyo sincero",
-    "Te animamos",
-    "Para que sigas adelante",
-    "Mantente fuerte",
-    "Con gratitud",
-    "Porque nos enorgulleces",
-  ]
-  user_messages_description_1: "Al equipo de desarrollo de Coconut"
-  user_messages_description_2: "${amount} sats"
-  donate_confirm: "Confirmar donación"
-  complete:
-    thank_you: "¡Gracias!"
-    description: "Tu donación es más que Bitcoin.\nPermite que Coconut avance hacia mejores billeteras\ny llegue a más personas." 
-
-  donation_amount: "Cantidad de donación"
-  ln_invoice: "Factura Lightning"
-  ln_address: "Dirección Lightning"
-  ln_address_pow: "powbitcoiner@speed.app"
-  ln_invoice_api_error: "Error al generar la factura Lightning."
-
 utility:
   p2p_calculator:
     calculator: "Calculadora"

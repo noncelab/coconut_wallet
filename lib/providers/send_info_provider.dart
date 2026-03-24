@@ -9,7 +9,6 @@ class SendInfoProvider {
   int? _estimatedFee;
   bool? _isMaxMode;
   bool? _isMultisig;
-  bool? _isDonation;
   SendEntryPoint? _sendEntryPoint;
   Transaction? _transaction;
   String? _txWaitingForSign;
@@ -24,7 +23,6 @@ class SendInfoProvider {
   int? get estimatedFee => _estimatedFee;
   bool? get isMaxMode => _isMaxMode;
   bool? get isMultisig => _isMultisig;
-  bool? get isDonation => _isDonation;
   SendEntryPoint? get sendEntryPoint => _sendEntryPoint;
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
@@ -78,10 +76,6 @@ class SendInfoProvider {
     _walletImportSource = walletImportSource;
   }
 
-  void setIsDonation(bool isDonation) {
-    _isDonation = isDonation;
-  }
-
   void setSendEntryPoint(SendEntryPoint sendEntryPoint) {
     _sendEntryPoint = sendEntryPoint;
   }
@@ -94,8 +88,7 @@ class SendInfoProvider {
                     _transaction =
                         _txWaitingForSign =
                             _signedResult =
-                                _isDonation =
-                                    _sendEntryPoint = _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
+                                _sendEntryPoint = _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
   }
 
   Map<String, int>? getRecipientMap() {

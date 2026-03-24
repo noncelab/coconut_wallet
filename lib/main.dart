@@ -78,9 +78,6 @@ void main() {
       // Faucet - regtest-only
       CoconutWalletApp.kFaucetHost = dotenv.env[DotenvKeys.apiHost] ?? '';
 
-      // Donation
-      CoconutWalletApp.kDonationAddress = dotenv.env[DotenvKeys.donationAddress] ?? '';
-
       // Mainnet, Regtest 등 네트워크 타입 설정
       CoconutWalletApp.kNetworkType = NetworkType.getNetworkType(dotenv.env[DotenvKeys.networkType]!);
       NetworkType.setNetworkType(CoconutWalletApp.kNetworkType);
