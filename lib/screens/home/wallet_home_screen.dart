@@ -848,16 +848,17 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
     final targetId = walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
 
-    if (!shouldBypassSyncCheck && !_checkStateAndShowToast(targetId)) return;\
+    if (!shouldBypassSyncCheck && !_checkStateAndShowToast(targetId)) return;
 
     final isManualUtxoSelection = _viewModel.isManualUtxoSelectionMode;
 
     // 자동선택 모드인 경우 보내기 화면으로 이동
     if (!isManualUtxoSelection || bitcoinUri != null) {
-    await Navigator.pushNamed(
-      context,
-      '/send',
-      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},);
+      await Navigator.pushNamed(
+        context,
+        '/send',
+        arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},
+      );
       return;
     }
 
