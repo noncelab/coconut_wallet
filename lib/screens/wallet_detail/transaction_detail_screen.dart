@@ -16,6 +16,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/transaction_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -23,6 +24,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
+import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
@@ -361,7 +363,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
     if (_viewModel.transactionStatus == null || _viewModel.isSendType == null) {
       return Container();
     }
-    bool canBumpingTx = _viewModel.canBumpingTx;
 
     return Container(
       width: MediaQuery.sizeOf(context).width,
@@ -424,11 +425,40 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                   child: GestureDetector(
                     onTap: () async {
                       if (!_viewModel.isNetworkOn) {
-                        CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+                        CoconutToast.showToast(
+                          context: context,
+                          isVisibleIcon: true,
+                          iconPath: 'assets/svg/triangle-warning.svg',
+                          text: ErrorCodes.networkError.message,
+                          level: CoconutToastLevel.warning,
+                        );
                         return;
                       }
 
-                      if (!canBumpingTx) return;
+                      if (_viewModel.needsMfp) {
+                        final bool? result = await showNoMfpDialog(context, () {
+                          if (context.mounted) {
+                            Navigator.of(context).pop(true);
+                          }
+                        });
+
+                        if (result == false) {
+                          return;
+                        }
+
+                        await Navigator.pushNamed(
+                          context,
+                          '/wallet-info',
+                          arguments: {
+                            'id': widget.id,
+                            'isMultisig': false,
+                            'entryPoint': kEntryPointWalletHome,
+                            'showMfpInput': true,
+                          },
+                        );
+                        _viewModel.setNeedsMfp();
+                        return;
+                      }
 
                       _viewModel.clearSendInfo();
                       Navigator.pushNamed(
@@ -447,9 +477,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                       child: Text(
                         _viewModel.isSendType! ? t.quick_send : t.quick_receive,
                         style: CoconutTypography.body2_14.setColor(
-                          _viewModel.isSendType!
-                              ? CoconutColors.primary.withValues(alpha: canBumpingTx ? 1.0 : 0.5)
-                              : CoconutColors.cyan.withValues(alpha: canBumpingTx ? 1.0 : 0.5),
+                          _viewModel.isSendType! ? CoconutColors.primary : CoconutColors.cyan,
                         ),
                       ),
                     ),
@@ -668,7 +696,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                     originalMemo: txMemo ?? '',
                     onComplete: (memo) {
                       if (!viewModel.updateTransactionMemo(memo)) {
-                        CoconutToast.showWarningToast(context: context, text: t.toast.memo_update_failed);
+                        CoconutToast.showToast(
+                          context: context,
+                          isVisibleIcon: true,
+                          iconPath: 'assets/svg/triangle-warning.svg',
+                          text: t.toast.memo_update_failed,
+                          level: CoconutToastLevel.warning,
+                        );
                       }
                     },
                   ),
@@ -755,18 +789,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
 
     // isOutputMine: output 중 navigable 목록 추출
     // isOutputToMyWallet: flow 색상 추출 시 현재 지갑 주소 여부 확인 필요
-    // incoming: utxo 존재 시에만 navigable, walletId 주소만 cyan
-    // outgoing: 내 지갑 주소 & utxo 존재에만 navigable, walletId 주소만 white
+    // 내 지갑 주소 & utxo 존재 시에만 navigable
     final walletProvider = context.read<WalletProvider>();
     final isOutputMine = walletProvider.containsAddressInAnyWallet;
     final isOutputToMyWallet = walletProvider.containsAddress;
-    final status = viewModel.transactionStatus;
-    final isIncoming = status == TransactionStatus.received || status == TransactionStatus.receiving;
-    final isOutgoing =
-        status == TransactionStatus.sent ||
-        status == TransactionStatus.sending ||
-        status == TransactionStatus.self ||
-        status == TransactionStatus.selfsending;
     FlowOutputTapTarget? changeTapTarget;
 
     for (var i = 0; i < tx.outputAddressList.length; i++) {
@@ -774,6 +800,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       final amount = output.amount.abs();
       final isChangeOutput =
           isOutputMine(output.address) && walletProvider.containsAddress(widget.id, output.address, isChange: true);
+
       final target = FlowOutputTapTarget(
         address: output.address,
         amount: amount,
@@ -792,21 +819,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         if (walletId != null) {
           final utxoId = getUtxoId(tx.transactionHash, i);
           final utxoState = walletProvider.getUtxoState(walletId, utxoId);
-          if (isIncoming) {
-            if (utxoState != null) {
-              if (isChangeOutput) {
-                changeTapTarget = target;
-              } else {
-                navigableOutputTapTargets.add(target);
-              }
-            }
-          } else if (isOutgoing) {
-            if (utxoState != null) {
-              if (isChangeOutput) {
-                changeTapTarget = target;
-              } else {
-                navigableOutputTapTargets.add(target);
-              }
+          if (utxoState != null) {
+            if (isChangeOutput) {
+              changeTapTarget = target;
+            } else {
+              navigableOutputTapTargets.add(target);
             }
           }
         }

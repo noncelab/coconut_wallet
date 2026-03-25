@@ -1,3 +1,23 @@
+## mainnet 0.10.1, regtest 3.9.1
+* minor UI updates
+  
+## mainnet 0.10.0, regtest 3.9.0
+### Added
+* UTXO 태그 일괄 적용 기능 및 선택 후 보내기 화면 이동 플로우 제공
+* UTXO 오버뷰 제공(+지갑 정보 화면 UI 개선 및 목표 수량 설정 기능 추가)
+### Enhanced
+* 지갑 목록 화면 - 여러 Fiat 가격 보기/숨기기 선택 가능
+* Fee Bumping 리팩토링 및 utxo 선택 가능하도록 확장
+* (메인넷) 홈화면 앱 바 풀다운 메뉴 튜토리얼 링크 추가
+* 유기적인 tx - utxo 상세 화면
+* xpub으로 추가한 지갑의 MFP 편집 가능
+### Fixed
+* iOS 26.0+에서 P2P 계산기 결과 공유 불가
+* 홈 화면 트잭 위젯 수정: 24시간 이내 pending tx가 보이는 문제
+* UI: 하단 고정 버튼 bg gradient 조정
+* 앱 재구동 시 비트코인 시세 업데이트 안되는 문제 
+
+
 ## mainnet 0.9.0, regtest 3.8.0
 ### Added
 * P2P 계산기

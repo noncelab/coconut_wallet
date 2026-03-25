@@ -17,6 +17,8 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:coconut_wallet/widgets/qrcode_info.dart';
+import 'package:flutter/material.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -24,6 +26,7 @@ class QrWithCopyTextScreen extends StatefulWidget {
 
   final String qrData;
 
+  // Data map used only when backing up a multisig wallet
   final Map<String, String>? qrDataMap;
   final Map<String, String>? textDataMap;
 
@@ -216,7 +219,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final qrWidth = _calcQrWidth(context);
     final displayQrData = _currentQrData;
     final displayTextData = _currentTextData;
     final currentUnit = context.read<PreferenceProvider>().currentUnit;
@@ -311,40 +313,19 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     ),
                   ),
                 ),
-              Column(
-                children: [
-                  CoconutLayout.spacing_300h,
-                  if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_300h],
-                  Center(
-                    child: Container(
-                      width: qrWidth,
-                      decoration: CoconutBoxDecoration.shadowBoxDecoration,
-                      child: RepaintBoundary(
-                        key: _qrCaptureKey,
-                        child: AdaptiveQrImage(qrData: displayQrData, embedImage: _qrEmbedImage, showFrame: false),
-                      ),
-                    ),
-                  ),
-                  CoconutLayout.spacing_500h,
-                  _buildCopyButton(displayTextData, qrWidth),
-                ],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+                child: QrCodeInfo(
+                  qrcodeTopWidget: widget.qrcodeTopWidget,
+                  qrData: displayQrData,
+                  displayText: displayTextData,
+                  isAddress: widget.isAddress,
+                ),
               ),
+              if (widget.footer != null) widget.footer!,
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCopyButton(String textData, double qrWidth) {
-    return SizedBox(
-      width: qrWidth,
-      child: CopyTextContainer(
-        text: textData,
-        isAddress: widget.isAddress,
-        textStyle: CoconutTypography.body2_14_Number,
-        toastMsg: t.copied,
-        textRichText: widget.textRichText,
       ),
     );
   }

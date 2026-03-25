@@ -9,9 +9,11 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/screens/home/analysis_period_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/utils/transaction_util.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -52,6 +54,11 @@ import 'package:collection/collection.dart';
 
 class WalletHomeScreen extends StatefulWidget {
   const WalletHomeScreen({super.key});
+
+  /// P2P 등 외부에서 홈의 "지갑 추가" 바텀시트를 띄울 때 호출.
+  static void openAddWalletIfActive() => _currentState?._onAddWalletPressed();
+
+  static _WalletHomeScreenState? _currentState;
 
   @override
   State<WalletHomeScreen> createState() => _WalletHomeScreenState();
@@ -321,6 +328,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
+    WalletHomeScreen._currentState = this;
 
     _scrollController = ScrollController();
     _carouselController = CarouselSliderController();
@@ -398,6 +406,9 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
 
   @override
   void dispose() {
+    if (WalletHomeScreen._currentState == this) {
+      WalletHomeScreen._currentState = null;
+    }
     _recentTransactionBannerTimer?.cancel();
     _scrollController.dispose();
     _pageIndicatorController.dispose();
@@ -665,10 +676,6 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                 ),
                 CoconutLayout.spacing_500h,
                 _buildHeaderActions(),
-                // if (!Platform.isIOS && NetworkType.currentNetworkType == NetworkType.mainnet) ...[
-                //   CoconutLayout.spacing_400h,
-                //   _buildDonationBanner(),
-                // ],
               ],
             ),
           ),
@@ -841,11 +848,41 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
     // walletOrder에 있는 순서대로 매칭된 첫 번째 지갑의 id
     final targetId = walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
 
-    if (!shouldBypassSyncCheck && !_checkStateAndShowToast(targetId)) return;
+    if (!shouldBypassSyncCheck && !_checkStateAndShowToast(targetId)) return;\
+
+    final isManualUtxoSelection = _viewModel.isManualUtxoSelectionMode;
+
+    // 자동선택 모드인 경우 보내기 화면으로 이동
+    if (!isManualUtxoSelection || bitcoinUri != null) {
     await Navigator.pushNamed(
       context,
       '/send',
-      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},
+      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'initialBitcoinUri': bitcoinUri},);
+      return;
+    }
+
+    if (!mounted) return;
+    // 수동선택 모드인 경우 UTXO 선택 화면으로 이동
+    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
+      context: context,
+      minChildSize: 0.6,
+      maxChildSize: 0.9,
+      initialChildSize: 0.9,
+      childBuilder:
+          (scrollController) => UtxoSelectionScreen(
+            selectedUtxoList: const <UtxoState>[],
+            walletId: targetId,
+            currentUnit: context.read<PreferenceProvider>().currentUnit,
+            scrollController: scrollController,
+            showSkipButton: true,
+          ),
+    );
+
+    if (!mounted || result == null) return;
+    Navigator.pushNamed(
+      context,
+      '/send',
+      arguments: {'walletId': targetId, 'sendEntryPoint': SendEntryPoint.home, 'selectedUtxoList': result},
     );
   }
 

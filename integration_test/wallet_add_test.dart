@@ -178,7 +178,6 @@ Future<void> validateDuplicatedExternalWalletAddFailed(WidgetTester tester, Wall
   final walletFromDescriptor1 = WalletAddService().createWalletFromDescriptor(
     descriptor: singleSigWallet1['descriptor'] as String,
     name: "zpub",
-    walletImportSource: WalletImportSource.extendedPublicKey,
   );
 
   var descriptorWalletAddResult = await walletProvider.syncFromThirdParty(walletFromDescriptor1);
@@ -189,7 +188,6 @@ Future<void> validateDuplicatedExternalWalletAddFailed(WidgetTester tester, Wall
   final walletFromDescriptor2 = WalletAddService().createWalletFromDescriptor(
     descriptor: DescriptorUtil.normalizeDescriptor(singleSigWallet1SimpleDescriptor),
     name: "zpub",
-    walletImportSource: WalletImportSource.extendedPublicKey,
   );
 
   var descriptorWalletAddResult2 = await walletProvider.syncFromThirdParty(walletFromDescriptor2);

@@ -40,7 +40,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   bool _isInitDone = false;
   bool _isSendingToMyAddress = false;
-  bool _isSendingDonation = false;
   final List<String> _recipientAddresses = [];
   int? _sendingAmount;
   int? _fee;
@@ -75,7 +74,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isInitDone => _isInitDone;
   bool get isNetworkOn => _isNetworkOn == true;
   bool get isSendingToMyAddress => _isSendingToMyAddress;
-  bool get isSendingDonation => _isSendingDonation;
   int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
   int? get totalAmount => _totalAmount;
   int get inputCount => _inputCount;
@@ -155,8 +153,6 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
-
-    _isSendingDonation = _sendInfoProvider.isDonation ?? false;
 
     Psbt signedPsbt;
     if (isPsbt(_sendInfoProvider.signedResult!)) {

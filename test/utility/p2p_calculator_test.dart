@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakePreferenceProvider extends Fake implements PreferenceProvider {
@@ -66,6 +67,16 @@ class FakePriceProvider extends Fake implements PriceProvider {
   void removeListener(VoidCallback listener) {}
 }
 
+class FakeWalletProvider extends Fake implements WalletProvider {
+  FakeWalletProvider();
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
+}
+
 void main() {
   const int defaultBtcPriceKrw = 140000000;
 
@@ -78,8 +89,9 @@ void main() {
     final prefProvider = FakePreferenceProvider(selectedFiat: fiatCode, isBtcUnit: isBtcUnit);
     final connectivityProvider = FakeConnectivityProvider(isInternetOn: isNetworkOn);
     final priceProvider = FakePriceProvider(defaultPrice: btcPrice);
+    final walletProvider = FakeWalletProvider();
 
-    return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider);
+    return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider, walletProvider);
   }
 
   group('calculateSatsFromFiat - Fiat → Sats 변환', () {
@@ -91,21 +103,21 @@ void main() {
 
     test('[Fiat -> Sats] 수수료 0%: 수수료 없이 변환', () {
       final viewModel = createViewModel();
-      viewModel.setFeeRate(0.0);
+      viewModel.setPremiumRate(0.0);
       // 1,000,000 / 140,000,000 × 100,000,000 = 714,285.714... → 714,286
       expect(viewModel.calculateSatsFromFiat(1000000), 714286);
     });
 
     test('[Fiat -> Sats] 수수료 5%: 높은 수수료로 변환', () {
       final viewModel = createViewModel();
-      viewModel.setFeeRate(5.0);
+      viewModel.setPremiumRate(5.0);
       // (1,000,000 × 0.95) / 140,000,000 × 100,000,000 = 678,571.428... → 678,571
       expect(viewModel.calculateSatsFromFiat(1000000), 678571);
     });
 
     test('[Fiat -> Sats] 수수료 10%: 매우 높은 수수료로 변환', () {
       final viewModel = createViewModel();
-      viewModel.setFeeRate(10.0);
+      viewModel.setPremiumRate(10.0);
       // (1,000,000 × 0.90) / 140,000,000 × 100,000,000 = 642,857.142... → 642,857
       expect(viewModel.calculateSatsFromFiat(1000000), 642857);
     });
@@ -145,7 +157,7 @@ void main() {
       final satsWithFee1 = viewModel.calculateSatsFromFiat(1000000);
       expect(satsWithFee1, 707143);
 
-      viewModel.setFeeRate(3.0);
+      viewModel.setPremiumRate(3.0);
       final satsWithFee3 = viewModel.calculateSatsFromFiat(1000000);
       // (1,000,000 × 0.97) / 140,000,000 × 100,000,000 = 692,857.142... → 692,857
       expect(satsWithFee3, 692857);
@@ -157,16 +169,16 @@ void main() {
       final viewModel = createViewModel();
       const fiatAmount = 1000000;
 
-      viewModel.setFeeRate(0.0);
+      viewModel.setPremiumRate(0.0);
       final satsNoFee = viewModel.calculateSatsFromFiat(fiatAmount);
 
-      viewModel.setFeeRate(1.0);
+      viewModel.setPremiumRate(1.0);
       final satsFee1 = viewModel.calculateSatsFromFiat(fiatAmount);
 
-      viewModel.setFeeRate(5.0);
+      viewModel.setPremiumRate(5.0);
       final satsFee5 = viewModel.calculateSatsFromFiat(fiatAmount);
 
-      viewModel.setFeeRate(10.0);
+      viewModel.setPremiumRate(10.0);
       final satsFee10 = viewModel.calculateSatsFromFiat(fiatAmount);
 
       expect(satsNoFee, greaterThan(satsFee1));
@@ -176,7 +188,7 @@ void main() {
 
     test('[Fiat -> Sats] 소수점 수수료율(0.5%) 적용', () {
       final viewModel = createViewModel();
-      viewModel.setFeeRate(0.5);
+      viewModel.setPremiumRate(0.5);
       // discountMultiplier = 0.995
       // (1,000,000 × 0.995) / 140,000,000 × 100,000,000 = 710,714.285... → 710,714
       expect(viewModel.calculateSatsFromFiat(1000000), 710714);
@@ -192,21 +204,21 @@ void main() {
 
     test('[Sats -> Fiat] 수수료 0%: 수수료 없이 변환', () {
       final viewModel = createViewModel();
-      viewModel.setFeeRate(0);
+      viewModel.setPremiumRate(0);
       // (1,000,000 / 100,000,000) * 140,000,000 = 1,400,000
       expect(viewModel.calculateFiatFromSats(1000000), 1400000);
     });
 
     test('[Sats -> Fiat] 수수료 5%: 높은 수수료로 변환', () {
       final viewModel = createViewModel();
-      viewModel.setFeeRate(5);
+      viewModel.setPremiumRate(5);
       // (1,000,000 / 100,000,000) * 140,000,000 * 1.05 = 1,470,000
       expect(viewModel.calculateFiatFromSats(1000000), 1470000);
     });
 
     test('[Sats -> Fiat] 수수료 10%: 매우 높은 수수료로 변환', () {
       final viewModel = createViewModel();
-      viewModel.setFeeRate(10);
+      viewModel.setPremiumRate(10);
       // (1,000,000 / 100,000,000) * 140,000,000 * 1.1 = 1,540,000
       expect(viewModel.calculateFiatFromSats(1000000), 1540000);
     });
@@ -246,7 +258,7 @@ void main() {
       final fiatWithFee1 = viewModel.calculateFiatFromSats(1000000);
       expect(fiatWithFee1, 1414000);
 
-      viewModel.setFeeRate(3.0);
+      viewModel.setPremiumRate(3.0);
       final fiatWithFee3 = viewModel.calculateFiatFromSats(1000000);
       // (1,000,000 / 100,000,000) * 140,000,000 * 1.03 = 1,442,000
       expect(fiatWithFee3, 1442000);
@@ -258,16 +270,16 @@ void main() {
       final viewModel = createViewModel();
       const satsAmount = 1000000;
 
-      viewModel.setFeeRate(0.0);
+      viewModel.setPremiumRate(0.0);
       final fiatNoFee = viewModel.calculateFiatFromSats(satsAmount);
 
-      viewModel.setFeeRate(1.0);
+      viewModel.setPremiumRate(1.0);
       final fiatFee1 = viewModel.calculateFiatFromSats(satsAmount);
 
-      viewModel.setFeeRate(5.0);
+      viewModel.setPremiumRate(5.0);
       final fiatFee5 = viewModel.calculateFiatFromSats(satsAmount);
 
-      viewModel.setFeeRate(10.0);
+      viewModel.setPremiumRate(10.0);
       final fiatFee10 = viewModel.calculateFiatFromSats(satsAmount);
 
       expect(fiatFee10, greaterThan(fiatFee5));
@@ -290,10 +302,10 @@ void main() {
         final viewModel = createViewModel();
         const fiatAmount = 1000000;
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final satsNoFee = viewModel.calculateSatsFromFiat(fiatAmount);
 
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         final satsWithFee = viewModel.calculateSatsFromFiat(fiatAmount);
 
         final feeSats = satsNoFee - satsWithFee;
@@ -305,10 +317,10 @@ void main() {
         final viewModel = createViewModel();
         const fiatAmount = 1000000;
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final satsNoFee = viewModel.calculateSatsFromFiat(fiatAmount);
 
-        viewModel.setFeeRate(5.0);
+        viewModel.setPremiumRate(5.0);
         final satsWithFee = viewModel.calculateSatsFromFiat(fiatAmount);
 
         final feeSats = satsNoFee - satsWithFee;
@@ -320,10 +332,10 @@ void main() {
         final viewModel = createViewModel();
         const fiatAmount = 1000000;
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final satsNoFee = viewModel.calculateSatsFromFiat(fiatAmount);
 
-        viewModel.setFeeRate(0.5);
+        viewModel.setPremiumRate(0.5);
         final satsWithFee = viewModel.calculateSatsFromFiat(fiatAmount);
 
         final feeSats = satsNoFee - satsWithFee;
@@ -337,10 +349,10 @@ void main() {
         final viewModel = createViewModel();
         const satsAmount = 1000000;
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final fiatNoFee = viewModel.calculateFiatFromSats(satsAmount);
 
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         final fiatWithFee = viewModel.calculateFiatFromSats(satsAmount);
 
         final feeInFiat = fiatWithFee - fiatNoFee;
@@ -353,10 +365,10 @@ void main() {
         final viewModel = createViewModel();
         const satsAmount = 1000000;
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final fiatNoFee = viewModel.calculateFiatFromSats(satsAmount);
 
-        viewModel.setFeeRate(5.0);
+        viewModel.setPremiumRate(5.0);
         final fiatWithFee = viewModel.calculateFiatFromSats(satsAmount);
 
         final feeInFiat = fiatWithFee - fiatNoFee;
@@ -368,10 +380,10 @@ void main() {
         final viewModel = createViewModel();
         const satsAmount = 1000000;
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final fiatNoFee = viewModel.calculateFiatFromSats(satsAmount);
 
-        viewModel.setFeeRate(0.5);
+        viewModel.setPremiumRate(0.5);
         final fiatWithFee = viewModel.calculateFiatFromSats(satsAmount);
 
         final feeInFiat = fiatWithFee - fiatNoFee;
@@ -383,15 +395,15 @@ void main() {
         final viewModel = createViewModel();
         const satsAmount = 1000000;
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final fiatNoFee = viewModel.calculateFiatFromSats(satsAmount);
 
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         final fiatWithFee = viewModel.calculateFiatFromSats(satsAmount);
 
         final feeInFiat = fiatWithFee - fiatNoFee;
         // feeInFiat(14,000)을 다시 Sats로 환산
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final feeSats = viewModel.calculateSatsFromFiat(feeInFiat);
         // 14,000 / 140,000,000 × 100,000,000 = 10,000
         expect(feeSats, 10000);
@@ -402,11 +414,11 @@ void main() {
       test('Fiat→BTC는 차감(discount), BTC→Fiat는 추가(premium)', () {
         final viewModel = createViewModel();
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final satsNoFee = viewModel.calculateSatsFromFiat(1000000);
         final fiatNoFee = viewModel.calculateFiatFromSats(1000000);
 
-        viewModel.setFeeRate(5.0);
+        viewModel.setPremiumRate(5.0);
         final satsWithFee = viewModel.calculateSatsFromFiat(1000000);
         final fiatWithFee = viewModel.calculateFiatFromSats(1000000);
 
@@ -418,7 +430,7 @@ void main() {
 
       test('동일 금액 왕복 변환 시 수수료만큼 손실 발생', () {
         final viewModel = createViewModel();
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
 
         // 1,000,000원 → Sats 변환
         final sats = viewModel.calculateSatsFromFiat(1000000);
@@ -432,19 +444,19 @@ void main() {
       test('수수료율이 같아도 방향에 따라 수수료 금액(원화)이 다름', () {
         final viewModel = createViewModel();
         const feeRate = 5.0;
-        viewModel.setFeeRate(feeRate);
+        viewModel.setPremiumRate(feeRate);
 
         // Fiat→Sats: 수수료 = 입력 fiat × rate = 1,000,000 × 5% = 50,000원
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final satsNoFee = viewModel.calculateSatsFromFiat(1000000);
-        viewModel.setFeeRate(feeRate);
+        viewModel.setPremiumRate(feeRate);
         final satsWithFee = viewModel.calculateSatsFromFiat(1000000);
         final fiatToSatsFeeSats = satsNoFee - satsWithFee;
 
         // Sats→Fiat: 수수료 = 기본 fiat × rate = 1,400,000 × 5% = 70,000원
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final fiatNoFee = viewModel.calculateFiatFromSats(1000000);
-        viewModel.setFeeRate(feeRate);
+        viewModel.setPremiumRate(feeRate);
         final fiatWithFee = viewModel.calculateFiatFromSats(1000000);
         final satsToFiatFeeFiat = fiatWithFee - fiatNoFee;
 
@@ -459,11 +471,11 @@ void main() {
     group('다양한 입력 금액에서 수수료 비례 검증', () {
       test('입력 금액이 2배이면 수수료 Sats도 2배', () {
         final viewModel = createViewModel();
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final satsNoFee1M = viewModel.calculateSatsFromFiat(1000000);
         final satsNoFee2M = viewModel.calculateSatsFromFiat(2000000);
 
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         final satsWithFee1M = viewModel.calculateSatsFromFiat(1000000);
         final satsWithFee2M = viewModel.calculateSatsFromFiat(2000000);
 
@@ -477,11 +489,11 @@ void main() {
       test('입력 금액이 10배이면 수수료 Fiat도 10배', () {
         final viewModel = createViewModel();
 
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         final fiatNoFee100K = viewModel.calculateFiatFromSats(100000);
         final fiatNoFee1M = viewModel.calculateFiatFromSats(1000000);
 
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         final fiatWithFee100K = viewModel.calculateFiatFromSats(100000);
         final fiatWithFee1M = viewModel.calculateFiatFromSats(1000000);
 
@@ -496,7 +508,7 @@ void main() {
     group('다양한 엣지케이스 테스트', () {
       test('수수료 99.9%: 거의 전부 수수료, 극소량 Sats만 반환', () {
         final viewModel = createViewModel();
-        viewModel.setFeeRate(99.9);
+        viewModel.setPremiumRate(99.9);
         // (100 × 0.001) / 140,000,000 × 100,000,000 = 0.07142857... → 0
         expect(viewModel.calculateSatsFromFiat(100), 0);
         // (1,000 × 0.001) / 140,000,000 × 100,000,000 = 0.7142857... → 1
@@ -507,7 +519,7 @@ void main() {
 
       test('수수료 0.01%: 매우 작은 수수료', () {
         final viewModel = createViewModel();
-        viewModel.setFeeRate(0.01);
+        viewModel.setPremiumRate(0.01);
         // (100 × 0.9999) / 140,000,000 × 100,000,000 = 71.42142857... → 71
         expect(viewModel.calculateSatsFromFiat(100), 71);
         // (1,000 × 0.9999) / 140,000,000 × 100,000,000 = 714.2142857... → 714
@@ -522,14 +534,14 @@ void main() {
     group('가격 = 1 (극단적 저가, 1원/BTC)', () {
       test('[Fiat→Sats] 1원 입력 시 거의 1 BTC에 해당하는 Sats 반환(수수료율: 1%)', () {
         final viewModel = createViewModel(btcPrice: 1);
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         // (1 × 0.99) / 1 × 100,000,000 = 99,000,000 sats (≈ 0.99 BTC)
         expect(viewModel.calculateSatsFromFiat(1), 99000000);
       });
 
       test('[Fiat→Sats] 100만원 입력 시 천문학적 Sats 반환(수수료율: 1%)', () {
         final viewModel = createViewModel(btcPrice: 1);
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         // (1,000,000 × 0.99) / 1 × 100,000,000 = 99,000,000,000,000,000
         final sats = viewModel.calculateSatsFromFiat(1000000);
         expect(sats, 99000000000000);
@@ -537,21 +549,21 @@ void main() {
 
       test('[Sats→Fiat] 1,000,000 sats 입력 시 0원 반환 (소수점 이하 반올림)(수수료율: 1%)', () {
         final viewModel = createViewModel(btcPrice: 1);
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         // (1,000,000 / 100,000,000) × 1 × 1.01 = 0.0101 → round → 0
         expect(viewModel.calculateFiatFromSats(1000000), 0);
       });
 
       test('[Sats→Fiat] 1 BTC(100,000,000 sats) 입력 시 1원 반환(수수료율: 1%)', () {
         final viewModel = createViewModel(btcPrice: 1);
-        viewModel.setFeeRate(1.0);
+        viewModel.setPremiumRate(1.0);
         // (100,000,000 / 100,000,000) × 1 × 1.01 = 1.01 → round → 1
         expect(viewModel.calculateFiatFromSats(100000000), 1);
       });
 
       test('[Sats→Fiat] Fiat 결과가 0이 아니려면 최소 약 0.5 BTC 필요(수수료율: 0%)', () {
         final viewModel = createViewModel(btcPrice: 1);
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         // (49,999,999 / 1e8) × 1 = 0.49999999 → round → 0
         expect(viewModel.calculateFiatFromSats(49999999), 0);
         // (50,000,000 / 1e8) × 1 = 0.5 → round → 1
@@ -560,7 +572,7 @@ void main() {
 
       test('[Fiat→Sats] 수수료 0%에서 정확히 입력금액 × 1억 sats(수수료율: 0%)', () {
         final viewModel = createViewModel(btcPrice: 1);
-        viewModel.setFeeRate(0.0);
+        viewModel.setPremiumRate(0.0);
         // 1 / 1 × 100,000,000 = 100,000,000 (정확히 1 BTC)
         expect(viewModel.calculateSatsFromFiat(1), 100000000);
       });

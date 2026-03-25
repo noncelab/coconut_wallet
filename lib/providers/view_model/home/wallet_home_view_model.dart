@@ -128,6 +128,9 @@ class WalletHomeViewModel extends ChangeNotifier {
   bool _isEditWidgetMode = false;
   bool get isEditWidgetMode => _isEditWidgetMode;
 
+  bool _isManualUtxoSelectionMode = false;
+  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
+
   void setEditWidgetMode(bool value) {
     if (_isEditWidgetMode != value) {
       _isEditWidgetMode = value;
@@ -160,6 +163,7 @@ class WalletHomeViewModel extends ChangeNotifier {
     _excludedFromTotalBalanceWalletIds = _preferenceProvider.excludedFromTotalBalanceWalletIds;
     _analysisPeriod = _preferenceProvider.analysisPeriod;
     _selectedAnalysisTransactionType = _preferenceProvider.selectedAnalysisTransactionType;
+    _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
   }
 
   void _onNodeProviderChanged() {
@@ -397,6 +401,10 @@ class WalletHomeViewModel extends ChangeNotifier {
 
     if (_analysisPeriod != _preferenceProvider.analysisPeriod) {
       _analysisPeriod = _preferenceProvider.analysisPeriod;
+    }
+
+    if (_isManualUtxoSelectionMode != _preferenceProvider.isManualUtxoSelectionMode) {
+      _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
     }
 
     if (_preferenceProvider.currentUnit != _bitcoinUnit) {

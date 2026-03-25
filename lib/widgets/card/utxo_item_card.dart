@@ -12,6 +12,7 @@ import 'package:lottie/lottie.dart';
 class UtxoItemCard extends StatelessWidget {
   final UtxoState utxo;
   final Function onPressed;
+  final VoidCallback? onLongPress;
   final BitcoinUnit currentUnit;
   final bool isSelected;
   final bool isSelectionMode;
@@ -20,6 +21,7 @@ class UtxoItemCard extends StatelessWidget {
     super.key,
     required this.utxo,
     required this.onPressed,
+    this.onLongPress,
     required this.currentUnit,
     this.isSelected = false,
     this.isSelectionMode = false,
@@ -37,6 +39,7 @@ class UtxoItemCard extends StatelessWidget {
       onPressed: () {
         onPressed();
       },
+      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(

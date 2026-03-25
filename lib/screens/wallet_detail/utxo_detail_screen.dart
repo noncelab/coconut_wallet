@@ -189,12 +189,15 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                           final viewModel = context.read<UtxoDetailViewModel>();
                           final result = await viewModel.toggleUtxoLockStatus();
                           if (context.mounted && !result) {
-                            CoconutToast.showWarningToast(
+                            CoconutToast.showToast(
                               context: context,
+                              isVisibleIcon: true,
+                              iconPath: 'assets/svg/triangle-warning.svg',
                               text:
                                   utxoStatus == UtxoStatus.locked
                                       ? t.errors.utxo_unlock_error
                                       : t.errors.utxo_lock_error,
+                              level: CoconutToastLevel.warning,
                             );
                             return;
                           }
@@ -576,12 +579,15 @@ class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/svg/${widget.isLocked ? 'lock' : 'unlock'}.svg',
+                  'assets/svg/${widget.isLocked ? 'lock_simple' : 'unlock_simple'}.svg',
+                  width: 16,
+                  height: 16,
                   colorFilter: ColorFilter.mode(
                     isPressing ? CoconutColors.gray800 : CoconutColors.white,
                     BlendMode.srcIn,
                   ),
                 ),
+                CoconutLayout.spacing_50w,
                 Text(
                   widget.isLocked ? t.utxo_detail_screen.utxo_locked : t.utxo_detail_screen.utxo_unlocked,
                   style: CoconutTypography.body3_12.setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),

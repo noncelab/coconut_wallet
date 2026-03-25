@@ -41,6 +41,17 @@ abstract final class CustomIcons {
   static const String car = 'assets/svg/wallet-icons/car.svg';
   static const String couch = 'assets/svg/wallet-icons/couch.svg';
 
+  static const String bitcoin = 'assets/svg/wallet-icons/bitcoin.svg';
+  static const String bitcoin_circle = 'assets/svg/wallet-icons/bitcoin-circle.svg';
+  static const String inheritance_1 = 'assets/svg/wallet-icons/inheritance-1.svg';
+  static const String inheritance_2 = 'assets/svg/wallet-icons/inheritance-2.svg';
+  static const String high_five = 'assets/svg/wallet-icons/high-five.svg';
+  static const String legacy_bitcoin = 'assets/svg/wallet-icons/legacy-bitcoin.svg';
+  static const String legacy_heart = 'assets/svg/wallet-icons/legacy-heart.svg';
+  static const String coconut = 'assets/svg/wallet-icons/coconut.svg';
+  static const String coconut_drink = 'assets/svg/wallet-icons/coconut-drink.svg';
+  static const String palm_tree = 'assets/svg/wallet-icons/palm-tree.svg';
+
   static const String triangleWarning = 'assets/svg/triangle-warning.svg';
 
   static List<String> icons = [
@@ -79,9 +90,19 @@ abstract final class CustomIcons {
     'assets/svg/wallet-icons/shop.svg',
     'assets/svg/wallet-icons/car.svg',
     'assets/svg/wallet-icons/couch.svg',
+    'assets/svg/wallet-icons/bitcoin.svg',
+    'assets/svg/wallet-icons/bitcoin-circle.svg',
+    'assets/svg/wallet-icons/inheritance-1.svg',
+    'assets/svg/wallet-icons/inheritance-2.svg',
+    'assets/svg/wallet-icons/high-five.svg',
+    'assets/svg/wallet-icons/legacy-bitcoin.svg',
+    'assets/svg/wallet-icons/legacy-heart.svg',
+    'assets/svg/wallet-icons/coconut.svg',
+    'assets/svg/wallet-icons/coconut-drink.svg',
+    'assets/svg/wallet-icons/palm-tree.svg',
   ];
 
-  static const totalCount = 35;
+  static const totalCount = 45;
 
   static String getPathByIndex(int index) {
     if (index >= 0 && index < icons.length) {

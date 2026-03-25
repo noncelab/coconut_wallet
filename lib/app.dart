@@ -23,9 +23,6 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
-import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
-import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
-import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
@@ -75,7 +72,6 @@ enum AppEntryFlow { splash, main, pinCheck }
 class CoconutWalletApp extends StatefulWidget {
   static late String kMempoolHost;
   static late String kFaucetHost;
-  static late String kDonationAddress;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
 
@@ -328,26 +324,12 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         walletId: args['walletId'],
                         sendEntryPoint: args['sendEntryPoint'],
                         transactionDraftId: args['transactionDraftId'],
+                        initialSatsFromP2P: args['initialSatsFromP2P'],
                         selectedUtxoList: args['selectedUtxoList'],
                         initialBitcoinUri: args['initialBitcoinUri'],
                       ),
                     ),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
-                '/select-donation-amount':
-                    (context) => buildScreenWithArgs(
-                      context,
-                      (args) => SelectDonationAmountScreen(walletListLength: args['wallet-list-length']),
-                    ),
-                '/onchain-donation-info':
-                    (context) => buildScreenWithArgs(
-                      context,
-                      (args) => OnchainDonationInfoScreen(donationAmount: args['donation-amount']),
-                    ),
-                '/lightning-donation-info':
-                    (context) => buildScreenWithArgs(
-                      context,
-                      (args) => LightningDonationInfoScreen(donationAmount: args['donation-amount']),
-                    ),
 
                 // 인자가 있고 로딩이 필요한 화면들
                 '/wallet-add-scanner':
@@ -369,11 +351,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/broadcasting-complete':
                     (context) => buildLoadingScreenWithArgs(
                       context,
-                      (args) => BroadcastingCompleteScreen(
-                        id: args['id'],
-                        txHash: args['txHash'],
-                        isDonation: args['isDonation'],
-                      ),
+                      (args) => BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash']),
                     ),
                 '/utxo-selection':
                     (context) => buildLoadingScreenWithArgs(

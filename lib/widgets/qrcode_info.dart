@@ -10,6 +10,7 @@ class QrCodeInfo extends StatefulWidget {
   final bool isAddress;
   final ImageProvider? embedImage;
   final GlobalKey? qrCaptureKey;
+  final TextStyle? textStyle;
 
   const QrCodeInfo({
     super.key,
@@ -19,6 +20,7 @@ class QrCodeInfo extends StatefulWidget {
     this.isAddress = false,
     this.embedImage,
     this.qrCaptureKey,
+    this.textStyle,
   });
 
   @override
@@ -42,7 +44,7 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
           child: CopyTextContainer(
             text: widget.displayText ?? widget.qrData,
             copyText: widget.qrData,
-            textStyle: CoconutTypography.body2_14,
+            textStyle: widget.textStyle ?? CoconutTypography.body2_14,
             isAddress: widget.isAddress,
           ),
         ),

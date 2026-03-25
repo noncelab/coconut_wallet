@@ -7,6 +7,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
@@ -17,6 +18,7 @@ import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -291,6 +293,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       Provider.of<ConnectivityProvider>(context, listen: false),
       Provider.of<PriceProvider>(context, listen: false),
       Provider.of<SendInfoProvider>(context, listen: false),
+      Provider.of<PreferenceProvider>(context, listen: false),
       Provider.of<NodeProvider>(context, listen: false),
     );
 
@@ -378,17 +381,35 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   bool _checkStateAndShowToast() {
     if (_viewModel.isNetworkOff) {
-      CoconutToast.showWarningToast(context: context, text: ErrorCodes.networkError.message);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: ErrorCodes.networkError.message,
+        level: CoconutToastLevel.warning,
+      );
       return false;
     }
 
     if (_viewModel.networkStatus == NetworkStatus.connectionFailed) {
-      CoconutToast.showWarningToast(context: context, text: t.errors.electrum_connection_failed);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: t.errors.electrum_connection_failed,
+        level: CoconutToastLevel.warning,
+      );
       return false;
     }
 
     if (_viewModel.isWalletSyncing) {
-      CoconutToast.showToast(isVisibleIcon: true, context: context, text: t.toast.fetching_onchain_data);
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/circle-info.svg',
+        text: t.toast.fetching_onchain_data,
+        level: CoconutToastLevel.info,
+      );
       return false;
     }
 
@@ -399,7 +420,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
   }
 
-  void _onTapSend() {
+  Future<void> _onTapSend() async {
     if (!_viewModel.isMultisigWallet &&
         (_viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder ||
             isWalletWithoutMfp(_viewModel.walletListBaseItem))) {
@@ -415,12 +436,43 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
     if (!_checkStateAndShowToast()) return;
     _viewModel.clearSendInfo();
-    // 이전 화면
-    // Navigator.pushNamed(context, '/send-address', arguments: {'id': widget.id});
+
+    final isManualUtxoSelection = _viewModel.isManualUtxoSelectionMode;
+
+    if (!isManualUtxoSelection) {
+      Navigator.pushNamed(
+        context,
+        '/send',
+        arguments: {'walletId': _viewModel.walletId, 'sendEntryPoint': SendEntryPoint.walletDetail},
+      );
+      return;
+    }
+
+    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
+      context: context,
+      minChildSize: 0.6,
+      maxChildSize: 0.9,
+      initialChildSize: 0.9,
+      childBuilder:
+          (scrollController) => UtxoSelectionScreen(
+            selectedUtxoList: const <UtxoState>[],
+            walletId: _viewModel.walletId,
+            currentUnit: context.read<PreferenceProvider>().currentUnit,
+            scrollController: scrollController,
+            showSkipButton: true,
+          ),
+    );
+
+    if (!mounted || result == null) return;
+
     Navigator.pushNamed(
       context,
       '/send',
-      arguments: {'walletId': _viewModel.walletId, 'sendEntryPoint': SendEntryPoint.walletDetail},
+      arguments: {
+        'walletId': _viewModel.walletId,
+        'sendEntryPoint': SendEntryPoint.walletDetail,
+        'selectedUtxoList': List<UtxoState>.from(result),
+      },
     );
   }
 
@@ -468,7 +520,13 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               CoconutToast.showToast(isVisibleIcon: true, context: context, text: message);
             } else {
               vibrateMedium();
-              CoconutToast.showWarningToast(context: context, text: message);
+              CoconutToast.showToast(
+                context: context,
+                isVisibleIcon: true,
+                iconPath: 'assets/svg/triangle-warning.svg',
+                text: message,
+                level: CoconutToastLevel.warning,
+              );
             }
           });
         },

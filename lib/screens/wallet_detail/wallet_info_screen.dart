@@ -24,6 +24,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 
@@ -441,43 +442,40 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     _tooltipTimer?.cancel();
   }
 
-  void _showTargetSettingBottomSheet(
-    BuildContext context,
-    WalletInfoViewModel viewModel,
-  ) {
-    final btcString =
-        viewModel.targetSats != null
-            ? _satsToBtcInputString(viewModel.targetSats!)
-            : '';
+  void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
+    final btcString = viewModel.targetSats != null ? _satsToBtcInputString(viewModel.targetSats!) : '';
+    final parentContext = context;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder:
-          (context) => _TargetQuantitySettingBottomSheet(
+          (bottomSheetContext) => _TargetQuantitySettingBottomSheet(
             initialBtcString: btcString,
             onComplete: (text) {
               final btc = double.tryParse(text);
               if (btc == null || btc <= 0) {
                 if (text.isNotEmpty) {
-                  CoconutToast.showWarningToast(
-                    context: context,
+                  CoconutToast.showToast(
+                    context: parentContext,
+                    isVisibleIcon: true,
+                    iconPath: 'assets/svg/triangle-warning.svg',
                     text: t.wallet_info_screen.target_set_invalid,
+                    level: CoconutToastLevel.warning,
                   );
                 }
                 return false;
               }
               if (btc > 21_000_000) {
-                CoconutToast.showWarningToast(
-                  context: context,
-                  text: t.wallet_info_screen.target_set_max_exceeded,
-                );
+                showToast(
+                  context: parentContext,
+                  text: t.wallet_info_screen.target_set_21m,);
                 return false;
               }
               if (btc == 21_000_000) {
                 CoconutToast.showToast(
-                  context: context,
+                  context: parentContext,
                   text: t.wallet_info_screen.target_set_21m,
                   isVisibleIcon: true,
                   iconPath: 'assets/svg/pie.svg',
@@ -490,9 +488,12 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                 viewModel.setTargetSats(sats);
                 return true;
               }
-              CoconutToast.showWarningToast(
-                context: context,
+              CoconutToast.showToast(
+                context: parentContext,
+                isVisibleIcon: true,
+                iconPath: 'assets/svg/triangle-warning.svg',
                 text: t.wallet_info_screen.target_set_invalid,
+                level: CoconutToastLevel.warning,
               );
               return false;
             },
@@ -753,89 +754,95 @@ class _TargetQuantityCard extends StatelessWidget {
             ? (balanceSats / effectiveTarget).clamp(0.0, 1.0)
             : 0.0;
     final percent = _formatProgressPercent(progress);
+    final isTargetReached = targetSats != null && progress >= 1.0;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color:
-            transparentBackground ? Colors.transparent : CoconutColors.gray800,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                t.wallet_info_screen.target_quantity,
-                style: CoconutTypography.body2_14_Bold.setColor(
-                  CoconutColors.gray500,
-                ),
-              ),
-              const SizedBox(width: 4),
-              SvgPicture.asset(
-                'assets/svg/edit-outlined.svg',
-                width: 12,
-                height: 12,
-                colorFilter: const ColorFilter.mode(
-                  CoconutColors.gray500,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ],
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: transparentBackground ? Colors.transparent : CoconutColors.gray800,
+            borderRadius: BorderRadius.circular(24),
           ),
-          const SizedBox(height: 8),
-          targetSats == null
-              ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
                   Text(
-                    'Stay humble, stack sats!',
-                    style: CoconutTypography.heading4_18_NumberBold.setColor(
-                      CoconutColors.gray500,
-                    ),
+                    t.wallet_info_screen.target_quantity,
+                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    t.wallet_info_screen.target_not_set_secondary,
-                    style: CoconutTypography.body3_12.setColor(
-                      CoconutColors.gray600,
-                    ),
+                  const SizedBox(width: 4),
+                  SvgPicture.asset(
+                    'assets/svg/edit-outlined.svg',
+                    width: 12,
+                    height: 12,
+                    colorFilter: const ColorFilter.mode(CoconutColors.gray500, BlendMode.srcIn),
                   ),
                 ],
-              )
-              : _buildTargetProgressText(
-                percent: percent,
-                amountText: currentUnit.displayBitcoinAmount(
-                  effectiveTarget,
-                  withUnit: false,
-                ),
-                unitSymbol: currentUnit.symbol,
-                isPrefixUnit: currentUnit.isPrefixSymbol,
               ),
-          if (targetSats != null) ...[
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: CoconutColors.white,
-                  inactiveTrackColor: CoconutColors.gray600,
-                  overlayShape: SliderComponentShape.noOverlay,
-                  trackHeight: 6,
-                  thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 0,
+              const SizedBox(height: 8),
+              targetSats == null
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Stay humble, stack sats!',
+                        style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.gray500),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        t.wallet_info_screen.target_not_set_secondary,
+                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray600),
+                      ),
+                    ],
+                  )
+                  : _buildTargetProgressText(
+                    percent: percent,
+                    amountText: currentUnit.displayBitcoinAmount(effectiveTarget, withUnit: false),
+                    unitSymbol: currentUnit.symbol,
+                    isPrefixUnit: currentUnit.isPrefixSymbol,
+                  ),
+              if (targetSats != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: CoconutColors.white,
+                      inactiveTrackColor: CoconutColors.gray600,
+                      overlayShape: SliderComponentShape.noOverlay,
+                      trackHeight: 6,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),
+                    ),
+                    child: IgnorePointer(child: Slider(value: progress, onChanged: (_) {})),
                   ),
                 ),
-                child: IgnorePointer(
-                  child: Slider(value: progress, onChanged: (_) {}),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        ),
+        if (isTargetReached)
+          Positioned(
+            top: -10,
+            right: 10,
+            child: IgnorePointer(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
+                child: Lottie.asset(
+                  'assets/lottie/fireworks.json',
+                  width: 140,
+                  height: 120,
+                  fit: BoxFit.contain,
+                  repeat: true,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-          ],
-        ],
-      ),
+          ),
+      ],
     );
   }
 

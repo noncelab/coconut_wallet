@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
@@ -152,66 +153,76 @@ class WalletProvider extends ChangeNotifier {
     }
   }
 
-  /// case1. 새로운 pubkey인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
-  /// case2. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
-  /// case3. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
-  /// case4. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
-  /// case5. 외부 지갑 형태로 이미 추가된 지갑 ("이미 추가된 지갑입니다. ([지갑 이름])")
+  /// case1. 이미 존재하는 fingerprint이지만 이름/계정/칼라 중 하나라도 변경되었을 경우 ("동기화를 완료했습니다.")
+  /// case2. 이미 존재하고 변화가 없는 경우 ("이미 추가된 지갑입니다.")
+  /// case3. 외부 지갑 형태로 이미 추가된 지갑 ("이미 추가된 지갑입니다. ([지갑 이름])")
+  /// case4. 새로운 pubkey인지 확인 후 지갑으로 추가하기 ("지갑을 추가했습니다.")
+  /// case5. 같은 이름과 MFP를 가졌지만 다른 derivation path의 지갑이 있는 경우 ("다른 계정 번호의 지갑을 추가했습니다.")
+  /// case6. 같은 이름을 가진 다른 지갑이 있는 경우 ("같은 이름을 가진 지갑이 있습니다. 이름을 변경한 후 동기화 해주세요.")
+
   Future<ResultOfSyncFromVault> syncFromCoconutVault(WatchOnlyWallet watchOnlyWallet) async {
-    WalletSyncResult result = WalletSyncResult.newWalletAdded;
     bool isMultisig = watchOnlyWallet.signers != null;
     int index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: isMultisig);
 
+    // Existing wallet (Case 1, 2, 3)
     if (index != -1) {
-      if (_walletItemList[index].walletImportSource != WalletImportSource.coconutVault) {
-        // case 5
+      final existingWallet = _walletItemList[index];
+
+      if (existingWallet.walletImportSource != WalletImportSource.coconutVault) {
         return ResultOfSyncFromVault(
           result: WalletSyncResult.existingWalletUpdateImpossible,
-          walletId: _walletItemList[index].id,
+          walletId: existingWallet.id,
         );
       }
-      // case 3
-      result = WalletSyncResult.existingWalletNoUpdate;
 
-      // case 2: 변경 사항 체크하며 업데이트
-      if (_hasChangedOfUI(_walletItemList[index], watchOnlyWallet)) {
-        _walletRepository.updateWalletUI(_walletItemList[index].id, watchOnlyWallet);
-
-        // 업데이트된 지갑 목록 가져오기
-        _setWalletItemList(await _fetchWalletListFromDB());
-        result = WalletSyncResult.existingWalletUpdated;
-        notifyListeners();
+      if (!_hasChangedOfUI(existingWallet, watchOnlyWallet)) {
+        return ResultOfSyncFromVault(result: WalletSyncResult.existingWalletNoUpdate, walletId: existingWallet.id);
       }
-      return ResultOfSyncFromVault(result: result, walletId: _walletItemList[index].id);
+
+      String? resolvedName = _resolveWalletNameConflict(
+        desiredName: watchOnlyWallet.name,
+        descriptor: watchOnlyWallet.descriptor,
+        isMultisig: isMultisig,
+        excludeWalletId: existingWallet.id,
+      );
+
+      if (resolvedName == null) {
+        return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
+      }
+
+      WatchOnlyWallet walletToUpdate = _copyWithNewName(watchOnlyWallet, resolvedName);
+      _walletRepository.updateWalletUI(existingWallet.id, walletToUpdate);
+
+      _setWalletItemList(await _fetchWalletListFromDB());
+      notifyListeners();
+
+      return ResultOfSyncFromVault(result: WalletSyncResult.existingWalletUpdated, walletId: existingWallet.id);
     }
 
-    // 새 지갑 추가
-    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
-    if (sameNameIndex != -1) {
-      // case 4: 동일 이름 존재
+    // New Wallet (Case 4, 5, 6)
+    String? resolvedName = _resolveWalletNameConflict(
+      desiredName: watchOnlyWallet.name,
+      descriptor: watchOnlyWallet.descriptor,
+      isMultisig: isMultisig,
+    );
+
+    if (resolvedName == null) {
       return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
     }
 
-    // case 1: 새 지갑 생성
+    watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
     var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
 
     Logger.log('--> syncFromCoconutVault:::::: ${_walletItemList.map((e) => e.id).toList()}');
+    _handleNewWalletAdded(newWallet.id);
 
-    if (result == WalletSyncResult.newWalletAdded) {
-      _handleNewWalletAdded(newWallet.id);
-    }
-
-    return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
+    return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: newWallet.id);
   }
 
   /// TODO: 추후 멀티시그지갑 descriptor 추가 가능해 진 후 함수 변경 필요
   Future<ResultOfSyncFromVault> syncFromThirdParty(WatchOnlyWallet watchOnlyWallet) async {
-    final sameNameIndex = _walletItemList.indexWhere((element) => element.name == watchOnlyWallet.name);
-    assert(sameNameIndex == -1);
-
-    WalletSyncResult result = WalletSyncResult.newWalletAdded;
-
-    final index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: false);
+    bool isMultisig = watchOnlyWallet.signers != null;
+    final index = _findSameWalletIndex(watchOnlyWallet.descriptor, isMultisig: isMultisig);
 
     if (index != -1) {
       return ResultOfSyncFromVault(
@@ -219,16 +230,125 @@ class WalletProvider extends ChangeNotifier {
         walletId: _walletItemList[index].id,
       );
     }
-    // case 1: 새 지갑 생성
-    bool isMultisig = watchOnlyWallet.signers != null;
-    var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
 
-    if (result == WalletSyncResult.newWalletAdded) {
-      _handleNewWalletAdded(newWallet.id);
+    // 현재 wallet_add_scanner_view_model에서 getNextThirdPartyWalletName을 통해 중복 이름을 미리 처리해서
+    // _resolveWalletNameConflict가 호출되는 경우가 없음
+    String? resolvedName = _resolveWalletNameConflict(
+      desiredName: watchOnlyWallet.name,
+      descriptor: watchOnlyWallet.descriptor,
+      isMultisig: isMultisig,
+    );
+
+    if (resolvedName == null) {
+      return ResultOfSyncFromVault(result: WalletSyncResult.existingName);
     }
 
-    return ResultOfSyncFromVault(result: result, walletId: newWallet.id);
+    watchOnlyWallet = _copyWithNewName(watchOnlyWallet, resolvedName);
+    var newWallet = await _addNewWallet(watchOnlyWallet, isMultisig);
+    _handleNewWalletAdded(newWallet.id);
+
+    return ResultOfSyncFromVault(result: WalletSyncResult.newWalletAdded, walletId: newWallet.id);
   }
+
+  // MARK: - Name Conflict, MFP verification Helpers
+
+  String? _resolveWalletNameConflict({
+    required String desiredName,
+    required String descriptor,
+    required bool isMultisig,
+    int? excludeWalletId,
+  }) {
+    final conflictWallet = _walletItemList.firstWhereOrNull((w) => w.id != excludeWalletId && w.name == desiredName);
+
+    // No conflict
+    if (conflictWallet == null) return desiredName;
+
+    // Multisig
+    if (isMultisig) return null;
+
+    // Conflict
+    List<String> incomingMfps = _getMfpsFromDescriptor(descriptor, isMultisig);
+    List<String> conflictMfps = _getMfps(conflictWallet);
+    bool isSameMfp = const UnorderedIterableEquality().equals(incomingMfps, conflictMfps);
+
+    if (isSameMfp) {
+      return _generateAccountName(desiredName, descriptor, excludeWalletId: excludeWalletId);
+    }
+
+    // Another device
+    return null;
+  }
+
+  /// Returns a new WatchOnlyWallet with the updated name
+  WatchOnlyWallet _copyWithNewName(WatchOnlyWallet wallet, String newName) {
+    return WatchOnlyWallet(
+      newName,
+      wallet.colorIndex,
+      wallet.iconIndex,
+      wallet.descriptor,
+      wallet.requiredSignatureCount,
+      wallet.signers,
+      wallet.walletImportSource.name,
+    );
+  }
+
+  List<String> _getMfps(WalletListItemBase wallet) {
+    if (wallet is SinglesigWalletListItem) {
+      return [(wallet.walletBase as SingleSignatureWallet).keyStore.masterFingerprint];
+    } else if (wallet is MultisigWalletListItem) {
+      return (wallet.walletBase as MultisignatureWallet).keyStoreList.map((k) => k.masterFingerprint).toList();
+    }
+    return [];
+  }
+
+  List<String> _getMfpsFromDescriptor(String descriptor, bool isMultisig) {
+    if (isMultisig) {
+      return MultisignatureWallet.fromDescriptor(descriptor).keyStoreList.map((k) => k.masterFingerprint).toList();
+    } else {
+      return [SingleSignatureWallet.fromDescriptor(descriptor).keyStore.masterFingerprint];
+    }
+  }
+
+  String _generateAccountName(String baseName, String descriptor, {int? excludeWalletId}) {
+    String? accountNumStr;
+
+    final regExp = RegExp(r'\[[0-9a-fA-F]{8}/([^\]]+)\]');
+    final match = regExp.firstMatch(descriptor);
+
+    if (match != null) {
+      String path = match.group(1)!;
+      if (path.startsWith('m/')) path = path.substring(2);
+      final parts = path.split('/');
+
+      if (parts.length >= 3) {
+        accountNumStr = parts[2].replaceAll(RegExp(r"['hH]"), "");
+      }
+    }
+
+    if (accountNumStr != null) {
+      String newName = "$baseName ${t.account} $accountNumStr";
+      int suffix = 2;
+      String finalName = newName;
+
+      while (_walletItemList.any((w) => w.id != excludeWalletId && w.name == finalName)) {
+        finalName = '$newName ($suffix)';
+        suffix++;
+      }
+      return finalName;
+    }
+
+    int fallbackSuffix = 2;
+    String fallbackName = '$baseName ($fallbackSuffix)';
+
+    while (_walletItemList.any((w) => w.id != excludeWalletId && w.name == fallbackName)) {
+      fallbackSuffix++;
+      fallbackName = '$baseName ($fallbackSuffix)';
+    }
+
+    throw FormatException('파생 경로(Derivation Path)에서 계정 번호를 추출할 수 없습니다. (비표준 규격)\nDescriptor: $descriptor');
+  }
+
+  // -----------------------------------------------------------------------------
 
   Future<WalletListItemBase> _addNewWallet(WatchOnlyWallet wallet, bool isMultisig) async {
     WalletListItemBase newItem;
@@ -318,6 +438,29 @@ class WalletProvider extends ChangeNotifier {
       null,
       walletItemList[index].walletImportSource.name,
     );
+    _walletRepository.updateWalletUI(id, watchOnlyWallet);
+    _setWalletItemList(await _fetchWalletListFromDB());
+
+    notifyListeners();
+  }
+
+  Future<void> updateWalletPalette(int id, int iconIndex, int colorIndex) async {
+    final wallet = getWalletById(id);
+
+    if (wallet is! SinglesigWalletListItem) {
+      throw Exception('해당 지갑은 싱글시그가 아닙니다. 멀티시그의 색상/아이콘은 변경할 수 없습니다.');
+    }
+
+    WatchOnlyWallet watchOnlyWallet = WatchOnlyWallet(
+      wallet.name,
+      colorIndex,
+      iconIndex,
+      wallet.descriptor,
+      null,
+      null,
+      wallet.walletImportSource.name,
+    );
+
     _walletRepository.updateWalletUI(id, watchOnlyWallet);
     _setWalletItemList(await _fetchWalletListFromDB());
 

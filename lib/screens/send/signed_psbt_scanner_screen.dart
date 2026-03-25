@@ -46,7 +46,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
       child: Scaffold(
         backgroundColor: CoconutColors.black,
         appBar: CoconutAppBar.build(
-          title: _viewModel.isSendingDonation ? t.donation.donate : t.signed_psbt_scanner_screen.title,
+          title: t.signed_psbt_scanner_screen.title,
           context: context,
           backgroundColor: CoconutColors.black.withOpacity(0.95),
           actionButtonList: [
@@ -286,28 +286,17 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
   }
 
   Widget _buildToolTip() {
-    // TODO: 코코넛 지갑인 경우 UI는 볼트와 한꺼번에 수정합니다.
-    if (_viewModel.isSendingDonation == true) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 30),
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Text(t.donation.signed_qr_tooltip, style: CoconutTypography.body2_14_Bold),
-        ),
-      );
-    } else {
-      return CoconutToolTip(
-        backgroundColor: CoconutColors.gray900,
-        borderColor: CoconutColors.gray900,
-        icon: SvgPicture.asset(
-          'assets/svg/circle-info.svg',
-          width: 20,
-          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-        ),
-        tooltipType: CoconutTooltipType.fixed,
-        richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
-      );
-    }
+    return CoconutToolTip(
+      backgroundColor: CoconutColors.gray900,
+      borderColor: CoconutColors.gray900,
+      icon: SvgPicture.asset(
+        'assets/svg/circle-info.svg',
+        width: 20,
+        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+      ),
+      tooltipType: CoconutTooltipType.fixed,
+      richText: RichText(text: TextSpan(style: CoconutTypography.body2_14, children: _getGuideTextSpan())),
+    );
   }
 
   List<TextSpan> _getGuideTextSpan() {

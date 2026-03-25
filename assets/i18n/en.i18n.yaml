@@ -57,7 +57,7 @@ utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
 tag_manage: "Tag Management"
 tag_manage_label: "Tag Management"
-extended_public_key: "ExPub Key"
+extended_public_key: "Extended Public Key"
 tx_memo: "Tx Memo"
 tx_id: "Tx ID"
 block_num: "Block Number"
@@ -101,6 +101,8 @@ electrum_server: "Electrum Server"
 block_explorer: "Block Explorer"
 log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
+name: "Name"
+account: "Account"
 
 relative_time:
   just_now: "Just now"
@@ -138,48 +140,6 @@ faucet_failed: "Request failed. Please try again later."
 bio_auth_required: "Biometric auth required"
 can_use_after_add_wallet: "Can use it after adding the wallet."
 
-donation:
-  coconut: "Coconut Donation"
-  donate: "Donate"
-  supportImpactMessage: "Thanks to your support, we can bring the freedom of money to more people."
-  encourageSupportMessage: "Help us keep Coconut running with your support."
-  coffee: "☕️ A Cup of Coffee"
-  late_meal: "🍜️ Late-night Meal"
-  maintenance: "⚒️️ Maintenance Costs"
-  support_heart: "🩷 A Heartfelt Support"
-  onchain: "On-chain Donation"
-  lightning: "Lightning Donation"
-  under_dust_error: "Please enter an amount greater than ${dust} (dust).\n"
-  over_donation_max_value_error: "You can donate up to a maximum of $value sats.\n"
-  donation_wallet: "Donation Wallet"
-  total_donation_amount: "Total Donation Amount"
-  donation_address: "Donation Address"
-  empty_enough_balance_wallet: "No wallet with sufficient balance."
-  unsigned_qr_tooltip: "Scan the QR code to sign."
-  signed_qr_tooltip: "Scan the signed transaction."
-  user_messages: [
-    "With love",
-    "With heartfelt support",
-    "Cheering you on",
-    "To keep you grinding",
-    "Stay strong",
-    "With gratitude",
-    "Because you’re proud of us",
-  ]
-  user_messages_description_1: "To the Coconut Dev Team"
-  user_messages_description_2: "${amount} sats"
-  donate_confirm: "Confirm Donation"
-  complete:
-    thank_you: "Thank You!"
-    description: "Your donation is more than just Bitcoin.\nIt keeps Coconut moving toward better wallets\nand wider adoption."
-
-  # Donation - Lightning
-  donation_amount: "Donation Amount"
-  ln_invoice: "Lightning Invoice"
-  ln_address: "Lightning Address"
-  ln_address_pow: "powbitcoiner@speed.app"
-  ln_invoice_api_error: "Failed to generate Lightning invoice."
-
 utility:
   p2p_calculator:
     calculator: "Calculator"
@@ -188,14 +148,19 @@ utility:
     binance_price: "Binance Price"
     bitflyer_price: "Bitflyer Price"
     offline_price_unavailable: "Price unavailable"
-    fee: "Fee"
+    premium: "Premium"
     transaction_bill: "Transaction Bill"
     reference_price: "Reference Price"
     reference_datetime: "Reference Datetime"
-    transaction_fee: "Transaction Fee"
+    transaction_premium: "Transaction Premium"
     copy_all: "Copy All"
     share: "Share"
-    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionFeeRate, transactionFee, feeToSats): "[Transaction Bill]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nReference Price: $currencySymbol $referencePrice / BTC\nReference Datetime: $referenceTime\nTransaction Fee: $transactionFeeRate / $currencySymbol $transactionFee ($feeToSats sats)"
+    send: "Send"
+    no_wallet: "No wallet"
+    no_wallet_description: "You need to add a wallet before sending Bitcoin.\nPlease add a wallet and try again."
+    add_wallet: "Add Wallet"
+    copy_format(currency, currencyAmount, btcUnit, btcAmount, currencySymbol, referencePrice, referenceTime, transactionPremiumRate, transactionPremium, premiumToSats): "[Transaction Bill]\n\n$currency: $currencyAmount\n$btcUnit: $btcAmount\n──────────────\nReference Price: $currencySymbol $referencePrice / BTC\nReference Datetime: $referenceTime\nTransaction Premium: $transactionPremiumRate / $currencySymbol $transactionPremium ($premiumToSats sats)"
+    enter_amount_first: "Please enter the amount first"
     
 transaction_draft:
   title: "Temporary Transaction"
@@ -477,6 +442,7 @@ send_screen:
 
 utxo_selection_screen:
   title: "Select UTXOs"
+  skip: "skip"
 
 select_wallet_with_options_bottom_sheet:
   select_utxo: "Select UTXOs"
@@ -596,6 +562,8 @@ settings_screen:
   change_password: "Change Password"
   fiat: "Fiat"
   language: "Language"
+  utxo_manual_selection: "UTXO Manual Selection"
+  utxo_manual_selection_description: "Select UTXOs manually for sending"
   utxo_tier_theme: "Coin Color"
   electrum_server: 
     server_address: "Server Address"
@@ -702,8 +670,14 @@ utxo_detail_screen:
   address: "Holding Address"
   utxo_locked: "Locked"
   utxo_unlocked: "Spendable"
-  utxo_locked_toast_msg: "UTXO lock complete! This coin will no longer be used automatically."
-  utxo_unlocked_toast_msg: "UTXO unlock complete! Coin has been switched to available status."
+  utxo_locked_toast_msg: "Locked! This coin won't be used automatically."
+  utxo_unlocked_toast_msg: "Unlocked! This coin is now available to spend."
+  utxo_already_locked: "Already locked."
+  utxo_already_unlocked: "Already spendable."
+  utxo_all_already_locked: "All UTXOs are already locked."
+  utxo_all_already_unlocked: "All UTXOs are already spendable."
+  utxo_locked_count_toast_msg: "$count UTXOs have been locked."
+  utxo_unlocked_count_toast_msg: "$count UTXOs have been unlocked."
 
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"
@@ -719,7 +693,6 @@ wallet_info_screen:
   target_set_placeholder: "Please enter in BTC unit"
   target_set_invalid: "You can’t set 0 BTC as a target"
   target_set_21m: "It’s the sats race!!!"
-  target_set_max_exceeded: "Please enter 21 million BTC or less"
   view_xpub: "View Extended Public Key"
   duplicated_name: "Name already in use"
   view_descriptor: "View Descriptor"

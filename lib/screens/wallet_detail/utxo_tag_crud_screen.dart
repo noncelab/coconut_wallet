@@ -126,7 +126,13 @@ class UtxoTagCrudScreen extends StatelessWidget {
             if (model.deleteUtxoTag()) {
               Navigator.of(context).pop();
             } else {
-              CoconutToast.showWarningToast(context: context, text: t.toast.tag_delete_failed);
+              CoconutToast.showToast(
+                context: context,
+                isVisibleIcon: true,
+                iconPath: 'assets/svg/triangle-warning.svg',
+                text: t.toast.tag_delete_failed,
+                level: CoconutToastLevel.warning,
+              );
             }
           },
           onTapLeft: () {
@@ -152,7 +158,13 @@ class UtxoTagCrudScreen extends StatelessWidget {
             updateUtxoTag: model.selectedUtxoTag,
             onTagCreated: (tag) {
               if (!model.updateUtxoTag(tag)) {
-                CoconutToast.showWarningToast(context: context, text: t.toast.tag_update_failed);
+                CoconutToast.showToast(
+                  context: context,
+                  isVisibleIcon: true,
+                  iconPath: 'assets/svg/triangle-warning.svg',
+                  text: t.toast.tag_update_failed,
+                  level: CoconutToastLevel.warning,
+                );
               }
             },
           ),
@@ -173,7 +185,13 @@ class UtxoTagCrudScreen extends StatelessWidget {
               if (model.selectedUtxoTag == null) {
                 final newTag = tag;
                 if (!model.addUtxoTag(newTag)) {
-                  CoconutToast.showWarningToast(context: context, text: t.toast.tag_add_failed);
+                  CoconutToast.showToast(
+                    context: context,
+                    isVisibleIcon: true,
+                    iconPath: 'assets/svg/triangle-warning.svg',
+                    text: t.toast.tag_add_failed,
+                    level: CoconutToastLevel.warning,
+                  );
                 }
                 return;
               }

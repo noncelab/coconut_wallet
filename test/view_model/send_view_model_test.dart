@@ -73,7 +73,6 @@ void main() {
       FakePreferenceProvider(),
       FakeTransactionDraftRepository(),
       FakeUtxoRepository(),
-      FakeWalletPreferencesRepository(),
       true,
       (_) {},
       (_) {},
@@ -81,6 +80,7 @@ void main() {
       null,
       SendEntryPoint.home,
       null,
+      [],
     );
   }
 

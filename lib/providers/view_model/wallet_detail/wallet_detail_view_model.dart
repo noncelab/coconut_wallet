@@ -10,6 +10,7 @@ import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/services/model/error/default_error_response.dart';
@@ -32,6 +33,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectProvider;
   final PriceProvider _priceProvider;
   final SendInfoProvider _sendInfoProvider;
+  final PreferenceProvider _preferenceProvider;
   final SharedPrefsRepository _sharedPrefs = SharedPrefsRepository();
   late final Stream<WalletUpdateInfo> _syncWalletStateStream;
   late final Stream<NodeSyncState> _nodeSyncStateStream;
@@ -51,6 +53,10 @@ class WalletDetailViewModel extends ChangeNotifier {
   String _walletName = '';
 
   bool _isRequesting = false;
+
+  bool _isManualUtxoSelectionMode = false;
+  bool get isManualUtxoSelectionMode => _isManualUtxoSelectionMode;
+
   // 상태 변화 확인용
   late WalletUpdateInfo _prevWalletUpdateInfo;
 
@@ -88,6 +94,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     this._connectProvider,
     this._priceProvider,
     this._sendInfoProvider,
+    this._preferenceProvider,
     NodeProvider nodeProvider,
   ) : _syncWalletStateStream = nodeProvider.getWalletStateStream(_walletId),
       _nodeSyncStateStream = nodeProvider.syncStateStream {
@@ -104,6 +111,7 @@ class WalletDetailViewModel extends ChangeNotifier {
     _nodeSyncState = NodeSyncState.syncing;
     _isWalletSyncing = !_allElementUpdateCompleted(_prevWalletUpdateInfo);
     _balance = _getBalance();
+    _isManualUtxoSelectionMode = _preferenceProvider.isManualUtxoSelectionMode;
 
     // WalletProvider 변경 감지 리스너
     _walletProvider.addListener(_onWalletProviderChanged);
@@ -118,13 +126,14 @@ class WalletDetailViewModel extends ChangeNotifier {
     _prevBalance = balance;
     // debugPrint('prev :: $_prevBalance');
 
-    // Faucet
     _setReceiveAddress();
     _walletName = walletBaseItem.name.length > 10 ? '${walletBaseItem.name.substring(0, 7)}...' : walletBaseItem.name;
-    _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
-    _checkFaucetRecord();
-
-    showFaucetTooltip();
+    // Faucet
+    if (NetworkType.currentNetworkType.isTestnet) {
+      _faucetRecord = _sharedPrefs.getFaucetHistoryWithId(_walletId);
+      _checkFaucetRecord();
+      showFaucetTooltip();
+    }
   }
 
   void _setReceiveAddress() {
