@@ -56,10 +56,25 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
     if (initialAmountSats == null) return '';
 
     if (widget.currentUnit.isBtcUnit) {
-      return UnitUtil.convertSatoshiToBitcoinString(initialAmountSats);
+      return _formatInitialBtcAmountText(initialAmountSats);
     }
 
     return initialAmountSats.toThousandsSeparatedString();
+  }
+
+  String _formatInitialBtcAmountText(int amountSats) {
+    final rawBtcText = UnitUtil.convertSatoshiToBitcoinString(amountSats);
+    final normalizedBtcText = rawBtcText.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+
+    final parts = normalizedBtcText.split('.');
+    final integerPart = parts[0].isEmpty ? '0' : parts[0];
+    final formattedIntegerPart = int.parse(integerPart).toThousandsSeparatedString();
+
+    if (parts.length == 1) {
+      return formattedIntegerPart;
+    }
+
+    return '$formattedIntegerPart.${parts[1]}';
   }
 
   @override
