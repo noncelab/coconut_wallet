@@ -1,13 +1,22 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
 import 'package:coconut_wallet/widgets/animated_bottom_action_overlay.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -62,7 +71,10 @@ class QrWithCopyTextScreen extends StatefulWidget {
 
 class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   final GlobalKey _pulldownKey = GlobalKey();
+  final GlobalKey _qrCaptureKey = GlobalKey();
+  final GlobalKey _shareButtonKey = GlobalKey();
   bool _isPulldownOpen = false;
+  int? _enteredReceiveAmountSats;
 
   String _selectedKey = "";
 
@@ -108,13 +120,23 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   }
 
   String get _currentQrData {
-    if (!widget.showPulldownMenu || widget.qrDataMap == null) {
-      return widget.qrData;
+    final baseQrData =
+        (!widget.showPulldownMenu || widget.qrDataMap == null)
+            ? widget.qrData
+            : widget.qrDataMap![_selectedKey] ?? widget.qrData;
+
+    if (!widget.isAddress || _enteredReceiveAmountSats == null) {
+      return baseQrData;
     }
-    return widget.qrDataMap![_selectedKey] ?? widget.qrData;
+
+    return buildBip21Uri(extractAddressFromBip21(baseQrData), amount: _enteredReceiveAmountSats);
   }
 
   String get _currentTextData {
+    if (widget.isAddress && _enteredReceiveAmountSats != null) {
+      return _currentQrData;
+    }
+
     if (!widget.showPulldownMenu) {
       return widget.qrData;
     }
@@ -216,6 +238,49 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         child: EnterInputAndShareBottomActionOverlay(
           scrollController: widget.scrollController,
           showBottomActions: widget.showBottomActions,
+          shareButtonKey: _shareButtonKey,
+          onEnterAmountTap: () async {
+            final sats = await ReceiveAmountBottomSheet.show(
+              context: context,
+              currentUnit: currentUnit,
+              initialAmountSats: _enteredReceiveAmountSats,
+            );
+            if (!mounted || sats == null || sats == _enteredReceiveAmountSats) return;
+            setState(() {
+              _enteredReceiveAmountSats = sats;
+            });
+          },
+          onShareTap: () async {
+            try {
+              final RenderRepaintBoundary boundary =
+                  _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+              final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+              final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+              final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+              final directory = await getTemporaryDirectory();
+              final file = File('${directory.path}/share_qr_address.png');
+              await file.writeAsBytes(pngBytes);
+
+              // 버튼 위치 계산
+              final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+              final Rect sharePositionOrigin =
+                  box != null
+                      ? box.localToGlobal(Offset.zero) & box.size
+                      : const Rect.fromLTWH(0, 400, 300, 50); // fallback
+
+              AppGuard.disablePrivacyScreen();
+              await SharePlus.instance.share(
+                ShareParams(files: [XFile(file.path)], text: displayTextData, sharePositionOrigin: sharePositionOrigin),
+              );
+            } catch (e, stack) {
+              debugPrint('Failed to capture and share: $e');
+              debugPrint('Stack: $stack');
+            } finally {
+              AppGuard.enablePrivacyScreen();
+            }
+          },
           child: Column(
             children: [
               if (widget.tooltipDescription != null) ...[
@@ -254,7 +319,10 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     child: Container(
                       width: qrWidth,
                       decoration: CoconutBoxDecoration.shadowBoxDecoration,
-                      child: AdaptiveQrImage(qrData: displayQrData, embedImage: _qrEmbedImage, showFrame: false),
+                      child: RepaintBoundary(
+                        key: _qrCaptureKey,
+                        child: AdaptiveQrImage(qrData: displayQrData, embedImage: _qrEmbedImage, showFrame: false),
+                      ),
                     ),
                   ),
                   CoconutLayout.spacing_500h,
@@ -263,7 +331,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
               ),
             ],
           ),
-          onEnterAmountTap: () => ReceiveAmountBottomSheet.show(context: context, currentUnit: currentUnit),
         ),
       ),
     );

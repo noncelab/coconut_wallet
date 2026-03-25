@@ -8,18 +8,20 @@ class EnterInputAndShareBottomActionOverlay extends StatefulWidget {
   const EnterInputAndShareBottomActionOverlay({
     super.key,
     required this.child,
+    required this.onEnterAmountTap,
+    required this.onShareTap,
+    this.shareButtonKey,
     this.scrollController,
     this.showBottomActions = true,
-    this.onEnterAmountTap,
-    this.onShareTap,
     this.bottomButtonPadding = const EdgeInsets.only(left: 16, right: 16, bottom: 120, top: 40),
   });
 
   final Widget child;
+  final VoidCallback onEnterAmountTap;
+  final VoidCallback onShareTap;
+  final GlobalKey? shareButtonKey;
   final ScrollController? scrollController;
   final bool showBottomActions;
-  final VoidCallback? onEnterAmountTap;
-  final VoidCallback? onShareTap;
   final EdgeInsets bottomButtonPadding;
 
   @override
@@ -172,7 +174,7 @@ class _EnterInputAndShareBottomActionOverlayState extends State<EnterInputAndSha
                                 child: CoconutUnderlinedButton(
                                   text: t.address_list_screen.set_amount,
                                   textStyle: CoconutTypography.body3_12,
-                                  onTap: widget.onEnterAmountTap ?? () {},
+                                  onTap: widget.onEnterAmountTap,
                                 ),
                               ),
                             ),
@@ -186,7 +188,8 @@ class _EnterInputAndShareBottomActionOverlayState extends State<EnterInputAndSha
                                 duration: const Duration(milliseconds: 280),
                                 curve: Curves.easeOutCubic,
                                 child: ShrinkAnimationButton(
-                                  onPressed: widget.onShareTap ?? () {},
+                                  key: widget.shareButtonKey,
+                                  onPressed: widget.onShareTap,
                                   borderRadius: 8,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),

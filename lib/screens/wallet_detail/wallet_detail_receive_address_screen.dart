@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
@@ -14,7 +18,10 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ReceiveAddressScreen extends StatefulWidget {
   final int id;
@@ -29,6 +36,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   WalletListItemBase? _selectedWalletItem;
   WalletAddress? _receiveAddress;
   int? _enteredReceiveAmountSats;
+  final GlobalKey _qrCaptureKey = GlobalKey();
+  final GlobalKey _shareButtonKey = GlobalKey();
 
   ImageProvider get _qrEmbedImage {
     final path =
@@ -109,6 +118,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
           _selectedWalletItem != null
               ? SafeArea(
                 child: EnterInputAndShareBottomActionOverlay(
+                  shareButtonKey: _shareButtonKey,
                   onEnterAmountTap: () async {
                     final currentUnit = context.read<PreferenceProvider>().currentUnit;
                     final sats = await ReceiveAmountBottomSheet.show(
@@ -121,11 +131,43 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                       _enteredReceiveAmountSats = sats;
                     });
                   },
+                  onShareTap: () async {
+                    try {
+                      final RenderRepaintBoundary boundary =
+                          _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+                      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+                      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+                      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+                      final directory = await getTemporaryDirectory();
+                      final file = File('${directory.path}/share_qr_address.png');
+                      await file.writeAsBytes(pngBytes);
+
+                      // 버튼 위치 계산
+                      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+                      final Rect sharePositionOrigin =
+                          box != null
+                              ? box.localToGlobal(Offset.zero) & box.size
+                              : const Rect.fromLTWH(0, 400, 300, 50); // fallback
+
+                      AppGuard.disablePrivacyScreen();
+                      await SharePlus.instance.share(
+                        ShareParams(files: [XFile(file.path)], text: qrData, sharePositionOrigin: sharePositionOrigin),
+                      );
+                    } catch (e, stack) {
+                      debugPrint('Failed to capture and share: $e');
+                      debugPrint('Stack: $stack');
+                    } finally {
+                      AppGuard.enablePrivacyScreen();
+                    }
+                  },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                     child: Column(
                       children: [
                         QrCodeInfo(
+                          qrCaptureKey: _qrCaptureKey,
                           qrcodeTopWidget: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Row(
