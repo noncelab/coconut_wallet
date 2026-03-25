@@ -3,7 +3,6 @@ class DotenvKeys {
   static const String mempoolApi = 'MEMPOOL_API';
   static const String apiHost = 'API_HOST';
   static const String networkType = 'NETWORK_TYPE';
-  static const String donationAddress = 'DONATION_ADDRESS';
 
   // Firebase
   static const String firebaseApiKeyAndroid = 'FIREBASE_API_KEY_ANDROID';

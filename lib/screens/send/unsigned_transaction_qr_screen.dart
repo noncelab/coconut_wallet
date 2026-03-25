@@ -27,7 +27,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   late final String _psbtBase64;
   late final bool _isMultisig;
   late final WalletImportSource _walletImportSource;
-  late bool? _isDonation;
 
   @override
   void initState() {
@@ -36,7 +35,6 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
     _psbtBase64 = _sendInfoProvider.txWaitingForSign!;
     _isMultisig = _sendInfoProvider.isMultisig!;
     _walletImportSource = _sendInfoProvider.walletImportSource!;
-    _isDonation = _sendInfoProvider.isDonation;
     _viewModel = UnsignedTransactionQrViewModel()..initializeBbqr(_psbtBase64, _walletImportSource);
   }
 
@@ -56,7 +54,7 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
           return Scaffold(
             floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
             backgroundColor: CoconutColors.black,
-            appBar: CoconutAppBar.build(title: (_isDonation ?? false) ? t.donation.donate : t.send, context: context),
+            appBar: CoconutAppBar.build(title: t.send, context: context),
             body: SafeArea(
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -185,26 +183,19 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   Widget _buildToolTip() {
-    if (_sendInfoProvider.isDonation == true) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 24),
-        child: Center(child: Text(t.donation.unsigned_qr_tooltip, style: CoconutTypography.body2_14_Bold)),
-      );
-    } else {
-      return CoconutToolTip(
-        backgroundColor: CoconutColors.gray900,
-        borderColor: CoconutColors.gray900,
-        icon: SvgPicture.asset(
-          'assets/svg/circle-info.svg',
-          width: 20,
-          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-        ),
-        tooltipType: CoconutTooltipType.fixed,
-        richText: RichText(
-          text: TextSpan(style: CoconutTypography.body2_14.copyWith(height: 1.3), children: _getGuideTextSpan()),
-        ),
-      );
-    }
+    return CoconutToolTip(
+      backgroundColor: CoconutColors.gray900,
+      borderColor: CoconutColors.gray900,
+      icon: SvgPicture.asset(
+        'assets/svg/circle-info.svg',
+        width: 20,
+        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+      ),
+      tooltipType: CoconutTooltipType.fixed,
+      richText: RichText(
+        text: TextSpan(style: CoconutTypography.body2_14.copyWith(height: 1.3), children: _getGuideTextSpan()),
+      ),
+    );
   }
 
   List<TextSpan> _getGuideTextSpan() {

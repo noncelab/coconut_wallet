@@ -1,26 +1,18 @@
-import 'dart:collection';
-
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
-import 'package:coconut_wallet/utils/balance_format_util.dart';
 
 enum SendEntryPoint { home, walletDetail }
 
 class SendInfoProvider {
   int? _walletId;
-  String? _recipientAddress;
-  double? _amount;
   int? _estimatedFee;
   bool? _isMaxMode;
   bool? _isMultisig;
-  bool? _isDonation;
   SendEntryPoint? _sendEntryPoint;
   Transaction? _transaction;
   String? _txWaitingForSign;
   String? _signedResult; // Base64 OR RawHexString
-  // batch tx (주소, 수량)
-  Map<String, double>? _recipientsForBatch;
   // null인 경우 RBF 또는 CPFP가 아닙니다.
   FeeBumpingType? _feeBumpingType;
   WalletImportSource? _walletImportSource;
@@ -28,18 +20,13 @@ class SendInfoProvider {
   double? _feeRate;
 
   int? get walletId => _walletId;
-  String? get recipientAddress => _recipientAddress;
-  double? get amount => _amount;
   int? get estimatedFee => _estimatedFee;
   bool? get isMaxMode => _isMaxMode;
   bool? get isMultisig => _isMultisig;
-  bool? get isDonation => _isDonation;
   SendEntryPoint? get sendEntryPoint => _sendEntryPoint;
   Transaction? get transaction => _transaction;
   String? get txWaitingForSign => _txWaitingForSign;
   String? get signedResult => _signedResult; // Base64 OR RawHexString
-  Map<String, double>? get recipientsForBatch =>
-      _recipientsForBatch == null ? null : UnmodifiableMapView(_recipientsForBatch!);
   FeeBumpingType? get feeBumpingType => _feeBumpingType;
   WalletImportSource? get walletImportSource => _walletImportSource;
   int? get unsignedDraftId => _unsignedDraftId;
@@ -55,14 +42,6 @@ class SendInfoProvider {
 
   void setWalletId(int id) {
     _walletId = id;
-  }
-
-  void setRecipientAddress(String? address) {
-    _recipientAddress = address;
-  }
-
-  void setAmount(double? amount) {
-    _amount = amount;
   }
 
   void setEstimatedFee(int fee) {
@@ -89,10 +68,6 @@ class SendInfoProvider {
     _signedResult = signedPsbtBase64Encoded;
   }
 
-  void setRecipientsForBatch(Map<String, double>? recipients) {
-    _recipientsForBatch = recipients;
-  }
-
   void setFeeBumpfingType(FeeBumpingType? feeBumpingType) {
     _feeBumpingType = feeBumpingType;
   }
@@ -101,39 +76,35 @@ class SendInfoProvider {
     _walletImportSource = walletImportSource;
   }
 
-  void setIsDonation(bool isDonation) {
-    _isDonation = isDonation;
-  }
-
   void setSendEntryPoint(SendEntryPoint sendEntryPoint) {
     _sendEntryPoint = sendEntryPoint;
   }
 
   void clear() {
     _walletId =
-        _recipientAddress =
-            _amount =
-                _estimatedFee =
-                    _isMaxMode =
-                        _isMultisig =
-                            _transaction =
-                                _txWaitingForSign =
-                                    _signedResult =
-                                        _isDonation =
-                                            _sendEntryPoint =
-                                                _recipientsForBatch =
-                                                    _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
+        _estimatedFee =
+            _isMaxMode =
+                _isMultisig =
+                    _transaction =
+                        _txWaitingForSign =
+                            _signedResult =
+                                _sendEntryPoint = _feeBumpingType = _walletImportSource = _unsignedDraftId = null;
   }
 
   Map<String, int>? getRecipientMap() {
-    if (_recipientsForBatch == null && _recipientAddress == null) {
+    if (_transaction == null) {
       return null;
     }
 
-    if (_recipientsForBatch != null) {
-      return _recipientsForBatch!.map((key, value) => MapEntry(key, UnitUtil.convertBitcoinToSatoshi(value)));
+    final Map<String, int> recipientMap = {};
+
+    for (final output in _transaction!.outputs) {
+      if (output.isChangeOutput == true) continue;
+
+      final address = output.getAddress();
+      recipientMap.update(address, (amount) => amount + output.amount, ifAbsent: () => output.amount);
     }
 
-    return {_recipientAddress!: UnitUtil.convertBitcoinToSatoshi(_amount!)};
+    return recipientMap;
   }
 }

@@ -1039,19 +1039,6 @@ class SendViewModel extends ChangeNotifier {
               .roundTo8Digits();
     }
 
-    // 이전에 사용한 정보 초기화
-    _sendInfoProvider.setRecipientsForBatch(null);
-    _sendInfoProvider.setRecipientAddress(null);
-    _sendInfoProvider.setAmount(null);
-
-    if (isBatchMode) {
-      _sendInfoProvider.setRecipientsForBatch(recipientMapInBtc);
-    } else {
-      final firstEntry = recipientMapInBtc.entries.first;
-      _sendInfoProvider.setRecipientAddress(firstEntry.key);
-      _sendInfoProvider.setAmount(firstEntry.value);
-    }
-
     _sendInfoProvider.setTransaction(_txBuildResult!.transaction!);
     _sendInfoProvider.setIsMultisig(_selectedWalletItem!.walletType == WalletType.multiSignature);
     _sendInfoProvider.setWalletImportSource(_selectedWalletItem!.walletImportSource);
