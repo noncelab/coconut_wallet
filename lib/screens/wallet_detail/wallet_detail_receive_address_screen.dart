@@ -24,6 +24,7 @@ class ReceiveAddressScreen extends StatefulWidget {
 class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   WalletListItemBase? _selectedWalletItem;
   WalletAddress? _receiveAddress;
+  late int _walletCount;
 
   String get derivationPath {
     if (_receiveAddress == null) return "";
@@ -51,6 +52,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     final walletProvider = context.read<WalletProvider>();
     _selectedWalletItem = walletProvider.walletItemList.where((e) => e.id == widget.id).first;
     _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
+    _walletCount = walletProvider.walletItemList.length;
   }
 
   @override
@@ -71,8 +73,10 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(_selectedWalletItem?.name ?? t.send_screen.select_wallet, style: CoconutTypography.body1_16),
-                CoconutLayout.spacing_50w,
-                const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
+                if (_walletCount > 1) ...[
+                  CoconutLayout.spacing_50w,
+                  const Icon(Icons.keyboard_arrow_down_sharp, color: CoconutColors.white, size: 16),
+                ],
               ],
             ),
           ],
@@ -80,7 +84,9 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
         onTitlePressed: _onAppBarTitlePressed,
         context: context,
         isBottom: true,
-        actionButtonList: [const SizedBox(width: 24, height: 24)],
+        actionButtonList: [
+          _walletCount > 1 ? const SizedBox(width: 24, height: 24) : const SizedBox(width: 48, height: 48),
+        ],
         onBackPressed: () {
           Navigator.of(context).pop();
         },
@@ -156,6 +162,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   }
 
   void _onAppBarTitlePressed() {
+    if (_walletCount <= 1) return;
+
     AppGuard.enablePrivacyScreen();
     CommonBottomSheets.showDraggableBottomSheet(
       context: context,

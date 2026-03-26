@@ -23,6 +23,7 @@ class CopyTextContainer extends StatefulWidget {
   final RichText? textRichText;
   final bool showButton;
   final bool isAddress;
+  final EdgeInsets? padding;
 
   const CopyTextContainer({
     super.key,
@@ -37,6 +38,7 @@ class CopyTextContainer extends StatefulWidget {
     this.textRichText,
     this.showButton = true,
     this.isAddress = false,
+    this.padding,
   });
 
   static const MethodChannel _channel = MethodChannel(methodChannelOS);
@@ -108,7 +110,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       },
       child: Container(
         width: MediaQuery.sizeOf(context).width,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
           color: CoconutColors.gray850,
