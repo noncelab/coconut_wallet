@@ -178,6 +178,7 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
             backgroundColor: CoconutColors.white,
             isVisibleAboveKeyboard: false,
             isActive: _amountInSats != null,
+            bottomPadding: 0,
             onButtonClicked: () {
               final amountInSats = _amountInSats;
               if (amountInSats == null) return;
