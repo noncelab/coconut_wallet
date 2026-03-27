@@ -164,6 +164,7 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
             child: CoconutTextField(
               controller: _amountController,
               focusNode: _amountFocusNode,
+              padding: const EdgeInsets.all(16),
               onChanged: (value) {},
               textInputType:
                   widget.currentUnit.isBtcUnit
