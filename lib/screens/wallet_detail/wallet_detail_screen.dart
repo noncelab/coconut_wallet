@@ -96,7 +96,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         },
                       ),
                     ),
-                    _buildLoadingWidget(),
                     _buildTxListLabel(),
                     TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
 
@@ -194,61 +193,57 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     );
   }
 
-  Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
-    return Selector<WalletDetailViewModel, bool>(
-      selector: (_, viewModel) => viewModel.isWalletSyncing,
-      builder: (_, isWalletSyncing, __) {
-        return SliverToBoxAdapter(
-          child: SizedBox(
-            height: 32,
-            child:
-                isWalletSyncing
-                    ? Padding(
-                      padding: const EdgeInsets.only(right: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            t.status_updating,
-                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.primary),
-                          ),
-                          CoconutLayout.spacing_100w,
-                          LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
-                        ],
-                      ),
-                    )
-                    : null,
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
-      child: Selector<WalletDetailViewModel, int>(
-        selector: (_, viewModel) => viewModel.txList.length,
-        builder: (_, txCount, __) {
+      child: Selector<WalletDetailViewModel, Tuple2<int, bool>>(
+        selector: (_, viewModel) => Tuple2(viewModel.txList.length, viewModel.isWalletSyncing),
+        builder: (_, data, __) {
+          final txCount = data.item1;
+          final isWalletSyncing = data.item2;
+
           return Padding(
             key: _txListLabelWidgetKey,
             padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(t.tx_list, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+            child: SizedBox(
+              height: 32,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              t.tx_list,
+                              style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                            ),
+                          ),
+                        ),
+                        CoconutLayout.spacing_100w,
+                        if (txCount > 0)
+                          Text(
+                            t.total_item_count(count: txCount),
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                CoconutLayout.spacing_100w,
-                if (txCount > 0)
-                  Text(
-                    t.total_item_count(count: txCount),
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                  ),
-              ],
+
+                  if (isWalletSyncing)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(t.status_updating, style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.primary)),
+                        CoconutLayout.spacing_100w,
+                        LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
+                      ],
+                    ),
+                ],
+              ),
             ),
           );
         },
