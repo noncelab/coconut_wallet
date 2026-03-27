@@ -22,6 +22,7 @@ class ReceiveAmountBottomSheet extends StatefulWidget {
       context: context,
       isCloseButton: true,
       showDragHandle: true,
+      titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: ReceiveAmountBottomSheet(currentUnit: currentUnit, initialAmountSats: initialAmountSats),
     );
   }

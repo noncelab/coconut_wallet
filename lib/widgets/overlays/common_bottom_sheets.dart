@@ -57,14 +57,10 @@ class CommonBottomSheets {
                                 Navigator.pop(context);
                               }
                               : null,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        color: Colors.transparent,
-                        child:
-                            isCloseButton
-                                ? const Icon(Icons.close_rounded, size: 20, color: CoconutColors.white)
-                                : Container(width: 20),
-                      ),
+                      child:
+                          isCloseButton
+                              ? const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white)
+                              : Container(width: 20),
                     ),
                     Text(
                       title,
