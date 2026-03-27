@@ -620,7 +620,7 @@ address_list_screen:
   receiving: "입금"
   change: "잔돈"
   show_only_unused_address: "사용 전 주소만 보기"
-  set_amount: "금액 입력"
+  set_amount: "금액 입력하기"
   share: "공유하기"
   enter_receive_amount: "받을 금액을 입력해 주세요"
 utxo_overview_screen:
