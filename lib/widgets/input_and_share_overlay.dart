@@ -197,6 +197,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
                                   key: widget.shareButtonKey,
                                   onPressed: widget.onShareTap,
                                   borderRadius: 8,
+                                  pressedColor: CoconutColors.gray850,
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
                                     child: Row(
@@ -205,7 +206,10 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
                                       children: [
                                         SvgPicture.asset('assets/svg/export.svg'),
                                         CoconutLayout.spacing_100w,
-                                        Text(t.address_list_screen.share, style: CoconutTypography.body3_12),
+                                        Text(
+                                          t.address_list_screen.share,
+                                          style: CoconutTypography.body3_12.copyWith(height: 1.0),
+                                        ),
                                       ],
                                     ),
                                   ),
