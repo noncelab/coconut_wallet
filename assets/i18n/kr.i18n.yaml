@@ -913,6 +913,8 @@ toast:
   tag_update_failed: "태그를 편집할 수 없어요."
   tag_delete_failed: "태그를 삭제할 수 없어요."
   wallet_detail_refresh: "화면을 아래로 당겨 최신 데이터를 가져와 주세요."
+  merge_utxos_unavailable_description: "여러 개의 UTXO가 있을 때 합치기를 사용할 수 있어요"
+  split_utxo_unavailable_description: "나눌 UTXO가 없어요"
 
 alert:
   error_tx:

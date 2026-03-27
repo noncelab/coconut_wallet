@@ -16,9 +16,11 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_list_view_model.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_detail_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
 import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -484,52 +486,82 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   Widget _buildbottomActionBar() {
-    return BottomActionBarSlide(
-      isVisible: true,
-      child: BottomActionBar(
-        padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 32.0, top: 16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Expanded(
-              child: BottomActionButton(
-                iconPath: 'assets/svg/merge-utxos.svg',
-                label: t.merge_utxos,
-                onTap: () => {},
-                buttonLayout: BottomActionButtonLayout.vertical,
-                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
-              ),
+    return Selector<WalletDetailViewModel, int>(
+      selector: (_, viewModel) => viewModel.utxoCount,
+      builder: (_, utxoCount, __) {
+        final bool canMerge = utxoCount > 1;
+        final bool canSplit = utxoCount > 0;
+
+        return BottomActionBarSlide(
+          isVisible: true,
+          child: BottomActionBar(
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 32.0, top: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Expanded(
+                  child: BottomActionButton(
+                    iconPath: 'assets/svg/merge-utxos.svg',
+                    label: t.merge_utxos,
+                    onTap:
+                        canMerge
+                            ? () {}
+                            : () {
+                              CoconutToast.showToast(
+                                context: context,
+                                isVisibleIcon: true,
+                                iconPath: 'assets/svg/circle-info.svg',
+                                text: t.toast.merge_utxos_unavailable_description,
+                                level: CoconutToastLevel.info,
+                              );
+                            },
+                    buttonLayout: BottomActionButtonLayout.vertical,
+                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  ),
+                ),
+                Expanded(
+                  child: BottomActionButton(
+                    iconPath: 'assets/svg/split-utxo.svg',
+                    label: t.split_utxo,
+                    onTap:
+                        canSplit
+                            ? () {}
+                            : () {
+                              CoconutToast.showToast(
+                                context: context,
+                                isVisibleIcon: true,
+                                iconPath: 'assets/svg/circle-info.svg',
+                                text: t.toast.split_utxo_unavailable_description,
+                                level: CoconutToastLevel.info,
+                              );
+                            },
+                    buttonLayout: BottomActionButtonLayout.vertical,
+                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  ),
+                ),
+                Expanded(
+                  child: BottomActionButton(
+                    iconPath: 'assets/svg/receive-plane.svg',
+                    label: t.receive,
+                    onTap: _onTapReceive,
+                    buttonLayout: BottomActionButtonLayout.vertical,
+                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  ),
+                ),
+                Expanded(
+                  child: BottomActionButton(
+                    iconPath: 'assets/svg/send-plane.svg',
+                    label: t.send,
+                    onTap: _onTapSend,
+                    buttonLayout: BottomActionButtonLayout.vertical,
+                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  ),
+                ),
+              ],
             ),
-            Expanded(
-              child: BottomActionButton(
-                iconPath: 'assets/svg/split-utxo.svg',
-                label: t.split_utxo,
-                onTap: () => {},
-                buttonLayout: BottomActionButtonLayout.vertical,
-                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
-              ),
-            ),
-            Expanded(
-              child: BottomActionButton(
-                iconPath: 'assets/svg/receive-plane.svg',
-                label: t.receive,
-                onTap: _onTapReceive,
-                buttonLayout: BottomActionButtonLayout.vertical,
-                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
-              ),
-            ),
-            Expanded(
-              child: BottomActionButton(
-                iconPath: 'assets/svg/send-plane.svg',
-                label: t.send,
-                onTap: _onTapSend,
-                buttonLayout: BottomActionButtonLayout.vertical,
-                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

@@ -909,6 +909,8 @@ toast:
   tag_update_failed: "Cannot edit tag."
   tag_delete_failed: "Cannot delete tag."
   wallet_detail_refresh: "Pull down the screen to get the latest data."
+  merge_utxos_unavailable_description: "Merge is available when you have multiple UTXOs."
+  split_utxo_unavailable_description: "There are no UTXOs to split."
 
 alert:
   error_tx:
