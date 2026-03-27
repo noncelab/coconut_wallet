@@ -92,8 +92,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                             sendingAmount: data.item3,
                             receivingAmount: data.item4,
                             onPressedUnitToggle: _toggleUnit,
-                            onTapReceive: _onTapReceive,
-                            onTapSend: _onTapSend,
                           );
                         },
                       ),
@@ -189,14 +187,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               isVisible: isVisible,
               currentUnit: _currentUnit,
               animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
-              onTapReceive: () {
-                _viewModel.removeFaucetTooltip();
-                _onTapReceive();
-              },
-              onTapSend: () {
-                _viewModel.removeFaucetTooltip();
-                _onTapSend();
-              },
             );
           },
         );
