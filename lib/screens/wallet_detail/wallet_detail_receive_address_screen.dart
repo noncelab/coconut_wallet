@@ -12,7 +12,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/widgets/animated_bottom_action_overlay.dart';
+import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
@@ -123,7 +123,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
       body:
           _selectedWalletItem != null
               ? SafeArea(
-                child: EnterInputAndShareBottomActionOverlay(
+                child: InputAndShareOverlay(
                   shareButtonKey: _shareButtonKey,
                   onEnterAmountTap: () async {
                     final currentUnit = context.read<PreferenceProvider>().currentUnit;

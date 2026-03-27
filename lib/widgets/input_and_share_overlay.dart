@@ -4,8 +4,14 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-class EnterInputAndShareBottomActionOverlay extends StatefulWidget {
-  const EnterInputAndShareBottomActionOverlay({
+/// 스크롤 가능한 본문 위에 하단 액션 버튼을 오버레이로 띄워주는 위젯입니다.
+///
+/// 본문은 스크롤 뷰 안에 배치하고, 하단의 "금액 입력" / "공유" 버튼은
+/// 화면 아래에 고정된 오버레이로 fade / slide 애니메이션과 함께 노출합니다.
+/// 또한 오버레이가 본문을 가리지 않도록, 실제 오버레이 높이를 측정한 뒤
+/// 스크롤 영역 하단에 같은 높이만큼 공간을 확보합니다.
+class InputAndShareOverlay extends StatefulWidget {
+  const InputAndShareOverlay({
     super.key,
     required this.child,
     required this.onEnterAmountTap,
@@ -25,10 +31,10 @@ class EnterInputAndShareBottomActionOverlay extends StatefulWidget {
   final EdgeInsets bottomButtonPadding;
 
   @override
-  State<EnterInputAndShareBottomActionOverlay> createState() => _EnterInputAndShareBottomActionOverlayState();
+  State<InputAndShareOverlay> createState() => _InputAndShareOverlayState();
 }
 
-class _EnterInputAndShareBottomActionOverlayState extends State<EnterInputAndShareBottomActionOverlay> {
+class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
   final GlobalKey _bottomOverlayKey = GlobalKey();
   bool _showBottomOverlayGradient = false;
   bool _showEnterAmountButton = false;
@@ -44,7 +50,7 @@ class _EnterInputAndShareBottomActionOverlayState extends State<EnterInputAndSha
   }
 
   @override
-  void didUpdateWidget(covariant EnterInputAndShareBottomActionOverlay oldWidget) {
+  void didUpdateWidget(covariant InputAndShareOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.showBottomActions && widget.showBottomActions) {
       _startBottomOverlayAnimation();
@@ -147,9 +153,9 @@ class _EnterInputAndShareBottomActionOverlayState extends State<EnterInputAndSha
                                 CoconutColors.black.withValues(alpha: 0.1),
                                 CoconutColors.black.withValues(alpha: 0.4),
                                 CoconutColors.black.withValues(alpha: 0.7),
-                                CoconutColors.black,
+                                CoconutColors.black.withValues(alpha: 0.9),
                               ],
-                              stops: const [0.0, 0.03, 0.07, 0.15, 0.23],
+                              stops: const [0.0, 0.1, 0.2, 0.5, 0.9],
                             ),
                           ),
                         ),

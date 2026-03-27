@@ -9,7 +9,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
-import 'package:coconut_wallet/widgets/animated_bottom_action_overlay.dart';
+import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
@@ -237,7 +237,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         actionButtonList: widget.actionButton != null ? [widget.actionButton!] : [],
       ),
       body: SafeArea(
-        child: EnterInputAndShareBottomActionOverlay(
+        child: InputAndShareOverlay(
           scrollController: widget.scrollController,
           showBottomActions: widget.showBottomActions,
           shareButtonKey: _shareButtonKey,
