@@ -23,6 +23,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
+import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -100,6 +101,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                     _buildLoadingWidget(),
                     _buildTxListLabel(),
                     TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
+
+                    const SliverToBoxAdapter(child: SizedBox(height: 75)),
                   ],
                 ),
               ),
@@ -110,6 +113,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   return _buildFaucetTooltip(isFaucetTooltipVisible);
                 },
               ),
+              _buildbottomActionBar(),
             ],
           ),
         ),
@@ -491,6 +495,56 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       iconPosition: _faucetIconPosition,
       iconSize: _faucetIconSize,
       onTapRemove: _viewModel.removeFaucetTooltip,
+    );
+  }
+
+  Widget _buildbottomActionBar() {
+    return BottomActionBarSlide(
+      isVisible: true,
+      child: BottomActionBar(
+        padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 32.0, top: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Expanded(
+              child: BottomActionButton(
+                iconPath: 'assets/svg/merge-utxos.svg',
+                label: t.merge_utxos,
+                onTap: () => {},
+                buttonLayout: BottomActionButtonLayout.vertical,
+                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+              ),
+            ),
+            Expanded(
+              child: BottomActionButton(
+                iconPath: 'assets/svg/split-utxo.svg',
+                label: t.split_utxo,
+                onTap: () => {},
+                buttonLayout: BottomActionButtonLayout.vertical,
+                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+              ),
+            ),
+            Expanded(
+              child: BottomActionButton(
+                iconPath: 'assets/svg/receive-plane.svg',
+                label: t.receive,
+                onTap: _onTapReceive,
+                buttonLayout: BottomActionButtonLayout.vertical,
+                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+              ),
+            ),
+            Expanded(
+              child: BottomActionButton(
+                iconPath: 'assets/svg/send-plane.svg',
+                label: t.send,
+                onTap: _onTapSend,
+                buttonLayout: BottomActionButtonLayout.vertical,
+                textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

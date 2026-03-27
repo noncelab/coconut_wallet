@@ -310,9 +310,12 @@ flutter:
     - assets/svg/search-not-found.svg
     - assets/svg/remove-minus.svg
     - assets/svg/send-plane.svg
+    - assets/svg/receive-plane.svg
     - assets/svg/bitcoin.svg
     - assets/svg/wallet-outlined.svg
     - assets/svg/pie.svg
+    - assets/svg/merge-utxos.svg
+    - assets/svg/split-utxo.svg
 
   fonts:
     - family: SpaceGrotesk
