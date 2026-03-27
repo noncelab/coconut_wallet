@@ -34,18 +34,21 @@ class InputAndShareOverlay extends StatefulWidget {
   State<InputAndShareOverlay> createState() => _InputAndShareOverlayState();
 }
 
-class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
+class _InputAndShareOverlayState extends State<InputAndShareOverlay> with WidgetsBindingObserver {
   final GlobalKey _bottomOverlayKey = GlobalKey();
   bool _showBottomOverlayGradient = false;
   bool _showEnterAmountButton = false;
   bool _showShareButton = false;
   double _bottomOverlayReservedHeight = 0;
+  bool _isHeightMeasurementScheduled = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.showBottomActions) {
       _startBottomOverlayAnimation();
+      _scheduleBottomOverlayHeightMeasurement();
     }
   }
 
@@ -54,6 +57,7 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.showBottomActions && widget.showBottomActions) {
       _startBottomOverlayAnimation();
+      _scheduleBottomOverlayHeightMeasurement();
     }
     if (oldWidget.showBottomActions && !widget.showBottomActions && _bottomOverlayReservedHeight != 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -68,10 +72,18 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
     }
   }
 
-  void _updateBottomOverlayHeight() {
-    if (!widget.showBottomActions) return;
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    _scheduleBottomOverlayHeightMeasurement();
+  }
 
+  void _scheduleBottomOverlayHeightMeasurement() {
+    if (!widget.showBottomActions || _isHeightMeasurementScheduled) return;
+
+    _isHeightMeasurementScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isHeightMeasurementScheduled = false;
       if (!mounted) return;
       final context = _bottomOverlayKey.currentContext;
       if (context == null) return;
@@ -109,8 +121,6 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    _updateBottomOverlayHeight();
-
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
@@ -227,5 +237,11 @@ class _InputAndShareOverlayState extends State<InputAndShareOverlay> {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 }
