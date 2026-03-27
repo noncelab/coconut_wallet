@@ -127,14 +127,14 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                   shareButtonKey: _shareButtonKey,
                   onEnterAmountTap: () async {
                     final currentUnit = context.read<PreferenceProvider>().currentUnit;
-                    final sats = await ReceiveAmountBottomSheet.show(
+                    final result = await ReceiveAmountBottomSheet.show(
                       context: context,
                       currentUnit: currentUnit,
                       initialAmountSats: _enteredReceiveAmountSats,
                     );
-                    if (!mounted || sats == null || sats == _enteredReceiveAmountSats) return;
+                    if (!mounted || result == null || !result.didEdit) return;
                     setState(() {
-                      _enteredReceiveAmountSats = sats;
+                      _enteredReceiveAmountSats = result.amountInSats;
                     });
                   },
                   onShareTap: () async {

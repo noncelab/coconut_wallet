@@ -10,14 +10,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 
+class ReceiveAmountBottomSheetResult {
+  final bool didEdit;
+  final int? amountInSats;
+
+  const ReceiveAmountBottomSheetResult({required this.didEdit, required this.amountInSats});
+}
+
 class ReceiveAmountBottomSheet extends StatefulWidget {
   const ReceiveAmountBottomSheet({super.key, required this.currentUnit, this.initialAmountSats});
 
   final BitcoinUnit currentUnit;
   final int? initialAmountSats;
 
-  static Future<int?> show({required BuildContext context, required BitcoinUnit currentUnit, int? initialAmountSats}) {
-    return CommonBottomSheets.showBottomSheet<int>(
+  static Future<ReceiveAmountBottomSheetResult?> show({
+    required BuildContext context,
+    required BitcoinUnit currentUnit,
+    int? initialAmountSats,
+  }) {
+    return CommonBottomSheets.showBottomSheet<ReceiveAmountBottomSheetResult>(
       title: t.address_list_screen.set_amount,
       context: context,
       isCloseButton: true,
@@ -34,6 +45,7 @@ class ReceiveAmountBottomSheet extends StatefulWidget {
 class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
   final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
+  late final String _initialAmountText;
 
   int? get _amountInSats {
     final rawText = _amountController.text.trim().replaceAll(',', '');
@@ -44,10 +56,13 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
     return widget.currentUnit.toSatoshi(amount);
   }
 
+  bool get _didEditAmount => _amountController.text != _initialAmountText;
+
   @override
   void initState() {
     super.initState();
-    _amountController.text = _buildInitialAmountText();
+    _initialAmountText = _buildInitialAmountText();
+    _amountController.text = _initialAmountText;
     _amountController.addListener(_onFieldChanged);
     _amountFocusNode.addListener(_onFieldChanged);
   }
@@ -179,12 +194,11 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
           FixedBottomButton(
             backgroundColor: CoconutColors.white,
             isVisibleAboveKeyboard: false,
-            isActive: _amountInSats != null,
+            isActive: _didEditAmount,
             bottomPadding: 0,
             onButtonClicked: () {
-              final amountInSats = _amountInSats;
-              if (amountInSats == null) return;
-              Navigator.pop(context, amountInSats);
+              if (!_didEditAmount) return;
+              Navigator.pop(context, ReceiveAmountBottomSheetResult(didEdit: true, amountInSats: _amountInSats));
             },
             text: t.complete,
           ),

@@ -3,22 +3,17 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app_guard.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/widgets/adaptive_qr_image.dart';
 import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
-import 'package:coconut_wallet/widgets/button/copy_text_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:coconut_wallet/widgets/qrcode_info.dart';
-import 'package:flutter/material.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -108,19 +103,6 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   int get _selectedIndex => _optionKeys.indexOf(_selectedKey);
 
   String get _displayTitle => _displayNames[_selectedKey] ?? _selectedKey;
-
-  ImageProvider? get _qrEmbedImage {
-    if (!widget.showQrEmbedImage) return null;
-    final path =
-        NetworkType.currentNetworkType == NetworkType.regtest
-            ? 'assets/images/splash_logo_regtest.png'
-            : 'assets/images/splash_logo_mainnet.png';
-    return AssetImage(path);
-  }
-
-  double _calcQrWidth(BuildContext context) {
-    return MediaQuery.of(context).size.width * 0.76;
-  }
 
   String get _currentQrData {
     final baseQrData =
@@ -242,14 +224,14 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
           showBottomActions: widget.showBottomActions,
           shareButtonKey: _shareButtonKey,
           onEnterAmountTap: () async {
-            final sats = await ReceiveAmountBottomSheet.show(
+            final result = await ReceiveAmountBottomSheet.show(
               context: context,
               currentUnit: currentUnit,
               initialAmountSats: _enteredReceiveAmountSats,
             );
-            if (!mounted || sats == null || sats == _enteredReceiveAmountSats) return;
+            if (!mounted || result == null || !result.didEdit) return;
             setState(() {
-              _enteredReceiveAmountSats = sats;
+              _enteredReceiveAmountSats = result.amountInSats;
             });
           },
           onShareTap: () async {
