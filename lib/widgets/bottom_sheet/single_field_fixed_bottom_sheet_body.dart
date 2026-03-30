@@ -42,8 +42,8 @@ class SingleFieldFixedBottomSheetBody extends StatelessWidget {
             backgroundColor: CoconutColors.white,
             isVisibleAboveKeyboard: false,
             isActive: isCompleteEnabled,
-            showGradient: false,
-            bottomPadding: 0,
+            showGradient: true,
+            bottomPadding: FixedBottomButton.fixedBottomButtonDefaultBottomPadding,
             onButtonClicked: () {
               if (!isCompleteEnabled) return;
               onComplete();
