@@ -421,6 +421,7 @@ send_screen:
   fee_subtracted_from_send_amount_disabled_description: "受取人は入力された正確な金額を受け取ります"
   fee_subtracted_from_send_amount_enabled_description: "手数料は受取人の金額から差し引かれます"
   my_address: "自分のアドレス"
+  current_wallet_label: "現在"
   add_recipient: "受取人追加"
   use_btc_unit: "BTC単位を使用"
   input_maximum_amount: "すべて送信"

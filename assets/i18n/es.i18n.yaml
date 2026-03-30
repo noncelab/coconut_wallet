@@ -423,6 +423,7 @@ send_screen:
   fee_subtracted_from_send_amount_disabled_description: "El destinatario recibe el monto exacto ingresado" 
   fee_subtracted_from_send_amount_enabled_description: "La comisión se restará del monto del destinatario"  
   my_address: "Mis direcciones"
+  current_wallet_label: "Actual"
   add_recipient: "Agregar destinatario"  
   use_btc_unit: "Usar unidad BTC"
   input_maximum_amount: "Enviar todo"
