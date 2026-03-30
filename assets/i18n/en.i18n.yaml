@@ -599,6 +599,7 @@ settings_screen:
     log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
     log_target: "[Logging Target]"
     log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
+    log_target_description_2: "Logs the cause of broadcast failure stages."
     clear_log: "Clear Log"
     clear_log_description: "Are you sure to clear log?"
     email_subject: "[Coconut Wallet] Debug Log"

@@ -602,6 +602,7 @@ settings_screen:
     log_description_2: "La información compartida solo se usará para la resolución de problemas y se descartará inmediatamente después de resolver el problema."
     log_target: "[Objetivo de registro]"
     log_target_description_1: "Para la verificación de síntomas y resolución de problemas, estamos registrando información cuando agregamos la billetera Keystone 3 Pro. Algunos dispositivos pueden enfrentar problemas, por lo que el registro está en progreso para verificar esto."  
+    log_target_description_2: "Registra la causa de las fases de error en el broadcast."
     clear_log: "Limpiar registro"
     clear_log_description: "¿Estás seguro de querer limpiar el registro?"
     email_subject: "[Coconut Wallet] Registro de depuración"

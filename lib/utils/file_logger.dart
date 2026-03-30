@@ -12,6 +12,14 @@ class FileLogger {
   static bool _isWriting = false;
   static Timer? _flushTimer;
 
+  /// 트랜잭션 브로드캐스트 실패 진단용
+  static void logBroadcast(String message) {
+    if (_logFile == null) return;
+    final timestamp = _getSimpleTimestamp();
+    _logQueue.add('[$timestamp] BROADCAST $message');
+    _flushQueue();
+  }
+
   static Future<void> initialize() async {
     try {
       final directory = await getApplicationDocumentsDirectory();

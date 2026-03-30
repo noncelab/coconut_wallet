@@ -14,6 +14,7 @@ import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/model/node/spawn_isolate_dto.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
@@ -348,6 +349,31 @@ class IsolateManager {
     }
   }
 
+  /// Isolate 명령 실패 로그
+  void _logCommandFailure(IsolateControllerCommand command, String failureStage, [Object? detail]) {
+    if (detail != null) {
+      Logger.error('IsolateManager: command=${command.name} failureStage=$failureStage detail=$detail');
+    } else {
+      Logger.error('IsolateManager: command=${command.name} failureStage=$failureStage');
+    }
+    // [FileLogger]에 브로드캐스트 실패 로그 추가
+    if (command == IsolateControllerCommand.broadcast) {
+      _logBroadcastFailureToFile(failureStage, detail);
+    }
+  }
+
+  void _logBroadcastFailureToFile(String failureStage, Object? detail) {
+    if (detail == null) {
+      FileLogger.logBroadcast('isolate failureStage=$failureStage');
+      return;
+    }
+    if (detail is AppError) {
+      FileLogger.logBroadcast('isolate failureStage=$failureStage code=${detail.code}');
+      return;
+    }
+    FileLogger.logBroadcast('isolate failureStage=$failureStage type=${detail.runtimeType}');
+  }
+
   /// 간단한 작업의 경우 소켓 상태를 먼저 확인하고 작업을 수행합니다.
   Future<Result<T>> _sendWithSocketCheck<T>(
     IsolateControllerCommand messageType,
@@ -360,14 +386,21 @@ class IsolateManager {
 
         final socketStatus = await getSocketConnectionStatus();
         if (socketStatus.isFailure || socketStatus.value == SocketConnectionStatus.terminated) {
-          Logger.error('IsolateManager: Socket connection terminated, aborting fast command: $messageType');
+          _logCommandFailure(
+            messageType,
+            'socket_terminated_before_command',
+            socketStatus.isFailure ? socketStatus.error : 'status=${socketStatus.value}',
+          );
           return Result.failure(ErrorCodes.nodeConnectionError);
         }
       }
 
       return await _send<T>(messageType, params, commandTimeoutOverride: timeout);
     } catch (e) {
-      Logger.error('IsolateManager: Error in _sendWithSocketCheck: $e');
+      _logCommandFailure(messageType, 'sendWithSocketCheck_outer_catch', e);
+      if (e is AppError) {
+        return Result.failure(e);
+      }
       return Result.failure(ErrorCodes.nodeUnknown);
     }
   }
@@ -387,12 +420,14 @@ class IsolateManager {
             onTimeout: () => throw TimeoutException('Isolate not ready', initTimeout),
           );
         } else if (!isInitialized) {
+          _logCommandFailure(messageType, 'isolate_not_initialized_no_pending_init');
           throw ErrorCodes.nodeIsolateError;
         }
       }
 
       // 여전히 초기화되지 않았으면 에러 발생
       if (!isInitialized) {
+        _logCommandFailure(messageType, 'isolate_not_initialized_after_wait');
         throw ErrorCodes.nodeIsolateError;
       }
 
@@ -421,6 +456,7 @@ class IsolateManager {
             if (isSocketConnectionStatusMessage) {
               return Result.success(SocketConnectionStatus.terminated);
             }
+            _logCommandFailure(messageType, 'isolate_response_timeout', '${timeLimit.inMilliseconds}ms');
             return Result<T>.failure(ErrorCodes.nodeIsolateError);
           },
         );
@@ -431,16 +467,26 @@ class IsolateManager {
       }
 
       if (result is Exception) {
-        Logger.error('IsolateManager: Received Exception from isolate ($messageType): $result');
+        _logCommandFailure(messageType, 'isolate_payload_was_exception', result);
         return Result<T>.failure(ErrorCodes.nodeUnknown);
       }
 
       if (result.isFailure) {
+        _logCommandFailure(messageType, 'isolate_response_failure', result.error);
         return Result<T>.failure(result.error);
       }
       return result as Result<T>;
     } catch (e) {
-      Logger.error('IsolateManager: Error in _send ($messageType): $e');
+      String stage = 'send_outer_catch';
+      if (e is TimeoutException) {
+        stage = 'isolate_ready_wait_timeout';
+      } else if (e is AppError) {
+        stage = 'thrown_app_error_${e.code}';
+      }
+      _logCommandFailure(messageType, stage, e);
+      if (e is AppError) {
+        return Result.failure(e);
+      }
       if (e is TimeoutException) {
         return Result<T>.failure(ErrorCodes.nodeIsolateError);
       }
