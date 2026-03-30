@@ -320,7 +320,7 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                               children: [Text(term, style: Styles.h3), Text('${details['en']}', style: Styles.label)],
                             ),
                           ),
-                          //
+
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
