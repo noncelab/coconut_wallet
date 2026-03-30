@@ -298,6 +298,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                 child: QrCodeInfo(
+                  qrCaptureKey: _qrCaptureKey,
                   qrcodeTopWidget: widget.qrcodeTopWidget,
                   qrData: displayQrData,
                   displayText: displayTextData,
