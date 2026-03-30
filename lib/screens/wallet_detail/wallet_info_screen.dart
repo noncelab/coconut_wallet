@@ -9,7 +9,9 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
+import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_mfp_input_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/button_group.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:coconut_wallet/widgets/card/multisig_signer_card.dart';
@@ -379,52 +381,75 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     final btcString = viewModel.targetSats != null ? _satsToBtcInputString(viewModel.targetSats!) : '';
     final parentContext = context;
 
-    showModalBottomSheet(
+    SingleTextFieldBottomSheet.show(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (bottomSheetContext) => _TargetQuantitySettingBottomSheet(
-            initialBtcString: btcString,
-            onComplete: (text) {
-              final btc = double.tryParse(text);
-              if (btc == null || btc <= 0) {
-                if (text.isNotEmpty) {
-                  CoconutToast.showToast(
-                    context: parentContext,
-                    isVisibleIcon: true,
-                    iconPath: 'assets/svg/triangle-warning.svg',
-                    text: t.wallet_info_screen.target_set_invalid,
-                    level: CoconutToastLevel.warning,
-                  );
-                }
-                return false;
-              }
-              if (btc == 21_000_000) {
-                CoconutToast.showToast(
-                  context: parentContext,
-                  text: t.wallet_info_screen.target_set_21m,
-                  isVisibleIcon: true,
-                  iconPath: 'assets/svg/pie.svg',
-                  iconSize: 16,
-                  iconRightPadding: 8,
-                );
-              }
-              final sats = UnitUtil.convertBitcoinToSatoshi(btc);
-              if (sats > 0) {
-                viewModel.setTargetSats(sats);
-                return true;
-              }
-              CoconutToast.showToast(
-                context: parentContext,
-                isVisibleIcon: true,
-                iconPath: 'assets/svg/triangle-warning.svg',
-                text: t.wallet_info_screen.target_set_invalid,
-                level: CoconutToastLevel.warning,
-              );
-              return false;
-            },
-          ),
+      title: t.wallet_info_screen.target_set_title,
+      originalText: btcString,
+      completeButtonText: t.done,
+      placeholder: t.wallet_info_screen.target_set_placeholder,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      visibleTextLimit: false,
+      maxLength: 17,
+      collapsedHeight: 300,
+      textInputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+        _SingleDotInputFormatter(),
+        const BtcAmountInputFormatter(),
+      ],
+      completeEnabledWhen: (current, original) {
+        final currentText = current.trim();
+        return currentText.isNotEmpty && currentText != original.trim();
+      },
+      focusOnlyWhenOriginalNotEmpty: true,
+      fieldBackgroundColor: CoconutColors.white.withValues(alpha: 0.15),
+      errorColor: CoconutColors.hotPink,
+      placeholderColor: CoconutColors.gray700,
+      activeColor: CoconutColors.white,
+      cursorColor: CoconutColors.white,
+      suffix: Text(
+        BitcoinUnit.btc.symbol,
+        style: CoconutTypography.body2_14_Bold,
+      ),
+      onComplete: (text) {
+        final btc = double.tryParse(text.replaceAll(',', ''));
+        if (btc == null || btc <= 0) {
+          if (text.isNotEmpty) {
+            CoconutToast.showToast(
+              context: parentContext,
+              isVisibleIcon: true,
+              iconPath: 'assets/svg/triangle-warning.svg',
+              text: t.wallet_info_screen.target_set_invalid,
+              level: CoconutToastLevel.warning,
+            );
+          }
+          return;
+        }
+        if (btc == 21_000_000) {
+          vibrateMedium();
+          CoconutToast.showToast(
+            context: parentContext,
+            text: t.wallet_info_screen.target_set_21m,
+            isVisibleIcon: true,
+            iconPath: 'assets/svg/pie.svg',
+            iconSize: 16,
+            iconRightPadding: 8,
+          );
+        }
+
+        final sats = UnitUtil.convertBitcoinToSatoshi(btc);
+        if (sats > 0) {
+          viewModel.setTargetSats(sats);
+          return;
+        }
+
+        CoconutToast.showToast(
+          context: parentContext,
+          isVisibleIcon: true,
+          iconPath: 'assets/svg/triangle-warning.svg',
+          text: t.wallet_info_screen.target_set_invalid,
+          level: CoconutToastLevel.warning,
+        );
+      },
     );
   }
 
@@ -777,107 +802,6 @@ class _TargetQuantityCard extends StatelessWidget {
     }
 
     return count;
-  }
-}
-
-class _TargetQuantitySettingBottomSheet extends StatefulWidget {
-  final String initialBtcString;
-  final bool Function(String text) onComplete;
-
-  const _TargetQuantitySettingBottomSheet({required this.initialBtcString, required this.onComplete});
-
-  @override
-  State<_TargetQuantitySettingBottomSheet> createState() => _TargetQuantitySettingBottomSheetState();
-}
-
-class _TargetQuantitySettingBottomSheetState extends State<_TargetQuantitySettingBottomSheet> {
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(() => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _controller.text = widget.initialBtcString;
-      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
-      if (widget.initialBtcString.trim().isNotEmpty) {
-        _focusNode.requestFocus();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  bool get _isValueChanged {
-    final text = _controller.text.trim();
-    return text.isNotEmpty && text != widget.initialBtcString.trim();
-  }
-
-  void _handleComplete() {
-    FocusScope.of(context).unfocus();
-    final text = _controller.text.trim();
-    if (text.isNotEmpty) {
-      widget.onComplete(text);
-    }
-    Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: CoconutBottomSheet(
-        useIntrinsicHeight: true,
-        appBar: CoconutAppBar.buildWithNext(
-          title: t.wallet_info_screen.target_set_title,
-          context: context,
-          onBackPressed: () => Navigator.pop(context),
-          onNextPressed: _handleComplete,
-          nextButtonTitle: t.done,
-          isBottom: true,
-          isActive: _isValueChanged,
-        ),
-        body: _buildBody(context),
-      ),
-    );
-  }
-
-  Widget _buildBody(BuildContext context) {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 16, right: 16, top: 30),
-            child: CoconutTextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              onChanged: (_) => setState(() {}),
-              textInputType: const TextInputType.numberWithOptions(decimal: true),
-              textInputFormatter: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                _SingleDotInputFormatter(),
-                const BtcAmountInputFormatter(),
-              ],
-              placeholderText: t.wallet_info_screen.target_set_placeholder,
-              backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
-              errorColor: CoconutColors.hotPink,
-              placeholderColor: CoconutColors.gray700,
-              activeColor: CoconutColors.white,
-              cursorColor: CoconutColors.white,
-              maxLength: 17,
-              isLengthVisible: false,
-              maxLines: 1,
-            ),
-          ),
-        );
-      },
-    );
   }
 }
 
