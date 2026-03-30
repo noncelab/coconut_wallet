@@ -40,7 +40,7 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
         children: [
           CoconutLayout.spacing_800h,
           _buildBalanceInfo(),
-          CoconutLayout.spacing_200h,
+          CoconutLayout.spacing_500h,
           _buildPendingAmountStatus(),
         ],
       ),
