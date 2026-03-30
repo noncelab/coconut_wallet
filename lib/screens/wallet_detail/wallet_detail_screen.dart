@@ -498,43 +498,50 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: BottomActionButton(
-                    iconPath: 'assets/svg/merge-utxos.svg',
-                    label: t.merge_utxos,
-                    onTap:
-                        canMerge
-                            ? () {}
-                            : () {
-                              CoconutToast.showToast(
-                                context: context,
-                                isVisibleIcon: true,
-                                iconPath: 'assets/svg/circle-info.svg',
-                                text: t.toast.merge_utxos_unavailable_description,
-                                level: CoconutToastLevel.info,
-                              );
-                            },
-                    buttonLayout: BottomActionButtonLayout.vertical,
-                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  child: Opacity(
+                    opacity: canMerge ? 1.0 : 0.3,
+                    child: BottomActionButton(
+                      iconPath: 'assets/svg/merge-utxos.svg',
+                      label: t.merge_utxos,
+                      onTap:
+                          canMerge
+                              ? () {
+                              }
+                              : () {
+                                CoconutToast.showToast(
+                                  context: context,
+                                  isVisibleIcon: true,
+                                  iconPath: 'assets/svg/circle-info.svg',
+                                  text: t.toast.merge_utxos_unavailable_description,
+                                  level: CoconutToastLevel.info,
+                                );
+                              },
+                      buttonLayout: BottomActionButtonLayout.vertical,
+                      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: BottomActionButton(
-                    iconPath: 'assets/svg/split-utxo.svg',
-                    label: t.split_utxo,
-                    onTap:
-                        canSplit
-                            ? () {}
-                            : () {
-                              CoconutToast.showToast(
-                                context: context,
-                                isVisibleIcon: true,
-                                iconPath: 'assets/svg/circle-info.svg',
-                                text: t.toast.split_utxo_unavailable_description,
-                                level: CoconutToastLevel.info,
-                              );
-                            },
-                    buttonLayout: BottomActionButtonLayout.vertical,
-                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  child: Opacity(
+                    opacity: canSplit ? 1.0 : 0.3,
+                    child: BottomActionButton(
+                      iconPath: 'assets/svg/split-utxo.svg',
+                      label: t.split_utxo,
+                      onTap:
+                          canSplit
+                              ? () {}
+                              : () {
+                                CoconutToast.showToast(
+                                  context: context,
+                                  isVisibleIcon: true,
+                                  iconPath: 'assets/svg/circle-info.svg',
+                                  text: t.toast.split_utxo_unavailable_description,
+                                  level: CoconutToastLevel.info,
+                                );
+                              },
+                      buttonLayout: BottomActionButtonLayout.vertical,
+                      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                    ),
                   ),
                 ),
                 Expanded(
