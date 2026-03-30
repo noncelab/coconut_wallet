@@ -617,6 +617,10 @@ address_list_screen:
   receiving: "受信"
   change: "おつり"
   show_only_unused_address: "未使用アドレスのみ表示"
+  set_amount: "金額設定"
+  share: "共有する"
+  enter_receive_amount: "受け取る金額を入力"
+  
 utxo_overview_screen:
   by_amount: "金額別"
   by_tag: "タグ別"

@@ -620,6 +620,9 @@ address_list_screen:
   receiving: "Recibiendo"
   change: "Cambio"
   show_only_unused_address: "Mostrar solo direcciones sin usar"
+  set_amount: "establecer importe"
+  share: "compartir"
+  enter_receive_amount: "Ingrese la cantidad que debe recibir"
 utxo_overview_screen:
   by_amount: "Monto"
   by_tag: "Etiqueta"

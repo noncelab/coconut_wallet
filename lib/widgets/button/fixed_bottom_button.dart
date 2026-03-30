@@ -5,7 +5,7 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomButton extends StatefulWidget {
-  static const fixedBottomButtonDefaultHeight = 55.0;
+  static const fixedBottomButtonDefaultHeight = 50.0;
   static const fixedBottomButtonDefaultBottomPadding = 22.0;
 
   const FixedBottomButton({
@@ -116,9 +116,9 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                         child: Text(
                           widget.text,
                           textAlign: TextAlign.center,
-                          style: CoconutTypography.heading4_18_Bold.setColor(
-                            widget.isActive ? widget.textColor : CoconutColors.gray700,
-                          ),
+                          style: CoconutTypography.body2_14_Bold
+                              .setColor(widget.isActive ? widget.textColor : CoconutColors.gray700)
+                              .copyWith(height: 1.0),
                         ),
                       ),
                     ),
