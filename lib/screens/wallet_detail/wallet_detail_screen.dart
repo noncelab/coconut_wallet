@@ -271,6 +271,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   final GlobalKey _txListLabelWidgetKey = GlobalKey();
 
+  static const double _stickyHeaderScrollThresholdOffset = 45;
+
   @override
   void initState() {
     super.initState();
@@ -288,7 +290,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);
-      Size topHeaderWidgetSize = const Size(0, 0);
       Size positionedTopWidgetSize = const Size(0, 0);
 
       if (_appBarKey.currentContext != null) {
@@ -313,11 +314,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       }
 
       setState(() {
-        _topPadding = topSelectorWidgetSize.height + topHeaderWidgetSize.height - positionedTopWidgetSize.height;
+        _topPadding = topSelectorWidgetSize.height - positionedTopWidgetSize.height;
       });
 
       _scrollController.addListener(() {
-        if (_scrollController.offset > _topPadding) {
+        if (_scrollController.offset > _topPadding + _stickyHeaderScrollThresholdOffset) {
           if (!_isPullToRefreshing) {
             _stickyHeaderVisibleNotifier.value = true;
             _stickyHeaderRenderBox ??= _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
