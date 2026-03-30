@@ -13,7 +13,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/refactor/select_wallet_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/receive_amount_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -127,7 +127,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                   shareButtonKey: _shareButtonKey,
                   onEnterAmountTap: () async {
                     final currentUnit = context.read<PreferenceProvider>().currentUnit;
-                    final result = await ReceiveAmountBottomSheet.show(
+                    final result = await Bip21AmountBottomSheet.show(
                       context: context,
                       currentUnit: currentUnit,
                       initialAmountSats: _enteredReceiveAmountSats,

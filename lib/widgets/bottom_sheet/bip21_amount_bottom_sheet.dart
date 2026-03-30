@@ -10,39 +10,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 
-class ReceiveAmountBottomSheetResult {
+class Bip21AmountBottomSheetResult {
   final bool didEdit;
   final int? amountInSats;
 
-  const ReceiveAmountBottomSheetResult({required this.didEdit, required this.amountInSats});
+  const Bip21AmountBottomSheetResult({required this.didEdit, required this.amountInSats});
 }
 
-class ReceiveAmountBottomSheet extends StatefulWidget {
-  const ReceiveAmountBottomSheet({super.key, required this.currentUnit, this.initialAmountSats});
+class Bip21AmountBottomSheet extends StatefulWidget {
+  const Bip21AmountBottomSheet({super.key, required this.currentUnit, this.initialAmountSats});
 
   final BitcoinUnit currentUnit;
   final int? initialAmountSats;
 
-  static Future<ReceiveAmountBottomSheetResult?> show({
+  static Future<Bip21AmountBottomSheetResult?> show({
     required BuildContext context,
     required BitcoinUnit currentUnit,
     int? initialAmountSats,
   }) {
-    return CommonBottomSheets.showBottomSheet<ReceiveAmountBottomSheetResult>(
+    return CommonBottomSheets.showBottomSheet<Bip21AmountBottomSheetResult>(
       title: t.address_list_screen.set_amount,
       context: context,
       isCloseButton: true,
       showDragHandle: true,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      child: ReceiveAmountBottomSheet(currentUnit: currentUnit, initialAmountSats: initialAmountSats),
+      child: Bip21AmountBottomSheet(currentUnit: currentUnit, initialAmountSats: initialAmountSats),
     );
   }
 
   @override
-  State<ReceiveAmountBottomSheet> createState() => _ReceiveAmountBottomSheetState();
+  State<Bip21AmountBottomSheet> createState() => _Bip21AmountBottomSheetState();
 }
 
-class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
+class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
   final TextEditingController _amountController = TextEditingController();
   final FocusNode _amountFocusNode = FocusNode();
   late final String _initialAmountText;
@@ -198,7 +198,7 @@ class _ReceiveAmountBottomSheetState extends State<ReceiveAmountBottomSheet> {
             bottomPadding: 0,
             onButtonClicked: () {
               if (!_didEditAmount) return;
-              Navigator.pop(context, ReceiveAmountBottomSheetResult(didEdit: true, amountInSats: _amountInSats));
+              Navigator.pop(context, Bip21AmountBottomSheetResult(didEdit: true, amountInSats: _amountInSats));
             },
             text: t.complete,
           ),

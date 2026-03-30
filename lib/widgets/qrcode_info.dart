@@ -46,7 +46,7 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
             copyText: widget.qrData,
             textStyle: widget.textStyle ?? CoconutTypography.body2_14,
             isAddress: widget.isAddress,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            padding: const EdgeInsets.all(20),
           ),
         ),
       ],
