@@ -494,7 +494,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         return BottomActionBarSlide(
           isVisible: true,
           child: BottomActionBar(
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 32.0, top: 16.0),
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0, top: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -506,8 +506,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       label: t.merge_utxos,
                       onTap:
                           canMerge
-                              ? () {
-                              }
+                              ? () {}
                               : () {
                                 CoconutToast.showToast(
                                   context: context,
