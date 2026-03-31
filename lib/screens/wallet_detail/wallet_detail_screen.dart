@@ -53,6 +53,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late BitcoinUnit _currentUnit;
   late WalletDetailViewModel _viewModel;
 
+  final ValueNotifier<bool> _bottomActionBarVisibleNotifier = ValueNotifier<bool>(true);
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -69,38 +71,52 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               Scaffold(
                 backgroundColor: CoconutColors.black,
                 appBar: _buildAppBar(context),
-                body: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  controller: _scrollController,
-                  slivers: [
-                    CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
-                    SliverToBoxAdapter(
-                      child: Selector<WalletDetailViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
-                        selector:
-                            (_, viewModel) => Tuple4(
-                              AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                              viewModel.bitcoinPriceKrwInString,
-                              viewModel.sendingAmount,
-                              viewModel.receivingAmount,
-                            ),
-                        builder: (_, data, __) {
-                          return WalletDetailHeader(
-                            key: _headerWidgetKey,
-                            animatedBalanceData: data.item1,
-                            currentUnit: _currentUnit,
-                            btcPriceInKrw: data.item2,
-                            sendingAmount: data.item3,
-                            receivingAmount: data.item4,
-                            onPressedUnitToggle: _toggleUnit,
-                          );
-                        },
+                body: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollStartNotification || notification is ScrollUpdateNotification) {
+                      if (_bottomActionBarVisibleNotifier.value) {
+                        _bottomActionBarVisibleNotifier.value = false;
+                      }
+                    } else if (notification is ScrollEndNotification) {
+                      if (!_bottomActionBarVisibleNotifier.value) {
+                        _bottomActionBarVisibleNotifier.value = true;
+                      }
+                    }
+                    return false;
+                  },
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    slivers: [
+                      CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
+                      SliverToBoxAdapter(
+                        child: Selector<WalletDetailViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
+                          selector:
+                              (_, viewModel) => Tuple4(
+                                AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                                viewModel.bitcoinPriceKrwInString,
+                                viewModel.sendingAmount,
+                                viewModel.receivingAmount,
+                              ),
+                          builder: (_, data, __) {
+                            return WalletDetailHeader(
+                              key: _headerWidgetKey,
+                              animatedBalanceData: data.item1,
+                              currentUnit: _currentUnit,
+                              btcPriceInKrw: data.item2,
+                              sendingAmount: data.item3,
+                              receivingAmount: data.item4,
+                              onPressedUnitToggle: _toggleUnit,
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    _buildTxListLabel(),
-                    TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
+                      _buildTxListLabel(),
+                      TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
 
-                    const SliverToBoxAdapter(child: SizedBox(height: 75)),
-                  ],
+                      const SliverToBoxAdapter(child: SizedBox(height: 75)),
+                    ],
+                  ),
                 ),
               ),
               _buildStickyHeader(),
@@ -342,6 +358,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _statusBarTapOverlayEntry = null;
     _scrollController.dispose();
     _stickyHeaderVisibleNotifier.dispose();
+    _bottomActionBarVisibleNotifier.dispose();
     super.dispose();
   }
 
@@ -491,80 +508,86 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
         final bool canMerge = utxoCount > 1;
         final bool canSplit = utxoCount > 0;
 
-        return BottomActionBarSlide(
-          isVisible: true,
-          child: BottomActionBar(
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0, top: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: Opacity(
-                    opacity: canMerge ? 1.0 : 0.3,
-                    child: BottomActionButton(
-                      iconPath: 'assets/svg/merge-utxos.svg',
-                      label: t.merge_utxos,
-                      onTap:
-                          canMerge
-                              ? () {}
-                              : () {
-                                CoconutToast.showToast(
-                                  context: context,
-                                  isVisibleIcon: true,
-                                  iconPath: 'assets/svg/circle-info.svg',
-                                  text: t.toast.merge_utxos_unavailable_description,
-                                  level: CoconutToastLevel.info,
-                                );
-                              },
-                      buttonLayout: BottomActionButtonLayout.vertical,
-                      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+        return ValueListenableBuilder<bool>(
+          valueListenable: _bottomActionBarVisibleNotifier,
+          builder: (context, isVisible, child) {
+            return BottomActionBarSlide(
+              isVisible: isVisible,
+              child: BottomActionBar(
+                padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0, top: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: Opacity(
+                        opacity: canMerge ? 1.0 : 0.3,
+                        child: BottomActionButton(
+                          iconPath: 'assets/svg/merge-utxos.svg',
+                          label: t.merge_utxos,
+                          onTap:
+                              canMerge
+                                  ? () {
+                                  }
+                                  : () {
+                                    CoconutToast.showToast(
+                                      context: context,
+                                      isVisibleIcon: true,
+                                      iconPath: 'assets/svg/circle-info.svg',
+                                      text: t.toast.merge_utxos_unavailable_description,
+                                      level: CoconutToastLevel.info,
+                                    );
+                                  },
+                          buttonLayout: BottomActionButtonLayout.vertical,
+                          textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Opacity(
-                    opacity: canSplit ? 1.0 : 0.3,
-                    child: BottomActionButton(
-                      iconPath: 'assets/svg/split-utxo.svg',
-                      label: t.split_utxo,
-                      onTap:
-                          canSplit
-                              ? () {}
-                              : () {
-                                CoconutToast.showToast(
-                                  context: context,
-                                  isVisibleIcon: true,
-                                  iconPath: 'assets/svg/circle-info.svg',
-                                  text: t.toast.split_utxo_unavailable_description,
-                                  level: CoconutToastLevel.info,
-                                );
-                              },
-                      buttonLayout: BottomActionButtonLayout.vertical,
-                      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                    Expanded(
+                      child: Opacity(
+                        opacity: canSplit ? 1.0 : 0.3,
+                        child: BottomActionButton(
+                          iconPath: 'assets/svg/split-utxo.svg',
+                          label: t.split_utxo,
+                          onTap:
+                              canSplit
+                                  ? () {}
+                                  : () {
+                                    CoconutToast.showToast(
+                                      context: context,
+                                      isVisibleIcon: true,
+                                      iconPath: 'assets/svg/circle-info.svg',
+                                      text: t.toast.split_utxo_unavailable_description,
+                                      level: CoconutToastLevel.info,
+                                    );
+                                  },
+                          buttonLayout: BottomActionButtonLayout.vertical,
+                          textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                        ),
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: BottomActionButton(
+                        iconPath: 'assets/svg/receive-plane.svg',
+                        label: t.receive,
+                        onTap: _onTapReceive,
+                        buttonLayout: BottomActionButtonLayout.vertical,
+                        textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                      ),
+                    ),
+                    Expanded(
+                      child: BottomActionButton(
+                        iconPath: 'assets/svg/send-plane.svg',
+                        label: t.send,
+                        onTap: _onTapSend,
+                        buttonLayout: BottomActionButtonLayout.vertical,
+                        textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: BottomActionButton(
-                    iconPath: 'assets/svg/receive-plane.svg',
-                    label: t.receive,
-                    onTap: _onTapReceive,
-                    buttonLayout: BottomActionButtonLayout.vertical,
-                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                  ),
-                ),
-                Expanded(
-                  child: BottomActionButton(
-                    iconPath: 'assets/svg/send-plane.svg',
-                    label: t.send,
-                    onTap: _onTapSend,
-                    buttonLayout: BottomActionButtonLayout.vertical,
-                    textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
