@@ -44,11 +44,13 @@ import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_search_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/split_utxo_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/merge_utxos_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
@@ -329,6 +331,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         initialBitcoinUri: args['initialBitcoinUri'],
                       ),
                     ),
+                '/merge-utxos': (context) => buildScreenWithArgs(context, (args) => MergeUtxosScreen(id: args['id'])),
+                '/split-utxo': (context) => buildScreenWithArgs(context, (args) => SplitUtxoScreen(id: args['id'])),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
 
                 // 인자가 있고 로딩이 필요한 화면들

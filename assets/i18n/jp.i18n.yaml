@@ -754,6 +754,15 @@ transaction_fee_bumping_screen:
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 
+merge_utxos_screen:
+  title: "UTXOの統合"
+  not_enough_utxos: "現在、整理するほどのUTXOはありません"
+  efficient_utxo_state: "現在6個のUTXOがあります\n今は統合しなくても十分に効率的です"
+  merge_anyway: "それでも統合する"
+
+split_utxo_screen:
+  title: "UTXOの分割"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "ウォッチオンリーウォレットを\n追加してみてください！"
