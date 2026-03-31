@@ -41,10 +41,10 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
               Container(
                 color: CoconutColors.black,
                 padding: const EdgeInsets.only(left: 16.0, right: 16, top: 20.0),
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.center,
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
+                  alignment: Alignment.center,
                   child: BitcoinAmountUnit(
                     currentUnit: widget.currentUnit,
                     unitStyle: CoconutTypography.body2_14_Number,
