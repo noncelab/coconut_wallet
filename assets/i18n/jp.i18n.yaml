@@ -103,6 +103,8 @@ log_viewer: "ログビューアー"
 go_to_settings: "設定を開く"
 name: "名前"
 account: "アカウント"
+merge_utxos: "UTXOを統合"
+split_utxo: "UTXOを分割"
 
 relative_time:
   just_now: "たった今"
@@ -617,6 +619,10 @@ address_list_screen:
   receiving: "受信"
   change: "おつり"
   show_only_unused_address: "未使用アドレスのみ表示"
+  set_amount: "金額設定"
+  share: "共有する"
+  enter_receive_amount: "受け取る金額を入力"
+  
 utxo_overview_screen:
   by_amount: "金額別"
   by_tag: "タグ別"
@@ -907,6 +913,8 @@ toast:
   tag_update_failed: "タグを更新できませんでした。"
   tag_delete_failed: "タグを削除できませんでした。"
   wallet_detail_refresh: "画面を下にスクロールして最新データを取得してください。"
+  merge_utxos_unavailable_description: "複数のUTXOがある場合、統合を利用できます。"
+  split_utxo_unavailable_description: "分割できるUTXOがありません。"
 
 alert:
   error_tx:

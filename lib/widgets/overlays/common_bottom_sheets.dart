@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CommonBottomSheets {
-  static void showBottomSheet({
+  static Future<T?> showBottomSheet<T>({
     required String title,
     required BuildContext context,
     required Widget child,
@@ -15,18 +15,35 @@ class CommonBottomSheets {
     bool isDismissible = true,
     bool enableDrag = true,
     bool isCloseButton = false,
+    bool showDragHandle = false,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
-    showModalBottomSheet(
+    return showModalBottomSheet<T>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 20),
-          child: Wrap(
+        final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.only(bottom: keyboardInset + 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              if (showDragHandle)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Center(
+                    child: Container(
+                      width: 55,
+                      height: 4,
+                      decoration: BoxDecoration(color: CoconutColors.gray400, borderRadius: BorderRadius.circular(4)),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: titlePadding,
                 child: Row(
@@ -40,14 +57,10 @@ class CommonBottomSheets {
                                 Navigator.pop(context);
                               }
                               : null,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        color: Colors.transparent,
-                        child:
-                            isCloseButton
-                                ? const Icon(Icons.close_rounded, color: CoconutColors.white)
-                                : Container(width: 16),
-                      ),
+                      child:
+                          isCloseButton
+                              ? const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white)
+                              : Container(width: 20),
                     ),
                     Text(
                       title,
@@ -56,7 +69,7 @@ class CommonBottomSheets {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Container(padding: const EdgeInsets.all(4), child: Container(width: 16)),
+                    Container(color: Colors.transparent, child: Container(width: 28)),
                   ],
                 ),
               ),
@@ -75,10 +88,15 @@ class CommonBottomSheets {
 
   static Future<T?> showCustomHeightBottomSheet<T>({
     required BuildContext context,
-    required Widget child,
+    Widget? child,
+    Widget Function(ScrollController scrollController)? childBuilder,
     required double heightRatio,
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
+    assert(child != null || childBuilder != null);
+    final draggableController = DraggableScrollableController();
+    bool isAnimating = false;
+
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
@@ -86,11 +104,61 @@ class CommonBottomSheets {
           borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
           child: Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * heightRatio,
-              width: MediaQuery.of(context).size.width,
-              child: child,
-            ),
+            child:
+                childBuilder == null
+                    ? SizedBox(
+                      height: MediaQuery.of(context).size.height * heightRatio,
+                      width: MediaQuery.of(context).size.width,
+                      child: child,
+                    )
+                    : DraggableScrollableSheet(
+                      controller: draggableController,
+                      expand: false,
+                      initialChildSize: heightRatio,
+                      minChildSize: 0.01,
+                      maxChildSize: heightRatio,
+                      shouldCloseOnMinExtent: true,
+                      builder: (context, scrollController) {
+                        void handleDragEnd() {
+                          if (isAnimating || !draggableController.isAttached) return;
+
+                          final extent = draggableController.size;
+                          final closeThreshold = heightRatio * 0.7;
+                          if ((extent - heightRatio).abs() < 0.001) return;
+
+                          isAnimating = true;
+                          final animation =
+                              extent <= closeThreshold
+                                  ? draggableController.animateTo(
+                                    0.01,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                  )
+                                  : draggableController.animateTo(
+                                    heightRatio,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                  );
+
+                          animation.whenComplete(() {
+                            if (extent <= closeThreshold && context.mounted) {
+                              // Navigator.of(context).pop();
+                            }
+                            isAnimating = false;
+                          });
+                        }
+
+                        return NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification is ScrollEndNotification) {
+                              handleDragEnd();
+                            }
+                            return false;
+                          },
+                          child: childBuilder(scrollController),
+                        );
+                      },
+                    ),
           ),
         );
       },

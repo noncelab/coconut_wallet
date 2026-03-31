@@ -82,6 +82,8 @@ class WalletDetailViewModel extends ChangeNotifier {
   late int _balance;
   int get balance => _balance;
 
+  int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+
   int _receivingAmount = 0;
   int _sendingAmount = 0;
   int get receivingAmount => _receivingAmount;

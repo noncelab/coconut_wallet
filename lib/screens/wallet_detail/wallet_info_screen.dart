@@ -18,6 +18,7 @@ import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
 import 'package:coconut_wallet/screens/common/qr_with_copy_text_screen.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
@@ -861,7 +862,7 @@ class _TargetQuantitySettingBottomSheetState extends State<_TargetQuantitySettin
               textInputFormatter: [
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                 _SingleDotInputFormatter(),
-                _BtcTargetInputFormatter(),
+                const BtcAmountInputFormatter(),
               ],
               placeholderText: t.wallet_info_screen.target_set_placeholder,
               backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
@@ -885,30 +886,5 @@ class _SingleDotInputFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if ('.'.allMatches(newValue.text).length > 1) return oldValue;
     return newValue;
-  }
-}
-
-/// 소수점 이하 8자리, 최대 2,100만 BTC까지 입력 가능하도록 제한
-class _BtcTargetInputFormatter extends TextInputFormatter {
-  static const int _maxDecimalPlaces = 8;
-  static const double _maxBtc = 21_000_000;
-
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    var text = newValue.text.replaceAll(RegExp(r'[^0-9.]'), '');
-    if (text.isEmpty) return newValue;
-
-    final parts = text.split('.');
-    if (parts.length > 2) return oldValue;
-
-    final decPart = parts.length > 1 ? parts[1] : '';
-
-    if (decPart.length > _maxDecimalPlaces) return oldValue;
-
-    final btc = double.tryParse(text);
-    if (btc != null && btc > _maxBtc) return oldValue;
-
-    final offset = newValue.selection.baseOffset.clamp(0, text.length);
-    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: offset));
   }
 }

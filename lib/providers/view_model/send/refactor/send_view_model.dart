@@ -637,7 +637,7 @@ class SendViewModel extends ChangeNotifier {
     _isMaxMode = isEnabled;
     if (_isMaxMode) {
       _adjustLastReceiverAmount(recipientIndex: lastIndex);
-      _updateFeeBoardVisibility();
+      updateFeeBoardVisibility();
       _previousIsFeeSubtractedFromSendAmount = _isFeeSubtractedFromSendAmount;
       _isFeeSubtractedFromSendAmount = true;
     } else {
@@ -683,7 +683,7 @@ class SendViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _updateFeeBoardVisibility() {
+  void updateFeeBoardVisibility() {
     if (_showFeeBoard) return;
 
     _showFeeBoard = hasValidRecipient;
@@ -874,7 +874,7 @@ class SendViewModel extends ChangeNotifier {
     }
     checkAndSetDuplicationError();
     _buildTransaction();
-    _updateFeeBoardVisibility();
+    updateFeeBoardVisibility();
   }
 
   void clearAmountText() {

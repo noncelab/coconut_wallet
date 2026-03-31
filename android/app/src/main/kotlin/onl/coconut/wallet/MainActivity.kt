@@ -15,6 +15,8 @@ class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "onl.coconut.wallet/os"
     private val CHANNEL_EVENT_ICON = "onl.coconut.wallet/app-event-icon"
     private val CHANNEL_OPEN_APP_SETTINGS = "app-settings"
+    private var osChannel: MethodChannel? = null
+    private var pendingBitcoinUri: String? = null
     
     // Activity Alias 이름 (AndroidManifest.xml과 일치해야 함)
     private val EVENT_ICON_ALIAS = "onl.coconut.wallet.MainActivityEventIcon"
@@ -22,12 +24,18 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        osChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        pendingBitcoinUri = extractBitcoinUri(intent)
+
+        osChannel?.setMethodCallHandler { call, result ->
             if (call.method == "getPlatformVersion") {
                 val version = Build.VERSION.RELEASE
                 result.success(version)
             } else if(call.method == "getSdkVersion"){
                 result.success(Build.VERSION.SDK_INT)
+            } else if(call.method == "getInitialBitcoinUri" || call.method == "getPendingBitcoinUri"){
+                result.success(pendingBitcoinUri)
+                pendingBitcoinUri = null
             }
             else {
                 result.notImplemented()
@@ -86,6 +94,15 @@ class MainActivity : FlutterFragmentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+
+        val bitcoinUri = extractBitcoinUri(intent) ?: return
+        pendingBitcoinUri = bitcoinUri
+        osChannel?.invokeMethod("onBitcoinUri", bitcoinUri)
+    }
     
     /**
      * 앱 아이콘 변경
@@ -138,5 +155,15 @@ class MainActivity : FlutterFragmentActivity() {
             null
         }
     }
-}
 
+    private fun extractBitcoinUri(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) return null
+
+        val dataString = intent.dataString ?: return null
+        return if (dataString.startsWith("bitcoin:", ignoreCase = true)) {
+            dataString
+        } else {
+            null
+        }
+    }
+}

@@ -104,6 +104,8 @@ log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
 name: "Nombre"
 account: "Cuenta"
+merge_utxos: "Combinar UTXOs"
+split_utxo: "Dividir UTXO"
 
 relative_time:
   just_now: "Justo ahora"
@@ -620,6 +622,9 @@ address_list_screen:
   receiving: "Recibiendo"
   change: "Cambio"
   show_only_unused_address: "Mostrar solo direcciones sin usar"
+  set_amount: "establecer importe"
+  share: "compartir"
+  enter_receive_amount: "Ingrese la cantidad que debe recibir"
 utxo_overview_screen:
   by_amount: "Monto"
   by_tag: "Etiqueta"
@@ -911,6 +916,8 @@ toast:
   tag_update_failed: "No se puede editar la etiqueta."
   tag_delete_failed: "No se puede eliminar la etiqueta."
   wallet_detail_refresh: "Arrastra la pantalla hacia abajo para obtener los datos más recientes."
+  merge_utxos_unavailable_description: "Puedes combinar UTXOs cuando hay múltiples UTXOs disponibles."
+  split_utxo_unavailable_description: "No hay UTXOs para dividir."
 
 alert:
   error_tx:

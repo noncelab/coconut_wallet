@@ -103,6 +103,8 @@ log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 name: "Name"
 account: "Account"
+merge_utxos: "Merge UTXOs"
+split_utxo: "Split UTXO"
 
 relative_time:
   just_now: "Just now"
@@ -617,6 +619,9 @@ address_list_screen:
   receiving: "Receiving"
   change: "Change"
   show_only_unused_address: "Show Only Unused Addresses"
+  set_amount: "Set amount"
+  share: "Share"
+  enter_receive_amount: "Enter the amount to receive"
 utxo_overview_screen:
   by_amount: "Amount"
   by_tag: "Tag"
@@ -907,6 +912,8 @@ toast:
   tag_update_failed: "Cannot edit tag."
   tag_delete_failed: "Cannot delete tag."
   wallet_detail_refresh: "Pull down the screen to get the latest data."
+  merge_utxos_unavailable_description: "Merge is available when you have multiple UTXOs."
+  split_utxo_unavailable_description: "There are no UTXOs to split."
 
 alert:
   error_tx:
