@@ -61,6 +61,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
+import 'package:coconut_wallet/widgets/deep_link_listener.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -85,6 +86,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
 
   final RealmManager _realmManager = RealmManager();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   /// startSplash 완료 콜백
   void _completeSplash(AppEntryFlow appEntryFlow) {
@@ -183,6 +185,19 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         child: Builder(
           builder: (context) {
             final app = CupertinoApp(
+              navigatorKey: _navigatorKey,
+              builder: (context, child) {
+                final currentChild = child ?? const SizedBox.shrink();
+                if (_appEntryFlow != AppEntryFlow.main) {
+                  return currentChild;
+                }
+                return AppGuard(
+                  child: DeepLinkListener(
+                    navigatorKey: _navigatorKey,
+                    child: currentChild,
+                  ),
+                );
+              },
               navigatorObservers: [
                 routeObserver,
                 if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
@@ -311,6 +326,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         transactionDraftId: args['transactionDraftId'],
                         initialSatsFromP2P: args['initialSatsFromP2P'],
                         selectedUtxoList: args['selectedUtxoList'],
+                        initialBitcoinUri: args['initialBitcoinUri'],
                       ),
                     ),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
@@ -370,7 +386,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               },
             );
 
-            return _appEntryFlow == AppEntryFlow.main ? AppGuard(child: app) : app;
+            return app;
           },
         ),
       ),

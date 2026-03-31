@@ -42,7 +42,7 @@ if (keystorePropertiesFile.exists()) {
     throw new GradleException("❌ keystore properties 파일이 존재하지 않습니다: ${keystorePropertiesFile}")
 }
 
-if (flavor == "mainnet") {
+if (flavor == "mainnet" && file("src/mainnet/google-services.json").exists()) {
     apply plugin: 'com.google.gms.google-services'
 }
 

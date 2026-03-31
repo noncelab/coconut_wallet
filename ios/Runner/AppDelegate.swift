@@ -4,6 +4,8 @@ import Flutter
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   private var methodChannel: FlutterMethodChannel?
+  private var osMethodChannel: FlutterMethodChannel?
+  private var pendingBitcoinUri: String?
 
   override func application(
     _ application: UIApplication,
@@ -50,7 +52,41 @@ import Flutter
       }
     }
 
+    osMethodChannel = FlutterMethodChannel(
+      name: "onl.coconut.wallet/os",
+      binaryMessenger: controller.binaryMessenger
+    )
+
+    osMethodChannel?.setMethodCallHandler { [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) in
+      if call.method == "getInitialBitcoinUri" || call.method == "getPendingBitcoinUri" {
+        result(self?.pendingBitcoinUri)
+        self?.pendingBitcoinUri = nil
+      } else {
+        result(FlutterMethodNotImplemented)
+      }
+    }
+
+    if let url = launchOptions?[.url] as? URL,
+       url.scheme?.lowercased() == "bitcoin" {
+      pendingBitcoinUri = url.absoluteString
+    }
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey : Any] = [:]
+  ) -> Bool {
+    guard url.scheme?.lowercased() == "bitcoin" else {
+      return super.application(app, open: url, options: options)
+    }
+
+    let uri = url.absoluteString
+    pendingBitcoinUri = uri
+    osMethodChannel?.invokeMethod("onBitcoinUri", arguments: uri)
+    return true
   }
 
   // MARK: - App Icon 변경
