@@ -414,13 +414,13 @@ class CommonBottomSheets {
   }
 }
 
-class SelectableBottomSheetItem extends StatelessWidget {
+class SelectableBottomSheetTextItem extends StatelessWidget {
   final String text;
   final bool isSelected;
   final VoidCallback? onTap;
   final bool isDisabled;
 
-  const SelectableBottomSheetItem({
+  const SelectableBottomSheetTextItem({
     super.key,
     required this.text,
     required this.isSelected,

@@ -177,7 +177,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
             (isTagMergeItem && !viewModel.hasMergeableTaggedUtxos) ||
             (isAddressMergeItem && !viewModel.hasSameAddressUtxos);
 
-        return SelectableBottomSheetItem(text: item, isSelected: isSelected, onTap: onTap, isDisabled: isDisabled);
+        return SelectableBottomSheetTextItem(text: item, isSelected: isSelected, onTap: onTap, isDisabled: isDisabled);
       },
     );
 
