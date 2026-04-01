@@ -756,6 +756,14 @@ transaction_fee_bumping_screen:
   toast:
     insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
 
+merge_utxos_screen:
+  title: "Combinar UTXOs"
+  not_enough_utxos: "No hay suficientes UTXOs para optimizar en este momento"
+  efficient_utxo_state: "Actualmente tienes ${count} UTXOs\nNo es necesario combinarlos por ahora, ya es eficiente"
+  merge_anyway: "Combinar de todos modos"
+
+split_utxo_screen:
+  title: "Dividir UTXO"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

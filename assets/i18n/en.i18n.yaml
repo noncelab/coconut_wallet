@@ -753,6 +753,15 @@ transaction_fee_bumping_screen:
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 
+merge_utxos_screen:
+  title: "Merge UTXOs"
+  not_enough_utxos: "There aren't enough UTXOs to consolidate right now"
+  efficient_utxo_state: "You currently have ${count} UTXOs\nMerging isn’t necessary right now—it’s already efficient"
+  merge_anyway: "Merge anyway"
+
+split_utxo_screen:
+  title: "Split UTXO"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "Try adding a watch-only wallet!"

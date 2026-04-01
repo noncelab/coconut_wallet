@@ -757,6 +757,15 @@ transaction_fee_bumping_screen:
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
 
+merge_utxos_screen:
+  title: "UTXO 합치기"
+  not_enough_utxos: "지금은 정리할 UTXO가 많지 않아요"
+  efficient_utxo_state: "현재 ${count}개의 UTXO가 있어요\n지금은 합치지 않아도 충분히 효율적이에요"
+  merge_anyway: "그래도 합치기"
+
+split_utxo_screen:
+  title: "UTXO 나누기"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "보기 전용 지갑을 추가해 보세요!"

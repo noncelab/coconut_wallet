@@ -527,6 +527,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           onTap:
                               canMerge
                                   ? () {
+                                    Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
                                   }
                                   : () {
                                     CoconutToast.showToast(
@@ -550,7 +551,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           label: t.split_utxo,
                           onTap:
                               canSplit
-                                  ? () {}
+                                  ? () {
+                                    Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
+                                  }
                                   : () {
                                     CoconutToast.showToast(
                                       context: context,
