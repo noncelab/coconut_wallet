@@ -3,7 +3,9 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/selectable_list_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CommonBottomSheets {
@@ -205,6 +207,7 @@ class CommonBottomSheets {
     bool showDragHandle = true,
     String? title,
     String? subLabel,
+    Color backgroundColor = CoconutColors.black,
   }) async {
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
@@ -255,7 +258,7 @@ class CommonBottomSheets {
                   return false;
                 },
                 child: Container(
-                  color: CoconutColors.black,
+                  color: backgroundColor,
                   child: Column(
                     children: [
                       if (showDragHandle)
@@ -272,7 +275,7 @@ class CommonBottomSheets {
                             handleDrag();
                           },
                           child: Container(
-                            color: CoconutColors.black,
+                            color: backgroundColor,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Center(
                               child: Container(
@@ -307,6 +310,7 @@ class CommonBottomSheets {
                               subLabel ?? '',
                               style: CoconutTypography.body3_12.setColor(CoconutColors.black),
                             ),
+                            backgroundColor: backgroundColor,
                             showSubLabel: subLabel != null,
                             isBottom: true,
                           ),
@@ -350,6 +354,7 @@ class CommonBottomSheets {
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
       initialChildSize: initialChildSize,
+      backgroundColor: backgroundColor,
       childBuilder: (scrollController) {
         return _SelectableDraggableSheetBody<T>(
           scrollController: scrollController,
@@ -405,6 +410,62 @@ class CommonBottomSheets {
       enableDrag: enableDrag,
       useSafeArea: useSafeArea,
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+    );
+  }
+}
+
+class SelectableBottomSheetTextItem extends StatelessWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback? onTap;
+  final bool isDisabled;
+
+  const SelectableBottomSheetTextItem({
+    super.key,
+    required this.text,
+    required this.isSelected,
+    this.onTap,
+    this.isDisabled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: ShrinkAnimationButton(
+        onPressed: () {
+          if (isDisabled) return;
+          if (onTap != null) onTap!();
+        },
+        defaultColor: CoconutColors.gray900,
+        pressedColor: CoconutColors.gray800,
+        borderRadius: 8,
+        borderWidth: 0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Row(
+            children: [
+              Text(text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+              const Spacer(),
+              if (isSelected)
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/svg/check.svg',
+                      width: 16,
+                      height: 16,
+                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(width: 24, height: 24),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

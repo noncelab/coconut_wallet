@@ -755,13 +755,23 @@ transaction_fee_bumping_screen:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 
 merge_utxos_screen:
-  title: "UTXOの統合"
-  not_enough_utxos: "現在、整理するほどのUTXOはありません"
+  title: "UTXOを統合"
+  not_enough_utxos: "現在、統合するほどのUTXOはありません"
   efficient_utxo_state: "現在${count}個のUTXOがあります\n現時点では統合しなくても十分効率的です"
   merge_anyway: "それでも統合する"
+  bottomsheet:
+    title: "統合方法を選択"
+    merge_small_amounts: "少額のUTXOを統合"
+    merge_same_tag: "同じタグのUTXOを統合"
+    merge_same_address: "同じアドレスで受け取ったUTXOを統合"
 
 split_utxo_screen:
-  title: "UTXOの分割"
+  title: "UTXOを分割"
+  bottomsheet:
+    title: "分割方法を選択"
+    split_by_amount: "一定の金額で分割"
+    split_evenly: "均等に分割"
+    split_manually: "手動で分割"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
