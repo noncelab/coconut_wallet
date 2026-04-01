@@ -759,7 +759,7 @@ transaction_fee_bumping_screen:
 merge_utxos_screen:
   title: "Combinar UTXOs"
   not_enough_utxos: "No hay suficientes UTXOs para optimizar en este momento"
-  efficient_utxo_state: "Actualmente tienes 6 UTXOs\nPor ahora no es necesario combinarlos"
+  efficient_utxo_state: "Actualmente tienes ${count} UTXOs\nNo es necesario combinarlos por ahora, ya es eficiente"
   merge_anyway: "Combinar de todos modos"
 
 split_utxo_screen:

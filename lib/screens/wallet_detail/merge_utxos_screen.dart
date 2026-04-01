@@ -77,7 +77,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
                 ),
                 CoconutLayout.spacing_800h,
                 Text(
-                  t.merge_utxos_screen.efficient_utxo_state,
+                  t.merge_utxos_screen.efficient_utxo_state(count: viewModel.utxoCount),
                   style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                   textAlign: TextAlign.center,
                 ),

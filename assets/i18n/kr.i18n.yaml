@@ -760,7 +760,7 @@ transaction_fee_bumping_screen:
 merge_utxos_screen:
   title: "UTXO 합치기"
   not_enough_utxos: "지금은 정리할 UTXO가 많지 않아요"
-  efficient_utxo_state: "현재 6개의 UTXO가 있어요\n지금은 합치지 않아도 충분히 효율적이에요"
+  efficient_utxo_state: "현재 ${count}개의 UTXO가 있어요\n지금은 합치지 않아도 충분히 효율적이에요"
   merge_anyway: "그래도 합치기"
 
 split_utxo_screen:
