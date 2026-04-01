@@ -205,6 +205,7 @@ class CommonBottomSheets {
     bool showDragHandle = true,
     String? title,
     String? subLabel,
+    Color backgroundColor = CoconutColors.black,
   }) async {
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
@@ -255,7 +256,7 @@ class CommonBottomSheets {
                   return false;
                 },
                 child: Container(
-                  color: CoconutColors.black,
+                  color: backgroundColor,
                   child: Column(
                     children: [
                       if (showDragHandle)
@@ -272,7 +273,7 @@ class CommonBottomSheets {
                             handleDrag();
                           },
                           child: Container(
-                            color: CoconutColors.black,
+                            color: backgroundColor,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Center(
                               child: Container(
@@ -307,6 +308,7 @@ class CommonBottomSheets {
                               subLabel ?? '',
                               style: CoconutTypography.body3_12.setColor(CoconutColors.black),
                             ),
+                            backgroundColor: backgroundColor,
                             showSubLabel: subLabel != null,
                             isBottom: true,
                           ),
@@ -350,6 +352,7 @@ class CommonBottomSheets {
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
       initialChildSize: initialChildSize,
+      backgroundColor: backgroundColor,
       childBuilder: (scrollController) {
         return _SelectableDraggableSheetBody<T>(
           scrollController: scrollController,

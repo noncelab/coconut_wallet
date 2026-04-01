@@ -762,9 +762,20 @@ merge_utxos_screen:
   not_enough_utxos: "지금은 정리할 UTXO가 많지 않아요"
   efficient_utxo_state: "현재 ${count}개의 UTXO가 있어요\n지금은 합치지 않아도 충분히 효율적이에요"
   merge_anyway: "그래도 합치기"
+  bottomsheet:
+    title: "정리 기준 선택"
+    merge_small_amounts: "금액이 작은 UTXO를 합쳐요"
+    merge_same_tag: "같은 태그의 UTXO를 합쳐요"
+    merge_same_address: "같은 주소로 받은 UTXO를 합쳐요"
+
 
 split_utxo_screen:
   title: "UTXO 나누기"
+  bottomsheet:
+    title: "분할 기준 선택"
+    split_by_amount: "일정 금액으로 나눌게요"
+    split_evenly: "균등하게 나눌게요"
+    split_manually: "직접 나눌게요"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

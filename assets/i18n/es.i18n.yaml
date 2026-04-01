@@ -758,12 +758,22 @@ transaction_fee_bumping_screen:
 
 merge_utxos_screen:
   title: "Combinar UTXOs"
-  not_enough_utxos: "No hay suficientes UTXOs para optimizar en este momento"
+  not_enough_utxos: "No hay suficientes UTXOs para combinar en este momento"
   efficient_utxo_state: "Actualmente tienes ${count} UTXOs\nNo es necesario combinarlos por ahora, ya es eficiente"
   merge_anyway: "Combinar de todos modos"
+  bottomsheet:
+    title: "Elegir criterio de combinación"
+    merge_small_amounts: "Combinar UTXOs de bajo monto"
+    merge_same_tag: "Combinar UTXOs con la misma etiqueta"
+    merge_same_address: "Combinar UTXOs recibidos en la misma dirección"
 
 split_utxo_screen:
   title: "Dividir UTXO"
+  bottomsheet:
+    title: "Elegir criterio de división"
+    split_by_amount: "Dividir por monto fijo"
+    split_evenly: "Dividir equitativamente"
+    split_manually: "Dividir manualmente"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
