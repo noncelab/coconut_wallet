@@ -54,7 +54,7 @@ class Bip21AmountBottomSheet {
               : null,
       resultBuilder: (currentText, originalText) {
         final sats = BalanceFormatUtil.parseBip21AmountTextToSats(currentUnit: currentUnit, inputText: currentText);
-        return Bip21AmountBottomSheetResult(didEdit: sats != null, amountInSats: sats);
+        return Bip21AmountBottomSheetResult(didEdit: currentText != originalText, amountInSats: sats);
       },
     );
   }
