@@ -3,10 +3,8 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/merge_utxos/merge_utxos_view_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 
@@ -179,43 +177,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
             (isTagMergeItem && !viewModel.hasMergeableTaggedUtxos) ||
             (isAddressMergeItem && !viewModel.hasSameAddressUtxos);
 
-        return Opacity(
-          opacity: isDisabled ? 0.5 : 1.0,
-          child: ShrinkAnimationButton(
-            onPressed: () {
-              if (isDisabled) return;
-              if (onTap != null) onTap();
-            },
-            defaultColor: CoconutColors.gray900,
-            pressedColor: CoconutColors.gray800,
-            borderRadius: 8,
-            borderWidth: 0,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-              child: Row(
-                children: [
-                  Text(item, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                  const Spacer(),
-                  if (isSelected)
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Center(
-                        child: SvgPicture.asset(
-                          'assets/svg/check.svg',
-                          width: 16,
-                          height: 16,
-                          colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                        ),
-                      ),
-                    )
-                  else
-                    const SizedBox(width: 24, height: 24),
-                ],
-              ),
-            ),
-          ),
-        );
+        return SelectableBottomSheetItem(text: item, isSelected: isSelected, onTap: onTap, isDisabled: isDisabled);
       },
     );
 

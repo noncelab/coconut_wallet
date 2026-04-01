@@ -1,10 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/split_utxo/split_utxo_view_model.dart';
-import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 
 class SplitUtxoScreen extends StatefulWidget {
@@ -102,39 +100,7 @@ class SplitUtxoScreenState extends State<SplitUtxoScreen> {
       maxChildSize: 0.9,
       backgroundColor: CoconutColors.gray900,
       itemBuilder: (context, item, isSelected, onTap) {
-        return ShrinkAnimationButton(
-          onPressed: () {
-            if (onTap != null) onTap();
-          },
-          defaultColor: CoconutColors.gray900,
-          pressedColor: CoconutColors.gray800,
-          borderRadius: 8,
-          borderWidth: 0,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-            child: Row(
-              children: [
-                Text(item, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                const Spacer(),
-                if (isSelected)
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Center(
-                      child: SvgPicture.asset(
-                        'assets/svg/check.svg',
-                        width: 16,
-                        height: 16,
-                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                      ),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 24, height: 24),
-              ],
-            ),
-          ),
-        );
+        return SelectableBottomSheetItem(text: item, isSelected: isSelected, onTap: onTap);
       },
     );
 
