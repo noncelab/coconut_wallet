@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/selectable_list_bottom_sheet.dart';
@@ -16,7 +17,7 @@ class CommonBottomSheets {
     TextStyle titleTextStyle = Styles.body2Bold,
     bool isDismissible = true,
     bool enableDrag = true,
-    bool isCloseButton = false,
+    bool showCloseButton = false,
     bool showDragHandle = false,
     Color backgroundColor = CoconutColors.black,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
@@ -55,13 +56,13 @@ class CommonBottomSheets {
                   children: [
                     GestureDetector(
                       onTap:
-                          isCloseButton
+                          showCloseButton
                               ? () {
                                 Navigator.pop(context);
                               }
                               : null,
                       child:
-                          isCloseButton
+                          showCloseButton
                               ? const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white)
                               : Container(width: 20),
                     ),
@@ -460,7 +461,7 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
                       colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                     ),
                   ),
-                )
+                ).scaleInAnimation(duration: const Duration(milliseconds: 300))
               else
                 const SizedBox(width: 24, height: 24),
             ],

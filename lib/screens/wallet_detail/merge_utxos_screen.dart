@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/merge_utxos/merge_utxos_view_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
@@ -19,7 +20,7 @@ class MergeUtxosScreen extends StatefulWidget {
 
 class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
   bool _forceMerge = false;
-  String? _selectedMergeCriteria;
+  String? _selectedMergeStandard;
 
   @override
   Widget build(BuildContext context) {
@@ -109,17 +110,17 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
   }
 
   Widget _buildMergeContent(BuildContext context, MergeUtxosViewModel viewModel) {
-    if (_selectedMergeCriteria == null) {
+    if (_selectedMergeStandard == null) {
       return _buildInitialSelectionView(context, viewModel);
     }
 
-    if (_selectedMergeCriteria == t.merge_utxos_screen.bottomsheet.merge_small_amounts) {
+    if (_selectedMergeStandard == t.merge_utxos_screen.bottomsheet.merge_small_amounts) {
       return _buildMergeSmallAmountsBody(viewModel);
     }
-    if (_selectedMergeCriteria == t.merge_utxos_screen.bottomsheet.merge_same_tag) {
+    if (_selectedMergeStandard == t.merge_utxos_screen.bottomsheet.merge_same_tag) {
       return _buildMergeSameTagBody(viewModel);
     }
-    if (_selectedMergeCriteria == t.merge_utxos_screen.bottomsheet.merge_same_address) {
+    if (_selectedMergeStandard == t.merge_utxos_screen.bottomsheet.merge_same_address) {
       return _buildMergeSameAddressBody(viewModel);
     }
 
@@ -134,9 +135,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
         children: [
           Text('UTXO 합치기 화면 (UTXO 개수: ${viewModel.utxoCount})', style: const TextStyle(color: Colors.white)),
           const SizedBox(height: 16),
+          'UTXO 합치기 화면 (UTXO 개수: ${viewModel.utxoCount})'.characterFadeInAnimation(
+            textStyle: const TextStyle(color: Colors.white),
+            duration: const Duration(milliseconds: 300),
+          ),
           SizedBox(
             width: 160,
-            child: CoconutButton(text: '바텀시트 열기', onPressed: () => _showMergeCriteriaBottomSheet(context, viewModel)),
+            child: CoconutButton(text: '바텀시트 열기', onPressed: () => _showMergeStandardBottomSheet(context, viewModel)),
           ),
         ],
       ),
@@ -155,8 +160,9 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
     return Center(child: Text('동일 주소 UTXO 합치기 화면', style: CoconutTypography.body1_16.setColor(CoconutColors.white)));
   }
 
-  void _showMergeCriteriaBottomSheet(BuildContext context, MergeUtxosViewModel viewModel) async {
+  void _showMergeStandardBottomSheet(BuildContext context, MergeUtxosViewModel viewModel) async {
     final selectedItem = await CommonBottomSheets.showBottomSheet<String>(
+      showCloseButton: true,
       context: context,
       backgroundColor: CoconutColors.gray900,
       title: t.merge_utxos_screen.bottomsheet.title,
@@ -189,7 +195,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
 
     if (selectedItem != null && context.mounted) {
       setState(() {
-        _selectedMergeCriteria = selectedItem;
+        _selectedMergeStandard = selectedItem;
       });
     }
   }

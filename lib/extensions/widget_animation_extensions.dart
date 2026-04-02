@@ -1,6 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 // ignore: implementation_imports
-import 'package:coconut_design_system/src/animation/_transition_animation.dart';
+import 'package:coconut_design_system/src/animation/transition_animation.dart';
 import 'package:flutter/material.dart';
 
 extension WidgetAnimationExtensions on Widget {
@@ -322,6 +322,7 @@ extension StringAnimationExtensions on String {
     CoconutCharacterFadeSlideDirection slideDirection = CoconutCharacterFadeSlideDirection.none,
     double slideOffset = 8,
     VoidCallback? onCompleted,
+    Duration delay = Duration.zero,
   }) {
     return CoconutCharacterFadeInAnimation(
       key: key,
@@ -337,6 +338,7 @@ extension StringAnimationExtensions on String {
       slideDirection: slideDirection,
       slideOffset: slideOffset,
       onCompleted: onCompleted,
+      delay: delay,
     );
   }
 

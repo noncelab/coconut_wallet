@@ -31,7 +31,7 @@ class Bip21AmountBottomSheet extends StatefulWidget {
     return CommonBottomSheets.showBottomSheet<Bip21AmountBottomSheetResult>(
       title: t.address_list_screen.set_amount,
       context: context,
-      isCloseButton: true,
+      showCloseButton: true,
       showDragHandle: true,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: Bip21AmountBottomSheet(currentUnit: currentUnit, initialAmountSats: initialAmountSats),
