@@ -31,7 +31,7 @@ import 'package:coconut_wallet/widgets/card/transaction_input_output_card.dart';
 import 'package:coconut_wallet/widgets/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/widgets/contents/fiat_price.dart';
 import 'package:coconut_wallet/widgets/highlighted_info_area.dart';
-import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_memo_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lottie/lottie.dart';
@@ -688,24 +688,24 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
           label: t.tx_memo,
           underlineButtonLabel: t.edit,
           onTapUnderlineButton: () {
-            showModalBottomSheet(
+            SingleTextFieldBottomSheet.show(
               context: context,
-              isScrollControlled: true,
-              builder:
-                  (context) => MemoBottomSheet(
-                    originalMemo: txMemo ?? '',
-                    onComplete: (memo) {
-                      if (!viewModel.updateTransactionMemo(memo)) {
-                        CoconutToast.showToast(
-                          context: context,
-                          isVisibleIcon: true,
-                          iconPath: 'assets/svg/triangle-warning.svg',
-                          text: t.toast.memo_update_failed,
-                          level: CoconutToastLevel.warning,
-                        );
-                      }
-                    },
-                  ),
+              title: t.tx_memo,
+              originalText: txMemo ?? '',
+              completeButtonText: t.done,
+              collapsedHeight: 300,
+              onComplete: (memo) {
+                if (!viewModel.updateTransactionMemo(memo)) {
+                  CoconutToast.showToast(
+                    context: context,
+                    isVisibleIcon: true,
+                    iconPath: 'assets/svg/triangle-warning.svg',
+                    text: t.toast.memo_update_failed,
+                    level: CoconutToastLevel.warning,
+                  );
+                }
+              },
+              formatInput: (s) => s.trim(),
             );
           },
           child: Text(
