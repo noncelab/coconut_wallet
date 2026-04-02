@@ -247,9 +247,6 @@ class UtxoSplitBuilder {
       return _cachedNiceSplitCounts!;
     }
 
-    // niceAmounts 중 utxo.amount보다 작으면서 가장 큰 값으로부터 최대 5개를 찾아 subList로 만든다.
-    // subList가 0개면 빈 배열을 반환한다.
-    // subList에 있는 값의 근사값으로 나눠지려면 count 몇으로 나눠야하는지 찾아서 배열로 반환한다.
     await _initOutputVBytes();
     final selectableNiceAmounts = niceAmounts.where((element) => element < utxo.amount).toList().reversed;
     final List<int> niceSplitCounts = [];
