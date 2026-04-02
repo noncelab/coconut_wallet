@@ -263,6 +263,22 @@ void main() {
       expect(counts, orderedEquals([...counts]..sort()));
     });
 
+    test('추천 count로 균등 분할하면 output amount가 대응 nice amount 근사값이 된다', () async {
+      final utxo = createUtxo(100000000);
+      final builder = createBuilder(utxo);
+
+      final counts = await builder.getNiceSplitCounts();
+
+      expect(counts, [2, 5, 10, 20, 50]);
+      await expectEqualSplitAmountsNearNiceAmounts(builder, {
+        2: 50000000,
+        5: 20000000,
+        10: 10000000,
+        20: 5000000,
+        50: 2000000,
+      });
+    });
+
     test('utxo.amount가 50000일 때 가능한 nice split count만 반환한다', () async {
       final utxo = createUtxo(50000);
       final builder = createBuilder(utxo);
@@ -271,6 +287,16 @@ void main() {
 
       expect(counts, [3, 5]);
       expect(counts, orderedEquals([...counts]..sort()));
+    });
+
+    test('utxo.amount가 50000일 때 추천 count로 균등 분할하면 output amount가 대응 nice amount 근사값이 된다', () async {
+      final utxo = createUtxo(50000);
+      final builder = createBuilder(utxo);
+
+      final counts = await builder.getNiceSplitCounts();
+
+      expect(counts, [3, 5]);
+      await expectEqualSplitAmountsNearNiceAmounts(builder, {3: 20000, 5: 10000});
     });
 
     test('같은 feeRate에서는 캐시된 동일 인스턴스를 반환하고 feeRate 변경 후에는 새로 계산한다', () async {
