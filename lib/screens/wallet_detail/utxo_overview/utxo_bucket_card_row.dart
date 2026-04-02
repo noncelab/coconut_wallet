@@ -21,6 +21,7 @@ class UtxoBucketCardRow extends StatelessWidget {
   final bool isSelectionMode;
   final Set<String> selectedUtxoIds;
   final Set<String> reusedAddresses;
+  final Set<String> suspiciousUtxoIds;
   final void Function(UtxoState) onTapUtxo;
   final void Function(UtxoState)? onLongPressUtxo;
   final void Function(int)? setActiveIndex;
@@ -35,6 +36,7 @@ class UtxoBucketCardRow extends StatelessWidget {
     required this.isSelectionMode,
     required this.selectedUtxoIds,
     required this.reusedAddresses,
+    required this.suspiciousUtxoIds,
     required this.onTapUtxo,
     this.onLongPressUtxo,
     this.setActiveIndex,
@@ -70,6 +72,7 @@ class UtxoBucketCardRow extends StatelessWidget {
                 isSelectionMode: isSelectionMode,
                 selectedUtxoIds: selectedUtxoIds,
                 reusedAddresses: reusedAddresses,
+                suspiciousUtxoIds: suspiciousUtxoIds,
                 initialScrollOffset: scrollOffset,
                 onTap: onTapUtxo,
                 onLongPress: onLongPressUtxo,
@@ -89,6 +92,7 @@ class UtxoBucketCardRow extends StatelessWidget {
           isSelectionMode: isSelectionMode,
           selectedUtxoIds: selectedUtxoIds,
           reusedAddresses: reusedAddresses,
+          suspiciousUtxoIds: suspiciousUtxoIds,
           initialScrollOffset: null,
           onTap: onTapUtxo,
           onLongPress: onLongPressUtxo,
@@ -147,6 +151,7 @@ class _CoinStack extends StatefulWidget {
   final bool isSelectionMode;
   final Set<String> selectedUtxoIds;
   final Set<String> reusedAddresses;
+  final Set<String> suspiciousUtxoIds;
   final double? initialScrollOffset;
   final void Function(UtxoState) onTap;
   final void Function(UtxoState)? onLongPress;
@@ -158,6 +163,7 @@ class _CoinStack extends StatefulWidget {
     required this.isSelectionMode,
     required this.selectedUtxoIds,
     required this.reusedAddresses,
+    required this.suspiciousUtxoIds,
     this.initialScrollOffset,
     required this.onTap,
     this.onLongPress,
@@ -314,6 +320,7 @@ class _CoinStackState extends State<_CoinStack> {
                           isSelectionMode: widget.isSelectionMode,
                           currentUnit: widget.currentUnit,
                           isAddressReused: widget.reusedAddresses.contains(widget.utxos[i].to),
+                          isSuspiciousDust: widget.suspiciousUtxoIds.contains(widget.utxos[i].utxoId),
                           onTap: () => widget.onTap(widget.utxos[i]),
                           onLongPress: widget.onLongPress != null ? () => widget.onLongPress!(widget.utxos[i]) : null,
                         ),
@@ -338,6 +345,7 @@ class UtxoCoinCard extends StatefulWidget {
   final bool isSelectionMode;
   final BitcoinUnit currentUnit;
   final bool isAddressReused;
+  final bool isSuspiciousDust;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -351,6 +359,7 @@ class UtxoCoinCard extends StatefulWidget {
     this.isSelectionMode = false,
     required this.currentUnit,
     this.isAddressReused = false,
+    this.isSuspiciousDust = false,
     required this.onTap,
     this.onLongPress,
   });
@@ -364,18 +373,21 @@ class UtxoCoinCard extends StatefulWidget {
     bool isFocused,
     Color iconColor,
     UtxoState utxo,
-    BitcoinUnit currentUnit,
-  ) {
+    BitcoinUnit currentUnit, {
+    bool isSuspiciousDust = false,
+  }) {
+    print('isSuspiciousDust: $isSuspiciousDust, utxo.amount: ${utxo.amount}');
+
     return Stack(
       alignment: Alignment.center,
       children: [
         Positioned.fill(
           child: Padding(
-            padding: EdgeInsets.all(size * 0.2),
+            padding: EdgeInsets.all(size * (isSuspiciousDust ? 0.25 : 0.2)),
             child: Opacity(
               opacity: isFocused ? 0.2 : 0.1,
               child: SvgPicture.asset(
-                'assets/svg/bitcoin.svg',
+                isSuspiciousDust ? 'assets/svg/dust.svg' : 'assets/svg/bitcoin.svg',
                 colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
               ),
             ),
@@ -435,9 +447,12 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
     final bgColor = widget.isFocused ? bucketCol : Color.lerp(const Color(0xFF1A1A1A), bucketCol, 0.68)!;
     final iconColor = bgColor;
     final shadowBlur = widget.isFocused ? 16.0 : 6.0;
-    final innerStrokeColor = bgColor.withValues(alpha: widget.isFocused ? 0.2 : 0.1);
+    final innerStrokeColor =
+        widget.isSuspiciousDust ? Colors.transparent : bgColor.withValues(alpha: widget.isFocused ? 0.2 : 0.1);
     final coinBorder =
-        widget.isAddressReused
+        widget.isSuspiciousDust
+            ? null
+            : widget.isAddressReused
             ? Border.all(color: CoconutColors.hotPink, width: 2)
             : (widget.isSelected ? Border.all(color: CoconutColors.gray150, width: 2) : null);
 
@@ -484,7 +499,9 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               iconColor,
                               widget.utxo,
                               widget.currentUnit,
+                              isSuspiciousDust: widget.isSuspiciousDust,
                             ),
+                            // coin 테두리
                             Positioned.fill(
                               child: Padding(
                                 padding: const EdgeInsets.all(5),
@@ -509,6 +526,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               iconColor,
                               widget.utxo,
                               widget.currentUnit,
+                              isSuspiciousDust: widget.isSuspiciousDust,
                             ),
                             Positioned.fill(
                               child: Padding(

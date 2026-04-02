@@ -365,6 +365,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                         isSelectionMode: _isSelectionMode,
                         selectedUtxoIds: _selectedUtxoIds,
                         reusedAddresses: _reusedAddresses,
+                        suspiciousUtxoIds: _suspiciousUtxoIds,
                         onTapUtxo: (u) {
                           if (_isSelectionMode) {
                             if (u.status == UtxoStatus.outgoing || u.status == UtxoStatus.incoming) {
@@ -464,6 +465,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             currentUnit: _currentUnit,
             selectedUtxoIds: _selectedUtxoIds,
             reusedAddresses: _reusedAddresses,
+            suspiciousUtxoIds: _suspiciousUtxoIds,
             isSelectionMode: _isSelectionMode,
             onUtxoTap: (u) {
               if (_isSelectionMode) {
@@ -767,6 +769,10 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
     return addressCounts.entries.where((e) => e.value > 1).map((e) => e.key).toSet();
   }
 
+  Set<String> get _suspiciousUtxoIds {
+    return viewModel.utxoList.where((u) => viewModel.isUtxoSuspicious(u)).map((u) => u.utxoId).toSet();
+  }
+
   Widget _buildGridSliver(BitcoinUnit currentUnit) {
     final utxos = _filteredBuckets.expand((b) => b.utxos).toList();
     const mainAxisSpacing = 6.0;
@@ -799,6 +805,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                   isSelectionMode: _isSelectionMode,
                   currentUnit: currentUnit,
                   isAddressReused: _reusedAddresses.contains(utxo.to),
+                  isSuspiciousDust: _suspiciousUtxoIds.contains(utxo.utxoId),
                   onTap: () {
                     if (_isSelectionMode) {
                       if (utxo.status == UtxoStatus.outgoing || utxo.status == UtxoStatus.incoming) {

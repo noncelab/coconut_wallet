@@ -317,6 +317,7 @@ flutter:
     - assets/svg/bitcoin.svg
     - assets/svg/wallet-outlined.svg
     - assets/svg/pie.svg
+    - assets/svg/dust.svg
 
   fonts:
     - family: SpaceGrotesk
