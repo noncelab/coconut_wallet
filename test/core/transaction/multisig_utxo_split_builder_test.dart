@@ -42,7 +42,7 @@ void main() {
     }
   }
 
-  setUp(() async {
+  setUpAll(() async {
     realmManager = await setupTestRealmManager();
     final realmWalletBase = RealmWalletBase(
       wallet.id,
@@ -98,8 +98,7 @@ void main() {
     });
   });
 
-  tearDown(() {
-    realmManager.reset();
+  tearDownAll(() {
     realmManager.dispose();
   });
 
