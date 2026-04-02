@@ -265,6 +265,71 @@ void main() {
     });
   });
 
+  group('Nice Split Counts', () {
+    test('성공 가능한 nice amount 기준 count를 오름차순으로 최대 5개 반환한다', () async {
+      final utxo = createUtxo(100000000);
+      final builder = createBuilder(utxo);
+
+      final counts = await builder.getNiceSplitCounts();
+
+      expect(counts, [2, 5, 10, 20, 50]);
+      expect(counts.length, lessThanOrEqualTo(5));
+      expect(counts, orderedEquals([...counts]..sort()));
+    });
+
+    test('추천 count로 균등 분할하면 output amount가 대응 nice amount 근사값이 된다', () async {
+      final utxo = createUtxo(100000000);
+      final builder = createBuilder(utxo);
+
+      final counts = await builder.getNiceSplitCounts();
+
+      expect(counts, [2, 5, 10, 20, 50]);
+      await expectEqualSplitAmountsNearNiceAmounts(builder, {
+        2: 50000000,
+        5: 20000000,
+        10: 10000000,
+        20: 5000000,
+        50: 2000000,
+      });
+    });
+
+    test('utxo.amount가 50000일 때 가능한 nice split count만 반환한다', () async {
+      final utxo = createUtxo(50000);
+      final builder = createBuilder(utxo);
+
+      final counts = await builder.getNiceSplitCounts();
+
+      expect(counts, [3, 5]);
+      expect(counts, orderedEquals([...counts]..sort()));
+    });
+
+    test('utxo.amount가 50000일 때 추천 count로 균등 분할하면 output amount가 대응 nice amount 근사값이 된다', () async {
+      final utxo = createUtxo(50000);
+      final builder = createBuilder(utxo);
+
+      final counts = await builder.getNiceSplitCounts();
+
+      expect(counts, [3, 5]);
+      await expectEqualSplitAmountsNearNiceAmounts(builder, {3: 20000, 5: 10000});
+    });
+
+    test('같은 feeRate에서는 캐시된 동일 인스턴스를 반환하고 feeRate 변경 후에는 새로 계산한다', () async {
+      final utxo = createUtxo(100000000);
+      final builder = createBuilder(utxo, feeRate: 1.0);
+
+      final first = await builder.getNiceSplitCounts();
+      final cached = await builder.getNiceSplitCounts();
+      expect(cached, same(first));
+
+      builder.feeRate = 50.0;
+
+      final afterFeeChange = await builder.getNiceSplitCounts();
+
+      expect(afterFeeChange, [2, 5, 10, 20, 50]);
+      expect(afterFeeChange, isNot(same(first)));
+    });
+  });
+
   group('직접 나누기 (Custom Split)', () {
     test('1BTC를 0.1 x 5, 0.05 x 9로 나누기', () async {
       final utxo = createUtxo(100000000); // 1 BTC

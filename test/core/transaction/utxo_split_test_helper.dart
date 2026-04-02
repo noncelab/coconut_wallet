@@ -17,3 +17,16 @@ void expectSuccessfulTransaction(UtxoSplitResult result, {int? expectedOutputCou
     expect(output.amount, greaterThan(dustLimit));
   }
 }
+
+Future<void> expectEqualSplitAmountsNearNiceAmounts(
+  UtxoSplitBuilder builder,
+  Map<int, int> expectedNiceAmountByCount, {
+  int tolerance = 10000,
+}) async {
+  for (final entry in expectedNiceAmountByCount.entries) {
+    final result = await builder.buildEqualSplit(splitCount: entry.key);
+
+    expectSuccessfulTransaction(result, expectedOutputCount: entry.key);
+    expect(result.splitAmountMap.keys, everyElement(inInclusiveRange(entry.value - tolerance, entry.value)));
+  }
+}
