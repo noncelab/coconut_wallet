@@ -156,29 +156,35 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
   }
 
   void _showMergeCriteriaBottomSheet(BuildContext context, MergeUtxosViewModel viewModel) async {
-    final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<String>(
+    final selectedItem = await CommonBottomSheets.showBottomSheet<String>(
       context: context,
-      title: t.merge_utxos_screen.bottomsheet.title,
-      items: [
-        t.merge_utxos_screen.bottomsheet.merge_small_amounts,
-        t.merge_utxos_screen.bottomsheet.merge_same_tag,
-        t.merge_utxos_screen.bottomsheet.merge_same_address,
-      ],
-      getItemId: (item) => item,
-      initialChildSize: 0.5,
-      confirmText: t.complete,
-      minChildSize: 0.49,
-      maxChildSize: 0.9,
       backgroundColor: CoconutColors.gray900,
-      itemBuilder: (context, item, isSelected, onTap) {
-        final isTagMergeItem = item == t.merge_utxos_screen.bottomsheet.merge_same_tag;
-        final isAddressMergeItem = item == t.merge_utxos_screen.bottomsheet.merge_same_address;
-        final isDisabled =
-            (isTagMergeItem && !viewModel.hasMergeableTaggedUtxos) ||
-            (isAddressMergeItem && !viewModel.hasSameAddressUtxos);
+      title: t.merge_utxos_screen.bottomsheet.title,
+      child: SelectableBottomSheetBody<String>(
+        items: [
+          t.merge_utxos_screen.bottomsheet.merge_small_amounts,
+          t.merge_utxos_screen.bottomsheet.merge_same_tag,
+          t.merge_utxos_screen.bottomsheet.merge_same_address,
+        ],
+        showGradient: false,
+        getItemId: (item) => item,
+        confirmText: t.complete,
+        backgroundColor: CoconutColors.gray900,
+        itemBuilder: (context, item, isSelected, onTap) {
+          final isTagMergeItem = item == t.merge_utxos_screen.bottomsheet.merge_same_tag;
+          final isAddressMergeItem = item == t.merge_utxos_screen.bottomsheet.merge_same_address;
+          final isDisabled =
+              (isTagMergeItem && !viewModel.hasMergeableTaggedUtxos) ||
+              (isAddressMergeItem && !viewModel.hasSameAddressUtxos);
 
-        return SelectableBottomSheetTextItem(text: item, isSelected: isSelected, onTap: onTap, isDisabled: isDisabled);
-      },
+          return SelectableBottomSheetTextItem(
+            text: item,
+            isSelected: isSelected,
+            onTap: onTap,
+            isDisabled: isDisabled,
+          );
+        },
+      ),
     );
 
     if (selectedItem != null && context.mounted) {

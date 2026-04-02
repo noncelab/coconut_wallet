@@ -18,6 +18,7 @@ class CommonBottomSheets {
     bool enableDrag = true,
     bool isCloseButton = false,
     bool showDragHandle = false,
+    Color backgroundColor = CoconutColors.black,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
     return showModalBottomSheet<T>(
@@ -80,7 +81,7 @@ class CommonBottomSheets {
           ),
         );
       },
-      backgroundColor: CoconutColors.black,
+      backgroundColor: backgroundColor,
       isDismissible: isDismissible,
       isScrollControlled: true,
       enableDrag: enableDrag,
@@ -356,7 +357,7 @@ class CommonBottomSheets {
       initialChildSize: initialChildSize,
       backgroundColor: backgroundColor,
       childBuilder: (scrollController) {
-        return _SelectableDraggableSheetBody<T>(
+        return SelectableBottomSheetBody<T>(
           scrollController: scrollController,
           items: items,
           getItemId: getItemId,
@@ -470,31 +471,33 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
   }
 }
 
-class _SelectableDraggableSheetBody<T> extends StatefulWidget {
-  final ScrollController scrollController;
+class SelectableBottomSheetBody<T> extends StatefulWidget {
+  final ScrollController? scrollController;
   final List<T> items;
   final Object Function(T item) getItemId;
   final SelectableItemBuilder<T> itemBuilder;
   final Object? initiallySelectedId;
   final String confirmText;
   final Color backgroundColor;
+  final bool showGradient;
 
-  const _SelectableDraggableSheetBody({
+  const SelectableBottomSheetBody({
     super.key,
-    required this.scrollController,
+    this.scrollController,
     required this.items,
     required this.getItemId,
     required this.itemBuilder,
     this.initiallySelectedId,
     required this.confirmText,
     required this.backgroundColor,
+    this.showGradient = true,
   });
 
   @override
-  State<_SelectableDraggableSheetBody<T>> createState() => _SelectableDraggableSheetBodyState<T>();
+  State<SelectableBottomSheetBody<T>> createState() => _SelectableBottomSheetBodyState<T>();
 }
 
-class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSheetBody<T>> {
+class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody<T>> {
   Object? _selectedId;
 
   @override
@@ -505,16 +508,26 @@ class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSh
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: widget.backgroundColor,
-      body: SafeArea(
+    final bottomSafeArea = MediaQuery.of(context).padding.bottom;
+    final buttonAreaHeight = FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea;
+
+    return Container(
+      color: widget.backgroundColor,
+      child: SafeArea(
+        top: false,
         child: Stack(
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
               child: ListView.builder(
                 controller: widget.scrollController,
-                padding: const EdgeInsets.only(bottom: Sizes.size96),
+                shrinkWrap: true,
+                primary: false,
+                physics:
+                    widget.scrollController == null
+                        ? const NeverScrollableScrollPhysics()
+                        : const ClampingScrollPhysics(),
+                padding: EdgeInsets.only(bottom: buttonAreaHeight),
                 itemCount: widget.items.length,
                 itemBuilder: (context, index) {
                   final item = widget.items[index];
@@ -532,17 +545,28 @@ class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSh
                 },
               ),
             ),
-            FixedBottomButton(
-              onButtonClicked: () {
-                final selectedItem =
-                    _selectedId == null
-                        ? null
-                        : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
-                Navigator.pop(context, selectedItem);
-              },
-              isActive: _selectedId != null,
-              text: widget.confirmText,
-              backgroundColor: CoconutColors.white,
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SizedBox(
+                height: buttonAreaHeight,
+                child: FixedBottomButton(
+                  showGradient: widget.showGradient,
+                  isVisibleAboveKeyboard: false,
+                  bottomPadding: 0,
+                  onButtonClicked: () {
+                    final selectedItem =
+                        _selectedId == null
+                            ? null
+                            : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                    Navigator.pop(context, selectedItem);
+                  },
+                  isActive: _selectedId != null,
+                  text: widget.confirmText,
+                  backgroundColor: CoconutColors.white,
+                ),
+              ),
             ),
           ],
         ),
