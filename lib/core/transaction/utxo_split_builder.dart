@@ -4,10 +4,8 @@ import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
-import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -49,11 +47,12 @@ class UtxoSplitBuilder {
   double _feeRate;
   final WalletListItemBase walletListItemBase;
   final AddressRepository addressRepository;
-  late final WalletAddress _nextReceiveAddress;
   late final int _nextReceiveAddressIndex;
-  late final double _lastAmountMargin;
+  late final double _outputCountVarIntFeeMargin;
   double? _outputVBytes;
   double? _oneOutputTxVBytes;
+
+  static const int _outputCountVarIntThreshold = 253;
   static const List<double> niceAmounts = [
     0.0001,
     0.0002,
@@ -89,10 +88,14 @@ class UtxoSplitBuilder {
     required this.walletListItemBase,
     required this.addressRepository,
   }) : assert(feeRate > 0, 'feeRate must be greater than 0'),
-       assert(utxo.amount >= 20000, 'utxo.amount must be at least 20000'),
+       assert(utxo.amount >= 50000, 'utxo.amount must be at least 50000'),
        _feeRate = feeRate {
-    _nextReceiveAddress = addressRepository.getReceiveAddress(walletListItemBase.id);
-    _lastAmountMargin = 10 * feeRate;
+    /** output 개수가 253 이상일 때 tx 크기가 2 증가
+     * Segwit tx에서 witness가 아닌 base 영역이 2bytes 증가하므로 수수료도 2 * feeRate 증가
+     * output length: if (0 ~ 252) → 1 byte, if (253 ~ 65535) → 3 bytes, if (65536 ~ 4294967295) → 5 bytes
+     * output이 65535개 초과인 경우는 커버 X
+     */
+    _outputCountVarIntFeeMargin = 2 * feeRate;
     _nextReceiveAddressIndex = addressRepository.getReceiveAddress(walletListItemBase.id).index;
   }
 
@@ -118,21 +121,31 @@ class UtxoSplitBuilder {
     // 조건: (utxo.amount - fee) >= (dustLimit + 1) * n
     double feePerOutput = _outputVBytes! * feeRate;
     // INFO: _lastAmountMargin 필요한 이유: coconut_lib 트랜잭션 생성 시 예상 수수료가 여기서 예상한 것보다 큰 경우 마지막 Output Amount가 dustLimit 이하가 되는 경우를 방지
-    final left = utxo.amount - (_oneOutputTxVBytes! * feeRate) - _lastAmountMargin;
-    // left - feePerOutput * (n-1) >= (546 + 1) * n
-    // left + feePerOutput >= 547 * n + feePerOutput * n
-    // left + feePerOutput >= n * (547 + feePerOutput)
-    // n <= (left + feePerOutput) / (547 + feePerOutput)
-    return (left + feePerOutput) ~/ (dustLimit + 1 + feePerOutput);
+    var left = utxo.amount - (_oneOutputTxVBytes! * feeRate);
+    /** left - feePerOutput * (n-1) >= (546 + 1) * n
+        left + feePerOutput >= 547 * n + feePerOutput * n
+        left + feePerOutput >= n * (547 + feePerOutput)
+        n <= (left + feePerOutput) / (547 + feePerOutput) */
+    var result = (left + feePerOutput) ~/ (dustLimit + 1 + feePerOutput);
+    if (result < _outputCountVarIntThreshold) {
+      return result;
+    }
+
+    left = utxo.amount - (_oneOutputTxVBytes! * feeRate) - _outputCountVarIntFeeMargin;
+    result = (left + feePerOutput) ~/ (dustLimit + 1 + feePerOutput);
+    return result;
   }
 
   /// 균등하게 나누기
   Future<UtxoSplitResult> buildEqualSplit({required int splitCount}) async {
     assert(splitCount >= 2);
+    Logger.log("--> splitCount: $splitCount");
     await _initOutputVBytes();
     // INFO: _lastAmountMargin 필요한 이유: coconut_lib 트랜잭션 생성 시 예상 수수료가 여기서 예상한 것보다 큰 경우 마지막 Output Amount가 dustLimit 이하가 되는 경우를 방지
-    final fee = (_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate + _lastAmountMargin;
-
+    var fee =
+        (_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
+        (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
+    Logger.log('--> UtxoSplitBuilder 균등분할 estimatedFee: $fee');
     if (fee >= utxo.amount) {
       throw SplitInsufficientAmountException(estimatedFee: fee); // 수수료가 UTXO 금액보다 커요
     }
@@ -155,9 +168,7 @@ class UtxoSplitBuilder {
     }
 
     // 트랜잭션 생성 (마지막 output에 fee 포함하여 sweep)
-    var recipients = await _buildSweepRecipients(desiredAmounts.sublist(0, desiredAmounts.length - 1));
-    var txBuildResult = _buildTransaction(recipients);
-
+    var txBuildResult = await _buildTransaction(desiredAmounts.sublist(0, desiredAmounts.length - 1));
     if (txBuildResult.isFailure) {
       _throwIfBuildFailed(txBuildResult);
     }
@@ -173,7 +184,7 @@ class UtxoSplitBuilder {
       throw const SplitOutputDustException(); // 0.0000 0547 BTC부터 전송할 수 있어요
     }
 
-    var firstLeft = utxo.amount - _lastAmountMargin - (_oneOutputTxVBytes! * feeRate) - amountPerOutput;
+    double firstLeft = utxo.amount - (_oneOutputTxVBytes! * feeRate) - amountPerOutput;
     final feePerOutput = _outputVBytes! * feeRate;
     if (firstLeft <= dustLimit + feePerOutput) {
       throw const SplitInsufficientAmountException(); // 수수료를 포함하면 나눌 수 없는 금액이에요.
@@ -186,21 +197,28 @@ class UtxoSplitBuilder {
     // left에서 neededSatsPerOneMore를 차감한 후 마지막 sweep output이 dustLimit 이상인지 확인
     // exactAmounts: 정확한 금액의 output 리스트 (sweep output 제외)
     List<int> exactAmounts = [amountPerOutput];
+    int count = 1;
     while (left - neededSatsPerOneMore > dustLimit + feePerOutput) {
+      if (count + 1 == _outputCountVarIntThreshold) {
+        if (left - _outputCountVarIntFeeMargin - neededSatsPerOneMore <= dustLimit + feePerOutput) {
+          break;
+        } else {
+          left -= _outputCountVarIntFeeMargin;
+        }
+      }
+
       left -= neededSatsPerOneMore;
       exactAmounts.add(amountPerOutput);
+      count++;
     }
 
-    var recipients = await _buildSweepRecipients(exactAmounts);
-    var txBuildResult = _buildTransaction(recipients);
-
+    var txBuildResult = await _buildTransaction(exactAmounts);
     if (txBuildResult.isFailure) {
       if (txBuildResult.exception is SendAmountTooLowException) {
         if (exactAmounts.length > 2) {
           // 1개 줄여서 다시 시도
           exactAmounts.removeLast();
-          recipients = await _buildSweepRecipients(exactAmounts);
-          txBuildResult = _buildTransaction(recipients);
+          txBuildResult = await _buildTransaction(exactAmounts);
         }
         if (txBuildResult.isFailure) {
           _throwIfBuildFailed(txBuildResult);
@@ -229,8 +247,10 @@ class UtxoSplitBuilder {
     final totalRequested = amountCountMap.entries.fold<int>(0, (sum, entry) => sum + entry.key * entry.value);
     final totalOutputCount = amountCountMap.values.fold<int>(0, (sum, count) => sum + count);
 
-    final double estimatedFee = (_oneOutputTxVBytes! + _outputVBytes! * (totalOutputCount - 1)) * feeRate;
-    final left = utxo.amount - _lastAmountMargin - totalRequested - estimatedFee;
+    final double estimatedFee =
+        (_oneOutputTxVBytes! + _outputVBytes! * (totalOutputCount - 1)) * feeRate +
+        (totalOutputCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
+    final left = utxo.amount - totalRequested - estimatedFee;
     if (left < 0) {
       throw SplitInsufficientAmountException(estimatedFee: estimatedFee); // 금액이 부족해요
     }
@@ -240,10 +260,7 @@ class UtxoSplitBuilder {
     }
 
     final flattenedAmounts = amountCountMap.entries.expand((entry) => List.filled(entry.value, entry.key)).toList();
-
-    var recipients = await _buildSweepRecipients(flattenedAmounts);
-    var txBuildResult = _buildTransaction(recipients);
-
+    var txBuildResult = await _buildTransaction(flattenedAmounts);
     if (txBuildResult.isFailure) {
       _throwIfBuildFailed(txBuildResult);
     }
@@ -358,12 +375,13 @@ class UtxoSplitBuilder {
     return recipients;
   }
 
-  TransactionBuildResult _buildTransaction(Map<String, int> recipients) {
+  Future<TransactionBuildResult> _buildTransaction(List<int> exactAmounts) async {
+    final firstRecipients = await _buildSweepRecipients(exactAmounts);
     final changeAddress = addressRepository.getChangeAddress(walletListItemBase.id);
 
     return TransactionBuilder(
       availableUtxos: [utxo],
-      recipients: recipients,
+      recipients: firstRecipients,
       feeRate: feeRate,
       changeDerivationPath: changeAddress.derivationPath,
       walletListItemBase: walletListItemBase,

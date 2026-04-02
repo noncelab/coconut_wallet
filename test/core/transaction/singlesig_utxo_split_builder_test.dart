@@ -40,6 +40,8 @@ void main() {
     for (final entry in result.splitAmountMap.entries) {
       print('${entry.key} x ${entry.value}');
     }
+
+    print('estimatedFee: ${result.estimatedFee}');
   }
 
   setUp(() async {
@@ -61,13 +63,13 @@ void main() {
     // generatedReceiveIndex, generatedChangeIndex 업데이트
     realmManager.realm.write(() {
       final savedWallet = realmManager.realm.find<RealmWalletBase>(wallet.id)!;
-      savedWallet.generatedReceiveIndex = 49;
+      savedWallet.generatedReceiveIndex = 399;
       savedWallet.generatedChangeIndex = 19;
     });
 
-    // receive 주소 50개, change 주소 20개 생성
+    // receive 주소 400개, change 주소 20개 생성
     final List<WalletAddress> addresses = [];
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 400; i++) {
       final address = wallet.walletBase.getAddress(i, isChange: false);
       final derivationPath = "${wallet.walletBase.derivationPath}/0/$i";
       addresses.add(WalletAddress(address, derivationPath, i, false, false, 0, 0, 0));
@@ -107,7 +109,7 @@ void main() {
     test('기본 균등 분할 - 나머지가 있는 경우', () async {
       // P2WPKH: 1 input, 5 outputs → vSize 약 203 → fee = 203 sats (feeRate 1.0)
       // 100000 - 203 = 99797 → 99797 / 5 = 19959 remainder 2
-      // splitAmountMap: {19959: 3, 19960: 2}
+      // splitAmountMap: {19959: 3, 19960: 2} 203/ 5 = 40 r 3
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo);
 
@@ -127,8 +129,7 @@ void main() {
       // feeRatio 검증 (소숫점 2자리)
       expect(result.feeRatio, isA<double>());
       expect(result.feeRatio.toString().split('.').last.length, lessThanOrEqualTo(2));
-
-      print(result.toString());
+      printSplitOutputs(result, '기본 균등 분할');
     });
 
     test('나머지 없이 딱 떨어지는 경우', () async {
@@ -149,18 +150,19 @@ void main() {
 
       final totalCount = result.splitAmountMap.values.fold<int>(0, (sum, c) => sum + c);
       expect(totalCount, 5);
+      printSplitOutputs(result, '균등분할: 나머지 없이 딱 떨어지는 경우');
     });
 
     test('dust 발생 시 SplitOutputDustException', () async {
       // 최소 허용 금액에서 많이 쪼개려 하면 dust 발생
-      final utxo = createUtxo(20000);
+      final utxo = createUtxo(50000);
       final builder = createBuilder(utxo);
 
       expect(() => builder.buildEqualSplit(splitCount: 200), throwsA(isA<SplitOutputDustException>()));
     });
 
     test('fee가 UTXO amount 대비 너무 크면 SplitInsufficientAmountException', () async {
-      final utxo = createUtxo(20000);
+      final utxo = createUtxo(50000);
       final builder = createBuilder(utxo, feeRate: 1000.0);
 
       expect(() => builder.buildEqualSplit(splitCount: 2), throwsA(isA<SplitInsufficientAmountException>()));
@@ -206,6 +208,42 @@ void main() {
       printSplitOutputs(result, '100000 sats UTXO, 5000 sats per output');
     });
 
+    test('1BTC UTXO를 300000 sats씩 나누기 - outputCount varInt threshold 초과', () async {
+      final utxo = createUtxo(100000000);
+      final builder = createBuilder(utxo);
+
+      final result = await builder.buildFixedAmountSplit(amountPerOutput: 300000);
+
+      expect(result.isSuccess, isTrue);
+      expectSuccessfulTransaction(result);
+      expect(result.splitAmountMap.containsKey(300000), isTrue);
+
+      final totalCount = result.splitAmountMap.values.fold<int>(0, (sum, c) => sum + c);
+      expect(totalCount, greaterThanOrEqualTo(253));
+
+      final totalAmount = result.splitAmountMap.entries.fold<int>(0, (sum, entry) => sum + entry.key * entry.value);
+      expect(totalAmount + result.estimatedFee, utxo.amount);
+      printSplitOutputs(result, '1BTC UTXO, 300000 sats per output');
+    });
+
+    test('1BTC UTXO를 300000 sats씩 나누기 - feeRate 12.5, outputCount varInt threshold 초과', () async {
+      final utxo = createUtxo(100000000);
+      final builder = createBuilder(utxo, feeRate: 12.5);
+
+      final result = await builder.buildFixedAmountSplit(amountPerOutput: 300000);
+
+      expect(result.isSuccess, isTrue);
+      expectSuccessfulTransaction(result);
+      expect(result.splitAmountMap.containsKey(300000), isTrue);
+
+      final totalCount = result.splitAmountMap.values.fold<int>(0, (sum, c) => sum + c);
+      expect(totalCount, greaterThanOrEqualTo(253));
+
+      final totalAmount = result.splitAmountMap.entries.fold<int>(0, (sum, entry) => sum + entry.key * entry.value);
+      expect(totalAmount + result.estimatedFee, utxo.amount);
+      printSplitOutputs(result, '1BTC UTXO, 300000 sats per output, feeRate 12.5');
+    });
+
     test('amountPerOutput이 너무 커서 fee 포함 불가 → SplitInsufficientAmountException', () async {
       // firstLeft = 100000 - 10 - 110 - 99990 = -110 ≤ dustLimit(546) + feePerOutput(31)
       final utxo = createUtxo(100000);
@@ -244,6 +282,42 @@ void main() {
       final totalAmount = result.splitAmountMap.entries.fold<int>(0, (sum, entry) => sum + entry.key * entry.value);
       expect(totalAmount + result.estimatedFee, utxo.amount);
       printSplitOutputs(result, 'CustomSplit: 1BTC UTXO, 0.1 x 5, 0.05 x 9 and extra');
+    });
+
+    test('1BTC를 300000 sats 332개로 나누기', () async {
+      final utxo = createUtxo(100000000); // 1 BTC
+      final builder = createBuilder(utxo, feeRate: 1.0);
+
+      final result = await builder.buildCustomSplit(amountCountMap: {300000: 332});
+
+      expect(result.isSuccess, isTrue);
+      expectSuccessfulTransaction(result);
+      expect(result.splitAmountMap[300000], 332);
+
+      final totalCount = result.splitAmountMap.values.fold<int>(0, (sum, count) => sum + count);
+      expect(totalCount, 333);
+
+      final totalAmount = result.splitAmountMap.entries.fold<int>(0, (sum, entry) => sum + entry.key * entry.value);
+      expect(totalAmount + result.estimatedFee, utxo.amount);
+      printSplitOutputs(result, 'CustomSplit: 1BTC UTXO, 300000 sats x 332 and extra');
+    });
+
+    test('1BTC를 300000 sats 332개로 나누기, feeRate 12.5', () async {
+      final utxo = createUtxo(100000000); // 1 BTC
+      final builder = createBuilder(utxo, feeRate: 12.5);
+
+      final result = await builder.buildCustomSplit(amountCountMap: {300000: 332});
+
+      expect(result.isSuccess, isTrue);
+      expectSuccessfulTransaction(result);
+      expect(result.splitAmountMap[300000], 332);
+
+      final totalCount = result.splitAmountMap.values.fold<int>(0, (sum, count) => sum + count);
+      expect(totalCount, 333);
+
+      final totalAmount = result.splitAmountMap.entries.fold<int>(0, (sum, entry) => sum + entry.key * entry.value);
+      expect(totalAmount + result.estimatedFee, utxo.amount);
+      printSplitOutputs(result, 'CustomSplit: 1BTC UTXO, 300000 sats x 332, feeRate 12.5 and extra');
     });
 
     test('1BTC를 0.1 x 5, 0.05 x 10로 나누려 하면 SplitInsufficientAmountException', () async {
@@ -323,16 +397,14 @@ void main() {
   group('getMaxEqualSplitCount로 buildEqualSplit 성공 검증', () {
     final testCases = [
       //(amount, feeRate, description)
-      (20000, 1.0, '최소 허용 금액'),
-      (30000, 1.0, '소액 UTXO'),
-      (50000, 1.0, '5만 sats'),
+      (50000, 1.0, '최소 허용 금액'),
       (100000, 1.0, '10만 sats'),
       (1000000, 1.0, '100만 sats'),
       (10000000, 1.0, '0.1 BTC'),
-      // (100000000, 1.0, '1 BTC'), // 173010개: 너무 많아서 10분으로도 부족함
       (100000, 5.0, '높은 feeRate'),
       (100000, 50.0, '매우 높은 feeRate'),
       (10000000, 100.0, '높은 금액 + 높은 feeRate'), // estimatedFee: 8498810.0 8498975
+      // (100000000, 1.0, '1 BTC'), // output 173010개: 너무 많아서 10분으로도 부족함
     ];
 
     for (final (amount, feeRate, description) in testCases) {
