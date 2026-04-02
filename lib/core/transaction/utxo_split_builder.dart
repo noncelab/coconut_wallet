@@ -48,31 +48,33 @@ class UtxoSplitBuilder {
   final WalletListItemBase walletListItemBase;
   final AddressRepository addressRepository;
   late final int _nextReceiveAddressIndex;
-  late final double _outputCountVarIntFeeMargin;
   double? _outputVBytes;
   double? _oneOutputTxVBytes;
+  List<int>? _cachedNiceSplitCounts;
 
   static const int _outputCountVarIntThreshold = 253;
-  static const List<double> niceAmounts = [
-    0.0001,
-    0.0002,
-    0.0005,
-    0.001,
-    0.002,
-    0.005,
-    0.01,
-    0.02,
-    0.05,
-    0.1,
-    0.2,
-    0.5,
-    1,
-    2,
-    5,
-    10,
-    20,
-    50,
+  static const List<int> niceAmounts = [
+    10000,
+    20000,
+    50000,
+    100000,
+    200000,
+    500000,
+    1000000,
+    2000000,
+    5000000,
+    10000000,
+    20000000,
+    50000000,
+    100000000,
+    200000000,
+    500000000,
+    1000000000,
+    2000000000,
+    5000000000,
   ];
+
+  double get _outputCountVarIntFeeMargin => 2 * feeRate;
 
   double get feeRate => _feeRate;
   set feeRate(double value) {
@@ -80,6 +82,7 @@ class UtxoSplitBuilder {
       throw ArgumentError('feeRate must be greater than 0. Given: $value');
     }
     _feeRate = value;
+    _cachedNiceSplitCounts = null;
   }
 
   UtxoSplitBuilder({
@@ -95,7 +98,6 @@ class UtxoSplitBuilder {
      * output length: if (0 ~ 252) → 1 byte, if (253 ~ 65535) → 3 bytes, if (65536 ~ 4294967295) → 5 bytes
      * output이 65535개 초과인 경우는 커버 X
      */
-    _outputCountVarIntFeeMargin = 2 * feeRate;
     _nextReceiveAddressIndex = addressRepository.getReceiveAddress(walletListItemBase.id).index;
   }
 
@@ -183,34 +185,7 @@ class UtxoSplitBuilder {
     if (amountPerOutput <= dustLimit) {
       throw const SplitOutputDustException(); // 0.0000 0547 BTC부터 전송할 수 있어요
     }
-
-    double firstLeft = utxo.amount - (_oneOutputTxVBytes! * feeRate) - amountPerOutput;
-    final feePerOutput = _outputVBytes! * feeRate;
-    if (firstLeft <= dustLimit + feePerOutput) {
-      throw const SplitInsufficientAmountException(); // 수수료를 포함하면 나눌 수 없는 금액이에요.
-    }
-
-    var neededSatsPerOneMore = amountPerOutput + feePerOutput;
-    double left = firstLeft;
-
-    // amountPerOutput을 최대한 많이 넣을 수 있는 개수를 구함
-    // left에서 neededSatsPerOneMore를 차감한 후 마지막 sweep output이 dustLimit 이상인지 확인
-    // exactAmounts: 정확한 금액의 output 리스트 (sweep output 제외)
-    List<int> exactAmounts = [amountPerOutput];
-    int count = 1;
-    while (left - neededSatsPerOneMore > dustLimit + feePerOutput) {
-      if (count + 1 == _outputCountVarIntThreshold) {
-        if (left - _outputCountVarIntFeeMargin - neededSatsPerOneMore <= dustLimit + feePerOutput) {
-          break;
-        } else {
-          left -= _outputCountVarIntFeeMargin;
-        }
-      }
-
-      left -= neededSatsPerOneMore;
-      exactAmounts.add(amountPerOutput);
-      count++;
-    }
+    List<int> exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
 
     var txBuildResult = await _buildTransaction(exactAmounts);
     if (txBuildResult.isFailure) {
@@ -268,32 +243,36 @@ class UtxoSplitBuilder {
     return _buildSuccessResult(txBuildResult.transaction!);
   }
 
-  /// UTXO를 niceNumbers로 나눠지게 하는 count 최대 5개를 반환
-  // List<int> getNiceSplitCounts(double value) {
-  //   final raw = value / 10;
+  /// UTXO를 niceAmounts로 나눠지게 하는 count 최대 5개를 반환
+  Future<List<int>> getNiceSplitCounts() async {
+    if (_cachedNiceSplitCounts != null) {
+      return _cachedNiceSplitCounts!;
+    }
 
-  //   const List<double> niceNumbers = [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 20, 50];
+    // niceAmounts 중 utxo.amount보다 작으면서 가장 큰 값으로부터 최대 5개를 찾아 subList로 만든다.
+    // subList가 0개면 빈 배열을 반환한다.
+    // subList에 있는 값의 근사값으로 나눠지려면 count 몇으로 나눠야하는지 찾아서 배열로 반환한다.
+    await _initOutputVBytes();
+    final selectableNiceAmounts = niceAmounts.where((element) => element < utxo.amount).toList().reversed;
+    final List<int> niceSplitCounts = [];
 
-  //   const maxOutputs = 20;
+    for (final amount in selectableNiceAmounts) {
+      try {
+        final exactAmounts = _getFixedSplitExactAmounts(amount);
+        niceSplitCounts.add(exactAmounts.length + 1);
+        if (niceSplitCounts.length == 5) {
+          break;
+        }
+      } on SplitOutputDustException {
+        continue;
+      } on SplitInsufficientAmountException {
+        continue;
+      }
+    }
 
-  //   double best = niceNumbers.first;
-  //   double minDiff = double.infinity;
-
-  //   for (final n in niceNumbers) {
-  //     final count = value / n;
-
-  //     if (count > maxOutputs) continue;
-
-  //     final diff = (raw - n).abs();
-
-  //     if (diff < minDiff) {
-  //       minDiff = diff;
-  //       best = n;
-  //     }
-  //   }
-
-  //   return best;
-  // }
+    _cachedNiceSplitCounts = niceSplitCounts;
+    return _cachedNiceSplitCounts!;
+  }
 
   // ----------- Internal methods -----------
   // ----------- Handle Result -----------
@@ -343,9 +322,36 @@ class UtxoSplitBuilder {
   }
 
   /// sweep 방식의 recipients 생성
-  /// [exactAmounts]: 정확한 금액의 output 리스트 (sweep output 미포함)
-  /// sweep output이 마지막에 자동으로 추가됨 (utxo.amount - sum(exactAmounts) - fee)
-  /// TransactionBuilder가 isFeeSubtractedFromAmount: true로 마지막에서 fee 차감
+  /// [exactAmounts]: 확정된 금액의 output 리스트, last output은 미포함
+  List<int> _getFixedSplitExactAmounts(int amountPerOutput) {
+    double firstLeft = utxo.amount - (_oneOutputTxVBytes! * feeRate) - amountPerOutput;
+    final feePerOutput = _outputVBytes! * feeRate;
+    if (firstLeft <= dustLimit + feePerOutput) {
+      throw const SplitInsufficientAmountException();
+    }
+
+    var neededSatsPerOneMore = amountPerOutput + feePerOutput;
+    double left = firstLeft;
+    List<int> exactAmounts = [amountPerOutput];
+    int count = 1;
+
+    while (left - neededSatsPerOneMore > dustLimit + feePerOutput) {
+      if (count + 1 == _outputCountVarIntThreshold) {
+        if (left - _outputCountVarIntFeeMargin - neededSatsPerOneMore <= dustLimit + feePerOutput) {
+          break;
+        } else {
+          left -= _outputCountVarIntFeeMargin;
+        }
+      }
+
+      left -= neededSatsPerOneMore;
+      exactAmounts.add(amountPerOutput);
+      count++;
+    }
+
+    return exactAmounts;
+  }
+
   Future<Map<String, int>> _buildSweepRecipients(List<int> exactAmounts) async {
     final totalOutputCount = exactAmounts.length + 1; // +1 for sweep output
 
