@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
@@ -7,8 +6,9 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
-import 'package:coconut_wallet/widgets/bottom_sheet/bip21_amount_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -72,7 +72,7 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   final GlobalKey _qrCaptureKey = GlobalKey();
   final GlobalKey _shareButtonKey = GlobalKey();
   bool _isPulldownOpen = false;
-  int? _enteredReceiveAmountSats;
+  int? _amountInSats; // bip21 포맷의 amount를 sats로 변환한 값
 
   String _selectedKey = "";
 
@@ -110,15 +110,15 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
             ? widget.qrData
             : widget.qrDataMap![_selectedKey] ?? widget.qrData;
 
-    if (!widget.isAddress || _enteredReceiveAmountSats == null) {
+    if (!widget.isAddress || _amountInSats == null) {
       return baseQrData;
     }
 
-    return buildBip21Uri(extractAddressFromBip21(baseQrData), amount: _enteredReceiveAmountSats);
+    return buildBip21Uri(extractAddressFromBip21(baseQrData), amount: _amountInSats);
   }
 
   String get _currentTextData {
-    if (widget.isAddress && _enteredReceiveAmountSats != null) {
+    if (widget.isAddress && _amountInSats != null) {
       return _currentQrData;
     }
 
@@ -227,11 +227,11 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
             final result = await Bip21AmountBottomSheet.show(
               context: context,
               currentUnit: currentUnit,
-              initialAmountSats: _enteredReceiveAmountSats,
+              initialAmountSats: _amountInSats,
             );
             if (!mounted || result == null || !result.didEdit) return;
             setState(() {
-              _enteredReceiveAmountSats = result.amountInSats;
+              _amountInSats = result.amountInSats;
             });
           },
           onShareTap: () async {
