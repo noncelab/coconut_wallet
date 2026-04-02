@@ -376,8 +376,6 @@ class UtxoCoinCard extends StatefulWidget {
     BitcoinUnit currentUnit, {
     bool isSuspiciousDust = false,
   }) {
-    print('isSuspiciousDust: $isSuspiciousDust, utxo.amount: ${utxo.amount}');
-
     return Stack(
       alignment: Alignment.center,
       children: [
