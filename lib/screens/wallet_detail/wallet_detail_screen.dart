@@ -114,7 +114,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       _buildTxListLabel(),
                       TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
 
-                      const SliverToBoxAdapter(child: SizedBox(height: 75)),
+                      SliverToBoxAdapter(child: SizedBox(height: 35 + MediaQuery.of(context).padding.bottom)),
                     ],
                   ),
                 ),
@@ -514,7 +514,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             return BottomActionBarSlide(
               isVisible: isVisible,
               child: BottomActionBar(
-                padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0, top: 16.0),
+                padding: EdgeInsets.only(
+                  left: 8.0,
+                  right: 8.0,
+                  bottom: MediaQuery.of(context).padding.bottom,
+                  top: 8.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
