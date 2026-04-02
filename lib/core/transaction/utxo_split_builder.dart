@@ -122,7 +122,6 @@ class UtxoSplitBuilder {
     // fee = (_oneOutputTxVBytes + _outputVBytes * (n - 1)) * feeRate
     // 조건: (utxo.amount - fee) >= (dustLimit + 1) * n
     double feePerOutput = _outputVBytes! * feeRate;
-    // INFO: _lastAmountMargin 필요한 이유: coconut_lib 트랜잭션 생성 시 예상 수수료가 여기서 예상한 것보다 큰 경우 마지막 Output Amount가 dustLimit 이하가 되는 경우를 방지
     var left = utxo.amount - (_oneOutputTxVBytes! * feeRate);
     /** left - feePerOutput * (n-1) >= (546 + 1) * n
         left + feePerOutput >= 547 * n + feePerOutput * n
@@ -143,7 +142,6 @@ class UtxoSplitBuilder {
     assert(splitCount >= 2);
     Logger.log("--> splitCount: $splitCount");
     await _initOutputVBytes();
-    // INFO: _lastAmountMargin 필요한 이유: coconut_lib 트랜잭션 생성 시 예상 수수료가 여기서 예상한 것보다 큰 경우 마지막 Output Amount가 dustLimit 이하가 되는 경우를 방지
     var fee =
         (_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
         (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
