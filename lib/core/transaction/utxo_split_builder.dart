@@ -91,7 +91,7 @@ class UtxoSplitBuilder {
     required this.walletListItemBase,
     required this.addressRepository,
   }) : assert(feeRate > 0, 'feeRate must be greater than 0'),
-       assert(utxo.amount >= 50000, 'utxo.amount must be at least 50000'),
+       assert(utxo.amount >= 20000, 'utxo.amount must be at least 20000'),
        _feeRate = feeRate {
     /** output 개수가 253 이상일 때 tx 크기가 2 증가
      * Segwit tx에서 witness가 아닌 base 영역이 2bytes 증가하므로 수수료도 2 * feeRate 증가
