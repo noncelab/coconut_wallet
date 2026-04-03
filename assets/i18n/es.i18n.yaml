@@ -769,6 +769,17 @@ merge_utxos_screen:
 
 split_utxo_screen:
   title: "Dividir UTXO"
+  placeholder_utxo: "Seleccione un UTXO"
+  placeholder_criteria: "Seleccione el criterio de división"
+  question_select_utxo: "¿Qué UTXO dividir?"
+  question_select_criteria: "¿Cómo dividir?"
+  question_split_by_amount: "¿Cuánto para cada uno?"
+  question_split_evenly: "¿En cuántas partes?"
+  label_split_criteria: "Criterio de división"
+  label_selected_utxo: "UTXO seleccionado"
+  and_more_tags: "${count} más"
+  utxo_error: "Esta cantidad es demasiado pequeña para dividirla"
+  utxo_warning: "La proporción de comisiones es alta, por lo que puede no ser adecuada para dividir"  
   bottomsheet:
     title: "Elegir criterio de división"
     split_by_amount: "Dividir por monto fijo"

@@ -771,6 +771,17 @@ merge_utxos_screen:
 
 split_utxo_screen:
   title: "UTXO 나누기"
+  placeholder_utxo: "UTXO를 선택하세요"
+  placeholder_criteria: "분할 기준을 선택하세요"
+  question_select_utxo: "어떤 UTXO를 나눌까요?"
+  question_select_criteria: "어떻게 나눌까요?"
+  question_split_by_amount: "얼마씩 나눌까요?"
+  question_split_evenly: "몇 개로 나눌까요?"
+  label_split_criteria: "분할 기준"
+  label_selected_utxo: "선택한 UTXO"
+  and_more_tags: "외 ${count}개"
+  utxo_error: "이 금액은 나누기에 너무 작아요"
+  utxo_warning: "수수료 비중이 높아 나누기에 적합하지 않을 수 있어요"
   bottomsheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"

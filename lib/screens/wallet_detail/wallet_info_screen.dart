@@ -406,10 +406,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       placeholderColor: CoconutColors.gray700,
       activeColor: CoconutColors.white,
       cursorColor: CoconutColors.white,
-      suffix: Text(
-        BitcoinUnit.btc.symbol,
-        style: CoconutTypography.body2_14_Bold,
-      ),
+      suffix: Text(BitcoinUnit.btc.symbol, style: CoconutTypography.body2_14_Bold),
       onComplete: (text) {
         final btc = double.tryParse(text.replaceAll(',', ''));
         if (btc == null || btc <= 0) {

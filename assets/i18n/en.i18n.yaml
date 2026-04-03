@@ -766,6 +766,17 @@ merge_utxos_screen:
 
 split_utxo_screen:
   title: "Split UTXO"
+  placeholder_utxo: "Select a UTXO"
+  placeholder_criteria: "Select split criteria"
+  question_select_utxo: "Which UTXO to split?"
+  question_select_criteria: "How to split?"
+  question_split_by_amount: "How much for each?"
+  question_split_evenly: "How many parts?"
+  label_split_criteria: "Split criteria"
+  label_selected_utxo: "Selected UTXO"
+  and_more_tags: "${count} more"
+  utxo_error: "This amount is too small to split"
+  utxo_warning: "The fee ratio is high, so it may not be suitable for splitting"
   bottomsheet:
     title: "Choose split criteria"
     split_by_amount: "Split by amount"
