@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -83,6 +84,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   int get balance => _balance;
 
   int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+  int get availableUtxoCount => _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent).length;
 
   int _receivingAmount = 0;
   int _sendingAmount = 0;

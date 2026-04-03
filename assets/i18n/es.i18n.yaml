@@ -945,8 +945,9 @@ toast:
   tag_update_failed: "No se puede editar la etiqueta."
   tag_delete_failed: "No se puede eliminar la etiqueta."
   wallet_detail_refresh: "Arrastra la pantalla hacia abajo para obtener los datos más recientes."
-  merge_utxos_unavailable_description: "Puedes combinar UTXOs cuando hay múltiples UTXOs disponibles."
-  split_utxo_unavailable_description: "No hay UTXOs para dividir."
+  merge_utxos_unavailable_description: "Se necesitan al menos 2 UTXO para combinarlos"
+  locked_utxo_unavailable_description: "Los UTXO bloqueados no se pueden combinar"
+  split_utxo_unavailable_description: "No hay UTXO disponibles para dividir"
 
 alert:
   error_tx:

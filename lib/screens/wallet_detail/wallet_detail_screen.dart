@@ -502,9 +502,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   Widget _buildbottomActionBar() {
-    return Selector<WalletDetailViewModel, int>(
-      selector: (_, viewModel) => viewModel.utxoCount,
-      builder: (_, utxoCount, __) {
+    return Selector<WalletDetailViewModel, Tuple2<int, int>>(
+      selector: (_, viewModel) => Tuple2(viewModel.utxoCount, viewModel.availableUtxoCount),
+      builder: (_, data, __) {
+        final int utxoCount = data.item1;
+        final int availableUtxoCount = data.item2;
+
         final bool canMerge = utxoCount > 1;
         final bool canSplit = utxoCount > 0;
 
@@ -532,7 +535,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           onTap:
                               canMerge
                                   ? () {
-                                    Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+                                    if (availableUtxoCount < 2) {
+                                      CoconutToast.showToast(
+                                        context: context,
+                                        isVisibleIcon: true,
+                                        iconPath: 'assets/svg/circle-info.svg',
+                                        text: t.toast.locked_utxo_unavailable_description,
+                                        level: CoconutToastLevel.info,
+                                      );
+                                    } else {
+                                      Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+                                    }
                                   }
                                   : () {
                                     CoconutToast.showToast(
