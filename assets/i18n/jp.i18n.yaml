@@ -932,8 +932,9 @@ toast:
   tag_update_failed: "タグを更新できませんでした。"
   tag_delete_failed: "タグを削除できませんでした。"
   wallet_detail_refresh: "画面を下にスクロールして最新データを取得してください。"
-  merge_utxos_unavailable_description: "複数のUTXOがある場合、統合を利用できます。"
-  split_utxo_unavailable_description: "分割できるUTXOがありません。"
+  merge_utxos_unavailable_description: "統合するにはUTXOが2つ以上必要です"
+  locked_utxo_unavailable_description: "ロックされたUTXOは統合できません"
+  split_utxo_unavailable_description: "分割できるUTXOがありません"
 
 alert:
   error_tx:
