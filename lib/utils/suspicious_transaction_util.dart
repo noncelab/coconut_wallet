@@ -18,7 +18,14 @@ class SuspiciousTransactionUtil {
       if (isMyAddress(input.address)) return false;
     }
 
-    return true;
+    // 내 주소로 온 output 중 dust 크기가 있는지 확인
+    for (final output in record.outputAddressList) {
+      if (isMyAddress(output.address) && output.amount > 0 && output.amount < suspiciousAmountThreshold) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /// UtxoState 기반 dust attack 의심 여부 판단

@@ -514,7 +514,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     }
   }
 
-  Future<void> _toggleSuspiciousUtxoLock({required bool lock, bool showToast = true}) async {
+  Future<void> _toggleUtxoLock({required bool lock, bool showToast = true}) async {
     final result = await _viewModel.toggleUtxoLockStatus();
     if (mounted && !result && showToast) {
       CoconutToast.showToast(
@@ -586,7 +586,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       label: t.utxo_detail_screen.lock_status,
       underlineButtonLabel:
           isLocked ? t.utxo_detail_screen.utxo_unlocked_button : t.utxo_detail_screen.utxo_locked_button,
-      onTapUnderlineButton: () => _toggleSuspiciousUtxoLock(lock: !isLocked, showToast: !isSuspiciousDustUtxo),
+      onTapUnderlineButton: () => _toggleUtxoLock(lock: !isLocked, showToast: !isSuspiciousDustUtxo),
       child: UtxoLockStatusChip(isLocked: isLocked, isSuspiciousDustUtxo: isSuspiciousDustUtxo),
     );
   }

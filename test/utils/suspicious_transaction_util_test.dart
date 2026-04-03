@@ -42,92 +42,88 @@ void main() {
   bool isMyAddress(String address) => myAddresses.contains(address);
 
   group('isTransactionSuspicious', () {
-    test('received + 소액 + 외부 input → suspicious', () {
+    test('received + 내 주소에 소액 output + 외부 input → suspicious', () {
       final record = _createRecord(
         type: TransactionType.received,
         amount: 500,
         inputs: [TransactionAddress('attacker_addr', 50000)],
+        outputs: [TransactionAddress('my_addr_1', 500)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isTrue,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isTrue);
     });
 
-    test('received + 경계값(999 sats) → suspicious', () {
+    test('received + 내 주소에 경계값(999 sats) output → suspicious', () {
       final record = _createRecord(
         type: TransactionType.received,
         amount: 999,
         inputs: [TransactionAddress('attacker_addr', 50000)],
+        outputs: [TransactionAddress('my_addr_1', 999)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isTrue,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isTrue);
     });
 
-    test('received + 경계값(1000 sats) → not suspicious', () {
+    test('received + 내 주소에 경계값(1000 sats) output → not suspicious', () {
       final record = _createRecord(
         type: TransactionType.received,
         amount: 1000,
         inputs: [TransactionAddress('attacker_addr', 50000)],
+        outputs: [TransactionAddress('my_addr_1', 1000)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
     });
 
-    test('received + 큰 금액 → not suspicious', () {
+    test('received + 내 주소에 큰 금액 output → not suspicious', () {
       final record = _createRecord(
         type: TransactionType.received,
-        amount: 100000,
-        inputs: [TransactionAddress('external_addr', 200000)],
+        amount: 50000,
+        inputs: [TransactionAddress('external_addr', 100000)],
+        outputs: [TransactionAddress('my_addr_1', 50000)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isFalse,
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
+    });
+
+    test('received + 혼합 output(dust + 정상) → suspicious', () {
+      final record = _createRecord(
+        type: TransactionType.received,
+        amount: 50500,
+        inputs: [TransactionAddress('attacker_addr', 100000)],
+        outputs: [TransactionAddress('my_addr_1', 500), TransactionAddress('my_addr_2', 50000)],
       );
+
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isTrue);
+    });
+
+    test('received + 외부 주소에만 소액 output → not suspicious', () {
+      final record = _createRecord(
+        type: TransactionType.received,
+        amount: 5000,
+        inputs: [TransactionAddress('external_addr', 100000)],
+        outputs: [TransactionAddress('unknown_addr', 500), TransactionAddress('my_addr_1', 5000)],
+      );
+
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
     });
 
     test('sent 트랜잭션 → not suspicious', () {
-      final record = _createRecord(
-        type: TransactionType.sent,
-        amount: 500,
-      );
+      final record = _createRecord(type: TransactionType.sent, amount: 500);
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
     });
 
     test('self 트랜잭션 → not suspicious', () {
-      final record = _createRecord(
-        type: TransactionType.self,
-        amount: 500,
-      );
+      final record = _createRecord(type: TransactionType.self, amount: 500);
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
     });
 
     test('unknown 트랜잭션 → not suspicious', () {
-      final record = _createRecord(
-        type: TransactionType.unknown,
-        amount: 500,
-      );
+      final record = _createRecord(type: TransactionType.unknown, amount: 500);
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
     });
 
     test('received + 소액 + input이 다른 내 지갑 주소 → not suspicious', () {
@@ -135,44 +131,32 @@ void main() {
         type: TransactionType.received,
         amount: 500,
         inputs: [TransactionAddress('my_wallet_b_addr_1', 50000)],
+        outputs: [TransactionAddress('my_addr_1', 500)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
     });
 
     test('received + 소액 + 여러 input 중 하나가 내 주소 → not suspicious', () {
       final record = _createRecord(
         type: TransactionType.received,
         amount: 500,
-        inputs: [
-          TransactionAddress('attacker_addr_1', 30000),
-          TransactionAddress('my_wallet_b_addr_1', 20000),
-        ],
+        inputs: [TransactionAddress('attacker_addr_1', 30000), TransactionAddress('my_wallet_b_addr_1', 20000)],
+        outputs: [TransactionAddress('my_addr_1', 500)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isFalse);
     });
 
     test('received + 소액 + 여러 external input → suspicious', () {
       final record = _createRecord(
         type: TransactionType.received,
         amount: 546,
-        inputs: [
-          TransactionAddress('attacker_addr_1', 30000),
-          TransactionAddress('attacker_addr_2', 20000),
-        ],
+        inputs: [TransactionAddress('attacker_addr_1', 30000), TransactionAddress('attacker_addr_2', 20000)],
+        outputs: [TransactionAddress('my_addr_1', 546)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress),
-        isTrue,
-      );
+      expect(SuspiciousTransactionUtil.isTransactionSuspicious(record, isMyAddress), isTrue);
     });
   });
 
@@ -185,19 +169,13 @@ void main() {
         inputs: [TransactionAddress('attacker_addr', 50000)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress),
-        isTrue,
-      );
+      expect(SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress), isTrue);
     });
 
     test('소액 UTXO + txRecord null → not suspicious', () {
       final utxo = _createUtxo(amount: 500);
 
-      expect(
-        SuspiciousTransactionUtil.isUtxoSuspicious(utxo, null, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isUtxoSuspicious(utxo, null, isMyAddress), isFalse);
     });
 
     test('큰 금액 UTXO + suspicious 트랜잭션 → not suspicious (UTXO 금액 기준)', () {
@@ -208,23 +186,14 @@ void main() {
         inputs: [TransactionAddress('attacker_addr', 50000)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress), isFalse);
     });
 
     test('소액 UTXO + sent 트랜잭션 → not suspicious', () {
       final utxo = _createUtxo(amount: 300);
-      final txRecord = _createRecord(
-        type: TransactionType.sent,
-        amount: 300,
-      );
+      final txRecord = _createRecord(type: TransactionType.sent, amount: 300);
 
-      expect(
-        SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress), isFalse);
     });
 
     test('소액 UTXO + 내 지갑 간 전송 → not suspicious', () {
@@ -235,11 +204,7 @@ void main() {
         inputs: [TransactionAddress('my_wallet_b_addr_1', 50000)],
       );
 
-      expect(
-        SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress),
-        isFalse,
-      );
+      expect(SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, isMyAddress), isFalse);
     });
-
   });
 }
