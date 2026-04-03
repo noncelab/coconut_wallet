@@ -459,7 +459,9 @@ void main() {
   group('getMaxEqualSplitCount로 buildEqualSplit 성공 검증', () {
     final testCases = [
       // (amount, feeRate, description)
-      (50000, 1.0, '최소 허용 금액 (50000)'),
+      (20000, 1.0, '최소 허용 금액 (20000)'),
+      (30000, 1.0, '소액 UTXO'),
+      (50000, 1.0, '5만 sats'),
       (100000, 1.0, '10만 sats'),
       (1000000, 1.0, '100만 sats'),
       (10000000, 1.0, '0.1 BTC'),
