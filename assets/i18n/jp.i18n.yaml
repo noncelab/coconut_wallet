@@ -599,6 +599,7 @@ settings_screen:
     log_description_2: "共有される情報は問題解決のためのみに使用され、問題解決後すぐに破棄されます。"
     log_target: "[ログ対象]"
     log_target_description_1: "症状確認と問題解決のため、Keystone 3 Proウォレット追加時に情報をログしています。一部のデバイスで問題が発生する可能性があるため、これを確認するためのログを取得中です。"
+    log_target_description_2: "ブロードキャスト失敗段階の原因をログします。"
     clear_log: "ログをクリア"
     clear_log_description: "ログをクリアしてもよろしいですか？"
     email_subject: "[Coconut Wallet] デバッグログ"

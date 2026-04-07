@@ -602,6 +602,7 @@ settings_screen:
     log_description_2: "공유해주신 정보는 문제 해결을 위해서만 사용되며 문제 해결 즉시 폐기됩니다."
     log_target: "[로깅 대상]"
     log_target_description_1: "키스톤 3 프로 지갑 추가 시 일부 기기에서 문제가 발생함에 따라 증상 확인 및 문제 해결을 위해 정보를 로깅합니다."
+    log_target_description_2: "브로드캐스트 실패 구간 원인을 로깅합니다."
     clear_log: "로그 지우기"
     clear_log_description: "로그를 지우시겠어요?"
     email_subject: "[코코넛 월렛] Debug Log"
