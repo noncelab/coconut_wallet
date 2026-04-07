@@ -20,6 +20,7 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/suspicious_transaction_util.dart';
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:tuple/tuple.dart';
@@ -655,6 +656,14 @@ class WalletProvider extends ChangeNotifier {
 
     _setWalletItemList(await _fetchWalletListFromDB());
     notifyListeners();
+  }
+
+  bool isTransactionSuspicious(TransactionRecord record) {
+    return SuspiciousTransactionUtil.isTransactionSuspicious(record, _addressRepository.containsAddressInAnyWallet);
+  }
+
+  bool isUtxoSuspicious(UtxoState utxo, TransactionRecord? txRecord) {
+    return SuspiciousTransactionUtil.isUtxoSuspicious(utxo, txRecord, _addressRepository.containsAddressInAnyWallet);
   }
 
   @override
