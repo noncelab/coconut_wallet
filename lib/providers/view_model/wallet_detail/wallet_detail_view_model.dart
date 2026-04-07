@@ -169,6 +169,8 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   String get bitcoinPriceKrwInString => _bitcoinPriceKrwInString;
 
+  bool isTransactionSuspicious(TransactionRecord tx) => _walletProvider.isTransactionSuspicious(tx);
+
   // todo: 상태를 반환해주도록 수정되면 좋겠음.
   Future<void> refreshWallet() async {
     _balance = _getBalance();

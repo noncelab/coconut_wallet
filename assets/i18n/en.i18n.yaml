@@ -680,6 +680,11 @@ utxo_detail_screen:
   utxo_all_already_unlocked: "All UTXOs are already spendable."
   utxo_locked_count_toast_msg: "$count UTXOs have been locked."
   utxo_unlocked_count_toast_msg: "$count UTXOs have been unlocked."
+  suspicious_dust_warning: "An unexpectedly small amount was received. Using this UTXO with others may reveal address relationships.\nYou can lock this UTXO to prevent it from being spent."
+  suspicious_dust_locked: "An unexpectedly small amount was received. This UTXO is already locked."
+  utxo_locked_button: "Lock"
+  utxo_unlocked_button: "Unlock"
+  lock_status: "Lock Status"
 
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"

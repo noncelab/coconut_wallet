@@ -620,6 +620,7 @@ class UtxoTagGridSection extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final Set<String> selectedUtxoIds;
   final Set<String> reusedAddresses;
+  final Set<String> suspiciousUtxoIds;
   final bool isSelectionMode;
   final void Function(UtxoState) onUtxoTap;
   final void Function(UtxoState)? onUtxoLongPress;
@@ -631,6 +632,7 @@ class UtxoTagGridSection extends StatefulWidget {
     required this.currentUnit,
     required this.selectedUtxoIds,
     required this.reusedAddresses,
+    required this.suspiciousUtxoIds,
     required this.isSelectionMode,
     required this.onUtxoTap,
     this.onUtxoLongPress,
@@ -903,6 +905,9 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                                           isSelectionMode: widget.isSelectionMode,
                                                           currentUnit: widget.currentUnit,
                                                           isAddressReused: widget.reusedAddresses.contains(utxo.to),
+                                                          isSuspiciousDust: widget.suspiciousUtxoIds.contains(
+                                                            utxo.utxoId,
+                                                          ),
                                                           onTap: () => widget.onUtxoTap(utxo),
                                                           onLongPress:
                                                               widget.onUtxoLongPress != null
@@ -939,6 +944,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                           isSelectionMode: widget.isSelectionMode,
                                           currentUnit: widget.currentUnit,
                                           isAddressReused: widget.reusedAddresses.contains(utxo.to),
+                                          isSuspiciousDust: widget.suspiciousUtxoIds.contains(utxo.utxoId),
                                           onTap: () => widget.onUtxoTap(utxo),
                                           onLongPress:
                                               widget.onUtxoLongPress != null

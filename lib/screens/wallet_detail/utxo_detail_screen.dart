@@ -148,19 +148,20 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
           child: Selector<
             UtxoDetailViewModel,
-            Tuple6<TransactionRecord?, List<String>, List<UtxoTag>, List<UtxoTag>, UtxoStatus, bool>
+            Tuple7<TransactionRecord?, List<String>, List<UtxoTag>, List<UtxoTag>, UtxoStatus, bool, bool>
           >(
             selector:
-                (_, viewModel) => Tuple6(
+                (_, viewModel) => Tuple7(
                   viewModel.transaction,
                   viewModel.dateString,
                   viewModel.utxoTagList,
                   viewModel.selectedUtxoTagList,
                   viewModel.utxoStatus,
                   viewModel.isFetchingFromMempool,
+                  viewModel.isSuspiciousDustUtxo,
                 ),
             builder: (_, data, __) {
               final tx = data.item1;
@@ -169,9 +170,11 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
               final selectedTags = data.item4;
               final utxoStatus = data.item5;
               final isFetchingFromMempool = data.item6;
+              final isSuspiciousDustUtxo = data.item7;
 
               return Column(
                 children: [
+                  _buildSuspiciousDustUtxoWarning(isSuspiciousDustUtxo, utxoStatus == UtxoStatus.locked),
                   if (tx == null)
                     const Center(child: CircularProgressIndicator())
                   else ...{
@@ -182,55 +185,24 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
                     else ...{
                       _buildPendingStatus(utxoStatus),
                     },
-                    if (utxoStatus == UtxoStatus.unspent || utxoStatus == UtxoStatus.locked)
-                      UtxoLockToggleButton(
-                        isLocked: utxoStatus == UtxoStatus.locked,
-                        onPressed: () async {
-                          final viewModel = context.read<UtxoDetailViewModel>();
-                          final result = await viewModel.toggleUtxoLockStatus();
-                          if (context.mounted && !result) {
-                            CoconutToast.showToast(
-                              context: context,
-                              isVisibleIcon: true,
-                              iconPath: 'assets/svg/triangle-warning.svg',
-                              text:
-                                  utxoStatus == UtxoStatus.locked
-                                      ? t.errors.utxo_unlock_error
-                                      : t.errors.utxo_lock_error,
-                              level: CoconutToastLevel.warning,
-                            );
-                            return;
-                          }
-                          _removeUtxoTooltip();
-                          vibrateLight();
-                          if (context.mounted) {
-                            CoconutToast.showToast(
-                              context: context,
-                              isVisibleIcon: true,
-                              iconPath: 'assets/svg/circle-info.svg',
-                              text:
-                                  utxoStatus != UtxoStatus.locked
-                                      ? t.utxo_detail_screen.utxo_locked_toast_msg
-                                      : t.utxo_detail_screen.utxo_unlocked_toast_msg,
-                            );
-                          }
-                        },
-                      ),
-                    if (isFetchingFromMempool && tx.inputAddressList.isEmpty)
-                      _buildTransactionInputOutputSkeleton()
-                    else
-                      TransactionInputOutputCard(
-                        transaction: tx,
-                        isSameAddress: (address, index) {
-                          return address == widget.utxo.to && index == widget.utxo.index;
-                        },
-                        isForTransaction: false,
-                        currentUnit: _currentUnit,
-                      ),
                     CoconutLayout.spacing_800h,
                     _buildAddress(),
+                    _buildLockStatus(utxoStatus == UtxoStatus.locked, isSuspiciousDustUtxo),
                     _buildTagSection(context, tags, selectedTags),
-                    _buildTxId(context),
+                    _buildTxId(
+                      context,
+                      child:
+                          isFetchingFromMempool && tx.inputAddressList.isEmpty
+                              ? _buildTransactionInputOutputSkeleton()
+                              : TransactionInputOutputCard(
+                                transaction: tx,
+                                isSameAddress: (address, index) {
+                                  return address == widget.utxo.to && index == widget.utxo.index;
+                                },
+                                isForTransaction: false,
+                                currentUnit: _currentUnit,
+                              ),
+                    ),
                     _buildTxMemo(tx.memo),
                     _buildBlockHeight(),
                     CoconutLayout.spacing_1000h,
@@ -402,7 +374,7 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
     );
   }
 
-  Widget _buildTxId(BuildContext context) {
+  Widget _buildTxId(BuildContext context, {required Widget child}) {
     return UnderlineButtonItemCard(
       label: t.tx_id,
       underlineButtonLabel: t.view_tx_details,
@@ -421,6 +393,8 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
             text: widget.utxo.transactionHash,
             textStyle: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
           ),
+          CoconutLayout.spacing_300h,
+          child,
         ],
       ),
     );
@@ -539,58 +513,120 @@ class _UtxoDetailScreenState extends State<UtxoDetailScreen> {
       }
     }
   }
+
+  Future<void> _toggleUtxoLock({required bool lock, bool showToast = true}) async {
+    final result = await _viewModel.toggleUtxoLockStatus();
+    if (mounted && !result && showToast) {
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/triangle-warning.svg',
+        text: lock ? t.errors.utxo_lock_error : t.errors.utxo_unlock_error,
+        level: CoconutToastLevel.warning,
+      );
+      return;
+    }
+    _removeUtxoTooltip();
+    vibrateLight();
+    if (mounted && showToast) {
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: 'assets/svg/circle-info.svg',
+        text: lock ? t.utxo_detail_screen.utxo_locked_toast_msg : t.utxo_detail_screen.utxo_unlocked_toast_msg,
+      );
+    }
+  }
+
+  Widget _buildSuspiciousDustUtxoWarning(bool isSuspiciousDustUtxo, bool isLocked) {
+    if (!isSuspiciousDustUtxo) return const SizedBox(height: 20);
+
+    final color = isLocked ? CoconutColors.white : CoconutColors.red;
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      alignment: Alignment.topCenter,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        margin: const EdgeInsets.only(bottom: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2.0),
+              child: SvgPicture.asset(
+                'assets/svg/dust.svg',
+                width: 14,
+                height: 14,
+                colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+              ),
+            ),
+            CoconutLayout.spacing_100w,
+            Flexible(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Text(
+                  isLocked ? t.utxo_detail_screen.suspicious_dust_locked : t.utxo_detail_screen.suspicious_dust_warning,
+                  key: ValueKey(isLocked),
+                  style: CoconutTypography.body3_12.setColor(color),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLockStatus(bool isLocked, bool isSuspiciousDustUtxo) {
+    return UnderlineButtonItemCard(
+      label: t.utxo_detail_screen.lock_status,
+      underlineButtonLabel:
+          isLocked ? t.utxo_detail_screen.utxo_unlocked_button : t.utxo_detail_screen.utxo_locked_button,
+      onTapUnderlineButton: () => _toggleUtxoLock(lock: !isLocked, showToast: !isSuspiciousDustUtxo),
+      child: UtxoLockStatusChip(isLocked: isLocked, isSuspiciousDustUtxo: isSuspiciousDustUtxo),
+    );
+  }
 }
 
-class UtxoLockToggleButton extends StatefulWidget {
+class UtxoLockStatusChip extends StatefulWidget {
   final bool isLocked;
-  final VoidCallback onPressed;
-  const UtxoLockToggleButton({super.key, required this.isLocked, required this.onPressed});
+  final bool isSuspiciousDustUtxo;
+  const UtxoLockStatusChip({super.key, required this.isLocked, required this.isSuspiciousDustUtxo});
 
   @override
-  State<UtxoLockToggleButton> createState() => _UtxoLockToggleButton();
+  State<UtxoLockStatusChip> createState() => _UtxoLockStatusChip();
 }
 
-class _UtxoLockToggleButton extends State<UtxoLockToggleButton> {
-  bool isPressing = false;
-
+class _UtxoLockStatusChip extends State<UtxoLockStatusChip> {
   @override
   Widget build(BuildContext context) {
+    final color = widget.isSuspiciousDustUtxo && !widget.isLocked ? CoconutColors.red : CoconutColors.white;
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onTapDown:
-              (details) => setState(() {
-                isPressing = true;
-              }),
-          onTapCancel:
-              () => setState(() {
-                isPressing = false;
-              }),
-          onTap: () {
-            setState(() {
-              isPressing = false;
-            });
-            widget.onPressed();
-          },
+        Container(
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(CoconutStyles.radius_300),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
             child: Row(
               children: [
                 SvgPicture.asset(
                   'assets/svg/${widget.isLocked ? 'lock_simple' : 'unlock_simple'}.svg',
-                  width: 16,
-                  height: 16,
-                  colorFilter: ColorFilter.mode(
-                    isPressing ? CoconutColors.gray800 : CoconutColors.white,
-                    BlendMode.srcIn,
-                  ),
+                  width: 14,
+                  height: 14,
+                  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
                 ),
-                CoconutLayout.spacing_50w,
+                CoconutLayout.spacing_100w,
                 Text(
                   widget.isLocked ? t.utxo_detail_screen.utxo_locked : t.utxo_detail_screen.utxo_unlocked,
-                  style: CoconutTypography.body3_12.setColor(isPressing ? CoconutColors.gray800 : CoconutColors.white),
+                  style: CoconutTypography.body3_12.copyWith(color: color, height: 1.2),
                 ),
               ],
             ),

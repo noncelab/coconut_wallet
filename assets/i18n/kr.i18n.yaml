@@ -683,6 +683,12 @@ utxo_detail_screen:
   utxo_all_already_unlocked: "모든 UTXO가 이미 사용 가능한 상태입니다."
   utxo_locked_count_toast_msg: "UTXO $count개를 잠갔어요."
   utxo_unlocked_count_toast_msg: "UTXO $count개를 잠금 해제했어요."
+  suspicious_dust_warning: "예상하지 못한 아주 작은 금액이 들어왔어요. 다른 UTXO와 함께 사용하면 주소 관계가 드러날 수 있어요.\n이 UTXO가 사용되지 않길 원하시면 잠그세요."
+  suspicious_dust_locked: "예상하지 못한 아주 작은 금액이 들어왔어요. 이 UTXO는 이미 사용되지 않도록 잠겨있어요."
+  utxo_locked_button: "사용 잠금"
+  utxo_unlocked_button: "잠금 해제"
+  lock_status: "잠금 상태"
+
 
 utxo_tag_screen:
   onboarding_title: "UTXO 태그를 관리할 수 있어요"

@@ -51,6 +51,8 @@ class UtxoDetailViewModel extends ChangeNotifier {
   String get walletName => _walletProvider.getWalletById(_walletId).name;
   String get walletNameDisplay => TextUtils.ellipsisIfLonger(walletName, maxLength: 15);
 
+  bool get isSuspiciousDustUtxo => _walletProvider.isUtxoSuspicious(_utxo, _transaction);
+
   UtxoDetailViewModel(
     this._walletId,
     this._utxo,
