@@ -50,7 +50,9 @@ class BcUrQrScanDataHandler implements IFragmentedQrScanDataHandler {
       _urDecoder.expectedType = _currentUrType!.value;
     }
 
-    FileLogger.log('BcUrQrScanDataHandler', 'joinData', data);
+    if (_currentUrType == UrType.cryptoAccount || _currentUrType == UrType.accountDescriptor) {
+      FileLogger.log('BcUrQrScanDataHandler', 'joinData', data);
+    }
     Logger.log('--> [QR] joinData: $data');
     final receivePartResult = _urDecoder.receivePart(data);
     if (!receivePartResult && validateFormat(data)) {
