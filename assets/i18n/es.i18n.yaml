@@ -681,6 +681,11 @@ utxo_detail_screen:
   utxo_all_already_unlocked: "Todos los UTXOs ya están disponibles."
   utxo_locked_count_toast_msg: "$count UTXOs han sido bloqueados."
   utxo_unlocked_count_toast_msg: "$count UTXOs han sido desbloqueados."
+  suspicious_dust_warning: "Se recibió una cantidad inesperadamente pequeña. Usar este UTXO con otros puede revelar relaciones entre direcciones.\nPuedes bloquear este UTXO para evitar que se gaste."
+  suspicious_dust_locked: "Se recibió una cantidad inesperadamente pequeña. Este UTXO ya está bloqueado."
+  utxo_locked_button: "Bloquear"
+  utxo_unlocked_button: "Desbloquear"
+  lock_status: "Estado de bloqueo"
 
 utxo_tag_screen:
   onboarding_title: "Puedes gestionar etiquetas UTXO"

@@ -275,6 +275,12 @@ class AddressRepository extends BaseRepository {
     return addresses;
   }
 
+  /// 모든 지갑에서 해당 주소가 존재하는지 확인
+  bool containsAddressInAnyWallet(String address) {
+    final result = realm.query<RealmWalletAddress>(r'address == $0', [address]);
+    return result.isNotEmpty;
+  }
+
   /// 주소가 이미 존재하는지 확인
   bool containsAddress(int walletId, String address, {bool? isChange}) {
     String query;
