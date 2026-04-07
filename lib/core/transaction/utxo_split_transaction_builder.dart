@@ -42,7 +42,7 @@ class UtxoSplitResult {
   }
 }
 
-class UtxoSplitBuilder {
+class UtxoSplitTransactionBuilder {
   final UtxoState utxo;
   double _feeRate;
   final WalletListItemBase walletListItemBase;
@@ -85,7 +85,7 @@ class UtxoSplitBuilder {
     _cachedNiceSplitCounts = null;
   }
 
-  UtxoSplitBuilder({
+  UtxoSplitTransactionBuilder({
     required this.utxo,
     required double feeRate,
     required this.walletListItemBase,
@@ -138,7 +138,7 @@ class UtxoSplitBuilder {
   }
 
   /// 균등하게 나누기
-  Future<UtxoSplitResult> buildEqualSplit({required int splitCount}) async {
+  Future<UtxoSplitResult> buildEqualAmountSplit({required int splitCount}) async {
     assert(splitCount >= 2);
     Logger.log("--> splitCount: $splitCount");
     await _initOutputVBytes();
@@ -208,7 +208,7 @@ class UtxoSplitBuilder {
   }
 
   /// 직접 나누기
-  Future<UtxoSplitResult> buildCustomSplit({required Map<int, int> amountCountMap}) async {
+  Future<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) async {
     await _initOutputVBytes();
     // dust 검증
     for (final amount in amountCountMap.keys) {
