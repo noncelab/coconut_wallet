@@ -1,20 +1,14 @@
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 
-String filterNumericInput(
-  String input, {
-  required int decimalPlaces,
-  int integerPlaces = -1,
-}) {
+String filterNumericInput(String input, {required int decimalPlaces, int integerPlaces = -1}) {
   String allowedCharsInput = input.replaceAll(RegExp(r'[^0-9.]'), '');
   if (input == '00') return '0';
   if (input == '.') return '0.';
   if (RegExp(r'^0[1-9]$').hasMatch(input)) return input.substring(1);
 
   var splitedInput = allowedCharsInput.split('.');
-  if (splitedInput.length == 1 &&
-      integerPlaces != -1 &&
-      splitedInput[0].length > integerPlaces) {
+  if (splitedInput.length == 1 && integerPlaces != -1 && splitedInput[0].length > integerPlaces) {
     /// 정수만 있는 경우 자리수 처리
     return splitedInput[0].substring(0, integerPlaces);
   }
@@ -49,10 +43,7 @@ class BtcAmountInputFormatter extends TextInputFormatter {
   const BtcAmountInputFormatter({this.decimalPlaces = 8});
 
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final text = newValue.text.replaceAll(RegExp(r'[^0-9.]'), '');
     if (text.isEmpty) return newValue;
 
@@ -71,10 +62,7 @@ class BtcAmountInputFormatter extends TextInputFormatter {
       formattedText: formattedText,
       baseOffset: newValue.selection.baseOffset,
     );
-    return TextEditingValue(
-      text: formattedText,
-      selection: TextSelection.collapsed(offset: offset),
-    );
+    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
   }
 }
 
@@ -84,10 +72,7 @@ class SatoshiAmountInputFormatter extends TextInputFormatter {
   const SatoshiAmountInputFormatter();
 
   @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     final text = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (text.isEmpty) return newValue;
 
@@ -100,10 +85,7 @@ class SatoshiAmountInputFormatter extends TextInputFormatter {
       formattedText: formattedText,
       baseOffset: newValue.selection.baseOffset,
     );
-    return TextEditingValue(
-      text: formattedText,
-      selection: TextSelection.collapsed(offset: offset),
-    );
+    return TextEditingValue(text: formattedText, selection: TextSelection.collapsed(offset: offset));
   }
 }
 
@@ -121,16 +103,9 @@ String _formatBtcText(String text) {
   return '$formattedIntegerPart.${parts[1]}';
 }
 
-int _calculateSelectionOffset({
-  required String originalText,
-  required String formattedText,
-  required int baseOffset,
-}) {
+int _calculateSelectionOffset({required String originalText, required String formattedText, required int baseOffset}) {
   final clampedOffset = baseOffset.clamp(0, originalText.length);
-  final meaningfulCharCount = originalText
-      .substring(0, clampedOffset)
-      .replaceAll(',', '')
-      .length;
+  final meaningfulCharCount = originalText.substring(0, clampedOffset).replaceAll(',', '').length;
 
   var seenMeaningfulChars = 0;
   for (var i = 0; i < formattedText.length; i++) {

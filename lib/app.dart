@@ -191,12 +191,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 if (_appEntryFlow != AppEntryFlow.main) {
                   return currentChild;
                 }
-                return AppGuard(
-                  child: DeepLinkListener(
-                    navigatorKey: _navigatorKey,
-                    child: currentChild,
-                  ),
-                );
+                return AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild));
               },
               navigatorObservers: [
                 routeObserver,
