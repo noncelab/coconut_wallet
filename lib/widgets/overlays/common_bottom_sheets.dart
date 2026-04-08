@@ -19,6 +19,7 @@ class CommonBottomSheets {
     bool enableDrag = true,
     bool showCloseButton = false,
     bool showDragHandle = false,
+    bool adjustForKeyboardInset = true,
     Color backgroundColor = CoconutColors.black,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
@@ -32,7 +33,7 @@ class CommonBottomSheets {
         return AnimatedPadding(
           duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutCubic,
-          padding: EdgeInsets.only(bottom: keyboardInset + 20),
+          padding: EdgeInsets.only(bottom: adjustForKeyboardInset ? keyboardInset + 20 : 0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -418,6 +419,7 @@ class CommonBottomSheets {
 
 class SelectableBottomSheetTextItem extends StatelessWidget {
   final String text;
+  final String? description;
   final bool isSelected;
   final VoidCallback? onTap;
   final bool isDisabled;
@@ -426,6 +428,7 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
     super.key,
     required this.text,
     required this.isSelected,
+    this.description,
     this.onTap,
     this.isDisabled = false,
   });
@@ -446,24 +449,28 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                  if (description != null)
+                    Text(description!, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+                ],
+              ),
               if (isSelected)
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Center(
-                    child: SvgPicture.asset(
-                      'assets/svg/check.svg',
-                      width: 16,
-                      height: 16,
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                    ),
-                  ),
-                ).scaleInAnimation(duration: const Duration(milliseconds: 300))
-              else
-                const SizedBox(width: 24, height: 24),
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  width: 18,
+                  height: 18,
+                  child: SvgPicture.asset(
+                    'assets/svg/check.svg',
+                    width: 16,
+                    height: 16,
+                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  ).scaleInAnimation(duration: const Duration(milliseconds: 300)),
+                ),
             ],
           ),
         ),
@@ -481,6 +488,8 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
   final String confirmText;
   final Color backgroundColor;
   final bool showGradient;
+  final bool showConfirmButton;
+  final ValueChanged<T?>? onSelectionChanged;
 
   const SelectableBottomSheetBody({
     super.key,
@@ -492,6 +501,8 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
     required this.confirmText,
     required this.backgroundColor,
     this.showGradient = true,
+    this.showConfirmButton = true,
+    this.onSelectionChanged,
   });
 
   @override
@@ -510,7 +521,8 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
   @override
   Widget build(BuildContext context) {
     final bottomSafeArea = MediaQuery.of(context).padding.bottom;
-    final buttonAreaHeight = FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea;
+    final buttonAreaHeight =
+        widget.showConfirmButton ? FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea : 0.0;
 
     return Container(
       color: widget.backgroundColor,
@@ -518,57 +530,68 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
         top: false,
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-              child: ListView.builder(
-                controller: widget.scrollController,
-                shrinkWrap: true,
-                primary: false,
-                physics:
-                    widget.scrollController == null
-                        ? const NeverScrollableScrollPhysics()
-                        : const ClampingScrollPhysics(),
-                padding: EdgeInsets.only(bottom: buttonAreaHeight),
-                itemCount: widget.items.length,
-                itemBuilder: (context, index) {
-                  final item = widget.items[index];
-                  final id = widget.getItemId(item);
-                  final isSelected = _selectedId == id;
-
-                  void handleTap() {
-                    vibrateExtraLight();
-                    setState(() {
-                      _selectedId = _selectedId == id ? null : id;
-                    });
-                  }
-
-                  return widget.itemBuilder(context, item, isSelected, handleTap);
-                },
-              ),
-            ),
             Positioned(
+              top: 0,
               left: 0,
               right: 0,
-              bottom: 0,
-              child: SizedBox(
-                height: buttonAreaHeight,
-                child: FixedBottomButton(
-                  showGradient: widget.showGradient,
-                  isVisibleAboveKeyboard: false,
-                  bottomPadding: 0,
-                  onButtonClicked: () {
-                    final selectedItem =
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                child: ListView.builder(
+                  controller: widget.scrollController,
+                  shrinkWrap: true,
+                  primary: false,
+                  physics:
+                      widget.scrollController == null
+                          ? const NeverScrollableScrollPhysics()
+                          : const ClampingScrollPhysics(),
+                  padding: EdgeInsets.only(bottom: buttonAreaHeight),
+                  itemCount: widget.items.length,
+                  itemBuilder: (context, index) {
+                    final item = widget.items[index];
+                    final id = widget.getItemId(item);
+                    final isSelected = _selectedId == id;
+
+                    void handleTap() {
+                      vibrateExtraLight();
+                      setState(() {
+                        _selectedId = _selectedId == id ? null : id;
+                      });
+                      widget.onSelectionChanged?.call(
                         _selectedId == null
                             ? null
-                            : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
-                    Navigator.pop(context, selectedItem);
+                            : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
+                      );
+                    }
+
+                    return widget.itemBuilder(context, item, isSelected, handleTap);
                   },
-                  isActive: _selectedId != null,
-                  text: widget.confirmText,
-                  backgroundColor: CoconutColors.white,
                 ),
               ),
             ),
+            if (widget.showConfirmButton)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SizedBox(
+                  height: buttonAreaHeight,
+                  child: FixedBottomButton(
+                    showGradient: widget.showGradient,
+                    isVisibleAboveKeyboard: false,
+                    bottomPadding: 0,
+                    onButtonClicked: () {
+                      final selectedItem =
+                          _selectedId == null
+                              ? null
+                              : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                      Navigator.pop(context, selectedItem);
+                    },
+                    isActive: _selectedId != null,
+                    text: widget.confirmText,
+                    backgroundColor: CoconutColors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

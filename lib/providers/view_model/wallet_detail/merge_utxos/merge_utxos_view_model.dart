@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -12,17 +13,26 @@ class MergeUtxosViewModel extends ChangeNotifier {
 
   List<UtxoState> _utxoList = [];
   List<UtxoState> get utxoList => _utxoList;
+  late UtxoMergeStep _currentStep;
+  UtxoMergeStep get currentStep => _currentStep;
 
   int get utxoCount => _utxoList.length;
 
   void initialize() {
     final allUtxos = _utxoRepository.getUtxoStateList(walletId);
     _utxoList = allUtxos.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
+    _currentStep =
+        utxoList.length >= 2 && utxoList.length < 11 ? UtxoMergeStep.entry : UtxoMergeStep.selectMergeCriteria;
 
     for (var utxo in _utxoList) {
       utxo.tags = _utxoTagProvider.getUtxoTagsByUtxoId(walletId, utxo.utxoId);
     }
 
+    notifyListeners();
+  }
+
+  void setCurrentStep(UtxoMergeStep step) {
+    _currentStep = step;
     notifyListeners();
   }
 

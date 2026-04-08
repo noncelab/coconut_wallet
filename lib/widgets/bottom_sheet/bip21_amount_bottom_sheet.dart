@@ -152,7 +152,7 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
     if (widget.currentUnit.isBtcUnit) {
       return [
         FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-        _SingleDotInputFormatter(),
+        SingleDotInputFormatter(),
         const BtcAmountInputFormatter(),
       ];
     }
@@ -208,7 +208,7 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
   }
 }
 
-class _SingleDotInputFormatter extends TextInputFormatter {
+class SingleDotInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     if ('.'.allMatches(newValue.text).length > 1) {

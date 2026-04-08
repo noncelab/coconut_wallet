@@ -761,11 +761,28 @@ merge_utxos_screen:
   not_enough_utxos: "No hay suficientes UTXOs para combinar en este momento"
   efficient_utxo_state: "Actualmente tienes ${count} UTXOs\nNo es necesario combinarlos por ahora, ya es eficiente"
   merge_anyway: "Combinar de todos modos"
-  bottomsheet:
+  select_merge_criteria: "¿Cómo quieres organizarlos?"
+  select_amount_criteria: "Selecciona un criterio de monto."
+  select_tag: "Selecciona una etiqueta."
+  merge_criteria: "Criterio de combinación"
+  merge_criteria_bottomsheet:
     title: "Elegir criterio de combinación"
     merge_small_amounts: "Combinar UTXOs de bajo monto"
     merge_same_tag: "Combinar UTXOs con la misma etiqueta"
     merge_same_address: "Combinar UTXOs recibidos en la misma dirección"
+  amount_criteria: "Criterio de monto"
+  amount_criteria_bottomsheet:
+    title: "Seleccionar criterio de monto"
+    recommendation_criteria: "criterio de recomendación"
+    below_001: "0.01 BTC o menos"
+    below_001_description: "Incluir más UTXOs"
+    below_0001: "0.001 BTC o menos"
+    below_0001_description: "Organizar UTXOs pequeños (Recomendado)"
+    below_00001: "0.0001 BTC o menos"
+    below_00001_description: "Limpieza mínima"
+    or_less: "o menos"
+    less_than: "menos de"
+    custom: "Personalizado"
 
 split_utxo_screen:
   title: "Dividir UTXO"

@@ -758,11 +758,28 @@ merge_utxos_screen:
   not_enough_utxos: "There aren’t enough UTXOs to consolidate right now"
   efficient_utxo_state: "You currently have ${count} UTXOs\nMerging isn’t necessary right now—it’s already efficient"
   merge_anyway: "Merge anyway"
-  bottomsheet:
+  select_merge_criteria: "Choose how to merge"
+  select_amount_criteria: "Select amount criteria"
+  select_tag: "Select a tag"
+  merge_criteria: "Merge criteria"
+  merge_criteria_bottomsheet:
     title: "Choose merge criteria"
     merge_small_amounts: "Merge smaller UTXOs"
     merge_same_tag: "Merge UTXOs with the same tag"
     merge_same_address: "Merge UTXOs from the same address"
+  amount_criteria: "Amount criteria"
+  amount_criteria_bottomsheet:
+    title: "Select amount criteria"
+    recommendation_criteria: "Recommendation criteria"
+    below_001: "0.01 BTC or less"
+    below_001_description: "Include more UTXOs"
+    below_0001: "0.001 BTC or less"
+    below_0001_description: "Organize smaller UTXOs (Recommended)"
+    below_00001: "0.0001 BTC or less"
+    below_00001_description: "Minimum cleanup"
+    or_less: "or less"
+    less_than: "less than"
+    custom: "Custom"
 
 split_utxo_screen:
   title: "Split UTXO"

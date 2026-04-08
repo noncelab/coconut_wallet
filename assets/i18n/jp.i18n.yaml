@@ -759,11 +759,28 @@ merge_utxos_screen:
   not_enough_utxos: "現在、統合するほどのUTXOはありません"
   efficient_utxo_state: "現在${count}個のUTXOがあります\n現時点では統合しなくても十分効率的です"
   merge_anyway: "それでも統合する"
-  bottomsheet:
+  select_merge_criteria: "どの基準で整理しますか？"
+  select_amount_criteria: "金額の基準を選択してください。"
+  select_tag: "タグを選択してください。"
+  merge_criteria: "整理基準"
+  merge_criteria_bottomsheet:
     title: "統合方法を選択"
     merge_small_amounts: "少額のUTXOを統合"
     merge_same_tag: "同じタグのUTXOを統合"
     merge_same_address: "同じアドレスで受け取ったUTXOを統合"
+  amount_criteria: "金額基準"
+  amount_criteria_bottomsheet:
+    title: "金額基準の選択"
+    recommendation_criteria: "推薦基準"
+    below_001: "0.01 BTC以下"
+    below_001_description: "整理対象の拡大"
+    below_0001: "0.001 BTC以下"
+    below_0001_description: "小さなUTXOの整理（おすすめ）"
+    below_00001: "0.0001 BTC以下"
+    below_00001_description: "最小整理"
+    or_less: "以下"
+    less_than: "未満"
+    custom: "直接設定"
 
 split_utxo_screen:
   title: "UTXOを分割"

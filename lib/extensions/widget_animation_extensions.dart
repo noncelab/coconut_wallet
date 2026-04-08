@@ -7,6 +7,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget fadeInAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 220),
+    Duration delay = Duration.zero,
     Curve curve = Curves.easeOut,
     bool autoStart = true,
     VoidCallback? onCompleted,
@@ -14,6 +15,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutFadeInAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       curve: curve,
       autoStart: autoStart,
       onCompleted: onCompleted,
@@ -24,6 +26,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget fadeOutAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 220),
+    Duration delay = Duration.zero,
     Curve curve = Curves.easeIn,
     bool autoStart = true,
     VoidCallback? onCompleted,
@@ -31,6 +34,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutFadeOutAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       curve: curve,
       autoStart: autoStart,
       onCompleted: onCompleted,
@@ -41,6 +45,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget bounceInAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 420),
+    Duration delay = Duration.zero,
     double beginScale = 0.78,
     Curve curve = Curves.elasticOut,
     bool autoStart = true,
@@ -49,6 +54,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutBounceInAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       beginScale: beginScale,
       curve: curve,
       autoStart: autoStart,
@@ -60,6 +66,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget scaleInAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 240),
+    Duration delay = Duration.zero,
     double beginScale = 0.92,
     Curve curve = Curves.easeOutCubic,
     bool autoStart = true,
@@ -68,6 +75,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutScaleInAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       beginScale: beginScale,
       curve: curve,
       autoStart: autoStart,
@@ -79,6 +87,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget scaleOutAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 220),
+    Duration delay = Duration.zero,
     double endScale = 0.92,
     Curve curve = Curves.easeInCubic,
     bool autoStart = true,
@@ -87,6 +96,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutScaleOutAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       endScale: endScale,
       curve: curve,
       autoStart: autoStart,
@@ -98,6 +108,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget shakeAnimation({
     Key? key,
     int duration = 500,
+    Duration delay = Duration.zero,
     double shakeOffset = 3,
     double shakeAmount = 3,
     Axis direction = Axis.horizontal,
@@ -108,6 +119,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutShakeAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       shakeOffset: shakeOffset,
       shakeAmount: shakeAmount,
       direction: direction,
@@ -121,6 +133,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget slideDownAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 280),
+    Duration delay = Duration.zero,
     Offset offset = const Offset(0, -24),
     Curve curve = Curves.easeOutCubic,
     bool autoStart = true,
@@ -129,6 +142,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutSlideDownAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       offset: offset,
       curve: curve,
       autoStart: autoStart,
@@ -140,6 +154,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget slideLeftAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 280),
+    Duration delay = Duration.zero,
     Offset offset = const Offset(24, 0),
     Curve curve = Curves.easeOutCubic,
     bool autoStart = true,
@@ -148,6 +163,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutSlideLeftAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       offset: offset,
       curve: curve,
       autoStart: autoStart,
@@ -159,6 +175,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget slideRightAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 280),
+    Duration delay = Duration.zero,
     Offset offset = const Offset(-24, 0),
     Curve curve = Curves.easeOutCubic,
     bool autoStart = true,
@@ -167,6 +184,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutSlideRightAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       offset: offset,
       curve: curve,
       autoStart: autoStart,
@@ -178,6 +196,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget slideUpAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 280),
+    Duration delay = Duration.zero,
     Offset offset = const Offset(0, 24),
     Curve curve = Curves.easeOutCubic,
     bool autoStart = true,
@@ -186,6 +205,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutSlideUpAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       offset: offset,
       curve: curve,
       autoStart: autoStart,
@@ -204,6 +224,7 @@ extension WidgetAnimationExtensions on Widget {
     required double endScale,
     required Curve curve,
     required Duration duration,
+    Duration delay = Duration.zero,
     Alignment alignment = Alignment.center,
     bool autoStart = true,
     VoidCallback? onCompleted,
@@ -218,6 +239,7 @@ extension WidgetAnimationExtensions on Widget {
       endScale: endScale,
       curve: curve,
       duration: duration,
+      delay: delay,
       alignment: alignment,
       autoStart: autoStart,
       onCompleted: onCompleted,
@@ -228,6 +250,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget zoomInAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 260),
+    Duration delay = Duration.zero,
     double beginScale = 0.72,
     Curve curve = Curves.easeOutBack,
     bool autoStart = true,
@@ -236,6 +259,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutZoomInAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       beginScale: beginScale,
       curve: curve,
       autoStart: autoStart,
@@ -247,6 +271,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget zoomOutAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 220),
+    Duration delay = Duration.zero,
     double endScale = 0.64,
     Curve curve = Curves.easeInBack,
     bool autoStart = true,
@@ -255,6 +280,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutZoomOutAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       endScale: endScale,
       curve: curve,
       autoStart: autoStart,
@@ -266,6 +292,7 @@ extension WidgetAnimationExtensions on Widget {
   Widget bounceOutAnimation({
     Key? key,
     Duration duration = const Duration(milliseconds: 280),
+    Duration delay = Duration.zero,
     double endScale = 0.7,
     Curve curve = Curves.easeInBack,
     bool autoStart = true,
@@ -274,6 +301,7 @@ extension WidgetAnimationExtensions on Widget {
     return CoconutBounceOutAnimation(
       key: key,
       duration: duration,
+      delay: delay,
       endScale: endScale,
       curve: curve,
       autoStart: autoStart,
@@ -291,6 +319,7 @@ extension StringAnimationExtensions on String {
     int? maxLines,
     TextOverflow? overflow,
     Duration duration = const Duration(milliseconds: 800),
+    Duration delay = Duration.zero,
     Curve curve = Curves.linear,
     bool autoStart = true,
     VoidCallback? onCompleted,
@@ -303,6 +332,7 @@ extension StringAnimationExtensions on String {
       maxLines: maxLines,
       overflow: overflow,
       duration: duration,
+      delay: delay,
       curve: curve,
       autoStart: autoStart,
       onCompleted: onCompleted,
@@ -349,6 +379,7 @@ extension StringAnimationExtensions on String {
     int? maxLines,
     TextOverflow? overflow,
     Duration duration = const Duration(milliseconds: 1200),
+    Duration delay = Duration.zero,
     Curve curve = Curves.easeIn,
     bool autoStart = true,
     double fadePortion = 0.45,
@@ -364,6 +395,7 @@ extension StringAnimationExtensions on String {
       maxLines: maxLines,
       overflow: overflow,
       duration: duration,
+      delay: delay,
       curve: curve,
       autoStart: autoStart,
       fadePortion: fadePortion,
