@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/widgets/ripple_effect.dart';
 
 class SplitUtxoScreen extends StatelessWidget {
   final int id;
@@ -253,6 +254,7 @@ class SplitUtxoScreen extends StatelessWidget {
 
   Widget _buildSplitByAmountBody(SplitUtxoViewModel viewModel) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
           controller: viewModel.amountController,
@@ -284,8 +286,38 @@ class SplitUtxoScreen extends StatelessWidget {
             ),
           ),
         ),
+        CoconutLayout.spacing_300h,
+        _buildRecommendedAmounts(viewModel),
         CoconutLayout.spacing_1000h,
       ],
+    );
+  }
+
+  Widget _buildRecommendedAmounts(SplitUtxoViewModel viewModel) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Wrap(
+        spacing: 8,
+        children:
+            viewModel.recommendedSplitAmounts.map((btc) {
+              final sats = (btc * 1e8).toInt();
+              return RippleEffect(
+                onTap: () => viewModel.onRecommendedAmountTapped(btc),
+                borderRadius: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: CoconutColors.gray700),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    viewModel.currentUnit.displayBitcoinAmount(sats, withUnit: true),
+                    style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                  ),
+                ),
+              );
+            }).toList(),
+      ),
     );
   }
 

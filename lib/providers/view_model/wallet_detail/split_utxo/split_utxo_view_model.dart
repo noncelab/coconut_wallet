@@ -64,6 +64,40 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   int get _selectedUtxoAmount => _selectedUtxoList.isNotEmpty ? _selectedUtxoList.first.amount : 0;
   String get _splitAmountInput => amountController.text.replaceAll(',', '').trim();
 
+  List<double> get recommendedSplitAmounts {
+    const allAmounts = [
+      0.0001,
+      0.0002,
+      0.0005,
+      0.001,
+      0.002,
+      0.005,
+      0.01,
+      0.02,
+      0.05,
+      0.1,
+      0.2,
+      0.5,
+      1.0,
+      2.0,
+      5.0,
+      10.0,
+      20.0,
+      50.0,
+    ];
+
+    if (_selectedUtxoAmount <= 0) return [];
+
+    final validAmounts =
+        allAmounts.where((btc) {
+          final sats = (btc * 1e8).toInt();
+          return sats < _selectedUtxoAmount;
+        }).toList();
+
+    if (validAmounts.length <= 6) return validAmounts;
+    return validAmounts.sublist(validAmounts.length - 6);
+  }
+
   // --- Initialization ---
   SplitUtxoViewModel(
     this.walletId,
@@ -376,6 +410,14 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (hasAmountError) return t.split_utxo_screen.utxo_error;
     if (hasAmountWarning) return t.split_utxo_screen.utxo_warning;
     return null;
+  }
+
+  void onRecommendedAmountTapped(double btc) {
+    if (currentUnit.isBasedOnSatoshi) {
+      amountController.text = (btc * 1e8).toInt().toString();
+    } else {
+      amountController.text = btc.toStringAsFixed(8).replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
+    }
   }
 
   String getFeePickerText(Translations t) {
