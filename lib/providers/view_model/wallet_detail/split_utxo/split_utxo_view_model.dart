@@ -65,7 +65,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   String get _splitAmountInput => amountController.text.replaceAll(',', '').trim();
 
   List<double> get recommendedSplitAmounts {
-    const allAmounts = [
+    const niceNumbers = [
       0.0001,
       0.0002,
       0.0005,
@@ -89,7 +89,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (_selectedUtxoAmount <= 0) return [];
 
     final validAmounts =
-        allAmounts.where((btc) {
+        niceNumbers.where((btc) {
           final sats = (btc * 1e8).toInt();
           return sats < _selectedUtxoAmount;
         }).toList();
