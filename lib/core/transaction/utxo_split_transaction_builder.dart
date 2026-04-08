@@ -352,7 +352,7 @@ class UtxoSplitTransactionBuilder {
 
     final addresses = await addressRepository.getWalletAddressList(
       walletListItemBase,
-      _nextReceiveAddressIndex,
+      _nextReceiveAddressIndex - 1,
       totalOutputCount,
       false,
       true,
