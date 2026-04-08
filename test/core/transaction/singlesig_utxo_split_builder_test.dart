@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -34,6 +35,7 @@ void main() {
 
   UtxoSplitTransactionBuilder createBuilder(UtxoState utxo, {double feeRate = 1.0}) => UtxoSplitTransactionBuilder(
     utxo: utxo,
+    dustThreshold: DustThresholds.p2wpkh,
     feeRate: feeRate,
     walletListItemBase: wallet,
     addressRepository: addressRepository,
