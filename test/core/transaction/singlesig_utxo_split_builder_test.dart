@@ -1,6 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
-import 'package:coconut_wallet/core/transaction/utxo_split_builder.dart';
+import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/singlesig_wallet_list_item.dart';
@@ -32,8 +32,12 @@ void main() {
     timestamp: DateTime.now(),
   );
 
-  UtxoSplitBuilder createBuilder(UtxoState utxo, {double feeRate = 1.0}) =>
-      UtxoSplitBuilder(utxo: utxo, feeRate: feeRate, walletListItemBase: wallet, addressRepository: addressRepository);
+  UtxoSplitTransactionBuilder createBuilder(UtxoState utxo, {double feeRate = 1.0}) => UtxoSplitTransactionBuilder(
+    utxo: utxo,
+    feeRate: feeRate,
+    walletListItemBase: wallet,
+    addressRepository: addressRepository,
+  );
 
   void printSplitOutputs(UtxoSplitResult result, String label) {
     print('--- $label ---');
@@ -112,7 +116,7 @@ void main() {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildEqualSplit(splitCount: 5);
+      final result = await builder.buildEqualAmountSplit(splitCount: 5);
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -139,7 +143,7 @@ void main() {
       final utxo = createUtxo(100270);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildEqualSplit(splitCount: 5);
+      final result = await builder.buildEqualAmountSplit(splitCount: 5);
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -157,14 +161,14 @@ void main() {
       final utxo = createUtxo(50000);
       final builder = createBuilder(utxo);
 
-      expect(() => builder.buildEqualSplit(splitCount: 200), throwsA(isA<SplitOutputDustException>()));
+      expect(() => builder.buildEqualAmountSplit(splitCount: 200), throwsA(isA<SplitOutputDustException>()));
     });
 
     test('fee가 UTXO amount 대비 너무 크면 SplitInsufficientAmountException', () async {
       final utxo = createUtxo(50000);
       final builder = createBuilder(utxo, feeRate: 1000.0);
 
-      expect(() => builder.buildEqualSplit(splitCount: 2), throwsA(isA<SplitInsufficientAmountException>()));
+      expect(() => builder.buildEqualAmountSplit(splitCount: 2), throwsA(isA<SplitInsufficientAmountException>()));
     });
   });
 
@@ -335,7 +339,7 @@ void main() {
       final utxo = createUtxo(100000000); // 1 BTC
       final builder = createBuilder(utxo, feeRate: 1.0);
 
-      final result = await builder.buildCustomSplit(amountCountMap: {10000000: 5, 5000000: 9});
+      final result = await builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 9});
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -352,7 +356,7 @@ void main() {
       final utxo = createUtxo(100000000); // 1 BTC
       final builder = createBuilder(utxo, feeRate: 1.0);
 
-      final result = await builder.buildCustomSplit(amountCountMap: {300000: 332});
+      final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332});
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -370,7 +374,7 @@ void main() {
       final utxo = createUtxo(100000000); // 1 BTC
       final builder = createBuilder(utxo, feeRate: 12.5);
 
-      final result = await builder.buildCustomSplit(amountCountMap: {300000: 332});
+      final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332});
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -389,7 +393,7 @@ void main() {
       final builder = createBuilder(utxo, feeRate: 1.0);
 
       expect(
-        () => builder.buildCustomSplit(amountCountMap: {10000000: 5, 5000000: 10}),
+        () => builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 10}),
         throwsA(isA<SplitInsufficientAmountException>()),
       );
     });
@@ -399,7 +403,7 @@ void main() {
       final builder = createBuilder(utxo, feeRate: 1.0);
 
       expect(
-        () => builder.buildCustomSplit(amountCountMap: {50000000: 1, 49999828: 1}),
+        () => builder.buildCustomAmountSplit(amountCountMap: {50000000: 1, 49999828: 1}),
         throwsA(isA<SplitOutputDustException>()),
       );
     });
@@ -409,7 +413,7 @@ void main() {
       final builder = createBuilder(utxo, feeRate: 10000000);
 
       try {
-        await builder.buildCustomSplit(amountCountMap: {5000000: 20});
+        await builder.buildCustomAmountSplit(amountCountMap: {5000000: 20});
         fail('SplitInsufficientAmountException should be thrown');
       } on SplitInsufficientAmountException catch (e) {
         expect(e.estimatedFee, isNotNull);
@@ -422,7 +426,7 @@ void main() {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildEqualSplit(splitCount: 3);
+      final result = await builder.buildEqualAmountSplit(splitCount: 3);
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -435,7 +439,7 @@ void main() {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo, feeRate: 3.5);
 
-      final result = await builder.buildEqualSplit(splitCount: 3);
+      final result = await builder.buildEqualAmountSplit(splitCount: 3);
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -450,7 +454,7 @@ void main() {
       final utxo = createUtxo(1000000);
       final builder = createBuilder(utxo, feeRate: 100.0);
 
-      final result = await builder.buildEqualSplit(splitCount: 2);
+      final result = await builder.buildEqualAmountSplit(splitCount: 2);
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -483,13 +487,13 @@ void main() {
         if (maxCount < 2) {
           // 분할 불가능한 경우 - 2분할도 실패해야 함
           expect(
-            () => builder.buildEqualSplit(splitCount: 2),
+            () => builder.buildEqualAmountSplit(splitCount: 2),
             throwsA(anyOf(isA<SplitOutputDustException>(), isA<SplitInsufficientAmountException>())),
           );
           return;
         }
 
-        final result = await builder.buildEqualSplit(splitCount: maxCount);
+        final result = await builder.buildEqualAmountSplit(splitCount: maxCount);
 
         expect(result.isSuccess, isTrue, reason: 'getMaxEqualSplitCount=$maxCount, buildEqualSplit 실패');
         expectSuccessfulTransaction(result);
