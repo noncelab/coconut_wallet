@@ -783,6 +783,9 @@ merge_utxos_screen:
     or_less: "o menos"
     less_than: "menos de"
     custom: "Personalizado"
+  receive_address: "Dirección de recepción"
+  receive_address_summary_count: "Se combinarán ${count} UTXOs"
+  receive_address_summary: "\nen la dirección seleccionada"
 
 split_utxo_screen:
   title: "Dividir UTXO"

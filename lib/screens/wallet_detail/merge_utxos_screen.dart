@@ -1,18 +1,25 @@
+import 'dart:async';
+
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/merge_utxos/merge_utxos_view_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:shimmer/shimmer.dart';
 
 class MergeUtxosScreen extends StatefulWidget {
   final int id;
@@ -23,7 +30,7 @@ class MergeUtxosScreen extends StatefulWidget {
   State<MergeUtxosScreen> createState() => _MergeUtxosScreenState();
 }
 
-class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
+class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerProviderStateMixin {
   static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
   static const Duration _optionPickerAnimationDuration = Duration(milliseconds: 300);
 
@@ -36,6 +43,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
   String? _customAmountCriteriaText;
   bool _isCustomAmountLessThan = false;
   bool _didConfirmAmountCriteria = false;
+  late String _selectedReceiveAddress;
   UtxoMergeStep? _displayedHeaderStep;
   UtxoMergeStep? _pendingHeaderStep;
   UtxoMergeStep? _lastObservedHeaderStep;
@@ -46,16 +54,25 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
   UtxoMergeStep? _lastObservedOptionPickerStep;
   int _optionPickerAnimationNonce = 0;
   final List<UtxoMergeStep> _visibleOptionPickerSteps = [];
+  late final AnimationController _receiveAddressSummaryLottieController;
+  Timer? _receiveAddressSummaryTimer;
+  bool _showReceiveAddressSummaryText = false;
+  int _receiveAddressSummaryAnimationNonce = 0;
+  bool _isAmountTextHighlighted = false;
 
   @override
   void initState() {
     super.initState();
+    _receiveAddressSummaryLottieController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
     _viewModel = MergeUtxosViewModel(widget.id, context.read<UtxoRepository>(), context.read<UtxoTagProvider>())
       ..initialize();
+    _selectedReceiveAddress = context.read<WalletProvider>().getReceiveAddress(widget.id).address;
   }
 
   @override
   void dispose() {
+    _receiveAddressSummaryTimer?.cancel();
+    _receiveAddressSummaryLottieController.dispose();
     _viewModel.dispose();
     super.dispose();
   }
@@ -176,6 +193,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
 
   void _syncHeaderAnimation(UtxoMergeStep step) {
     if (!_isAnimatedHeaderStep(step)) return;
+    _handleReceiveAddressSummaryAnimation(step);
 
     _pendingHeaderStep = step;
 
@@ -206,6 +224,41 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
       setState(() {
         _displayedHeaderStep = _pendingHeaderStep;
         _isHeaderFadingOut = false;
+      });
+    });
+  }
+
+  void _handleReceiveAddressSummaryAnimation(UtxoMergeStep step) {
+    _receiveAddressSummaryTimer?.cancel();
+
+    if (step != UtxoMergeStep.selectReceiveAddress) {
+      _receiveAddressSummaryLottieController.stop();
+      _receiveAddressSummaryLottieController.reset();
+      _showReceiveAddressSummaryText = false;
+      return;
+    }
+
+    final nonce = ++_receiveAddressSummaryAnimationNonce;
+    _receiveAddressSummaryLottieController
+      ..stop()
+      ..reset()
+      ..repeat(period: const Duration(seconds: 1));
+
+    if (_showReceiveAddressSummaryText) {
+      setState(() {
+        _showReceiveAddressSummaryText = false;
+      });
+    }
+
+    _receiveAddressSummaryTimer = Timer(const Duration(seconds: 4), () {
+      if (!mounted || nonce != _receiveAddressSummaryAnimationNonce) return;
+
+      _receiveAddressSummaryLottieController
+        ..stop()
+        ..value = 1;
+
+      setState(() {
+        _showReceiveAddressSummaryText = true;
       });
     });
   }
@@ -261,6 +314,15 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
           });
         }
         break;
+      case UtxoMergeStep.selectReceiveAddress:
+        if (!_didConfirmAmountCriteria) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_isBottomSheetOpen) {
+              _showReceiveAddressBottomSheet(context);
+            }
+          });
+        }
+        break;
       default:
         break;
     }
@@ -269,7 +331,8 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
   bool _isAnimatedHeaderStep(UtxoMergeStep step) {
     return step == UtxoMergeStep.selectMergeCriteria ||
         step == UtxoMergeStep.selectAmountCriteria ||
-        step == UtxoMergeStep.selectTag;
+        step == UtxoMergeStep.selectTag ||
+        step == UtxoMergeStep.selectReceiveAddress;
   }
 
   String? _headerTextForStep(UtxoMergeStep? step) {
@@ -287,9 +350,30 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
 
   Widget _buildAnimatedHeader() {
     final step = _displayedHeaderStep;
-    final text = _headerTextForStep(step);
 
-    if (step == null || text == null) {
+    if (step == null) {
+      return const SizedBox.shrink();
+    }
+
+    if (step == UtxoMergeStep.selectReceiveAddress) {
+      final summaryCard = _buildReceiveAddressSummaryCard();
+
+      if (_isHeaderFadingOut) {
+        return summaryCard.fadeOutAnimation(
+          key: ValueKey('merge-header-out-${step.name}-$_headerAnimationNonce'),
+          duration: const Duration(milliseconds: 100),
+        );
+      }
+
+      return summaryCard.fadeInAnimation(
+        key: ValueKey('merge-header-in-${step.name}-$_headerAnimationNonce'),
+        duration: _headerAnimationDuration,
+        delay: const Duration(milliseconds: 300),
+      );
+    }
+
+    final text = _headerTextForStep(step);
+    if (text == null) {
       return const SizedBox.shrink();
     }
 
@@ -308,6 +392,163 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
       duration: _headerAnimationDuration,
       delay: const Duration(milliseconds: 300),
       slideDirection: CoconutCharacterFadeSlideDirection.slideDown,
+    );
+  }
+
+  Widget _buildReceiveAddressSummaryCard() {
+    final amountText = _currentAmountCriteriaText;
+    final utxoCount = _viewModel.utxoCount;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: CoconutColors.gray800,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: CoconutColors.gray600, width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Lottie.asset(
+              'assets/lottie/three-stars-growing.json',
+              controller: _receiveAddressSummaryLottieController,
+              onLoaded: (composition) {
+                _receiveAddressSummaryLottieController.duration = composition.duration;
+                if (_displayedHeaderStep == UtxoMergeStep.selectReceiveAddress) {
+                  if (_showReceiveAddressSummaryText) {
+                    _receiveAddressSummaryLottieController.value = 1;
+                  } else if (!_receiveAddressSummaryLottieController.isAnimating) {
+                    _receiveAddressSummaryLottieController.repeat(
+                      period: _receiveAddressSummaryLottieController.duration ?? composition.duration,
+                    );
+                  }
+                }
+              },
+              width: 24,
+              height: 24,
+              fit: BoxFit.contain,
+              repeat: false,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                layoutBuilder: (currentChild, previousChildren) {
+                  return Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [...previousChildren, if (currentChild != null) currentChild],
+                  );
+                },
+                transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                child:
+                    _showReceiveAddressSummaryText
+                        ? RichText(
+                          key: const ValueKey('receive-address-summary-text'),
+                          text: TextSpan(
+                            style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                            children: [
+                              TextSpan(
+                                text: amountText,
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
+                                ),
+                                recognizer:
+                                    TapGestureRecognizer()
+                                      ..onTapDown = (_) {
+                                        setState(() {
+                                          _isAmountTextHighlighted = true;
+                                        });
+                                      }
+                                      ..onTapUp = (_) {
+                                        setState(() {
+                                          _isAmountTextHighlighted = false;
+                                        });
+                                        debugPrint('amountText tapped: $amountText');
+                                      }
+                                      ..onTapCancel = () {
+                                        setState(() {
+                                          _isAmountTextHighlighted = false;
+                                        });
+                                      },
+                              ),
+                              TextSpan(
+                                text: '\n${t.merge_utxos_screen.receive_address_summary_count(count: utxoCount)}',
+                                style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
+                                ),
+                                recognizer:
+                                    TapGestureRecognizer()
+                                      ..onTapDown = (_) {
+                                        setState(() {
+                                          _isAmountTextHighlighted = true;
+                                        });
+                                      }
+                                      ..onTapUp = (_) {
+                                        setState(() {
+                                          _isAmountTextHighlighted = false;
+                                        });
+                                        debugPrint('receive_address_summary_count tapped: $utxoCount');
+                                      }
+                                      ..onTapCancel = () {
+                                        setState(() {
+                                          _isAmountTextHighlighted = false;
+                                        });
+                                      },
+                              ),
+                              TextSpan(text: t.merge_utxos_screen.receive_address_summary),
+                            ],
+                          ),
+                        ).fadeInAnimation(
+                          key: ValueKey('receive-address-summary-text-fade-$_receiveAddressSummaryAnimationNonce'),
+                          duration: const Duration(milliseconds: 260),
+                        )
+                        : _buildReceiveAddressSummarySkeleton(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReceiveAddressSummarySkeleton() {
+    return Shimmer.fromColors(
+      key: const ValueKey('receive-address-summary-skeleton'),
+      baseColor: CoconutColors.gray700,
+      highlightColor: CoconutColors.gray600,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 6),
+          Container(
+            width: 132,
+            height: 16,
+            decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: 120,
+            height: 16,
+            decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: 168,
+            height: 16,
+            decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -389,7 +630,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
 
               if (isNewest) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.only(bottom: 40),
                   child: picker.slideUpAnimation(
                     key: ValueKey('merge-picker-in-${step.name}-$_optionPickerAnimationNonce'),
                     duration: _optionPickerAnimationDuration,
@@ -400,7 +641,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
                 );
               }
 
-              return Padding(padding: EdgeInsets.only(top: index == 0 ? 0 : 12), child: picker);
+              return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : 40), child: picker);
             }).toList(),
       ),
     );
@@ -420,6 +661,11 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
         onTap: _isBottomSheetOpen ? null : () => _showAmountCriteriaBottomSheet(context),
       ),
       UtxoMergeStep.selectTag => CoconutOptionPicker(text: t.merge_utxos_screen.select_tag, onTap: () {}),
+      UtxoMergeStep.selectReceiveAddress => CoconutOptionPicker(
+        text: _selectedReceiveAddress,
+        label: t.merge_utxos_screen.receive_address,
+        onTap: _isBottomSheetOpen ? null : () => _showReceiveAddressBottomSheet(context),
+      ),
       _ => const SizedBox.shrink(),
     };
   }
@@ -505,6 +751,26 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
 
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
+    var selectedTabIndex = _currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
+    UtxoAmountCriteria? selectedRecommendedCriteria =
+        [
+              UtxoAmountCriteria.below001,
+              UtxoAmountCriteria.below0001,
+              UtxoAmountCriteria.below00001,
+            ].contains(_currentAmountCriteria)
+            ? _currentAmountCriteria
+            : null;
+    final customAmountController = TextEditingController(text: _customAmountCriteriaText ?? '');
+    final customAmountFocusNode = FocusNode();
+    var isCustomAmountLessThan = _isCustomAmountLessThan;
+
+    if (selectedTabIndex == 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          customAmountFocusNode.requestFocus();
+        }
+      });
+    }
 
     final selectedItem = await CommonBottomSheets.showBottomSheet<_AmountCriteriaSelectionResult>(
       showCloseButton: true,
@@ -514,17 +780,85 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
       title: t.merge_utxos_screen.amount_criteria_bottomsheet.title,
       child: SizedBox(
         height: bodyHeight + 16,
-        child: _AmountCriteriaBottomSheetBody(
-          bodyHeight: bodyHeight,
-          initialSelectedCriteria: _currentAmountCriteria,
-          recommendationTabLabel: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
-          customTabLabel: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
-          confirmText: t.complete,
-          titleBuilder: _amountCriteriaText,
-          descriptionBuilder: _amountCriteriaDescription,
+        child: StatefulBuilder(
+          builder: (context, modalSetState) {
+            return _SegmentedBottomSheetBody(
+              bodyHeight: bodyHeight,
+              selectedTabIndex: selectedTabIndex,
+              confirmText: t.complete,
+              isConfirmEnabled:
+                  selectedTabIndex == 0
+                      ? selectedRecommendedCriteria != null
+                      : customAmountController.text.trim().isNotEmpty &&
+                          double.tryParse(customAmountController.text.trim()) != 0,
+              onConfirm: () {
+                if (selectedTabIndex == 0) {
+                  if (selectedRecommendedCriteria == null) return;
+                  Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: selectedRecommendedCriteria!));
+                  return;
+                }
+
+                if (customAmountController.text.trim().isEmpty) return;
+                Navigator.pop(
+                  context,
+                  _AmountCriteriaSelectionResult(
+                    criteria: UtxoAmountCriteria.custom,
+                    customAmountText: customAmountController.text.trim(),
+                    isLessThan: isCustomAmountLessThan,
+                  ),
+                );
+              },
+              onTabSelected: (index) {
+                modalSetState(() {
+                  selectedTabIndex = index;
+                });
+                if (index == 1) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      customAmountFocusNode.requestFocus();
+                    }
+                  });
+                } else {
+                  customAmountFocusNode.unfocus();
+                }
+              },
+              tabs: [
+                _BottomSheetTab(
+                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
+                  child: _buildAmountCriteriaRecommendationTab(
+                    selectedRecommendedCriteria: selectedRecommendedCriteria,
+                    onSelectionChanged: (selected) {
+                      modalSetState(() {
+                        selectedRecommendedCriteria = selected;
+                      });
+                    },
+                  ),
+                ),
+                _BottomSheetTab(
+                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
+                  child: _buildCustomAmountTab(
+                    controller: customAmountController,
+                    focusNode: customAmountFocusNode,
+                    isLessThan: isCustomAmountLessThan,
+                    onAmountChanged: () {
+                      modalSetState(() {});
+                    },
+                    onLessThanToggle: () {
+                      modalSetState(() {
+                        isCustomAmountLessThan = !isCustomAmountLessThan;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
+
+    customAmountController.dispose();
+    customAmountFocusNode.dispose();
 
     if (selectedItem != null && context.mounted) {
       const nextStep = UtxoMergeStep.selectReceiveAddress;
@@ -547,89 +881,175 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> {
       });
     }
   }
-}
 
-class _AmountCriteriaBottomSheetBody extends StatefulWidget {
-  final double bodyHeight;
-  final UtxoAmountCriteria initialSelectedCriteria;
-  final String recommendationTabLabel;
-  final String customTabLabel;
-  final String confirmText;
-  final String Function(UtxoAmountCriteria criteria) titleBuilder;
-  final String? Function(UtxoAmountCriteria criteria) descriptionBuilder;
+  void _showReceiveAddressBottomSheet(BuildContext context) async {
+    if (_isBottomSheetOpen) return;
 
-  const _AmountCriteriaBottomSheetBody({
-    required this.bodyHeight,
-    required this.initialSelectedCriteria,
-    required this.recommendationTabLabel,
-    required this.customTabLabel,
-    required this.confirmText,
-    required this.titleBuilder,
-    required this.descriptionBuilder,
-  });
+    setState(() {
+      _isBottomSheetOpen = true;
+    });
 
-  @override
-  State<_AmountCriteriaBottomSheetBody> createState() => _AmountCriteriaBottomSheetBodyState();
-}
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
+    var selectedTabIndex = _currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
+    UtxoAmountCriteria? selectedRecommendedCriteria =
+        [
+              UtxoAmountCriteria.below001,
+              UtxoAmountCriteria.below0001,
+              UtxoAmountCriteria.below00001,
+            ].contains(_currentAmountCriteria)
+            ? _currentAmountCriteria
+            : null;
+    final customAmountController = TextEditingController(text: _customAmountCriteriaText ?? '');
+    final customAmountFocusNode = FocusNode();
+    var isCustomAmountLessThan = _isCustomAmountLessThan;
 
-class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomSheetBody> {
-  static const List<UtxoAmountCriteria> _recommendedCriteria = [
-    UtxoAmountCriteria.below001,
-    UtxoAmountCriteria.below0001,
-    UtxoAmountCriteria.below00001,
-  ];
-  late int _selectedTabIndex;
-  UtxoAmountCriteria? _selectedRecommendedCriteria;
-  final TextEditingController _customAmountController = TextEditingController();
-  final FocusNode _customAmountFocusNode = FocusNode();
-  bool _isCustomAmountLessThan = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedTabIndex = widget.initialSelectedCriteria == UtxoAmountCriteria.custom ? 1 : 0;
-    _selectedRecommendedCriteria =
-        _recommendedCriteria.contains(widget.initialSelectedCriteria) ? widget.initialSelectedCriteria : null;
-    if (_selectedTabIndex == 1) {
+    if (selectedTabIndex == 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _customAmountFocusNode.requestFocus();
+          customAmountFocusNode.requestFocus();
         }
+      });
+    }
+
+    final selectedItem = await CommonBottomSheets.showBottomSheet<_AmountCriteriaSelectionResult>(
+      showCloseButton: true,
+      adjustForKeyboardInset: false,
+      context: context,
+      backgroundColor: CoconutColors.gray900,
+      title: t.merge_utxos_screen.amount_criteria_bottomsheet.title,
+      child: SizedBox(
+        height: bodyHeight + 16,
+        child: StatefulBuilder(
+          builder: (context, modalSetState) {
+            return _SegmentedBottomSheetBody(
+              bodyHeight: bodyHeight,
+              selectedTabIndex: selectedTabIndex,
+              confirmText: t.complete,
+              isConfirmEnabled:
+                  selectedTabIndex == 0
+                      ? selectedRecommendedCriteria != null
+                      : customAmountController.text.trim().isNotEmpty &&
+                          double.tryParse(customAmountController.text.trim()) != 0,
+              onConfirm: () {
+                if (selectedTabIndex == 0) {
+                  if (selectedRecommendedCriteria == null) return;
+                  Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: selectedRecommendedCriteria));
+                  return;
+                }
+
+                if (customAmountController.text.trim().isEmpty) return;
+                Navigator.pop(
+                  context,
+                  _AmountCriteriaSelectionResult(
+                    criteria: UtxoAmountCriteria.custom,
+                    customAmountText: customAmountController.text.trim(),
+                    isLessThan: isCustomAmountLessThan,
+                  ),
+                );
+              },
+              onTabSelected: (index) {
+                modalSetState(() {
+                  selectedTabIndex = index;
+                });
+                if (index == 1) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      customAmountFocusNode.requestFocus();
+                    }
+                  });
+                } else {
+                  customAmountFocusNode.unfocus();
+                }
+              },
+              tabs: [
+                _BottomSheetTab(
+                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
+                  child: _buildReceiveAddressOwnedTab(
+                    addresses: _receiveAddresses,
+                    selectedAddress: _selectedReceiveAddress,
+                    onSelectionChanged: (address) {
+                      modalSetState(() {
+                        _selectedReceiveAddress = address;
+                      });
+                    },
+                  ),
+                ),
+                _BottomSheetTab(
+                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
+                  child: _buildCustomAmountTab(
+                    controller: customAmountController,
+                    focusNode: customAmountFocusNode,
+                    isLessThan: isCustomAmountLessThan,
+                    onAmountChanged: () {
+                      modalSetState(() {});
+                    },
+                    onLessThanToggle: () {
+                      modalSetState(() {
+                        isCustomAmountLessThan = !isCustomAmountLessThan;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+
+    customAmountController.dispose();
+    customAmountFocusNode.dispose();
+
+    if (selectedItem != null && context.mounted) {
+      const nextStep = UtxoMergeStep.selectReceiveAddress;
+
+      setState(() {
+        _selectedAmountCriteria = selectedItem.criteria;
+        _customAmountCriteriaText = selectedItem.customAmountText;
+        _isCustomAmountLessThan = selectedItem.isLessThan;
+        _didConfirmAmountCriteria = true;
+        _isBottomSheetOpen = false;
+      });
+
+      _viewModel.setCurrentStep(nextStep);
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isBottomSheetOpen = false;
       });
     }
   }
 
-  @override
-  void dispose() {
-    _customAmountController.dispose();
-    _customAmountFocusNode.dispose();
-    super.dispose();
-  }
+  Widget _buildReceiveAddressOwnedTab({
+    required List<_ReceiveAddressOption> addresses,
+    required String? selectedAddress,
+    required ValueChanged<String> onSelectionChanged,
+  }) {
+    final initialSelection = addresses.cast<_ReceiveAddressOption?>().firstWhere(
+      (item) => item?.address == selectedAddress,
+      orElse: () => null,
+    );
 
-  double _tabBodyHeight(BuildContext context) {
-    return widget.bodyHeight - 230;
-  }
-
-  Widget _amountCriteriaBottomSheetBody() {
-    return SelectableBottomSheetBody<UtxoAmountCriteria>(
-      key: const ValueKey('recommended-amount-criteria'),
-      items: _recommendedCriteria,
+    return SelectableBottomSheetBody<_ReceiveAddressOption>(
+      key: const ValueKey('owned-receive-address-list'),
+      items: addresses,
       showGradient: false,
       showConfirmButton: false,
-      initiallySelectedId: _selectedRecommendedCriteria,
+      initiallySelectedId: initialSelection,
       getItemId: (item) => item,
-
-      confirmText: widget.confirmText,
+      confirmText: t.complete,
       backgroundColor: CoconutColors.gray900,
       onSelectionChanged: (selected) {
-        setState(() {
-          _selectedRecommendedCriteria = selected;
-        });
+        if (selected == null) return;
+        onSelectionChanged(selected.address);
       },
       itemBuilder: (context, item, isSelected, onTap) {
         return SelectableBottomSheetTextItem(
-          text: widget.titleBuilder(item),
-          description: widget.descriptionBuilder(item),
+          text: item.address,
+          description: item.derivationPath,
           isSelected: isSelected,
           onTap: onTap,
         );
@@ -637,7 +1057,49 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
     );
   }
 
-  Widget _customAmountBottomSheetBody() {
+  List<_ReceiveAddressOption> get _receiveAddresses {
+    final walletProvider = context.read<WalletProvider>();
+    final seen = <String>{};
+
+    return walletProvider.walletItemList
+        .map((wallet) => walletProvider.getReceiveAddress(wallet.id))
+        .where((walletAddress) => seen.add(walletAddress.address))
+        .map((walletAddress) => _ReceiveAddressOption.fromWalletAddress(walletAddress))
+        .toList();
+  }
+
+  Widget _buildAmountCriteriaRecommendationTab({
+    required UtxoAmountCriteria? selectedRecommendedCriteria,
+    required ValueChanged<UtxoAmountCriteria?> onSelectionChanged,
+  }) {
+    return SelectableBottomSheetBody<UtxoAmountCriteria>(
+      key: const ValueKey('recommended-amount-criteria'),
+      items: const [UtxoAmountCriteria.below001, UtxoAmountCriteria.below0001, UtxoAmountCriteria.below00001],
+      showGradient: false,
+      showConfirmButton: false,
+      initiallySelectedId: selectedRecommendedCriteria,
+      getItemId: (item) => item,
+      confirmText: t.complete,
+      backgroundColor: CoconutColors.gray900,
+      onSelectionChanged: onSelectionChanged,
+      itemBuilder: (context, item, isSelected, onTap) {
+        return SelectableBottomSheetTextItem(
+          text: _amountCriteriaText(item),
+          description: _amountCriteriaDescription(item),
+          isSelected: isSelected,
+          onTap: onTap,
+        );
+      },
+    );
+  }
+
+  Widget _buildCustomAmountTab({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required bool isLessThan,
+    required VoidCallback onAmountChanged,
+    required VoidCallback onLessThanToggle,
+  }) {
     return SizedBox.expand(
       child: Container(
         key: const ValueKey('custom-amount-criteria'),
@@ -652,14 +1114,12 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
                 children: [
                   Expanded(
                     child: CoconutTextField(
-                      controller: _customAmountController,
-                      focusNode: _customAmountFocusNode,
+                      controller: controller,
+                      focusNode: focusNode,
                       fontSize: 18,
                       style: CoconutTextFieldStyle.underline,
                       padding: const EdgeInsets.only(left: 5, right: 0, top: 16, bottom: 6),
-                      onChanged: (_) {
-                        setState(() {});
-                      },
+                      onChanged: (_) => onAmountChanged(),
                       textInputType: const TextInputType.numberWithOptions(decimal: true),
                       textInputFormatter: [
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
@@ -681,11 +1141,7 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
                   Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: ShrinkAnimationButton(
-                      onPressed: () {
-                        setState(() {
-                          _isCustomAmountLessThan = !_isCustomAmountLessThan;
-                        });
-                      },
+                      onPressed: onLessThanToggle,
                       defaultColor: CoconutColors.gray800,
                       pressedColor: CoconutColors.gray700,
                       borderRadius: 8,
@@ -693,7 +1149,7 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         child: Text(
-                          _isCustomAmountLessThan
+                          isLessThan
                               ? t.merge_utxos_screen.amount_criteria_bottomsheet.less_than
                               : t.merge_utxos_screen.amount_criteria_bottomsheet.or_less,
                           style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.white),
@@ -709,30 +1165,29 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
       ),
     );
   }
+}
 
-  bool get _isConfirmEnabled {
-    if (_selectedTabIndex == 0) {
-      return _selectedRecommendedCriteria != null;
-    }
-    return _customAmountController.text.trim().isNotEmpty && double.tryParse(_customAmountController.text.trim()) != 0;
-  }
+class _SegmentedBottomSheetBody extends StatelessWidget {
+  final double bodyHeight;
+  final int selectedTabIndex;
+  final List<_BottomSheetTab> tabs;
+  final String confirmText;
+  final bool isConfirmEnabled;
+  final ValueChanged<int> onTabSelected;
+  final VoidCallback onConfirm;
 
-  void _handleConfirm() {
-    if (_selectedTabIndex == 0) {
-      if (_selectedRecommendedCriteria == null) return;
-      Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: _selectedRecommendedCriteria!));
-      return;
-    }
+  const _SegmentedBottomSheetBody({
+    required this.bodyHeight,
+    required this.selectedTabIndex,
+    required this.tabs,
+    required this.confirmText,
+    required this.isConfirmEnabled,
+    required this.onTabSelected,
+    required this.onConfirm,
+  });
 
-    if (_customAmountController.text.trim().isEmpty) return;
-    Navigator.pop(
-      context,
-      _AmountCriteriaSelectionResult(
-        criteria: UtxoAmountCriteria.custom,
-        customAmountText: _customAmountController.text.trim(),
-        isLessThan: _isCustomAmountLessThan,
-      ),
-    );
+  double _tabBodyHeight(BuildContext context) {
+    return bodyHeight - 230;
   }
 
   @override
@@ -756,22 +1211,9 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                   child: CoconutSegmentedControl(
-                    labels: [widget.recommendationTabLabel, widget.customTabLabel],
-                    isSelected: [_selectedTabIndex == 0, _selectedTabIndex == 1],
-                    onPressed: (index) {
-                      setState(() {
-                        _selectedTabIndex = index;
-                      });
-                      if (index == 1) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) {
-                            _customAmountFocusNode.requestFocus();
-                          }
-                        });
-                      } else {
-                        _customAmountFocusNode.unfocus();
-                      }
-                    },
+                    labels: tabs.map((tab) => tab.label).toList(),
+                    isSelected: List.generate(tabs.length, (index) => selectedTabIndex == index),
+                    onPressed: onTabSelected,
                   ),
                 ),
                 CoconutLayout.spacing_400h,
@@ -787,7 +1229,7 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
                         children: [...previousChildren, if (currentChild != null) currentChild],
                       );
                     },
-                    child: _selectedTabIndex == 0 ? _amountCriteriaBottomSheetBody() : _customAmountBottomSheetBody(),
+                    child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
                   ),
                 ),
               ],
@@ -803,9 +1245,9 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
                 showGradient: false,
                 isVisibleAboveKeyboard: false,
                 bottomPadding: buttonBottomSpacing,
-                onButtonClicked: _handleConfirm,
-                isActive: _isConfirmEnabled,
-                text: widget.confirmText,
+                onButtonClicked: onConfirm,
+                isActive: isConfirmEnabled,
+                text: confirmText,
                 backgroundColor: CoconutColors.white,
               ),
             ),
@@ -813,6 +1255,24 @@ class _AmountCriteriaBottomSheetBodyState extends State<_AmountCriteriaBottomShe
         ],
       ),
     );
+  }
+}
+
+class _BottomSheetTab {
+  final String label;
+  final Widget child;
+
+  const _BottomSheetTab({required this.label, required this.child});
+}
+
+class _ReceiveAddressOption {
+  final String address;
+  final String derivationPath;
+
+  const _ReceiveAddressOption({required this.address, required this.derivationPath});
+
+  factory _ReceiveAddressOption.fromWalletAddress(WalletAddress walletAddress) {
+    return _ReceiveAddressOption(address: walletAddress.address, derivationPath: walletAddress.derivationPath);
   }
 }
 

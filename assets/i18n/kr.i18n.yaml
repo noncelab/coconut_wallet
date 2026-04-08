@@ -784,7 +784,9 @@ merge_utxos_screen:
     or_less: "이하"
     less_than: "미만"
     custom: "직접 설정"
-
+  receive_address: "받는 주소"
+  receive_address_summary_count: "UTXO ${count}개"
+  receive_address_summary: "를\n선택한 주소로 합칠게요"
 
 split_utxo_screen:
   title: "UTXO 나누기"

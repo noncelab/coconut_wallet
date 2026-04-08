@@ -781,6 +781,9 @@ merge_utxos_screen:
     or_less: "以下"
     less_than: "未満"
     custom: "直接設定"
+  receive_address: "受取アドレス"
+  receive_address_summary_count: "UTXO ${count}個"
+  receive_address_summary: "を\n選択したアドレスに統合します"
 
 split_utxo_screen:
   title: "UTXOを分割"

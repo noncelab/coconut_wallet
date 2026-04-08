@@ -780,6 +780,9 @@ merge_utxos_screen:
     or_less: "or less"
     less_than: "less than"
     custom: "Custom"
+  receive_address: "Receive address"
+  receive_address_summary_count: "${count} UTXOs"
+  receive_address_summary: "\nwill be merged into the selected address"
 
 split_utxo_screen:
   title: "Split UTXO"

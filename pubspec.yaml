@@ -238,6 +238,7 @@ flutter:
     - assets/lottie/swipe-left.json
     - assets/lottie/online-offline-switch.json
     - assets/lottie/fireworks.json
+    - assets/lottie/three-stars-growing.json
     - assets/images/hand-with-laid-heart.png
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
