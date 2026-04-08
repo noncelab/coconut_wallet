@@ -1,12 +1,11 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
-import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
-import 'package:coconut_wallet/model/wallet/wallet_list_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -123,7 +122,7 @@ class TransactionUtil {
   ) {
     int baseVbyte = 72; // 0 input, 2 output
     int vBytePerInput = 0;
-    int dust = _getDustThreshold(addressType);
+    int dust = addressType.dustThreshold;
     if (addressType.isSegwit) {
       vBytePerInput = 68; //segwit discount
     } else {
@@ -166,22 +165,6 @@ class TransactionUtil {
     }
 
     return selectedUtxos;
-  }
-
-  static int _getDustThreshold(AddressType addressType) {
-    if (addressType == AddressType.p2wpkh) {
-      return 294;
-    } else if (addressType == AddressType.p2wsh || addressType.isTaproot) {
-      return 330;
-    } else if (addressType == AddressType.p2pkh) {
-      return 546;
-    } else if (addressType == AddressType.p2sh) {
-      return 888;
-    } else if (addressType == AddressType.p2wpkhInP2sh) {
-      return 273;
-    } else {
-      throw Exception('Unsupported Address Type');
-    }
   }
 
   /// 코인베이스 트랜잭션 여부를 확인합니다.

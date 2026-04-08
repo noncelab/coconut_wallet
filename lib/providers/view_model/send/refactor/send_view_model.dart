@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/transaction_enums.dart';
@@ -70,13 +70,13 @@ enum AmountError {
   bool get isError => this != AmountError.none;
   bool get isNotError => this == AmountError.none;
 
-  String getMessage(BitcoinUnit currentUnit) {
+  String getMessage(BitcoinUnit currentUnit, {required int dustThreshold}) {
     switch (this) {
       case AmountError.insufficientBalance:
         return t.errors.insufficient_balance;
       case AmountError.minimumAmount:
         return t.alert.error_send.minimum_amount(
-          amount: currentUnit.displayBitcoinAmount(dustLimit + 1, withUnit: true),
+          amount: currentUnit.displayBitcoinAmount(dustThreshold + 1, withUnit: true),
         );
       case AmountError.none:
         return "";
@@ -197,6 +197,8 @@ class SendViewModel extends ChangeNotifier {
 
   bool get isNetworkOn => _isNetworkOn == true;
   num get _dustLimitDenominator => (_currentUnit.isBasedOnSatoshi ? 1 : 1e8);
+  int get _dustThreshold =>
+      _selectedWalletItem != null ? _selectedWalletItem!.walletType.addressType.dustThreshold : DustThresholds.p2wsh;
   bool get isAmountDisabled => _isMaxMode && _currentIndex == lastIndex;
   bool get isEstimatedFeeGreaterThanBalance => balance < (_estimatedFee ?? 0);
   bool get hasValidRecipient => validRecipientList.isNotEmpty;
@@ -617,7 +619,7 @@ class SendViewModel extends ChangeNotifier {
     int estimatedFeeInSats = _estimatedFee ?? 0;
     int maxBalanceInSats = balance - _currentUnit.toSatoshi(amountSumExceptLast) - estimatedFeeInSats;
     _recipientList[lastIndex].amount =
-        maxBalanceInSats > dustLimit
+        maxBalanceInSats > _dustThreshold
             ? (_currentUnit.isBasedOnSatoshi
                     ? maxBalanceInSats
                     : BalanceFormatUtil.formatSatoshiToReadableBitcoin(maxBalanceInSats).replaceAll(' ', ''))
@@ -695,11 +697,11 @@ class SendViewModel extends ChangeNotifier {
     String message = "";
     // [전체] 충분하지 않은 Balance 입력 > [수신자] dust 보다 적은 금액을 입력 > [마지막 수신자] 전송 금액 - 예상 수수료가 dustLimit보다 크지 않음 > [수신자] 주소에 에러가 있는 경우 > 최소값보다 낮은 수수료 입력
     if (_isAmountSumExceedsBalance.isError) {
-      message = _isAmountSumExceedsBalance.getMessage(currentUnit);
+      message = _isAmountSumExceedsBalance.getMessage(currentUnit, dustThreshold: _dustThreshold);
     } else if (_recipientList.any((r) => r.minimumAmountError.isError)) {
-      message = AmountError.minimumAmount.getMessage(currentUnit);
+      message = AmountError.minimumAmount.getMessage(currentUnit, dustThreshold: _dustThreshold);
     } else if (_isLastAmountInsufficient.isError) {
-      message = _isLastAmountInsufficient.getMessage(currentUnit);
+      message = _isLastAmountInsufficient.getMessage(currentUnit, dustThreshold: _dustThreshold);
     } else if (_recipientList.any((r) => r.addressError.isError)) {
       int addressErrorIndex = _recipientList.indexWhere((r) => r.addressError.isError);
       if (addressErrorIndex != -1) {
@@ -934,7 +936,7 @@ class SendViewModel extends ChangeNotifier {
     assert(recipientIndex != -1);
     final recipient = recipientList[recipientIndex];
     if (recipient.amount.isNotEmpty && double.parse(recipient.amount) > 0) {
-      if (double.parse(recipient.amount) <= dustLimit / _dustLimitDenominator) {
+      if (double.parse(recipient.amount) <= _dustThreshold / _dustLimitDenominator) {
         recipient.minimumAmountError = AmountError.minimumAmount;
       } else {
         recipient.minimumAmountError = AmountError.none;
@@ -957,7 +959,7 @@ class SendViewModel extends ChangeNotifier {
     if (_recipientList[lastIndex].amount.isNotEmpty) {
       double amount = double.parse(_recipientList[lastIndex].amount);
       int estimatedFeeInSats = _estimatedFee ?? 0;
-      bool isAmountInsufficientForFee = _currentUnit.toSatoshi(amount) - estimatedFeeInSats <= dustLimit;
+      bool isAmountInsufficientForFee = _currentUnit.toSatoshi(amount) - estimatedFeeInSats <= _dustThreshold;
 
       _isLastAmountInsufficient = isAmountInsufficientForFee ? AmountError.insufficientBalance : AmountError.none;
       Logger.log("_insufficientBalanceErrorOfLastRecipient: $_isLastAmountInsufficient");

@@ -8,11 +8,27 @@ class DustThresholds {
   static const int p2sh = 888;
   static const int p2wpkhInP2sh = 273;
 
-  static Map<AddressType, int> thresholds = {
+  static final Map<AddressType, int> thresholds = {
     AddressType.p2wpkh: p2wpkh,
     AddressType.p2wsh: p2wsh,
     AddressType.p2pkh: p2pkh,
     AddressType.p2sh: p2sh,
     AddressType.p2wpkhInP2sh: p2wpkhInP2sh,
   };
+
+  static int getByAddressType(AddressType addressType) {
+    if (addressType.isTaproot) {
+      return taproot;
+    }
+
+    final threshold = thresholds[addressType];
+    if (threshold == null) {
+      throw Exception('Unsupported Address Type: $addressType');
+    }
+    return threshold;
+  }
+}
+
+extension AddressTypeDustThresholdX on AddressType {
+  int get dustThreshold => DustThresholds.getByAddressType(this);
 }

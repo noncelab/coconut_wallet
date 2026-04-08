@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_preparer.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -69,6 +69,7 @@ class RbfBuilder {
 
   final WalletListItemBase walletListItemBase;
   final WalletAddress nextChangeAddress;
+  int get _dustThreshold => walletListItemBase.walletType.addressType.dustThreshold;
 
   late final TransactionRecord _pendingTx;
   late final List<UtxoState> _inputUtxos;
@@ -185,7 +186,7 @@ class RbfBuilder {
 
   /// selfOutput의 amount를 줄이거나 제거하여 deficitAmount를 줄이는 함수.
   ///
-  /// - 부분 차감: selfOutput.amount - deficit > dustLimit → amount만 줄임 (vSize 변화 없음)
+  /// - 부분 차감: selfOutput.amount - deficit > dust threshold → amount만 줄임 (vSize 변화 없음)
   /// - 전체 제거: 위 조건 불만족 → output 전체 제거.
   ///   deficit -= (selfOutput.amount + ceil(outputBytes * feeRate))
   ///   output이 제거되면 vSize가 줄어들고, 그 절약된 fee도 deficit 감소에 기여함.
@@ -201,7 +202,7 @@ class RbfBuilder {
     int index = selfOutputs!.length - 1;
     for (; index >= 0; index--) {
       final selfOutput = selfOutputs![index];
-      if (selfOutput.amount - leftDeficit >= dustLimit) {
+      if (selfOutput.amount - leftDeficit > _dustThreshold) {
         final (:result, :recipients) = _trySelfOutputReductionSweep(newRecipients, selfOutput, feeRate);
         if (result != null) {
           return (result: result, newRecipients: recipients!, remainingDeficit: 0, vSizeReduced: vSizeReduced);
@@ -209,11 +210,11 @@ class RbfBuilder {
       }
       // recipients에 selfOutput 1개만 남은 경우
       if (newRecipients.length == 1) {
-        if (selfOutput.amount <= dustLimit + 1) {
+        if (selfOutput.amount <= _dustThreshold + 1) {
           // 0 ~ 547
           break;
         } else {
-          const int lastSelfOutputAmount = dustLimit + 1;
+          final int lastSelfOutputAmount = _dustThreshold + 1;
           newRecipients[selfOutput.address] = lastSelfOutputAmount;
           leftDeficit -= (selfOutput.amount - lastSelfOutputAmount);
         }
@@ -381,7 +382,7 @@ class RbfBuilder {
     );
     // coconut_lib change output의 dust 기준에 걸려 수수료로 전환된 경우
     if (foundChangeOutput == null) return null;
-    return foundChangeOutput.amount <= dustLimit;
+    return foundChangeOutput.amount <= _dustThreshold;
   }
 
   /// 트랜잭션 생성 시도 시 항상 맨 처음 호출된다고 가정
