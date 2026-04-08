@@ -105,6 +105,7 @@ name: "名前"
 account: "アカウント"
 merge_utxos: "UTXOを統合"
 split_utxo: "UTXOを分割"
+organize: "整理する"
 
 relative_time:
   just_now: "たった今"
@@ -774,20 +775,30 @@ split_utxo_screen:
   title: "UTXOを分割"
   placeholder_utxo: "UTXOを選択してください"
   placeholder_criteria: "分割基準を選択してください"
+  placeholder_split_amount: "金額を入力してください"
+  placeholder_expected_fee: "予想手数料を入力してください"
   question_select_utxo: "どのUTXOを分割しますか？"
   question_select_criteria: "どのように分割しますか？"
   question_split_by_amount: "いくらずつ分割しますか？"
   question_split_evenly: "いくつに分割しますか？"
   label_split_criteria: "分割基準"
   label_selected_utxo: "選択したUTXO"
-  and_more_tags: "ほか${count}件"
+  label_expected_fee: "予想手数料"
+  and_more_tags: "他${count}件"
   utxo_error: "この金額は分割するには小さすぎます"
-  utxo_warning: "手数料の割合が高く、分割には適さない可能性があります"
-  bottomsheet:
-    title: "分割方法を選択"
-    split_by_amount: "一定の金額で分割"
-    split_evenly: "均等に分割"
-    split_manually: "手動で分割"
+  utxo_warning: "手数料の割合が高く、分割に適していない可能性があります"
+  criteria_bottomsheet:
+    title: "分割基準を選択"
+    split_by_amount: "一定額で分割します"
+    split_evenly: "均等に分割します"
+    split_manually: "手動で分割します"
+  expected_fee_bottomsheet:
+    title: "予想手数料"
+    expected_fee: "予想手数料"
+    fee_rate: "手数料率"
+  expected_result:
+    new_utxos: "新しいUTXO"
+    fee: "手数料"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

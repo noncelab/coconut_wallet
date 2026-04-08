@@ -105,6 +105,7 @@ name: "Name"
 account: "Account"
 merge_utxos: "Merge UTXOs"
 split_utxo: "Split UTXO"
+organize: "Organize"
 
 relative_time:
   just_now: "Just now"
@@ -772,21 +773,31 @@ merge_utxos_screen:
 split_utxo_screen:
   title: "Split UTXO"
   placeholder_utxo: "Select a UTXO"
-  placeholder_criteria: "Select split criteria"
-  question_select_utxo: "Which UTXO to split?"
-  question_select_criteria: "How to split?"
-  question_split_by_amount: "How much for each?"
-  question_split_evenly: "How many parts?"
-  label_split_criteria: "Split criteria"
+  placeholder_criteria: "Select a split method"
+  placeholder_split_amount: "Enter amount"
+  placeholder_expected_fee: "Enter expected fee"
+  question_select_utxo: "Which UTXO would you like to split?"
+  question_select_criteria: "How would you like to split it?"
+  question_split_by_amount: "How much per split?"
+  question_split_evenly: "Into how many parts?"
+  label_split_criteria: "Split method"
   label_selected_utxo: "Selected UTXO"
-  and_more_tags: "${count} more"
+  label_expected_fee: "Expected fee"
+  and_more_tags: "and ${count} more"
   utxo_error: "This amount is too small to split"
-  utxo_warning: "The fee ratio is high, so it may not be suitable for splitting"
-  bottomsheet:
-    title: "Choose split criteria"
-    split_by_amount: "Split by amount"
+  utxo_warning: "The fee ratio is high and may not be suitable for splitting"
+  criteria_bottomsheet:
+    title: "Select split method"
+    split_by_amount: "Split by fixed amount"
     split_evenly: "Split evenly"
     split_manually: "Split manually"
+  expected_fee_bottomsheet:
+    title: "Expected fee"
+    expected_fee: "Expected fee"
+    fee_rate: "Fee rate"
+  expected_result:
+    new_utxos: "New UTXOs"
+    fee: "Fee"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

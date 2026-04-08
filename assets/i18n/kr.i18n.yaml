@@ -105,6 +105,7 @@ name: "이름"
 account: "계정"
 merge_utxos: "UTXO 합치기"
 split_utxo: "UTXO 나누기"
+organize: "정리하기"
 
 relative_time:
   just_now: "방금 전"
@@ -779,20 +780,30 @@ split_utxo_screen:
   title: "UTXO 나누기"
   placeholder_utxo: "UTXO를 선택하세요"
   placeholder_criteria: "분할 기준을 선택하세요"
+  placeholder_split_amount: "금액을 입력하세요"
+  placeholder_expected_fee: "예상 수수료를 입력해주세요"
   question_select_utxo: "어떤 UTXO를 나눌까요?"
   question_select_criteria: "어떻게 나눌까요?"
   question_split_by_amount: "얼마씩 나눌까요?"
   question_split_evenly: "몇 개로 나눌까요?"
   label_split_criteria: "분할 기준"
   label_selected_utxo: "선택한 UTXO"
+  label_expected_fee: "예상 수수료"
   and_more_tags: "외 ${count}개"
   utxo_error: "이 금액은 나누기에 너무 작아요"
   utxo_warning: "수수료 비중이 높아 나누기에 적합하지 않을 수 있어요"
-  bottomsheet:
+  criteria_bottomsheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"
     split_evenly: "균등하게 나눌게요"
     split_manually: "직접 나눌게요"
+  expected_fee_bottomsheet:
+    title: "예상 수수료"
+    expected_fee: "예상 수수료"
+    fee_rate: "수수료율"
+  expected_result:
+    new_utxos: "새로운 UTXO"
+    fee: "수수료"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
