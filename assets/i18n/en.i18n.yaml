@@ -786,15 +786,11 @@ split_utxo_screen:
   and_more_tags: "and ${count} more"
   utxo_error: "This amount is too small to split"
   utxo_warning: "The fee ratio is high and may not be suitable for splitting"
-  criteria_bottomsheet:
+  criteria_bottom_sheet:
     title: "Select split method"
     split_by_amount: "Split by fixed amount"
     split_evenly: "Split evenly"
     split_manually: "Split manually"
-  expected_fee_bottomsheet:
-    title: "Expected fee"
-    expected_fee: "Expected fee"
-    fee_rate: "Fee rate"
   expected_result:
     new_utxos: "New UTXOs"
     fee: "Fee"
@@ -1057,6 +1053,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "Expected fee"
+    expected_fee: "Expected fee"
+    fee_rate: "Fee rate"
 
 long_pressed_menu:
   hide: "Hide"

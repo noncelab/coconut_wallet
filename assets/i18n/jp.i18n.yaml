@@ -787,15 +787,11 @@ split_utxo_screen:
   and_more_tags: "他${count}件"
   utxo_error: "この金額は分割するには小さすぎます"
   utxo_warning: "手数料の割合が高く、分割に適していない可能性があります"
-  criteria_bottomsheet:
+  criteria_bottom_sheet:
     title: "分割基準を選択"
     split_by_amount: "一定額で分割します"
     split_evenly: "均等に分割します"
     split_manually: "手動で分割します"
-  expected_fee_bottomsheet:
-    title: "予想手数料"
-    expected_fee: "予想手数料"
-    fee_rate: "手数料率"
   expected_result:
     new_utxos: "新しいUTXO"
     fee: "手数料"
@@ -1058,6 +1054,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "予想手数料"
+    expected_fee: "予想手数料"
+    fee_rate: "手数料率"
 
 long_pressed_menu:
   hide: "非表示"

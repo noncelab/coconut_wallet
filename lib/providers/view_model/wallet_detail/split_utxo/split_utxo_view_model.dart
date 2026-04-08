@@ -12,11 +12,11 @@ enum SplitCriteria {
   String getLabel(Translations t) {
     switch (this) {
       case SplitCriteria.byAmount:
-        return t.split_utxo_screen.bottomsheet.split_by_amount;
+        return t.split_utxo_screen.criteria_bottom_sheet.split_by_amount;
       case SplitCriteria.evenly:
-        return t.split_utxo_screen.bottomsheet.split_evenly;
+        return t.split_utxo_screen.criteria_bottom_sheet.split_evenly;
       case SplitCriteria.manually:
-        return t.split_utxo_screen.bottomsheet.split_manually;
+        return t.split_utxo_screen.criteria_bottom_sheet.split_manually;
     }
   }
 }

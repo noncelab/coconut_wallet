@@ -21,7 +21,7 @@ import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
@@ -1035,22 +1035,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   height: 30,
                   padding: const EdgeInsets.only(left: 12, right: 2),
                   onChanged: (text) {
-                    if (text == "-") return;
-                    String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
-                    double? parsedFeeRate = double.tryParse(formattedText);
-
-                    if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
-                        (parsedFeeRate != null && parsedFeeRate < 0.1)) {
+                    final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
+                      _feeRateController.text = formattedText;
+                      _viewModel.setFeeRateText(formattedText);
+                    });
+                    if (isTooLow) {
                       Fluttertoast.showToast(
                         msg: t.send_screen.fee_rate_too_low,
                         backgroundColor: CoconutColors.gray700,
                         toastLength: Toast.LENGTH_SHORT,
                       );
-                      _feeRateController.text = '0.';
-                      return;
                     }
-                    _feeRateController.text = formattedText;
-                    _viewModel.setFeeRateText(formattedText);
                   },
                   maxLines: 1,
                   fontFamily: 'SpaceGrotesk',
@@ -2169,5 +2164,3 @@ class FinalButtonMessage {
 
   FinalButtonMessage({required this.textColor, required this.message});
 }
-
-enum RecommendedFeeFetchStatus { fetching, succeed, failed }

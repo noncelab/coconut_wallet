@@ -196,7 +196,7 @@ class SplitUtxoScreen extends StatelessWidget {
   void _showSplitCriteriaBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
     final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<SplitCriteria>(
       context: context,
-      title: t.split_utxo_screen.bottomsheet.title,
+      title: t.split_utxo_screen.criteria_bottom_sheet.title,
       items: SplitCriteria.values,
       getItemId: (item) => item.name,
       initialChildSize: 0.5,

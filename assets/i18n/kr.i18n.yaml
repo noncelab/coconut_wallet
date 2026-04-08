@@ -792,15 +792,11 @@ split_utxo_screen:
   and_more_tags: "외 ${count}개"
   utxo_error: "이 금액은 나누기에 너무 작아요"
   utxo_warning: "수수료 비중이 높아 나누기에 적합하지 않을 수 있어요"
-  criteria_bottomsheet:
+  criteria_bottom_sheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"
     split_evenly: "균등하게 나눌게요"
     split_manually: "직접 나눌게요"
-  expected_fee_bottomsheet:
-    title: "예상 수수료"
-    expected_fee: "예상 수수료"
-    fee_rate: "수수료율"
   expected_result:
     new_utxos: "새로운 UTXO"
     fee: "수수료"
@@ -1063,6 +1059,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "예상 수수료"
+    expected_fee: "예상 수수료"
+    fee_rate: "수수료율"
 
 long_pressed_menu:
   hide: "숨기기"

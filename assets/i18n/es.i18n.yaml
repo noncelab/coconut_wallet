@@ -789,15 +789,11 @@ split_utxo_screen:
   and_more_tags: "y ${count} más"
   utxo_error: "Este monto es demasiado pequeño para dividir"
   utxo_warning: "La proporción de comisión es alta y puede no ser adecuado dividirlo"
-  criteria_bottomsheet:
+  criteria_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
     split_evenly: "Dividir en partes iguales"
     split_manually: "Dividir manualmente"
-  expected_fee_bottomsheet:
-    title: "Comisión estimada"
-    expected_fee: "Comisión estimada"
-    fee_rate: "Tasa de comisión"
   expected_result:
     new_utxos: "Nuevos UTXO"
     fee: "Comisión"
@@ -1060,6 +1056,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "Comisión estimada"
+    expected_fee: "Comisión estimada"
+    fee_rate: "Tasa de comisión"
 
 long_pressed_menu:
   hide: "Ocultar"
