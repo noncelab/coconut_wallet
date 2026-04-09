@@ -14,6 +14,7 @@ class CommonBottomSheets {
     required String title,
     required BuildContext context,
     required Widget child,
+    List<Widget>? actionList,
     TextStyle titleTextStyle = Styles.body2Bold,
     bool isDismissible = true,
     bool enableDrag = true,
@@ -51,31 +52,47 @@ class CommonBottomSheets {
                 ),
               Padding(
                 padding: titlePadding,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap:
-                          showCloseButton
-                              ? () {
-                                Navigator.pop(context);
-                              }
-                              : null,
-                      child:
-                          showCloseButton
-                              ? const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white)
-                              : Container(width: 20),
-                    ),
-                    Text(
-                      title,
-                      style: titleTextStyle,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Container(color: Colors.transparent, child: Container(width: 28)),
-                  ],
+                child: SizedBox(
+                  height: 32,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Center(
+                          child: Text(
+                            title,
+                            style: titleTextStyle,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          onTap:
+                              showCloseButton
+                                  ? () {
+                                    Navigator.pop(context);
+                                  }
+                                  : null,
+                          child:
+                              showCloseButton
+                                  ? const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white)
+                                  : const SizedBox(width: 24, height: 24),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child:
+                            actionList != null
+                                ? Row(mainAxisSize: MainAxisSize.min, children: actionList)
+                                : const SizedBox(width: 28, height: 24),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               child,

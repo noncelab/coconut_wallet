@@ -791,6 +791,7 @@ merge_utxos_screen:
   receive_address: "Dirección de recepción"
   receive_address_summary_count: "Se combinarán ${count} UTXOs"
   receive_address_summary: "\nen la dirección seleccionada"
+  used_utxos_count: "${used} de ${total} usados"
   receive_address_bottomsheet:
     title: "Seleccionar dirección"
     my_address: "Mi dirección"

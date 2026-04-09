@@ -793,6 +793,7 @@ merge_utxos_screen:
   receive_address: "받는 주소"
   receive_address_summary_count: "UTXO ${count}개"
   receive_address_summary: "를\n선택한 주소로 합칠게요"
+  used_utxos_count: "${total}개 중 ${used}개 사용"
   receive_address_bottomsheet:
     title: "주소 선택"
     my_address: "내 주소"
