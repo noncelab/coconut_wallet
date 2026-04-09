@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/exceptions/cpfp_creation/cpfp_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_preparer.dart';
@@ -56,6 +56,7 @@ class CpfpBuildResult {
 
 class CpfpBuilder {
   final WalletListItemBase walletListItemBase;
+  int get _dustThreshold => walletListItemBase.walletType.addressType.dustThreshold;
 
   /// child tx의 단일 output 주소 (sweep 대상)
   final WalletAddress nextReceiveAddress;
@@ -232,7 +233,7 @@ class CpfpBuilder {
     }
     final recalculatedFeeRate = _calculateMinimumChildFeeRate(estimatedVSize);
     final inputSum = inputs.fold<int>(0, (cur, utxo) => cur + utxo.amount);
-    final deficitAmount = txBuildResult.estimatedFee - (inputSum - dustLimit);
+    final deficitAmount = txBuildResult.estimatedFee - (inputSum - _dustThreshold);
 
     return CpfpBuildResult(
       addedInputs: addedUtxo,

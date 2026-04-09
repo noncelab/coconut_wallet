@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -91,7 +91,7 @@ class UtxoSelector {
     }
 
     // 보내는 금액에서 제외하는 경우, amount 충분한지 확인
-    if (isFeeSubtractedFromAmount && paymentMap.entries.last.value - estimatedFee <= dustLimit) {
+    if (isFeeSubtractedFromAmount && paymentMap.entries.last.value - estimatedFee <= addressType.dustThreshold) {
       throw SendAmountTooLowException(
         message: 'Last output amount is too small to cover fee.',
         estimatedFee: estimatedFee,

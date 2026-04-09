@@ -52,13 +52,13 @@ class UtxoTierTheme {
   TierSwatch swatch(UtxoTier tier) => TierSwatch(bg: bg(tier), fg: fg(tier));
 
   /// sats 금액에 해당하는 배경색
-  Color colorForSats(int sats) => bg(tierOfSats(sats));
+  Color colorForSats(int sats, {required int dustThreshold}) => bg(tierOfSats(sats, dustThreshold: dustThreshold));
 }
 
-// ---- sats -> tier (네 구간 반영, tiny는 547~10,000로 공백 커버) ----
-UtxoTier tierOfSats(int sats) {
-  if (sats <= 546) return UtxoTier.dust;
-  if (sats <= 10_000) return UtxoTier.tiny; // 547~10,000
+// ---- sats -> tier (네 구간 반영, tiny는 dustThreshold~10,000로 공백 커버) ----
+UtxoTier tierOfSats(int sats, {required int dustThreshold}) {
+  if (sats <= dustThreshold) return UtxoTier.dust;
+  if (sats <= 10_000) return UtxoTier.tiny; // dustThreshold+1~10,000
   if (sats <= 100_000) return UtxoTier.small;
   if (sats <= 1_000_000) return UtxoTier.medium;
   if (sats <= 9_999_999) return UtxoTier.large;
