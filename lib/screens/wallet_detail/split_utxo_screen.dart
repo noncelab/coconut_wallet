@@ -235,7 +235,7 @@ class SplitUtxoScreen extends StatelessWidget {
               () => EstimatedFeeBottomSheet.show(
                 context: context,
                 listenable: viewModel,
-                estimatedFeeTextGetter: () => viewModel.estimatedFeeText,
+                estimatedFeeTextGetter: () => viewModel.previewFeeText,
                 feeRateController: viewModel.feeRateController,
                 feeRateFocusNode: viewModel.feeRateFocusNode,
                 onFeeRateChanged: viewModel.onFeeRateChanged,
@@ -684,15 +684,6 @@ class SplitResultBox extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (viewModel.remainderText.isNotEmpty) ...[
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      viewModel.remainderText,
-                      style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400),
-                    ),
-                  ),
-                ],
                 CoconutLayout.spacing_100h,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -702,7 +693,7 @@ class SplitResultBox extends StatelessWidget {
                       style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                     ),
                     Text(
-                      viewModel.estimatedFeeText,
+                      viewModel.previewFeeText,
                       style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                     ),
                   ],
