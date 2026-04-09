@@ -1529,7 +1529,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
+  Widget _buildAddressRow(
+    BuildContext context,
+    int index,
+    String address,
+    String walletName,
+    String derivationPath, {
+    required bool isCurrentWallet,
+  }) {
     return ShrinkAnimationButton(
       onPressed: () {
         final currentIndex = _viewModel.currentIndex;
@@ -1568,14 +1575,38 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             children: [
               CoconutLayout.spacing_100h,
               Text(
-                shortenAddress(address, head: 10),
+                shortenAddress(address, head: 12, tail: 14),
                 style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
               ),
-              Text("$walletName • $derivationPath", style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+              _buildAddressRowSubtitle(context, walletName, derivationPath, isCurrentWallet),
               CoconutLayout.spacing_100h,
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 현재 보내기 지갑의 주소면 `이름 • 현재 지갑 라벨 • derivation path`, 아니면 기존 `이름 • derivation path`.
+  Widget _buildAddressRowSubtitle(
+    BuildContext context,
+    String walletName,
+    String derivationPath,
+    bool isCurrentWallet,
+  ) {
+    final fontStyle = CoconutTypography.body3_12.setColor(CoconutColors.gray400);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: walletName, style: fontStyle),
+          if (isCurrentWallet) ...[
+            TextSpan(
+              text: ' • ${t.send_screen.current_wallet_label}',
+              style: fontStyle.setColor(CoconutColors.primary),
+            ),
+          ],
+          TextSpan(text: ' • $derivationPath', style: fontStyle),
+        ],
       ),
     );
   }
@@ -1593,7 +1624,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 decoration: BoxDecoration(
                   color: CoconutColors.black,
                   border: Border.all(color: CoconutColors.gray700, width: 1),
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  borderRadius: const BorderRadius.all(Radius.circular(14)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1686,14 +1717,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               controller: _addressListScrollController,
               itemCount: _viewModel.orderedRegisteredWallets.length,
               itemBuilder: (BuildContext context, int index) {
-                final walletAddressInfo = _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                final entry = _viewModel.registeredWalletAddressMap.entries.toList()[index];
+                final walletAddressInfo = entry.value;
+                final isCurrentWallet = entry.key == _viewModel.selectedWalletId;
                 return Column(
                   children: [
                     _buildAddressRow(
+                      context,
                       index,
                       walletAddressInfo.walletAddress.address,
                       walletAddressInfo.name,
                       walletAddressInfo.walletAddress.derivationPath,
+                      isCurrentWallet: isCurrentWallet,
                     ),
                   ],
                 );
@@ -1717,15 +1752,19 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   controller: _addressListScrollController,
                   itemCount: _viewModel.orderedRegisteredWallets.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final walletAddressInfo = _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                    final entry = _viewModel.registeredWalletAddressMap.entries.toList()[index];
+                    final walletAddressInfo = entry.value;
+                    final isCurrentWallet = entry.key == _viewModel.selectedWalletId;
                     return Column(
                       children: [
                         if (index == 0) CoconutLayout.spacing_200h,
                         _buildAddressRow(
+                          context,
                           index,
                           walletAddressInfo.walletAddress.address,
                           walletAddressInfo.name,
                           walletAddressInfo.walletAddress.derivationPath,
+                          isCurrentWallet: isCurrentWallet,
                         ),
                         if (index == _viewModel.orderedRegisteredWallets.length - 1) CoconutLayout.spacing_200h,
                       ],
