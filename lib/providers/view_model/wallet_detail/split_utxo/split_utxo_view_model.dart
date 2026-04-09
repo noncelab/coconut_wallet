@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -71,6 +72,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   final FocusNode feeRateFocusNode = FocusNode();
   final TextEditingController splitCountController = TextEditingController();
   final FocusNode splitCountFocusNode = FocusNode();
+  late final UtxoSplitTransactionBuilder _splitBuilder;
 
   final List<ManualSplitItem> manualSplitItems = [];
   Timer? _debounceTimer;
@@ -145,8 +147,19 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     splitCountController.addListener(_onInputChanged);
     splitCountFocusNode.addListener(notifyListeners);
 
+    final wallet = _walletProvider.getWalletById(walletId);
+    _splitBuilder = UtxoSplitTransactionBuilder(
+      dustThreshold: wallet.walletType == WalletType.singleSignature ? DustThresholds.p2wpkh : DustThresholds.p2wsh,
+      feeRate: 1.0,
+      walletListItemBase: wallet,
+      addressRepository: _addressRepository,
+    );
     addManualSplitItem();
-    refreshRecommendedFees();
+    refreshRecommendedFees().then((bool isSucceed) {
+      if (isSucceed) {
+        _splitBuilder.feeRate = feeInfos[2].satsPerVb!;
+      }
+    });
   }
 
   // --- UI Text Getter ---
@@ -351,8 +364,8 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   // --- Network ---
-  Future<void> refreshRecommendedFees() async {
-    await fetchRecommendedFees(
+  Future<bool> refreshRecommendedFees() async {
+    return await fetchRecommendedFees(
       currentFeeRateText: feeRateController.text,
       onDefaultFeeRateSet: (text) => feeRateController.text = text,
     );
@@ -363,6 +376,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
     if (_selectedUtxoList.isEmpty) {
       _selectedCriteria = null;
+      _splitBuilder.setUtxo(null);
+    } else {
+      _splitBuilder.setUtxo(_selectedUtxoList.first);
     }
 
     _onInputChanged();
@@ -554,9 +570,20 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool onFeeRateChanged(String text) {
-    return handleFeeRateChanged(text, (formattedText) {
-      feeRateController.text = formattedText;
+    String? updatedText;
+    final isTooLow = handleFeeRateChanged(text, (formattedUpdatedText) {
+      updatedText = formattedUpdatedText;
+      feeRateController.text = formattedUpdatedText;
     });
+
+    if (!isTooLow && updatedText != null) {
+      final parsed = double.tryParse(updatedText!);
+      if (parsed != null && parsed > 0) {
+        _splitBuilder.feeRate = parsed;
+      }
+    }
+
+    return isTooLow;
   }
 
   void removeTrailingDotInFeeRate() {
