@@ -644,7 +644,7 @@ class SplitResultBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         color: CoconutColors.gray800,
         border: Border.all(color: CoconutColors.gray600),
@@ -662,7 +662,7 @@ class SplitResultBox extends StatelessWidget {
               colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
