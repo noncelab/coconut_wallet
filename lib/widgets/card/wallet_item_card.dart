@@ -110,6 +110,12 @@ class WalletItemCard extends StatelessWidget {
     ValueChanged<(bool, int)>? onTapStar,
     int? index,
   }) {
+    final walletDescriptionParts = <String>[
+      name,
+      if (isPrimaryWallet == true) t.wallet_list.primary_wallet,
+      if (isExcludeFromTotalBalance == true) t.wallet_list.exclude_from_total_amount,
+    ];
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isEditMode ? 8 : 20, vertical: 12),
       child: Row(
@@ -204,27 +210,16 @@ class WalletItemCard extends StatelessWidget {
                     ),
                 Row(
                   children: [
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: Text(
-                        name,
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          walletDescriptionParts.join(' • '),
+                          style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
+                        ),
                       ),
                     ),
-                    if (isPrimaryWallet == true)
-                      Text(
-                        ' • ${t.wallet_list.primary_wallet}',
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
-                      ),
-                    if (isExcludeFromTotalBalance == true)
-                      Text(
-                        isPrimaryWallet == true
-                            ? ' | ${t.wallet_list.exclude_from_total_amount}'
-                            : ' • ${t.wallet_list.exclude_from_total_amount}',
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
-                      ),
                   ],
                 ),
               ],

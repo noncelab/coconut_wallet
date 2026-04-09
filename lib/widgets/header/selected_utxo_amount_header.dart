@@ -69,24 +69,28 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
               ),
             ),
           ),
-
+          CoconutLayout.spacing_200w,
           Expanded(
             child: Align(
               alignment: Alignment.centerRight,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment:
-                    currentUnit.isPrefixSymbol ? CrossAxisAlignment.center : CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  if (currentUnit.isPrefixSymbol)
-                    Text(unitText, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
-                  Text(utxoSumText, style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white)),
-                  if (!currentUnit.isPrefixSymbol) ...[
-                    CoconutLayout.spacing_50w,
-                    Text(unitText, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment:
+                      currentUnit.isPrefixSymbol ? CrossAxisAlignment.center : CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    if (currentUnit.isPrefixSymbol)
+                      Text(unitText, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+                    Text(utxoSumText, style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white)),
+                    if (!currentUnit.isPrefixSymbol) ...[
+                      CoconutLayout.spacing_50w,
+                      Text(unitText, style: CoconutTypography.body1_16_Number.setColor(CoconutColors.white)),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -116,24 +120,31 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              const SizedBox(width: 16),
-              CustomUnderlinedButton(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                text: t.unselect_all,
-                isEnable: true,
-                onTap: onUnselectAll,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(width: 16),
+                  CustomUnderlinedButton(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    text: t.unselect_all,
+                    isEnable: true,
+                    onTap: onUnselectAll,
+                  ),
+                  SvgPicture.asset('assets/svg/row-divider.svg'),
+                  CustomUnderlinedButton(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    text: t.select_all,
+                    isEnable: true,
+                    onTap: onSelectAll,
+                  ),
+                ],
               ),
-              SvgPicture.asset('assets/svg/row-divider.svg'),
-              CustomUnderlinedButton(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                text: t.select_all,
-                isEnable: true,
-                onTap: onSelectAll,
-              ),
-            ],
+            ),
           ),
         ),
       ],
