@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -264,7 +265,7 @@ class SplitUtxoScreen extends StatelessWidget {
       case SplitCriteria.evenly:
         return _buildSplitEvenlyBody(viewModel);
       case SplitCriteria.manually:
-        return _buildSplitManuallyBody();
+        return _buildSplitManuallyBody(viewModel);
       default:
         return const SizedBox.shrink();
     }
@@ -405,8 +406,161 @@ class SplitUtxoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSplitManuallyBody() =>
-      Center(child: Text('수동으로 나누기 화면', style: CoconutTypography.body1_16.setColor(CoconutColors.white)));
+  Widget _buildSplitManuallyBody(SplitUtxoViewModel viewModel) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...viewModel.manualSplitItems.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: Dismissible(
+              key: ObjectKey(item),
+              direction: viewModel.manualSplitItems.length > 1 ? DismissDirection.endToStart : DismissDirection.none,
+              onDismissed: (direction) {
+                viewModel.removeManualSplitItem(index);
+              },
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 16.0),
+                decoration: BoxDecoration(color: CoconutColors.hotPink, borderRadius: BorderRadius.circular(8)),
+                child: SvgPicture.asset(
+                  'assets/svg/trash.svg',
+                  width: 24,
+                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                ),
+              ),
+              child: Container(
+                color: CoconutColors.black,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: item.amountController,
+                        focusNode: item.amountFocusNode,
+                        onTapOutside: (_) => item.amountFocusNode.unfocus(),
+                        onEditingComplete: () => item.amountFocusNode.unfocus(),
+                        onSubmitted: (_) => item.amountFocusNode.unfocus(),
+                        textInputAction: TextInputAction.done,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                        decoration: InputDecoration(
+                          hintText: t.split_utxo_screen.placeholder_split_amount,
+                          hintStyle: CoconutTypography.body1_16.setColor(CoconutColors.gray500),
+                          errorBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.hotPink)),
+                          focusedErrorBorder: const UnderlineInputBorder(
+                            borderSide: BorderSide(color: CoconutColors.hotPink),
+                          ),
+                          enabledBorder: const UnderlineInputBorder(
+                            borderSide: BorderSide(color: CoconutColors.gray500),
+                          ),
+                          focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.white)),
+                          suffixIcon: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                viewModel.currentUnit.symbol,
+                                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    CoconutLayout.spacing_300w,
+                    RippleEffect(
+                      onTap: () => viewModel.decrementManualSplitCount(index),
+                      borderRadius: 24,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: CoconutColors.gray800,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: CoconutColors.gray300),
+                        ),
+                        child: const Icon(Icons.remove, color: CoconutColors.white),
+                      ),
+                    ),
+                    CoconutLayout.spacing_300w,
+                    SizedBox(
+                      width: 50,
+                      child: TextField(
+                        controller: item.countController,
+                        focusNode: item.countFocusNode,
+                        textAlign: TextAlign.center,
+                        onTapOutside: (_) => item.countFocusNode.unfocus(),
+                        onEditingComplete: () => item.countFocusNode.unfocus(),
+                        onSubmitted: (_) => item.countFocusNode.unfocus(),
+                        textInputAction: TextInputAction.done,
+                        keyboardType: TextInputType.number,
+                        style: CoconutTypography.heading2_28_Number.setColor(CoconutColors.white),
+                        decoration: InputDecoration(
+                          hintText: '0',
+                          hintStyle: CoconutTypography.heading2_28_Number.setColor(CoconutColors.gray500),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    CoconutLayout.spacing_300w,
+                    RippleEffect(
+                      onTap: () => viewModel.incrementManualSplitCount(index),
+                      borderRadius: 24,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: CoconutColors.gray800,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: CoconutColors.gray300),
+                        ),
+                        child: const Icon(Icons.add, color: CoconutColors.white),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+        CoconutLayout.spacing_300h,
+        RippleEffect(
+          onTap: viewModel.addManualSplitItem,
+          borderRadius: 12,
+          child: CustomPaint(
+            foregroundPainter: DashedBorderPainter(
+              color: CoconutColors.gray400,
+              radius: 12,
+              dashWidth: 2,
+              dashSpace: 2,
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    'assets/svg/plus.svg',
+                    width: 12,
+                    height: 12,
+                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                  ),
+                  const SizedBox(width: 5),
+                  Text('금액 추가하기', style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                ],
+              ),
+            ),
+          ),
+        ),
+        CoconutLayout.spacing_1000h,
+      ],
+    );
+  }
 
   Widget _buildRecommendedCounts(SplitUtxoViewModel viewModel) {
     return SingleChildScrollView(
@@ -560,4 +714,46 @@ class SplitResultBox extends StatelessWidget {
       ),
     );
   }
+}
+
+class DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+  final double dashWidth;
+  final double dashSpace;
+
+  DashedBorderPainter({
+    required this.color,
+    this.strokeWidth = 1.0,
+    this.radius = 8.0,
+    this.dashWidth = 6.0,
+    this.dashSpace = 4.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint =
+        Paint()
+          ..color = color
+          ..strokeWidth = strokeWidth
+          ..style = PaintingStyle.stroke;
+
+    final path =
+        Path()
+          ..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), Radius.circular(radius)));
+    final dashedPath = Path();
+
+    for (PathMetric measurePath in path.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < measurePath.length) {
+        dashedPath.addPath(measurePath.extractPath(distance, distance + dashWidth), Offset.zero);
+        distance += dashWidth + dashSpace;
+      }
+    }
+    canvas.drawPath(dashedPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

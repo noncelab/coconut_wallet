@@ -72,6 +72,8 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   final TextEditingController splitCountController = TextEditingController();
   final FocusNode splitCountFocusNode = FocusNode();
 
+  final List<ManualSplitItem> manualSplitItems = [];
+
   int? _estimatedFeeSats;
   bool _isDustError = false;
   bool _isFeeExceedsAmountError = false;
@@ -143,6 +145,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     splitCountController.addListener(_onInputChanged);
     splitCountFocusNode.addListener(notifyListeners);
 
+    addManualSplitItem();
     refreshRecommendedFees();
   }
 
@@ -616,6 +619,42 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     }
   }
 
+  void addManualSplitItem() {
+    final item = ManualSplitItem();
+    item.amountController.addListener(_onInputChanged);
+    item.countController.addListener(_onInputChanged);
+    item.amountFocusNode.addListener(notifyListeners);
+    item.countFocusNode.addListener(notifyListeners);
+    manualSplitItems.add(item);
+    notifyListeners();
+  }
+
+  void removeManualSplitItem(int index) {
+    if (manualSplitItems.length > 1) {
+      final item = manualSplitItems.removeAt(index);
+      item.amountController.removeListener(_onInputChanged);
+      item.countController.removeListener(_onInputChanged);
+      item.amountFocusNode.removeListener(notifyListeners);
+      item.countFocusNode.removeListener(notifyListeners);
+      item.dispose();
+      _onInputChanged();
+    }
+  }
+
+  void incrementManualSplitCount(int index) {
+    manualSplitItems[index].countFocusNode.unfocus();
+    final current = int.tryParse(manualSplitItems[index].countController.text) ?? 0;
+    manualSplitItems[index].countController.text = (current + 1).toString();
+  }
+
+  void decrementManualSplitCount(int index) {
+    manualSplitItems[index].countFocusNode.unfocus();
+    final current = int.tryParse(manualSplitItems[index].countController.text) ?? 0;
+    if (current > 0) {
+      manualSplitItems[index].countController.text = (current - 1).toString();
+    }
+  }
+
   void onRecommendedCountTapped(int count) {
     splitCountFocusNode.unfocus();
     splitCountController.text = count.toString();
@@ -675,6 +714,23 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     feeRateFocusNode.dispose();
     splitCountController.dispose();
     splitCountFocusNode.dispose();
+    for (var item in manualSplitItems) {
+      item.dispose();
+    }
     super.dispose();
+  }
+}
+
+class ManualSplitItem {
+  final TextEditingController amountController = TextEditingController();
+  final FocusNode amountFocusNode = FocusNode();
+  final TextEditingController countController = TextEditingController(text: '0');
+  final FocusNode countFocusNode = FocusNode();
+
+  void dispose() {
+    amountController.dispose();
+    amountFocusNode.dispose();
+    countController.dispose();
+    countFocusNode.dispose();
   }
 }
