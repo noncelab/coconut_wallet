@@ -787,6 +787,11 @@ merge_utxos_screen:
   receive_address: "받는 주소"
   receive_address_summary_count: "UTXO ${count}개"
   receive_address_summary: "를\n선택한 주소로 합칠게요"
+  receive_address_bottomsheet:
+    title: "주소 선택"
+    my_address: "내 주소"
+    custom: "직접 입력"
+    not_your_owned_wallet: "지갑에서 확인되지 않는 주소입니다"
 
 split_utxo_screen:
   title: "UTXO 나누기"

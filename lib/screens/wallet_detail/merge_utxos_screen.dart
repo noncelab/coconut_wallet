@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
@@ -9,6 +10,8 @@ import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -16,6 +19,7 @@ import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
@@ -43,7 +47,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   String? _customAmountCriteriaText;
   bool _isCustomAmountLessThan = false;
   bool _didConfirmAmountCriteria = false;
-  late String _selectedReceiveAddress;
+  String? _selectedReceiveAddress;
+  String? _customReceiveAddressText;
+  bool _isCustomReceiveAddressValidFormat = false;
+  bool _isCustomReceiveAddressOwnedByAnyWallet = false;
   UtxoMergeStep? _displayedHeaderStep;
   UtxoMergeStep? _pendingHeaderStep;
   UtxoMergeStep? _lastObservedHeaderStep;
@@ -616,34 +623,38 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildVisibleOptionPickers(BuildContext context) {
+    final pickerWidgets =
+        _visibleOptionPickerSteps.indexed.map((entry) {
+          final index = entry.$1;
+          final step = entry.$2;
+          final picker = _buildStepOptionPicker(context, step);
+          final isNewest = step == _displayedOptionPickerStep && index == 0;
+
+          if (isNewest) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 40),
+              child: picker.slideUpAnimation(
+                key: ValueKey('merge-picker-in-${step.name}-$_optionPickerAnimationNonce'),
+                duration: _optionPickerAnimationDuration,
+                delay: const Duration(milliseconds: 1500),
+                offset: const Offset(0, 24),
+                onCompleted: () => _scheduleBottomSheetOpen(step),
+              ),
+            );
+          }
+
+          return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : 40), child: picker);
+        }).toList();
+
+    if (_viewModel.currentStep == UtxoMergeStep.selectReceiveAddress) {
+      pickerWidgets.add(Padding(padding: const EdgeInsets.only(bottom: 40), child: _buildEstimatedFeeOptionPicker()));
+    }
+
     return AnimatedSize(
       duration: _optionPickerAnimationDuration,
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
-      child: Column(
-        children:
-            _visibleOptionPickerSteps.indexed.map((entry) {
-              final index = entry.$1;
-              final step = entry.$2;
-              final picker = _buildStepOptionPicker(context, step);
-              final isNewest = step == _displayedOptionPickerStep && index == 0;
-
-              if (isNewest) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 40),
-                  child: picker.slideUpAnimation(
-                    key: ValueKey('merge-picker-in-${step.name}-$_optionPickerAnimationNonce'),
-                    duration: _optionPickerAnimationDuration,
-                    delay: const Duration(milliseconds: 1500),
-                    offset: const Offset(0, 24),
-                    onCompleted: () => _scheduleBottomSheetOpen(step),
-                  ),
-                );
-              }
-
-              return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : 40), child: picker);
-            }).toList(),
-      ),
+      child: Column(children: pickerWidgets),
     );
   }
 
@@ -662,12 +673,60 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       ),
       UtxoMergeStep.selectTag => CoconutOptionPicker(text: t.merge_utxos_screen.select_tag, onTap: () {}),
       UtxoMergeStep.selectReceiveAddress => CoconutOptionPicker(
-        text: _selectedReceiveAddress,
+        inlineWidgets: [_buildReceiveAddressOptionText()],
         label: t.merge_utxos_screen.receive_address,
         onTap: _isBottomSheetOpen ? null : () => _showReceiveAddressBottomSheet(context),
+        enableTextWrap: true,
+        coconutOptionStateEnum:
+            _isDirectInputReceiveAddressWarning ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,
+        guideText:
+            _isDirectInputReceiveAddressWarning
+                ? t.merge_utxos_screen.receive_address_bottomsheet.not_your_owned_wallet
+                : null,
       ),
       _ => const SizedBox.shrink(),
     };
+  }
+
+  bool get _isDirectInputReceiveAddressWarning {
+    return _customReceiveAddressText != null &&
+        _selectedReceiveAddress == _customReceiveAddressText &&
+        _isCustomReceiveAddressValidFormat &&
+        !_isCustomReceiveAddressOwnedByAnyWallet;
+  }
+
+  Widget _buildReceiveAddressOptionText() {
+    final address = _selectedReceiveAddress ?? '';
+    final baseStyle = CoconutTypography.body1_16_Number.setColor(CoconutColors.white);
+    final boldStyle = CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white);
+
+    if (address.isEmpty) {
+      return Text('', style: baseStyle);
+    }
+
+    final bech32SeparatorIndex = address.indexOf('1');
+    final highlightStart =
+        bech32SeparatorIndex >= 0 && bech32SeparatorIndex + 2 < address.length ? bech32SeparatorIndex + 2 : 0;
+    final firstBoldEnd = (highlightStart + 4).clamp(0, address.length);
+    final lastBoldStart = address.length > 4 ? address.length - 4 : 0;
+
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          if (highlightStart > 0) TextSpan(text: address.substring(0, highlightStart)),
+          if (firstBoldEnd > highlightStart)
+            TextSpan(text: address.substring(highlightStart, firstBoldEnd), style: boldStyle),
+          if (lastBoldStart > firstBoldEnd) TextSpan(text: address.substring(firstBoldEnd, lastBoldStart)),
+          if (lastBoldStart < address.length) TextSpan(text: address.substring(lastBoldStart), style: boldStyle),
+        ],
+      ),
+      softWrap: true,
+    );
+  }
+
+  Widget _buildEstimatedFeeOptionPicker() {
+    return CoconutOptionPicker(text: '-', label: t.estimated_fee, onTap: () {});
   }
 
   UtxoMergeStep? _nextStepForMergeCriteria(UtxoMergeCriteria mergeCriteria) {
@@ -710,10 +769,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                 (isAddressMergeItem && !_viewModel.hasSameAddressUtxos);
 
             return SelectableBottomSheetTextItem(
-              text: _mergeCriteriaText(item),
               isSelected: isSelected,
               onTap: onTap,
               isDisabled: isDisabled,
+              child: Text(
+                _mergeCriteriaText(item),
+                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+              ),
             );
           },
         ),
@@ -891,33 +953,30 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
-    var selectedTabIndex = _currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
-    UtxoAmountCriteria? selectedRecommendedCriteria =
-        [
-              UtxoAmountCriteria.below001,
-              UtxoAmountCriteria.below0001,
-              UtxoAmountCriteria.below00001,
-            ].contains(_currentAmountCriteria)
-            ? _currentAmountCriteria
-            : null;
-    final customAmountController = TextEditingController(text: _customAmountCriteriaText ?? '');
-    final customAmountFocusNode = FocusNode();
-    var isCustomAmountLessThan = _isCustomAmountLessThan;
+    final isUsingDirectInput =
+        _customReceiveAddressText != null && _selectedReceiveAddress == _customReceiveAddressText;
+    var selectedTabIndex = isUsingDirectInput ? 1 : 0;
+    String? selectedOwnedAddress = isUsingDirectInput ? null : _selectedReceiveAddress;
+    final directInputController = TextEditingController(
+      text: isUsingDirectInput ? (_customReceiveAddressText ?? '') : '',
+    );
+    final directInputFocusNode = FocusNode();
+    _validateCustomReceiveAddress(directInputController.text);
 
     if (selectedTabIndex == 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          customAmountFocusNode.requestFocus();
+          directInputFocusNode.requestFocus();
         }
       });
     }
 
-    final selectedItem = await CommonBottomSheets.showBottomSheet<_AmountCriteriaSelectionResult>(
+    final selectedItem = await CommonBottomSheets.showBottomSheet<_ReceiveAddressSelectionResult>(
       showCloseButton: true,
       adjustForKeyboardInset: false,
       context: context,
       backgroundColor: CoconutColors.gray900,
-      title: t.merge_utxos_screen.amount_criteria_bottomsheet.title,
+      title: t.merge_utxos_screen.receive_address,
       child: SizedBox(
         height: bodyHeight + 16,
         child: StatefulBuilder(
@@ -926,25 +985,30 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               bodyHeight: bodyHeight,
               selectedTabIndex: selectedTabIndex,
               confirmText: t.complete,
+              confirmSubWidget:
+                  selectedTabIndex == 1
+                      ? _buildReceiveAddressValidationSubWidget(directInputController.text.trim())
+                      : null,
               isConfirmEnabled:
                   selectedTabIndex == 0
-                      ? selectedRecommendedCriteria != null
-                      : customAmountController.text.trim().isNotEmpty &&
-                          double.tryParse(customAmountController.text.trim()) != 0,
+                      ? selectedOwnedAddress != null
+                      : directInputController.text.trim().isNotEmpty && _isCustomReceiveAddressValidFormat,
               onConfirm: () {
                 if (selectedTabIndex == 0) {
-                  if (selectedRecommendedCriteria == null) return;
-                  Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: selectedRecommendedCriteria));
+                  if (selectedOwnedAddress == null) return;
+                  Navigator.pop(
+                    context,
+                    _ReceiveAddressSelectionResult(address: selectedOwnedAddress!, isDirectInput: false),
+                  );
                   return;
                 }
 
-                if (customAmountController.text.trim().isEmpty) return;
+                if (directInputController.text.trim().isEmpty || !_isCustomReceiveAddressValidFormat) return;
                 Navigator.pop(
                   context,
-                  _AmountCriteriaSelectionResult(
-                    criteria: UtxoAmountCriteria.custom,
-                    customAmountText: customAmountController.text.trim(),
-                    isLessThan: isCustomAmountLessThan,
+                  _ReceiveAddressSelectionResult(
+                    address: normalizeAddress(directInputController.text.trim()),
+                    isDirectInput: true,
                   ),
                 );
               },
@@ -955,38 +1019,34 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                 if (index == 1) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
-                      customAmountFocusNode.requestFocus();
+                      directInputFocusNode.requestFocus();
                     }
                   });
                 } else {
-                  customAmountFocusNode.unfocus();
+                  directInputFocusNode.unfocus();
                 }
               },
               tabs: [
                 _BottomSheetTab(
-                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
+                  label: '내 주소',
                   child: _buildReceiveAddressOwnedTab(
                     addresses: _receiveAddresses,
-                    selectedAddress: _selectedReceiveAddress,
+                    selectedAddress: selectedOwnedAddress,
                     onSelectionChanged: (address) {
                       modalSetState(() {
-                        _selectedReceiveAddress = address;
+                        selectedOwnedAddress = address;
                       });
                     },
                   ),
                 ),
                 _BottomSheetTab(
-                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
-                  child: _buildCustomAmountTab(
-                    controller: customAmountController,
-                    focusNode: customAmountFocusNode,
-                    isLessThan: isCustomAmountLessThan,
-                    onAmountChanged: () {
-                      modalSetState(() {});
-                    },
-                    onLessThanToggle: () {
+                  label: '직접 입력',
+                  child: _buildReceiveAddressDirectInputTab(
+                    controller: directInputController,
+                    focusNode: directInputFocusNode,
+                    onChanged: (value) {
                       modalSetState(() {
-                        isCustomAmountLessThan = !isCustomAmountLessThan;
+                        _validateCustomReceiveAddress(value);
                       });
                     },
                   ),
@@ -998,21 +1058,15 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       ),
     );
 
-    customAmountController.dispose();
-    customAmountFocusNode.dispose();
+    directInputController.dispose();
+    directInputFocusNode.dispose();
 
     if (selectedItem != null && context.mounted) {
-      const nextStep = UtxoMergeStep.selectReceiveAddress;
-
       setState(() {
-        _selectedAmountCriteria = selectedItem.criteria;
-        _customAmountCriteriaText = selectedItem.customAmountText;
-        _isCustomAmountLessThan = selectedItem.isLessThan;
-        _didConfirmAmountCriteria = true;
+        _selectedReceiveAddress = selectedItem.address;
+        _customReceiveAddressText = selectedItem.isDirectInput ? selectedItem.address : null;
         _isBottomSheetOpen = false;
       });
-
-      _viewModel.setCurrentStep(nextStep);
       return;
     }
 
@@ -1023,37 +1077,150 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
   }
 
+  void _validateCustomReceiveAddress(String rawAddress) {
+    final trimmed = rawAddress.trim();
+    _customReceiveAddressText = trimmed.isEmpty ? null : trimmed;
+
+    if (trimmed.isEmpty) {
+      _isCustomReceiveAddressValidFormat = false;
+      _isCustomReceiveAddressOwnedByAnyWallet = false;
+      return;
+    }
+
+    final normalized = normalizeAddress(trimmed);
+    final walletProvider = context.read<WalletProvider>();
+
+    try {
+      _isCustomReceiveAddressValidFormat = WalletUtility.validateAddress(normalized);
+      _isCustomReceiveAddressOwnedByAnyWallet =
+          _isCustomReceiveAddressValidFormat && walletProvider.containsAddressInAnyWallet(normalized);
+    } catch (_) {
+      _isCustomReceiveAddressValidFormat = false;
+      _isCustomReceiveAddressOwnedByAnyWallet = false;
+    }
+  }
+
+  Widget? _buildReceiveAddressValidationSubWidget(String input) {
+    if (input.isEmpty) return null;
+
+    if (!_isCustomReceiveAddressValidFormat) {
+      return Text(
+        t.errors.address_error.invalid,
+        style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
+        textAlign: TextAlign.center,
+      );
+    }
+
+    if (!_isCustomReceiveAddressOwnedByAnyWallet) {
+      return Text(
+        t.merge_utxos_screen.receive_address_bottomsheet.not_your_owned_wallet,
+        style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+        textAlign: TextAlign.center,
+      );
+    }
+
+    return null;
+  }
+
   Widget _buildReceiveAddressOwnedTab({
     required List<_ReceiveAddressOption> addresses,
     required String? selectedAddress,
-    required ValueChanged<String> onSelectionChanged,
+    required ValueChanged<String?> onSelectionChanged,
   }) {
-    final initialSelection = addresses.cast<_ReceiveAddressOption?>().firstWhere(
-      (item) => item?.address == selectedAddress,
-      orElse: () => null,
-    );
-
     return SelectableBottomSheetBody<_ReceiveAddressOption>(
       key: const ValueKey('owned-receive-address-list'),
       items: addresses,
       showGradient: false,
       showConfirmButton: false,
-      initiallySelectedId: initialSelection,
-      getItemId: (item) => item,
+      initiallySelectedId: selectedAddress,
+      getItemId: (item) => item.address,
       confirmText: t.complete,
       backgroundColor: CoconutColors.gray900,
       onSelectionChanged: (selected) {
-        if (selected == null) return;
-        onSelectionChanged(selected.address);
+        onSelectionChanged(selected?.address);
       },
       itemBuilder: (context, item, isSelected, onTap) {
         return SelectableBottomSheetTextItem(
-          text: item.address,
-          description: item.derivationPath,
           isSelected: isSelected,
           onTap: onTap,
+          reserveCheckIconSpace: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.address, style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white)),
+              Text(
+                '${item.walletName} • ${item.derivationPath}',
+                style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+              ),
+            ],
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildReceiveAddressDirectInputTab({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required ValueChanged<String> onChanged,
+  }) {
+    return SizedBox.expand(
+      child: Container(
+        key: const ValueKey('custom-receive-address'),
+        color: CoconutColors.gray900,
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: CoconutTextField(
+                controller: controller,
+                focusNode: focusNode,
+                backgroundColor: CoconutColors.black,
+                height: 52,
+                padding: const EdgeInsets.only(left: 16, right: 0),
+                onChanged: onChanged,
+                maxLines: 1,
+                suffix: IconButton(
+                  iconSize: 14,
+                  padding: EdgeInsets.zero,
+                  onPressed: () async {
+                    if (controller.text.isEmpty) {
+                      final scannedData = await showAddressScannerBottomSheet(context, title: t.send);
+                      if (scannedData == null) return;
+                      final normalized =
+                          scannedData.startsWith('bitcoin:')
+                              ? normalizeAddress(parseBip21Uri(scannedData).address)
+                              : normalizeAddress(scannedData);
+                      controller.text = normalized;
+                      controller.selection = TextSelection.collapsed(offset: controller.text.length);
+                      onChanged(normalized);
+                      return;
+                    }
+
+                    controller.clear();
+                    onChanged('');
+                  },
+                  icon:
+                      controller.text.isEmpty
+                          ? SvgPicture.asset('assets/svg/scan.svg')
+                          : SvgPicture.asset(
+                            'assets/svg/text-field-clear.svg',
+                            colorFilter: ColorFilter.mode(
+                              controller.text.isNotEmpty && !_isCustomReceiveAddressValidFormat
+                                  ? CoconutColors.hotPink
+                                  : CoconutColors.white,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                ),
+                placeholderText: t.send_screen.address_placeholder,
+                isError: controller.text.isNotEmpty && !_isCustomReceiveAddressValidFormat,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1062,9 +1229,9 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     final seen = <String>{};
 
     return walletProvider.walletItemList
-        .map((wallet) => walletProvider.getReceiveAddress(wallet.id))
-        .where((walletAddress) => seen.add(walletAddress.address))
-        .map((walletAddress) => _ReceiveAddressOption.fromWalletAddress(walletAddress))
+        .map((wallet) => (wallet: wallet, address: walletProvider.getReceiveAddress(wallet.id)))
+        .where((entry) => seen.add(entry.address.address))
+        .map((entry) => _ReceiveAddressOption.fromWalletAddress(entry.address, walletName: entry.wallet.name))
         .toList();
   }
 
@@ -1084,10 +1251,19 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       onSelectionChanged: onSelectionChanged,
       itemBuilder: (context, item, isSelected, onTap) {
         return SelectableBottomSheetTextItem(
-          text: _amountCriteriaText(item),
-          description: _amountCriteriaDescription(item),
           isSelected: isSelected,
           onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_amountCriteriaText(item), style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+              if (_amountCriteriaDescription(item) != null)
+                Text(
+                  _amountCriteriaDescription(item)!,
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                ),
+            ],
+          ),
         );
       },
     );
@@ -1172,6 +1348,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
   final int selectedTabIndex;
   final List<_BottomSheetTab> tabs;
   final String confirmText;
+  final Widget? confirmSubWidget;
   final bool isConfirmEnabled;
   final ValueChanged<int> onTabSelected;
   final VoidCallback onConfirm;
@@ -1181,6 +1358,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
     required this.selectedTabIndex,
     required this.tabs,
     required this.confirmText,
+    this.confirmSubWidget,
     required this.isConfirmEnabled,
     required this.onTabSelected,
     required this.onConfirm,
@@ -1196,8 +1374,13 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
     final bottomSafeArea = MediaQuery.of(context).padding.bottom;
     final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
     const buttonBottomSpacing = 16.0;
+    const confirmSubWidgetHeight = 32;
     final buttonAreaHeight =
-        FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea + buttonBottomSpacing + 3;
+        FixedBottomButton.fixedBottomButtonDefaultHeight +
+        bottomSafeArea +
+        buttonBottomSpacing +
+        3 +
+        (confirmSubWidget != null ? confirmSubWidgetHeight : 0);
 
     return SafeArea(
       top: false,
@@ -1218,7 +1401,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                 ),
                 CoconutLayout.spacing_400h,
                 SizedBox(
-                  height: tabBodyHeight,
+                  height: tabBodyHeight - confirmSubWidgetHeight,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 220),
                     switchInCurve: Curves.easeOutCubic,
@@ -1245,6 +1428,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                 showGradient: false,
                 isVisibleAboveKeyboard: false,
                 bottomPadding: buttonBottomSpacing,
+                subWidget: confirmSubWidget,
                 onButtonClicked: onConfirm,
                 isActive: isConfirmEnabled,
                 text: confirmText,
@@ -1267,12 +1451,17 @@ class _BottomSheetTab {
 
 class _ReceiveAddressOption {
   final String address;
+  final String walletName;
   final String derivationPath;
 
-  const _ReceiveAddressOption({required this.address, required this.derivationPath});
+  const _ReceiveAddressOption({required this.address, required this.walletName, required this.derivationPath});
 
-  factory _ReceiveAddressOption.fromWalletAddress(WalletAddress walletAddress) {
-    return _ReceiveAddressOption(address: walletAddress.address, derivationPath: walletAddress.derivationPath);
+  factory _ReceiveAddressOption.fromWalletAddress(WalletAddress walletAddress, {required String walletName}) {
+    return _ReceiveAddressOption(
+      address: walletAddress.address,
+      walletName: walletName,
+      derivationPath: walletAddress.derivationPath,
+    );
   }
 }
 
@@ -1282,4 +1471,11 @@ class _AmountCriteriaSelectionResult {
   final bool isLessThan;
 
   const _AmountCriteriaSelectionResult({required this.criteria, this.customAmountText, this.isLessThan = false});
+}
+
+class _ReceiveAddressSelectionResult {
+  final String address;
+  final bool isDirectInput;
+
+  const _ReceiveAddressSelectionResult({required this.address, required this.isDirectInput});
 }

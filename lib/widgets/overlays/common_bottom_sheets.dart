@@ -418,19 +418,19 @@ class CommonBottomSheets {
 }
 
 class SelectableBottomSheetTextItem extends StatelessWidget {
-  final String text;
-  final String? description;
+  final Widget child;
   final bool isSelected;
   final VoidCallback? onTap;
   final bool isDisabled;
+  final bool reserveCheckIconSpace;
 
   const SelectableBottomSheetTextItem({
     super.key,
-    required this.text,
+    required this.child,
     required this.isSelected,
-    this.description,
     this.onTap,
     this.isDisabled = false,
+    this.reserveCheckIconSpace = false,
   });
 
   @override
@@ -449,27 +449,22 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(text, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                  if (description != null)
-                    Text(description!, style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
-                ],
-              ),
-              if (isSelected)
+              Expanded(child: child),
+              if (isSelected || reserveCheckIconSpace)
                 Container(
-                  margin: const EdgeInsets.only(right: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
                   width: 18,
                   height: 18,
-                  child: SvgPicture.asset(
-                    'assets/svg/check.svg',
-                    width: 16,
-                    height: 16,
-                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                  ).scaleInAnimation(duration: const Duration(milliseconds: 300)),
+                  child:
+                      isSelected
+                          ? SvgPicture.asset(
+                            'assets/svg/check.svg',
+                            width: 16,
+                            height: 16,
+                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          ).scaleInAnimation(duration: const Duration(milliseconds: 300))
+                          : null,
                 ),
             ],
           ),
@@ -516,6 +511,14 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
   void initState() {
     super.initState();
     _selectedId = widget.initiallySelectedId;
+  }
+
+  @override
+  void didUpdateWidget(covariant SelectableBottomSheetBody<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initiallySelectedId != widget.initiallySelectedId) {
+      _selectedId = widget.initiallySelectedId;
+    }
   }
 
   @override
