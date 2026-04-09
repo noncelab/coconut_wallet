@@ -41,6 +41,13 @@ class UtxoSplitResult {
   }
 }
 
+class SplitPreview {
+  final double estimatedFee;
+  final Map<String, int> recipients;
+
+  const SplitPreview({required this.estimatedFee, required this.recipients});
+}
+
 class UtxoSplitTransactionBuilder {
   final UtxoState utxo;
   final int dustThreshold;
@@ -143,8 +150,20 @@ class UtxoSplitTransactionBuilder {
   Future<UtxoSplitResult> buildEqualAmountSplit({required int splitCount}) async {
     assert(splitCount >= 2);
     Logger.log("--> splitCount: $splitCount");
+    final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount);
+
+    var txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
+    if (txBuildResult.isFailure) {
+      _throwIfBuildFailed(txBuildResult);
+    }
+
+    return _buildSuccessResult(txBuildResult.transaction!);
+  }
+
+  Future<SplitPreview> getEqualAmountSplitPreview({required int splitCount}) async {
+    assert(splitCount >= 2);
     await _initOutputVBytes();
-    var fee =
+    final fee =
         (_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
         (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
     Logger.log('--> UtxoSplitBuilder 균등분할 estimatedFee: $fee');
@@ -159,9 +178,8 @@ class UtxoSplitTransactionBuilder {
       throw SplitOutputDustException(estimatedFee: fee); // 이 개수로 나누면 dust가 생성돼요
     }
 
-    // 원하는 output 금액 리스트 생성
     final remainder = availableAmount % splitCount;
-    List<int> desiredAmounts = [];
+    final List<int> desiredAmounts = [];
     for (int i = 0; i < splitCount - remainder; i++) {
       desiredAmounts.add(baseAmount);
     }
@@ -169,31 +187,24 @@ class UtxoSplitTransactionBuilder {
       desiredAmounts.add(baseAmount + 1);
     }
 
-    // 트랜잭션 생성 (마지막 output에 fee 포함하여 sweep)
-    var txBuildResult = await _buildTransaction(desiredAmounts.sublist(0, desiredAmounts.length - 1));
-    if (txBuildResult.isFailure) {
-      _throwIfBuildFailed(txBuildResult);
-    }
-
-    return _buildSuccessResult(txBuildResult.transaction!);
+    return _buildSplitPreview(desiredAmounts.sublist(0, desiredAmounts.length - 1), fee);
   }
 
   /// 일정 금액으로 나누기
   Future<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) async {
-    assert(amountPerOutput > 0);
-    await _initOutputVBytes();
-    if (amountPerOutput <= dustThreshold) {
-      throw const SplitOutputDustException(); // 0.0000 0547 BTC부터 전송할 수 있어요
-    }
-    List<int> exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
-
-    var txBuildResult = await _buildTransaction(exactAmounts);
+    var splitPreview = await getFixedAmountSplitPreview(amountPerOutput: amountPerOutput);
+    var txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
     if (txBuildResult.isFailure) {
       if (txBuildResult.exception is SendAmountTooLowException) {
+        final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
         if (exactAmounts.length > 2) {
           // 1개 줄여서 다시 시도
           exactAmounts.removeLast();
-          txBuildResult = await _buildTransaction(exactAmounts);
+          splitPreview = await _buildSplitPreview(
+            exactAmounts,
+            (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length - 1)) * feeRate,
+          );
+          txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
         }
         if (txBuildResult.isFailure) {
           _throwIfBuildFailed(txBuildResult);
@@ -209,10 +220,31 @@ class UtxoSplitTransactionBuilder {
     return _buildSuccessResult(txBuildResult.transaction!);
   }
 
+  Future<SplitPreview> getFixedAmountSplitPreview({required int amountPerOutput}) async {
+    assert(amountPerOutput > 0);
+    await _initOutputVBytes();
+    if (amountPerOutput <= dustThreshold) {
+      throw const SplitOutputDustException(); // 0.0000 0547 BTC부터 전송할 수 있어요
+    }
+
+    final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
+    final estimatedFee = (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length - 1)) * feeRate;
+    return _buildSplitPreview(exactAmounts, estimatedFee);
+  }
+
   /// 직접 나누기
   Future<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) async {
+    final splitPreview = await getCustomAmountSplitPreview(amountCountMap: amountCountMap);
+    var txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
+    if (txBuildResult.isFailure) {
+      _throwIfBuildFailed(txBuildResult);
+    }
+
+    return _buildSuccessResult(txBuildResult.transaction!);
+  }
+
+  Future<SplitPreview> getCustomAmountSplitPreview({required Map<int, int> amountCountMap}) async {
     await _initOutputVBytes();
-    // dust 검증
     for (final amount in amountCountMap.keys) {
       if (amount <= dustThreshold) {
         throw const SplitOutputDustException(); // 0.0000 0547부터 전송할 수 있어요 -> 이건 나누기 화면에서 미리 잡아야함
@@ -235,12 +267,7 @@ class UtxoSplitTransactionBuilder {
     }
 
     final flattenedAmounts = amountCountMap.entries.expand((entry) => List.filled(entry.value, entry.key)).toList();
-    var txBuildResult = await _buildTransaction(flattenedAmounts);
-    if (txBuildResult.isFailure) {
-      _throwIfBuildFailed(txBuildResult);
-    }
-
-    return _buildSuccessResult(txBuildResult.transaction!);
+    return _buildSplitPreview(flattenedAmounts, estimatedFee);
   }
 
   /// UTXO를 niceAmounts로 나눠지게 하는 count 최대 5개를 반환
@@ -378,13 +405,17 @@ class UtxoSplitTransactionBuilder {
     return recipients;
   }
 
-  Future<TransactionBuildResult> _buildTransaction(List<int> exactAmounts) async {
-    final firstRecipients = await _buildSweepRecipients(exactAmounts);
+  Future<SplitPreview> _buildSplitPreview(List<int> exactAmounts, double estimatedFee) async {
+    final recipients = await _buildSweepRecipients(exactAmounts);
+    return SplitPreview(estimatedFee: estimatedFee, recipients: recipients);
+  }
+
+  Future<TransactionBuildResult> _buildTransactionWithRecipients(Map<String, int> recipients) async {
     final changeAddress = addressRepository.getChangeAddress(walletListItemBase.id);
 
     return TransactionBuilder(
       availableUtxos: [utxo],
-      recipients: firstRecipients,
+      recipients: recipients,
       feeRate: feeRate,
       changeDerivationPath: changeAddress.derivationPath,
       walletListItemBase: walletListItemBase,

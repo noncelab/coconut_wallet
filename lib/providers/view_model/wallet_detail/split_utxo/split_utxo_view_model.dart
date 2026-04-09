@@ -539,6 +539,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
         feeRate: feeRate,
         walletListItemBase: walletItem,
         addressRepository: _addressRepository,
+        dustThreshold: dustLimit,
       );
 
       _finalErrorMessage = "";
