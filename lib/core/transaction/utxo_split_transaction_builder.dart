@@ -228,7 +228,7 @@ class UtxoSplitTransactionBuilder {
     }
 
     final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
-    final estimatedFee = (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length - 1)) * feeRate;
+    final estimatedFee = (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length)) * feeRate;
     return _buildSplitPreview(exactAmounts, estimatedFee);
   }
 

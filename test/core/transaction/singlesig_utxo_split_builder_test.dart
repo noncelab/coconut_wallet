@@ -506,4 +506,26 @@ void main() {
       }, timeout: const Timeout(Duration(minutes: 10)));
     }
   });
+
+  group('FixedAmountPreview compare with buildResult', () {
+    test('21000 / 10000', () async {
+      final utxo = createUtxo(21000);
+      final builder = createBuilder(utxo, feeRate: 1.0);
+
+      final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
+      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000);
+
+      expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+
+    test('50000 / 10000', () async {
+      final utxo = createUtxo(50000);
+      final builder = createBuilder(utxo, feeRate: 1.0);
+
+      final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
+      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000);
+
+      expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+  });
 }
