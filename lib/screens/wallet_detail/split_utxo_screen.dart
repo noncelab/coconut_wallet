@@ -67,7 +67,16 @@ class SplitUtxoScreen extends StatelessWidget {
                 viewModel.getHeaderTitle(t),
                 style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
               ),
-              CoconutLayout.spacing_500h,
+              if (viewModel.isDustError) ...[
+                CoconutLayout.spacing_50h,
+                Text(
+                  t.split_utxo_screen.dust_error,
+                  style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink),
+                ),
+                CoconutLayout.spacing_200h,
+              ] else ...[
+                CoconutLayout.spacing_600h,
+              ],
               if (hasSelectedCriteria) _buildSplitContent(viewModel),
               _buildCriteriaPicker(context, viewModel),
               _buildUtxoPicker(context, viewModel),
@@ -201,7 +210,14 @@ class SplitUtxoScreen extends StatelessWidget {
   }
 
   Widget _buildFeePicker(BuildContext context, SplitUtxoViewModel viewModel) {
-    if (viewModel.splitAmountSats <= 0) {
+    bool shouldShow = false;
+    if (viewModel.selectedCriteria == SplitCriteria.byAmount && viewModel.splitAmountSats > 0) {
+      shouldShow = true;
+    } else if (viewModel.selectedCriteria == SplitCriteria.evenly && viewModel.splitCount >= 2) {
+      shouldShow = true;
+    }
+
+    if (!shouldShow) {
       return const SizedBox.shrink();
     }
 
@@ -212,6 +228,8 @@ class SplitUtxoScreen extends StatelessWidget {
           label: t.split_utxo_screen.label_expected_fee,
           text: viewModel.getFeePickerText(t),
           textColor: viewModel.hasFeeRate ? CoconutColors.white : CoconutColors.gray500,
+          coconutOptionStateEnum: viewModel.feeOptionState,
+          guideText: viewModel.feeExceedsAmountErrorText,
           onTap:
               () => EstimatedFeeBottomSheet.show(
                 context: context,
@@ -244,7 +262,7 @@ class SplitUtxoScreen extends StatelessWidget {
       case SplitCriteria.byAmount:
         return _buildSplitByAmountBody(viewModel);
       case SplitCriteria.evenly:
-        return _buildSplitEvenlyBody();
+        return _buildSplitEvenlyBody(viewModel);
       case SplitCriteria.manually:
         return _buildSplitManuallyBody();
       default:
@@ -321,10 +339,104 @@ class SplitUtxoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSplitEvenlyBody() =>
-      Center(child: Text('균등하게 나누기 화면', style: CoconutTypography.body1_16.setColor(CoconutColors.white)));
+  Widget _buildSplitEvenlyBody(SplitUtxoViewModel viewModel) {
+    final textColor = viewModel.splitCount >= 2 && viewModel.isDustError ? CoconutColors.hotPink : CoconutColors.white;
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            RippleEffect(
+              onTap: viewModel.decrementSplitCount,
+              borderRadius: 24,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: CoconutColors.gray800,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: CoconutColors.gray300),
+                ),
+                child: const Icon(Icons.remove, color: CoconutColors.white),
+              ),
+            ),
+            CoconutLayout.spacing_300w,
+            SizedBox(
+              width: 50,
+              child: TextField(
+                controller: viewModel.splitCountController,
+                focusNode: viewModel.splitCountFocusNode,
+                textAlign: TextAlign.center,
+                onTapOutside: (_) => viewModel.splitCountFocusNode.unfocus(),
+                onEditingComplete: () => viewModel.splitCountFocusNode.unfocus(),
+                onSubmitted: (_) => viewModel.splitCountFocusNode.unfocus(),
+                textInputAction: TextInputAction.done,
+                keyboardType: TextInputType.number,
+                style: CoconutTypography.heading2_28_Number.setColor(textColor),
+                decoration: InputDecoration(
+                  hintText: '0',
+                  hintStyle: CoconutTypography.heading2_28_Number.setColor(CoconutColors.gray500),
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+            CoconutLayout.spacing_300w,
+            RippleEffect(
+              onTap: viewModel.incrementSplitCount,
+              borderRadius: 24,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: CoconutColors.gray800,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: CoconutColors.gray300),
+                ),
+                child: const Icon(Icons.add, color: CoconutColors.white),
+              ),
+            ),
+          ],
+        ),
+        CoconutLayout.spacing_300h,
+        _buildRecommendedCounts(viewModel),
+        CoconutLayout.spacing_1000h,
+      ],
+    );
+  }
+
   Widget _buildSplitManuallyBody() =>
       Center(child: Text('수동으로 나누기 화면', style: CoconutTypography.body1_16.setColor(CoconutColors.white)));
+
+  Widget _buildRecommendedCounts(SplitUtxoViewModel viewModel) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Wrap(
+        spacing: 8,
+        children:
+            viewModel.recommendedSplitCounts.map((count) {
+              return RippleEffect(
+                onTap: () => viewModel.onRecommendedCountTapped(count),
+                borderRadius: 8,
+                child: Container(
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: CoconutColors.gray700),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  width: 50,
+                  height: 25,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('$count', style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+                  ),
+                ),
+              );
+            }).toList(),
+      ),
+    );
+  }
 
   void _showUtxoSelectionBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
     final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
@@ -405,6 +517,7 @@ class SplitResultBox extends StatelessWidget {
                 CoconutLayout.spacing_200h,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       t.split_utxo_screen.expected_result.new_utxos,
@@ -413,6 +526,7 @@ class SplitResultBox extends StatelessWidget {
                     Text(
                       viewModel.newUtxoResultText,
                       style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                      textAlign: TextAlign.right,
                     ),
                   ],
                 ),
