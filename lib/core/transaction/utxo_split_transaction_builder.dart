@@ -255,7 +255,7 @@ class UtxoSplitTransactionBuilder {
     final totalOutputCount = amountCountMap.values.fold<int>(0, (sum, count) => sum + count);
 
     final double estimatedFee =
-        (_oneOutputTxVBytes! + _outputVBytes! * (totalOutputCount - 1)) * feeRate +
+        (_oneOutputTxVBytes! + _outputVBytes! * totalOutputCount) * feeRate +
         (totalOutputCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
     final left = utxo.amount - totalRequested - estimatedFee;
     if (left < 0) {
@@ -386,6 +386,8 @@ class UtxoSplitTransactionBuilder {
       false,
       true,
     );
+
+    final addresses = await _getReceiveAddresses(totalOutputCount);
 
     if (addresses.length < totalOutputCount) {
       throw StateError('Not enough unused addresses. Required: $totalOutputCount, Available: ${addresses.length}');
