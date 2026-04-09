@@ -21,6 +21,7 @@ import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
@@ -176,16 +177,32 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   Widget _buildMergeContent(BuildContext context) {
     _scheduleHeaderAnimation(_viewModel.currentStep);
     _scheduleOptionPickerAnimation(_viewModel.currentStep);
+    final showMergeBottomButton = _viewModel.currentStep == UtxoMergeStep.selectReceiveAddress;
 
     return Stack(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, showMergeBottomButton ? 132 : 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [_buildAnimatedHeader(), CoconutLayout.spacing_400h, _buildVisibleOptionPickers(context)],
+            children: [_buildAnimatedHeader(), CoconutLayout.spacing_1000h, _buildVisibleOptionPickers(context)],
           ),
         ),
+        if (showMergeBottomButton)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SizedBox(
+              height: 120,
+              child: FixedBottomButton(
+                onButtonClicked: () {},
+                isActive: _showReceiveAddressSummaryText,
+                text: '정리하기',
+                backgroundColor: CoconutColors.white,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -208,6 +225,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       if (!mounted) return;
       _syncOptionPickerAnimation(step);
     });
+  }
+
+  void _refreshAnimationsForCurrentStep() {
+    final step = _viewModel.currentStep;
+    _lastObservedHeaderStep = null;
+    _lastObservedOptionPickerStep = null;
+    _scheduleHeaderAnimation(step);
+    _scheduleOptionPickerAnimation(step);
   }
 
   void _syncHeaderAnimation(UtxoMergeStep step) {
@@ -286,29 +311,59 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     if (!_isAnimatedHeaderStep(step)) return;
 
     _pendingOptionPickerStep = step;
+    final nextVisibleSteps = _visibleOptionPickerStepsFor(step);
 
     if (_displayedOptionPickerStep == null) {
       setState(() {
         _displayedOptionPickerStep = step;
-        if (!_visibleOptionPickerSteps.contains(step)) {
-          _visibleOptionPickerSteps.insert(0, step);
-        }
+        _visibleOptionPickerSteps
+          ..clear()
+          ..addAll(nextVisibleSteps);
       });
       return;
     }
 
-    if (_displayedOptionPickerStep == step) {
+    if (_displayedOptionPickerStep == step && listEquals(_visibleOptionPickerSteps, nextVisibleSteps)) {
       return;
     }
 
     ++_optionPickerAnimationNonce;
     setState(() {
       _displayedOptionPickerStep = _pendingOptionPickerStep;
-      final pendingStep = _pendingOptionPickerStep;
-      if (pendingStep != null && !_visibleOptionPickerSteps.contains(pendingStep)) {
-        _visibleOptionPickerSteps.insert(0, pendingStep);
-      }
+      _visibleOptionPickerSteps
+        ..clear()
+        ..addAll(nextVisibleSteps);
     });
+  }
+
+  List<UtxoMergeStep> _visibleOptionPickerStepsFor(UtxoMergeStep step) {
+    switch (step) {
+      case UtxoMergeStep.selectMergeCriteria:
+        return const [UtxoMergeStep.selectMergeCriteria];
+      case UtxoMergeStep.selectAmountCriteria:
+        return const [UtxoMergeStep.selectAmountCriteria, UtxoMergeStep.selectMergeCriteria];
+      case UtxoMergeStep.selectTag:
+        return const [UtxoMergeStep.selectTag, UtxoMergeStep.selectMergeCriteria];
+      case UtxoMergeStep.selectReceiveAddress:
+        switch (_currentMergeCriteria) {
+          case UtxoMergeCriteria.sameAddress:
+            return const [UtxoMergeStep.selectReceiveAddress, UtxoMergeStep.selectMergeCriteria];
+          case UtxoMergeCriteria.sameTag:
+            return const [
+              UtxoMergeStep.selectReceiveAddress,
+              UtxoMergeStep.selectTag,
+              UtxoMergeStep.selectMergeCriteria,
+            ];
+          case UtxoMergeCriteria.smallAmounts:
+            return const [
+              UtxoMergeStep.selectReceiveAddress,
+              UtxoMergeStep.selectAmountCriteria,
+              UtxoMergeStep.selectMergeCriteria,
+            ];
+        }
+      case UtxoMergeStep.entry:
+        return const [];
+    }
   }
 
   void _scheduleBottomSheetOpen(UtxoMergeStep step) async {
@@ -573,26 +628,52 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   List<UtxoState> get _candidateUtxosForCurrentAmountCriteria {
     final utxos = _viewModel.utxoList.where((utxo) => !utxo.isLocked).toList();
-    final int? satsThreshold = switch (_currentAmountCriteria) {
-      UtxoAmountCriteria.below001 => 1_000_000,
-      UtxoAmountCriteria.below0001 => 100_000,
-      UtxoAmountCriteria.below00001 => 10_000,
-      UtxoAmountCriteria.custom => () {
-        if (_customAmountCriteriaText == null || _customAmountCriteriaText!.trim().isEmpty) {
-          return null;
-        }
-        try {
-          return UnitUtil.convertBitcoinToSatoshi(double.parse(_customAmountCriteriaText!.trim()));
-        } catch (_) {
-          return null;
-        }
-      }(),
-    };
+    switch (_currentMergeCriteria) {
+      case UtxoMergeCriteria.smallAmounts:
+        final int? satsThreshold = switch (_currentAmountCriteria) {
+          UtxoAmountCriteria.below001 => 1_000_000,
+          UtxoAmountCriteria.below0001 => 100_000,
+          UtxoAmountCriteria.below00001 => 10_000,
+          UtxoAmountCriteria.custom => () {
+            if (_customAmountCriteriaText == null || _customAmountCriteriaText!.trim().isEmpty) {
+              return null;
+            }
+            try {
+              return UnitUtil.convertBitcoinToSatoshi(double.parse(_customAmountCriteriaText!.trim()));
+            } catch (_) {
+              return null;
+            }
+          }(),
+        };
 
-    return utxos.where((utxo) {
-      if (satsThreshold == null) return false;
-      return _isCustomAmountLessThan ? utxo.amount < satsThreshold : utxo.amount <= satsThreshold;
-    }).toList();
+        return utxos.where((utxo) {
+          if (satsThreshold == null) return false;
+          return _isCustomAmountLessThan ? utxo.amount < satsThreshold : utxo.amount <= satsThreshold;
+        }).toList();
+      case UtxoMergeCriteria.sameAddress:
+        final addressCounts = <String, int>{};
+        for (final utxo in utxos) {
+          addressCounts[utxo.to] = (addressCounts[utxo.to] ?? 0) + 1;
+        }
+        return utxos.where((utxo) => (addressCounts[utxo.to] ?? 0) >= 2).toList();
+      case UtxoMergeCriteria.sameTag:
+        final duplicatedTagNames = <String>{};
+        final tagCounts = <String, int>{};
+        for (final utxo in utxos) {
+          final uniqueTagNames = (utxo.tags ?? []).map((tag) => tag.name).toSet();
+          for (final tagName in uniqueTagNames) {
+            final nextCount = (tagCounts[tagName] ?? 0) + 1;
+            tagCounts[tagName] = nextCount;
+            if (nextCount >= 2) {
+              duplicatedTagNames.add(tagName);
+            }
+          }
+        }
+        return utxos.where((utxo) {
+          final tagNames = (utxo.tags ?? []).map((tag) => tag.name);
+          return tagNames.any(duplicatedTagNames.contains);
+        }).toList();
+    }
   }
 
   List<UtxoState> get _selectedUtxosForCurrentAmountCriteria {
@@ -608,6 +689,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     return '${BalanceFormatUtil.formatSatoshiToReadableBitcoin(_estimatedMergeFeeSats!, forceEightDecimals: true)} BTC';
   }
 
+  void _syncEstimatedFeeTextToViewModel() {
+    _viewModel.setEstimatedFeeText(_estimatedMergeFeeText);
+  }
+
   Future<void> _calculateEstimatedMergeFee() async {
     final selectedReceiveAddress = _selectedReceiveAddress;
     final selectedUtxos = _selectedUtxosForCurrentAmountCriteria;
@@ -621,6 +706,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         _estimatedMergeFeeSats = null;
         _isEstimatedMergeFeeLoading = false;
       });
+      _syncEstimatedFeeTextToViewModel();
       return;
     }
 
@@ -633,7 +719,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       final wallet = walletProvider.getWalletById(widget.id);
       final changeAddress = walletProvider.getChangeAddress(widget.id);
       final recommendedFees = await FeeService().getRecommendedFees();
-      final feeRate = recommendedFees?.halfHourFee ?? recommendedFees?.hourFee ?? recommendedFees?.minimumFee ?? 1.0;
+      final inputFeeRate = double.tryParse(_viewModel.feeRateController.text.trim());
+      final feeRate =
+          inputFeeRate ??
+          recommendedFees?.halfHourFee ??
+          recommendedFees?.hourFee ??
+          recommendedFees?.minimumFee ??
+          1.0;
       final totalInputAmount = selectedUtxos.fold<int>(0, (sum, utxo) => sum + utxo.amount);
 
       final txBuildResult =
@@ -653,12 +745,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             txBuildResult.isSuccess ? txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0) : null;
         _isEstimatedMergeFeeLoading = false;
       });
+      _syncEstimatedFeeTextToViewModel();
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _estimatedMergeFeeSats = null;
         _isEstimatedMergeFeeLoading = false;
       });
+      _syncEstimatedFeeTextToViewModel();
     }
   }
 
@@ -895,7 +989,43 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildEstimatedFeeOptionPicker() {
-    return CoconutOptionPicker(text: _estimatedMergeFeeText, label: t.estimated_fee, onTap: () {});
+    return CoconutOptionPicker(
+      text: _estimatedMergeFeeText,
+      label: t.estimated_fee,
+      onTap: () {
+        unawaited(_viewModel.refreshRecommendedFees());
+        EstimatedFeeBottomSheet.show(
+          context: context,
+          listenable: _viewModel,
+          estimatedFeeTextGetter: () => _viewModel.estimatedFeeText,
+          feeRateController: _viewModel.feeRateController,
+          feeRateFocusNode: _viewModel.feeRateFocusNode,
+          onFeeRateChanged: (text) {
+            final isTooLow = _viewModel.onFeeRateChanged(text);
+            final currentText = _viewModel.feeRateController.text.trim();
+            if (currentText.isNotEmpty && !currentText.endsWith('.')) {
+              unawaited(_calculateEstimatedMergeFee());
+            }
+            return isTooLow;
+          },
+          onEditingComplete: () {
+            _viewModel.removeTrailingDotInFeeRate();
+            unawaited(_calculateEstimatedMergeFee());
+            FocusScope.of(context).unfocus();
+            Navigator.pop(context);
+          },
+          recommendedFeeFetchStatusGetter: () => _viewModel.recommendedFeeFetchStatus,
+          feeInfosGetter: () => _viewModel.feeInfos,
+          refreshRecommendedFees: _viewModel.refreshRecommendedFees,
+          onFeeRateSelected: (sats) {
+            _viewModel.setFeeRateFromRecommendation(sats);
+            unawaited(_calculateEstimatedMergeFee());
+            FocusScope.of(context).unfocus();
+            Navigator.pop(context);
+          },
+        );
+      },
+    );
   }
 
   UtxoMergeStep? _nextStepForMergeCriteria(UtxoMergeCriteria mergeCriteria) {
@@ -953,15 +1083,35 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
     if (selectedItem != null && context.mounted) {
       final nextStep = _nextStepForMergeCriteria(selectedItem);
+      final previousMergeCriteria = _selectedMergeCriteria;
+      final didMergeCriteriaChange = previousMergeCriteria != selectedItem;
 
       setState(() {
         _selectedMergeCriteria = selectedItem;
         _didConfirmMergeCriteria = true;
+        if (didMergeCriteriaChange) {
+          switch (selectedItem) {
+            case UtxoMergeCriteria.smallAmounts:
+              _didConfirmAmountCriteria = false;
+              _editedSelectedUtxoIds = null;
+              _estimatedMergeFeeSats = null;
+              break;
+            case UtxoMergeCriteria.sameTag:
+              _editedSelectedUtxoIds = null;
+              _estimatedMergeFeeSats = null;
+              break;
+            case UtxoMergeCriteria.sameAddress:
+              _editedSelectedUtxoIds = null;
+              _estimatedMergeFeeSats = null;
+              break;
+          }
+        }
         _isBottomSheetOpen = false;
       });
 
       if (nextStep != null) {
         _viewModel.setCurrentStep(nextStep);
+        _refreshAnimationsForCurrentStep();
       }
       return;
     }
