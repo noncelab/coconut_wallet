@@ -2,11 +2,9 @@ import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/extensions/double_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/model/send/fee_info.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -16,10 +14,9 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
-import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
-import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
@@ -84,7 +81,7 @@ enum AmountError {
   }
 }
 
-class SendViewModel extends ChangeNotifier {
+class SendViewModel extends ChangeNotifier with FeeRateMixin {
   final WalletProvider _walletProvider;
   final SendInfoProvider _sendInfoProvider;
   final PreferenceProvider _preferenceProvider;
@@ -142,15 +139,6 @@ class SendViewModel extends ChangeNotifier {
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
   bool get isUtxoSelectionAuto => _isUtxoSelectionAuto;
 
-  RecommendedFeeFetchStatus _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
-  RecommendedFeeFetchStatus get recommendedFeeFetchStatus => _recommendedFeeFetchStatus;
-
-  List<FeeInfoWithLevel> feeInfos = [
-    FeeInfoWithLevel(level: TransactionFeeLevel.fastest),
-    FeeInfoWithLevel(level: TransactionFeeLevel.halfhour),
-    FeeInfoWithLevel(level: TransactionFeeLevel.hour),
-  ];
-
   TransactionBuilder? _txBuilder;
   String _feeRateText = "";
   String _changeAddressDerivationPath = "";
@@ -164,9 +152,6 @@ class SendViewModel extends ChangeNotifier {
 
   bool _isFeeRateLowerThanMin = false;
   bool get isFeeRateLowerThanMin => _isFeeRateLowerThanMin;
-
-  double? _minimumFeeRate;
-  double? get minimumFeeRate => _minimumFeeRate;
 
   late bool? _isNetworkOn;
   late BitcoinUnit _currentUnit;
@@ -442,7 +427,7 @@ class SendViewModel extends ChangeNotifier {
     _feeRateText = draft.feeRate.toString();
     try {
       final feeRateValue = double.parse(_feeRateText);
-      _isFeeRateLowerThanMin = _minimumFeeRate != null && feeRateValue < _minimumFeeRate!;
+      _isFeeRateLowerThanMin = minimumFeeRate != null && feeRateValue < minimumFeeRate!;
     } catch (e) {
       Logger.error(e);
       _isFeeRateLowerThanMin = false;
@@ -563,33 +548,20 @@ class SendViewModel extends ChangeNotifier {
   }
 
   Future<void> refreshRecommendedFees() async {
-    if (_recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) return;
+    if (recommendedFeeFetchStatus == RecommendedFeeFetchStatus.fetching) return;
     await _setRecommendedFees();
-    notifyListeners();
   }
 
   Future<bool> _setRecommendedFees() async {
-    _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.fetching;
-
-    final recommendedFees = await FeeService().getRecommendedFees();
-
-    if (recommendedFees == null) {
-      _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.failed;
-      return false;
-    }
-
-    feeInfos[0].satsPerVb = recommendedFees.fastestFee;
-    feeInfos[1].satsPerVb = recommendedFees.halfHourFee;
-    feeInfos[2].satsPerVb = recommendedFees.hourFee;
-    _minimumFeeRate = recommendedFees.hourFee;
-
-    final defaultFeeRate = recommendedFees.halfHourFee?.toString();
-    if (defaultFeeRate != null && _transactionDraftId == null) {
-      _feeRateText = defaultFeeRate;
-      _onFeeRateTextUpdate(_feeRateText);
-    }
-    _recommendedFeeFetchStatus = RecommendedFeeFetchStatus.succeed;
-    return true;
+    return fetchRecommendedFees(
+      currentFeeRateText: _feeRateText,
+      onDefaultFeeRateSet: (text) {
+        if (_transactionDraftId == null) {
+          _feeRateText = text;
+          _onFeeRateTextUpdate(text);
+        }
+      },
+    );
   }
 
   void setCurrentPage(int index) {
@@ -777,7 +749,7 @@ class SendViewModel extends ChangeNotifier {
 
     try {
       var feeRateValue = double.parse(feeRate);
-      _isFeeRateLowerThanMin = _minimumFeeRate != null && feeRateValue < _minimumFeeRate!;
+      _isFeeRateLowerThanMin = minimumFeeRate != null && feeRateValue < minimumFeeRate!;
     } catch (e) {
       Logger.error(e);
       _isFeeRateLowerThanMin = false;
@@ -888,7 +860,7 @@ class SendViewModel extends ChangeNotifier {
 
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
-    if (isNetworkOn == true && _recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed) {
+    if (isNetworkOn == true && recommendedFeeFetchStatus == RecommendedFeeFetchStatus.failed) {
       refreshRecommendedFees();
     }
     notifyListeners();

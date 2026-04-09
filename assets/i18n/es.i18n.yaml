@@ -106,6 +106,7 @@ name: "Nombre"
 account: "Cuenta"
 merge_utxos: "Combinar UTXOs"
 split_utxo: "Dividir UTXO"
+organize: "Organizar"
 
 relative_time:
   just_now: "Justo ahora"
@@ -800,11 +801,35 @@ merge_utxos_screen:
 
 split_utxo_screen:
   title: "Dividir UTXO"
-  bottomsheet:
-    title: "Elegir criterio de división"
+  placeholder_utxo: "Selecciona un UTXO"
+  placeholder_criteria: "Selecciona un criterio de división"
+  placeholder_split_amount: "Ingresa el monto"
+  placeholder_expected_fee: "Ingresa la comisión estimada"
+  question_select_utxo: "¿Qué UTXO quieres dividir?"
+  question_select_criteria: "¿Cómo quieres dividirlo?"
+  question_split_by_amount: "¿Cuánto por cada uno?"
+  question_split_evenly: "¿En cuántas partes?"
+  label_split_criteria: "Criterio de división"
+  label_selected_utxo: "UTXO seleccionado"
+  label_expected_fee: "Comisión estimada"
+  and_more_tags: "y ${count} más"
+  utxo_error: "Este monto es demasiado pequeño para dividir"
+  utxo_warning: "La proporción de comisión es alta y puede no ser adecuado dividirlo"
+  amount_error:
+    amount_too_large: "Por favor, introduce un importe menor que el UTXO seleccionado"
+    insufficient_after_fee: "No es posible dividir este importe al incluir la comisión"
+  fee_error: "La comisión es mayor que el importe del UTXO"
+  dust_error: "Si lo divides así, se generarán pequeñas cantidades difíciles de usar"
+  criteria_bottom_sheet:
+    title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
-    split_evenly: "Dividir equitativamente"
+    split_evenly: "Dividir en partes iguales"
     split_manually: "Dividir manualmente"
+  expected_result:
+    split_by_amount: "Dividiremos ${utxoAmountText} en partes de ${formattedSplitAmount}"
+    split_evenly: "Dividiremos ${utxoAmountText} en ${splitCount} partes iguales"
+    new_utxos: "Nuevos UTXO"
+    fee: "Comisión"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
@@ -1064,6 +1089,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "Comisión estimada"
+    expected_fee: "Comisión estimada"
+    fee_rate: "Tasa de comisión"
 
 long_pressed_menu:
   hide: "Ocultar"

@@ -105,6 +105,7 @@ name: "Name"
 account: "Account"
 merge_utxos: "Merge UTXOs"
 split_utxo: "Split UTXO"
+organize: "Organize"
 
 relative_time:
   just_now: "Just now"
@@ -797,11 +798,35 @@ merge_utxos_screen:
 
 split_utxo_screen:
   title: "Split UTXO"
-  bottomsheet:
-    title: "Choose split criteria"
-    split_by_amount: "Split by amount"
+  placeholder_utxo: "Select a UTXO"
+  placeholder_criteria: "Select a split method"
+  placeholder_split_amount: "Enter amount"
+  placeholder_expected_fee: "Enter expected fee"
+  question_select_utxo: "Which UTXO would you like to split?"
+  question_select_criteria: "How would you like to split it?"
+  question_split_by_amount: "How much per split?"
+  question_split_evenly: "Into how many parts?"
+  label_split_criteria: "Split method"
+  label_selected_utxo: "Selected UTXO"
+  label_expected_fee: "Expected fee"
+  and_more_tags: "and ${count} more"
+  utxo_error: "This amount is too small to split"
+  utxo_warning: "The fee ratio is high and may not be suitable for splitting"
+  amount_error:
+    amount_too_large: "Please enter an amount smaller than the selected UTXO"
+    insufficient_after_fee: "This amount can’t be split when the fee is included"
+  fee_error: "The fee is greater than the UTXO amount"
+  dust_error: "Splitting it this way will create small amounts that are difficult to use"
+  criteria_bottom_sheet:
+    title: "Select split method"
+    split_by_amount: "Split by fixed amount"
     split_evenly: "Split evenly"
     split_manually: "Split manually"
+  expected_result:
+    split_by_amount: "We’ll split ${utxoAmountText} into amounts of ${formattedSplitAmount}"
+    split_evenly: "We’ll split ${utxoAmountText} into ${splitCount} equal parts"
+    new_utxos: "New UTXOs"
+    fee: "Fee"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
@@ -1061,6 +1086,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "Expected fee"
+    expected_fee: "Expected fee"
+    fee_rate: "Fee rate"
 
 long_pressed_menu:
   hide: "Hide"
