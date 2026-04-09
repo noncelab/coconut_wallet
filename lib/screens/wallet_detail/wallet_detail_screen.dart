@@ -114,7 +114,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                       _buildTxListLabel(),
                       TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
 
-                      const SliverToBoxAdapter(child: SizedBox(height: 75)),
+                      SliverToBoxAdapter(child: SizedBox(height: 35 + MediaQuery.of(context).padding.bottom)),
                     ],
                   ),
                 ),
@@ -502,9 +502,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   }
 
   Widget _buildbottomActionBar() {
-    return Selector<WalletDetailViewModel, int>(
-      selector: (_, viewModel) => viewModel.utxoCount,
-      builder: (_, utxoCount, __) {
+    return Selector<WalletDetailViewModel, Tuple2<int, int>>(
+      selector: (_, viewModel) => Tuple2(viewModel.utxoCount, viewModel.availableUtxoCount),
+      builder: (_, data, __) {
+        final int utxoCount = data.item1;
+        final int availableUtxoCount = data.item2;
+
         final bool canMerge = utxoCount > 1;
         final bool canSplit = utxoCount > 0;
 
@@ -514,7 +517,12 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             return BottomActionBarSlide(
               isVisible: isVisible,
               child: BottomActionBar(
-                padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0, top: 16.0),
+                padding: EdgeInsets.only(
+                  left: 8.0,
+                  right: 8.0,
+                  bottom: MediaQuery.of(context).padding.bottom,
+                  top: 8.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -527,7 +535,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           onTap:
                               canMerge
                                   ? () {
-                                    Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+                                    if (availableUtxoCount < 2) {
+                                      CoconutToast.showToast(
+                                        context: context,
+                                        isVisibleIcon: true,
+                                        iconPath: 'assets/svg/circle-info.svg',
+                                        text: t.toast.locked_utxo_unavailable_description,
+                                        level: CoconutToastLevel.info,
+                                      );
+                                    } else {
+                                      Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+                                    }
                                   }
                                   : () {
                                     CoconutToast.showToast(

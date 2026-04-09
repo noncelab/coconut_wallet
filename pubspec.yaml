@@ -321,6 +321,7 @@ flutter:
     - assets/svg/pie.svg
     - assets/svg/merge-utxos.svg
     - assets/svg/split-utxo.svg
+    - assets/svg/dust.svg
 
   fonts:
     - family: SpaceGrotesk

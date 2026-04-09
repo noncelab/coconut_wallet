@@ -681,6 +681,11 @@ utxo_detail_screen:
   utxo_all_already_unlocked: "すべてのUTXOはすでに使用可能な状態です。"
   utxo_locked_count_toast_msg: "$count個のUTXOがロックされました。"
   utxo_unlocked_count_toast_msg: "$count個のUTXOがロック解除されました。"
+  suspicious_dust_warning: "予期しない少額が受信されました。他のUTXOと一緒に使用すると、アドレスの関係が明らかになる可能性があります。\nこのUTXOが使用されないようにロックできます。"
+  suspicious_dust_locked: "予期しない少額が受信されました。このUTXOはすでに使用されないようにロックされています。"
+  utxo_locked_button: "使用ロック"
+  utxo_unlocked_button: "ロック解除"
+  lock_status: "ロック状態"
 
 utxo_tag_screen:
   onboarding_title: "UTXOタグを管理できます"
@@ -957,8 +962,9 @@ toast:
   tag_update_failed: "タグを更新できませんでした。"
   tag_delete_failed: "タグを削除できませんでした。"
   wallet_detail_refresh: "画面を下にスクロールして最新データを取得してください。"
-  merge_utxos_unavailable_description: "複数のUTXOがある場合、統合を利用できます。"
-  split_utxo_unavailable_description: "分割できるUTXOがありません。"
+  merge_utxos_unavailable_description: "統合するにはUTXOが2つ以上必要です"
+  locked_utxo_unavailable_description: "ロックされたUTXOは統合できません"
+  split_utxo_unavailable_description: "分割できるUTXOがありません"
 
 alert:
   error_tx:

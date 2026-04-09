@@ -680,6 +680,11 @@ utxo_detail_screen:
   utxo_all_already_unlocked: "All UTXOs are already spendable."
   utxo_locked_count_toast_msg: "$count UTXOs have been locked."
   utxo_unlocked_count_toast_msg: "$count UTXOs have been unlocked."
+  suspicious_dust_warning: "An unexpectedly small amount was received. Using this UTXO with others may reveal address relationships.\nYou can lock this UTXO to prevent it from being spent."
+  suspicious_dust_locked: "An unexpectedly small amount was received. This UTXO is already locked."
+  utxo_locked_button: "Lock"
+  utxo_unlocked_button: "Unlock"
+  lock_status: "Lock Status"
 
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"
@@ -956,8 +961,9 @@ toast:
   tag_update_failed: "Cannot edit tag."
   tag_delete_failed: "Cannot delete tag."
   wallet_detail_refresh: "Pull down the screen to get the latest data."
-  merge_utxos_unavailable_description: "Merge is available when you have multiple UTXOs."
-  split_utxo_unavailable_description: "There are no UTXOs to split."
+  merge_utxos_unavailable_description: "At least 2 UTXOs are required to merge"
+  locked_utxo_unavailable_description: "Locked UTXOs cannot be merged"
+  split_utxo_unavailable_description: "There are no UTXOs available to split"
 
 alert:
   error_tx:

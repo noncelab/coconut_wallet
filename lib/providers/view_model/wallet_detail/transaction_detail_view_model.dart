@@ -53,6 +53,9 @@ class TransactionDetailViewModel extends ChangeNotifier {
 
   String get mempoolHost => _blockExplorerProvider.blockExplorerUrl;
 
+  bool get isSuspiciousDustTransaction =>
+      _walletProvider.isTransactionSuspicious(_transactionList![_selectedTransactionIndex]);
+
   @override
   void dispose() {
     _disposed = true;
