@@ -1,5 +1,4 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -44,6 +43,7 @@ class UtxoSplitResult {
 
 class UtxoSplitTransactionBuilder {
   final UtxoState utxo;
+  final int dustThreshold;
   double _feeRate;
   final WalletListItemBase walletListItemBase;
   final AddressRepository addressRepository;
@@ -87,10 +87,12 @@ class UtxoSplitTransactionBuilder {
 
   UtxoSplitTransactionBuilder({
     required this.utxo,
+    required this.dustThreshold,
     required double feeRate,
     required this.walletListItemBase,
     required this.addressRepository,
-  }) : assert(feeRate > 0, 'feeRate must be greater than 0'),
+  }) : assert(dustThreshold > 0, 'dustThreshold must be greater than 0'),
+       assert(feeRate > 0, 'feeRate must be greater than 0'),
        assert(utxo.amount >= 20000, 'utxo.amount must be at least 20000'),
        _feeRate = feeRate {
     /** output 개수가 253 이상일 때 tx 크기가 2 증가
@@ -120,20 +122,20 @@ class UtxoSplitTransactionBuilder {
     await _initOutputVBytes();
 
     // fee = (_oneOutputTxVBytes + _outputVBytes * (n - 1)) * feeRate
-    // 조건: (utxo.amount - fee) >= (dustLimit + 1) * n
+    // 조건: (utxo.amount - fee) >= (dustThreshold + 1) * n
     double feePerOutput = _outputVBytes! * feeRate;
     var left = utxo.amount - (_oneOutputTxVBytes! * feeRate);
     /** left - feePerOutput * (n-1) >= (546 + 1) * n
         left + feePerOutput >= 547 * n + feePerOutput * n
         left + feePerOutput >= n * (547 + feePerOutput)
         n <= (left + feePerOutput) / (547 + feePerOutput) */
-    var result = (left + feePerOutput) ~/ (dustLimit + 1 + feePerOutput);
+    var result = (left + feePerOutput) ~/ (dustThreshold + 1 + feePerOutput);
     if (result < _outputCountVarIntThreshold) {
       return result;
     }
 
     left = utxo.amount - (_oneOutputTxVBytes! * feeRate) - _outputCountVarIntFeeMargin;
-    result = (left + feePerOutput) ~/ (dustLimit + 1 + feePerOutput);
+    result = (left + feePerOutput) ~/ (dustThreshold + 1 + feePerOutput);
     return result;
   }
 
@@ -153,7 +155,7 @@ class UtxoSplitTransactionBuilder {
     final availableAmount = utxo.amount - fee;
     final baseAmount = availableAmount ~/ splitCount;
 
-    if (baseAmount <= dustLimit) {
+    if (baseAmount <= dustThreshold) {
       throw SplitOutputDustException(estimatedFee: fee); // 이 개수로 나누면 dust가 생성돼요
     }
 
@@ -180,7 +182,7 @@ class UtxoSplitTransactionBuilder {
   Future<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) async {
     assert(amountPerOutput > 0);
     await _initOutputVBytes();
-    if (amountPerOutput <= dustLimit) {
+    if (amountPerOutput <= dustThreshold) {
       throw const SplitOutputDustException(); // 0.0000 0547 BTC부터 전송할 수 있어요
     }
     List<int> exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
@@ -212,7 +214,7 @@ class UtxoSplitTransactionBuilder {
     await _initOutputVBytes();
     // dust 검증
     for (final amount in amountCountMap.keys) {
-      if (amount <= dustLimit) {
+      if (amount <= dustThreshold) {
         throw const SplitOutputDustException(); // 0.0000 0547부터 전송할 수 있어요 -> 이건 나누기 화면에서 미리 잡아야함
       }
     }
@@ -228,7 +230,7 @@ class UtxoSplitTransactionBuilder {
       throw SplitInsufficientAmountException(estimatedFee: estimatedFee); // 금액이 부족해요
     }
 
-    if (left <= dustLimit) {
+    if (left <= dustThreshold) {
       throw const SplitOutputDustException(); // dust가 생성돼요
     }
 
@@ -321,7 +323,7 @@ class UtxoSplitTransactionBuilder {
   List<int> _getFixedSplitExactAmounts(int amountPerOutput) {
     double firstLeft = utxo.amount - (_oneOutputTxVBytes! * feeRate) - amountPerOutput;
     final feePerOutput = _outputVBytes! * feeRate;
-    if (firstLeft <= dustLimit + feePerOutput) {
+    if (firstLeft <= dustThreshold + feePerOutput) {
       throw const SplitInsufficientAmountException();
     }
 
@@ -330,9 +332,9 @@ class UtxoSplitTransactionBuilder {
     List<int> exactAmounts = [amountPerOutput];
     int count = 1;
 
-    while (left - neededSatsPerOneMore > dustLimit + feePerOutput) {
+    while (left - neededSatsPerOneMore > dustThreshold + feePerOutput) {
       if (count + 1 == _outputCountVarIntThreshold) {
-        if (left - _outputCountVarIntFeeMargin - neededSatsPerOneMore <= dustLimit + feePerOutput) {
+        if (left - _outputCountVarIntFeeMargin - neededSatsPerOneMore <= dustThreshold + feePerOutput) {
           break;
         } else {
           left -= _outputCountVarIntFeeMargin;
