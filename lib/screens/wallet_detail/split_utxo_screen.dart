@@ -14,11 +14,14 @@ import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
+
+enum SplitStep { selectUtxo, selectCriteria, enterDetails }
 
 class SplitUtxoScreen extends StatefulWidget {
   final int id;
@@ -37,6 +40,19 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   String? _lastObservedHeaderTitle;
   bool _isHeaderFadingOut = false;
   int _headerAnimationNonce = 0;
+
+  static const Duration _pickerAnimationDuration = Duration(milliseconds: 300);
+  SplitStep? _displayedPickerStep;
+  SplitStep? _pendingPickerStep;
+  SplitStep? _lastObservedPickerStep;
+  int _pickerAnimationNonce = 0;
+  final List<SplitStep> _visiblePickerSteps = [];
+
+  SplitStep get _currentStep {
+    if (_viewModel.selectedUtxoList.isEmpty) return SplitStep.selectUtxo;
+    if (_viewModel.selectedCriteria == null) return SplitStep.selectCriteria;
+    return SplitStep.enterDetails;
+  }
 
   @override
   void initState() {
@@ -79,9 +95,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildBody(BuildContext context, SplitUtxoViewModel viewModel) {
-    final hasSelectedCriteria = viewModel.selectedCriteria != null;
     final currentTitle = viewModel.getHeaderTitle(t);
+    final currentStep = _currentStep;
     _scheduleHeaderAnimation(currentTitle);
+    _schedulePickerAnimation(currentStep);
 
     return SafeArea(
       child: Stack(
@@ -102,10 +119,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               ] else ...[
                 CoconutLayout.spacing_600h,
               ],
-              if (hasSelectedCriteria) _buildSplitContent(viewModel),
-              _buildCriteriaPicker(context, viewModel),
-              _buildUtxoPicker(context, viewModel),
-              _buildFeePicker(context, viewModel),
+              _buildVisibleOptionPickers(context, viewModel),
             ],
           ),
           _buildOrganizeButton(context, viewModel),
@@ -188,6 +202,96 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       delay: const Duration(milliseconds: 300),
       slideDirection: CoconutCharacterFadeSlideDirection.slideDown,
     );
+  }
+
+  void _schedulePickerAnimation(SplitStep step) {
+    if (_lastObservedPickerStep == step) return;
+    _lastObservedPickerStep = step;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncPickerAnimation(step);
+    });
+  }
+
+  void _syncPickerAnimation(SplitStep step) {
+    _pendingPickerStep = step;
+    final nextVisibleSteps = _getVisibleSteps(step);
+
+    if (_displayedPickerStep == null) {
+      setState(() {
+        _displayedPickerStep = step;
+        _visiblePickerSteps.clear();
+        _visiblePickerSteps.addAll(nextVisibleSteps);
+      });
+      return;
+    }
+
+    if (_displayedPickerStep == step && listEquals(_visiblePickerSteps, nextVisibleSteps)) {
+      return;
+    }
+
+    ++_pickerAnimationNonce;
+    setState(() {
+      _displayedPickerStep = _pendingPickerStep;
+      _visiblePickerSteps.clear();
+      _visiblePickerSteps.addAll(nextVisibleSteps);
+    });
+  }
+
+  List<SplitStep> _getVisibleSteps(SplitStep step) {
+    switch (step) {
+      case SplitStep.selectUtxo:
+        return const [SplitStep.selectUtxo];
+      case SplitStep.selectCriteria:
+        return const [SplitStep.selectCriteria, SplitStep.selectUtxo];
+      case SplitStep.enterDetails:
+        return const [SplitStep.enterDetails, SplitStep.selectCriteria, SplitStep.selectUtxo];
+    }
+  }
+
+  Widget _buildVisibleOptionPickers(BuildContext context, SplitUtxoViewModel viewModel) {
+    final pickerWidgets =
+        _visiblePickerSteps.indexed.map((entry) {
+          final index = entry.$1;
+          final step = entry.$2;
+          final widget = _buildStepWidget(context, viewModel, step);
+          final isNewest = step == _displayedPickerStep && index == 0;
+
+          if (isNewest) {
+            return widget.slideUpAnimation(
+              key: ValueKey('split-picker-in-${step.name}-$_pickerAnimationNonce'),
+              duration: _pickerAnimationDuration,
+              delay: const Duration(milliseconds: 1500),
+              offset: const Offset(0, 24),
+            );
+          }
+
+          return widget;
+        }).toList();
+
+    if (_currentStep == SplitStep.enterDetails) {
+      final feePicker = _buildFeePicker(context, viewModel);
+      pickerWidgets.add(feePicker);
+    }
+
+    return AnimatedSize(
+      duration: _pickerAnimationDuration,
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: pickerWidgets),
+    );
+  }
+
+  Widget _buildStepWidget(BuildContext context, SplitUtxoViewModel viewModel, SplitStep step) {
+    switch (step) {
+      case SplitStep.selectUtxo:
+        return _buildUtxoPicker(context, viewModel);
+      case SplitStep.selectCriteria:
+        return _buildCriteriaPicker(context, viewModel);
+      case SplitStep.enterDetails:
+        return _buildSplitContent(viewModel);
+    }
   }
 
   Widget _buildOrganizeButton(BuildContext context, SplitUtxoViewModel viewModel) {
