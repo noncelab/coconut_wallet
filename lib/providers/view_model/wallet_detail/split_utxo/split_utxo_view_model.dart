@@ -77,6 +77,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   final FocusNode feeRateFocusNode = FocusNode();
   final TextEditingController splitCountController = TextEditingController();
   final FocusNode splitCountFocusNode = FocusNode();
+  String _lastFeeRateText = '';
+  String _lastAmountText = '';
+  String _lastSplitCountText = '';
   late final WalletListItemBase _wallet;
   late final UtxoSplitTransactionBuilder _splitBuilder;
 
@@ -157,15 +160,28 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     this._showBigTxConfirmPrompt,
   ) {
     feeRateController.addListener(() {
-      Logger.log('--> feeRateController.addListener');
-      _onInputChanged();
+      if (_lastFeeRateText != feeRateController.text) {
+        _lastFeeRateText = feeRateController.text;
+        Logger.log('--> feeRateController.addListener');
+        _onInputChanged();
+      }
     });
     feeRateFocusNode.addListener(notifyListeners);
 
-    amountController.addListener(_onInputChanged);
+    amountController.addListener(() {
+      if (_lastAmountText != amountController.text) {
+        _lastAmountText = amountController.text;
+        _onInputChanged();
+      }
+    });
     amountFocusNode.addListener(notifyListeners);
 
-    splitCountController.addListener(_onInputChanged);
+    splitCountController.addListener(() {
+      if (_lastSplitCountText != splitCountController.text) {
+        _lastSplitCountText = splitCountController.text;
+        _onInputChanged();
+      }
+    });
     splitCountFocusNode.addListener(notifyListeners);
 
     // TODO: 직접 나누기는 어디에 있나?
