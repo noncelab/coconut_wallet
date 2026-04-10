@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -19,22 +20,46 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
 
-class SplitUtxoScreen extends StatelessWidget {
+class SplitUtxoScreen extends StatefulWidget {
   final int id;
 
   const SplitUtxoScreen({super.key, required this.id});
 
   @override
+  State<SplitUtxoScreen> createState() => _SplitUtxoScreenState();
+}
+
+class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
+  late SplitUtxoViewModel _viewModel;
+
+  static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
+  String? _displayedHeaderTitle;
+  String? _lastObservedHeaderTitle;
+  bool _isHeaderFadingOut = false;
+  int _headerAnimationNonce = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = SplitUtxoViewModel(
+      widget.id,
+      context.read<PreferenceProvider>(),
+      context.read<WalletProvider>(),
+      context.read<AddressRepository>(),
+      context.read<SendInfoProvider>(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<SplitUtxoViewModel>(
-      create:
-          (context) => SplitUtxoViewModel(
-            id,
-            context.read<PreferenceProvider>(),
-            context.read<WalletProvider>(),
-            context.read<AddressRepository>(),
-            context.read<SendInfoProvider>(),
-          ),
+    return ChangeNotifierProvider<SplitUtxoViewModel>.value(
+      value: _viewModel,
       child: Scaffold(
         backgroundColor: CoconutColors.black,
         appBar: _buildAppBar(context),
@@ -55,6 +80,8 @@ class SplitUtxoScreen extends StatelessWidget {
 
   Widget _buildBody(BuildContext context, SplitUtxoViewModel viewModel) {
     final hasSelectedCriteria = viewModel.selectedCriteria != null;
+    final currentTitle = viewModel.getHeaderTitle(t);
+    _scheduleHeaderAnimation(currentTitle);
 
     return SafeArea(
       child: Stack(
@@ -64,10 +91,7 @@ class SplitUtxoScreen extends StatelessWidget {
             children: [
               _buildExpectedResult(viewModel),
               CoconutLayout.spacing_800h,
-              Text(
-                viewModel.getHeaderTitle(t),
-                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-              ),
+              _buildAnimatedHeader(),
               if (viewModel.isDustError) ...[
                 CoconutLayout.spacing_50h,
                 Text(
@@ -103,6 +127,66 @@ class SplitUtxoScreen extends StatelessWidget {
           viewModel.showSplitResultBox
               ? SplitResultBox(key: const ValueKey('split_result_box'), viewModel: viewModel)
               : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
+    );
+  }
+
+  void _scheduleHeaderAnimation(String title) {
+    if (_lastObservedHeaderTitle == title) return;
+    _lastObservedHeaderTitle = title;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncHeaderAnimation(title);
+    });
+  }
+
+  void _syncHeaderAnimation(String title) {
+    if (_displayedHeaderTitle == null) {
+      setState(() {
+        _displayedHeaderTitle = title;
+        _isHeaderFadingOut = false;
+      });
+      return;
+    }
+
+    if (_displayedHeaderTitle == title && !_isHeaderFadingOut) {
+      return;
+    }
+
+    final token = ++_headerAnimationNonce;
+    setState(() {
+      _isHeaderFadingOut = true;
+    });
+
+    Future.delayed(_headerAnimationDuration, () {
+      if (!mounted || token != _headerAnimationNonce) return;
+
+      setState(() {
+        _displayedHeaderTitle = title;
+        _isHeaderFadingOut = false;
+      });
+    });
+  }
+
+  Widget _buildAnimatedHeader() {
+    final title = _displayedHeaderTitle;
+    if (title == null) return const SizedBox.shrink();
+
+    if (_isHeaderFadingOut) {
+      return title.characterFadeOutAnimation(
+        key: ValueKey('split-header-out-$title-$_headerAnimationNonce'),
+        textStyle: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+        duration: const Duration(milliseconds: 100),
+        slideDirection: CoconutCharacterFadeSlideDirection.slideUp,
+      );
+    }
+
+    return title.characterFadeInAnimation(
+      key: ValueKey('split-header-in-$title-$_headerAnimationNonce'),
+      textStyle: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+      duration: _headerAnimationDuration,
+      delay: const Duration(milliseconds: 300),
+      slideDirection: CoconutCharacterFadeSlideDirection.slideDown,
     );
   }
 
@@ -161,7 +245,7 @@ class SplitUtxoScreen extends StatelessWidget {
     List<Widget> inlineWidgets = [];
     if (isSelected) {
       final utxoTagProvider = context.read<UtxoTagProvider>();
-      final tags = utxoTagProvider.getUtxoTagsByUtxoId(id, viewModel.selectedUtxoList.first.utxoId);
+      final tags = utxoTagProvider.getUtxoTagsByUtxoId(widget.id, viewModel.selectedUtxoList.first.utxoId);
 
       if (tags.isNotEmpty) {
         final firstTag = tags.first;
@@ -501,7 +585,7 @@ class SplitUtxoScreen extends StatelessWidget {
       childBuilder:
           (scrollController) => UtxoSelectionScreen(
             selectedUtxoList: viewModel.selectedUtxoList,
-            walletId: id,
+            walletId: widget.id,
             currentUnit: viewModel.currentUnit,
             scrollController: scrollController,
             isSplitMode: true,
@@ -530,7 +614,7 @@ class SplitUtxoScreen extends StatelessWidget {
           onTap: onTap,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [Text(item.getLabel(t), style: CoconutTypography.body3_12.setColor(CoconutColors.gray400))],
+            children: [Text(item.getLabel(t), style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white))],
           ),
         );
       },
