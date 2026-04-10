@@ -800,6 +800,7 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "${utxoAmountText} を ${formattedSplitAmount} ずつに分割します"
     split_evenly: "${utxoAmountText} を ${splitCount} 個に分割します"
+    split_manually: "${utxoAmountText} をこのように分割します"
     new_utxos: "新しいUTXO"
     fee: "手数料"
 

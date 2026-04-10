@@ -805,6 +805,7 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "$utxoAmountText를 $formattedSplitAmount씩 나눌게요"
     split_evenly: "$utxoAmountText를 ${splitCount}개로 나눌게요"
+    split_manually: "$utxoAmountText를 이렇게 나눌게요"
     new_utxos: "새로운 UTXO"
     fee: "수수료"
 

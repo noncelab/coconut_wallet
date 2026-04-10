@@ -799,6 +799,7 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "We’ll split ${utxoAmountText} into amounts of ${formattedSplitAmount}"
     split_evenly: "We’ll split ${utxoAmountText} into ${splitCount} equal parts"
+    split_manually: "We’ll split ${utxoAmountText} like this"
     new_utxos: "New UTXOs"
     fee: "Fee"
 
