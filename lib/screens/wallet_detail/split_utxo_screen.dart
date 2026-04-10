@@ -90,7 +90,7 @@ class SplitUtxoScreen extends StatelessWidget {
                 _buildExpectedResult(viewModel),
                 CoconutLayout.spacing_800h,
                 Text(
-                  viewModel.getHeaderTitle(t),
+                  _getHeaderTitle(t, viewModel),
                   style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
                 ),
                 if (viewModel.isDustError) ...[
@@ -264,7 +264,7 @@ class SplitUtxoScreen extends StatelessWidget {
       children: [
         CoconutOptionPicker(
           label: t.split_utxo_screen.label_expected_fee,
-          text: viewModel.getFeePickerText(t),
+          text: _getFeePickerText(t, viewModel),
           textColor: viewModel.hasFeeRate ? CoconutColors.white : CoconutColors.gray500,
           coconutOptionStateEnum: viewModel.feeOptionState,
           guideText: viewModel.feeExceedsAmountErrorText,
@@ -562,6 +562,28 @@ class SplitUtxoScreen extends StatelessWidget {
     if (selectedItem != null && context.mounted) {
       viewModel.setSelectedCriteria(selectedItem);
     }
+  }
+
+  String _getHeaderTitle(Translations t, SplitUtxoViewModel viewModel) {
+    if (viewModel.selectedUtxoList.isEmpty) {
+      return t.split_utxo_screen.question_select_utxo;
+    }
+    if (viewModel.selectedCriteria == null) {
+      return t.split_utxo_screen.question_select_criteria;
+    }
+
+    switch (viewModel.selectedCriteria!) {
+      case SplitCriteria.byAmount:
+        return t.split_utxo_screen.question_split_by_amount;
+      case SplitCriteria.evenly:
+        return t.split_utxo_screen.question_split_evenly;
+      case SplitCriteria.manually:
+        return t.split_utxo_screen.question_select_criteria;
+    }
+  }
+
+  String _getFeePickerText(Translations t, SplitUtxoViewModel viewModel) {
+    return viewModel.hasFeeRate ? viewModel.previewFeeText : t.split_utxo_screen.placeholder_expected_fee;
   }
 }
 

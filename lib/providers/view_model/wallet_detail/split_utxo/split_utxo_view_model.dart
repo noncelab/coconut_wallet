@@ -426,25 +426,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _onInputChanged();
   }
 
-  // TODO: screen으로 이동하기
-  String getHeaderTitle(Translations t) {
-    if (_selectedUtxoList.isEmpty) {
-      return t.split_utxo_screen.question_select_utxo;
-    }
-    if (_selectedCriteria == null) {
-      return t.split_utxo_screen.question_select_criteria;
-    }
-
-    switch (_selectedCriteria!) {
-      case SplitCriteria.byAmount:
-        return t.split_utxo_screen.question_split_by_amount;
-      case SplitCriteria.evenly:
-        return t.split_utxo_screen.question_split_evenly;
-      case SplitCriteria.manually:
-        return t.split_utxo_screen.question_select_criteria;
-    }
-  }
-
   Future<UtxoSplitResult?> _buildTransaction() async {
     try {
       _finalErrorMessage = "";
@@ -697,11 +678,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     } else {
       amountController.text = btc.toStringAsFixed(8).replaceAll(RegExp(r'0*$'), '').replaceAll(RegExp(r'\.$'), '');
     }
-  }
-
-  // TODO: screen으로 이동
-  String getFeePickerText(Translations t) {
-    return hasFeeRate ? previewFeeText : t.split_utxo_screen.placeholder_expected_fee;
   }
 
   Future<SplitPreview> _buildPreview() async {
