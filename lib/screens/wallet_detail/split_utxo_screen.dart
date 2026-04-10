@@ -216,6 +216,13 @@ class SplitUtxoScreen extends StatelessWidget {
       shouldShow = true;
     } else if (viewModel.selectedCriteria == SplitCriteria.evenly && viewModel.splitCount >= 2) {
       shouldShow = true;
+    } else if (viewModel.selectedCriteria == SplitCriteria.manually &&
+        viewModel.manualSplitItems.any(
+          (item) =>
+              (double.tryParse(item.amountController.text) ?? 0) > 0 &&
+              (int.tryParse(item.countController.text) ?? 0) > 0,
+        )) {
+      shouldShow = true;
     }
 
     if (!shouldShow) {
@@ -235,7 +242,7 @@ class SplitUtxoScreen extends StatelessWidget {
               () => EstimatedFeeBottomSheet.show(
                 context: context,
                 listenable: viewModel,
-                estimatedFeeTextGetter: () => viewModel.estimatedFeeText,
+                estimatedFeeTextGetter: () => viewModel.previewFeeText,
                 feeRateController: viewModel.feeRateController,
                 feeRateFocusNode: viewModel.feeRateFocusNode,
                 onFeeRateChanged: viewModel.onFeeRateChanged,
@@ -411,118 +418,11 @@ class SplitUtxoScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ...viewModel.manualSplitItems.asMap().entries.map((entry) {
-          final index = entry.key;
-          final item = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Dismissible(
-              key: ObjectKey(item),
-              direction: viewModel.manualSplitItems.length > 1 ? DismissDirection.endToStart : DismissDirection.none,
-              onDismissed: (direction) {
-                viewModel.removeManualSplitItem(index);
-              },
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 16.0),
-                decoration: BoxDecoration(color: CoconutColors.hotPink, borderRadius: BorderRadius.circular(8)),
-                child: SvgPicture.asset(
-                  'assets/svg/trash.svg',
-                  width: 24,
-                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                ),
-              ),
-              child: Container(
-                color: CoconutColors.black,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: item.amountController,
-                        focusNode: item.amountFocusNode,
-                        onTapOutside: (_) => item.amountFocusNode.unfocus(),
-                        onEditingComplete: () => item.amountFocusNode.unfocus(),
-                        onSubmitted: (_) => item.amountFocusNode.unfocus(),
-                        textInputAction: TextInputAction.done,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-                        decoration: InputDecoration(
-                          hintText: t.split_utxo_screen.placeholder_split_amount,
-                          hintStyle: CoconutTypography.body1_16.setColor(CoconutColors.gray500),
-                          errorBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.hotPink)),
-                          focusedErrorBorder: const UnderlineInputBorder(
-                            borderSide: BorderSide(color: CoconutColors.hotPink),
-                          ),
-                          enabledBorder: const UnderlineInputBorder(
-                            borderSide: BorderSide(color: CoconutColors.gray500),
-                          ),
-                          focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.white)),
-                          suffixIcon: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                viewModel.currentUnit.symbol,
-                                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    CoconutLayout.spacing_300w,
-                    RippleEffect(
-                      onTap: () => viewModel.decrementManualSplitCount(index),
-                      borderRadius: 24,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: CoconutColors.gray800,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: CoconutColors.gray300),
-                        ),
-                        child: const Icon(Icons.remove, color: CoconutColors.white),
-                      ),
-                    ),
-                    CoconutLayout.spacing_300w,
-                    SizedBox(
-                      width: 50,
-                      child: TextField(
-                        controller: item.countController,
-                        focusNode: item.countFocusNode,
-                        textAlign: TextAlign.center,
-                        onTapOutside: (_) => item.countFocusNode.unfocus(),
-                        onEditingComplete: () => item.countFocusNode.unfocus(),
-                        onSubmitted: (_) => item.countFocusNode.unfocus(),
-                        textInputAction: TextInputAction.done,
-                        keyboardType: TextInputType.number,
-                        style: CoconutTypography.heading2_28_Number.setColor(CoconutColors.white),
-                        decoration: InputDecoration(
-                          hintText: '0',
-                          hintStyle: CoconutTypography.heading2_28_Number.setColor(CoconutColors.gray500),
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                    CoconutLayout.spacing_300w,
-                    RippleEffect(
-                      onTap: () => viewModel.incrementManualSplitCount(index),
-                      borderRadius: 24,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: CoconutColors.gray800,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: CoconutColors.gray300),
-                        ),
-                        child: const Icon(Icons.add, color: CoconutColors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          return _ManualSplitListItem(
+            key: ObjectKey(entry.value),
+            index: entry.key,
+            item: entry.value,
+            viewModel: viewModel,
           );
         }),
         CoconutLayout.spacing_300h,
@@ -651,7 +551,7 @@ class SplitResultBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
         color: CoconutColors.gray800,
         border: Border.all(color: CoconutColors.gray600),
@@ -669,7 +569,7 @@ class SplitResultBox extends StatelessWidget {
               colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,15 +591,6 @@ class SplitResultBox extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (viewModel.remainderText.isNotEmpty) ...[
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      viewModel.remainderText,
-                      style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.gray400),
-                    ),
-                  ),
-                ],
                 CoconutLayout.spacing_100h,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -709,7 +600,7 @@ class SplitResultBox extends StatelessWidget {
                       style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                     ),
                     Text(
-                      viewModel.estimatedFeeText,
+                      viewModel.previewFeeText,
                       style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
                     ),
                   ],
@@ -763,4 +654,217 @@ class DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ManualSplitListItem extends StatefulWidget {
+  final int index;
+  final ManualSplitItem item;
+  final SplitUtxoViewModel viewModel;
+
+  const _ManualSplitListItem({super.key, required this.index, required this.item, required this.viewModel});
+
+  @override
+  State<_ManualSplitListItem> createState() => _ManualSplitListItemState();
+}
+
+class _ManualSplitListItemState extends State<_ManualSplitListItem> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final double _actionWidth = 60.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+  }
+
+  @override
+  void didUpdateWidget(covariant _ManualSplitListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.viewModel.manualSplitItems.length <= 1 && _controller.value > 0) {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (widget.viewModel.manualSplitItems.length <= 1) return;
+    _controller.value -= details.primaryDelta! / _actionWidth;
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (widget.viewModel.manualSplitItems.length <= 1) return;
+    if (_controller.value > 0.5 || details.primaryVelocity! < -500) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: ClipRect(
+        child: GestureDetector(
+          onHorizontalDragUpdate: _onHorizontalDragUpdate,
+          onHorizontalDragEnd: _onHorizontalDragEnd,
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            alignment: Alignment.centerRight,
+            children: [
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  return Transform.translate(offset: Offset(-_controller.value * _actionWidth, 0), child: child);
+                },
+                child: Container(
+                  color: CoconutColors.black,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: widget.item.amountController,
+                          focusNode: widget.item.amountFocusNode,
+                          onTapOutside: (_) => widget.item.amountFocusNode.unfocus(),
+                          onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
+                          onSubmitted: (_) => widget.item.amountFocusNode.unfocus(),
+                          textInputAction: TextInputAction.done,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                          decoration: InputDecoration(
+                            hintText: t.split_utxo_screen.placeholder_split_amount,
+                            hintStyle: CoconutTypography.body1_16.setColor(CoconutColors.gray500),
+                            errorBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(color: CoconutColors.hotPink),
+                            ),
+                            focusedErrorBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(color: CoconutColors.hotPink),
+                            ),
+                            enabledBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(color: CoconutColors.gray500),
+                            ),
+                            focusedBorder: const UnderlineInputBorder(
+                              borderSide: BorderSide(color: CoconutColors.white),
+                            ),
+                            suffixIcon: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  widget.viewModel.currentUnit.symbol,
+                                  style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      CoconutLayout.spacing_300w,
+                      RippleEffect(
+                        onTap: () => widget.viewModel.decrementManualSplitCount(widget.index),
+                        borderRadius: 24,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: CoconutColors.gray800,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: CoconutColors.gray300),
+                          ),
+                          child: const Icon(Icons.remove, color: CoconutColors.white),
+                        ),
+                      ),
+                      CoconutLayout.spacing_300w,
+                      SizedBox(
+                        width: 50,
+                        child: TextField(
+                          controller: widget.item.countController,
+                          focusNode: widget.item.countFocusNode,
+                          textAlign: TextAlign.center,
+                          onTapOutside: (_) => widget.item.countFocusNode.unfocus(),
+                          onEditingComplete: () => widget.item.countFocusNode.unfocus(),
+                          onSubmitted: (_) => widget.item.countFocusNode.unfocus(),
+                          textInputAction: TextInputAction.done,
+                          keyboardType: TextInputType.number,
+                          style: CoconutTypography.heading2_28_Number.setColor(CoconutColors.white),
+                          decoration: InputDecoration(
+                            hintText: '0',
+                            hintStyle: CoconutTypography.heading2_28_Number.setColor(CoconutColors.gray500),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      CoconutLayout.spacing_300w,
+                      RippleEffect(
+                        onTap: () => widget.viewModel.incrementManualSplitCount(widget.index),
+                        borderRadius: 24,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: CoconutColors.gray800,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: CoconutColors.gray300),
+                          ),
+                          child: const Icon(Icons.add, color: CoconutColors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (widget.viewModel.manualSplitItems.length > 1)
+                Positioned(
+                  right: 0,
+                  child: AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, child) {
+                      return Transform.translate(
+                        offset: Offset(_actionWidth * (1 - _controller.value), 0),
+                        child: child,
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CoconutLayout.spacing_300w,
+                        RippleEffect(
+                          onTap: () {
+                            _controller.reverse();
+                            widget.viewModel.removeManualSplitItem(widget.index);
+                          },
+                          borderRadius: 12,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: CoconutColors.hotPink,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: SvgPicture.asset(
+                              'assets/svg/trash.svg',
+                              width: 20,
+                              height: 20,
+                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
