@@ -62,8 +62,8 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     notifyListeners();
   }
 
-  Future<void> refreshRecommendedFees() async {
-    await fetchRecommendedFees(
+  Future<bool> refreshRecommendedFees() async {
+    return fetchRecommendedFees(
       currentFeeRateText: feeRateController.text,
       onDefaultFeeRateSet: (text) => feeRateController.text = text,
     );
