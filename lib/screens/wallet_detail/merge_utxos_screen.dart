@@ -1920,6 +1920,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                               isSuspiciousDust: false,
                               showSelectedCheckIcon: false,
                               onTap: () => _handleUtxoTap(rowUtxos[column], isEditing),
+                              dustThreshold: 294, // TODO: 임시 설정,
                             ),
                           ),
                         )
