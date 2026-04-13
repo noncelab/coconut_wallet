@@ -819,8 +819,11 @@ merge_utxos_screen:
   future_fee_saving: "지금 합치면 약 ${amount} sats를 절약할 수 있어요"
   merge_cta_neutral_low_saving: "합쳐도 수수료 절감 효과가 크지 않아요"
   merge_cta_neutral_efficient: "현재 상태로도 충분히 효율적이에요"
+  merge_cta_high_fee_ratio: "수수료 비중이 높아요 (${ratio}%)"
   merge_cta_discouraged_high_fee: "현재 수수료가 높아 합치기에는 적절하지 않아요"
   merge_cta_discouraged_costly: "합치는 비용이 절약되는 수수료보다 더 커요"
+  transaction_build_error: "예측하지 못한 오류가 발생했습니다."
+  transaction_build_error_with_message: "예측하지 못한 오류가 발생했습니다.\n${error_msg}"
 
 
 split_utxo_screen:

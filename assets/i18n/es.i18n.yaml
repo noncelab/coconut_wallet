@@ -816,9 +816,12 @@ merge_utxos_screen:
   single_utxo_for_amount_criteria: "Solo hay 1 UTXO que coincide con este criterio, por lo que no se puede consolidar."
   future_fee_saving: "Si consolidas ahora, podrías ahorrar aproximadamente ${amount} sats"
   merge_cta_neutral_low_saving: "Consolidar ahora no supondría un gran ahorro en comisiones"
-  merge_cta_neutral_efficient: "Tu estado actual ya es lo suficientemente eficiente"
+  merge_cta_neutral_efficient: "Ya es suficientemente eficiente sin consolidar"
+  merge_cta_high_fee_ratio: "La proporción de comisión es alta (${ratio}%)"
   merge_cta_discouraged_high_fee: "La comisión actual es demasiado alta para consolidar ahora"
   merge_cta_discouraged_costly: "El costo de consolidar es mayor que las comisiones que ahorrarías"
+  transaction_build_error: "Ocurrió un error inesperado."
+  transaction_build_error_with_message: "Ocurrió un error inesperado.\n${error_msg}"
 
 split_utxo_screen:
   title: "Dividir UTXO"

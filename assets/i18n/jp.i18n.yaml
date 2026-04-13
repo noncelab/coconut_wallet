@@ -814,9 +814,12 @@ merge_utxos_screen:
   single_utxo_for_amount_criteria: "条件に該当するUTXOが1つしかないため、まとめられません。"
   future_fee_saving: "今まとめると約${amount} sats節約できます"
   merge_cta_neutral_low_saving: "まとめても手数料削減効果は大きくありません"
-  merge_cta_neutral_efficient: "現在の状態でも十分に効率的です"
+  merge_cta_neutral_efficient: "今のままでも十分に効率的です"
+  merge_cta_high_fee_ratio: "手数料の比率が高いです (${ratio}%)"
   merge_cta_discouraged_high_fee: "現在の手数料率が高いため、今まとめるのは適切ではありません"
   merge_cta_discouraged_costly: "まとめるコストが節約できる手数料より大きいです"
+  transaction_build_error: "予期しないエラーが発生しました。"
+  transaction_build_error_with_message: "予期しないエラーが発生しました。\n${error_msg}"
 
 split_utxo_screen:
   title: "UTXOを分割"

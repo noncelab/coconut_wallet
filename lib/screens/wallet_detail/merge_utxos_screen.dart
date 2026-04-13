@@ -326,6 +326,16 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
     final currentFee = _estimatedMergeFeeSats ?? 0;
     if (currentFee <= 0) return null;
+    final totalInputAmount = _selectedUtxosForCurrentAmountCriteria.fold<int>(0, (sum, utxo) => sum + utxo.amount);
+    if (totalInputAmount <= 0) return null;
+    final feeRatioPercent = ((currentFee / totalInputAmount) * 100);
+
+    if (feeRatioPercent >= 10) {
+      return _MergeCtaAssistData(
+        message: t.merge_utxos_screen.merge_cta_high_fee_ratio(ratio: feeRatioPercent.toStringAsFixed(1)),
+        color: CoconutColors.warningText,
+      );
+    }
 
     final futureSaving = (inputCount - 1) * inputSize * futureFeeRate;
     final netBenefit = futureSaving - currentFee;
@@ -631,15 +641,31 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildTransactionSummaryCard() {
+    final isFailed = _mergeTransactionSummaryState == _MergeTransactionSummaryState.failed;
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder:
+          (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SizeTransition(sizeFactor: animation, axisAlignment: -1, child: child),
+          ),
+      child: isFailed ? _buildTransactionSummaryErrorTooltip() : _buildTransactionSummaryCardBody(),
+    );
+  }
+
+  Widget _buildTransactionSummaryCardBody() {
     final amountText = _summaryCardHeadlineText;
     final totalAmountText = _selectedUtxosTotalAmountText;
     final destinationText = _summaryCardDestinationText;
     final isPreparing = _mergeTransactionSummaryState == _MergeTransactionSummaryState.preparing;
     final isReady = _mergeTransactionSummaryState == _MergeTransactionSummaryState.ready;
     final isInvalidSelection = _mergeTransactionSummaryState == _MergeTransactionSummaryState.invalidSelection;
-    final isFailed = _mergeTransactionSummaryState == _MergeTransactionSummaryState.failed;
 
     return Container(
+      key: const ValueKey('merge-transaction-summary-card'),
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
@@ -735,17 +761,37 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                         : isPreparing
                         ? _buildReceiveAddressSummarySkeleton()
                         : _buildReceiveAddressSummaryFallback(
-                          message:
-                              isInvalidSelection
-                                  ? t.merge_utxos_screen.not_enough_utxos
-                                  : isFailed
-                                  ? t.calculation_failed
-                                  : '',
+                          message: isInvalidSelection ? t.merge_utxos_screen.not_enough_utxos : '',
                         ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionSummaryErrorTooltip() {
+    final rawErrorMessage = _preparedMergeTransactionBuildResult?.exception?.toString();
+    final errorMessage =
+        rawErrorMessage == null || rawErrorMessage.isEmpty
+            ? t.merge_utxos_screen.transaction_build_error
+            : t.merge_utxos_screen.transaction_build_error_with_message(error_msg: rawErrorMessage);
+
+    return SizedBox(
+      key: const ValueKey('merge-transaction-summary-error-tooltip'),
+      width: double.infinity,
+      child: CoconutToolTip(
+        tooltipType: CoconutTooltipType.fixed,
+        tooltipState: CoconutTooltipState.error,
+        showIcon: true,
+        icon: SvgPicture.asset(
+          'assets/svg/triangle-warning.svg',
+          colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
+        ),
+        richText: RichText(
+          text: TextSpan(text: errorMessage, style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
+        ),
       ),
     );
   }
