@@ -1038,16 +1038,16 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     padding: const EdgeInsets.only(left: 12, right: 2),
                     onChanged: (text) {
                       final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
-                      _feeRateController.text = formattedText;
-                      _viewModel.setFeeRateText(formattedText);
-                    });
-                    if (isTooLow) {
-                      Fluttertoast.showToast(
-                        msg: t.send_screen.fee_rate_too_low,
-                        backgroundColor: CoconutColors.gray700,
-                        toastLength: Toast.LENGTH_SHORT,
-                      );
-                    }
+                        _feeRateController.text = formattedText;
+                        _viewModel.setFeeRateText(formattedText);
+                      });
+                      if (isTooLow) {
+                        Fluttertoast.showToast(
+                          msg: t.send_screen.fee_rate_too_low,
+                          backgroundColor: CoconutColors.gray700,
+                          toastLength: Toast.LENGTH_SHORT,
+                        );
+                      }
                     },
                     maxLines: 1,
                     fontFamily: 'SpaceGrotesk',
