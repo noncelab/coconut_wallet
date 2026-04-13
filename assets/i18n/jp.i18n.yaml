@@ -776,7 +776,7 @@ split_utxo_screen:
   placeholder_utxo: "UTXOを選択してください"
   placeholder_criteria: "分割基準を選択してください"
   placeholder_split_amount: "金額を入力してください"
-  placeholder_expected_fee: "予想手数料を入力してください"
+  placeholder_expected_fee: "手数料率を入力してください"
   question_select_utxo: "どのUTXOを分割しますか？"
   question_select_criteria: "どのように分割しますか？"
   question_split_by_amount: "いくらずつ分割しますか？"

@@ -781,7 +781,7 @@ split_utxo_screen:
   placeholder_utxo: "UTXO를 선택하세요"
   placeholder_criteria: "분할 기준을 선택하세요"
   placeholder_split_amount: "금액을 입력하세요"
-  placeholder_expected_fee: "예상 수수료를 입력해주세요"
+  placeholder_expected_fee: "수수료율을 입력해 주세요"
   question_select_utxo: "어떤 UTXO를 나눌까요?"
   question_select_criteria: "어떻게 나눌까요?"
   question_split_by_amount: "얼마씩 나눌까요?"

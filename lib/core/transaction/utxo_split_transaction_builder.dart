@@ -44,9 +44,9 @@ class UtxoSplitResult {
 
 class SplitPreview {
   final double estimatedFee;
-  final Map<String, int> recipients;
+  final Map<int, int> amountCountMap;
 
-  const SplitPreview({required this.estimatedFee, required this.recipients});
+  const SplitPreview({required this.estimatedFee, required this.amountCountMap});
 }
 
 class UtxoSplitTransactionBuilder {
@@ -182,7 +182,9 @@ class UtxoSplitTransactionBuilder {
     Logger.log("--> splitCount: $splitCount");
     final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount);
 
-    var txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
+    var txBuildResult = await _buildTransactionWithDesiredAmounts(
+      splitPreview.amountCountMap.entries.expand((entry) => List.filled(entry.value, entry.key)).toList(),
+    );
     if (txBuildResult.isFailure) {
       _throwIfBuildFailed(txBuildResult);
     }
@@ -224,7 +226,7 @@ class UtxoSplitTransactionBuilder {
   /// 일정 금액으로 나누기
   Future<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) async {
     var splitPreview = await getFixedAmountSplitPreview(amountPerOutput: amountPerOutput);
-    var txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
+    var txBuildResult = await _buildTransactionWithDesiredAmounts(_flattenAmountCountMap(splitPreview.amountCountMap));
     if (txBuildResult.isFailure) {
       if (txBuildResult.exception is SendAmountTooLowException) {
         final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
@@ -235,7 +237,9 @@ class UtxoSplitTransactionBuilder {
             exactAmounts,
             (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length - 1)) * feeRate,
           );
-          txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
+          txBuildResult = await _buildTransactionWithDesiredAmounts(
+            _flattenAmountCountMap(splitPreview.amountCountMap),
+          );
         }
         if (txBuildResult.isFailure) {
           _throwIfBuildFailed(txBuildResult);
@@ -266,7 +270,7 @@ class UtxoSplitTransactionBuilder {
   /// 직접 나누기
   Future<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) async {
     final splitPreview = await getCustomAmountSplitPreview(amountCountMap: amountCountMap);
-    var txBuildResult = await _buildTransactionWithRecipients(splitPreview.recipients);
+    var txBuildResult = await _buildTransactionWithDesiredAmounts(_flattenAmountCountMap(splitPreview.amountCountMap));
     if (txBuildResult.isFailure) {
       _throwIfBuildFailed(txBuildResult);
     }
@@ -462,8 +466,42 @@ class UtxoSplitTransactionBuilder {
   }
 
   Future<SplitPreview> _buildSplitPreview(List<int> exactAmounts, double estimatedFee) async {
+    return SplitPreview(estimatedFee: estimatedFee, amountCountMap: _buildAmountCountMap(exactAmounts));
+  }
+
+  Map<int, int> _buildAmountCountMap(List<int> exactAmounts) {
+    final utxo = _requiredUtxo;
+    final Map<int, int> amountCountMap = {};
+    int sumOfExact = 0;
+
+    for (final amount in exactAmounts) {
+      amountCountMap[amount] = (amountCountMap[amount] ?? 0) + 1;
+      sumOfExact += amount;
+    }
+
+    final sweepAmount = utxo.amount - sumOfExact;
+    amountCountMap[sweepAmount] = (amountCountMap[sweepAmount] ?? 0) + 1;
+    return amountCountMap;
+  }
+
+  List<int> _flattenAmountCountMap(Map<int, int> amountCountMap) {
+    final amounts = <int>[];
+    for (final entry in amountCountMap.entries) {
+      for (int i = 0; i < entry.value; i++) {
+        amounts.add(entry.key);
+      }
+    }
+    return amounts;
+  }
+
+  Future<TransactionBuildResult> _buildTransactionWithDesiredAmounts(List<int> desiredAmounts) async {
+    final exactAmounts = List<int>.from(desiredAmounts);
+    if (exactAmounts.isEmpty) {
+      throw StateError('desiredAmounts must contain at least one output');
+    }
+    exactAmounts.removeLast();
     final recipients = await _buildSweepRecipients(exactAmounts);
-    return SplitPreview(estimatedFee: estimatedFee, recipients: recipients);
+    return _buildTransactionWithRecipients(recipients);
   }
 
   Future<TransactionBuildResult> _buildTransactionWithRecipients(Map<String, int> recipients) async {

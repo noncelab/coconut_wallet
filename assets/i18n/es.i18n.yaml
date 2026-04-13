@@ -778,7 +778,7 @@ split_utxo_screen:
   placeholder_utxo: "Selecciona un UTXO"
   placeholder_criteria: "Selecciona un criterio de división"
   placeholder_split_amount: "Ingresa el monto"
-  placeholder_expected_fee: "Ingresa la comisión estimada"
+  placeholder_expected_fee: "Ingresa la tasa de comisión"
   question_select_utxo: "¿Qué UTXO quieres dividir?"
   question_select_criteria: "¿Cómo quieres dividirlo?"
   question_split_by_amount: "¿Cuánto por cada uno?"

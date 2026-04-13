@@ -775,7 +775,7 @@ split_utxo_screen:
   placeholder_utxo: "Select a UTXO"
   placeholder_criteria: "Select a split method"
   placeholder_split_amount: "Enter amount"
-  placeholder_expected_fee: "Enter expected fee"
+  placeholder_expected_fee: "Enter fee rate"
   question_select_utxo: "Which UTXO would you like to split?"
   question_select_criteria: "How would you like to split it?"
   question_split_by_amount: "How much per split?"

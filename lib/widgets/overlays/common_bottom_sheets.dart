@@ -497,6 +497,8 @@ class _SelectableDraggableSheetBody<T> extends StatefulWidget {
 class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSheetBody<T>> {
   Object? _selectedId;
 
+  bool get _hasSelectionChanged => _selectedId != widget.initiallySelectedId;
+
   @override
   void initState() {
     super.initState();
@@ -540,7 +542,7 @@ class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSh
                         : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
                 Navigator.pop(context, selectedItem);
               },
-              isActive: _selectedId != null,
+              isActive: _selectedId != null && _hasSelectionChanged,
               text: widget.confirmText,
               backgroundColor: CoconutColors.white,
             ),

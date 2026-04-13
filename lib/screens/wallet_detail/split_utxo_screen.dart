@@ -19,7 +19,6 @@ import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart'
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
 
@@ -59,7 +58,7 @@ class SplitUtxoScreen extends StatelessWidget {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: t.confirm,
-          description: '나누는 개수가 많아 트랜잭션 생성 시 1분 이상 걸릴 수 있어요. 현재 결과값은 예측값이며 정확한 결과를 보시려면 트랜잭션 생성이 필요해요. 계속 진행하시겠어요?',
+          description: '나누는 개수가 많아 트랜잭션 생성 시 1분 이상 걸릴 수 있어요. 취소를 누르시면 예측값을 보여드려요. 트랜잭션을 생성하시겠어요?',
           onTapRight: () {
             Navigator.pop(dialogContext, true);
           },
@@ -167,12 +166,13 @@ class SplitUtxoScreen extends StatelessWidget {
   }
 
   Widget _buildOrganizeButton(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple3<bool, bool, bool>>(
-      selector: (_, vm) => Tuple3(vm.showSplitResultBox, vm.isSplitValid, vm.isBuilding),
+    return Selector<SplitUtxoViewModel, Tuple4<bool, bool, bool, String>>(
+      selector: (_, vm) => Tuple4(vm.showSplitResultBox, vm.isSplitValid, vm.isBuilding, vm.finalErrorMessage),
       builder: (context, data, _) {
         final showSplitResultBox = data.item1;
         final isSplitValid = data.item2;
         final isBuilding = data.item3;
+        final finalErrorMessage = data.item4;
         final viewModel = context.read<SplitUtxoViewModel>();
         return AnimatedOpacity(
           opacity: showSplitResultBox ? 1.0 : 0.0,
@@ -180,23 +180,25 @@ class SplitUtxoScreen extends StatelessWidget {
           child: IgnorePointer(
             ignoring: !showSplitResultBox,
             child: FixedBottomButton(
+              subWidget:
+                  finalErrorMessage.isNotEmpty
+                      ? Text(
+                        finalErrorMessage,
+                        style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink),
+                        textAlign: TextAlign.center,
+                      )
+                      : null,
               text: t.organize,
               onButtonClicked: () async {
                 if (!isSplitValid) return;
                 FocusScope.of(context).unfocus();
 
-                final isSuccess = await viewModel.buildSplitTransaction();
+                final isSuccess = await viewModel.buildTxAndSaveForNext();
                 if (isSuccess && context.mounted) {
                   Navigator.pushNamed(context, '/send-confirm', arguments: {"currentUnit": viewModel.currentUnit});
-                } else if (viewModel.finalErrorMessage.isNotEmpty && context.mounted) {
-                  Fluttertoast.showToast(
-                    msg: viewModel.finalErrorMessage,
-                    backgroundColor: CoconutColors.gray700,
-                    toastLength: Toast.LENGTH_SHORT,
-                  );
                 }
               },
-              isActive: isSplitValid && !isBuilding,
+              isActive: isSplitValid && !isBuilding && finalErrorMessage.isEmpty,
               backgroundColor: CoconutColors.white,
             ),
           ),
@@ -295,36 +297,14 @@ class SplitUtxoScreen extends StatelessWidget {
   }
 
   Widget _buildFeePicker(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple5<SplitCriteria?, int, int, List<ManualSplitItem>, Tuple2<bool, String?>>>(
+    return Selector<SplitUtxoViewModel, Tuple3<bool, Tuple2<bool, String?>, String>>(
       selector:
-          (_, vm) => Tuple5(
-            vm.selectedCriteria,
-            vm.splitAmountSats,
-            vm.splitCount,
-            vm.manualSplitItems,
-            Tuple2(vm.hasFeeRate, vm.feeExceedsAmountErrorText),
-          ),
+          (_, vm) => Tuple3(vm.shouldShowFeePicker, Tuple2(vm.hasFeeRate, vm.errorTextAboutFee), vm.previewFeeText),
       builder: (context, data, _) {
-        bool shouldShow = false;
-        final criteria = data.item1;
-        final splitAmountSats = data.item2;
-        final splitCount = data.item3;
-        final manualSplitItems = data.item4;
-        final hasFeeRate = data.item5.item1;
-        final feeExceedsAmountErrorText = data.item5.item2;
-
-        if (criteria == SplitCriteria.byAmount && splitAmountSats > 0) {
-          shouldShow = true;
-        } else if (criteria == SplitCriteria.evenly && splitCount >= 2) {
-          shouldShow = true;
-        } else if (criteria == SplitCriteria.manually &&
-            manualSplitItems.any(
-              (item) =>
-                  (double.tryParse(item.amountController.text) ?? 0) > 0 &&
-                  (int.tryParse(item.countController.text) ?? 0) > 0,
-            )) {
-          shouldShow = true;
-        }
+        final shouldShow = data.item1;
+        final hasFeeRate = data.item2.item1;
+        final feeExceedsAmountErrorText = data.item2.item2;
+        final previewFeeText = data.item3;
 
         if (!shouldShow) {
           return const SizedBox.shrink();
@@ -336,7 +316,7 @@ class SplitUtxoScreen extends StatelessWidget {
           children: [
             CoconutOptionPicker(
               label: t.split_utxo_screen.label_expected_fee,
-              text: _getFeePickerText(t, hasFeeRate, viewModel.previewFeeText),
+              text: _getFeePickerText(t, hasFeeRate, previewFeeText),
               textColor: hasFeeRate ? CoconutColors.white : CoconutColors.gray500,
               coconutOptionStateEnum: viewModel.feeOptionState,
               guideText: feeExceedsAmountErrorText,
@@ -539,51 +519,56 @@ class SplitUtxoScreen extends StatelessWidget {
 
   Widget _buildSplitManuallyBody(BuildContext context) {
     final viewModel = context.read<SplitUtxoViewModel>();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...viewModel.manualSplitItems.asMap().entries.map((entry) {
-          return _ManualSplitListItem(
-            key: ObjectKey(entry.value),
-            index: entry.key,
-            item: entry.value,
-            viewModel: viewModel,
-          );
-        }),
-        CoconutLayout.spacing_300h,
-        RippleEffect(
-          onTap: viewModel.addManualSplitItem,
-          borderRadius: 12,
-          child: CustomPaint(
-            foregroundPainter: DashedBorderPainter(
-              color: CoconutColors.gray400,
-              radius: 12,
-              dashWidth: 2,
-              dashSpace: 2,
-            ),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SvgPicture.asset(
-                    'assets/svg/plus.svg',
-                    width: 12,
-                    height: 12,
-                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+    return Selector<SplitUtxoViewModel, List<ManualSplitItem>>(
+      selector: (_, vm) => List<ManualSplitItem>.of(vm.manualSplitItems),
+      builder: (context, manualSplitItems, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...manualSplitItems.asMap().entries.map((entry) {
+              return _ManualSplitListItem(
+                key: ObjectKey(entry.value),
+                index: entry.key,
+                item: entry.value,
+                viewModel: viewModel,
+              );
+            }),
+            CoconutLayout.spacing_300h,
+            RippleEffect(
+              onTap: viewModel.addManualSplitItem,
+              borderRadius: 12,
+              child: CustomPaint(
+                foregroundPainter: DashedBorderPainter(
+                  color: CoconutColors.gray400,
+                  radius: 12,
+                  dashWidth: 2,
+                  dashSpace: 2,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SvgPicture.asset(
+                        'assets/svg/plus.svg',
+                        width: 12,
+                        height: 12,
+                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                      ),
+                      const SizedBox(width: 5),
+                      Text('금액 추가하기', style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                    ],
                   ),
-                  const SizedBox(width: 5),
-                  Text('금액 추가하기', style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-        CoconutLayout.spacing_1000h,
-      ],
+            CoconutLayout.spacing_1000h,
+          ],
+        );
+      },
     );
   }
 
@@ -650,6 +635,7 @@ class SplitUtxoScreen extends StatelessWidget {
       title: t.split_utxo_screen.criteria_bottom_sheet.title,
       items: SplitCriteria.values,
       getItemId: (item) => item.name,
+      initiallySelectedId: viewModel.selectedCriteria?.name,
       initialChildSize: 0.5,
       confirmText: t.complete,
       minChildSize: 0.49,

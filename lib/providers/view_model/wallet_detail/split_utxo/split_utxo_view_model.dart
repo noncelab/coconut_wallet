@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
@@ -96,7 +95,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   bool _isBuilding = false;
 
   /// Output 개수가 많을 때 트랜잭션 생성 시 1분 이상 걸릴 수 있으므로 컨펌 필요
-  final int _bigTxOutputThreshold = 100;
+  final int _bigTxOutputThreshold = 1000;
   bool? _isBigTxBuild;
 
   // --- UI Getter ---
@@ -117,7 +116,12 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     return count;
   }
 
-  bool get showSplitResultBox => _splitResult != null;
+  bool get usePreview =>
+      _splitPreview != null &&
+      _splitPreview!.amountCountMap.values.fold<int>(0, (sum, count) => sum + count) > _bigTxOutputThreshold &&
+      _isBigTxBuild == false;
+
+  bool get showSplitResultBox => _splitResult != null || usePreview;
 
   List<double> get recommendedSplitAmounts {
     if (_selectedUtxoAmount <= 0) return [];
@@ -198,12 +202,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   // --- UI Text Getter ---
-  String get previewFeeText {
-    if (_splitPreview != null && _splitPreview!.estimatedFee > 0) {
-      return currentUnit.displayBitcoinAmount(_splitPreview!.estimatedFee.ceil(), withUnit: true);
-    }
-    return '-';
-  }
 
   /// utxo.amount를 000 나눌게요
   String get splitSummaryTitle {
@@ -227,9 +225,16 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   /// N x M
   String? get splitOutputText {
+    if (usePreview) {
+      return _splitPreview!.amountCountMap.entries
+          .map((e) {
+            final formattedAmount = currentUnit.displayBitcoinAmount(e.key, withUnit: true);
+            return '${e.value} × $formattedAmount';
+          })
+          .join('\n');
+    }
     if (_splitResult == null) return null;
     if (_splitResult!.exception != null) return null;
-    if (_selectedCriteria == null || _selectedUtxoList.isEmpty) return '-';
 
     final outputMap = _splitResult!.splitAmountMap;
     if (outputMap.isNotEmpty) {
@@ -241,7 +246,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
           .join('\n');
     }
 
-    return '-';
+    return null;
   }
 
   String? get amountErrorText {
@@ -277,9 +282,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
         return;
       }
 
-      final outputCount = preview.recipients.length;
+      final outputCount = preview.amountCountMap.values.fold<int>(0, (sum, count) => sum + count);
       bool isBuildTx = true;
-      if (outputCount >= _bigTxOutputThreshold) {
+      if (outputCount > _bigTxOutputThreshold) {
         if (_isBigTxBuild == null) {
           _isBigTxBuild = await _showBigTxConfirmPrompt(outputCount);
           isBuildTx = _isBigTxBuild!;
@@ -292,7 +297,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
       notifyListeners();
     });
-    //notifyListeners(); // TODO: 필요없어보여서 주석처리 테스트중
   }
 
   double get feeRate {
@@ -320,6 +324,19 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     return false;
   }
 
+  bool get shouldShowFeePicker {
+    if (_selectedCriteria == SplitCriteria.byAmount) {
+      return splitAmountSats > 0;
+    }
+    if (_selectedCriteria == SplitCriteria.evenly) {
+      return splitCount >= 2;
+    }
+    if (_selectedCriteria == SplitCriteria.manually) {
+      return manualSplitItems.any(_isValidManualSplitItem);
+    }
+    return false;
+  }
+
   bool _isValidManualSplitItem(ManualSplitItem item) {
     return (double.tryParse(item.amountController.text) ?? 0) > 0 && (int.tryParse(item.countController.text) ?? 0) > 0;
   }
@@ -339,7 +356,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   Future<SplitPreview?> _updatePreview() async {
     _isDustError = false;
     _isFeeExceedsAmountError = false;
+    _finalErrorMessage = "";
     _splitPreview = null;
+    _splitResult = null;
 
     if (!isSplitInputValid) {
       notifyListeners();
@@ -359,8 +378,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     } on SplitInsufficientAmountException {
       _isFeeExceedsAmountError = true;
     } catch (e) {
-      // ignore
-      // TODO:
+      _finalErrorMessage = e.toString();
     }
 
     notifyListeners();
@@ -423,7 +441,34 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   void setSelectedCriteria(SplitCriteria criteria) {
     _selectedCriteria = criteria;
-    _onInputChanged();
+    _clearResult();
+  }
+
+  void _clearResult() {
+    // TODO: textField들 초기화하기
+    _lastAmountText = '';
+    _lastSplitCountText = '';
+    amountController.text = '';
+    splitCountController.text = '';
+    _resetManualSplitItems();
+    _isDustError = false;
+    _isFeeExceedsAmountError = false;
+    _isBigTxBuild = null;
+    _finalErrorMessage = "";
+    _splitResult = _splitPreview = null;
+    notifyListeners();
+  }
+
+  void _resetManualSplitItems() {
+    for (final item in manualSplitItems) {
+      item.amountController.removeListener(_onInputChanged);
+      item.countController.removeListener(_onInputChanged);
+      item.amountFocusNode.removeListener(notifyListeners);
+      item.countFocusNode.removeListener(notifyListeners);
+      item.dispose();
+    }
+    manualSplitItems.clear();
+    addManualSplitItem();
   }
 
   Future<UtxoSplitResult?> _buildTransaction() async {
@@ -453,130 +498,28 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     return null;
   }
 
-  /// feeRate이 변경될 때
-  /// utxo가 변경될 때
-  /// criteria가 변경될 때
-  Future<bool> buildSplitResult() async {
-    /// TODO: criteria가 변경되고 입력값이 없을 때는 _splitResult = null
-    if (!isSplitValid || _isBuilding) return false;
-    // TODO: 호출 타이밍 조절 / isolate 적용
-    _isBuilding = true;
-
-    notifyListeners();
-
-    try {
-      final feeRateText = feeRateController.text;
-      final feeRate = double.tryParse(feeRateText) ?? 0.0;
-
-      if (feeRate <= 0) return false;
-
-      final utxo = _selectedUtxoList.first;
-      final walletItem = _walletProvider.getWalletById(walletId);
-
-      final builder = UtxoSplitTransactionBuilder(
-        utxo: utxo,
-        feeRate: feeRate,
-        walletListItemBase: walletItem,
-        addressRepository: _addressRepository,
-        dustThreshold: dustLimit,
-      );
-
-      _finalErrorMessage = "";
-      UtxoSplitResult? result;
-
-      if (_selectedCriteria == SplitCriteria.byAmount) {
-        result = await builder.buildFixedAmountSplit(amountPerOutput: splitAmountSats);
-      } else if (_selectedCriteria == SplitCriteria.evenly) {
-        result = await builder.buildEqualAmountSplit(splitCount: splitCount);
-      } else if (_selectedCriteria == SplitCriteria.manually) {
-        final Map<int, int> amountCountMap = {};
-        for (var item in manualSplitItems) {
-          final amount = currentUnit.toSatoshi(double.tryParse(item.amountController.text) ?? 0.0);
-          final count = int.tryParse(item.countController.text) ?? 0;
-          if (amount > 0 && count > 0) {
-            amountCountMap[amount] = (amountCountMap[amount] ?? 0) + count;
-          }
-        }
-        result = await builder.buildCustomAmountSplit(amountCountMap: amountCountMap);
-      }
-
-      if (result != null && result.isSuccess) {
-        _sendInfoProvider.clear();
-        _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
-        _sendInfoProvider.setWalletId(walletItem.id);
-        _sendInfoProvider.setTransaction(result.transaction!);
-        _sendInfoProvider.setIsMultisig(walletItem.walletType == WalletType.multiSignature);
-        _sendInfoProvider.setWalletImportSource(walletItem.walletImportSource);
-        _sendInfoProvider.setFeeRate(feeRate);
-        _sendInfoProvider.setIsMaxMode(false);
-        return true;
-      } else if (result != null && result.exception != null) {
-        _finalErrorMessage = result.exception.toString();
-      }
-    } catch (e) {
-      _finalErrorMessage = e.toString();
-    } finally {
-      _isBuilding = false;
-      notifyListeners();
-    }
-    return false;
-  }
-
-  // --- Transaction ---
-  Future<bool> buildSplitTransaction() async {
+  Future<bool> buildTxAndSaveForNext() async {
     if (!isSplitValid || _isBuilding) return false;
 
     _isBuilding = true;
     notifyListeners();
 
     try {
-      final feeRateText = feeRateController.text;
-      final feeRate = double.tryParse(feeRateText) ?? 0.0;
+      _splitResult ??= await _buildTransaction();
+      assert(_splitResult != null && _splitResult!.isSuccess);
 
-      if (feeRate <= 0) return false;
-
-      final utxo = _selectedUtxoList.first;
-      final walletItem = _walletProvider.getWalletById(walletId);
-
-      final builder = UtxoSplitTransactionBuilder(
-        utxo: utxo,
-        feeRate: feeRate,
-        walletListItemBase: walletItem,
-        addressRepository: _addressRepository,
-        dustThreshold: dustLimit,
-      );
-
-      _finalErrorMessage = "";
-      UtxoSplitResult? result;
-
-      if (_selectedCriteria == SplitCriteria.byAmount) {
-        result = await builder.buildFixedAmountSplit(amountPerOutput: splitAmountSats);
-      } else if (_selectedCriteria == SplitCriteria.evenly) {
-        result = await builder.buildEqualAmountSplit(splitCount: splitCount);
-      } else if (_selectedCriteria == SplitCriteria.manually) {
-        final Map<int, int> amountCountMap = {};
-        for (var item in manualSplitItems) {
-          final amount = currentUnit.toSatoshi(double.tryParse(item.amountController.text) ?? 0.0);
-          final count = int.tryParse(item.countController.text) ?? 0;
-          if (amount > 0 && count > 0) {
-            amountCountMap[amount] = (amountCountMap[amount] ?? 0) + count;
-          }
-        }
-        result = await builder.buildCustomAmountSplit(amountCountMap: amountCountMap);
-      }
-
-      if (result != null && result.isSuccess) {
+      if (_splitResult!.isSuccess) {
         _sendInfoProvider.clear();
         _sendInfoProvider.setSendEntryPoint(SendEntryPoint.walletDetail);
-        _sendInfoProvider.setWalletId(walletItem.id);
-        _sendInfoProvider.setTransaction(result.transaction!);
-        _sendInfoProvider.setIsMultisig(walletItem.walletType == WalletType.multiSignature);
-        _sendInfoProvider.setWalletImportSource(walletItem.walletImportSource);
+        _sendInfoProvider.setWalletId(_wallet.id);
+        _sendInfoProvider.setTransaction(_splitResult!.transaction!);
+        _sendInfoProvider.setIsMultisig(_wallet.walletType == WalletType.multiSignature);
+        _sendInfoProvider.setWalletImportSource(_wallet.walletImportSource);
         _sendInfoProvider.setFeeRate(feeRate);
-        _sendInfoProvider.setIsMaxMode(false);
+        _sendInfoProvider.setIsMaxMode(true);
         return true;
-      } else if (result != null && result.exception != null) {
-        _finalErrorMessage = result.exception.toString();
+      } else {
+        _finalErrorMessage = _splitResult!.exception.toString();
       }
     } catch (e) {
       _finalErrorMessage = e.toString();
@@ -606,15 +549,27 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     return null;
   }
 
+  // ----- estimated fee option picker ------
   CoconutOptionStateEnum get feeOptionState {
     if (_isFeeExceedsAmountError) return CoconutOptionStateEnum.error;
     return CoconutOptionStateEnum.normal;
   }
 
-  String? get feeExceedsAmountErrorText {
+  String? get errorTextAboutFee {
     if (_isFeeExceedsAmountError) return t.split_utxo_screen.fee_error;
     return null;
   }
+
+  String get previewFeeText {
+    if (usePreview && _splitPreview != null && _splitPreview!.estimatedFee > 0) {
+      return currentUnit.displayBitcoinAmount(_splitPreview!.estimatedFee.ceil(), withUnit: true);
+    }
+    if (!usePreview && _splitResult != null && _splitResult!.estimatedFee > 0) {
+      return currentUnit.displayBitcoinAmount(_splitResult!.estimatedFee.ceil(), withUnit: true);
+    }
+    return '-';
+  }
+  // ----- estimated fee option picker ------
 
   void incrementSplitCount() {
     splitCountFocusNode.unfocus();
