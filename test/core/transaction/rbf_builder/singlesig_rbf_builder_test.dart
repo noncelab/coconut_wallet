@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/rbf_builder.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -255,7 +256,7 @@ void main() {
     test('selfOutput 1 / change insufficient / selfOutput partial reduction → getBaselineTransaction 성공', () async {
       // 원본 tx: 1-in/2-out (selfOutput + change), vSize=141
       // additionalFee = 141, changeOutput(100) < 141 → deficitAmount = 41
-      // selfOutput(99759) - 41 = 99718 > dustLimit(546) → partial reduction
+      // selfOutput(99759) - 41 = 99718 > dustLimit(294) → partial reduction
       // sweep tx 생성 후 실제 vSize=109.75로 작아짐
       // RBF 최소 조건: fee >= 141 + 109.75 = 250.75
       // requiredFeeRate = ceil(251/109.75) = 2.29으로 재빌드
@@ -290,16 +291,16 @@ void main() {
       () async {
         // 원본 tx: 1-in/3-out (external + selfOutput + change), vSize=172
         // additionalFee = 172, changeOutput(100) < 172 → deficitAmount = 72
-        // selfOutput(500) - 72 = 428 ≤ dustLimit(546) → full removal
+        // selfOutput(366) - 72 = 294 ≤ dustLimit(294) → full removal
         // leftDeficit = 72 - (500 + ceil(31*1.0)=31) = -459 → 0
         // vSizeReduced = 31, newTxVSize = 172 - 31 = 141
         // newRecipients = {external: 1000} (selfOutput 제거됨)
         // build at _calculateMinimumFeeRate(141) = 2.0:
-        //   tx: external(1000) + change(1741-1000-282=459), fee=282, 실제 vSize=140.75
+        //   tx: external(1000) + change(1638-1000-282=356), fee=282, 실제 vSize=140.75
         //   getFeeRate = ceilFeeRate(282/140.75) = 2.01
         final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
-          inputAmounts: [1772],
-          recipients: [Tuple(false, 1000), Tuple(true, 500)],
+          inputAmounts: [1638],
+          recipients: [Tuple(false, 1000), Tuple(true, 366)],
           changeAmount: 100,
           fee: 172,
           vSize: 172,
@@ -791,7 +792,7 @@ void main() {
       // 원본 tx: 1-in/2-out (external + selfOutput), changeAmount=0, vSize=141
       // changeOutput 없으므로 보수적 vSize 추정: newTxVSize = 141 + 31*1.0 = 172
       // additionalFee = ceil(172 * 1.0) = 172, deficitAmount = 172
-      // selfOutput(98859) - 172 = 98687 > dustLimit(546) → partial reduction
+      // selfOutput(98859) - 172 = 98687 > dustLimit(294) → partial reduction
       // newRecipients = {ext: 1000, self: 98687}, deficit = 0
       // build at _calculateMinimumFeeRate(172) = ceilFeeRate(313/172) = 1.82:
       //   tx: ext(1000) + self(98687), change=0 → 드롭
@@ -841,7 +842,7 @@ void main() {
       // 원본 tx: 1-in/3-out (external + selfOutput1 + selfOutput2), changeAmount=0, vSize=172
       // changeOutput 없으므로 보수적 vSize 추정: newTxVSize = 172 + 31*1.0 = 203
       // additionalFee = ceil(203 * 1.0) = 203, deficitAmount = 203
-      // selfOutput2(5000) - 203 = 4797 > dustLimit(546) → partial reduction
+      // selfOutput2(5000) - 203 = 4797 > dustLimit(294) → partial reduction
       // newRecipients = {ext: 1000, self1: 10000, self2: 4797}, deficit = 0
       // sweep tx 생성 후 실제 vSize 확인하여 RBF 최소 조건 만족하도록 재빌드
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
@@ -925,7 +926,7 @@ void main() {
     test('Ex 1, Self 2 / change NotEnough / use 1 enough selfOutput', () async {
       // 원본 tx: 1-in/4-out (external + selfOutput1 + selfOutput2 + change), vSize=203
       // changeAmount=100 < additionalFee=203 → deficitAmount = 103
-      // selfOutput2(900) - 103 = 797 > dustLimit(546) → partial reduction
+      // selfOutput2(900) - 103 = 797 > dustLimit(294) → partial reduction
       // newRecipients = {ext: 13000, self1: 2000, self2: 797}, deficit = 0
       // sweep tx 생성 후 실제 vSize 확인하여 RBF 최소 조건 만족하도록 재빌드
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
@@ -1019,15 +1020,14 @@ void main() {
       expectRbfMinimumCondition(buildResult, pendingTx);
     });
 
-    test('Ex 1, Self 2 / change enough but left under dustlimit / sweep', () async {
+    test('Ex 1, Self 2 / change enough but left under dustlimit / left changed used as fee', () async {
       // 원본 tx: 1-in/4-out (external + selfOutput1 + selfOutput2 + change), vSize=210
-      // changeAmount= 1979
-      // first changeAmount = 1979 - 1652 = 328, 328 < 547
-      // selfOutput2의 amount를 (5000 - 2000)으로 만든 후 Sweep으로 트랜잭션 생성, 3000 - 1374 = 1626
+      // changeAmount= 1934
+      // FeeRate 8.0일 때, first changeAmount = 1879 - 1602 = 277, 277 < 294 -> 남은 잔돈은 수수료로 사용됨
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
-        inputAmounts: [5000],
+        inputAmounts: [4900],
         recipients: [Tuple(true, 1000), Tuple(false, 1000), Tuple(true, 1000)],
-        changeAmount: 1979,
+        changeAmount: 1879,
         fee: 21,
         vSize: 210,
       );
@@ -1044,7 +1044,7 @@ void main() {
       final RbfBuildResult buildResult = rbfBuilder.build(newFeeRate: 8);
 
       expect(buildResult.isSuccess, isTrue);
-      expect(buildResult.estimatedFee, equals(1374));
+      expect(buildResult.estimatedFee, equals(1900));
       expect(buildResult.transaction, isNotNull);
       expect(buildResult.exception, isNull);
       expect(buildResult.isSelfOutputsUsed, isFalse);
@@ -1058,11 +1058,8 @@ void main() {
       expect(tx.outputs.any((o) => o.getAddress() == creator.externalWalletAddressList[1] && o.amount == 1000), isTrue);
       // SelfOutput1은 그대로 유지
       expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[1] && o.amount == 1000), isTrue);
-      // SelfOutput2는 늘어남
-      final selfOutput2InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[2]).toList();
-      expect(selfOutput2InTx.length, 1);
-      expect(selfOutput2InTx.first.amount, greaterThan(1000));
-      expect(selfOutput2InTx.first.amount, 1626);
+      // SelfOutput2도 그대로 유지
+      expect(tx.outputs.any((o) => o.getAddress() == creator.receiveAddressList[2] && o.amount == 1000), isTrue);
       // Change output은 드롭됨
       expect(tx.outputs.any((o) => o.getAddress() == creator.changeAddressList[0]), isFalse);
 
@@ -1230,7 +1227,7 @@ void main() {
       // 1-in/2-out (selfOutput1 + selfOutput2), no change, vSize=172
       // newTxVSize = 172 + 31*1.0 = 203 (conservative for no change)
       // deficitAmount = 203
-      // selfOutput2(1800) - 203 = 1597 > dustLimit(546) → selfOutput2만 partial reduction (sweep)
+      // selfOutput2(1800) - 203 = 1597 > dustLimit(294) → selfOutput2만 partial reduction (sweep)
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [12000],
         recipients: [Tuple(true, 10000), Tuple(true, 1800)],
@@ -1469,14 +1466,14 @@ void main() {
     test('Self1 / no change / use 1 enough additionalUtxo', () async {
       // 1-in/1-out (self1=700), no change, fee=141, vSize=141
       // newTxVSize = 172 (conservative), deficitAmount = 172
-      // self1(700): 700-172=528 < dustLimit → dustLimit 브랜치, set to 547, leftDeficit=19
-      // additionalUtxo(1000)로 sweep: self1 = inputSum(841) + 1000 - fee
+      // self1(700): 404-172=294 <= dustLimit → dustLimit 브랜치, set to 295, leftDeficit=1
+      // additionalUtxo(1000)로 sweep: self1 = inputSum(514) + 1000 - fee
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
-        inputAmounts: [841],
-        recipients: [Tuple(true, 700)],
+        inputAmounts: [514],
+        recipients: [Tuple(true, 404)],
         changeAmount: 0,
-        fee: 141,
-        vSize: 141,
+        fee: 110,
+        vSize: 110,
         additionalSpendable: [1000],
       );
 
@@ -1505,7 +1502,7 @@ void main() {
       final tx = buildResult.transaction!;
       final selfOutput1InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[1]).toList();
       expect(selfOutput1InTx.length, 1);
-      expect(selfOutput1InTx.first.amount, greaterThan(546));
+      expect(selfOutput1InTx.first.amount, greaterThan(DustThresholds.p2wpkh));
 
       expectRbfMinimumCondition(buildResult, pendingTx);
     });
@@ -1554,7 +1551,7 @@ void main() {
       // self1은 sweep되어 있음
       final selfOutput1InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[1]).toList();
       expect(selfOutput1InTx.length, 1);
-      expect(selfOutput1InTx.first.amount, greaterThan(546));
+      expect(selfOutput1InTx.first.amount, greaterThan(DustThresholds.p2wpkh));
 
       expectRbfMinimumCondition(buildResult, pendingTx);
     });
@@ -1667,11 +1664,11 @@ void main() {
       // 1-in/2-out (self1=575, change=84), fee=341, vSize=141
       // newTxVSize = 141 (changeOutput exists)
       // additionalFee=141, change(84) < 141 → deficit=57
-      // self1(575): 575-57=518 < dustLimit → set to 547, leftDeficit=57-(575-547)=29
+      // self1(575): 350-57=293 < dustLimit → set to 294, leftDeficit=57-(350-294)=1
       // additionalUtxo(1000)로 sweep: self1 = inputSum(1000) + 1000 - fee
       final (pendingTx, rbfBuilder) = creator.createRbfBuilder(
         inputAmounts: [1000],
-        recipients: [Tuple(true, 575)],
+        recipients: [Tuple(true, 350)],
         changeAmount: 84,
         fee: 341,
         vSize: 141,
@@ -1705,7 +1702,7 @@ void main() {
       // self1은 sweep, change는 드롭
       final selfOutput1InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[1]).toList();
       expect(selfOutput1InTx.length, 1);
-      expect(selfOutput1InTx.first.amount, greaterThan(546));
+      expect(selfOutput1InTx.first.amount, greaterThan(DustThresholds.p2wpkh));
       expect(tx.outputs.any((o) => o.getAddress() == creator.changeAddressList[0]), isFalse);
 
       expectRbfMinimumCondition(buildResult, pendingTx);
@@ -1754,7 +1751,7 @@ void main() {
       // self1은 sweep되어 있음
       final selfOutput1InTx = tx.outputs.where((o) => o.getAddress() == creator.receiveAddressList[1]).toList();
       expect(selfOutput1InTx.length, 1);
-      expect(selfOutput1InTx.first.amount, greaterThan(546));
+      expect(selfOutput1InTx.first.amount, greaterThan(DustThresholds.p2wpkh));
 
       expectRbfMinimumCondition(buildResult, pendingTx);
     });

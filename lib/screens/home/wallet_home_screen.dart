@@ -650,6 +650,7 @@ class _WalletHomeScreenState extends State<WalletHomeScreen> with TickerProvider
                             ),
                           ),
                         ),
+                        CoconutLayout.spacing_200w,
                         ShrinkAnimationButton(
                           borderRadius: CoconutStyles.radius_100,
                           defaultColor: CoconutColors.gray800,

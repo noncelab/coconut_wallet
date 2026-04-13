@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -24,6 +23,7 @@ class UtxoSummaryChart extends StatelessWidget {
   final int lockedCount;
   final int lockedSats;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final VoidCallback? onBalanceTap;
   final VoidCallback? onThemeSettingTap;
   final bool hasReusedAddresses;
@@ -38,6 +38,7 @@ class UtxoSummaryChart extends StatelessWidget {
     required this.lockedCount,
     required this.lockedSats,
     required this.currentUnit,
+    required this.dustThreshold,
     this.onBalanceTap,
     this.onThemeSettingTap,
     this.hasReusedAddresses = false,
@@ -66,6 +67,7 @@ class UtxoSummaryChart extends StatelessWidget {
               coinCount: coinCount,
               totalSats: totalSats,
               currentUnit: currentUnit,
+              dustThreshold: dustThreshold,
               onBalanceTap: onBalanceTap,
             ),
             const SizedBox(height: 12),
@@ -76,7 +78,7 @@ class UtxoSummaryChart extends StatelessWidget {
                     label: t.utxo_detail_screen.utxo_unlocked,
                     count: availableCount,
                     sats: availableSats,
-                    formatBalance: (s) => formatUtxoAmountForDisplay(s, currentUnit),
+                    formatBalance: (s) => formatUtxoAmountForDisplay(s, currentUnit, dustThreshold: dustThreshold),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -85,7 +87,7 @@ class UtxoSummaryChart extends StatelessWidget {
                     label: t.utxo_detail_screen.utxo_locked,
                     count: lockedCount,
                     sats: lockedSats,
-                    formatBalance: (s) => formatUtxoAmountForDisplay(s, currentUnit),
+                    formatBalance: (s) => formatUtxoAmountForDisplay(s, currentUnit, dustThreshold: dustThreshold),
                   ),
                 ),
               ],
@@ -95,6 +97,7 @@ class UtxoSummaryChart extends StatelessWidget {
               buckets: buckets,
               tierTheme: tierTheme,
               currentUnit: currentUnit,
+              dustThreshold: dustThreshold,
               onThemeSettingTap: onThemeSettingTap,
             ),
             if (hasReusedAddresses) ...[
@@ -175,9 +178,16 @@ class _BarChart extends StatefulWidget {
   final List<UtxoBucket> buckets;
   final UtxoTierTheme tierTheme;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final VoidCallback? onThemeSettingTap;
 
-  const _BarChart({required this.buckets, required this.tierTheme, required this.currentUnit, this.onThemeSettingTap});
+  const _BarChart({
+    required this.buckets,
+    required this.tierTheme,
+    required this.currentUnit,
+    required this.dustThreshold,
+    this.onThemeSettingTap,
+  });
 
   @override
   State<_BarChart> createState() => _BarChartState();
@@ -247,16 +257,16 @@ class _BarChartState extends State<_BarChart> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  ...utxoBucketRanges.map((r) {
-                    final isDustRange = r.max <= dustLimit;
+                  ...getUtxoBucketRanges(dustThreshold: widget.dustThreshold).map((r) {
+                    final isDustRange = r.max <= widget.dustThreshold;
                     final isWhale = r.label == 'whale';
                     final rangeStr =
                         isWhale
                             ? '≥ 10 ${t.btc}'
                             : (isDustRange
                                 ? '${r.min.toThousandsSeparatedString()} ~ ${r.max.toThousandsSeparatedString()} ${t.sats}'
-                                : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc)}');
-                    final color = tierTheme.colorForSats(r.max);
+                                : '${formatUtxoAmountForDisplay(r.min, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)} ~ ${formatUtxoAmountForDisplay(r.max, BitcoinUnit.btc, dustThreshold: widget.dustThreshold)}');
+                    final color = tierTheme.colorForSats(r.max, dustThreshold: widget.dustThreshold);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
@@ -319,11 +329,11 @@ class _BarChartState extends State<_BarChart> {
                 widget.buckets.asMap().entries.map((entry) {
                   final index = entry.key;
                   final bucket = entry.value;
-                  final count = bucket.utxos.length;
+                  final count = bucket.utxos.length.toDouble();
                   final heightRatio = count / maxCountClamped;
                   final barHeight = _barMaxHeight * heightRatio;
                   final isTapped = _tappedBucketIndex == index;
-                  var color = widget.tierTheme.colorForSats(bucket.maxSats);
+                  var color = widget.tierTheme.colorForSats(bucket.maxSats, dustThreshold: widget.dustThreshold);
                   if (!isTapped) {
                     color = Color.lerp(color, const Color(0xFF1D1D1D), _overlayOpacity)!;
                   }
@@ -438,6 +448,7 @@ class _BarChartState extends State<_BarChart> {
                                 final balance = formatUtxoBalanceForTooltip(
                                   bucket.utxos.fold<int>(0, (s, u) => s + u.amount),
                                   widget.currentUnit,
+                                  dustThreshold: widget.dustThreshold,
                                   isDustBucket: bucket.label == 'dust',
                                 );
                                 return OverflowBox(

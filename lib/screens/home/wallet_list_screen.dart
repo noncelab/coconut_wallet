@@ -287,135 +287,138 @@ class _WalletListScreenState extends State<WalletListScreen> with TickerProvider
 
   Widget _buildTotalAmount(Map<int, AnimatedBalanceData> walletBalanceMap) {
     return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-        child: Stack(
-          children: [
-            Container(
-              width: MediaQuery.sizeOf(context).width,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
-              child: Selector<PreferenceProvider, Tuple3<BitcoinUnit, List<int>, List<int>>>(
-                selector:
-                    (_, viewModel) => Tuple3(
-                      viewModel.currentUnit,
-                      viewModel.excludedFromTotalBalanceWalletIds,
-                      viewModel.favoriteWalletIds,
-                    ),
-                builder: (context, data, child) {
-                  final currentUnit = data.item1;
-                  final excludedIds = data.item2;
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+          child: Stack(
+            children: [
+              Container(
+                width: MediaQuery.sizeOf(context).width,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(color: CoconutColors.gray900, borderRadius: BorderRadius.circular(12)),
+                child: Selector<PreferenceProvider, Tuple3<BitcoinUnit, List<int>, List<int>>>(
+                  selector:
+                      (_, viewModel) => Tuple3(
+                        viewModel.currentUnit,
+                        viewModel.excludedFromTotalBalanceWalletIds,
+                        viewModel.favoriteWalletIds,
+                      ),
+                  builder: (context, data, child) {
+                    final currentUnit = data.item1;
+                    final excludedIds = data.item2;
 
-                  // 전체 총액
-                  final totalBalance = walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b);
-                  final prevTotalBalance = walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b);
+                    // 전체 총액
+                    final totalBalance = walletBalanceMap.values.map((e) => e.current).fold(0, (a, b) => a + b);
+                    final prevTotalBalance = walletBalanceMap.values.map((e) => e.previous).fold(0, (a, b) => a + b);
 
-                  // 제외 총액 (제외된 지갑들의 총액)
-                  final excludedBalance = walletBalanceMap.entries
-                      .where((entry) => excludedIds.contains(entry.key))
-                      .map((entry) => entry.value.current)
-                      .fold(0, (a, b) => a + b);
+                    // 제외 총액 (제외된 지갑들의 총액)
+                    final excludedBalance = walletBalanceMap.entries
+                        .where((entry) => excludedIds.contains(entry.key))
+                        .map((entry) => entry.value.current)
+                        .fold(0, (a, b) => a + b);
 
-                  // 홈 화면 총액
-                  final homeBalance = totalBalance - excludedBalance;
+                    // 홈 화면 총액
+                    final homeBalance = totalBalance - excludedBalance;
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 전체 총액
-                      BitcoinAmountUnit(
-                        currentUnit: currentUnit,
-                        unitStyle: CoconutTypography.heading4_18_NumberBold,
-                        spacing: CoconutLayout.spacing_100w,
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: AnimatedBalance(
-                            prevValue: prevTotalBalance,
-                            value: totalBalance,
-                            currentUnit: currentUnit,
-                            textStyle: CoconutTypography.heading4_18_NumberBold,
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 전체 총액
+                        BitcoinAmountUnit(
+                          currentUnit: currentUnit,
+                          unitStyle: CoconutTypography.heading4_18_NumberBold,
+                          spacing: CoconutLayout.spacing_100w,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: AnimatedBalance(
+                              prevValue: prevTotalBalance,
+                              value: totalBalance,
+                              currentUnit: currentUnit,
+                              textStyle: CoconutTypography.heading4_18_NumberBold,
+                            ),
                           ),
                         ),
-                      ),
-                      // 전체 총액 - Fiat Price
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (child, animation) {
-                          return FadeTransition(opacity: animation, child: child);
-                        },
+                        // 전체 총액 - Fiat Price
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(opacity: animation, child: child);
+                          },
 
-                        child:
-                            _viewModel.isWalletListFiatHidden
-                                ? const SizedBox.shrink()
-                                : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    for (var fiat in _viewModel.visibleFiats) ...[
-                                      Text(
-                                        _viewModel.getBitcoinPrice(totalBalance, fiat),
-                                        style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
+                          child:
+                              _viewModel.isWalletListFiatHidden
+                                  ? const SizedBox.shrink()
+                                  : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      for (var fiat in _viewModel.visibleFiats) ...[
+                                        Text(
+                                          _viewModel.getBitcoinPrice(totalBalance, fiat),
+                                          style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray500),
+                                        ),
+                                      ],
+                                      // 홈 화면 총액 (애니메이션)
+                                      AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 300),
+                                        transitionBuilder: (child, animation) {
+                                          return FadeTransition(opacity: animation, child: child);
+                                        },
+                                        child:
+                                            excludedIds.isNotEmpty
+                                                ? Column(
+                                                  key: const ValueKey('balance_details'),
+                                                  children: [
+                                                    CoconutLayout.spacing_300h,
+                                                    _buildBalanceRow(
+                                                      label: t.wallet_list.home_balance,
+                                                      amount: homeBalance,
+                                                      currentUnit: currentUnit,
+                                                    ),
+                                                    CoconutLayout.spacing_200h,
+                                                    _buildBalanceRow(
+                                                      label: t.wallet_list.excluded_balance,
+                                                      amount: excludedBalance,
+                                                      currentUnit: currentUnit,
+                                                    ),
+                                                  ],
+                                                )
+                                                : const SizedBox.shrink(key: ValueKey('balance_empty')),
                                       ),
                                     ],
-                                    // 홈 화면 총액 (애니메이션)
-                                    AnimatedSwitcher(
-                                      duration: const Duration(milliseconds: 300),
-                                      transitionBuilder: (child, animation) {
-                                        return FadeTransition(opacity: animation, child: child);
-                                      },
-                                      child:
-                                          excludedIds.isNotEmpty
-                                              ? Column(
-                                                key: const ValueKey('balance_details'),
-                                                children: [
-                                                  CoconutLayout.spacing_300h,
-                                                  _buildBalanceRow(
-                                                    label: t.wallet_list.home_balance,
-                                                    amount: homeBalance,
-                                                    currentUnit: currentUnit,
-                                                  ),
-                                                  CoconutLayout.spacing_200h,
-                                                  _buildBalanceRow(
-                                                    label: t.wallet_list.excluded_balance,
-                                                    amount: excludedBalance,
-                                                    currentUnit: currentUnit,
-                                                  ),
-                                                ],
-                                              )
-                                              : const SizedBox.shrink(key: ValueKey('balance_empty')),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton(
+                  onPressed: () {
+                    CommonBottomSheets.showBottomSheet(
+                      title: '',
+                      titlePadding: EdgeInsets.zero,
+                      context: context,
+                      child: ListenableBuilder(
+                        listenable: _viewModel,
+                        builder:
+                            (context, _) => WalletListSettingsBottomSheet(
+                              viewModel: _viewModel,
+                              visibleFiats: _viewModel.visibleFiats,
+                              onTogglePressed: (fiat) => onTogglePressed(fiat),
+                            ),
                       ),
-                    ],
-                  );
-                },
+                    );
+                  },
+                  icon: SvgPicture.asset('assets/svg/settings.svg', width: 16, height: 16),
+                ),
               ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                onPressed: () {
-                  CommonBottomSheets.showBottomSheet(
-                    title: '',
-                    titlePadding: EdgeInsets.zero,
-                    context: context,
-                    child: ListenableBuilder(
-                      listenable: _viewModel,
-                      builder:
-                          (context, _) => WalletListSettingsBottomSheet(
-                            viewModel: _viewModel,
-                            visibleFiats: _viewModel.visibleFiats,
-                            onTogglePressed: (fiat) => onTogglePressed(fiat),
-                          ),
-                    ),
-                  );
-                },
-                icon: SvgPicture.asset('assets/svg/settings.svg', width: 16, height: 16),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

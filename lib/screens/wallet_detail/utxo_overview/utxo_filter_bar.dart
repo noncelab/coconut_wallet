@@ -9,12 +9,14 @@ class _SelectionSummaryBar extends StatelessWidget {
   final int selectedCount;
   final int selectedTotalSats;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final VoidCallback onCancel;
 
   const _SelectionSummaryBar({
     required this.selectedCount,
     required this.selectedTotalSats,
     required this.currentUnit,
+    required this.dustThreshold,
     required this.onCancel,
   });
 
@@ -38,7 +40,7 @@ class _SelectionSummaryBar extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '$selectedCount coins • ${formatUtxoAmountForDisplay(selectedTotalSats, currentUnit)}',
+                '$selectedCount coins • ${formatUtxoAmountForDisplay(selectedTotalSats, currentUnit, dustThreshold: dustThreshold)}',
                 style: CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white),
                 textScaler: const TextScaler.linear(1.0),
               ),
@@ -60,6 +62,7 @@ class UtxoAmountStickyFilterBarDelegate extends SliverPersistentHeaderDelegate {
   final int selectedCount;
   final int selectedTotalSats;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final int viewModeIndex;
   final int lockFilterIndex;
   final bool isSelectionMode;
@@ -72,6 +75,7 @@ class UtxoAmountStickyFilterBarDelegate extends SliverPersistentHeaderDelegate {
     required this.selectedCount,
     required this.selectedTotalSats,
     required this.currentUnit,
+    required this.dustThreshold,
     required this.viewModeIndex,
     required this.lockFilterIndex,
     required this.isSelectionMode,
@@ -97,6 +101,7 @@ class UtxoAmountStickyFilterBarDelegate extends SliverPersistentHeaderDelegate {
           selectedCount: selectedCount,
           selectedTotalSats: selectedTotalSats,
           currentUnit: currentUnit,
+          dustThreshold: dustThreshold,
           viewModeIndex: viewModeIndex,
           lockFilterIndex: lockFilterIndex,
           isSelectionMode: isSelectionMode,
@@ -114,6 +119,7 @@ class UtxoAmountStickyFilterBarDelegate extends SliverPersistentHeaderDelegate {
       selectedCount != oldDelegate.selectedCount ||
       selectedTotalSats != oldDelegate.selectedTotalSats ||
       currentUnit != oldDelegate.currentUnit ||
+      dustThreshold != oldDelegate.dustThreshold ||
       viewModeIndex != oldDelegate.viewModeIndex ||
       lockFilterIndex != oldDelegate.lockFilterIndex ||
       isSelectionMode != oldDelegate.isSelectionMode;
@@ -125,6 +131,7 @@ class _StickyFilterBar extends StatelessWidget {
   final int selectedCount;
   final int selectedTotalSats;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final int viewModeIndex;
   final int lockFilterIndex;
   final bool isSelectionMode;
@@ -136,6 +143,7 @@ class _StickyFilterBar extends StatelessWidget {
     required this.selectedCount,
     required this.selectedTotalSats,
     required this.currentUnit,
+    required this.dustThreshold,
     required this.viewModeIndex,
     required this.lockFilterIndex,
     required this.isSelectionMode,
@@ -198,6 +206,7 @@ class _StickyFilterBar extends StatelessWidget {
                 selectedCount: selectedCount,
                 selectedTotalSats: selectedTotalSats,
                 currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
                 onCancel: onExitSelectionMode,
               ),
             ),
@@ -354,6 +363,7 @@ class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
   final int selectedCount;
   final int selectedTotalSats;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final bool isSelectionMode;
   final VoidCallback onExitSelectionMode;
 
@@ -362,6 +372,7 @@ class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
     required this.selectedCount,
     required this.selectedTotalSats,
     required this.currentUnit,
+    required this.dustThreshold,
     required this.isSelectionMode,
     required this.onExitSelectionMode,
   });
@@ -387,6 +398,7 @@ class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
                     selectedCount: selectedCount,
                     selectedTotalSats: selectedTotalSats,
                     currentUnit: currentUnit,
+                    dustThreshold: dustThreshold,
                     onCancel: onExitSelectionMode,
                   ),
                 )
@@ -401,5 +413,6 @@ class UtxoTagSelectionBarDelegate extends SliverPersistentHeaderDelegate {
       selectedCount != oldDelegate.selectedCount ||
       selectedTotalSats != oldDelegate.selectedTotalSats ||
       currentUnit != oldDelegate.currentUnit ||
+      dustThreshold != oldDelegate.dustThreshold ||
       isSelectionMode != oldDelegate.isSelectionMode;
 }
