@@ -806,7 +806,7 @@ split_utxo_screen:
   placeholder_utxo: "UTXO를 선택하세요"
   placeholder_criteria: "분할 기준을 선택하세요"
   placeholder_split_amount: "금액을 입력하세요"
-  placeholder_expected_fee: "예상 수수료를 입력해주세요"
+  placeholder_expected_fee: "수수료율을 입력해 주세요"
   question_select_utxo: "어떤 UTXO를 나눌까요?"
   question_select_criteria: "어떻게 나눌까요?"
   question_split_by_amount: "얼마씩 나눌까요?"
@@ -820,6 +820,7 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "선택한 UTXO 금액보다 작게 입력해주세요"
     insufficient_after_fee: "수수료를 포함하면 나눌 수 없는 금액이에요"
+    manual_sum_over_input: "금액이 부족해요"
   fee_error: "수수료가 UTXO 금액보다 커요"
   dust_error: "이렇게 나누면 사용하기 어려운 잔돈이 생성돼요"
   criteria_bottom_sheet:
@@ -830,6 +831,7 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "$utxoAmountText를 $formattedSplitAmount씩 나눌게요"
     split_evenly: "$utxoAmountText를 ${splitCount}개로 나눌게요"
+    split_manually: "$utxoAmountText를 이렇게 나눌게요"
     new_utxos: "새로운 UTXO"
     fee: "수수료"
 

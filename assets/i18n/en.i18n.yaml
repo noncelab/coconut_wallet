@@ -801,7 +801,7 @@ split_utxo_screen:
   placeholder_utxo: "Select a UTXO"
   placeholder_criteria: "Select a split method"
   placeholder_split_amount: "Enter amount"
-  placeholder_expected_fee: "Enter expected fee"
+  placeholder_expected_fee: "Enter fee rate"
   question_select_utxo: "Which UTXO would you like to split?"
   question_select_criteria: "How would you like to split it?"
   question_split_by_amount: "How much per split?"
@@ -815,6 +815,7 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "Please enter an amount smaller than the selected UTXO"
     insufficient_after_fee: "This amount can’t be split when the fee is included"
+    manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
   dust_error: "Splitting it this way will create small amounts that are difficult to use"
   criteria_bottom_sheet:
@@ -825,6 +826,7 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "We’ll split ${utxoAmountText} into amounts of ${formattedSplitAmount}"
     split_evenly: "We’ll split ${utxoAmountText} into ${splitCount} equal parts"
+    split_manually: "We’ll split ${utxoAmountText} like this"
     new_utxos: "New UTXOs"
     fee: "Fee"
 

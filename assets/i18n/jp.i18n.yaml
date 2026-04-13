@@ -802,7 +802,7 @@ split_utxo_screen:
   placeholder_utxo: "UTXOを選択してください"
   placeholder_criteria: "分割基準を選択してください"
   placeholder_split_amount: "金額を入力してください"
-  placeholder_expected_fee: "予想手数料を入力してください"
+  placeholder_expected_fee: "手数料率を入力してください"
   question_select_utxo: "どのUTXOを分割しますか？"
   question_select_criteria: "どのように分割しますか？"
   question_split_by_amount: "いくらずつ分割しますか？"
@@ -816,6 +816,7 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "選択したUTXOの金額より小さく入力してください"
     insufficient_after_fee: "手数料を含めると分割できない金額です"
+    manual_sum_over_input: "金額が足りません"
   fee_error: "手数料がUTXOの金額より大きいです"
   dust_error: "このように分割すると、使いにくい少額が発生します"
   criteria_bottom_sheet:
@@ -826,6 +827,7 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "${utxoAmountText} を ${formattedSplitAmount} ずつに分割します"
     split_evenly: "${utxoAmountText} を ${splitCount} 個に分割します"
+    split_manually: "${utxoAmountText} をこのように分割します"
     new_utxos: "新しいUTXO"
     fee: "手数料"
 

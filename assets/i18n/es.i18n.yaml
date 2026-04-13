@@ -804,7 +804,7 @@ split_utxo_screen:
   placeholder_utxo: "Selecciona un UTXO"
   placeholder_criteria: "Selecciona un criterio de división"
   placeholder_split_amount: "Ingresa el monto"
-  placeholder_expected_fee: "Ingresa la comisión estimada"
+  placeholder_expected_fee: "Ingresa la tasa de comisión"
   question_select_utxo: "¿Qué UTXO quieres dividir?"
   question_select_criteria: "¿Cómo quieres dividirlo?"
   question_split_by_amount: "¿Cuánto por cada uno?"
@@ -818,6 +818,7 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "Por favor, introduce un importe menor que el UTXO seleccionado"
     insufficient_after_fee: "No es posible dividir este importe al incluir la comisión"
+    manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
   dust_error: "Si lo divides así, se generarán pequeñas cantidades difíciles de usar"
   criteria_bottom_sheet:
@@ -828,6 +829,7 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "Dividiremos ${utxoAmountText} en partes de ${formattedSplitAmount}"
     split_evenly: "Dividiremos ${utxoAmountText} en ${splitCount} partes iguales"
+    split_manually: "Dividiremos ${utxoAmountText} de esta manera"
     new_utxos: "Nuevos UTXO"
     fee: "Comisión"
 
