@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:tuple/tuple.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -17,6 +18,7 @@ import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.d
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -94,10 +96,10 @@ class SplitUtxoScreen extends StatelessWidget {
             ListView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
               children: [
+                _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                CoconutLayout.spacing_800h,
+                CoconutLayout.spacing_1000h,
                 _buildHeaderTitle(),
-                _buildDustError(),
                 _buildSplitContent(context),
                 _buildCriteriaPicker(context),
                 _buildUtxoPicker(context),
@@ -111,33 +113,35 @@ class SplitUtxoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderTitle() {
-    return Selector<SplitUtxoViewModel, Tuple2<List<UtxoState>, SplitCriteria?>>(
-      selector: (_, vm) => Tuple2(vm.selectedUtxoList, vm.selectedCriteria),
-      builder: (context, data, _) {
-        return Text(
-          _getHeaderTitle(t, data.item1, data.item2),
-          style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-        );
+  Widget _buildUnexpectedErrorTooltip() {
+    return Selector<SplitUtxoViewModel, String>(
+      selector: (_, vm) => vm.finalErrorMessage,
+      builder: (context, finalErrorMessage, _) {
+        if (finalErrorMessage.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return ErrorTooltip(isShown: true, errorMessage: finalErrorMessage);
       },
     );
   }
 
-  Widget _buildDustError() {
-    return Selector<SplitUtxoViewModel, bool>(
-      selector: (_, vm) => vm.isDustError,
-      builder: (_, isDustError, __) {
-        if (isDustError) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CoconutLayout.spacing_50h,
-              Text(t.split_utxo_screen.dust_error, style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink)),
-              CoconutLayout.spacing_200h,
-            ],
-          );
-        }
-        return CoconutLayout.spacing_600h;
+  Widget _buildHeaderTitle() {
+    return Selector<SplitUtxoViewModel, Tuple3<List<UtxoState>, SplitCriteria?, String?>>(
+      selector: (_, vm) => Tuple3(vm.selectedUtxoList, vm.selectedCriteria, vm.headerTitleErrorMessage),
+      builder: (context, data, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _getHeaderTitle(t, data.item1, data.item2),
+              style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+            ),
+            CoconutLayout.spacing_50h,
+            const _HeaderTitleErrorText(),
+            CoconutLayout.spacing_200h,
+          ],
+        );
       },
     );
   }
@@ -180,14 +184,6 @@ class SplitUtxoScreen extends StatelessWidget {
           child: IgnorePointer(
             ignoring: !showSplitResultBox,
             child: FixedBottomButton(
-              subWidget:
-                  finalErrorMessage.isNotEmpty
-                      ? Text(
-                        finalErrorMessage,
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink),
-                        textAlign: TextAlign.center,
-                      )
-                      : null,
               text: t.organize,
               onButtonClicked: () async {
                 if (!isSplitValid) return;
@@ -196,6 +192,9 @@ class SplitUtxoScreen extends StatelessWidget {
                 final isSuccess = await viewModel.buildTxAndSaveForNext();
                 if (isSuccess && context.mounted) {
                   Navigator.pushNamed(context, '/send-confirm', arguments: {"currentUnit": viewModel.currentUnit});
+                }
+                if (!isSuccess) {
+                  vibrateLightDouble();
                 }
               },
               isActive: isSplitValid && !isBuilding && finalErrorMessage.isEmpty,
@@ -299,7 +298,8 @@ class SplitUtxoScreen extends StatelessWidget {
   Widget _buildFeePicker(BuildContext context) {
     return Selector<SplitUtxoViewModel, Tuple3<bool, Tuple2<bool, String?>, String>>(
       selector:
-          (_, vm) => Tuple3(vm.shouldShowFeePicker, Tuple2(vm.hasFeeRate, vm.errorTextAboutFee), vm.previewFeeText),
+          (_, vm) =>
+              Tuple3(vm.shouldShowFeePicker, Tuple2(vm.hasFeeRate, vm.errorTextAboutFee), vm.feePickerDisplayText),
       builder: (context, data, _) {
         final shouldShow = data.item1;
         final hasFeeRate = data.item2.item1;
@@ -324,7 +324,7 @@ class SplitUtxoScreen extends StatelessWidget {
                   () => EstimatedFeeBottomSheet.show(
                     context: context,
                     listenable: viewModel,
-                    estimatedFeeTextGetter: () => viewModel.previewFeeText,
+                    estimatedFeeTextGetter: () => viewModel.feePickerDisplayText,
                     feeRateController: viewModel.feeRateController,
                     feeRateFocusNode: viewModel.feeRateFocusNode,
                     onFeeRateChanged: viewModel.onFeeRateChanged,
@@ -674,6 +674,31 @@ class SplitUtxoScreen extends StatelessWidget {
   }
 }
 
+class _HeaderTitleErrorText extends StatelessWidget {
+  const _HeaderTitleErrorText();
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 14),
+      child: Selector<SplitUtxoViewModel, Tuple2<String?, String>>(
+        selector: (_, vm) => Tuple2(vm.headerTitleErrorMessage, vm.feePickerDisplayText),
+        builder: (_, data, __) {
+          final headerTitleErrorMessage = data.item1;
+          if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Text(headerTitleErrorMessage, style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink)),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class SplitResultBox extends StatelessWidget {
   final bool isPreviewResult;
 
@@ -682,7 +707,7 @@ class SplitResultBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<SplitUtxoViewModel, Tuple3<String, String?, String>>(
-      selector: (_, vm) => Tuple3(vm.splitSummaryTitle, vm.splitOutputText, vm.previewFeeText),
+      selector: (_, vm) => Tuple3(vm.splitSummaryTitle, vm.splitOutputText, vm.feePickerDisplayText),
       builder: (context, data, _) {
         final splitSummaryTitle = data.item1;
         final splitOutputText = data.item2;
@@ -748,15 +773,17 @@ class SplitResultBox extends StatelessWidget {
                 ],
               ),
             ),
-            CoconutLayout.spacing_200h,
             Visibility(
               visible: isPreviewResult,
-              maintainState: true,
-              maintainAnimation: true,
-              maintainSize: true,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: Text('위 결과는 예측값입니다.', style: CoconutTypography.caption_10.setColor(CoconutColors.gray400)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  CoconutLayout.spacing_200h,
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text('위 결과는 예측값입니다.', style: CoconutTypography.caption_10.setColor(CoconutColors.gray400)),
+                  ),
+                ],
               ),
             ),
           ],

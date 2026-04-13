@@ -789,6 +789,7 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "Please enter an amount smaller than the selected UTXO"
     insufficient_after_fee: "This amount can’t be split when the fee is included"
+    manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
   dust_error: "Splitting it this way will create small amounts that are difficult to use"
   criteria_bottom_sheet:

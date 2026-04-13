@@ -201,7 +201,7 @@ class UtxoSplitTransactionBuilder {
         (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
     Logger.log('--> UtxoSplitBuilder 균등분할 estimatedFee: $fee');
     if (fee >= utxo.amount) {
-      throw SplitInsufficientAmountException(estimatedFee: fee); // 수수료가 UTXO 금액보다 커요
+      throw FeeExceedsUtxoAmountException(estimatedFee: fee); // 수수료가 UTXO 금액보다 커요
     }
 
     final availableAmount = utxo.amount - fee;
@@ -293,6 +293,10 @@ class UtxoSplitTransactionBuilder {
     final double estimatedFee =
         (_oneOutputTxVBytes! + _outputVBytes! * totalOutputCount) * feeRate +
         (totalOutputCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
+    if (estimatedFee >= utxo.amount) {
+      throw FeeExceedsUtxoAmountException(estimatedFee: estimatedFee);
+    }
+
     final left = utxo.amount - totalRequested - estimatedFee;
     if (left < 0) {
       throw SplitInsufficientAmountException(estimatedFee: estimatedFee); // 금액이 부족해요
@@ -325,6 +329,8 @@ class UtxoSplitTransactionBuilder {
           break;
         }
       } on SplitOutputDustException {
+        continue;
+      } on FeeExceedsUtxoAmountException {
         continue;
       } on SplitInsufficientAmountException {
         continue;
@@ -388,10 +394,14 @@ class UtxoSplitTransactionBuilder {
   /// [exactAmounts]: 확정된 금액의 output 리스트, last output은 미포함
   List<int> _getFixedSplitExactAmounts(int amountPerOutput) {
     final utxo = _requiredUtxo;
-    double firstLeft = utxo.amount - (_oneOutputTxVBytes! * feeRate) - amountPerOutput;
+    final oneOutputFee = _oneOutputTxVBytes! * feeRate;
+    if (oneOutputFee >= utxo.amount) {
+      throw FeeExceedsUtxoAmountException(estimatedFee: oneOutputFee);
+    }
+    double firstLeft = utxo.amount - oneOutputFee - amountPerOutput;
     final feePerOutput = _outputVBytes! * feeRate;
     if (firstLeft <= dustThreshold + feePerOutput) {
-      throw const SplitInsufficientAmountException();
+      throw SplitInsufficientAmountException(estimatedFee: oneOutputFee); // 수수료를 포함하면 나눌 수 없는 금액이에요
     }
 
     var neededSatsPerOneMore = amountPerOutput + feePerOutput;
