@@ -664,6 +664,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       item.countFocusNode.removeListener(notifyListeners);
       item.dispose();
       _onInputChanged();
+      notifyListeners();
     }
   }
 
