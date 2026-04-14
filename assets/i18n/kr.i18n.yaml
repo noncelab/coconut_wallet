@@ -849,7 +849,7 @@ split_utxo_screen:
     insufficient_after_fee: "수수료를 포함하면 나눌 수 없는 금액이에요"
     manual_sum_over_input: "금액이 부족해요"
   fee_error: "수수료가 UTXO 금액보다 커요"
-  dust_error: "이렇게 나누면 사용하기 어려운 잔돈이 생성돼요"
+  dust_error: "이 개수로 나누면 작은 금액(dust)이 생성돼요"
   criteria_bottom_sheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"

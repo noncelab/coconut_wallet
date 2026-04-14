@@ -843,7 +843,7 @@ split_utxo_screen:
     insufficient_after_fee: "This amount can’t be split when the fee is included"
     manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
-  dust_error: "Splitting it this way will create small amounts that are difficult to use"
+  dust_error: "Splitting with this amount will create small amounts (dust)"
   criteria_bottom_sheet:
     title: "Select split method"
     split_by_amount: "Split by fixed amount"
