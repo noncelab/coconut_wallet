@@ -260,7 +260,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   Widget _buildBody(BuildContext context) {
     return SafeArea(
       child: Selector<SplitUtxoViewModel, bool>(
-        selector: (_, vm) => vm.isBuilding,
+        selector: (_, vm) => vm.isPreparingNextStep,
         builder: (context, isBuilding, child) {
           return LoadingOverlay(isLoading: isBuilding, child: child!);
         },
@@ -362,7 +362,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   Widget _buildOrganizeButton(BuildContext context) {
     return Selector<SplitUtxoViewModel, Tuple4<bool, bool, bool, String>>(
-      selector: (_, vm) => Tuple4(vm.showSplitResultBox, vm.isSplitValid, vm.isBuilding, vm.finalErrorMessage),
+      selector: (_, vm) => Tuple4(vm.showSplitResultBox, vm.isSplitValid, vm.isPreparingNextStep, vm.finalErrorMessage),
       builder: (context, data, _) {
         final showSplitResultBox = data.item1;
         final isSplitValid = data.item2;

@@ -1,4 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'dart:async';
+import 'dart:isolate';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -177,105 +179,161 @@ class UtxoSplitTransactionBuilder {
   }
 
   /// 균등하게 나누기
-  Future<UtxoSplitResult> buildEqualAmountSplit({required int splitCount}) async {
-    assert(splitCount >= 2);
-    Logger.log("--> splitCount: $splitCount");
-    final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount);
+  CancelableBuildTask<UtxoSplitResult> buildEqualAmountSplit({required int splitCount}) {
+    final completer = Completer<UtxoSplitResult>();
+    CancelableBuildTask<TransactionBuildResult>? txTask;
+    var isCancelled = false;
 
-    var txBuildResult = await _buildTransactionWithDesiredAmounts(
-      splitPreview.amountCountMap.entries.expand((entry) => List.filled(entry.value, entry.key)).toList(),
-    );
-    if (txBuildResult.isFailure) {
-      _throwIfBuildFailed(txBuildResult);
-    }
-
-    return _buildSuccessResult(txBuildResult.transaction!);
-  }
-
-  Future<SplitPreview> getEqualAmountSplitPreview({required int splitCount}) async {
-    assert(splitCount >= 2);
-    await _initOutputVBytes();
-    final utxo = _requiredUtxo;
-    final fee =
-        (_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
-        (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
-    Logger.log('--> UtxoSplitBuilder 균등분할 estimatedFee: $fee');
-    if (fee >= utxo.amount) {
-      throw FeeExceedsUtxoAmountException(estimatedFee: fee); // 수수료가 UTXO 금액보다 커요
-    }
-
-    final availableAmount = utxo.amount - fee;
-    final baseAmount = availableAmount ~/ splitCount;
-
-    if (baseAmount <= dustThreshold) {
-      throw SplitOutputDustException(estimatedFee: fee); // 이 개수로 나누면 dust가 생성돼요
-    }
-
-    final remainder = availableAmount % splitCount;
-    final List<int> desiredAmounts = [];
-    for (int i = 0; i < splitCount - remainder; i++) {
-      desiredAmounts.add(baseAmount);
-    }
-    for (int i = 0; i < remainder; i++) {
-      desiredAmounts.add(baseAmount + 1);
-    }
-
-    return _buildSplitPreview(desiredAmounts.sublist(0, desiredAmounts.length - 1), fee);
-  }
-
-  /// 일정 금액으로 나누기
-  Future<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) async {
-    var splitPreview = await getFixedAmountSplitPreview(amountPerOutput: amountPerOutput);
-    var txBuildResult = await _buildTransactionWithDesiredAmounts(_flattenAmountCountMap(splitPreview.amountCountMap));
-    if (txBuildResult.isFailure) {
-      if (txBuildResult.exception is SendAmountTooLowException) {
-        final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
-        if (exactAmounts.length > 2) {
-          // 1개 줄여서 다시 시도
-          exactAmounts.removeLast();
-          splitPreview = await _buildSplitPreview(
-            exactAmounts,
-            (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length - 1)) * feeRate,
-          );
-          txBuildResult = await _buildTransactionWithDesiredAmounts(
-            _flattenAmountCountMap(splitPreview.amountCountMap),
-          );
+    () async {
+      try {
+        Logger.log("--> splitCount: $splitCount");
+        final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount);
+        if (isCancelled) {
+          if (!completer.isCompleted) {
+            completer.completeError(const SplitBuildCancelledException());
+          }
+          return;
         }
+
+        txTask = _buildTransactionWithDesiredAmounts(
+          splitPreview.amountCountMap.entries.expand((entry) => List.filled(entry.value, entry.key)).toList(),
+        );
+        final txBuildResult = await txTask!.future;
         if (txBuildResult.isFailure) {
           _throwIfBuildFailed(txBuildResult);
         }
-      } else {
-        throw UtxoSplitException(
-          estimatedFee: txBuildResult.estimatedFee.toDouble(),
-          message: txBuildResult.exception!.toString(),
-        );
-      }
-    }
 
-    return _buildSuccessResult(txBuildResult.transaction!);
+        if (!completer.isCompleted) {
+          completer.complete(_buildSuccessResult(txBuildResult.transaction!));
+        }
+      } catch (e, stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(e, stackTrace);
+        }
+      }
+    }();
+    return CancelableBuildTask(
+      future: completer.future,
+      cancel: () async {
+        isCancelled = true;
+        await txTask?.cancel();
+        if (!completer.isCompleted) {
+          completer.completeError(const SplitBuildCancelledException());
+        }
+      },
+    );
   }
 
-  Future<SplitPreview> getFixedAmountSplitPreview({required int amountPerOutput}) async {
-    assert(amountPerOutput > 0);
-    await _initOutputVBytes();
-    if (amountPerOutput <= dustThreshold) {
-      throw const SplitOutputDustException(); // 0.0000 0547 BTC부터 전송할 수 있어요
-    }
+  /// 일정 금액으로 나누기
+  CancelableBuildTask<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) {
+    final completer = Completer<UtxoSplitResult>();
+    CancelableBuildTask<TransactionBuildResult>? txTask;
+    var isCancelled = false;
 
-    final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
-    final estimatedFee = (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length)) * feeRate;
-    return _buildSplitPreview(exactAmounts, estimatedFee);
+    () async {
+      try {
+        var splitPreview = await getFixedAmountSplitPreview(amountPerOutput: amountPerOutput);
+        if (isCancelled) {
+          if (!completer.isCompleted) {
+            completer.completeError(const SplitBuildCancelledException());
+          }
+          return;
+        }
+
+        txTask = _buildTransactionWithDesiredAmounts(_flattenAmountCountMap(splitPreview.amountCountMap));
+        var txBuildResult = await txTask!.future;
+        if (txBuildResult.isFailure) {
+          if (txBuildResult.exception is SendAmountTooLowException) {
+            final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
+            if (exactAmounts.length > 2) {
+              exactAmounts.removeLast();
+              splitPreview = await _buildSplitPreview(
+                exactAmounts,
+                (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length - 1)) * feeRate,
+              );
+              if (isCancelled) {
+                if (!completer.isCompleted) {
+                  completer.completeError(const SplitBuildCancelledException());
+                }
+                return;
+              }
+              txTask = _buildTransactionWithDesiredAmounts(_flattenAmountCountMap(splitPreview.amountCountMap));
+              txBuildResult = await txTask!.future;
+            }
+            if (txBuildResult.isFailure) {
+              _throwIfBuildFailed(txBuildResult);
+            }
+          } else {
+            throw UtxoSplitException(
+              estimatedFee: txBuildResult.estimatedFee.toDouble(),
+              message: txBuildResult.exception!.toString(),
+            );
+          }
+        }
+
+        if (!completer.isCompleted) {
+          completer.complete(_buildSuccessResult(txBuildResult.transaction!));
+        }
+      } catch (e, stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(e, stackTrace);
+        }
+      }
+    }();
+    return CancelableBuildTask(
+      future: completer.future,
+      cancel: () async {
+        isCancelled = true;
+        await txTask?.cancel();
+        if (!completer.isCompleted) {
+          completer.completeError(const SplitBuildCancelledException());
+        }
+      },
+    );
   }
 
   /// 직접 나누기
-  Future<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) async {
-    final splitPreview = await getCustomAmountSplitPreview(amountCountMap: amountCountMap);
-    var txBuildResult = await _buildTransactionWithDesiredAmounts(_flattenAmountCountMap(splitPreview.amountCountMap));
-    if (txBuildResult.isFailure) {
-      _throwIfBuildFailed(txBuildResult);
-    }
+  CancelableBuildTask<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) {
+    final completer = Completer<UtxoSplitResult>();
+    CancelableBuildTask<TransactionBuildResult>? txTask;
+    var isCancelled = false;
 
-    return _buildSuccessResult(txBuildResult.transaction!);
+    () async {
+      try {
+        final splitPreview = await getCustomAmountSplitPreview(amountCountMap: amountCountMap);
+        if (isCancelled) {
+          if (!completer.isCompleted) {
+            completer.completeError(const SplitBuildCancelledException());
+          }
+          return;
+        }
+
+        txTask = _buildTransactionWithDesiredAmounts(_flattenAmountCountMap(splitPreview.amountCountMap));
+        final txBuildResult = await txTask!.future;
+        if (txBuildResult.isFailure) {
+          _throwIfBuildFailed(txBuildResult);
+        }
+
+        if (!completer.isCompleted) {
+          completer.complete(_buildSuccessResult(txBuildResult.transaction!));
+        }
+      } catch (e, stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(e, stackTrace);
+        }
+      }
+    }();
+
+    return CancelableBuildTask(
+      future: completer.future,
+      cancel: () async {
+        isCancelled = true;
+        await txTask?.cancel();
+        if (!completer.isCompleted) {
+          completer.completeError(const SplitBuildCancelledException());
+        }
+      },
+    );
   }
 
   Future<SplitPreview> getCustomAmountSplitPreview({required Map<int, int> amountCountMap}) async {
@@ -310,7 +368,51 @@ class UtxoSplitTransactionBuilder {
     return _buildSplitPreview(flattenedAmounts, estimatedFee);
   }
 
-  /// UTXO를 niceAmounts로 나눠지게 하는 count 최대 5개를 반환
+  Future<SplitPreview> getFixedAmountSplitPreview({required int amountPerOutput}) async {
+    assert(amountPerOutput > 0);
+    await _initOutputVBytes();
+    if (amountPerOutput <= dustThreshold) {
+      throw const SplitOutputDustException();
+    }
+
+    final exactAmounts = _getFixedSplitExactAmounts(amountPerOutput);
+    final estimatedFee = (_oneOutputTxVBytes! + _outputVBytes! * (exactAmounts.length)) * feeRate;
+    return _buildSplitPreview(exactAmounts, estimatedFee);
+  }
+
+  Future<SplitPreview> getEqualAmountSplitPreview({required int splitCount}) async {
+    assert(splitCount >= 2);
+    await _initOutputVBytes();
+    final utxo = _requiredUtxo;
+    final fee =
+        (_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
+        (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
+    Logger.log('--> UtxoSplitBuilder 균등분할 estimatedFee: $fee');
+    if (fee >= utxo.amount) {
+      throw FeeExceedsUtxoAmountException(estimatedFee: fee);
+    }
+
+    final availableAmount = utxo.amount - fee;
+    final baseAmount = availableAmount ~/ splitCount;
+
+    if (baseAmount <= dustThreshold) {
+      throw SplitOutputDustException(estimatedFee: fee);
+    }
+
+    final remainder = availableAmount % splitCount;
+    final List<int> desiredAmounts = [];
+    for (int i = 0; i < splitCount - remainder; i++) {
+      desiredAmounts.add(baseAmount);
+    }
+    for (int i = 0; i < remainder; i++) {
+      desiredAmounts.add(baseAmount + 1);
+    }
+
+    return _buildSplitPreview(desiredAmounts.sublist(0, desiredAmounts.length - 1), fee);
+  }
+
+  /// UTXO를 niceAmounts로 나누어지게 하는 count 최대 5개를 반환
+  /// TODO: 사용 안되고 있음
   Future<List<int>> getNiceSplitCounts() async {
     if (_cachedNiceSplitCounts != null) {
       return _cachedNiceSplitCounts!;
@@ -504,28 +606,181 @@ class UtxoSplitTransactionBuilder {
     return amounts;
   }
 
-  Future<TransactionBuildResult> _buildTransactionWithDesiredAmounts(List<int> desiredAmounts) async {
-    final exactAmounts = List<int>.from(desiredAmounts);
-    if (exactAmounts.isEmpty) {
-      throw StateError('desiredAmounts must contain at least one output');
-    }
-    exactAmounts.removeLast();
-    final recipients = await _buildSweepRecipients(exactAmounts);
-    return _buildTransactionWithRecipients(recipients);
+  CancelableBuildTask<TransactionBuildResult> _buildTransactionWithDesiredAmounts(List<int> desiredAmounts) {
+    return _createTransactionBuildTask(() async {
+      final exactAmounts = List<int>.from(desiredAmounts);
+      if (exactAmounts.isEmpty) {
+        throw StateError('desiredAmounts must contain at least one output');
+      }
+      exactAmounts.removeLast();
+      return _buildSweepRecipients(exactAmounts);
+    });
   }
 
-  Future<TransactionBuildResult> _buildTransactionWithRecipients(Map<String, int> recipients) async {
+  CancelableBuildTask<TransactionBuildResult> _buildTransactionWithRecipients(Map<String, int> recipients) {
     final utxo = _requiredUtxo;
     final changeAddress = addressRepository.getChangeAddress(walletListItemBase.id);
-
-    return TransactionBuilder(
-      availableUtxos: [utxo],
-      recipients: recipients,
-      feeRate: feeRate,
-      changeDerivationPath: changeAddress.derivationPath,
-      walletListItemBase: walletListItemBase,
-      isFeeSubtractedFromAmount: true,
-      isUtxoFixed: true,
-    ).build();
+    return _spawnBuildTask(utxo: utxo, recipients: recipients, changeDerivationPath: changeAddress.derivationPath);
   }
+
+  CancelableBuildTask<TransactionBuildResult> _spawnBuildTask({
+    required UtxoState utxo,
+    required Map<String, int> recipients,
+    required String changeDerivationPath,
+  }) {
+    final receivePort = ReceivePort();
+    final completer = Completer<TransactionBuildResult>();
+    StreamSubscription? subscription;
+    Isolate? isolate;
+
+    () async {
+      try {
+        isolate = await Isolate.spawn<_SplitBuildIsolateRequest>(
+          _splitBuildIsolateEntry,
+          _SplitBuildIsolateRequest(
+            sendPort: receivePort.sendPort,
+            utxo: utxo,
+            recipients: recipients,
+            feeRate: feeRate,
+            changeDerivationPath: changeDerivationPath,
+            walletListItemBase: walletListItemBase,
+          ),
+        );
+
+        subscription = receivePort.listen((message) {
+          if (completer.isCompleted) {
+            return;
+          }
+
+          if (message is List && message.isNotEmpty) {
+            final type = message[0];
+            if (type == 'result' && message.length > 1 && message[1] is TransactionBuildResult) {
+              completer.complete(message[1] as TransactionBuildResult);
+            } else if (type == 'error' && message.length > 1 && message[1] is String) {
+              completer.completeError(StateError(message[1] as String));
+            } else {
+              completer.completeError(StateError('Unexpected split build isolate message: $message'));
+            }
+          } else {
+            completer.completeError(StateError('Unexpected split build isolate payload: $message'));
+          }
+
+          subscription?.cancel();
+          receivePort.close();
+          isolate?.kill(priority: Isolate.immediate);
+          isolate = null;
+        });
+      } catch (e) {
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
+        await subscription?.cancel();
+        receivePort.close();
+        isolate?.kill(priority: Isolate.immediate);
+        isolate = null;
+      }
+    }();
+    return CancelableBuildTask(
+      future: completer.future,
+      cancel: () async {
+        isolate?.kill(priority: Isolate.immediate);
+        isolate = null;
+        await subscription?.cancel();
+        receivePort.close();
+        if (!completer.isCompleted) {
+          completer.completeError(const SplitBuildCancelledException());
+        }
+      },
+    );
+  }
+
+  static void _splitBuildIsolateEntry(_SplitBuildIsolateRequest request) {
+    try {
+      final result =
+          TransactionBuilder(
+            availableUtxos: [request.utxo],
+            recipients: request.recipients,
+            feeRate: request.feeRate,
+            changeDerivationPath: request.changeDerivationPath,
+            walletListItemBase: request.walletListItemBase,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
+      request.sendPort.send(['result', result]);
+    } catch (e) {
+      request.sendPort.send(['error', e.toString()]);
+    }
+  }
+
+  CancelableBuildTask<TransactionBuildResult> _createTransactionBuildTask(
+    Future<Map<String, int>> Function() prepareRecipients,
+  ) {
+    final completer = Completer<TransactionBuildResult>();
+    CancelableBuildTask<TransactionBuildResult>? innerTask;
+    var isCancelled = false;
+
+    () async {
+      try {
+        final recipients = await prepareRecipients();
+        if (isCancelled) {
+          if (!completer.isCompleted) {
+            completer.completeError(const SplitBuildCancelledException());
+          }
+          return;
+        }
+
+        innerTask = _buildTransactionWithRecipients(recipients);
+        final result = await innerTask!.future;
+        if (!completer.isCompleted) {
+          completer.complete(result);
+        }
+      } catch (e, stackTrace) {
+        if (!completer.isCompleted) {
+          completer.completeError(e, stackTrace);
+        }
+      }
+    }();
+    return CancelableBuildTask(
+      future: completer.future,
+      cancel: () async {
+        isCancelled = true;
+        await innerTask?.cancel();
+        if (!completer.isCompleted) {
+          completer.completeError(const SplitBuildCancelledException());
+        }
+      },
+    );
+  }
+}
+
+class SplitBuildCancelledException implements Exception {
+  const SplitBuildCancelledException();
+
+  @override
+  String toString() => 'SplitBuildCancelledException';
+}
+
+class CancelableBuildTask<T> {
+  final Future<T> future;
+  final Future<void> Function() cancel;
+
+  const CancelableBuildTask({required this.future, required this.cancel});
+}
+
+class _SplitBuildIsolateRequest {
+  final SendPort sendPort;
+  final UtxoState utxo;
+  final Map<String, int> recipients;
+  final double feeRate;
+  final String changeDerivationPath;
+  final WalletListItemBase walletListItemBase;
+
+  const _SplitBuildIsolateRequest({
+    required this.sendPort,
+    required this.utxo,
+    required this.recipients,
+    required this.feeRate,
+    required this.changeDerivationPath,
+    required this.walletListItemBase,
+  });
 }
