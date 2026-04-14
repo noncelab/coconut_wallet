@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'dart:async';
 import 'dart:isolate';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
@@ -179,9 +180,9 @@ class UtxoSplitTransactionBuilder {
   }
 
   /// 균등하게 나누기
-  CancelableBuildTask<UtxoSplitResult> buildEqualAmountSplit({required int splitCount}) {
+  CancelableTask<UtxoSplitResult> buildEqualAmountSplit({required int splitCount}) {
     final completer = Completer<UtxoSplitResult>();
-    CancelableBuildTask<TransactionBuildResult>? txTask;
+    CancelableTask<TransactionBuildResult>? txTask;
     var isCancelled = false;
 
     () async {
@@ -190,7 +191,7 @@ class UtxoSplitTransactionBuilder {
         final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount);
         if (isCancelled) {
           if (!completer.isCompleted) {
-            completer.completeError(const SplitBuildCancelledException());
+            completer.completeError(const TaskCancelledException());
           }
           return;
         }
@@ -212,22 +213,22 @@ class UtxoSplitTransactionBuilder {
         }
       }
     }();
-    return CancelableBuildTask(
+    return CancelableTask(
       future: completer.future,
       cancel: () async {
         isCancelled = true;
         await txTask?.cancel();
         if (!completer.isCompleted) {
-          completer.completeError(const SplitBuildCancelledException());
+          completer.completeError(const TaskCancelledException());
         }
       },
     );
   }
 
   /// 일정 금액으로 나누기
-  CancelableBuildTask<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) {
+  CancelableTask<UtxoSplitResult> buildFixedAmountSplit({required int amountPerOutput}) {
     final completer = Completer<UtxoSplitResult>();
-    CancelableBuildTask<TransactionBuildResult>? txTask;
+    CancelableTask<TransactionBuildResult>? txTask;
     var isCancelled = false;
 
     () async {
@@ -235,7 +236,7 @@ class UtxoSplitTransactionBuilder {
         var splitPreview = await getFixedAmountSplitPreview(amountPerOutput: amountPerOutput);
         if (isCancelled) {
           if (!completer.isCompleted) {
-            completer.completeError(const SplitBuildCancelledException());
+            completer.completeError(const TaskCancelledException());
           }
           return;
         }
@@ -253,7 +254,7 @@ class UtxoSplitTransactionBuilder {
               );
               if (isCancelled) {
                 if (!completer.isCompleted) {
-                  completer.completeError(const SplitBuildCancelledException());
+                  completer.completeError(const TaskCancelledException());
                 }
                 return;
               }
@@ -280,22 +281,22 @@ class UtxoSplitTransactionBuilder {
         }
       }
     }();
-    return CancelableBuildTask(
+    return CancelableTask(
       future: completer.future,
       cancel: () async {
         isCancelled = true;
         await txTask?.cancel();
         if (!completer.isCompleted) {
-          completer.completeError(const SplitBuildCancelledException());
+          completer.completeError(const TaskCancelledException());
         }
       },
     );
   }
 
   /// 직접 나누기
-  CancelableBuildTask<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) {
+  CancelableTask<UtxoSplitResult> buildCustomAmountSplit({required Map<int, int> amountCountMap}) {
     final completer = Completer<UtxoSplitResult>();
-    CancelableBuildTask<TransactionBuildResult>? txTask;
+    CancelableTask<TransactionBuildResult>? txTask;
     var isCancelled = false;
 
     () async {
@@ -303,7 +304,7 @@ class UtxoSplitTransactionBuilder {
         final splitPreview = await getCustomAmountSplitPreview(amountCountMap: amountCountMap);
         if (isCancelled) {
           if (!completer.isCompleted) {
-            completer.completeError(const SplitBuildCancelledException());
+            completer.completeError(const TaskCancelledException());
           }
           return;
         }
@@ -324,13 +325,13 @@ class UtxoSplitTransactionBuilder {
       }
     }();
 
-    return CancelableBuildTask(
+    return CancelableTask(
       future: completer.future,
       cancel: () async {
         isCancelled = true;
         await txTask?.cancel();
         if (!completer.isCompleted) {
-          completer.completeError(const SplitBuildCancelledException());
+          completer.completeError(const TaskCancelledException());
         }
       },
     );
@@ -606,7 +607,7 @@ class UtxoSplitTransactionBuilder {
     return amounts;
   }
 
-  CancelableBuildTask<TransactionBuildResult> _buildTransactionWithDesiredAmounts(List<int> desiredAmounts) {
+  CancelableTask<TransactionBuildResult> _buildTransactionWithDesiredAmounts(List<int> desiredAmounts) {
     return _createTransactionBuildTask(() async {
       final exactAmounts = List<int>.from(desiredAmounts);
       if (exactAmounts.isEmpty) {
@@ -617,13 +618,13 @@ class UtxoSplitTransactionBuilder {
     });
   }
 
-  CancelableBuildTask<TransactionBuildResult> _buildTransactionWithRecipients(Map<String, int> recipients) {
+  CancelableTask<TransactionBuildResult> _buildTransactionWithRecipients(Map<String, int> recipients) {
     final utxo = _requiredUtxo;
     final changeAddress = addressRepository.getChangeAddress(walletListItemBase.id);
     return _spawnBuildTask(utxo: utxo, recipients: recipients, changeDerivationPath: changeAddress.derivationPath);
   }
 
-  CancelableBuildTask<TransactionBuildResult> _spawnBuildTask({
+  CancelableTask<TransactionBuildResult> _spawnBuildTask({
     required UtxoState utxo,
     required Map<String, int> recipients,
     required String changeDerivationPath,
@@ -680,7 +681,7 @@ class UtxoSplitTransactionBuilder {
         isolate = null;
       }
     }();
-    return CancelableBuildTask(
+    return CancelableTask(
       future: completer.future,
       cancel: () async {
         isolate?.kill(priority: Isolate.immediate);
@@ -688,7 +689,7 @@ class UtxoSplitTransactionBuilder {
         await subscription?.cancel();
         receivePort.close();
         if (!completer.isCompleted) {
-          completer.completeError(const SplitBuildCancelledException());
+          completer.completeError(const TaskCancelledException());
         }
       },
     );
@@ -712,11 +713,11 @@ class UtxoSplitTransactionBuilder {
     }
   }
 
-  CancelableBuildTask<TransactionBuildResult> _createTransactionBuildTask(
+  CancelableTask<TransactionBuildResult> _createTransactionBuildTask(
     Future<Map<String, int>> Function() prepareRecipients,
   ) {
     final completer = Completer<TransactionBuildResult>();
-    CancelableBuildTask<TransactionBuildResult>? innerTask;
+    CancelableTask<TransactionBuildResult>? innerTask;
     var isCancelled = false;
 
     () async {
@@ -724,7 +725,7 @@ class UtxoSplitTransactionBuilder {
         final recipients = await prepareRecipients();
         if (isCancelled) {
           if (!completer.isCompleted) {
-            completer.completeError(const SplitBuildCancelledException());
+            completer.completeError(const TaskCancelledException());
           }
           return;
         }
@@ -740,31 +741,17 @@ class UtxoSplitTransactionBuilder {
         }
       }
     }();
-    return CancelableBuildTask(
+    return CancelableTask(
       future: completer.future,
       cancel: () async {
         isCancelled = true;
         await innerTask?.cancel();
         if (!completer.isCompleted) {
-          completer.completeError(const SplitBuildCancelledException());
+          completer.completeError(const TaskCancelledException());
         }
       },
     );
   }
-}
-
-class SplitBuildCancelledException implements Exception {
-  const SplitBuildCancelledException();
-
-  @override
-  String toString() => 'SplitBuildCancelledException';
-}
-
-class CancelableBuildTask<T> {
-  final Future<T> future;
-  final Future<void> Function() cancel;
-
-  const CancelableBuildTask({required this.future, required this.cancel});
 }
 
 class _SplitBuildIsolateRequest {
