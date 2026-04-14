@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
+import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -67,7 +68,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   final List<ManualSplitItem> manualSplitItems = [];
   Timer? _debounceTimer;
   SplitPreview? _splitPreview;
-  CancelableBuildTask<UtxoSplitResult>? _activeBuildTask;
+  CancelableTask<UtxoSplitResult>? _activeBuildTask;
   int _buildRequestId = 0;
 
   bool _isDustError = false;
@@ -172,8 +173,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       }
     });
     splitCountFocusNode.addListener(notifyListeners);
-
-    // TODO: 직접 나누기는 어디에 있나?
 
     _wallet = _walletProvider.getWalletById(walletId);
     _splitBuilder = UtxoSplitTransactionBuilder(
@@ -330,7 +329,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
           Logger.log(
             '--> SplitUtxoViewModel._onInputChanged build finished requestId=$requestId success=${result?.isSuccess}',
           );
-        } on SplitBuildCancelledException {
+        } on TaskCancelledException {
           Logger.log(
             '--> SplitUtxoViewModel._onInputChanged build cancelled requestId=$requestId currentRequestId=$_buildRequestId',
           );
@@ -587,7 +586,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   Future<UtxoSplitResult?> _buildTransaction() async {
     assert(_splitPreview != null);
-    CancelableBuildTask<UtxoSplitResult>? task;
+    CancelableTask<UtxoSplitResult>? task;
     try {
       _finalErrorMessage = "";
       Logger.log(
@@ -612,7 +611,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       } else if (result != null) {
         _finalErrorMessage = result.exception.toString();
       }
-    } on SplitBuildCancelledException {
+    } on TaskCancelledException {
       rethrow;
     } catch (e) {
       _finalErrorMessage = e.toString();
@@ -782,7 +781,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (!isTooLow && updatedText != null) {
       final parsed = double.tryParse(updatedText!);
       if (parsed != null && parsed > 0) {
-        // TODO: feeRate 설정을 여기서 해주는게 맞는가??????
         _splitBuilder.feeRate = parsed;
         _onInputChanged();
       }
