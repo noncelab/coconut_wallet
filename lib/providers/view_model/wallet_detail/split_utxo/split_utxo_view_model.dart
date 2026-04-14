@@ -38,28 +38,6 @@ enum SplitCriteria {
 }
 
 class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
-  // TODO: utxoSplitBuilder의 niceAmounts를 사용하도록 리팩토링 필요
-  static const List<double> _niceNumbers = [
-    0.0001,
-    0.0002,
-    0.0005,
-    0.001,
-    0.002,
-    0.005,
-    0.01,
-    0.02,
-    0.05,
-    0.1,
-    0.2,
-    0.5,
-    1.0,
-    2.0,
-    5.0,
-    10.0,
-    20.0,
-    50.0,
-  ];
-
   final int walletId;
   final PreferenceProvider _preferenceProvider;
   final WalletProvider _walletProvider;
@@ -133,10 +111,12 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (_selectedUtxoAmount <= 0) return [];
 
     final validAmounts =
-        _niceNumbers.where((btc) {
-          final sats = (btc * 1e8).toInt();
-          return sats < _selectedUtxoAmount;
-        }).toList();
+        UtxoSplitTransactionBuilder.niceAmounts
+            .where((sats) {
+              return sats < _selectedUtxoAmount;
+            })
+            .map((sats) => sats / 1e8)
+            .toList();
 
     if (validAmounts.length <= 6) return validAmounts;
     return validAmounts.sublist(validAmounts.length - 6);
@@ -147,8 +127,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
     final Set<int> counts = {};
 
-    for (final btc in _niceNumbers.reversed) {
-      final targetSats = (btc * 1e8).toInt();
+    for (final targetSats in UtxoSplitTransactionBuilder.niceAmounts.reversed) {
       final count = (_selectedUtxoAmount / targetSats).round();
       if (count >= 2) {
         counts.add(count);
