@@ -50,7 +50,7 @@ import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart'
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
-import 'package:coconut_wallet/screens/wallet_detail/merge_utxos_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_consolidation/merge_utxos_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
