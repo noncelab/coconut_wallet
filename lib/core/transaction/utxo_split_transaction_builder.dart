@@ -413,7 +413,6 @@ class UtxoSplitTransactionBuilder {
   }
 
   /// UTXO를 niceAmounts로 나누어지게 하는 count 최대 5개를 반환
-  /// TODO: 사용 안되고 있음
   Future<List<int>> getNiceSplitCounts() async {
     if (_cachedNiceSplitCounts != null) {
       return _cachedNiceSplitCounts!;
@@ -422,13 +421,13 @@ class UtxoSplitTransactionBuilder {
     await _initOutputVBytes();
     final utxo = _requiredUtxo;
     final selectableNiceAmounts = niceAmounts.where((element) => element < utxo.amount).toList().reversed;
-    final List<int> niceSplitCounts = [];
+    final Set<int> niceSplitCountsSet = {};
 
     for (final amount in selectableNiceAmounts) {
       try {
         final exactAmounts = _getFixedSplitExactAmounts(amount);
-        niceSplitCounts.add(exactAmounts.length + 1);
-        if (niceSplitCounts.length == 5) {
+        niceSplitCountsSet.add(exactAmounts.length + 1);
+        if (niceSplitCountsSet.length == 5) {
           break;
         }
       } on SplitOutputDustException {
@@ -440,7 +439,7 @@ class UtxoSplitTransactionBuilder {
       }
     }
 
-    _cachedNiceSplitCounts = niceSplitCounts;
+    _cachedNiceSplitCounts = niceSplitCountsSet.toList()..sort();
     return _cachedNiceSplitCounts!;
   }
 

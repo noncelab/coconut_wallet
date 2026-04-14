@@ -49,6 +49,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   // State
   List<UtxoState> _selectedUtxoList = [];
   SplitCriteria? _selectedCriteria;
+  List<int> _recommendedSplitCounts = [];
 
   final TextEditingController amountController = TextEditingController();
   final FocusNode amountFocusNode = FocusNode();
@@ -123,22 +124,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     return validAmounts.sublist(validAmounts.length - 6);
   }
 
-  List<int> get recommendedSplitCounts {
-    if (_selectedUtxoAmount <= 0) return [];
-
-    final Set<int> counts = {};
-
-    for (final targetSats in UtxoSplitTransactionBuilder.niceAmounts.reversed) {
-      final count = (_selectedUtxoAmount / targetSats).round();
-      if (count >= 2) {
-        counts.add(count);
-      }
-      if (counts.length >= 5) break;
-    }
-
-    final sortedCounts = counts.toList()..sort();
-    return sortedCounts;
-  }
+  List<int> get recommendedSplitCounts => _recommendedSplitCounts;
 
   // --- Initialization ---
   SplitUtxoViewModel(
@@ -511,6 +497,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       onDefaultFeeRateSet: (text) {
         feeRateController.text = text;
         _splitBuilder.feeRate = double.parse(text);
+        _updateRecommendedSplitCounts();
       },
     );
   }
@@ -525,6 +512,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _splitBuilder.setUtxo(_selectedUtxoList.first);
     }
 
+    _updateRecommendedSplitCounts();
     _onInputChanged();
   }
 
@@ -782,6 +770,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       final parsed = double.tryParse(updatedText!);
       if (parsed != null && parsed > 0) {
         _splitBuilder.feeRate = parsed;
+        _updateRecommendedSplitCounts();
         _onInputChanged();
       }
     }
@@ -795,6 +784,20 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   void setFeeRateFromRecommendation(double sats) {
     feeRateController.text = sats.toStringAsFixed(1);
+  }
+
+  Future<void> _updateRecommendedSplitCounts() async {
+    if (_selectedUtxoList.isEmpty) {
+      _recommendedSplitCounts = [];
+      notifyListeners();
+      return;
+    }
+    try {
+      _recommendedSplitCounts = await _splitBuilder.getNiceSplitCounts();
+      notifyListeners();
+    } catch (e) {
+      Logger.log('Error getting recommended split counts: $e');
+    }
   }
 
   @override
