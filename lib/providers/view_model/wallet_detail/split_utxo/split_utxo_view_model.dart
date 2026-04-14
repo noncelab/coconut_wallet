@@ -219,7 +219,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     return null;
   }
 
-  String? get amountErrorText {
+  String? get splitAmountErrorText {
     if (_selectedUtxoList.isEmpty) return null;
     if (_splitAmountInput.isEmpty) return null;
     // TODO: dustThreshold check
