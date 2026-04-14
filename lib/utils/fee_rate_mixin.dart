@@ -50,7 +50,7 @@ mixin FeeRateMixin on ChangeNotifier {
     return true;
   }
 
-  // 숫자 입력값인데 0 또는 0.1 미만이어서 보정을 했는지를 반환
+  // 숫자 입력값인데 0 또는 0.1 미만이어서 보정을 했는지를 반환, '-'일 때는 false
   bool handleFeeRateChanged(String text, void Function(String) updateText) {
     if (text == "-") return false;
     String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);

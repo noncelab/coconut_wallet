@@ -426,6 +426,7 @@ send_screen:
   fee_subtracted_from_send_amount_disabled_description: "El destinatario recibe el monto exacto ingresado" 
   fee_subtracted_from_send_amount_enabled_description: "La comisión se restará del monto del destinatario"  
   my_address: "Mis direcciones"
+  current_wallet_label: "Actual"
   add_recipient: "Agregar destinatario"  
   use_btc_unit: "Usar unidad BTC"
   input_maximum_amount: "Enviar todo"
@@ -605,6 +606,7 @@ settings_screen:
     log_description_2: "La información compartida solo se usará para la resolución de problemas y se descartará inmediatamente después de resolver el problema."
     log_target: "[Objetivo de registro]"
     log_target_description_1: "Para la verificación de síntomas y resolución de problemas, estamos registrando información cuando agregamos la billetera Keystone 3 Pro. Algunos dispositivos pueden enfrentar problemas, por lo que el registro está en progreso para verificar esto."  
+    log_target_description_2: "Registra la causa de las fases de error en el broadcast."
     clear_log: "Limpiar registro"
     clear_log_description: "¿Estás seguro de querer limpiar el registro?"
     email_subject: "[Coconut Wallet] Registro de depuración"
@@ -828,7 +830,7 @@ split_utxo_screen:
   placeholder_utxo: "Selecciona un UTXO"
   placeholder_criteria: "Selecciona un criterio de división"
   placeholder_split_amount: "Ingresa el monto"
-  placeholder_expected_fee: "Ingresa la comisión estimada"
+  placeholder_expected_fee: "Ingresa la tasa de comisión"
   question_select_utxo: "¿Qué UTXO quieres dividir?"
   question_select_criteria: "¿Cómo quieres dividirlo?"
   question_split_by_amount: "¿Cuánto por cada uno?"
@@ -842,8 +844,9 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "Por favor, introduce un importe menor que el UTXO seleccionado"
     insufficient_after_fee: "No es posible dividir este importe al incluir la comisión"
+    manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
-  dust_error: "Si lo divides así, se generarán pequeñas cantidades difíciles de usar"
+  dust_error: "Dividir con esta cantidad generará montos pequeños (dust)"
   criteria_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
@@ -852,8 +855,14 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "Dividiremos ${utxoAmountText} en partes de ${formattedSplitAmount}"
     split_evenly: "Dividiremos ${utxoAmountText} en ${splitCount} partes iguales"
+    split_manually: "Dividiremos ${utxoAmountText} de esta manera"
     new_utxos: "Nuevos UTXO"
     fee: "Comisión"
+    above_is_expected: "El resultado anterior es una estimación."
+  big_tx_confirm:
+    create: "Crear"
+    preview: "Vista previa"
+    description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

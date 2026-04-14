@@ -424,6 +424,7 @@ send_screen:
   fee_subtracted_from_send_amount_disabled_description: "Recipient receives the exact amount entered"
   fee_subtracted_from_send_amount_enabled_description: "The fee will be subtracted from the recipient’s amount"
   my_address: "My Addresses"
+  current_wallet_label: "Current"
   add_recipient: "Add Recipient"
   use_btc_unit: "Use BTC Unit"
   input_maximum_amount: "Send All"
@@ -602,6 +603,7 @@ settings_screen:
     log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
     log_target: "[Logging Target]"
     log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
+    log_target_description_2: "Logs the cause of broadcast failure stages."
     clear_log: "Clear Log"
     clear_log_description: "Are you sure to clear log?"
     email_subject: "[Coconut Wallet] Debug Log"
@@ -825,7 +827,7 @@ split_utxo_screen:
   placeholder_utxo: "Select a UTXO"
   placeholder_criteria: "Select a split method"
   placeholder_split_amount: "Enter amount"
-  placeholder_expected_fee: "Enter expected fee"
+  placeholder_expected_fee: "Enter fee rate"
   question_select_utxo: "Which UTXO would you like to split?"
   question_select_criteria: "How would you like to split it?"
   question_split_by_amount: "How much per split?"
@@ -839,8 +841,9 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "Please enter an amount smaller than the selected UTXO"
     insufficient_after_fee: "This amount can’t be split when the fee is included"
+    manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
-  dust_error: "Splitting it this way will create small amounts that are difficult to use"
+  dust_error: "Splitting with this amount will create small amounts (dust)"
   criteria_bottom_sheet:
     title: "Select split method"
     split_by_amount: "Split by fixed amount"
@@ -849,8 +852,14 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "We’ll split ${utxoAmountText} into amounts of ${formattedSplitAmount}"
     split_evenly: "We’ll split ${utxoAmountText} into ${splitCount} equal parts"
+    split_manually: "We’ll split ${utxoAmountText} like this"
     new_utxos: "New UTXOs"
     fee: "Fee"
+    above_is_expected: "The result above is an estimate."
+  big_tx_confirm:
+    create: "Create"
+    preview: "Preview"
+    description: "There are many splits, so creating the transaction may take some time. Would you like to preview the expected result first?"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

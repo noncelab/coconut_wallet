@@ -5,10 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-Future<String?> showAddressScannerBottomSheet(
-  BuildContext context, {
-  required String title,
-}) async {
+Future<String?> showAddressScannerBottomSheet(BuildContext context, {required String title}) async {
   MobileScannerController? qrViewController;
   bool isQrDataHandling = false;
   final qrKey = GlobalKey(debugLabel: 'QR');

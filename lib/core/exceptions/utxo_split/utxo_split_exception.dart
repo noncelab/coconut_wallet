@@ -21,3 +21,8 @@ class SplitInsufficientAmountException extends UtxoSplitException {
     super.estimatedFee,
   });
 }
+
+/// Exception thrown when the estimated fee alone exceeds the UTXO amount
+class FeeExceedsUtxoAmountException extends UtxoSplitException {
+  const FeeExceedsUtxoAmountException({super.message = 'Estimated fee exceeds UTXO amount.', super.estimatedFee});
+}

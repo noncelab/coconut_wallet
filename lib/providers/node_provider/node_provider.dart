@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/analytics_event_names.dart';
 import 'package:coconut_wallet/constants/isolate_constants.dart';
@@ -406,7 +407,12 @@ class NodeProvider extends ChangeNotifier {
   }
 
   Future<Result<String>> broadcast(Transaction signedTx) async {
-    return _isolateManager.broadcast(signedTx);
+    final result = await _isolateManager.broadcast(signedTx);
+    if (result.isFailure) {
+      Logger.error('NodeProvider.broadcast: failed code=${result.error.code} message=${result.error.message}');
+      FileLogger.logBroadcast('NodeProvider failure code=${result.error.code}');
+    }
+    return result;
   }
 
   Future<Result<int>> getNetworkMinimumFeeRate() async {

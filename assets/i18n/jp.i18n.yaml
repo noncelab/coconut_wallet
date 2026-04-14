@@ -424,6 +424,7 @@ send_screen:
   fee_subtracted_from_send_amount_disabled_description: "受取人は入力された正確な金額を受け取ります"
   fee_subtracted_from_send_amount_enabled_description: "手数料は受取人の金額から差し引かれます"
   my_address: "自分のアドレス"
+  current_wallet_label: "現在"
   add_recipient: "受取人追加"
   use_btc_unit: "BTC単位を使用"
   input_maximum_amount: "すべて送信"
@@ -602,6 +603,7 @@ settings_screen:
     log_description_2: "共有される情報は問題解決のためのみに使用され、問題解決後すぐに破棄されます。"
     log_target: "[ログ対象]"
     log_target_description_1: "症状確認と問題解決のため、Keystone 3 Proウォレット追加時に情報をログしています。一部のデバイスで問題が発生する可能性があるため、これを確認するためのログを取得中です。"
+    log_target_description_2: "ブロードキャスト失敗段階の原因をログします。"
     clear_log: "ログをクリア"
     clear_log_description: "ログをクリアしてもよろしいですか？"
     email_subject: "[Coconut Wallet] デバッグログ"
@@ -826,7 +828,7 @@ split_utxo_screen:
   placeholder_utxo: "UTXOを選択してください"
   placeholder_criteria: "分割基準を選択してください"
   placeholder_split_amount: "金額を入力してください"
-  placeholder_expected_fee: "予想手数料を入力してください"
+  placeholder_expected_fee: "手数料率を入力してください"
   question_select_utxo: "どのUTXOを分割しますか？"
   question_select_criteria: "どのように分割しますか？"
   question_split_by_amount: "いくらずつ分割しますか？"
@@ -840,8 +842,9 @@ split_utxo_screen:
   amount_error:
     amount_too_large: "選択したUTXOの金額より小さく入力してください"
     insufficient_after_fee: "手数料を含めると分割できない金額です"
+    manual_sum_over_input: "金額が足りません"
   fee_error: "手数料がUTXOの金額より大きいです"
-  dust_error: "このように分割すると、使いにくい少額が発生します"
+  dust_error: "この数で分割すると少額（ダスト）が発生します"
   criteria_bottom_sheet:
     title: "分割基準を選択"
     split_by_amount: "一定額で分割します"
@@ -850,8 +853,14 @@ split_utxo_screen:
   expected_result:
     split_by_amount: "${utxoAmountText} を ${formattedSplitAmount} ずつに分割します"
     split_evenly: "${utxoAmountText} を ${splitCount} 個に分割します"
+    split_manually: "${utxoAmountText} をこのように分割します"
     new_utxos: "新しいUTXO"
     fee: "手数料"
+    above_is_expected: "上の結果は予想値です。"
+  big_tx_confirm:
+    create: "作成する"
+    preview: "結果を確認"
+    description: "分割数が多いため、トランザクションの作成に時間がかかる場合があります。先に予想結果を確認しますか？"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

@@ -102,27 +102,30 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
               children: [
                 widget.subWidget ?? Container(),
                 CoconutLayout.spacing_300h,
-                ShrinkAnimationButton(
-                  onPressed: () {
-                    widget.onButtonClicked();
-                  },
-                  isActive: widget.isActive,
-                  defaultColor: widget.backgroundColor,
-                  pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(widget.backgroundColor),
-                  disabledColor: CoconutColors.gray800,
-                  borderRadius: 12,
-                  child: SizedBox(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: buttonHeight,
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          widget.text,
-                          textAlign: TextAlign.center,
-                          style: CoconutTypography.body2_14_Bold
-                              .setColor(widget.isActive ? widget.textColor : CoconutColors.gray700)
-                              .copyWith(height: 1.0),
+                MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: ShrinkAnimationButton(
+                    onPressed: () {
+                      widget.onButtonClicked();
+                    },
+                    isActive: widget.isActive,
+                    defaultColor: widget.backgroundColor,
+                    pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(widget.backgroundColor),
+                    disabledColor: CoconutColors.gray800,
+                    borderRadius: 12,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width,
+                      height: buttonHeight,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.text,
+                            textAlign: TextAlign.center,
+                            style: CoconutTypography.body2_14_Bold
+                                .setColor(widget.isActive ? widget.textColor : CoconutColors.gray700)
+                                .copyWith(height: 1.0),
+                          ),
                         ),
                       ),
                     ),

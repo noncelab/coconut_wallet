@@ -36,6 +36,7 @@ class UtxoTagChart extends StatelessWidget {
   final List<UtxoState> utxoList;
   final List<UtxoTag> utxoTagList;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final VoidCallback? onBalanceTap;
 
   const UtxoTagChart({
@@ -43,6 +44,7 @@ class UtxoTagChart extends StatelessWidget {
     required this.utxoList,
     required this.utxoTagList,
     required this.currentUnit,
+    required this.dustThreshold,
     this.onBalanceTap,
   });
 
@@ -160,6 +162,7 @@ class UtxoTagChart extends StatelessWidget {
               coinCount: coinCount,
               totalSats: totalSats,
               currentUnit: currentUnit,
+              dustThreshold: dustThreshold,
               onBalanceTap: onBalanceTap,
             ),
             const SizedBox(height: 12),
@@ -376,7 +379,7 @@ class _DonutChartState extends State<_DonutChart> {
     }
 
     const padding = 12.0;
-    final stackW = _size + padding * 2;
+    const stackW = _size + padding * 2;
 
     return SizedBox(
       width: stackW,
@@ -618,6 +621,7 @@ class UtxoTagGridSection extends StatefulWidget {
   final List<UtxoState> utxoList;
   final List<UtxoTag> utxoTagList;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final Set<String> selectedUtxoIds;
   final Set<String> reusedAddresses;
   final Set<String> suspiciousUtxoIds;
@@ -630,6 +634,7 @@ class UtxoTagGridSection extends StatefulWidget {
     required this.utxoList,
     required this.utxoTagList,
     required this.currentUnit,
+    required this.dustThreshold,
     required this.selectedUtxoIds,
     required this.reusedAddresses,
     required this.suspiciousUtxoIds,
@@ -904,6 +909,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                                           isSelected: isSelected,
                                                           isSelectionMode: widget.isSelectionMode,
                                                           currentUnit: widget.currentUnit,
+                                                          dustThreshold: widget.dustThreshold,
                                                           isAddressReused: widget.reusedAddresses.contains(utxo.to),
                                                           isSuspiciousDust: widget.suspiciousUtxoIds.contains(
                                                             utxo.utxoId,
@@ -943,6 +949,7 @@ class _UtxoTagGridSectionState extends State<UtxoTagGridSection> {
                                           isSelected: isSelected,
                                           isSelectionMode: widget.isSelectionMode,
                                           currentUnit: widget.currentUnit,
+                                          dustThreshold: widget.dustThreshold,
                                           isAddressReused: widget.reusedAddresses.contains(utxo.to),
                                           isSuspiciousDust: widget.suspiciousUtxoIds.contains(utxo.utxoId),
                                           onTap: () => widget.onUtxoTap(utxo),

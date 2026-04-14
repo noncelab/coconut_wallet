@@ -1,5 +1,3 @@
-import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/exceptions/cpfp_creation/cpfp_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
@@ -474,10 +472,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
-  }
-
-  bool makeDust(List<Utxo> utxoList, double outputSum, double requiredFee) {
-    return utxoList.fold(0, (sum, utxo) => sum + utxo.amount) - outputSum - requiredFee < dustLimit;
   }
 
   // 노드 프로바이더에서 추천 수수료 조회
