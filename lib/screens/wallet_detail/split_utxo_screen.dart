@@ -42,6 +42,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
   String? _displayedHeaderTitle;
+  String? _pendingHeaderTitle;
   String? _lastObservedHeaderTitle;
   bool _isHeaderFadingOut = false;
   int _headerAnimationNonce = 0;
@@ -52,12 +53,6 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   SplitStep? _lastObservedPickerStep;
   int _pickerAnimationNonce = 0;
   final List<SplitStep> _visiblePickerSteps = [];
-
-  SplitStep get _currentStep {
-    if (_viewModel.selectedUtxoList.isEmpty) return SplitStep.selectUtxo;
-    if (_viewModel.selectedCriteria == null) return SplitStep.selectCriteria;
-    return SplitStep.enterDetails;
-  }
 
   @override
   void initState() {
@@ -133,6 +128,135 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
+  void _scheduleHeaderAnimation(String nextTitle) {
+    if (_lastObservedHeaderTitle == nextTitle) return;
+    _lastObservedHeaderTitle = nextTitle;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncHeaderAnimation(nextTitle);
+    });
+  }
+
+  void _syncHeaderAnimation(String nextTitle) {
+    _pendingHeaderTitle = nextTitle;
+
+    if (_displayedHeaderTitle == null) {
+      setState(() {
+        _displayedHeaderTitle = nextTitle;
+        _isHeaderFadingOut = false;
+      });
+      return;
+    }
+
+    if (_displayedHeaderTitle == nextTitle && !_isHeaderFadingOut) return;
+    if (_isHeaderFadingOut) return;
+
+    final token = _headerAnimationNonce + 1;
+    _headerAnimationNonce = token;
+    setState(() => _isHeaderFadingOut = true);
+
+    Future.delayed(_headerAnimationDuration, () {
+      if (!mounted || token != _headerAnimationNonce) return;
+
+      setState(() {
+        _displayedHeaderTitle = _pendingHeaderTitle;
+        _isHeaderFadingOut = false;
+      });
+    });
+  }
+
+  void _scheduleOptionPickerAnimation(SplitStep step) {
+    if (_lastObservedPickerStep == step) return;
+    _lastObservedPickerStep = step;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncOptionPickerAnimation(step);
+    });
+  }
+
+  void _syncOptionPickerAnimation(SplitStep step) {
+    _pendingPickerStep = step;
+    final nextVisibleSteps = _visiblePickerStepsFor(step);
+
+    if (_displayedPickerStep == null) {
+      setState(() {
+        _displayedPickerStep = step;
+        _visiblePickerSteps.clear();
+        _visiblePickerSteps.addAll(nextVisibleSteps);
+      });
+      return;
+    }
+
+    if (_displayedPickerStep == step && listEquals(_visiblePickerSteps, nextVisibleSteps)) {
+      return;
+    }
+
+    _pickerAnimationNonce++;
+    setState(() {
+      _displayedPickerStep = _pendingPickerStep;
+      _visiblePickerSteps.clear();
+      _visiblePickerSteps.addAll(nextVisibleSteps);
+    });
+  }
+
+  List<SplitStep> _visiblePickerStepsFor(SplitStep step) {
+    switch (step) {
+      case SplitStep.selectUtxo:
+        return const [SplitStep.selectUtxo];
+      case SplitStep.selectCriteria:
+        return const [SplitStep.selectCriteria, SplitStep.selectUtxo];
+      case SplitStep.enterDetails:
+        return const [SplitStep.enterDetails, SplitStep.selectCriteria, SplitStep.selectUtxo];
+    }
+  }
+
+  Widget _buildVisibleOptionPickers(BuildContext context) {
+    final pickerWidgets =
+        _visiblePickerSteps.asMap().entries.map((entry) {
+          final index = entry.key;
+          final step = entry.value;
+
+          Widget picker;
+          switch (step) {
+            case SplitStep.selectUtxo:
+              picker = _buildUtxoPicker(context);
+              break;
+            case SplitStep.selectCriteria:
+              picker = _buildCriteriaPicker(context);
+              break;
+            case SplitStep.enterDetails:
+              picker = _buildSplitContent(context);
+              break;
+          }
+
+          final isNewest = step == _displayedPickerStep && index == 0;
+
+          if (isNewest) {
+            return picker.slideUpAnimation(
+              key: ValueKey('split-picker-in-${step.name}-$_pickerAnimationNonce'),
+              duration: _pickerAnimationDuration,
+              delay: const Duration(milliseconds: 1500),
+              offset: const Offset(0, 24),
+            );
+          }
+
+          return picker;
+        }).toList();
+
+    if (_displayedPickerStep == SplitStep.enterDetails) {
+      pickerWidgets.add(_buildFeePicker(context));
+    }
+
+    return AnimatedSize(
+      duration: _pickerAnimationDuration,
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: pickerWidgets),
+    );
+  }
+
   Widget _buildBody(BuildContext context) {
     return SafeArea(
       child: Selector<SplitUtxoViewModel, bool>(
@@ -149,10 +273,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                 _buildExpectedResult(),
                 CoconutLayout.spacing_1000h,
                 _buildHeaderTitle(),
-                _buildSplitContent(context),
-                _buildCriteriaPicker(context),
-                _buildUtxoPicker(context),
-                _buildFeePicker(context),
+                _buildVisibleOptionPickers(context),
               ],
             ),
             _buildOrganizeButton(context),
@@ -179,17 +300,38 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     return Selector<SplitUtxoViewModel, Tuple3<List<UtxoState>, SplitCriteria?, String?>>(
       selector: (_, vm) => Tuple3(vm.selectedUtxoList, vm.selectedCriteria, vm.headerTitleErrorMessage),
       builder: (context, data, _) {
+        final nextTitle = _getHeaderTitle(t, data.item1, data.item2);
+        _scheduleHeaderAnimation(nextTitle);
+
+        final currentStep =
+            data.item1.isEmpty
+                ? SplitStep.selectUtxo
+                : (data.item2 == null ? SplitStep.selectCriteria : SplitStep.enterDetails);
+        _scheduleOptionPickerAnimation(currentStep);
+
+        final titleToDisplay = _displayedHeaderTitle ?? nextTitle;
+
+        Widget titleWidget;
+        if (_isHeaderFadingOut) {
+          titleWidget = titleToDisplay.characterFadeOutAnimation(
+            key: ValueKey('split-header-out-$_headerAnimationNonce'),
+            textStyle: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+            duration: const Duration(milliseconds: 100),
+            slideDirection: CoconutCharacterFadeSlideDirection.slideUp,
+          );
+        } else {
+          titleWidget = titleToDisplay.characterFadeInAnimation(
+            key: ValueKey('split-header-in-$_headerAnimationNonce'),
+            textStyle: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+            duration: _headerAnimationDuration,
+            delay: const Duration(milliseconds: 300),
+            slideDirection: CoconutCharacterFadeSlideDirection.slideDown,
+          );
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _getHeaderTitle(t, data.item1, data.item2),
-              style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-            ),
-            CoconutLayout.spacing_50h,
-            const _HeaderTitleErrorText(),
-            CoconutLayout.spacing_200h,
-          ],
+          children: [titleWidget, CoconutLayout.spacing_50h, const _HeaderTitleErrorText(), CoconutLayout.spacing_200h],
         );
       },
     );
