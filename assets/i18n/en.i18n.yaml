@@ -855,6 +855,11 @@ split_utxo_screen:
     split_manually: "We’ll split ${utxoAmountText} like this"
     new_utxos: "New UTXOs"
     fee: "Fee"
+    above_is_expected: "The result above is an estimate."
+  big_tx_confirm:
+    create: "Create"
+    preview: "Preview"
+    description: "There are many splits, so creating the transaction may take some time. Would you like to preview the expected result first?"
 
 # lib/widgets/card
 wallet_list_add_guide_card:

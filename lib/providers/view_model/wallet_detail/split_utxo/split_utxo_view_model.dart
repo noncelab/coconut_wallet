@@ -17,7 +17,7 @@ import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 
-typedef BigTxConfirmPrompt = Future<bool> Function(int outputCount);
+typedef UsePreviewConfirmPrompt = Future<bool> Function(int outputCount);
 
 enum SplitErrorType { none, feeExceedsAmount, dust }
 
@@ -44,7 +44,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   final WalletProvider _walletProvider;
   final AddressRepository _addressRepository;
   final SendInfoProvider _sendInfoProvider;
-  final BigTxConfirmPrompt _showBigTxConfirmPrompt;
+  final UsePreviewConfirmPrompt _showUsePreviewConfirmPrompt;
 
   // State
   List<UtxoState> _selectedUtxoList = [];
@@ -81,7 +81,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   /// Output 개수가 많을 때 트랜잭션 생성 시 1분 이상 걸릴 수 있으므로 컨펌 필요
   final int _bigTxOutputThreshold = 1000;
-  bool? _isBigTxBuild;
+  bool? _usePreview;
 
   // --- UI Getter ---
   String get finalErrorMessage => _finalErrorMessage;
@@ -104,7 +104,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   bool get usePreview =>
       _splitPreview != null &&
       _splitPreview!.amountCountMap.values.fold<int>(0, (sum, count) => sum + count) > _bigTxOutputThreshold &&
-      _isBigTxBuild == false;
+      _usePreview == true;
 
   bool get showSkeletonResultBox => _activeBuildTask != null;
   bool get showSplitResultBox => _splitResult != null || usePreview;
@@ -133,7 +133,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     this._walletProvider,
     this._addressRepository,
     this._sendInfoProvider,
-    this._showBigTxConfirmPrompt,
+    this._showUsePreviewConfirmPrompt,
   ) {
     feeRateController.addListener(() {
       if (_lastFeeRateText != feeRateController.text) {
@@ -289,16 +289,16 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       final outputCount = preview.amountCountMap.values.fold<int>(0, (sum, count) => sum + count);
       bool isBuildTx = true;
       if (outputCount > _bigTxOutputThreshold) {
-        _isBigTxBuild ??= await _showBigTxConfirmPrompt(outputCount);
+        _usePreview ??= await _showUsePreviewConfirmPrompt(outputCount);
         if (requestId != _buildRequestId) {
           Logger.log(
-            '--> SplitUtxoViewModel._onInputChanged stale request after bigTx confirm requestId=$requestId currentRequestId=$_buildRequestId',
+            '--> SplitUtxoViewModel._onInputChanged stale request after use preview confirm requestId=$requestId currentRequestId=$_buildRequestId',
           );
           return;
         }
-        isBuildTx = _isBigTxBuild!;
+        isBuildTx = !_usePreview!;
         Logger.log(
-          '--> SplitUtxoViewModel._onInputChanged bigTx decision requestId=$requestId outputCount=$outputCount isBuildTx=$isBuildTx',
+          '--> SplitUtxoViewModel._onInputChanged use preview  decision requestId=$requestId outputCount=$outputCount isBuildTx=$isBuildTx',
         );
       }
 
@@ -538,7 +538,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _isAmountInsufficientAfterFee = false;
     _isFeeExceedsUtxoAmount = false;
     _errorEstimatedFee = null;
-    _isBigTxBuild = null;
+    _usePreview = null;
     _finalErrorMessage = "";
     _splitResult = _splitPreview = null;
     notifyListeners();

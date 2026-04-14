@@ -38,8 +38,6 @@ class SplitUtxoScreen extends StatefulWidget {
 }
 
 class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
-  late SplitUtxoViewModel _viewModel;
-
   static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
   String? _displayedHeaderTitle;
   String? _pendingHeaderTitle;
@@ -55,21 +53,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   final List<SplitStep> _visiblePickerSteps = [];
 
   @override
-  void initState() {
-    super.initState();
-    _viewModel = SplitUtxoViewModel(
-      widget.id,
-      context.read<PreferenceProvider>(),
-      context.read<WalletProvider>(),
-      context.read<AddressRepository>(),
-      context.read<SendInfoProvider>(),
-      (outputCount) => _showBigTxConfirmDialog(context, outputCount),
-    );
-  }
-
-  @override
   void dispose() {
-    _viewModel.dispose();
     super.dispose();
   }
 
@@ -83,7 +67,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             context.read<WalletProvider>(),
             context.read<AddressRepository>(),
             context.read<SendInfoProvider>(),
-            (outputCount) => _showBigTxConfirmDialog(context, outputCount),
+            (outputCount) => _showUsePreviewConfirmDialog(context, outputCount),
           ),
       child: Builder(
         builder: (context) {
@@ -97,14 +81,17 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  Future<bool> _showBigTxConfirmDialog(BuildContext context, int outputCount) async {
+  Future<bool> _showUsePreviewConfirmDialog(BuildContext context, int outputCount) async {
     final result = await showDialog<bool>(
+      barrierDismissible: false,
       context: context,
       builder: (dialogContext) {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: t.confirm,
-          description: '나누는 개수가 많아 트랜잭션 생성 시 1분 이상 걸릴 수 있어요. 취소를 누르시면 예측값을 보여드려요. 트랜잭션을 생성하시겠어요?',
+          leftButtonText: t.split_utxo_screen.big_tx_confirm.create,
+          rightButtonText: t.split_utxo_screen.big_tx_confirm.preview,
+          description: t.split_utxo_screen.big_tx_confirm.description,
           onTapRight: () {
             Navigator.pop(dialogContext, true);
           },
@@ -979,7 +966,10 @@ class SplitResultBox extends StatelessWidget {
                   CoconutLayout.spacing_200h,
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Text('위 결과는 예측값입니다.', style: CoconutTypography.caption_10.setColor(CoconutColors.gray400)),
+                    child: Text(
+                      t.split_utxo_screen.expected_result.above_is_expected,
+                      style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                    ),
                   ),
                 ],
               ),

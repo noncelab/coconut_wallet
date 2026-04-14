@@ -861,6 +861,11 @@ split_utxo_screen:
     split_manually: "$utxoAmountText를 이렇게 나눌게요"
     new_utxos: "새로운 UTXO"
     fee: "수수료"
+    above_is_expected: "위 결과는 예상값이에요."
+  big_tx_confirm:
+    create: "생성하기"
+    preview: "예상 보기"
+    description: "나누는 개수가 많아 트랜잭션 생성에 시간이 걸릴 수 있어요. 예상 결과를 먼저 확인할까요?"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
