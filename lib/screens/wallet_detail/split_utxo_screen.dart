@@ -261,8 +261,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     return SafeArea(
       child: Selector<SplitUtxoViewModel, bool>(
         selector: (_, vm) => vm.isPreparingNextStep,
-        builder: (context, isBuilding, child) {
-          return LoadingOverlay(isLoading: isBuilding, child: child!);
+        builder: (context, isPreparingNextStep, child) {
+          return LoadingOverlay(isLoading: isPreparingNextStep, child: child!);
         },
         child: Stack(
           children: [
@@ -366,7 +366,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       builder: (context, data, _) {
         final showSplitResultBox = data.item1;
         final isSplitValid = data.item2;
-        final isBuilding = data.item3;
+        final isPreparingNextStep = data.item3;
         final finalErrorMessage = data.item4;
         final viewModel = context.read<SplitUtxoViewModel>();
         return AnimatedOpacity(
@@ -388,7 +388,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                   vibrateLightDouble();
                 }
               },
-              isActive: isSplitValid && !isBuilding && finalErrorMessage.isEmpty,
+              isActive: isSplitValid && !isPreparingNextStep && finalErrorMessage.isEmpty,
               backgroundColor: CoconutColors.white,
             ),
           ),
