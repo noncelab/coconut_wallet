@@ -420,23 +420,19 @@ class UtxoSplitTransactionBuilder {
 
     await _initOutputVBytes();
     final utxo = _requiredUtxo;
-    final selectableNiceAmounts = niceAmounts.where((element) => element < utxo.amount).toList().reversed;
     final Set<int> niceSplitCountsSet = {};
 
-    for (final amount in selectableNiceAmounts) {
-      try {
-        final exactAmounts = _getFixedSplitExactAmounts(amount);
-        niceSplitCountsSet.add(exactAmounts.length + 1);
-        if (niceSplitCountsSet.length == 5) {
-          break;
+    for (final targetSats in niceAmounts.reversed) {
+      final count = (utxo.amount / targetSats).round();
+      if (count >= 2) {
+        try {
+          await getEqualAmountSplitPreview(splitCount: count);
+          niceSplitCountsSet.add(count);
+        } catch (_) {
+          continue;
         }
-      } on SplitOutputDustException {
-        continue;
-      } on FeeExceedsUtxoAmountException {
-        continue;
-      } on SplitInsufficientAmountException {
-        continue;
       }
+      if (niceSplitCountsSet.length >= 5) break;
     }
 
     _cachedNiceSplitCounts = niceSplitCountsSet.toList()..sort();
