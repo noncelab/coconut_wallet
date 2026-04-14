@@ -338,7 +338,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
   }
 
-  @Deprecated('옵션피커가 나타나고 바텀시트가 자동으로 올라오게 하려면 이 함수 사용')
   void _scheduleBottomSheetOpen(UtxoMergeStep step) async {
     await Future.delayed(const Duration(milliseconds: 50));
     // 옵션 피커가 생긴 뒤 BottomSheet 자동 노출 예약
@@ -1140,7 +1139,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                 duration: _optionPickerAnimationDuration,
                 delay: const Duration(milliseconds: 1500),
                 offset: const Offset(0, 24),
-                // onCompleted: () => _scheduleBottomSheetOpen(step),
+                onCompleted: () => _scheduleBottomSheetOpen(step),
               ),
             );
           }
@@ -1302,5 +1301,4 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       },
     );
   }
-
 }
