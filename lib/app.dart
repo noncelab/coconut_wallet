@@ -326,7 +326,8 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         initialBitcoinUri: args['initialBitcoinUri'],
                       ),
                     ),
-                '/merge-utxos': (context) => buildScreenWithArgs(context, (args) => MergeUtxosScreen(id: args['id'])),
+                '/merge-utxos':
+                    (context) => buildLoadingScreenWithArgs(context, (args) => MergeUtxosScreen(id: args['id'])),
                 '/split-utxo': (context) => buildScreenWithArgs(context, (args) => SplitUtxoScreen(id: args['id'])),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
 
