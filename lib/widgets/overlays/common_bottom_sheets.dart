@@ -524,6 +524,8 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
 class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody<T>> {
   Object? _selectedId;
 
+  bool get _hasSelectionChanged => _selectedId != widget.initiallySelectedId;
+
   @override
   void initState() {
     super.initState();
@@ -606,7 +608,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                               : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
                       Navigator.pop(context, selectedItem);
                     },
-                    isActive: _selectedId != null,
+                    isActive: _selectedId != null && _hasSelectionChanged,
                     text: widget.confirmText,
                     backgroundColor: CoconutColors.white,
                   ),

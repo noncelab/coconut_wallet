@@ -5,6 +5,7 @@ import 'package:coconut_wallet/services/model/response/block_header.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/recommended_fee.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
+import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 
 /// NodeProvider의 네트워크 관련 기능을 담당하는 서비스 클래스
@@ -128,6 +129,7 @@ class NetworkService {
 
       return Result.success(txHash);
     } catch (e) {
+      FileLogger.logBroadcast('electrum_broadcast_rpc_failure');
       return Result.failure(ErrorCodes.broadcastErrorWithMessage(e.toString()));
     }
   }

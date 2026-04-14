@@ -520,6 +520,9 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                               isSuspiciousDust: false,
                               showSelectedCheckIcon: false,
                               onTap: () => _handleUtxoTap(rowUtxos[column], isEditing),
+                              dustThreshold:
+                                  DustThresholds
+                                      .p2wpkh, // TODO: selectedUtxoPreviewBottomSheetBody에 AddressType을 생성자 매개변수로 받아서 사용해야함
                             ),
                           ),
                         )

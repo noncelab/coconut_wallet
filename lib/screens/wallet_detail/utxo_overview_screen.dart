@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
@@ -47,6 +48,8 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
 
   final GlobalKey _appBarKey = GlobalKey();
   final GlobalKey _scrollRailKey = GlobalKey();
+
+  int get _dustThreshold => viewModel.walletType.addressType.dustThreshold;
 
   bool _isByAmount = true;
   int _lockFilterIndex = 0; // 0: 사용 가능, 1: 사용 잠김
@@ -97,7 +100,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
   }
 
   void _refreshBucketsFromViewModel() {
-    _buckets = bucketize(viewModel.utxoList);
+    _buckets = bucketize(viewModel.utxoList, dustThreshold: _dustThreshold);
     final preserving = _restoreUtxoId != null;
     _updateFilteredBuckets(preserveUiState: preserving);
     _restoreStateAfterReturn();
@@ -168,7 +171,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
       context.read<NodeProvider>().getWalletStateStream(widget.id),
     );
 
-    _buckets = bucketize(viewModel.utxoList);
+    _buckets = bucketize(viewModel.utxoList, dustThreshold: _dustThreshold);
     _updateFilteredBuckets();
 
     viewModel.addListener(_onViewModelChanged);
@@ -307,6 +310,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                     .where((u) => u.status == UtxoStatus.locked)
                     .fold<int>(0, (s, u) => s + u.amount),
                 currentUnit: _currentUnit,
+                dustThreshold: _dustThreshold,
                 onBalanceTap: _toggleUnit,
                 onThemeSettingTap: () {
                   CommonBottomSheets.showCustomHeightBottomSheet(
@@ -325,6 +329,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                 selectedCount: _selectedUtxoIds.length,
                 selectedTotalSats: _selectedTotalSats,
                 currentUnit: _currentUnit,
+                dustThreshold: _dustThreshold,
                 viewModeIndex: _viewModeIndex,
                 lockFilterIndex: _lockFilterIndex,
                 isSelectionMode: _isSelectionMode,
@@ -360,6 +365,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                         bucket: bucket,
                         index: index,
                         currentUnit: _currentUnit,
+                        dustThreshold: _dustThreshold,
                         activeIndexListenable: _activeIndex,
                         restoredStateListenable: _restoredStateListenable,
                         isSelectionMode: _isSelectionMode,
@@ -441,6 +447,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             utxoList: viewModel.utxoList,
             utxoTagList: utxoTagList,
             currentUnit: _currentUnit,
+            dustThreshold: _dustThreshold,
             onBalanceTap: _toggleUnit,
           ),
         ),
@@ -451,6 +458,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             selectedCount: _selectedUtxoIds.length,
             selectedTotalSats: _selectedTotalSats,
             currentUnit: _currentUnit,
+            dustThreshold: _dustThreshold,
             isSelectionMode: _isSelectionMode,
             onExitSelectionMode: () {
               _exitSelectionMode();
@@ -463,6 +471,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
             utxoList: viewModel.utxoList,
             utxoTagList: utxoTagList,
             currentUnit: _currentUnit,
+            dustThreshold: _dustThreshold,
             selectedUtxoIds: _selectedUtxoIds,
             reusedAddresses: _reusedAddresses,
             suspiciousUtxoIds: _suspiciousUtxoIds,
@@ -804,6 +813,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
                   isSelected: isSelected,
                   isSelectionMode: _isSelectionMode,
                   currentUnit: currentUnit,
+                  dustThreshold: _dustThreshold,
                   isAddressReused: _reusedAddresses.contains(utxo.to),
                   isSuspiciousDust: _suspiciousUtxoIds.contains(utxo.utxoId),
                   onTap: () {

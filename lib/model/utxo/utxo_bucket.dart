@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 
 class UtxoBucket {
@@ -10,19 +9,21 @@ class UtxoBucket {
 }
 
 /// UTXO 금액 구간 정의 (그래프, 모달 등 공통 사용)
-const utxoBucketRanges = [
-  (label: 'whale', min: 1_000_000_000, max: 2_100_000_000_000_000),
-  (label: 'whole', min: 100_000_000, max: 999_999_999),
-  (label: 'huge', min: 10_000_000, max: 99_999_999),
-  (label: 'large', min: 1_000_001, max: 9_999_999),
-  (label: 'meduim', min: 100_001, max: 1_000_000),
-  (label: 'small', min: 10_001, max: 100_000),
-  (label: 'tiny', min: dustLimit + 1, max: 10_000),
-  (label: 'dust', min: 0, max: dustLimit),
-];
+List<({String label, int min, int max})> getUtxoBucketRanges({required int dustThreshold}) {
+  return [
+    (label: 'whale', min: 1_000_000_000, max: 2_100_000_000_000_000),
+    (label: 'whole', min: 100_000_000, max: 999_999_999),
+    (label: 'huge', min: 10_000_000, max: 99_999_999),
+    (label: 'large', min: 1_000_001, max: 9_999_999),
+    (label: 'meduim', min: 100_001, max: 1_000_000),
+    (label: 'small', min: 10_001, max: 100_000),
+    (label: 'tiny', min: dustThreshold + 1, max: 10_000),
+    (label: 'dust', min: 0, max: dustThreshold),
+  ];
+}
 
-List<UtxoBucket> bucketize(List<UtxoState> utxos) {
-  return utxoBucketRanges
+List<UtxoBucket> bucketize(List<UtxoState> utxos, {required int dustThreshold}) {
+  return getUtxoBucketRanges(dustThreshold: dustThreshold)
       .map((r) {
         final list =
             utxos.where((u) => u.amount >= r.min && u.amount <= r.max).toList()..sort((a, b) {

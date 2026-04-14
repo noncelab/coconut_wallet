@@ -144,6 +144,8 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                           CoconutLayout.spacing_100h,
                           // 로깅 대상 추가 시 여기에 추가
                           _buildLogDescription('1', t.settings_screen.log_viewer_screen.log_target_description_1),
+                          CoconutLayout.spacing_100h,
+                          _buildLogDescription('2', t.settings_screen.log_viewer_screen.log_target_description_2),
                         ],
                       ),
                     ),

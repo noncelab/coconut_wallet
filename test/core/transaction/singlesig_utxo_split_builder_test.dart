@@ -115,6 +115,7 @@ void main() {
       final builder = createBuilder();
 
       expect(() => builder.getMaxEqualSplitCount(), throwsA(isA<StateError>()));
+      expect(() => builder.buildEqualAmountSplit(splitCount: 200).future, throwsA(isA<StateError>()));
       expect(() => builder.getNiceSplitCounts(), throwsA(isA<StateError>()));
       expect(() => builder.getEqualAmountSplitPreview(splitCount: 2), throwsA(isA<StateError>()));
     });
@@ -132,7 +133,7 @@ void main() {
 
       builder.setUtxo(createUtxo(100000));
 
-      final result = await builder.buildEqualAmountSplit(splitCount: 2);
+      final result = await builder.buildEqualAmountSplit(splitCount: 2).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -147,7 +148,7 @@ void main() {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildEqualAmountSplit(splitCount: 5);
+      final result = await builder.buildEqualAmountSplit(splitCount: 5).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -174,7 +175,7 @@ void main() {
       final utxo = createUtxo(100270);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildEqualAmountSplit(splitCount: 5);
+      final result = await builder.buildEqualAmountSplit(splitCount: 5).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -192,14 +193,14 @@ void main() {
       final utxo = createUtxo(50000);
       final builder = createBuilder(utxo);
 
-      expect(() => builder.buildEqualAmountSplit(splitCount: 200), throwsA(isA<SplitOutputDustException>()));
+      expect(() => builder.buildEqualAmountSplit(splitCount: 200).future, throwsA(isA<SplitOutputDustException>()));
     });
 
     test('fee가 UTXO amount 대비 너무 크면 SplitInsufficientAmountException', () async {
       final utxo = createUtxo(50000);
       final builder = createBuilder(utxo, 1000.0);
 
-      expect(() => builder.buildEqualAmountSplit(splitCount: 2), throwsA(isA<SplitInsufficientAmountException>()));
+      expect(() => builder.buildEqualAmountSplit(splitCount: 2).future, throwsA(isA<FeeExceedsUtxoAmountException>()));
     });
   });
 
@@ -208,7 +209,7 @@ void main() {
       final utxo = createUtxo(100000000);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildFixedAmountSplit(amountPerOutput: 1000000);
+      final result = await builder.buildFixedAmountSplit(amountPerOutput: 1000000).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -224,14 +225,17 @@ void main() {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo);
 
-      expect(() => builder.buildFixedAmountSplit(amountPerOutput: 100), throwsA(isA<SplitOutputDustException>()));
+      expect(
+        () => builder.buildFixedAmountSplit(amountPerOutput: 100).future,
+        throwsA(isA<SplitOutputDustException>()),
+      );
     });
 
     test('기본 성공 케이스 - 100000 sats UTXO, 5000 sats per output', () async {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildFixedAmountSplit(amountPerOutput: 5000);
+      final result = await builder.buildFixedAmountSplit(amountPerOutput: 5000).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -246,7 +250,7 @@ void main() {
       final utxo = createUtxo(100000000);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildFixedAmountSplit(amountPerOutput: 300000);
+      final result = await builder.buildFixedAmountSplit(amountPerOutput: 300000).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -264,7 +268,7 @@ void main() {
       final utxo = createUtxo(100000000);
       final builder = createBuilder(utxo, 12.5);
 
-      final result = await builder.buildFixedAmountSplit(amountPerOutput: 300000);
+      final result = await builder.buildFixedAmountSplit(amountPerOutput: 300000).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -284,7 +288,7 @@ void main() {
       final builder = createBuilder(utxo);
 
       expect(
-        () => builder.buildFixedAmountSplit(amountPerOutput: 99990),
+        () => builder.buildFixedAmountSplit(amountPerOutput: 99990).future,
         throwsA(isA<SplitInsufficientAmountException>()),
       );
     });
@@ -294,8 +298,8 @@ void main() {
       final builder = createBuilder(utxo, 100000);
 
       expect(
-        () => builder.buildFixedAmountSplit(amountPerOutput: 5000),
-        throwsA(isA<SplitInsufficientAmountException>()),
+        () => builder.buildFixedAmountSplit(amountPerOutput: 5000).future,
+        throwsA(isA<FeeExceedsUtxoAmountException>()),
       );
     });
   });
@@ -370,7 +374,7 @@ void main() {
       final utxo = createUtxo(100000000); // 1 BTC
       final builder = createBuilder(utxo, 1.0);
 
-      final result = await builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 9});
+      final result = await builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 9}).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -387,7 +391,7 @@ void main() {
       final utxo = createUtxo(100000000); // 1 BTC
       final builder = createBuilder(utxo, 1.0);
 
-      final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332});
+      final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332}).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -405,7 +409,7 @@ void main() {
       final utxo = createUtxo(100000000); // 1 BTC
       final builder = createBuilder(utxo, 12.5);
 
-      final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332});
+      final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332}).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -424,7 +428,7 @@ void main() {
       final builder = createBuilder(utxo, 1.0);
 
       expect(
-        () => builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 10}),
+        () => builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 10}).future,
         throwsA(isA<SplitInsufficientAmountException>()),
       );
     });
@@ -434,19 +438,19 @@ void main() {
       final builder = createBuilder(utxo, 1.0);
 
       expect(
-        () => builder.buildCustomAmountSplit(amountCountMap: {50000000: 1, 49999828: 1}),
+        () => builder.buildCustomAmountSplit(amountCountMap: {50000000: 1, 49999828: 1}).future,
         throwsA(isA<SplitOutputDustException>()),
       );
     });
 
-    test('feeRate 10000000에서 0.1BTC를 0.05 x 20으로 나누려 하면 SplitInsufficientAmountException이고 estimatedFee가 있다', () async {
+    test('feeRate 10000000에서 0.1BTC를 0.05 x 20으로 나누려 하면 FeeExceedsUtxoAmountException이고 estimatedFee가 있다', () async {
       final utxo = createUtxo(10000000); // 0.1 BTC
       final builder = createBuilder(utxo, 10000000);
 
       try {
-        await builder.buildCustomAmountSplit(amountCountMap: {5000000: 20});
+        await builder.buildCustomAmountSplit(amountCountMap: {5000000: 20}).future;
         fail('SplitInsufficientAmountException should be thrown');
-      } on SplitInsufficientAmountException catch (e) {
+      } on FeeExceedsUtxoAmountException catch (e) {
         expect(e.estimatedFee, isNotNull);
       }
     });
@@ -457,7 +461,7 @@ void main() {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo);
 
-      final result = await builder.buildEqualAmountSplit(splitCount: 3);
+      final result = await builder.buildEqualAmountSplit(splitCount: 3).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -470,7 +474,7 @@ void main() {
       final utxo = createUtxo(100000);
       final builder = createBuilder(utxo, 3.5);
 
-      final result = await builder.buildEqualAmountSplit(splitCount: 3);
+      final result = await builder.buildEqualAmountSplit(splitCount: 3).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -485,7 +489,7 @@ void main() {
       final utxo = createUtxo(1000000);
       final builder = createBuilder(utxo, 100.0);
 
-      final result = await builder.buildEqualAmountSplit(splitCount: 2);
+      final result = await builder.buildEqualAmountSplit(splitCount: 2).future;
 
       expect(result.isSuccess, isTrue);
       expectSuccessfulTransaction(result);
@@ -518,13 +522,13 @@ void main() {
         if (maxCount < 2) {
           // 분할 불가능한 경우 - 2분할도 실패해야 함
           expect(
-            () => builder.buildEqualAmountSplit(splitCount: 2),
+            () => builder.buildEqualAmountSplit(splitCount: 2).future,
             throwsA(anyOf(isA<SplitOutputDustException>(), isA<SplitInsufficientAmountException>())),
           );
           return;
         }
 
-        final result = await builder.buildEqualAmountSplit(splitCount: maxCount);
+        final result = await builder.buildEqualAmountSplit(splitCount: maxCount).future;
 
         expect(result.isSuccess, isTrue, reason: 'getMaxEqualSplitCount=$maxCount, buildEqualSplit 실패');
         expectSuccessfulTransaction(result);
@@ -542,7 +546,7 @@ void main() {
       final builder = createBuilder(utxo, 1.0);
 
       final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
-      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000);
+      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000).future;
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
@@ -552,7 +556,7 @@ void main() {
       final builder = createBuilder(utxo, 1.0);
 
       final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
-      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000);
+      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000).future;
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
@@ -562,7 +566,7 @@ void main() {
       final builder = createBuilder(utxo, 1.0);
 
       final SplitPreview preview = await builder.getCustomAmountSplitPreview(amountCountMap: {10000: 2});
-      final UtxoSplitResult result = await builder.buildCustomAmountSplit(amountCountMap: {10000: 2});
+      final UtxoSplitResult result = await builder.buildCustomAmountSplit(amountCountMap: {10000: 2}).future;
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
@@ -572,7 +576,7 @@ void main() {
       final builder = createBuilder(utxo, 1.0);
 
       final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 2);
-      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 2);
+      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 2).future;
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });

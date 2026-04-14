@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/model/utxo/utxo_bucket.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -16,6 +15,7 @@ class UtxoBucketCardRow extends StatelessWidget {
   final UtxoBucket bucket;
   final int index;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final ValueListenable<int> activeIndexListenable;
   final ValueListenable<({int bucket, int card})?>? restoredStateListenable;
   final bool isSelectionMode;
@@ -31,6 +31,7 @@ class UtxoBucketCardRow extends StatelessWidget {
     required this.bucket,
     required this.index,
     required this.currentUnit,
+    required this.dustThreshold,
     required this.activeIndexListenable,
     this.restoredStateListenable,
     required this.isSelectionMode,
@@ -68,6 +69,7 @@ class UtxoBucketCardRow extends StatelessWidget {
               return _CoinStack(
                 utxos: bucket.utxos,
                 currentUnit: currentUnit,
+                dustThreshold: dustThreshold,
                 isExpanded: isExpanded,
                 isSelectionMode: isSelectionMode,
                 selectedUtxoIds: selectedUtxoIds,
@@ -88,6 +90,7 @@ class UtxoBucketCardRow extends StatelessWidget {
         return _CoinStack(
           utxos: bucket.utxos,
           currentUnit: currentUnit,
+          dustThreshold: dustThreshold,
           isExpanded: active == index,
           isSelectionMode: isSelectionMode,
           selectedUtxoIds: selectedUtxoIds,
@@ -111,7 +114,13 @@ class UtxoBucketCardRow extends StatelessWidget {
           const SizedBox(height: 8),
           ValueListenableBuilder<int>(
             valueListenable: activeIndexListenable,
-            builder: (_, active, __) => _Summary(bucket: bucket, currentUnit: currentUnit, isActive: active == index),
+            builder:
+                (_, active, __) => _Summary(
+                  bucket: bucket,
+                  currentUnit: currentUnit,
+                  dustThreshold: dustThreshold,
+                  isActive: active == index,
+                ),
           ),
           const SizedBox(height: 8),
           Expanded(child: _buildCoinStack()),
@@ -125,9 +134,15 @@ class UtxoBucketCardRow extends StatelessWidget {
 class _Summary extends StatelessWidget {
   final UtxoBucket bucket;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final bool isActive;
 
-  const _Summary({required this.bucket, required this.currentUnit, required this.isActive});
+  const _Summary({
+    required this.bucket,
+    required this.currentUnit,
+    required this.dustThreshold,
+    required this.isActive,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +152,7 @@ class _Summary extends StatelessWidget {
     return Align(
       alignment: Alignment.center,
       child: Text(
-        '${bucket.utxos.length} coins • ${formatUtxoAmountForDisplay(totalSats, currentUnit, forceSats: isDustBucket)}',
+        '${bucket.utxos.length} coins • ${formatUtxoAmountForDisplay(totalSats, currentUnit, dustThreshold: dustThreshold, forceSats: isDustBucket)}',
         style: CoconutTypography.body2_14_NumberBold.setColor(textColor),
       ),
     );
@@ -147,6 +162,7 @@ class _Summary extends StatelessWidget {
 class _CoinStack extends StatefulWidget {
   final List<UtxoState> utxos;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final bool isExpanded;
   final bool isSelectionMode;
   final Set<String> selectedUtxoIds;
@@ -159,6 +175,7 @@ class _CoinStack extends StatefulWidget {
   const _CoinStack({
     required this.utxos,
     required this.currentUnit,
+    required this.dustThreshold,
     required this.isExpanded,
     required this.isSelectionMode,
     required this.selectedUtxoIds,
@@ -319,6 +336,7 @@ class _CoinStackState extends State<_CoinStack> {
                           isSelected: widget.selectedUtxoIds.contains(widget.utxos[i].utxoId),
                           isSelectionMode: widget.isSelectionMode,
                           currentUnit: widget.currentUnit,
+                          dustThreshold: widget.dustThreshold,
                           isAddressReused: widget.reusedAddresses.contains(widget.utxos[i].to),
                           isSuspiciousDust: widget.suspiciousUtxoIds.contains(widget.utxos[i].utxoId),
                           onTap: () => widget.onTap(widget.utxos[i]),
@@ -344,6 +362,7 @@ class UtxoCoinCard extends StatefulWidget {
   final bool isSelected;
   final bool isSelectionMode;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final bool isAddressReused;
   final bool isSuspiciousDust;
   final bool showSelectedCheckIcon;
@@ -359,6 +378,7 @@ class UtxoCoinCard extends StatefulWidget {
     this.isSelected = false,
     this.isSelectionMode = false,
     required this.currentUnit,
+    required this.dustThreshold,
     this.isAddressReused = false,
     this.isSuspiciousDust = false,
     this.showSelectedCheckIcon = true,
@@ -375,7 +395,8 @@ class UtxoCoinCard extends StatefulWidget {
     bool isFocused,
     Color iconColor,
     UtxoState utxo,
-    BitcoinUnit currentUnit, {
+    BitcoinUnit currentUnit,
+    int dustThreshold, {
     bool isSuspiciousDust = false,
   }) {
     return Stack(
@@ -402,7 +423,12 @@ class UtxoCoinCard extends StatefulWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  formatUtxoBalanceForTooltip(utxo.amount, currentUnit, isDustBucket: utxo.amount <= dustLimit),
+                  formatUtxoBalanceForTooltip(
+                    utxo.amount,
+                    currentUnit,
+                    dustThreshold: dustThreshold,
+                    isDustBucket: utxo.amount <= dustThreshold,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -443,7 +469,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
     final cardWidth = isBill ? widget.size * 1.35 : widget.size;
     final cardHeight = isBill ? widget.size * 0.85 : widget.size;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
-    final bucketCol = tierTheme.colorForSats(widget.utxo.amount);
+    final bucketCol = tierTheme.colorForSats(widget.utxo.amount, dustThreshold: widget.dustThreshold);
     final bgColor = widget.isFocused ? bucketCol : Color.lerp(CoconutColors.black, bucketCol, 0.68)!;
     final iconColor = bgColor;
     final shadowBlur = widget.isFocused ? 16.0 : 6.0;
@@ -499,6 +525,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               iconColor,
                               widget.utxo,
                               widget.currentUnit,
+                              widget.dustThreshold,
                               isSuspiciousDust: widget.isSuspiciousDust,
                             ),
                             // coin 테두리
@@ -526,6 +553,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                               iconColor,
                               widget.utxo,
                               widget.currentUnit,
+                              widget.dustThreshold,
                               isSuspiciousDust: widget.isSuspiciousDust,
                             ),
                             Positioned.fill(

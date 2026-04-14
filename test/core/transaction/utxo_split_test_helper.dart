@@ -1,4 +1,4 @@
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,7 +14,7 @@ void expectSuccessfulTransaction(UtxoSplitResult result, {int? expectedOutputCou
   }
 
   for (final output in result.transaction!.outputs) {
-    expect(output.amount, greaterThan(dustLimit));
+    expect(output.amount, greaterThan(DustThresholds.p2wpkh));
   }
 }
 
@@ -24,7 +24,7 @@ Future<void> expectEqualSplitAmountsNearNiceAmounts(
   int tolerance = 10000,
 }) async {
   for (final entry in expectedNiceAmountByCount.entries) {
-    final result = await builder.buildEqualAmountSplit(splitCount: entry.key);
+    final result = await builder.buildEqualAmountSplit(splitCount: entry.key).future;
 
     expectSuccessfulTransaction(result, expectedOutputCount: entry.key);
     expect(result.splitAmountMap.keys, everyElement(inInclusiveRange(entry.value - tolerance, entry.value)));

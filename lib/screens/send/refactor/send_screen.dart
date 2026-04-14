@@ -694,30 +694,33 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
-    final child = Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        border: Border.all(width: 1, color: CoconutColors.gray700),
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            imagePath,
-            height: 12,
-            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-          ),
-          CoconutLayout.spacing_100w,
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(
-              "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
-              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+    final child = MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(width: 1, color: CoconutColors.gray700),
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              imagePath,
+              height: 12,
+              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
             ),
-          ),
-        ],
+            CoconutLayout.spacing_100w,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
+                style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -1017,44 +1020,47 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             child: IntrinsicWidth(
               child: Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: CoconutTextField(
-                  textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                  textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                  enableInteractiveSelection: false,
-                  textAlign: TextAlign.end,
-                  controller: _feeRateController,
-                  focusNode: _feeRateFocusNode,
-                  backgroundColor: feeRateFieldGray,
-                  onEditingComplete: () {
-                    _feeRateController.text = _removeTrailingDot(_feeRateController.text);
-                    FocusScope.of(context).unfocus();
-                  },
-                  height: 30,
-                  padding: const EdgeInsets.only(left: 12, right: 2),
-                  onChanged: (text) {
-                    final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
-                      _feeRateController.text = formattedText;
-                      _viewModel.setFeeRateText(formattedText);
-                    });
-                    if (isTooLow) {
-                      Fluttertoast.showToast(
-                        msg: t.send_screen.fee_rate_too_low,
-                        backgroundColor: CoconutColors.gray700,
-                        toastLength: Toast.LENGTH_SHORT,
-                      );
-                    }
-                  },
-                  maxLines: 1,
-                  fontFamily: 'SpaceGrotesk',
-                  fontSize: 14,
-                  activeColor: CoconutColors.white,
-                  fontWeight: FontWeight.bold,
-                  borderRadius: 8,
-                  suffix: Container(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Text(
-                      t.send_screen.fee_rate_suffix,
-                      style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: CoconutTextField(
+                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                    textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                    enableInteractiveSelection: false,
+                    textAlign: TextAlign.end,
+                    controller: _feeRateController,
+                    focusNode: _feeRateFocusNode,
+                    backgroundColor: feeRateFieldGray,
+                    onEditingComplete: () {
+                      _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+                      FocusScope.of(context).unfocus();
+                    },
+                    height: 30,
+                    padding: const EdgeInsets.only(left: 12, right: 2),
+                    onChanged: (text) {
+                      final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
+                        _feeRateController.text = formattedText;
+                        _viewModel.setFeeRateText(formattedText);
+                      });
+                      if (isTooLow) {
+                        Fluttertoast.showToast(
+                          msg: t.send_screen.fee_rate_too_low,
+                          backgroundColor: CoconutColors.gray700,
+                          toastLength: Toast.LENGTH_SHORT,
+                        );
+                      }
+                    },
+                    maxLines: 1,
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 14,
+                    activeColor: CoconutColors.white,
+                    fontWeight: FontWeight.bold,
+                    borderRadius: 8,
+                    suffix: Container(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        t.send_screen.fee_rate_suffix,
+                        style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                      ),
                     ),
                   ),
                 ),
@@ -1291,112 +1297,115 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           final isMaxMode = data.item2;
                           final isUtxoSelectionAuto = data.item3;
 
-                          return IgnorePointer(
-                            ignoring: !isLastIndex,
-                            child: Opacity(
-                              opacity: isLastIndex ? 1.0 : 0.0,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ShrinkAnimationButton(
-                                    onPressed: () {
-                                      _viewModel.setMaxMode(!isMaxMode);
-                                      _clearFocus();
-                                    },
-                                    defaultColor: MyColors.grey,
-                                    pressedColor: MyColors.grey.withValues(alpha: 0.8),
-                                    borderRadius: 4.0,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/svg/broom.svg',
-                                            colorFilter: ColorFilter.mode(
-                                              CoconutColors.white.withValues(alpha: isMaxMode ? 1.0 : 0.3),
-                                              BlendMode.srcIn,
-                                            ),
-                                          ),
-                                          CoconutLayout.spacing_100w,
-                                          Text(
-                                            maxButtonText,
-                                            style: Styles.caption.merge(
-                                              TextStyle(
-                                                color: CoconutColors.white,
-                                                fontFamily: CustomFonts.text.getFontFamily,
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                            child: IgnorePointer(
+                              ignoring: !isLastIndex,
+                              child: Opacity(
+                                opacity: isLastIndex ? 1.0 : 0.0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ShrinkAnimationButton(
+                                      onPressed: () {
+                                        _viewModel.setMaxMode(!isMaxMode);
+                                        _clearFocus();
+                                      },
+                                      defaultColor: MyColors.grey,
+                                      pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                      borderRadius: 4.0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            SvgPicture.asset(
+                                              'assets/svg/broom.svg',
+                                              colorFilter: ColorFilter.mode(
+                                                CoconutColors.white.withValues(alpha: isMaxMode ? 1.0 : 0.3),
+                                                BlendMode.srcIn,
                                               ),
                                             ),
-                                          ),
-                                        ],
+                                            CoconutLayout.spacing_100w,
+                                            Text(
+                                              maxButtonText,
+                                              style: Styles.caption.merge(
+                                                TextStyle(
+                                                  color: CoconutColors.white,
+                                                  fontFamily: CustomFonts.text.getFontFamily,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 220),
-                                    transitionBuilder: (child, animation) {
-                                      return FadeTransition(
-                                        opacity: animation,
-                                        child: SizeTransition(
-                                          sizeFactor: animation,
-                                          axis: Axis.horizontal,
-                                          axisAlignment: -1,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child:
-                                        !isUtxoSelectionAuto
-                                            ? Row(
-                                              key: const ValueKey('manual_utxo_button'),
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                CoconutLayout.spacing_300w,
-                                                ShrinkAnimationButton(
-                                                  onPressed: () {
-                                                    _viewModel.setIsUtxoSelectionAuto(true);
-                                                    _clearFocus();
-                                                  },
-                                                  defaultColor: MyColors.grey,
-                                                  pressedColor: MyColors.grey.withValues(alpha: 0.8),
-                                                  borderRadius: 4.0,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 12.0,
-                                                      vertical: 4.5,
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.center,
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        SvgPicture.asset(
-                                                          'assets/svg/arrow-reload.svg',
-                                                          width: 16,
-                                                          colorFilter: ColorFilter.mode(
-                                                            CoconutColors.white.withValues(alpha: 0.3),
-                                                            BlendMode.srcIn,
-                                                          ),
-                                                        ),
-                                                        CoconutLayout.spacing_100w,
-                                                        Text(
-                                                          t.send_screen.utxo_auto_selection,
-                                                          style: Styles.caption.merge(
-                                                            TextStyle(
-                                                              color: CoconutColors.white,
-                                                              fontFamily: CustomFonts.text.getFontFamily,
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 220),
+                                      transitionBuilder: (child, animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: SizeTransition(
+                                            sizeFactor: animation,
+                                            axis: Axis.horizontal,
+                                            axisAlignment: -1,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child:
+                                          !isUtxoSelectionAuto
+                                              ? Row(
+                                                key: const ValueKey('manual_utxo_button'),
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  CoconutLayout.spacing_300w,
+                                                  ShrinkAnimationButton(
+                                                    onPressed: () {
+                                                      _viewModel.setIsUtxoSelectionAuto(true);
+                                                      _clearFocus();
+                                                    },
+                                                    defaultColor: MyColors.grey,
+                                                    pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                                    borderRadius: 4.0,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 12.0,
+                                                        vertical: 4.5,
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          SvgPicture.asset(
+                                                            'assets/svg/arrow-reload.svg',
+                                                            width: 16,
+                                                            colorFilter: ColorFilter.mode(
+                                                              CoconutColors.white.withValues(alpha: 0.3),
+                                                              BlendMode.srcIn,
                                                             ),
                                                           ),
-                                                        ),
-                                                      ],
+                                                          CoconutLayout.spacing_100w,
+                                                          Text(
+                                                            t.send_screen.utxo_auto_selection,
+                                                            style: Styles.caption.merge(
+                                                              TextStyle(
+                                                                color: CoconutColors.white,
+                                                                fontFamily: CustomFonts.text.getFontFamily,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
-                                            )
-                                            : const SizedBox(key: ValueKey('manual_utxo_button_empty')),
-                                  ),
-                                ],
+                                                ],
+                                              )
+                                              : const SizedBox(key: ValueKey('manual_utxo_button_empty')),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
@@ -1524,7 +1533,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
+  Widget _buildAddressRow(
+    BuildContext context,
+    int index,
+    String address,
+    String walletName,
+    String derivationPath, {
+    required bool isCurrentWallet,
+  }) {
     return ShrinkAnimationButton(
       onPressed: () {
         final currentIndex = _viewModel.currentIndex;
@@ -1563,14 +1579,38 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             children: [
               CoconutLayout.spacing_100h,
               Text(
-                shortenAddress(address, head: 10),
+                shortenAddress(address, head: 12, tail: 14),
                 style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
               ),
-              Text("$walletName • $derivationPath", style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+              _buildAddressRowSubtitle(context, walletName, derivationPath, isCurrentWallet),
               CoconutLayout.spacing_100h,
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 현재 보내기 지갑의 주소면 `이름 • 현재 지갑 라벨 • derivation path`, 아니면 기존 `이름 • derivation path`.
+  Widget _buildAddressRowSubtitle(
+    BuildContext context,
+    String walletName,
+    String derivationPath,
+    bool isCurrentWallet,
+  ) {
+    final fontStyle = CoconutTypography.body3_12.setColor(CoconutColors.gray400);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: walletName, style: fontStyle),
+          if (isCurrentWallet) ...[
+            TextSpan(
+              text: ' • ${t.send_screen.current_wallet_label}',
+              style: fontStyle.setColor(CoconutColors.primary),
+            ),
+          ],
+          TextSpan(text: ' • $derivationPath', style: fontStyle),
+        ],
       ),
     );
   }
@@ -1588,7 +1628,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 decoration: BoxDecoration(
                   color: CoconutColors.black,
                   border: Border.all(color: CoconutColors.gray700, width: 1),
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  borderRadius: const BorderRadius.all(Radius.circular(14)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1681,14 +1721,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               controller: _addressListScrollController,
               itemCount: _viewModel.orderedRegisteredWallets.length,
               itemBuilder: (BuildContext context, int index) {
-                final walletAddressInfo = _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                final entry = _viewModel.registeredWalletAddressMap.entries.toList()[index];
+                final walletAddressInfo = entry.value;
+                final isCurrentWallet = entry.key == _viewModel.selectedWalletId;
                 return Column(
                   children: [
                     _buildAddressRow(
+                      context,
                       index,
                       walletAddressInfo.walletAddress.address,
                       walletAddressInfo.name,
                       walletAddressInfo.walletAddress.derivationPath,
+                      isCurrentWallet: isCurrentWallet,
                     ),
                   ],
                 );
@@ -1712,15 +1756,19 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   controller: _addressListScrollController,
                   itemCount: _viewModel.orderedRegisteredWallets.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final walletAddressInfo = _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                    final entry = _viewModel.registeredWalletAddressMap.entries.toList()[index];
+                    final walletAddressInfo = entry.value;
+                    final isCurrentWallet = entry.key == _viewModel.selectedWalletId;
                     return Column(
                       children: [
                         if (index == 0) CoconutLayout.spacing_200h,
                         _buildAddressRow(
+                          context,
                           index,
                           walletAddressInfo.walletAddress.address,
                           walletAddressInfo.name,
                           walletAddressInfo.walletAddress.derivationPath,
+                          isCurrentWallet: isCurrentWallet,
                         ),
                         if (index == _viewModel.orderedRegisteredWallets.length - 1) CoconutLayout.spacing_200h,
                       ],

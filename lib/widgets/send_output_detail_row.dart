@@ -32,25 +32,28 @@ class SendOutputDetailRow extends StatelessWidget {
         ),
         CoconutLayout.spacing_1000w,
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const SizedBox(height: 4),
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(text: address),
-                    TextSpan(
-                      text: ' | ',
-                      style: CoconutTypography.body3_12_NumberBold.copyWith(color: CoconutColors.gray700),
-                    ),
-                    TextSpan(text: amountText),
-                  ],
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const SizedBox(height: 4),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: address),
+                      TextSpan(
+                        text: ' | ',
+                        style: CoconutTypography.body3_12_NumberBold.copyWith(color: CoconutColors.gray700),
+                      ),
+                      TextSpan(text: amountText),
+                    ],
+                  ),
+                  textAlign: TextAlign.right,
+                  style: CoconutTypography.body3_12_NumberBold.copyWith(color: valueColor),
                 ),
-                textAlign: TextAlign.right,
-                style: CoconutTypography.body3_12_NumberBold.copyWith(color: valueColor),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

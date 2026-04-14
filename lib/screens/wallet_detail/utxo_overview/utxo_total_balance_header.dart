@@ -8,6 +8,7 @@ class UtxoTotalBalanceHeader extends StatelessWidget {
   final int coinCount;
   final int totalSats;
   final BitcoinUnit currentUnit;
+  final int dustThreshold;
   final VoidCallback? onBalanceTap;
 
   const UtxoTotalBalanceHeader({
@@ -15,6 +16,7 @@ class UtxoTotalBalanceHeader extends StatelessWidget {
     required this.coinCount,
     required this.totalSats,
     required this.currentUnit,
+    required this.dustThreshold,
     this.onBalanceTap,
   });
 
@@ -29,7 +31,7 @@ class UtxoTotalBalanceHeader extends StatelessWidget {
           onTap: onBalanceTap,
           behavior: HitTestBehavior.opaque,
           child: Text(
-            '$coinCount coins • ${formatUtxoAmountForDisplay(totalSats, currentUnit)}',
+            '$coinCount coins • ${formatUtxoAmountForDisplay(totalSats, currentUnit, dustThreshold: dustThreshold)}',
             style: CoconutTypography.heading4_18_NumberBold.setColor(CoconutColors.white),
           ),
         ),

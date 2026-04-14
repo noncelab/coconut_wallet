@@ -13,7 +13,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -115,7 +115,10 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                 maintainState: false,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-                                  child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                  child: ErrorTooltip(
+                                    isShown: !viewModel.isNetworkOn,
+                                    errorMessage: t.errors.network_error,
+                                  ),
                                 ),
                               ),
                               if (!widget.isSplitMode)
