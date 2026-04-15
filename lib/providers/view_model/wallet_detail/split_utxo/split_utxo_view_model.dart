@@ -107,7 +107,8 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _usePreview == true;
 
   bool get showSkeletonResultBox => _activeBuildTask != null;
-  bool get showSplitResultBox => _splitResult != null || usePreview;
+  bool get showSplitResultBox =>
+      shouldShowFeePicker && hasFeeRate && (showSkeletonResultBox || _splitResult != null || usePreview);
 
   List<double> get recommendedSplitAmounts {
     if (_selectedUtxoAmount <= 0) return [];

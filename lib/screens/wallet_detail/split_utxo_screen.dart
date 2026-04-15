@@ -23,8 +23,10 @@ import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
+import 'package:shimmer/shimmer.dart';
 
 enum SplitStep { selectUtxo, selectCriteria, enterDetails }
 
@@ -325,11 +327,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildExpectedResult() {
-    return Selector<SplitUtxoViewModel, Tuple2<bool, UtxoSplitResult?>>(
-      selector: (_, vm) => Tuple2(vm.showSplitResultBox, vm.splitResult),
+    return Selector<SplitUtxoViewModel, Tuple4<bool, bool, bool, UtxoSplitResult?>>(
+      selector: (_, vm) => Tuple4(vm.showSplitResultBox, vm.showSkeletonResultBox, vm.usePreview, vm.splitResult),
       builder: (context, data, _) {
         final showSplitResultBox = data.item1;
-        final splitResult = data.item2;
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           transitionBuilder: (child, animation) {
@@ -340,7 +341,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           },
           child:
               showSplitResultBox
-                  ? SplitResultBox(key: const ValueKey('split_result_box'), isPreviewResult: splitResult == null)
+                  ? _SplitResultContent(
+                    key: const ValueKey('split_result_box_content'),
+                    showSkeletonResultBox: data.item2,
+                    usePreview: data.item3,
+                    splitResult: data.item4,
+                  )
                   : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
         );
       },
@@ -552,29 +558,28 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         Selector<SplitUtxoViewModel, Tuple2<String?, String>>(
           selector: (_, vm) => Tuple2(vm.splitAmountErrorText, vm.currentUnit.symbol),
           builder: (context, data, _) {
-            return TextField(
+            return CoconutTextField(
               controller: viewModel.amountController,
               focusNode: viewModel.amountFocusNode,
-              onTapOutside: (_) => viewModel.amountFocusNode.unfocus(),
+              style: CoconutTextFieldStyle.underline,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              activeColor: CoconutColors.white,
+              placeholderColor: CoconutColors.gray500,
+              errorColor: CoconutColors.hotPink,
+              isError: data.item1 != null,
+              errorText: data.item1 ?? '',
+              onChanged: (_) {},
               onEditingComplete: () => viewModel.amountFocusNode.unfocus(),
-              onSubmitted: (_) => viewModel.amountFocusNode.unfocus(),
               textInputAction: TextInputAction.done,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-              decoration: InputDecoration(
-                hintText: t.split_utxo_screen.placeholder_split_amount,
-                hintStyle: CoconutTypography.body1_16.setColor(CoconutColors.gray500),
-                errorText: data.item1,
-                errorStyle: CoconutTypography.caption_10.setColor(CoconutColors.hotPink),
-                errorBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.hotPink)),
-                focusedErrorBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.hotPink)),
-                enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.gray500)),
-                focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: CoconutColors.white)),
-                suffixIcon: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [Text(data.item2, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white))],
-                ),
+              textInputType: const TextInputType.numberWithOptions(decimal: true),
+              placeholderText: t.split_utxo_screen.placeholder_split_amount,
+              maxLines: 1,
+              unfocusOnTapOutside: true,
+              padding: const EdgeInsets.only(left: 0, right: 0, top: 16, bottom: 16),
+              suffix: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(data.item2, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
               ),
             );
           },
@@ -661,24 +666,52 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                   ),
                 ),
                 CoconutLayout.spacing_300w,
-                SizedBox(
-                  width: 50,
-                  child: TextField(
-                    controller: viewModel.splitCountController,
-                    focusNode: viewModel.splitCountFocusNode,
-                    textAlign: TextAlign.center,
-                    onTapOutside: (_) => viewModel.splitCountFocusNode.unfocus(),
-                    onEditingComplete: () => viewModel.splitCountFocusNode.unfocus(),
-                    onSubmitted: (_) => viewModel.splitCountFocusNode.unfocus(),
-                    textInputAction: TextInputAction.done,
-                    keyboardType: TextInputType.number,
-                    style: CoconutTypography.heading2_28_Number.setColor(textColor),
-                    decoration: InputDecoration(
-                      hintText: '0',
-                      hintStyle: CoconutTypography.heading2_28_Number.setColor(CoconutColors.gray500),
-                      border: InputBorder.none,
-                    ),
-                  ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: viewModel.splitCountController,
+                  builder: (context, value, _) {
+                    final inputText = value.text;
+                    final visibleCharCount = inputText.isEmpty ? 3 : inputText.length.clamp(3, 6);
+                    final fieldWidth = (visibleCharCount * 16.0) + 2.0;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      width: fieldWidth,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CoconutTextField(
+                            controller: viewModel.splitCountController,
+                            focusNode: viewModel.splitCountFocusNode,
+                            textAlign: TextAlign.center,
+                            activeColor: textColor,
+                            placeholderColor: CoconutColors.gray500,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            isVisibleBorder: false,
+                            onChanged: (_) {},
+                            onEditingComplete: () => viewModel.splitCountFocusNode.unfocus(),
+                            textInputAction: TextInputAction.done,
+                            textInputType: TextInputType.number,
+                            placeholderText: '',
+                            unfocusOnTapOutside: true,
+                            maxLines: 1,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          if (inputText.isEmpty)
+                            IgnorePointer(
+                              child: Text(
+                                '0',
+                                style: CoconutTypography.heading3_21_NumberBold.copyWith(
+                                  color: CoconutColors.gray500,
+                                  fontSize: 24,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
                 CoconutLayout.spacing_300w,
                 RippleEffect(
@@ -895,6 +928,32 @@ class _HeaderTitleErrorText extends StatelessWidget {
   }
 }
 
+class _SplitResultContent extends StatelessWidget {
+  final bool showSkeletonResultBox;
+  final bool usePreview;
+  final UtxoSplitResult? splitResult;
+
+  const _SplitResultContent({
+    super.key,
+    required this.showSkeletonResultBox,
+    required this.usePreview,
+    required this.splitResult,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (showSkeletonResultBox) {
+      return const SplitResultSkeletonBox();
+    }
+
+    if (splitResult != null || usePreview) {
+      return const SplitResultBox(isPreviewResult: false);
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
 class SplitResultBox extends StatelessWidget {
   final bool isPreviewResult;
 
@@ -908,86 +967,191 @@ class SplitResultBox extends StatelessWidget {
         final splitSummaryTitle = data.item1;
         final splitOutputText = data.item2;
         final previewFeeText = data.item3;
-        return Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: CoconutColors.gray800,
-                border: Border.all(color: CoconutColors.gray600),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2.0),
-                    child: SvgPicture.asset(
-                      'assets/svg/split-utxo.svg',
-                      width: 16,
-                      height: 16,
-                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: CoconutColors.gray800,
+                  border: Border.all(color: CoconutColors.gray600),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2.0),
+                      child: SvgPicture.asset(
+                        'assets/svg/split-utxo.svg',
+                        width: 16,
+                        height: 16,
+                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
-                        CoconutLayout.spacing_200h,
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t.split_utxo_screen.expected_result.new_utxos,
-                              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                            ),
-                            Text(
-                              splitOutputText ?? '-',
-                              style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                              textAlign: TextAlign.right,
-                            ),
-                          ],
-                        ),
-                        CoconutLayout.spacing_100h,
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              t.split_utxo_screen.expected_result.fee,
-                              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                            ),
-                            Text(previewFeeText, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
-                          ],
-                        ),
-                      ],
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+                          CoconutLayout.spacing_200h,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.split_utxo_screen.expected_result.new_utxos,
+                                style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
+                              ),
+                              Text(
+                                splitOutputText ?? '-',
+                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                                textAlign: TextAlign.right,
+                              ),
+                            ],
+                          ),
+                          CoconutLayout.spacing_100h,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                t.split_utxo_screen.expected_result.fee,
+                                style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
+                              ),
+                              Text(
+                                previewFeeText,
+                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Visibility(
-              visible: isPreviewResult,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  CoconutLayout.spacing_200h,
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      t.split_utxo_screen.expected_result.above_is_expected,
-                      style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+              Visibility(
+                visible: isPreviewResult,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    CoconutLayout.spacing_200h,
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        t.split_utxo_screen.expected_result.above_is_expected,
+                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
+    );
+  }
+}
+
+class SplitResultSkeletonBox extends StatelessWidget {
+  const SplitResultSkeletonBox({super.key});
+
+  Widget _buildSkeletonBar({required double width, double height = 16}) {
+    return Shimmer.fromColors(
+      baseColor: CoconutColors.white.withValues(alpha: 0.12),
+      highlightColor: CoconutColors.white.withValues(alpha: 0.24),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: CoconutColors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: CoconutColors.gray800,
+              border: Border.all(color: CoconutColors.gray600),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Lottie.asset(
+                    'assets/lottie/three-stars-growing.json',
+                    width: 18,
+                    height: 18,
+                    fit: BoxFit.fill,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSkeletonBar(width: double.infinity, height: 22),
+                      CoconutLayout.spacing_200h,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.split_utxo_screen.expected_result.new_utxos,
+                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
+                          ),
+                          Column(
+                            children: [
+                              _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
+                              CoconutLayout.spacing_100h,
+                              _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
+                            ],
+                          ),
+                        ],
+                      ),
+                      CoconutLayout.spacing_100h,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            t.split_utxo_screen.expected_result.fee,
+                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
+                          ),
+                          _buildSkeletonBar(width: 92, height: 22),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          CoconutLayout.spacing_200h,
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              t.split_utxo_screen.expected_result.above_is_expected,
+              style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1127,39 +1291,28 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                         child: Row(
                           children: [
                             Expanded(
-                              child: TextField(
+                              child: CoconutTextField(
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
-                                onTapOutside: (_) => widget.item.amountFocusNode.unfocus(),
+                                style: CoconutTextFieldStyle.underline,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                activeColor: CoconutColors.white,
+                                placeholderColor: CoconutColors.gray500,
+                                errorColor: CoconutColors.hotPink,
+                                onChanged: (_) {},
                                 onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
-                                onSubmitted: (_) => widget.item.amountFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-                                decoration: InputDecoration(
-                                  hintText: t.split_utxo_screen.placeholder_split_amount,
-                                  hintStyle: CoconutTypography.body1_16.setColor(CoconutColors.gray500),
-                                  errorBorder: const UnderlineInputBorder(
-                                    borderSide: BorderSide(color: CoconutColors.hotPink),
-                                  ),
-                                  focusedErrorBorder: const UnderlineInputBorder(
-                                    borderSide: BorderSide(color: CoconutColors.hotPink),
-                                  ),
-                                  enabledBorder: const UnderlineInputBorder(
-                                    borderSide: BorderSide(color: CoconutColors.gray500),
-                                  ),
-                                  focusedBorder: const UnderlineInputBorder(
-                                    borderSide: BorderSide(color: CoconutColors.white),
-                                  ),
-                                  suffixIcon: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        widget.viewModel.currentUnit.symbol,
-                                        style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
-                                      ),
-                                    ],
+                                textInputType: const TextInputType.numberWithOptions(decimal: true),
+                                placeholderText: t.split_utxo_screen.placeholder_split_amount,
+                                maxLines: 1,
+                                padding: const EdgeInsets.only(left: 0, right: 0, top: 16, bottom: 16),
+                                unfocusOnTapOutside: true,
+                                suffix: Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    widget.viewModel.currentUnit.symbol,
+                                    style: CoconutTypography.heading4_18.setColor(CoconutColors.white),
                                   ),
                                 ),
                               ),
@@ -1182,21 +1335,25 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                             CoconutLayout.spacing_300w,
                             SizedBox(
                               width: 50,
-                              child: TextField(
+                              child: CoconutTextField(
                                 controller: widget.item.countController,
                                 focusNode: widget.item.countFocusNode,
                                 textAlign: TextAlign.center,
-                                onTapOutside: (_) => widget.item.countFocusNode.unfocus(),
+                                backgroundColor:
+                                    widget.item.countFocusNode.hasFocus ? CoconutColors.gray850 : Colors.transparent,
+                                activeColor: CoconutColors.white,
+                                placeholderColor: CoconutColors.gray500,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                isVisibleBorder: false,
+                                onChanged: (_) {},
                                 onEditingComplete: () => widget.item.countFocusNode.unfocus(),
-                                onSubmitted: (_) => widget.item.countFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
-                                keyboardType: TextInputType.number,
-                                style: CoconutTypography.heading2_28_Number.setColor(CoconutColors.white),
-                                decoration: InputDecoration(
-                                  hintText: '0',
-                                  hintStyle: CoconutTypography.heading2_28_Number.setColor(CoconutColors.gray500),
-                                  border: InputBorder.none,
-                                ),
+                                textInputType: TextInputType.number,
+                                placeholderText: '0',
+                                maxLines: 1,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                unfocusOnTapOutside: true,
                               ),
                             ),
                             CoconutLayout.spacing_300w,
