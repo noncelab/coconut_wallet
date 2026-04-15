@@ -611,8 +611,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                       Navigator.pop(context, selectedItem);
                     },
                     isActive:
-                        _selectedId != null &&
-                        (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
+                        _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
                     text: widget.confirmText,
                     backgroundColor: CoconutColors.white,
                   ),

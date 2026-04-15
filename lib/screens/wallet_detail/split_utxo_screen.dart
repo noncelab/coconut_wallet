@@ -348,13 +348,16 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildOrganizeButton(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple4<bool, bool, bool, String>>(
-      selector: (_, vm) => Tuple4(vm.showSplitResultBox, vm.isSplitValid, vm.isPreparingNextStep, vm.finalErrorMessage),
+    return Selector<SplitUtxoViewModel, Tuple5<bool, bool, bool, String, double?>>(
+      selector:
+          (_, vm) =>
+              Tuple5(vm.showSplitResultBox, vm.isSplitValid, vm.isPreparingNextStep, vm.finalErrorMessage, vm.feeRatio),
       builder: (context, data, _) {
         final showSplitResultBox = data.item1;
         final isSplitValid = data.item2;
         final isPreparingNextStep = data.item3;
         final finalErrorMessage = data.item4;
+        final feeRatio = data.item5;
         final viewModel = context.read<SplitUtxoViewModel>();
         return AnimatedOpacity(
           opacity: showSplitResultBox ? 1.0 : 0.0,
@@ -363,6 +366,13 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             ignoring: !showSplitResultBox,
             child: FixedBottomButton(
               text: t.organize,
+              subWidget:
+                  feeRatio != null && feeRatio >= 10
+                      ? Text(
+                        t.merge_utxos_screen.merge_cta_high_fee_ratio(ratio: feeRatio),
+                        style: CoconutTypography.caption_10.setColor(CoconutColors.yellow),
+                      )
+                      : null,
               onButtonClicked: () async {
                 if (!isSplitValid) return;
                 FocusScope.of(context).unfocus();

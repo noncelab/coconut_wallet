@@ -65,6 +65,14 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   UtxoSplitResult? _splitResult;
   UtxoSplitResult? get splitResult => _splitResult;
+  double? get feeRatio {
+    if (_splitResult != null) {
+      return _splitResult!.feeRatio;
+    } else if (usePreview) {
+      return _splitBuilder.calculateFeeRatio(_splitPreview!.estimatedFee.toInt(), _selectedUtxoAmount);
+    }
+    return null;
+  }
 
   final List<ManualSplitItem> manualSplitItems = [];
   Timer? _debounceTimer;
@@ -387,7 +395,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool get isOutputSumOverInput {
-    // byAmount일 때, amountErrorText로 반환 중
+    // byAmount일 때, splitAmountErrorText로 반환 중
     // if (_selectedCriteria == SplitCriteria.byAmount) {
     //   return _selectedUtxoList.isNotEmpty && splitAmountSats >= _selectedUtxoAmount;
     // }

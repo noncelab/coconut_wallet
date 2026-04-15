@@ -450,11 +450,11 @@ class UtxoSplitTransactionBuilder {
       transaction: transaction,
       splitAmountMap: actualSplitMap,
       estimatedFee: realFee,
-      feeRatio: _calculateFeeRatio(realFee, utxo.amount),
+      feeRatio: calculateFeeRatio(realFee, utxo.amount),
     );
   }
 
-  double _calculateFeeRatio(int fee, int denominator) {
+  double calculateFeeRatio(int fee, int denominator) {
     return ((fee / denominator * 100) * 100).roundToDouble() / 100;
   }
 
