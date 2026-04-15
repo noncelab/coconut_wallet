@@ -68,6 +68,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   late MergeUtxosViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
+  Timer? _estimateMergeFeeDebounceTimer;
   String? _preparedMergeTransactionKey;
   bool _isAmountTextHighlighted = false;
 
@@ -86,6 +87,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   @override
   void dispose() {
+    _estimateMergeFeeDebounceTimer?.cancel();
     _receiveAddressSummaryLottieController.dispose();
     _viewModel.dispose();
     super.dispose();
@@ -94,6 +96,19 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   void _setScreenState(VoidCallback fn) {
     if (!mounted) return;
     setState(fn);
+  }
+
+  void _scheduleCalculateEstimatedMergeFee({Duration delay = const Duration(seconds: 1)}) {
+    _estimateMergeFeeDebounceTimer?.cancel();
+    _estimateMergeFeeDebounceTimer = Timer(delay, () {
+      if (!mounted) return;
+      unawaited(_calculateEstimatedMergeFee());
+    });
+  }
+
+  void _runEstimatedMergeFeeCalculationNow() {
+    _estimateMergeFeeDebounceTimer?.cancel();
+    unawaited(_calculateEstimatedMergeFee());
   }
 
   @override
@@ -1284,13 +1299,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
           });
         }
         if (currentText.isNotEmpty && !currentText.endsWith('.')) {
-          unawaited(_calculateEstimatedMergeFee());
+          _scheduleCalculateEstimatedMergeFee();
         }
         return isTooLow;
       },
       onEditingComplete: () {
+        Logger.log('--> onEditingComplete');
         _viewModel.removeTrailingDotInFeeRate();
-        unawaited(_calculateEstimatedMergeFee());
+        _runEstimatedMergeFeeCalculationNow();
         FocusScope.of(context).unfocus();
         Navigator.pop(context);
       },
@@ -1304,7 +1320,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             _viewModel.setNeedsManualFeeRateInput(false);
           });
         }
-        unawaited(_calculateEstimatedMergeFee());
+        _runEstimatedMergeFeeCalculationNow();
         FocusScope.of(context).unfocus();
         Navigator.pop(context);
       },
