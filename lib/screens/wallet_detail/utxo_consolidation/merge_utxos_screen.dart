@@ -910,11 +910,12 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
     final selectedReceiveAddress = _viewModel.selectedReceiveAddress;
     final selectedUtxos = _viewModel.selectedUtxosForCurrentCriteria;
-
+    final inputFeeRate = double.tryParse(_viewModel.feeRateController.text.trim());
     if (_viewModel.currentStep != UtxoMergeStep.selectReceiveAddress ||
         selectedReceiveAddress == null ||
         selectedReceiveAddress.isEmpty ||
-        selectedUtxos.length < 2) {
+        selectedUtxos.length < 2 ||
+        inputFeeRate == null) {
       if (!mounted) return;
       setState(() {
         _viewModel.setPreparedMergeTransactionBuildResult(null);
@@ -950,21 +951,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       final walletProvider = context.read<WalletProvider>();
       final wallet = walletProvider.getWalletById(widget.id);
       final changeAddress = walletProvider.getChangeAddress(widget.id);
-      final recommendedFees = await FeeService().getRecommendedFees();
-      final inputFeeRate = double.tryParse(_viewModel.feeRateController.text.trim());
-      final feeRate =
-          inputFeeRate ??
-          recommendedFees?.halfHourFee ??
-          recommendedFees?.hourFee ??
-          recommendedFees?.minimumFee ??
-          1.0;
       final totalInputAmount = selectedUtxos.fold<int>(0, (sum, utxo) => sum + utxo.amount);
 
       final txBuildResult =
           TransactionBuilder(
             availableUtxos: selectedUtxos,
             recipients: {selectedReceiveAddress: totalInputAmount},
-            feeRate: feeRate,
+            feeRate: inputFeeRate,
             changeDerivationPath: changeAddress.derivationPath,
             walletListItemBase: wallet,
             isFeeSubtractedFromAmount: true,
@@ -974,7 +967,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       if (!mounted || nonce != _viewModel.mergeTransactionPreparationNonce) return;
       setState(() {
         _viewModel.setPreparedMergeTransactionBuildResult(txBuildResult);
-        _viewModel.setAppliedMergeFeeRate(feeRate);
+        _viewModel.setAppliedMergeFeeRate(inputFeeRate);
         _viewModel.setEstimatedMergeFeeSats(txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0));
         _viewModel.setIsEstimatedMergeFeeLoading(false);
         _viewModel.setMergeTransactionSummaryState(
@@ -1076,7 +1069,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
   }
 
-  UtxoMergeCriteria get _defaultMergeCriteria => _viewModel.defaultMergeCriteria;
   UtxoMergeCriteria get _currentMergeCriteria => _viewModel.currentMergeCriteria;
   String get _currentMergeCriteriaText => _mergeCriteriaText(_currentMergeCriteria);
   String _mergeCriteriaText(UtxoMergeCriteria criteria) {
@@ -1090,7 +1082,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
   }
 
-  UtxoAmountCriteria get _defaultAmountCriteria => _viewModel.defaultAmountCriteria;
   UtxoAmountCriteria get _currentAmountCriteria => _viewModel.currentAmountCriteria;
   String get _currentAmountCriteriaText => _amountCriteriaText(_currentAmountCriteria);
   String _amountCriteriaText(UtxoAmountCriteria criteria) {

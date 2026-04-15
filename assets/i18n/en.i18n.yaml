@@ -815,7 +815,7 @@ merge_utxos_screen:
   single_utxo_for_amount_criteria: "There is only 1 UTXO matching this criteria, so it cannot be consolidated."
   future_fee_saving: "Consolidating now could save about ${amount} sats"
   merge_cta_neutral_low_saving: "Merging now would not save much on fees"
-  merge_cta_neutral_efficient: "It’s already efficient without consolidating"
+  merge_cta_efficient_without_merge: "It’s already efficient enough without consolidating"
   merge_cta_high_fee_ratio: "The fee share is high (${ratio}%)"
   merge_cta_discouraged_high_fee: "The current fee rate is too high to consolidate now"
   merge_cta_discouraged_costly: "The consolidation cost is higher than the fees you would save"
