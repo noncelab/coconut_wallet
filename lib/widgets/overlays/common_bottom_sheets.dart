@@ -501,6 +501,7 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
   final Color backgroundColor;
   final bool showGradient;
   final bool showConfirmButton;
+  final bool allowConfirmWhenSelectionUnchanged;
   final ValueChanged<T?>? onSelectionChanged;
 
   const SelectableBottomSheetBody({
@@ -514,6 +515,7 @@ class SelectableBottomSheetBody<T> extends StatefulWidget {
     required this.backgroundColor,
     this.showGradient = true,
     this.showConfirmButton = true,
+    this.allowConfirmWhenSelectionUnchanged = false,
     this.onSelectionChanged,
   });
 
@@ -608,7 +610,9 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                               : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
                       Navigator.pop(context, selectedItem);
                     },
-                    isActive: _selectedId != null && _hasSelectionChanged,
+                    isActive:
+                        _selectedId != null &&
+                        (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
                     text: widget.confirmText,
                     backgroundColor: CoconutColors.white,
                   ),

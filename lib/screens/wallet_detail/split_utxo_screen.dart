@@ -593,30 +593,41 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         final recommendedSplitAmounts = data.item1;
         final currentUnit = data.item2;
         final viewModel = context.read<SplitUtxoViewModel>();
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Wrap(
-            spacing: 8,
-            children:
-                recommendedSplitAmounts.map((btc) {
-                  final sats = (btc * 1e8).toInt();
-                  return RippleEffect(
-                    onTap: () => viewModel.onRecommendedAmountTapped(btc),
-                    borderRadius: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: CoconutColors.gray700),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        currentUnit.displayBitcoinAmount(sats, withUnit: true),
-                        style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                      ),
-                    ),
-                  );
-                }).toList(),
-          ),
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final widthFactor = screenWidth / constraints.maxWidth;
+            return FractionallySizedBox(
+              widthFactor: widthFactor,
+              alignment: Alignment.center,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  children:
+                      recommendedSplitAmounts.map((btc) {
+                        final sats = (btc * 1e8).toInt();
+                        return RippleEffect(
+                          onTap: () => viewModel.onRecommendedAmountTapped(btc),
+                          borderRadius: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: CoconutColors.gray700),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              currentUnit.displayBitcoinAmount(sats, withUnit: true),
+                              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ),
+            );
+          },
         );
       },
     );

@@ -30,6 +30,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
           items: const [UtxoMergeCriteria.smallAmounts, UtxoMergeCriteria.sameTag, UtxoMergeCriteria.sameAddress],
           showGradient: false,
           initiallySelectedId: _currentMergeCriteria,
+          allowConfirmWhenSelectionUnchanged: true,
           getItemId: (item) => item,
           confirmText: t.complete,
           backgroundColor: CoconutColors.gray900,
@@ -633,6 +634,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }) {
     return SelectableBottomSheetBody<UtxoAmountCriteria>(
       key: const ValueKey('recommended-amount-criteria'),
+      allowConfirmWhenSelectionUnchanged: true,
       items: _recommendedAmountCriteriaItems,
       showGradient: false,
       showConfirmButton: false,
