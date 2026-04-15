@@ -272,7 +272,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   Widget _buildUnexpectedErrorTooltip() {
     return Selector<SplitUtxoViewModel, String>(
-      selector: (_, vm) => vm.finalErrorMessage,
+      selector: (_, vm) => vm.unexpectedErrorMessage,
       builder: (context, finalErrorMessage, _) {
         if (finalErrorMessage.isEmpty) {
           return const SizedBox.shrink();
@@ -350,8 +350,13 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   Widget _buildOrganizeButton(BuildContext context) {
     return Selector<SplitUtxoViewModel, Tuple5<bool, bool, bool, String, double?>>(
       selector:
-          (_, vm) =>
-              Tuple5(vm.showSplitResultBox, vm.isSplitValid, vm.isPreparingNextStep, vm.finalErrorMessage, vm.feeRatio),
+          (_, vm) => Tuple5(
+            vm.showSplitResultBox,
+            vm.isSplitValid,
+            vm.isPreparingNextStep,
+            vm.unexpectedErrorMessage,
+            vm.feeRatio,
+          ),
       builder: (context, data, _) {
         final showSplitResultBox = data.item1;
         final isSplitValid = data.item2;

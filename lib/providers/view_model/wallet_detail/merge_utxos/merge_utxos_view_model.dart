@@ -58,6 +58,8 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   final FocusNode feeRateFocusNode = FocusNode();
   String _estimatedFeeText = '-';
   int _dustThreshold = 0;
+  String? _unexpectedErrorMessage;
+  String get unexpectedErrorMessage => _unexpectedErrorMessage ?? '';
   String get estimatedFeeText => _estimatedFeeText;
 
   int get utxoCount => _utxoList.length;
@@ -251,6 +253,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   void setMergeTransactionPreparationNonce(int value) => _mergeTransactionPreparationNonce = value;
   void setReceiveAddressSummaryAnimationNonce(int value) => _receiveAddressSummaryAnimationNonce = value;
   void setDustThreshold(int value) => _dustThreshold = value;
+  void setUnexpectedErrorMessage(String? value) => _unexpectedErrorMessage = value;
 
   void setEstimatedFeeText(String text) {
     if (_estimatedFeeText == text) return;

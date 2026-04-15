@@ -84,7 +84,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   bool _isAmountInsufficientAfterFee = false; // byAmount or manual: 수수료를 제외하면 나눌 수 없는 금액이에요
   bool _isFeeExceedsUtxoAmount = false;
   double? _errorEstimatedFee;
-  String _finalErrorMessage = "";
+  String _unexpectedErrorMessage = "";
   bool _isPreparingNextStep = false;
 
   /// Output 개수가 많을 때 트랜잭션 생성 시 1분 이상 걸릴 수 있으므로 컨펌 필요
@@ -92,7 +92,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   bool? _usePreview;
 
   // --- UI Getter ---
-  String get finalErrorMessage => _finalErrorMessage;
+  String get unexpectedErrorMessage => _unexpectedErrorMessage;
   bool get isDustError => _isDustError;
   bool get isPreparingNextStep => _isPreparingNextStep;
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
@@ -424,7 +424,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _isAmountInsufficientAfterFee = false;
     _isFeeExceedsUtxoAmount = false;
     _errorEstimatedFee = null;
-    _finalErrorMessage = "";
+    _unexpectedErrorMessage = "";
     _splitPreview = null;
     _splitResult = null;
 
@@ -464,7 +464,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _errorEstimatedFee = e.estimatedFee;
     } catch (e) {
       Logger.log('--> SplitUtxoViewModel._updatePreview error=$e criteria=$_selectedCriteria');
-      _finalErrorMessage = e.toString();
+      _unexpectedErrorMessage = e.toString();
     }
 
     notifyListeners();
@@ -547,7 +547,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _isFeeExceedsUtxoAmount = false;
     _errorEstimatedFee = null;
     _usePreview = null;
-    _finalErrorMessage = "";
+    _unexpectedErrorMessage = "";
     _splitResult = _splitPreview = null;
     notifyListeners();
   }
@@ -584,7 +584,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     assert(_splitPreview != null);
     CancelableTask<UtxoSplitResult>? task;
     try {
-      _finalErrorMessage = "";
+      _unexpectedErrorMessage = "";
       Logger.log(
         '--> SplitUtxoViewModel._buildTransaction start requestId=$_buildRequestId '
         'criteria=$_selectedCriteria feeRate=$feeRate splitAmountSats=$splitAmountSats '
@@ -605,12 +605,12 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       if (result != null && result.isSuccess) {
         return result;
       } else if (result != null) {
-        _finalErrorMessage = result.exception.toString();
+        _unexpectedErrorMessage = result.exception.toString();
       }
     } on TaskCancelledException {
       rethrow;
     } catch (e) {
-      _finalErrorMessage = e.toString();
+      _unexpectedErrorMessage = e.toString();
     } finally {
       if (identical(_activeBuildTask, task)) {
         _activeBuildTask = null;
@@ -642,10 +642,10 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       }
 
       if (_splitResult != null) {
-        _finalErrorMessage = _splitResult!.exception.toString();
+        _unexpectedErrorMessage = _splitResult!.exception.toString();
       }
     } catch (e) {
-      _finalErrorMessage = e.toString();
+      _unexpectedErrorMessage = e.toString();
     } finally {
       _isPreparingNextStep = false;
       notifyListeners();

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
@@ -27,6 +28,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.dart';
@@ -195,7 +197,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             child: Container(
               padding: EdgeInsets.fromLTRB(
                 16,
-                isTransactionSummaryFailed ? 88 : 16,
+                _viewModel.unexpectedErrorMessage.isNotEmpty ? 88 : 16,
                 16,
                 showMergeBottomButton ? (showMergeButtonSubText ? 160 : 132) : 16,
               ),
@@ -205,6 +207,8 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               ),
             ),
           ),
+
+          /// Unexpected Error Tooltip
           Positioned(
             top: 16,
             left: 16,
@@ -215,8 +219,8 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               switchOutCurve: Curves.easeIn,
               transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
               child:
-                  isTransactionSummaryFailed
-                      ? _buildTransactionSummaryErrorTooltip()
+                  _viewModel.unexpectedErrorMessage.isNotEmpty
+                      ? _buildUnexpectedErrorTooltip(_viewModel.unexpectedErrorMessage)
                       : const SizedBox.shrink(key: ValueKey('merge-transaction-summary-error-empty')),
             ),
           ),
@@ -412,7 +416,8 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
     if (step == UtxoMergeStep.selectReceiveAddress) {
       if (_viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.invalidSelection ||
-          _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.idle) {
+          _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.idle ||
+          _viewModel.preparedMergeTransactionBuildResult?.isSuccess != true) {
         return const SizedBox.shrink();
       }
 
@@ -586,12 +591,12 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildTransactionSummaryErrorTooltip() {
-    final rawErrorMessage = _viewModel.preparedMergeTransactionBuildResult?.exception?.toString();
-    final errorMessage =
-        rawErrorMessage == null || rawErrorMessage.isEmpty
-            ? t.merge_utxos_screen.transaction_build_error
-            : t.merge_utxos_screen.transaction_build_error_with_message(error_msg: rawErrorMessage);
+  Widget _buildUnexpectedErrorTooltip(String errorMessage) {
+    // final rawErrorMessage = _viewModel.preparedMergeTransactionBuildResult?.exception?.toString();
+    // final errorMessage =
+    //     rawErrorMessage == null || rawErrorMessage.isEmpty
+    //         ? t.merge_utxos_screen.transaction_build_error
+    //         : t.merge_utxos_screen.transaction_build_error_with_message(error_msg: rawErrorMessage);
 
     return SizedBox(
       key: const ValueKey('merge-transaction-summary-error-tooltip'),
@@ -858,6 +863,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Future<void> _calculateEstimatedMergeFee({bool forceRebuild = false}) async {
+    Logger.log('--> calculateEstimatedMergeFee');
     final preparationKey = _viewModel.mergeTransactionPreparationKey;
     if (preparationKey == null) {
       if (!mounted) return;
@@ -954,9 +960,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       setState(() {
         _viewModel.setPreparedMergeTransactionBuildResult(txBuildResult);
         _viewModel.setAppliedMergeFeeRate(feeRate);
-        _viewModel.setEstimatedMergeFeeSats(
-          txBuildResult.isSuccess ? txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0) : null,
-        );
+        _viewModel.setEstimatedMergeFeeSats(txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0));
         _viewModel.setIsEstimatedMergeFeeLoading(false);
         _viewModel.setMergeTransactionSummaryState(
           txBuildResult.isSuccess ? MergeTransactionSummaryState.ready : MergeTransactionSummaryState.failed,
@@ -967,9 +971,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         ..stop()
         ..value = txBuildResult.isSuccess ? 1 : 0;
       _syncEstimatedFeeTextToViewModel();
-    } catch (_) {
+    } catch (e) {
       if (!mounted || nonce != _viewModel.mergeTransactionPreparationNonce) return;
       setState(() {
+        _viewModel.setUnexpectedErrorMessage(e.toString());
         _viewModel.setPreparedMergeTransactionBuildResult(null);
         _viewModel.setEstimatedMergeFeeSats(null);
         _viewModel.setIsEstimatedMergeFeeLoading(false);
@@ -1249,12 +1254,16 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   Widget _buildEstimatedFeeOptionPicker() {
     final shouldShowFeeRatePlaceholder =
         _viewModel.needsManualFeeRateInput && _viewModel.feeRateController.text.trim().isEmpty;
-
+    bool isFeeTooHigh =
+        _viewModel.preparedMergeTransactionBuildResult?.exception is InsufficientBalanceException ||
+        _viewModel.preparedMergeTransactionBuildResult?.exception is SendAmountTooLowException;
     return CoconutOptionPicker(
       text: shouldShowFeeRatePlaceholder ? t.merge_utxos_screen.fee_rate_input_placeholder : _estimatedMergeFeeText,
       label: t.estimated_fee,
       textColor: shouldShowFeeRatePlaceholder ? CoconutColors.gray500 : CoconutColors.white,
       onTap: _showEstimatedFeeBottomSheet,
+      coconutOptionStateEnum: isFeeTooHigh ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,
+      guideText: isFeeTooHigh ? t.merge_utxos_screen.exception.fee_too_high : null,
     );
   }
 

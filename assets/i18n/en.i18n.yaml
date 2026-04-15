@@ -819,6 +819,8 @@ merge_utxos_screen:
   merge_cta_high_fee_ratio: "The fee share is high (${ratio}%)"
   merge_cta_discouraged_high_fee: "The current fee rate is too high to consolidate now"
   merge_cta_discouraged_costly: "The consolidation cost is higher than the fees you would save"
+  exception:
+    fee_too_high: "The fee is too high"
   transaction_build_error: "An unexpected error occurred."
   transaction_build_error_with_message: "An unexpected error occurred.\n${error_msg}"
 

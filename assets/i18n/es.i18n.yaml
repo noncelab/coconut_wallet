@@ -822,6 +822,8 @@ merge_utxos_screen:
   merge_cta_high_fee_ratio: "La proporción de comisión es alta (${ratio}%)"
   merge_cta_discouraged_high_fee: "La comisión actual es demasiado alta para consolidar ahora"
   merge_cta_discouraged_costly: "El costo de consolidar es mayor que las comisiones que ahorrarías"
+  exception:
+    fee_too_high: "La comisión es demasiado alta"
   transaction_build_error: "Ocurrió un error inesperado."
   transaction_build_error_with_message: "Ocurrió un error inesperado.\n${error_msg}"
 
