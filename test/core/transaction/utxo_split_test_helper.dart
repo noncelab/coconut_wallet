@@ -2,6 +2,12 @@ import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+String formatAmountCountMap(Map<int, int> amountCountMap) {
+  return (amountCountMap.entries.toList()..sort((a, b) => a.key.compareTo(b.key)))
+      .map((entry) => '${entry.key} x ${entry.value}')
+      .join('\n');
+}
+
 void expectSuccessfulTransaction(UtxoSplitResult result, {int? expectedOutputCount}) {
   expect(result.isSuccess, isTrue);
   expect(result.transaction, isNotNull);

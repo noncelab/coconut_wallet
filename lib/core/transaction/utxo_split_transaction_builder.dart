@@ -574,10 +574,10 @@ class UtxoSplitTransactionBuilder {
   }
 
   Future<SplitPreview> _buildSplitPreview(List<int> exactAmounts, double estimatedFee) async {
-    return SplitPreview(estimatedFee: estimatedFee, amountCountMap: _buildAmountCountMap(exactAmounts));
+    return SplitPreview(estimatedFee: estimatedFee, amountCountMap: _buildAmountCountMap(exactAmounts, estimatedFee));
   }
 
-  Map<int, int> _buildAmountCountMap(List<int> exactAmounts) {
+  Map<int, int> _buildAmountCountMap(List<int> exactAmounts, double estimatedFee) {
     final utxo = _requiredUtxo;
     final Map<int, int> amountCountMap = {};
     int sumOfExact = 0;
@@ -587,7 +587,7 @@ class UtxoSplitTransactionBuilder {
       sumOfExact += amount;
     }
 
-    final sweepAmount = utxo.amount - sumOfExact;
+    final sweepAmount = utxo.amount - sumOfExact - estimatedFee.ceil();
     amountCountMap[sweepAmount] = (amountCountMap[sweepAmount] ?? 0) + 1;
     return amountCountMap;
   }

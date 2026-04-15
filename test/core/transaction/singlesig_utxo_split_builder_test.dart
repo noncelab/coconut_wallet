@@ -548,6 +548,11 @@ void main() {
       final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
       final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000).future;
 
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
 
@@ -557,6 +562,11 @@ void main() {
 
       final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
       final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
@@ -568,15 +578,25 @@ void main() {
       final SplitPreview preview = await builder.getCustomAmountSplitPreview(amountCountMap: {10000: 2});
       final UtxoSplitResult result = await builder.buildCustomAmountSplit(amountCountMap: {10000: 2}).future;
 
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
 
-    test('EqualAmountSplit 21000 / 10000', () async {
-      final utxo = createUtxo(21000);
+    test('EqualAmountSplit 99990000 / 5000개로 나누기', () async {
+      final utxo = createUtxo(99990000);
       final builder = createBuilder(utxo, 1.0);
 
-      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 2);
-      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 2).future;
+      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 5000);
+      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 5000).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
     });
