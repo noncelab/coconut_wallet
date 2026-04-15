@@ -554,21 +554,17 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
         top: false,
         child: Stack(
           children: [
-            Positioned(
+            Positioned.fill(
               top: 0,
-              left: 0,
-              right: 0,
+              bottom: buttonAreaHeight,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
                 child: ListView.builder(
                   controller: widget.scrollController,
-                  shrinkWrap: true,
-                  primary: false,
-                  physics:
-                      widget.scrollController == null
-                          ? const NeverScrollableScrollPhysics()
-                          : const ClampingScrollPhysics(),
-                  padding: EdgeInsets.only(bottom: buttonAreaHeight),
+                  shrinkWrap: false,
+                  primary: widget.scrollController == null,
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: Sizes.size16),
                   itemCount: widget.items.length,
                   itemBuilder: (context, index) {
                     final item = widget.items[index];
