@@ -550,7 +550,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Selector<SplitUtxoViewModel, Tuple2<String?, String>>(
-          selector: (_, vm) => Tuple2(vm.amountErrorText, vm.currentUnit.symbol),
+          selector: (_, vm) => Tuple2(vm.splitAmountErrorText, vm.currentUnit.symbol),
           builder: (context, data, _) {
             return TextField(
               controller: viewModel.amountController,

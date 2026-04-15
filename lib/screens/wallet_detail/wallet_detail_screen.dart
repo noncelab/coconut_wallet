@@ -570,7 +570,17 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           onTap:
                               canSplit
                                   ? () {
-                                    Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
+                                    if (availableUtxoCount < 1) {
+                                      CoconutToast.showToast(
+                                        context: context,
+                                        isVisibleIcon: true,
+                                        iconPath: 'assets/svg/circle-info.svg',
+                                        text: t.toast.locked_utxo_unavailable_description,
+                                        level: CoconutToastLevel.info,
+                                      );
+                                    } else {
+                                      Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
+                                    }
                                   }
                                   : () {
                                     CoconutToast.showToast(

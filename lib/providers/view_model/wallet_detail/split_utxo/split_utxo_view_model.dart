@@ -219,7 +219,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     return null;
   }
 
-  String? get amountErrorText {
+  String? get splitAmountErrorText {
     if (_selectedUtxoList.isEmpty) return null;
     if (_splitAmountInput.isEmpty) return null;
     // TODO: dustThreshold check
@@ -334,13 +334,13 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool get isSplitInputValid {
-    if (_selectedCriteria == null || _selectedUtxoList.isEmpty || hasAmountError) {
+    if (_selectedCriteria == null || _selectedUtxoList.isEmpty || hasSelectedUtxoAmountError) {
       return false;
     }
     if (feeRate <= 0) {
       return false;
     }
-    // TODO: hasAmountError는 언제 발생하는 에러인가?
+
     if (_selectedCriteria == SplitCriteria.byAmount) {
       return splitAmountSats > 0 && splitAmountSats < _selectedUtxoAmount;
     }
@@ -464,19 +464,19 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   // --- Validation ---
-  bool get hasAmountError {
+  bool get hasSelectedUtxoAmountError {
     if (_selectedUtxoList.isEmpty) return false;
     return _selectedUtxoAmount >= 1000 && _selectedUtxoAmount < 20000;
   }
 
-  bool get hasAmountWarning {
+  bool get hasSelectedUtxoAmountWarning {
     if (_selectedUtxoList.isEmpty) return false;
     return _selectedUtxoAmount >= 20000 && _selectedUtxoAmount < 50000;
   }
 
   bool get isSplitValid {
     if (_selectedCriteria == null || _selectedUtxoList.isEmpty) return false;
-    if (hasAmountError) return false;
+    if (hasSelectedUtxoAmountError) return false;
 
     if (_isDustError || _isAmountInsufficientAfterFee || _isFeeExceedsUtxoAmount || isOutputSumOverInput) return false;
     if (_splitPreview == null) return false;
@@ -653,14 +653,14 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   CoconutOptionStateEnum get utxoOptionState {
-    if (hasAmountError) return CoconutOptionStateEnum.error;
-    if (hasAmountWarning) return CoconutOptionStateEnum.warning;
+    if (hasSelectedUtxoAmountError) return CoconutOptionStateEnum.error;
+    if (hasSelectedUtxoAmountWarning) return CoconutOptionStateEnum.warning;
     return CoconutOptionStateEnum.normal;
   }
 
   String? getUtxoGuideText(Translations t) {
-    if (hasAmountError) return t.split_utxo_screen.utxo_error;
-    if (hasAmountWarning) return t.split_utxo_screen.utxo_warning;
+    if (hasSelectedUtxoAmountError) return t.split_utxo_screen.utxo_error;
+    if (hasSelectedUtxoAmountWarning) return t.split_utxo_screen.utxo_warning;
     return null;
   }
 
