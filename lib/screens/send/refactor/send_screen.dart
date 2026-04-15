@@ -19,13 +19,13 @@ import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart'
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
-import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_tap_wrapper.dart';
@@ -39,7 +39,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -52,6 +51,7 @@ class SendScreen extends StatefulWidget {
   final int? transactionDraftId;
   final int? initialSatsFromP2P;
   final List<UtxoState>? selectedUtxoList;
+  final String? initialBitcoinUri;
 
   const SendScreen({
     super.key,
@@ -60,6 +60,7 @@ class SendScreen extends StatefulWidget {
     this.transactionDraftId,
     this.initialSatsFromP2P,
     this.selectedUtxoList,
+    this.initialBitcoinUri,
   });
 
   @override
@@ -110,8 +111,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   late bool hasSeenAddRecipientCard;
   bool _isLeftDragGuideViewVisible = false;
 
-  MobileScannerController? _qrViewController;
-  bool _isQrDataHandling = false;
   String _previousAmountText = "";
 
   bool get _hasKeyboard => _amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus || _isAddressFocused;
@@ -148,8 +147,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       // initialSatsFromP2P가 있는 경우, 계산기에서 '보내기'를 실행한 경우이므로, UTXO 자동 선택 모드로 기본 설정합니다.
       _viewModel.setIsUtxoSelectionAuto(true);
       final sats = widget.initialSatsFromP2P!;
-      final btcAmount = UnitUtil.convertSatoshiToBitcoin(sats);
-      context.read<SendInfoProvider>().setAmount(btcAmount);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final amountText =
@@ -165,6 +162,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _viewModel.setSelectedUtxoList(widget.selectedUtxoList!);
+      });
+    }
+
+    if (widget.initialBitcoinUri != null && widget.initialBitcoinUri!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _applyIncomingBitcoinUri(widget.initialBitcoinUri!, 0);
+        _viewModel.updateFeeBoardVisibility();
       });
     }
 
@@ -689,30 +694,33 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildFeeItem(String imagePath, double? sats, bool isFetching) {
-    final child = Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        border: Border.all(width: 1, color: CoconutColors.gray700),
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            imagePath,
-            height: 12,
-            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-          ),
-          CoconutLayout.spacing_100w,
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(
-              "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
-              style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+    final child = MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(width: 1, color: CoconutColors.gray700),
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              imagePath,
+              height: 12,
+              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
             ),
-          ),
-        ],
+            CoconutLayout.spacing_100w,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
+                style: CoconutTypography.body2_14.setColor(CoconutColors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
 
@@ -1012,49 +1020,47 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             child: IntrinsicWidth(
               child: Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: CoconutTextField(
-                  textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                  textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                  enableInteractiveSelection: false,
-                  textAlign: TextAlign.end,
-                  controller: _feeRateController,
-                  focusNode: _feeRateFocusNode,
-                  backgroundColor: feeRateFieldGray,
-                  onEditingComplete: () {
-                    _feeRateController.text = _removeTrailingDot(_feeRateController.text);
-                    FocusScope.of(context).unfocus();
-                  },
-                  height: 30,
-                  padding: const EdgeInsets.only(left: 12, right: 2),
-                  onChanged: (text) {
-                    if (text == "-") return;
-                    String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
-                    double? parsedFeeRate = double.tryParse(formattedText);
-
-                    if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
-                        (parsedFeeRate != null && parsedFeeRate < 0.1)) {
-                      Fluttertoast.showToast(
-                        msg: t.send_screen.fee_rate_too_low,
-                        backgroundColor: CoconutColors.gray700,
-                        toastLength: Toast.LENGTH_SHORT,
-                      );
-                      _feeRateController.text = '0.';
-                      return;
-                    }
-                    _feeRateController.text = formattedText;
-                    _viewModel.setFeeRateText(formattedText);
-                  },
-                  maxLines: 1,
-                  fontFamily: 'SpaceGrotesk',
-                  fontSize: 14,
-                  activeColor: CoconutColors.white,
-                  fontWeight: FontWeight.bold,
-                  borderRadius: 8,
-                  suffix: Container(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Text(
-                      t.send_screen.fee_rate_suffix,
-                      style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: CoconutTextField(
+                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                    textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                    enableInteractiveSelection: false,
+                    textAlign: TextAlign.end,
+                    controller: _feeRateController,
+                    focusNode: _feeRateFocusNode,
+                    backgroundColor: feeRateFieldGray,
+                    onEditingComplete: () {
+                      _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+                      FocusScope.of(context).unfocus();
+                    },
+                    height: 30,
+                    padding: const EdgeInsets.only(left: 12, right: 2),
+                    onChanged: (text) {
+                      final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
+                        _feeRateController.text = formattedText;
+                        _viewModel.setFeeRateText(formattedText);
+                      });
+                      if (isTooLow) {
+                        Fluttertoast.showToast(
+                          msg: t.send_screen.fee_rate_too_low,
+                          backgroundColor: CoconutColors.gray700,
+                          toastLength: Toast.LENGTH_SHORT,
+                        );
+                      }
+                    },
+                    maxLines: 1,
+                    fontFamily: 'SpaceGrotesk',
+                    fontSize: 14,
+                    activeColor: CoconutColors.white,
+                    fontWeight: FontWeight.bold,
+                    borderRadius: 8,
+                    suffix: Container(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        t.send_screen.fee_rate_suffix,
+                        style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                      ),
                     ),
                   ),
                 ),
@@ -1291,112 +1297,115 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           final isMaxMode = data.item2;
                           final isUtxoSelectionAuto = data.item3;
 
-                          return IgnorePointer(
-                            ignoring: !isLastIndex,
-                            child: Opacity(
-                              opacity: isLastIndex ? 1.0 : 0.0,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ShrinkAnimationButton(
-                                    onPressed: () {
-                                      _viewModel.setMaxMode(!isMaxMode);
-                                      _clearFocus();
-                                    },
-                                    defaultColor: MyColors.grey,
-                                    pressedColor: MyColors.grey.withValues(alpha: 0.8),
-                                    borderRadius: 4.0,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/svg/broom.svg',
-                                            colorFilter: ColorFilter.mode(
-                                              CoconutColors.white.withValues(alpha: isMaxMode ? 1.0 : 0.3),
-                                              BlendMode.srcIn,
-                                            ),
-                                          ),
-                                          CoconutLayout.spacing_100w,
-                                          Text(
-                                            maxButtonText,
-                                            style: Styles.caption.merge(
-                                              TextStyle(
-                                                color: CoconutColors.white,
-                                                fontFamily: CustomFonts.text.getFontFamily,
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                            child: IgnorePointer(
+                              ignoring: !isLastIndex,
+                              child: Opacity(
+                                opacity: isLastIndex ? 1.0 : 0.0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ShrinkAnimationButton(
+                                      onPressed: () {
+                                        _viewModel.setMaxMode(!isMaxMode);
+                                        _clearFocus();
+                                      },
+                                      defaultColor: MyColors.grey,
+                                      pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                      borderRadius: 4.0,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.5),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            SvgPicture.asset(
+                                              'assets/svg/broom.svg',
+                                              colorFilter: ColorFilter.mode(
+                                                CoconutColors.white.withValues(alpha: isMaxMode ? 1.0 : 0.3),
+                                                BlendMode.srcIn,
                                               ),
                                             ),
-                                          ),
-                                        ],
+                                            CoconutLayout.spacing_100w,
+                                            Text(
+                                              maxButtonText,
+                                              style: Styles.caption.merge(
+                                                TextStyle(
+                                                  color: CoconutColors.white,
+                                                  fontFamily: CustomFonts.text.getFontFamily,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 220),
-                                    transitionBuilder: (child, animation) {
-                                      return FadeTransition(
-                                        opacity: animation,
-                                        child: SizeTransition(
-                                          sizeFactor: animation,
-                                          axis: Axis.horizontal,
-                                          axisAlignment: -1,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child:
-                                        !isUtxoSelectionAuto
-                                            ? Row(
-                                              key: const ValueKey('manual_utxo_button'),
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                CoconutLayout.spacing_300w,
-                                                ShrinkAnimationButton(
-                                                  onPressed: () {
-                                                    _viewModel.setIsUtxoSelectionAuto(true);
-                                                    _clearFocus();
-                                                  },
-                                                  defaultColor: MyColors.grey,
-                                                  pressedColor: MyColors.grey.withValues(alpha: 0.8),
-                                                  borderRadius: 4.0,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(
-                                                      horizontal: 12.0,
-                                                      vertical: 4.5,
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.center,
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        SvgPicture.asset(
-                                                          'assets/svg/arrow-reload.svg',
-                                                          width: 16,
-                                                          colorFilter: ColorFilter.mode(
-                                                            CoconutColors.white.withValues(alpha: 0.3),
-                                                            BlendMode.srcIn,
-                                                          ),
-                                                        ),
-                                                        CoconutLayout.spacing_100w,
-                                                        Text(
-                                                          t.send_screen.utxo_auto_selection,
-                                                          style: Styles.caption.merge(
-                                                            TextStyle(
-                                                              color: CoconutColors.white,
-                                                              fontFamily: CustomFonts.text.getFontFamily,
+                                    AnimatedSwitcher(
+                                      duration: const Duration(milliseconds: 220),
+                                      transitionBuilder: (child, animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: SizeTransition(
+                                            sizeFactor: animation,
+                                            axis: Axis.horizontal,
+                                            axisAlignment: -1,
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child:
+                                          !isUtxoSelectionAuto
+                                              ? Row(
+                                                key: const ValueKey('manual_utxo_button'),
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  CoconutLayout.spacing_300w,
+                                                  ShrinkAnimationButton(
+                                                    onPressed: () {
+                                                      _viewModel.setIsUtxoSelectionAuto(true);
+                                                      _clearFocus();
+                                                    },
+                                                    defaultColor: MyColors.grey,
+                                                    pressedColor: MyColors.grey.withValues(alpha: 0.8),
+                                                    borderRadius: 4.0,
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 12.0,
+                                                        vertical: 4.5,
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          SvgPicture.asset(
+                                                            'assets/svg/arrow-reload.svg',
+                                                            width: 16,
+                                                            colorFilter: ColorFilter.mode(
+                                                              CoconutColors.white.withValues(alpha: 0.3),
+                                                              BlendMode.srcIn,
                                                             ),
                                                           ),
-                                                        ),
-                                                      ],
+                                                          CoconutLayout.spacing_100w,
+                                                          Text(
+                                                            t.send_screen.utxo_auto_selection,
+                                                            style: Styles.caption.merge(
+                                                              TextStyle(
+                                                                color: CoconutColors.white,
+                                                                fontFamily: CustomFonts.text.getFontFamily,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
-                                            )
-                                            : const SizedBox(key: ValueKey('manual_utxo_button_empty')),
-                                  ),
-                                ],
+                                                ],
+                                              )
+                                              : const SizedBox(key: ValueKey('manual_utxo_button_empty')),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
@@ -1430,7 +1439,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         _setDropdownMenuVisiblility(false);
                         bool needToValidateAllFields = true;
                         if (controller.text.isEmpty) {
-                          final String? scannedData = await _showAddressScanner(index);
+                          final String? scannedData = await showAddressScannerBottomSheet(context, title: t.send);
+                          if (scannedData != null) {
+                            _applyIncomingBitcoinUri(scannedData, index);
+                          }
                           if (scannedData == null) {
                             needToValidateAllFields = false;
                           }
@@ -1521,7 +1533,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAddressRow(int index, String address, String walletName, String derivationPath) {
+  Widget _buildAddressRow(
+    BuildContext context,
+    int index,
+    String address,
+    String walletName,
+    String derivationPath, {
+    required bool isCurrentWallet,
+  }) {
     return ShrinkAnimationButton(
       onPressed: () {
         final currentIndex = _viewModel.currentIndex;
@@ -1560,14 +1579,38 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             children: [
               CoconutLayout.spacing_100h,
               Text(
-                shortenAddress(address, head: 10),
+                shortenAddress(address, head: 12, tail: 14),
                 style: CoconutTypography.body2_14_Number.setColor(CoconutColors.white),
               ),
-              Text("$walletName • $derivationPath", style: CoconutTypography.body3_12.setColor(CoconutColors.gray400)),
+              _buildAddressRowSubtitle(context, walletName, derivationPath, isCurrentWallet),
               CoconutLayout.spacing_100h,
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 현재 보내기 지갑의 주소면 `이름 • 현재 지갑 라벨 • derivation path`, 아니면 기존 `이름 • derivation path`.
+  Widget _buildAddressRowSubtitle(
+    BuildContext context,
+    String walletName,
+    String derivationPath,
+    bool isCurrentWallet,
+  ) {
+    final fontStyle = CoconutTypography.body3_12.setColor(CoconutColors.gray400);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: walletName, style: fontStyle),
+          if (isCurrentWallet) ...[
+            TextSpan(
+              text: ' • ${t.send_screen.current_wallet_label}',
+              style: fontStyle.setColor(CoconutColors.primary),
+            ),
+          ],
+          TextSpan(text: ' • $derivationPath', style: fontStyle),
+        ],
       ),
     );
   }
@@ -1585,7 +1628,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                 decoration: BoxDecoration(
                   color: CoconutColors.black,
                   border: Border.all(color: CoconutColors.gray700, width: 1),
-                  borderRadius: const BorderRadius.all(Radius.circular(8)),
+                  borderRadius: const BorderRadius.all(Radius.circular(14)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1678,14 +1721,18 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               controller: _addressListScrollController,
               itemCount: _viewModel.orderedRegisteredWallets.length,
               itemBuilder: (BuildContext context, int index) {
-                final walletAddressInfo = _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                final entry = _viewModel.registeredWalletAddressMap.entries.toList()[index];
+                final walletAddressInfo = entry.value;
+                final isCurrentWallet = entry.key == _viewModel.selectedWalletId;
                 return Column(
                   children: [
                     _buildAddressRow(
+                      context,
                       index,
                       walletAddressInfo.walletAddress.address,
                       walletAddressInfo.name,
                       walletAddressInfo.walletAddress.derivationPath,
+                      isCurrentWallet: isCurrentWallet,
                     ),
                   ],
                 );
@@ -1709,15 +1756,19 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                   controller: _addressListScrollController,
                   itemCount: _viewModel.orderedRegisteredWallets.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final walletAddressInfo = _viewModel.registeredWalletAddressMap.entries.toList()[index].value;
+                    final entry = _viewModel.registeredWalletAddressMap.entries.toList()[index];
+                    final walletAddressInfo = entry.value;
+                    final isCurrentWallet = entry.key == _viewModel.selectedWalletId;
                     return Column(
                       children: [
                         if (index == 0) CoconutLayout.spacing_200h,
                         _buildAddressRow(
+                          context,
                           index,
                           walletAddressInfo.walletAddress.address,
                           walletAddressInfo.name,
                           walletAddressInfo.walletAddress.derivationPath,
+                          isCurrentWallet: isCurrentWallet,
                         ),
                         if (index == _viewModel.orderedRegisteredWallets.length - 1) CoconutLayout.spacing_200h,
                       ],
@@ -1824,98 +1875,26 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    final codes = capture.barcodes;
-    if (codes.isEmpty) return;
+  void _applyIncomingBitcoinUri(String scannedData, int index) {
+    if (scannedData.startsWith('bitcoin:')) {
+      final bip21Data = parseBip21Uri(scannedData);
+      _addressControllerList[index].text = bip21Data.address;
+      _viewModel.setAddressText(bip21Data.address, index);
 
-    final barcode = codes.first;
-    if (barcode.rawValue == null) return;
-
-    final scanData = barcode.rawValue;
-
-    if (_isQrDataHandling || scanData == null || scanData.isEmpty) {
+      if (bip21Data.amount != null) {
+        final amountText =
+            _viewModel.currentUnit.isBasedOnSatoshi
+                ? bip21Data.amount!.toString()
+                : BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!);
+        _amountController.text = amountText;
+        _viewModel.setAmountText(bip21Data.amount!, index);
+      }
       return;
     }
 
-    _isQrDataHandling = true;
-
-    final validationResult = _viewModel.validateScannedAddress(scanData);
-    if (mounted) {
-      if (validationResult == null) {
-        Navigator.pop(context, scanData);
-      } else {
-        CoconutToast.showToast(isVisibleIcon: true, context: context, text: validationResult.message);
-      }
-
-      _isQrDataHandling = false;
-    }
-  }
-
-  Future<String?> _showAddressScanner(int index) async {
-    final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-    final String? scannedData = await CommonBottomSheets.showBottomSheet_100(
-      context: context,
-      child: Builder(
-        builder:
-            (sheetContext) => Scaffold(
-              backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(
-                title: t.send,
-                context: sheetContext,
-                actionButtonList: [
-                  IconButton(
-                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-                    color: CoconutColors.white,
-                    onPressed: () {
-                      _qrViewController?.switchCamera();
-                    },
-                  ),
-                ],
-                onBackPressed: () {
-                  _clearQrScanController();
-                  Navigator.of(sheetContext).pop<String?>(null);
-                },
-              ),
-              body: AddressQrScannerBody(
-                qrKey: qrKey,
-                onDetect: _onDetect,
-                setMobileScannerController: (controller) {
-                  _qrViewController = controller;
-                },
-              ),
-            ),
-      ),
-    );
-
-    if (scannedData != null) {
-      if (scannedData.startsWith('bitcoin:')) {
-        final bip21Data = parseBip21Uri(scannedData);
-        _addressControllerList[index].text = bip21Data.address;
-        _viewModel.setAddressText(bip21Data.address, index);
-
-        if (bip21Data.amount != null) {
-          final amountText =
-              _viewModel.currentUnit.isBasedOnSatoshi
-                  ? bip21Data.amount!.toString()
-                  : BalanceFormatUtil.formatSatoshiToReadableBitcoin(bip21Data.amount!);
-          _amountController.text = amountText;
-          _viewModel.setAmountText(bip21Data.amount!, index);
-        }
-      } else {
-        final normalized = normalizeAddress(scannedData);
-        _addressControllerList[index].text = normalized;
-        _viewModel.setAddressText(normalized, index);
-      }
-    }
-    _clearQrScanController();
-
-    return scannedData;
-  }
-
-  void _clearQrScanController() {
-    // dispose는 MobileScanner에서 함 (or error occurred)
-    //_qrViewController?.dispose();
-    _qrViewController = null;
+    final normalized = normalizeAddress(scannedData);
+    _addressControllerList[index].text = normalized;
+    _viewModel.setAddressText(normalized, index);
   }
 
   void _recipientPageListener() {
@@ -2156,5 +2135,3 @@ class FinalButtonMessage {
 
   FinalButtonMessage({required this.textColor, required this.message});
 }
-
-enum RecommendedFeeFetchStatus { fetching, succeed, failed }

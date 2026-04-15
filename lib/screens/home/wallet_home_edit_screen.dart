@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/home/wallet_home_edit_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
+import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -379,7 +380,9 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
       if (!isTextChanged) return isToggleChanged;
 
       final parsed = double.tryParse(text);
-      if (parsed != 0 && _viewModel.inputError != FakeBalanceInputError.none) return false;
+      if (parsed != 0 && _viewModel.inputError != FakeBalanceInputError.none) {
+        return false;
+      }
       return true;
     }
     return isToggleChanged;
@@ -583,7 +586,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: CoconutTextField(
                   textInputType: const TextInputType.numberWithOptions(decimal: true),
-                  textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,8}'))],
+                  textInputFormatter: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    const BtcAmountInputFormatter(),
+                  ],
                   placeholderText:
                       viewModel.tempFakeBalanceTotalBtc != null
                           ? ''

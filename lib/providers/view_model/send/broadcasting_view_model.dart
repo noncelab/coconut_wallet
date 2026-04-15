@@ -40,7 +40,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   bool _isInitDone = false;
   bool _isSendingToMyAddress = false;
-  bool _isSendingDonation = false;
   final List<String> _recipientAddresses = [];
   int? _sendingAmount;
   int? _fee;
@@ -75,7 +74,6 @@ class BroadcastingViewModel extends ChangeNotifier {
   bool get isInitDone => _isInitDone;
   bool get isNetworkOn => _isNetworkOn == true;
   bool get isSendingToMyAddress => _isSendingToMyAddress;
-  bool get isSendingDonation => _isSendingDonation;
   int? get sendingAmountWhenAddressIsMyChange => _sendingAmountWhenAddressIsMyChange;
   int? get totalAmount => _totalAmount;
   int get inputCount => _inputCount;
@@ -93,6 +91,13 @@ class BroadcastingViewModel extends ChangeNotifier {
   Transaction? get signedTx => _signedTx;
   bool get isAlreadySaved => _signedDraftId != null || _savedDraftId != null;
 
+  /// Electrum 브로드캐스트 실패 시 [Result]의 `error` getter(`AppError`)에 담기는 에러 코드
+  /// - `1004` [ErrorCodes.nodeConnectionError]: `IsolateManager`에서 명령 전 소켓 상태 선검사 실패·종료
+  /// - `1301` [ErrorCodes.nodeIsolateError]: isolate 미준비·준비 대기 타임아웃·isolate 응답 타임아웃 등
+  /// - `1300` [ErrorCodes.nodeUnknown]: 메인 isolate 브리지의 기타 예외, 또는 isolate가 `Result`가 아닌 `Exception`을 보낸 경우(`IsolateController` 최상위 catch 등)
+  /// - `1302` [ErrorCodes.broadcastError]: isolate 내부 Electrum broadcast RPC 실패(메시지에 상세 포함 가능)
+  ///
+  /// `failureStage`는 디버그용 [Logger]에 기록되는 구간 라벨이며, [FileLogger]에는 브로드캐스트 전용로 일부만 남김.
   Future<Result<String>> broadcast() async {
     Logger.log('BroadcastingViewModel: signedTx = ${_signedTx!.serialize()}');
     final isConnected = await isElectrumServerConnected();
@@ -155,8 +160,6 @@ class BroadcastingViewModel extends ChangeNotifier {
 
     _walletBase = _walletProvider.getWalletById(_sendInfoProvider.walletId!).walletBase;
     _walletId = _sendInfoProvider.walletId!;
-
-    _isSendingDonation = _sendInfoProvider.isDonation ?? false;
 
     Psbt signedPsbt;
     if (isPsbt(_sendInfoProvider.signedResult!)) {

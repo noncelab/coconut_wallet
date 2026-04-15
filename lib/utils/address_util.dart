@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 
 String shortenAddress(String address, {int head = 8, int tail = 8}) {
@@ -76,6 +77,38 @@ Bip21Data parseBip21Uri(String input) {
   }
 
   return Bip21Data(address: address, amount: amount, parameters: parameters);
+}
+
+String buildBip21Uri(String address, {int? amount, Map<String, String>? parameters}) {
+  final normalizedAddress = normalizeAddress(address);
+  final queryParameters = <String, String>{};
+
+  if (amount != null) {
+    queryParameters['amount'] = _formatBip21Amount(amount);
+  }
+
+  if (parameters != null) {
+    queryParameters.addAll(parameters);
+  }
+
+  if (queryParameters.isEmpty) {
+    return 'bitcoin:$normalizedAddress';
+  }
+
+  final query = queryParameters.entries
+      .map((entry) => '${Uri.encodeQueryComponent(entry.key)}=${Uri.encodeQueryComponent(entry.value)}')
+      .join('&');
+
+  return 'bitcoin:$normalizedAddress?$query';
+}
+
+String buildBip21UriFromWalletAddress(WalletAddress walletAddress, {int? amount, Map<String, String>? parameters}) {
+  return buildBip21Uri(walletAddress.address, amount: amount, parameters: parameters);
+}
+
+String _formatBip21Amount(int satoshi) {
+  final fixed = UnitUtil.convertSatoshiToBitcoinString(satoshi);
+  return fixed.replaceFirst(RegExp(r'\.?0+$'), '');
 }
 
 bool isBech32(String address) {

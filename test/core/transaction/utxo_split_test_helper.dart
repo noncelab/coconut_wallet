@@ -1,0 +1,38 @@
+import 'package:coconut_wallet/constants/dust_constants.dart';
+import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+String formatAmountCountMap(Map<int, int> amountCountMap) {
+  return (amountCountMap.entries.toList()..sort((a, b) => a.key.compareTo(b.key)))
+      .map((entry) => '${entry.key} x ${entry.value}')
+      .join('\n');
+}
+
+void expectSuccessfulTransaction(UtxoSplitResult result, {int? expectedOutputCount}) {
+  expect(result.isSuccess, isTrue);
+  expect(result.transaction, isNotNull);
+  expect(result.transaction!.inputs.length, 1);
+
+  final splitMapOutputCount = result.splitAmountMap.values.fold<int>(0, (sum, c) => sum + c);
+  expect(result.transaction!.outputs.length, splitMapOutputCount);
+  if (expectedOutputCount != null) {
+    expect(result.transaction!.outputs.length, expectedOutputCount);
+  }
+
+  for (final output in result.transaction!.outputs) {
+    expect(output.amount, greaterThan(DustThresholds.p2wpkh));
+  }
+}
+
+Future<void> expectEqualSplitAmountsNearNiceAmounts(
+  UtxoSplitTransactionBuilder builder,
+  Map<int, int> expectedNiceAmountByCount, {
+  int tolerance = 10000,
+}) async {
+  for (final entry in expectedNiceAmountByCount.entries) {
+    final result = await builder.buildEqualAmountSplit(splitCount: entry.key).future;
+
+    expectSuccessfulTransaction(result, expectedOutputCount: entry.key);
+    expect(result.splitAmountMap.keys, everyElement(inInclusiveRange(entry.value - tolerance, entry.value)));
+  }
+}

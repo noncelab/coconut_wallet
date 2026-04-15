@@ -21,6 +21,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   late bool? _isNetworkOn;
   late final int _walletId;
   bool _isInitialized = false;
+  bool isSplitMode = false;
 
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
@@ -191,12 +192,24 @@ class UtxoSelectionViewModel extends ChangeNotifier {
 
   void toggleUtxoSelection(UtxoState utxo) {
     _cachedSelectedUtxoAmountSum = null;
-    if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
-      _selectedUtxoList.remove(utxo);
-      _selectedUtxoIdSet.remove(utxo.utxoId);
+
+    if (isSplitMode) {
+      if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
+        _selectedUtxoList.removeWhere((e) => e.utxoId == utxo.utxoId);
+        _selectedUtxoIdSet.remove(utxo.utxoId);
+      } else {
+        _clearUtxoList();
+        _selectedUtxoList.add(utxo);
+        _selectedUtxoIdSet.add(utxo.utxoId);
+      }
     } else {
-      _selectedUtxoList.add(utxo);
-      _selectedUtxoIdSet.add(utxo.utxoId);
+      if (_selectedUtxoIdSet.contains(utxo.utxoId)) {
+        _selectedUtxoList.remove(utxo);
+        _selectedUtxoIdSet.remove(utxo.utxoId);
+      } else {
+        _selectedUtxoList.add(utxo);
+        _selectedUtxoIdSet.add(utxo.utxoId);
+      }
     }
     notifyListeners();
   }

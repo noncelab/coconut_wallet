@@ -23,9 +23,6 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
 import 'package:coconut_wallet/routes/route_observer.dart';
-import 'package:coconut_wallet/screens/donation/lightning_donation_info_screen.dart';
-import 'package:coconut_wallet/screens/donation/onchain_donation_info_screen.dart';
-import 'package:coconut_wallet/screens/donation/select_donation_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_edit_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_list_screen.dart';
@@ -47,11 +44,13 @@ import 'package:coconut_wallet/screens/settings/app_info_screen.dart';
 import 'package:coconut_wallet/screens/settings/bip39_list_screen.dart';
 import 'package:coconut_wallet/screens/send/signed_psbt_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/address_search_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/split_utxo_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_detail_screen.dart';
 import 'package:coconut_wallet/screens/send/unsigned_transaction_qr_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_list_screen.dart';
+import 'package:coconut_wallet/screens/wallet_detail/utxo_consolidation/merge_utxos_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_tag_crud_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview_screen.dart';
@@ -64,6 +63,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
+import 'package:coconut_wallet/widgets/deep_link_listener.dart';
 import 'package:coconut_wallet/widgets/custom_loading_overlay.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -74,7 +74,6 @@ enum AppEntryFlow { splash, main, pinCheck }
 class CoconutWalletApp extends StatefulWidget {
   static late String kMempoolHost;
   static late String kFaucetHost;
-  static late String kDonationAddress;
   static late NetworkType kNetworkType;
   static late bool kIsFirebaseAnalyticsUsed;
 
@@ -89,6 +88,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
   AppEntryFlow _appEntryFlow = AppEntryFlow.splash;
 
   final RealmManager _realmManager = RealmManager();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   /// startSplash 완료 콜백
   void _completeSplash(AppEntryFlow appEntryFlow) {
@@ -188,6 +188,14 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
         child: Builder(
           builder: (context) {
             final app = CupertinoApp(
+              navigatorKey: _navigatorKey,
+              builder: (context, child) {
+                final currentChild = child ?? const SizedBox.shrink();
+                if (_appEntryFlow != AppEntryFlow.main) {
+                  return currentChild;
+                }
+                return AppGuard(child: DeepLinkListener(navigatorKey: _navigatorKey, child: currentChild));
+              },
               navigatorObservers: [
                 routeObserver,
                 // if (CoconutWalletApp.kIsFirebaseAnalyticsUsed)
@@ -316,24 +324,13 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                         transactionDraftId: args['transactionDraftId'],
                         initialSatsFromP2P: args['initialSatsFromP2P'],
                         selectedUtxoList: args['selectedUtxoList'],
+                        initialBitcoinUri: args['initialBitcoinUri'],
                       ),
                     ),
+                '/merge-utxos':
+                    (context) => buildLoadingScreenWithArgs(context, (args) => MergeUtxosScreen(id: args['id'])),
+                '/split-utxo': (context) => buildScreenWithArgs(context, (args) => SplitUtxoScreen(id: args['id'])),
                 '/utxo-tag': (context) => buildScreenWithArgs(context, (args) => UtxoTagCrudScreen(id: args['id'])),
-                '/select-donation-amount':
-                    (context) => buildScreenWithArgs(
-                      context,
-                      (args) => SelectDonationAmountScreen(walletListLength: args['wallet-list-length']),
-                    ),
-                '/onchain-donation-info':
-                    (context) => buildScreenWithArgs(
-                      context,
-                      (args) => OnchainDonationInfoScreen(donationAmount: args['donation-amount']),
-                    ),
-                '/lightning-donation-info':
-                    (context) => buildScreenWithArgs(
-                      context,
-                      (args) => LightningDonationInfoScreen(donationAmount: args['donation-amount']),
-                    ),
 
                 // 인자가 있고 로딩이 필요한 화면들
                 '/wallet-add-scanner':
@@ -355,11 +352,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                 '/broadcasting-complete':
                     (context) => buildLoadingScreenWithArgs(
                       context,
-                      (args) => BroadcastingCompleteScreen(
-                        id: args['id'],
-                        txHash: args['txHash'],
-                        isDonation: args['isDonation'],
-                      ),
+                      (args) => BroadcastingCompleteScreen(id: args['id'], txHash: args['txHash']),
                     ),
                 '/utxo-selection':
                     (context) => buildLoadingScreenWithArgs(
@@ -394,7 +387,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
               },
             );
 
-            return _appEntryFlow == AppEntryFlow.main ? AppGuard(child: app) : app;
+            return app;
           },
         ),
       ),

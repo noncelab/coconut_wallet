@@ -4,6 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/main.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/toast.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,7 @@ class CopyTextContainer extends StatefulWidget {
   final RichText? textRichText;
   final bool showButton;
   final bool isAddress;
+  final EdgeInsets? padding;
 
   const CopyTextContainer({
     super.key,
@@ -37,6 +39,7 @@ class CopyTextContainer extends StatefulWidget {
     this.textRichText,
     this.showButton = true,
     this.isAddress = false,
+    this.padding,
   });
 
   static const MethodChannel _channel = MethodChannel(methodChannelOS);
@@ -108,7 +111,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       },
       child: Container(
         width: MediaQuery.sizeOf(context).width,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
           color: CoconutColors.gray850,
@@ -161,28 +164,7 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
     }
 
     if (widget.isAddress) {
-      return Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: widget.text.substring(0, _prefixLength),
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
-            ),
-            TextSpan(
-              text: widget.text.substring(_prefixLength, _prefixLength + 4),
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
-            ),
-            TextSpan(
-              text: widget.text.substring(_prefixLength + 4, widget.text.length - 4),
-              style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
-            ),
-            TextSpan(
-              text: widget.text.substring(widget.text.length - 4),
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
-            ),
-          ],
-        ),
-      );
+      return Text.rich(TextSpan(children: _buildAddressSpans()));
     }
 
     return Text(
@@ -190,5 +172,62 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
       textAlign: widget.textAlign ?? TextAlign.start,
       style: widget.textStyle?.setColor(_textColor) ?? CoconutTypography.body1_16_Number.setColor(_textColor),
     );
+  }
+
+  List<TextSpan> _buildAddressSpans() {
+    final text = widget.text;
+    final address = extractAddressFromBip21(text);
+    final schemeIndex = text.toLowerCase().startsWith('bitcoin:') ? 8 : 0;
+    final queryStartIndex = schemeIndex + address.length;
+
+    final spans = <TextSpan>[];
+    if (schemeIndex > 0) {
+      spans.add(
+        TextSpan(
+          text: text.substring(0, schemeIndex),
+          style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+        ),
+      );
+    }
+
+    if (address.length <= _prefixLength + 8) {
+      spans.add(TextSpan(text: address, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue)));
+    } else {
+      spans.add(
+        TextSpan(
+          text: address.substring(0, _prefixLength),
+          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.gray500),
+        ),
+      );
+      spans.add(
+        TextSpan(
+          text: address.substring(_prefixLength, _prefixLength + 4),
+          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
+        ),
+      );
+      spans.add(
+        TextSpan(
+          text: address.substring(_prefixLength + 4, address.length - 4),
+          style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+        ),
+      );
+      spans.add(
+        TextSpan(
+          text: address.substring(address.length - 4),
+          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.cyanBlue),
+        ),
+      );
+    }
+
+    if (queryStartIndex < text.length) {
+      spans.add(
+        TextSpan(
+          text: text.substring(queryStartIndex),
+          style: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+        ),
+      );
+    }
+
+    return spans;
   }
 }

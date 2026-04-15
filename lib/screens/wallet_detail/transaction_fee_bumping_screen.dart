@@ -22,7 +22,7 @@ import 'package:coconut_wallet/widgets/bubble_clipper.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/custom_expansion_panel.dart';
 import 'package:coconut_wallet/widgets/overlays/coconut_loading_overlay.dart';
-import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
@@ -115,7 +115,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
                                 maintainState: false,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-                                  child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                  child: ErrorTooltip(
+                                    isShown: !viewModel.isNetworkOn,
+                                    errorMessage: t.errors.network_error,
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -271,10 +274,10 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
 
     if (!canContinue) return;
 
-    bool success = await viewModel.prepareToSend(double.parse(_textEditingController.text));
+    bool success = viewModel.prepareToSend(double.parse(_textEditingController.text));
 
     if (success && context.mounted) {
-      Navigator.pushNamed(context, '/unsigned-transaction-qr', arguments: {'walletName': widget.walletName});
+      Navigator.pushNamed(context, '/send-confirm');
     }
   }
 

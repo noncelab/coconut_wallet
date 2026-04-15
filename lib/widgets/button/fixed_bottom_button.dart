@@ -5,8 +5,8 @@ import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
 class FixedBottomButton extends StatefulWidget {
-  static const fixedBottomButtonDefaultHeight = 55.0;
-  static const fixedBottomButtonDefaultBottomPadding = 22.0;
+  static const fixedBottomButtonDefaultHeight = 50.0;
+  static const fixedBottomButtonDefaultBottomPadding = 16.0;
 
   const FixedBottomButton({
     super.key,
@@ -50,7 +50,11 @@ class FixedBottomButton extends StatefulWidget {
 class _FixedBottomButtonState extends State<FixedBottomButton> {
   @override
   Widget build(BuildContext context) {
-    double keyboardHeight = (widget.isVisibleAboveKeyboard ? MediaQuery.of(context).viewInsets.bottom : 0);
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardHeight = widget.isVisibleAboveKeyboard ? mediaQuery.viewInsets.bottom : 0.0;
+    final anchoredBottomBase = keyboardHeight > 0 ? keyboardHeight : mediaQuery.padding.bottom;
+    final anchoredBottom = anchoredBottomBase + widget.bottomPadding;
+    final gradientBottom = keyboardHeight > 0 ? keyboardHeight : 0.0;
     double buttonHeight =
         widget.buttonHeight ??
         (Platform.isAndroid
@@ -65,20 +69,20 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
               key: widget.gradientKey,
               left: 0,
               right: 0,
-              bottom: keyboardHeight,
+              bottom: gradientBottom,
               child: IgnorePointer(
                 ignoring: true,
                 child: Container(
                   padding:
                       widget.gradientPadding ??
-                      EdgeInsets.only(left: 16, right: 16, bottom: 40, top: buttonHeight + 24),
+                      EdgeInsets.only(left: 16, right: 16, bottom: 40, top: buttonHeight + widget.bottomPadding),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        CoconutColors.black.withValues(alpha: 0.1),
+                        CoconutColors.black.withValues(alpha: 0.15),
                         CoconutColors.black.withValues(alpha: 0.4),
                         CoconutColors.black.withValues(alpha: 0.7),
                         CoconutColors.black,
@@ -92,32 +96,35 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
           Positioned(
             left: widget.horizontalPadding,
             right: widget.horizontalPadding,
-            bottom: keyboardHeight + widget.bottomPadding + MediaQuery.of(context).padding.bottom,
+            bottom: anchoredBottom,
             child: Column(
               key: widget.buttonKey,
               children: [
                 widget.subWidget ?? Container(),
                 CoconutLayout.spacing_300h,
-                ShrinkAnimationButton(
-                  onPressed: () {
-                    widget.onButtonClicked();
-                  },
-                  isActive: widget.isActive,
-                  defaultColor: widget.backgroundColor,
-                  pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(widget.backgroundColor),
-                  disabledColor: CoconutColors.gray800,
-                  borderRadius: 12,
-                  child: SizedBox(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: buttonHeight,
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          widget.text,
-                          textAlign: TextAlign.center,
-                          style: CoconutTypography.heading4_18_Bold.setColor(
-                            widget.isActive ? widget.textColor : CoconutColors.gray700,
+                MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: ShrinkAnimationButton(
+                    onPressed: () {
+                      widget.onButtonClicked();
+                    },
+                    isActive: widget.isActive,
+                    defaultColor: widget.backgroundColor,
+                    pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(widget.backgroundColor),
+                    disabledColor: CoconutColors.gray800,
+                    borderRadius: 12,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width,
+                      height: buttonHeight,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            widget.text,
+                            textAlign: TextAlign.center,
+                            style: CoconutTypography.body2_14_Bold
+                                .setColor(widget.isActive ? widget.textColor : CoconutColors.gray700)
+                                .copyWith(height: 1.0),
                           ),
                         ),
                       ),

@@ -1,26 +1,55 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
-class LoadingIndicator extends StatefulWidget {
-  const LoadingIndicator({super.key});
+class LoadingIndicator extends StatelessWidget {
+  final EdgeInsetsGeometry padding;
+  final Color color;
+  final double radius;
 
-  @override
-  State<LoadingIndicator> createState() => _LoadingIndicatorState();
-}
+  const LoadingIndicator({
+    super.key,
+    this.padding = const EdgeInsets.symmetric(vertical: 16.0),
+    this.color = CoconutColors.white,
+    this.radius = 14,
+  });
 
-class _LoadingIndicatorState extends State<LoadingIndicator> {
   @override
   Widget build(BuildContext context) {
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        child: const CupertinoActivityIndicator(
-          color: CoconutColors.white, // CoconutColors는 미리 정의된 색상입니다.
-          radius: 14,
-        ),
-      ),
+      child: Container(padding: padding, child: CupertinoActivityIndicator(color: color, radius: radius)),
+    );
+  }
+}
+
+class LoadingOverlay extends StatelessWidget {
+  final bool isLoading;
+  final Widget child;
+  final Widget? indicator;
+  final Color barrierColor;
+  final bool dismissible;
+
+  const LoadingOverlay({
+    super.key,
+    required this.isLoading,
+    required this.child,
+    this.indicator,
+    this.barrierColor = Colors.transparent,
+    this.dismissible = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        if (isLoading) ...[
+          ModalBarrier(dismissible: dismissible, color: barrierColor),
+          Center(child: indicator ?? const LoadingIndicator()),
+        ],
+      ],
     );
   }
 }

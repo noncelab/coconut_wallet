@@ -82,6 +82,11 @@ class UtxoListViewModel extends ChangeNotifier {
     return _cachedSelectedUtxoAmountSum!;
   }
 
+  bool isUtxoSuspicious(UtxoState utxo) {
+    final txRecord = _txProvider.getTransaction(_walletId, utxo.transactionHash);
+    return _walletProvider.isUtxoSuspicious(utxo, txRecord);
+  }
+
   // Constructor
   UtxoListViewModel(
     this._walletId,

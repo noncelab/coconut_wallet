@@ -226,21 +226,25 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
           children: [
             Row(
               children: [
-                AskCard(
-                  imagePath: 'assets/images/pow_logo.png',
-                  title: t.glossary_bottom_sheet.ask_to_pow,
-                  backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
-                  gutter: GlossaryBottomSheet.gutter,
-                  url: POW_URL,
-                  externalBrowser: true,
+                Expanded(
+                  child: AskCard(
+                    imagePath: 'assets/images/pow_logo.png',
+                    title: t.glossary_bottom_sheet.ask_to_pow,
+                    backgroundColor: const Color.fromRGBO(255, 238, 233, 1),
+                    gutter: GlossaryBottomSheet.gutter,
+                    url: POW_URL,
+                    externalBrowser: true,
+                  ),
                 ),
                 SizedBox(width: GlossaryBottomSheet.gutter / 2),
-                AskCard(
-                  imagePath: 'assets/images/discord-logo.png',
-                  title: t.glossary_bottom_sheet.ask_to_discord,
-                  backgroundColor: const Color.fromARGB(255, 240, 224, 251),
-                  gutter: GlossaryBottomSheet.gutter,
-                  url: DISCORD_COCONUT,
+                Expanded(
+                  child: AskCard(
+                    imagePath: 'assets/images/discord-logo.png',
+                    title: t.glossary_bottom_sheet.ask_to_discord,
+                    backgroundColor: const Color.fromARGB(255, 240, 224, 251),
+                    gutter: GlossaryBottomSheet.gutter,
+                    url: DISCORD_COCONUT,
+                  ),
                 ),
               ],
             ),
@@ -400,30 +404,32 @@ class AskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: _launchURL,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        width: (MediaQuery.of(context).size.width - gutter * 2 - gutter / 2) / 2,
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: backgroundColor),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              margin: const EdgeInsets.only(bottom: 4),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: const Color.fromRGBO(255, 255, 255, 0.5),
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: backgroundColor),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                margin: const EdgeInsets.only(bottom: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: const Color.fromRGBO(255, 255, 255, 0.5),
+                ),
+                child: Image.asset(imagePath, width: 28, height: 28),
               ),
-              child: Image.asset(imagePath, width: 28, height: 28),
-            ),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                title,
-                style: Styles.body2.merge(const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  style: Styles.body2.merge(const TextStyle(color: MyColors.darkgrey, fontWeight: FontWeight.bold)),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

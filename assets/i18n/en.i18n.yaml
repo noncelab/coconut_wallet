@@ -103,6 +103,9 @@ log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 name: "Name"
 account: "Account"
+merge_utxos: "Merge UTXOs"
+split_utxo: "Split UTXO"
+organize: "Organize"
 
 relative_time:
   just_now: "Just now"
@@ -139,48 +142,6 @@ faucet_already_request: "Already requested. It may take up to 5 minutes for the 
 faucet_failed: "Request failed. Please try again later."
 bio_auth_required: "Biometric auth required"
 can_use_after_add_wallet: "Can use it after adding the wallet."
-
-donation:
-  coconut: "Coconut Donation"
-  donate: "Donate"
-  supportImpactMessage: "Thanks to your support, we can bring the freedom of money to more people."
-  encourageSupportMessage: "Help us keep Coconut running with your support."
-  coffee: "☕️ A Cup of Coffee"
-  late_meal: "🍜️ Late-night Meal"
-  maintenance: "⚒️️ Maintenance Costs"
-  support_heart: "🩷 A Heartfelt Support"
-  onchain: "On-chain Donation"
-  lightning: "Lightning Donation"
-  under_dust_error: "Please enter an amount greater than ${dust} (dust).\n"
-  over_donation_max_value_error: "You can donate up to a maximum of $value sats.\n"
-  donation_wallet: "Donation Wallet"
-  total_donation_amount: "Total Donation Amount"
-  donation_address: "Donation Address"
-  empty_enough_balance_wallet: "No wallet with sufficient balance."
-  unsigned_qr_tooltip: "Scan the QR code to sign."
-  signed_qr_tooltip: "Scan the signed transaction."
-  user_messages: [
-    "With love",
-    "With heartfelt support",
-    "Cheering you on",
-    "To keep you grinding",
-    "Stay strong",
-    "With gratitude",
-    "Because you’re proud of us",
-  ]
-  user_messages_description_1: "To the Coconut Dev Team"
-  user_messages_description_2: "${amount} sats"
-  donate_confirm: "Confirm Donation"
-  complete:
-    thank_you: "Thank You!"
-    description: "Your donation is more than just Bitcoin.\nIt keeps Coconut moving toward better wallets\nand wider adoption."
-
-  # Donation - Lightning
-  donation_amount: "Donation Amount"
-  ln_invoice: "Lightning Invoice"
-  ln_address: "Lightning Address"
-  ln_address_pow: "powbitcoiner@speed.app"
-  ln_invoice_api_error: "Failed to generate Lightning invoice."
 
 utility:
   p2p_calculator:
@@ -463,6 +424,7 @@ send_screen:
   fee_subtracted_from_send_amount_disabled_description: "Recipient receives the exact amount entered"
   fee_subtracted_from_send_amount_enabled_description: "The fee will be subtracted from the recipient’s amount"
   my_address: "My Addresses"
+  current_wallet_label: "Current"
   add_recipient: "Add Recipient"
   use_btc_unit: "Use BTC Unit"
   input_maximum_amount: "Send All"
@@ -641,6 +603,7 @@ settings_screen:
     log_description_2: "The information shared will only be used for problem resolution and will be discarded immediately after the problem is resolved."
     log_target: "[Logging Target]"
     log_target_description_1: "For symptom verification and problem resolution, we are logging information when adding the Keystone 3 Pro wallet. Some devices may encounter problems, so logging is in progress to verify this."
+    log_target_description_2: "Logs the cause of broadcast failure stages."
     clear_log: "Clear Log"
     clear_log_description: "Are you sure to clear log?"
     email_subject: "[Coconut Wallet] Debug Log"
@@ -659,6 +622,9 @@ address_list_screen:
   receiving: "Receiving"
   change: "Change"
   show_only_unused_address: "Show Only Unused Addresses"
+  set_amount: "Set amount"
+  share: "Share"
+  enter_receive_amount: "Enter the amount to receive"
 utxo_overview_screen:
   by_amount: "Amount"
   by_tag: "Tag"
@@ -717,6 +683,11 @@ utxo_detail_screen:
   utxo_all_already_unlocked: "All UTXOs are already spendable."
   utxo_locked_count_toast_msg: "$count UTXOs have been locked."
   utxo_unlocked_count_toast_msg: "$count UTXOs have been unlocked."
+  suspicious_dust_warning: "An unexpectedly small amount was received. Using this UTXO with others may reveal address relationships.\nYou can lock this UTXO to prevent it from being spent."
+  suspicious_dust_locked: "An unexpectedly small amount was received. This UTXO is already locked."
+  utxo_locked_button: "Lock"
+  utxo_unlocked_button: "Unlock"
+  lock_status: "Lock Status"
 
 utxo_tag_screen:
   onboarding_title: "You can manage UTXO tags"
@@ -789,6 +760,108 @@ transaction_fee_bumping_screen:
     utxo_not_found: "Cannot find the UTXO used in the transaction."
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
+
+merge_utxos_screen:
+  title: "Merge UTXOs"
+  not_enough_utxos: "There aren’t enough UTXOs to consolidate right now"
+  efficient_utxo_state: "You currently have ${count} UTXOs\nMerging isn’t necessary right now—it’s already efficient"
+  merge_anyway: "Merge anyway"
+  select_merge_criteria: "Choose how to merge"
+  select_amount_criteria: "Select amount criteria"
+  select_tag: "Select a tag"
+  merge_criteria: "Merge criteria"
+  merge_criteria_bottomsheet:
+    title: "Choose merge criteria"
+    merge_small_amounts: "Merge smaller UTXOs"
+    merge_same_tag: "Merge UTXOs with the same tag"
+    merge_same_address: "Merge UTXOs from the same address"
+  amount_criteria: "Amount criteria"
+  amount_criteria_bottomsheet:
+    title: "Select amount criteria"
+    recommendation_criteria: "Recommendation criteria"
+    below_001: "0.01 BTC or less"
+    below_001_description: "Include more UTXOs"
+    below_0001: "0.001 BTC or less"
+    below_0001_description: "Organize smaller UTXOs (Recommended)"
+    below_00001: "0.0001 BTC or less"
+    below_00001_description: "Minimum cleanup"
+    or_less: "or less"
+    less_than: "less than"
+    custom: "Custom"
+  receive_address: "Receive address"
+  receive_address_summary_count: "${count} UTXOs"
+  receive_address_summary_headline_or_less: "${count} UTXOs at ${amount}"
+  receive_address_summary_headline_under: "${count} UTXOs under ${amount}"
+  receive_address_summary_total: "\ntotal ${amount}"
+  receive_address_summary_to_wallet: "\nwill be consolidated into a new address in ${wallet_name}."
+  receive_address_summary_to_selected_address: "\nwill be consolidated into the selected address."
+  used_utxos_count: "${used} of ${total} used"
+  receive_address_bottomsheet:
+    title: "Select address"
+    my_address: "My address"
+    custom: "Enter manually"
+    not_your_owned_wallet: "This address was not found in your wallets"
+  tag_criteria: "Tag Criteria"
+  count:
+    one: "${count} UTXO"
+    other: "${count} UTXOs"
+  merge_action: "Consolidate"
+  selected_tag_title: "#${name} Tag"
+  reused_address: "Reused Address"
+  dust_warning: "UTXOs suspected of a dust attack are included"
+  exclude_dust: "Exclude"
+  fee_rate_input_placeholder: "Please enter a fee rate."
+  no_utxos_for_amount_criteria: "There are no UTXOs matching this criteria."
+  single_utxo_for_amount_criteria: "There is only 1 UTXO matching this criteria, so it cannot be consolidated."
+  future_fee_saving: "Consolidating now could save about ${amount} sats"
+  merge_cta_neutral_low_saving: "Merging now would not save much on fees"
+  merge_cta_efficient_without_merge: "It’s already efficient enough without consolidating"
+  merge_cta_high_fee_ratio: "The fee share is high (${ratio}%)"
+  merge_cta_discouraged_high_fee: "The current fee rate is too high to consolidate now"
+  merge_cta_discouraged_costly: "The consolidation cost is higher than the fees you would save"
+  exception:
+    fee_too_high: "The fee is too high"
+  transaction_build_error: "An unexpected error occurred."
+  transaction_build_error_with_message: "An unexpected error occurred.\n${error_msg}"
+
+split_utxo_screen:
+  title: "Split UTXO"
+  placeholder_utxo: "Select a UTXO"
+  placeholder_criteria: "Select a split method"
+  placeholder_split_amount: "Enter amount"
+  placeholder_expected_fee: "Enter fee rate"
+  question_select_utxo: "Which UTXO would you like to split?"
+  question_select_criteria: "How would you like to split it?"
+  question_split_by_amount: "How much per split?"
+  question_split_evenly: "Into how many parts?"
+  label_split_criteria: "Split method"
+  label_selected_utxo: "Selected UTXO"
+  label_expected_fee: "Expected fee"
+  and_more_tags: "and ${count} more"
+  utxo_error: "This amount is too small to split"
+  utxo_warning: "The fee ratio is high and may not be suitable for splitting"
+  amount_error:
+    amount_too_large: "Please enter an amount smaller than the selected UTXO"
+    insufficient_after_fee: "This amount can’t be split when the fee is included"
+    manual_sum_over_input: "Insufficient amount"
+  fee_error: "The fee is greater than the UTXO amount"
+  dust_error: "Splitting with this amount will create small amounts (dust)"
+  criteria_bottom_sheet:
+    title: "Select split method"
+    split_by_amount: "Split by fixed amount"
+    split_evenly: "Split evenly"
+    split_manually: "Split manually"
+  expected_result:
+    split_by_amount: "We’ll split ${utxoAmountText} into amounts of ${formattedSplitAmount}"
+    split_evenly: "We’ll split ${utxoAmountText} into ${splitCount} equal parts"
+    split_manually: "We’ll split ${utxoAmountText} like this"
+    new_utxos: "New UTXOs"
+    fee: "Fee"
+    above_is_expected: "The result above is an estimate."
+  big_tx_confirm:
+    create: "Create"
+    preview: "Preview"
+    description: "There are many splits, so creating the transaction may take some time. Would you like to preview the expected result first?"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
@@ -949,6 +1022,9 @@ toast:
   tag_update_failed: "Cannot edit tag."
   tag_delete_failed: "Cannot delete tag."
   wallet_detail_refresh: "Pull down the screen to get the latest data."
+  merge_utxos_unavailable_description: "At least 2 UTXOs are required to merge"
+  locked_utxo_unavailable_description: "Locked UTXOs cannot be merged"
+  split_utxo_unavailable_description: "There are no UTXOs available to split"
 
 alert:
   error_tx:
@@ -1045,6 +1121,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "Expected fee"
+    expected_fee: "Expected fee"
+    fee_rate: "Fee rate"
 
 long_pressed_menu:
   hide: "Hide"

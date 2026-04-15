@@ -1,5 +1,4 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -22,14 +21,11 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_tween_button.dart';
 import 'package:coconut_wallet/widgets/card/send_transaction_flow_card.dart';
 import 'package:coconut_wallet/widgets/dialog.dart';
-import 'package:coconut_wallet/widgets/floating_widget.dart';
-import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/send_output_detail_card.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 class BroadcastingScreen extends StatefulWidget {
@@ -45,7 +41,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
   late BitcoinUnit _currentUnit;
 
   String get confirmText => _currentUnit.displayBitcoinAmount(_viewModel.amount);
-  int? userMessageIndex; // 후원하기에서만 사용
 
   String get totalCostText =>
       _currentUnit.displayBitcoinAmount(_viewModel.totalAmount, defaultWhenNull: t.calculation_failed);
@@ -58,16 +53,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     } else {
       context.loaderOverlay.hide();
     }
-  }
-
-  void _onChangeUserMessage() {
-    if (userMessageIndex == null) return;
-
-    final int userMessagesLength = t.donation.user_messages.length;
-    debugPrint('userMessageIndex: $userMessageIndex, userMessagesLength: $userMessagesLength');
-    setState(() {
-      userMessageIndex = (userMessageIndex! + 1) % userMessagesLength;
-    });
   }
 
   void broadcast() async {
@@ -104,11 +89,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
                 ? "/wallet-detail" // '/wallet-detail' 경로를 남기고 그 외의 경로 제거, '/'는 HomeScreen 까지
                 : "/",
           ),
-          arguments: {
-            'id': _viewModel.walletId!,
-            'txHash': _viewModel.signedTx!.transactionHash,
-            'isDonation': _viewModel.isSendingDonation,
-          },
+          arguments: {'id': _viewModel.walletId!, 'txHash': _viewModel.signedTx!.transactionHash},
         );
       }
     } catch (e) {
@@ -140,64 +121,58 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
             (context, viewModel, child) => Scaffold(
               floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
               backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(
-                title: viewModel.isSendingDonation ? t.donation.donate : t.broadcasting_screen.title,
-                context: context,
-              ),
+              appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
               body: SafeArea(
                 child: Stack(
                   children: [
-                    viewModel.isSendingDonation
-                        ? _buildDonationBroadcastInfo(viewModel.amount, viewModel.isInitDone, viewModel.isNetworkOn)
-                        : _buildNormalBroadcastInfo(
-                          viewModel,
-                          viewModel.amount,
-                          viewModel.fee,
-                          viewModel.totalAmount,
-                          viewModel.sendingAmountWhenAddressIsMyChange,
-                          viewModel.isSendingToMyAddress,
-                          viewModel.recipientAddresses,
-                          viewModel.isNetworkOn,
-                        ),
-                    if (!viewModel.isSendingDonation)
-                      if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
-                        FixedBottomTweenButton(
-                          leftButtonRatio: 0.35,
-                          leftButtonClicked: () async {
-                            if (viewModel.isAlreadySaved) {
-                              CoconutToast.showToast(
-                                context: context,
-                                text: t.broadcasting_screen.toast.already_saved_draft,
-                                isVisibleIcon: true,
-                              );
-                              return;
+                    _buildNormalBroadcastInfo(
+                      viewModel,
+                      viewModel.amount,
+                      viewModel.fee,
+                      viewModel.totalAmount,
+                      viewModel.sendingAmountWhenAddressIsMyChange,
+                      viewModel.isSendingToMyAddress,
+                      viewModel.recipientAddresses,
+                      viewModel.isNetworkOn,
+                    ),
+                    if (viewModel.feeBumpingType == null && widget.signedTransactionDraftId == null) ...{
+                      FixedBottomTweenButton(
+                        leftButtonRatio: 0.35,
+                        leftButtonClicked: () async {
+                          if (viewModel.isAlreadySaved) {
+                            CoconutToast.showToast(
+                              context: context,
+                              text: t.broadcasting_screen.toast.already_saved_draft,
+                              isVisibleIcon: true,
+                            );
+                            return;
+                          }
+                          try {
+                            final result = await viewModel.saveTransactionDraft();
+                            if (result.isSuccess) {
+                              _showTransactionDraftSavedDialog();
+                            } else {
+                              _showTransactionDraftSaveFailedDialog(result.error.message);
                             }
-                            try {
-                              final result = await viewModel.saveTransactionDraft();
-                              if (result.isSuccess) {
-                                _showTransactionDraftSavedDialog();
-                              } else {
-                                _showTransactionDraftSaveFailedDialog(result.error.message);
-                              }
-                            } catch (e) {
-                              _showTransactionDraftSaveFailedDialog(e.toString());
-                            }
-                          },
-                          rightButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          leftText: t.transaction_draft.save,
-                          rightText: t.broadcasting_screen.btn_submit,
-                        ),
-                      } else ...{
-                        FixedBottomButton(
-                          isActive: viewModel.isNetworkOn && viewModel.isInitDone,
-                          onButtonClicked: () async {
-                            _onBroadcastButtonClicked(viewModel);
-                          },
-                          text: t.broadcasting_screen.btn_submit,
-                        ),
-                      },
+                          } catch (e) {
+                            _showTransactionDraftSaveFailedDialog(e.toString());
+                          }
+                        },
+                        rightButtonClicked: () async {
+                          _onBroadcastButtonClicked(viewModel);
+                        },
+                        leftText: t.transaction_draft.save,
+                        rightText: t.broadcasting_screen.btn_submit,
+                      ),
+                    } else ...{
+                      FixedBottomButton(
+                        isActive: viewModel.isNetworkOn && viewModel.isInitDone,
+                        onButtonClicked: () async {
+                          _onBroadcastButtonClicked(viewModel);
+                        },
+                        text: t.broadcasting_screen.btn_submit,
+                      ),
+                    },
                   ],
                 ),
               ),
@@ -285,9 +260,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
       widget.signedTransactionDraftId,
     );
 
-    if (_viewModel.isSendingDonation) {
-      userMessageIndex = 0;
-    }
     WidgetsBinding.instance.addPostFrameCallback((duration) async {
       _setOverlayLoading(true);
 
@@ -335,84 +307,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
     });
   }
 
-  Widget _buildDonationBroadcastInfo(int? amount, bool isInitDone, bool isNetworkOn) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              if (!isNetworkOn) NetworkErrorTooltip(isNetworkOn: isNetworkOn),
-              Padding(
-                padding: const EdgeInsets.only(left: 20, top: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        _onChangeUserMessage();
-                      },
-                      child: Row(
-                        children: [
-                          Text(t.donation.user_messages[userMessageIndex!], style: CoconutTypography.heading3_21_Bold),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 4.0),
-                            child: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-                          ),
-                        ],
-                      ),
-                    ),
-                    CoconutLayout.spacing_100h,
-                    Text(t.donation.user_messages_description_1, style: CoconutTypography.heading4_18_Bold),
-                    CoconutLayout.spacing_100h,
-                    Text(
-                      t.donation.user_messages_description_2(amount: (amount ?? 0).toThousandsSeparatedString()),
-                      style: CoconutTypography.heading4_18_Bold,
-                    ),
-                  ],
-                ),
-              ),
-              CoconutLayout.spacing_200h,
-              _buildThanksImage(),
-              CoconutLayout.spacing_800h,
-              CoconutButton(
-                width: MediaQuery.sizeOf(context).width,
-                onPressed: () {
-                  if (isNetworkOn == false) {
-                    CoconutToast.showToast(
-                      context: context,
-                      isVisibleIcon: true,
-                      iconPath: 'assets/svg/triangle-warning.svg',
-                      text: ErrorCodes.networkError.message,
-                      level: CoconutToastLevel.warning,
-                    );
-                    return;
-                  }
-                  if (isInitDone) {
-                    broadcast();
-                  }
-                },
-                // 버튼 보이지 않을 때: 수수료 조회에 실패, 잔액이 충분한 지갑이 없음
-                // 비활성화 상태로 보일 때: 지갑 동기화 진행 중, 수수료 조회 중,
-                // 활성화 상태로 보일 때: 모든 지갑 동기화 완료, 지갑별 수수료 조회 성공
-                isActive: isNetworkOn && isInitDone,
-                text: t.donation.donate_confirm,
-                backgroundColor: CoconutColors.gray100,
-                pressedBackgroundColor: CoconutColors.gray500,
-                disabledBackgroundColor: CoconutColors.gray800,
-                disabledForegroundColor: CoconutColors.gray700,
-                height: 50,
-                foregroundColor: CoconutColors.black,
-                pressedTextColor: CoconutColors.black,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildNormalBroadcastInfo(
     BroadcastingViewModel viewModel,
     int? amount,
@@ -431,7 +325,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            if (!isNetworkOn) NetworkErrorTooltip(isNetworkOn: isNetworkOn),
+            if (!isNetworkOn) ErrorTooltip(isShown: !isNetworkOn, errorMessage: t.errors.network_error),
             CoconutLayout.spacing_1000h,
             Text(
               t.broadcasting_screen.description,
@@ -465,88 +359,6 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildThanksImage() {
-    final String assetPath;
-    int? delayMilliseconds;
-    bool repeat = false;
-
-    switch (userMessageIndex) {
-      case 0:
-        assetPath = 'assets/lottie/two-hands-making-heart.json';
-        repeat = true;
-        break;
-      case 1:
-        assetPath = 'assets/images/hand-with-laid-heart.png';
-        repeat = true;
-        break;
-      case 2:
-        assetPath = 'assets/lottie/giving-coin.json';
-        delayMilliseconds = 1000;
-        repeat = false;
-        break;
-      case 3:
-        assetPath = 'assets/lottie/hand-with-floating-heart.json';
-        repeat = true;
-        break;
-      case 4:
-        assetPath = 'assets/lottie/tripple-hearts.json';
-        repeat = true;
-        break;
-      case 5:
-        assetPath = 'assets/lottie/giving-heart.json';
-        delayMilliseconds = 1000;
-        repeat = false;
-        break;
-      case 6:
-        assetPath = 'assets/lottie/upside-down-hands.json';
-        delayMilliseconds = 1000;
-        repeat = false;
-        break;
-      default:
-        assetPath = 'assets/lottie/two-hands-heart.json';
-    }
-
-    final Key lottieKey = ValueKey(userMessageIndex);
-    if (userMessageIndex == 6) {
-      return FloatingWidget(
-        delayMilliseconds: delayMilliseconds,
-        child: Stack(
-          children: [
-            ShaderMask(
-              shaderCallback:
-                  (bounds) => LinearGradient(
-                    colors: [
-                      CoconutColors.white.withValues(alpha: 0.1),
-                      Colors.transparent,
-                      CoconutColors.black.withValues(alpha: 0.1),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ).createShader(bounds),
-              blendMode: BlendMode.srcATop,
-              child: Lottie.asset(
-                'assets/lottie/spinning-heart.json',
-                key: ValueKey(userMessageIndex! * 2),
-                width: 200,
-                height: 200,
-                fit: BoxFit.fill,
-                repeat: true,
-              ),
-            ),
-            Lottie.asset(assetPath, key: lottieKey, width: 200, height: 200, fit: BoxFit.fill, repeat: repeat),
-          ],
-        ),
-      );
-    }
-    return FloatingWidget(
-      delayMilliseconds: delayMilliseconds,
-      child:
-          userMessageIndex == 1
-              ? Image.asset(assetPath, width: 200, height: 200, fit: BoxFit.fill)
-              : Lottie.asset(assetPath, key: lottieKey, width: 200, height: 200, fit: BoxFit.fill, repeat: repeat),
     );
   }
 

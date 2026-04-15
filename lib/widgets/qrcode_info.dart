@@ -5,22 +5,21 @@ import 'package:flutter/material.dart';
 
 class QrCodeInfo extends StatefulWidget {
   final String qrData;
-
-  // Text data used only when backing up a multisig wallet
-  final String? textData;
-  final RichText? textRichText;
-
+  final String? displayText;
   final Widget? qrcodeTopWidget;
   final bool isAddress;
+  final ImageProvider? embedImage;
+  final GlobalKey? qrCaptureKey;
   final TextStyle? textStyle;
 
   const QrCodeInfo({
     super.key,
     required this.qrData,
-    this.textData,
-    this.textRichText,
+    this.displayText,
     this.qrcodeTopWidget,
     this.isAddress = false,
+    this.embedImage,
+    this.qrCaptureKey,
     this.textStyle,
   });
 
@@ -35,14 +34,19 @@ class _QrCodeInfoState extends State<QrCodeInfo> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (widget.qrcodeTopWidget != null) ...[widget.qrcodeTopWidget!, CoconutLayout.spacing_400h],
-        AdaptiveQrImage(qrData: widget.qrData),
+        RepaintBoundary(
+          key: widget.qrCaptureKey,
+          child: AdaptiveQrImage(qrData: widget.qrData, embedImage: widget.embedImage),
+        ),
         const SizedBox(height: 32),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: CopyTextContainer(
-            text: widget.textData ?? widget.qrData,
+            text: widget.displayText ?? widget.qrData,
+            copyText: widget.qrData,
             textStyle: widget.textStyle ?? CoconutTypography.body2_14,
             isAddress: widget.isAddress,
+            padding: const EdgeInsets.all(20),
           ),
         ),
       ],

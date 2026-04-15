@@ -1,5 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
+import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/utxo_selector.dart';
 import 'package:coconut_wallet/extensions/transaction_extension.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -81,6 +81,7 @@ class TransactionBuilder {
   Transaction? _transaction;
   int? _estimatedFeeByFeeEstimator; // 처음엔 추정된 값으로 초기화됨
   int? _subtractedFeeFromAmount; // 최종 생성된 tx.estimateFee()와 실제로 사용되는 fee가 다를 때 설정됨
+  int get _dustThreshold => walletListItemBase.walletType.addressType.dustThreshold;
 
   TransactionBuilder({
     required this.availableUtxos,
@@ -244,15 +245,9 @@ class TransactionBuilder {
           feeRate,
           walletListItemBase.walletBase,
         );
-        if (tx.outputs.first.amount <= dustLimit) {
-          throw SendAmountTooLowException(
-            estimatedFee: tx.estimateFee(
-              feeRate,
-              walletListItemBase.walletType.addressType,
-              requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-              totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-            ),
-          );
+        if (tx.outputs.first.amount <= _dustThreshold) {
+          final outputSum = tx.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+          throw SendAmountTooLowException(estimatedFee: totalInputAmount - outputSum);
         }
         return tx;
       } on TransactionCreationException catch (_) {
@@ -270,7 +265,7 @@ class TransactionBuilder {
 
     int initialFee = _estimatedFeeByFeeEstimator!;
     int sendAmount = maxUsedAmount - initialFee;
-    if (sendAmount <= dustLimit) {
+    if (sendAmount <= _dustThreshold) {
       throw SendAmountTooLowException(estimatedFee: _estimatedFeeByFeeEstimator!);
     }
 
@@ -312,7 +307,7 @@ class TransactionBuilder {
 
           initialFee = realEstimatedFee;
           sendAmount = maxUsedAmount - realEstimatedFee;
-          if (sendAmount <= dustLimit) {
+          if (sendAmount <= _dustThreshold) {
             /// estimatedFee + sendAmount < maxUsedAmount이더라도 반환
             return tx;
           }
@@ -329,7 +324,7 @@ class TransactionBuilder {
         if (estimatedFee != null) {
           initialFee = estimatedFee;
           sendAmount = maxUsedAmount - initialFee;
-          if (sendAmount <= dustLimit) {
+          if (sendAmount <= _dustThreshold) {
             throw SendAmountTooLowException(estimatedFee: initialFee);
           }
           continue;
@@ -364,15 +359,9 @@ class TransactionBuilder {
           feeRate,
           walletListItemBase.walletBase,
         );
-        if (tx.outputs.last.amount <= dustLimit) {
-          throw SendAmountTooLowException(
-            estimatedFee: tx.estimateFee(
-              feeRate,
-              walletListItemBase.walletType.addressType,
-              requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-              totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-            ),
-          );
+        if (tx.outputs.last.amount <= _dustThreshold) {
+          final outputSum = tx.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+          throw SendAmountTooLowException(estimatedFee: totalInputAmount - outputSum);
         }
         return tx;
       } on Exception catch (e) {
@@ -389,7 +378,7 @@ class TransactionBuilder {
     final lastRecipient = recipients.entries.last;
     int initialFee = _estimatedFeeByFeeEstimator!;
     int finalLastSendAmount = lastRecipient.value - initialFee;
-    if (finalLastSendAmount <= dustLimit) {
+    if (finalLastSendAmount <= _dustThreshold) {
       throw SendAmountTooLowException(estimatedFee: _estimatedFeeByFeeEstimator!);
     }
 
@@ -431,7 +420,7 @@ class TransactionBuilder {
 
           initialFee = realEstimatedFee;
           finalLastSendAmount = lastRecipient.value - initialFee;
-          if (finalLastSendAmount <= dustLimit) {
+          if (finalLastSendAmount <= _dustThreshold) {
             return tx;
           }
           updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;
@@ -449,7 +438,7 @@ class TransactionBuilder {
         if (estimatedFee != null) {
           initialFee = estimatedFee;
           finalLastSendAmount = lastRecipient.value - initialFee;
-          if (finalLastSendAmount <= dustLimit) {
+          if (finalLastSendAmount <= _dustThreshold) {
             throw SendAmountTooLowException(estimatedFee: initialFee);
           }
           updatedRecipients[recipients.entries.last.key] = finalLastSendAmount;

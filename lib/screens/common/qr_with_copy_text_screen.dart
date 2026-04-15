@@ -1,6 +1,19 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/widgets/qrcode_info.dart';
+import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/widgets/input_and_share_overlay.dart';
+import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:coconut_wallet/widgets/qrcode_info.dart';
 
 class QrWithCopyTextScreen extends StatefulWidget {
   final String title;
@@ -25,6 +38,11 @@ class QrWithCopyTextScreen extends StatefulWidget {
 
   final bool isBottom;
 
+  final double? receiveAmount;
+  final ScrollController? scrollController;
+  final bool showBottomActions;
+  final bool showQrEmbedImage;
+
   const QrWithCopyTextScreen({
     super.key,
     required this.title,
@@ -39,6 +57,10 @@ class QrWithCopyTextScreen extends StatefulWidget {
     this.actionButton,
     this.isAddress = false,
     this.isBottom = false,
+    this.receiveAmount,
+    this.scrollController,
+    this.showBottomActions = false,
+    this.showQrEmbedImage = false,
   });
 
   @override
@@ -47,7 +69,10 @@ class QrWithCopyTextScreen extends StatefulWidget {
 
 class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   final GlobalKey _pulldownKey = GlobalKey();
+  final GlobalKey _qrCaptureKey = GlobalKey();
+  final GlobalKey _shareButtonKey = GlobalKey();
   bool _isPulldownOpen = false;
+  int? _amountInSats; // bip21 포맷의 amount를 sats로 변환한 값
 
   String _selectedKey = "";
 
@@ -80,13 +105,23 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   String get _displayTitle => _displayNames[_selectedKey] ?? _selectedKey;
 
   String get _currentQrData {
-    if (!widget.showPulldownMenu || widget.qrDataMap == null) {
-      return widget.qrData;
+    final baseQrData =
+        (!widget.showPulldownMenu || widget.qrDataMap == null)
+            ? widget.qrData
+            : widget.qrDataMap![_selectedKey] ?? widget.qrData;
+
+    if (!widget.isAddress || _amountInSats == null) {
+      return baseQrData;
     }
-    return widget.qrDataMap![_selectedKey] ?? widget.qrData;
+
+    return buildBip21Uri(extractAddressFromBip21(baseQrData), amount: _amountInSats);
   }
 
   String get _currentTextData {
+    if (widget.isAddress && _amountInSats != null) {
+      return _currentQrData;
+    }
+
     if (!widget.showPulldownMenu) {
       return widget.qrData;
     }
@@ -168,9 +203,11 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
   Widget build(BuildContext context) {
     final displayQrData = _currentQrData;
     final displayTextData = _currentTextData;
+    final currentUnit = context.read<PreferenceProvider>().currentUnit;
 
     return Scaffold(
       backgroundColor: CoconutColors.black,
+      resizeToAvoidBottomInset: false,
       appBar: CoconutAppBar.build(
         title: widget.title,
         context: context,
@@ -182,7 +219,52 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
         actionButtonList: widget.actionButton != null ? [widget.actionButton!] : [],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: InputAndShareOverlay(
+          scrollController: widget.scrollController,
+          showBottomActions: widget.showBottomActions,
+          shareButtonKey: _shareButtonKey,
+          onEnterAmountTap: () async {
+            final result = await Bip21AmountBottomSheet.show(
+              context: context,
+              currentUnit: currentUnit,
+              initialAmountSats: _amountInSats,
+            );
+            if (!mounted || result == null || !result.didEdit) return;
+            setState(() {
+              _amountInSats = result.amountInSats;
+            });
+          },
+          onShareTap: () async {
+            try {
+              final RenderRepaintBoundary boundary =
+                  _qrCaptureKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+              final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+              final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+              final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+              final directory = await getTemporaryDirectory();
+              final file = File('${directory.path}/share_qr_address.png');
+              await file.writeAsBytes(pngBytes);
+
+              // 버튼 위치 계산
+              final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
+              final Rect sharePositionOrigin =
+                  box != null
+                      ? box.localToGlobal(Offset.zero) & box.size
+                      : const Rect.fromLTWH(0, 400, 300, 50); // fallback
+
+              AppGuard.disablePrivacyScreen();
+              await SharePlus.instance.share(
+                ShareParams(files: [XFile(file.path)], text: displayTextData, sharePositionOrigin: sharePositionOrigin),
+              );
+            } catch (e, stack) {
+              debugPrint('Failed to capture and share: $e');
+              debugPrint('Stack: $stack');
+            } finally {
+              AppGuard.enablePrivacyScreen();
+            }
+          },
           child: Column(
             children: [
               if (widget.tooltipDescription != null) ...[
@@ -213,14 +295,13 @@ class _QrWithCopyTextScreenState extends State<QrWithCopyTextScreen> {
                     ),
                   ),
                 ),
-
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
                 child: QrCodeInfo(
+                  qrCaptureKey: _qrCaptureKey,
                   qrcodeTopWidget: widget.qrcodeTopWidget,
                   qrData: displayQrData,
-                  textData: displayTextData,
-                  textRichText: widget.textRichText,
+                  displayText: displayTextData,
                   isAddress: widget.isAddress,
                 ),
               ),

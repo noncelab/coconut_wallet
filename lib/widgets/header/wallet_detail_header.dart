@@ -15,8 +15,6 @@ class WalletDetailHeader extends StatefulWidget {
   final int sendingAmount;
   final int receivingAmount;
   final void Function() onPressedUnitToggle;
-  final void Function() onTapReceive;
-  final void Function() onTapSend;
 
   const WalletDetailHeader({
     super.key,
@@ -26,8 +24,6 @@ class WalletDetailHeader extends StatefulWidget {
     required this.sendingAmount,
     required this.receivingAmount,
     required this.onPressedUnitToggle,
-    required this.onTapReceive,
-    required this.onTapSend,
   });
 
   @override
@@ -44,10 +40,8 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
         children: [
           CoconutLayout.spacing_800h,
           _buildBalanceInfo(),
-          CoconutLayout.spacing_200h,
-          _buildPendingAmountStatus(),
           CoconutLayout.spacing_500h,
-          _buildActionButtons(),
+          _buildPendingAmountStatus(),
         ],
       ),
     );
@@ -119,28 +113,6 @@ class _WalletDetailHeaderState extends State<WalletDetailHeader> {
           CoconutLayout.spacing_200w,
           Text(text, style: CoconutTypography.body2_14_Number.setColor(CoconutColors.gray200)),
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        _buildActionButton(widget.onTapReceive, t.receive, CoconutColors.white, CoconutColors.black),
-        const SizedBox(width: 12.0),
-        _buildActionButton(widget.onTapSend, t.send, CoconutColors.primary, CoconutColors.black),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(void Function() onTap, String label, Color backgroundColor, Color textColor) {
-    return Expanded(
-      child: CoconutButton(
-        onPressed: onTap,
-        backgroundColor: backgroundColor,
-        buttonType: CoconutButtonType.filled,
-        text: label,
-        foregroundColor: textColor,
       ),
     );
   }

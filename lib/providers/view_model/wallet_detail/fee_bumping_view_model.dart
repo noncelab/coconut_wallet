@@ -1,5 +1,3 @@
-import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/constants/bitcoin_network_rules.dart';
 import 'package:coconut_wallet/core/exceptions/cpfp_creation/cpfp_creation_exception.dart';
 import 'package:coconut_wallet/core/exceptions/rbf_creation/rbf_creation_exception.dart';
 import 'package:coconut_wallet/core/transaction/fee_bumping/cpfp_builder.dart';
@@ -422,7 +420,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     return _txProvider.hasTransactionConfirmed(_walletId, transaction.transactionHash);
   }
 
-  Future<bool> prepareToSend(double newTxFeeRate) async {
+  bool prepareToSend(double newTxFeeRate) {
     Logger.log(
       '[FeeBumping] prepareToSend: newTxFeeRate=$newTxFeeRate hasValidTransaction=$hasValidTransaction '
       'rbfBuildResult=${_rbfBuildResult != null} rbfSuccess=${_rbfBuildResult?.isSuccess} '
@@ -431,9 +429,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _sendInfoProvider.setWalletId(_walletId);
     _sendInfoProvider.setIsMultisig(_walletListItemBase.walletType == WalletType.multiSignature);
     final transaction = isRbf ? _rbfBuildResult!.transaction! : _cpfpBuildResult!.transaction!;
-    _sendInfoProvider.setTxWaitingForSign(
-      Psbt.fromTransaction(transaction, _walletListItemBase.walletBase).serialize(),
-    );
+    _sendInfoProvider.setTransaction(transaction);
     _sendInfoProvider.setFeeBumpfingType(_type);
     _sendInfoProvider.setWalletImportSource(_walletListItemBase.walletImportSource);
     return true;
@@ -476,10 +472,6 @@ class FeeBumpingViewModel extends ChangeNotifier {
   void setIsNetworkOn(bool? isNetworkOn) {
     _isNetworkOn = isNetworkOn;
     notifyListeners();
-  }
-
-  bool makeDust(List<Utxo> utxoList, double outputSum, double requiredFee) {
-    return utxoList.fold(0, (sum, utxo) => sum + utxo.amount) - outputSum - requiredFee < dustLimit;
   }
 
   // 노드 프로바이더에서 추천 수수료 조회

@@ -104,6 +104,9 @@ log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
 name: "Nombre"
 account: "Cuenta"
+merge_utxos: "Combinar UTXOs"
+split_utxo: "Dividir UTXO"
+organize: "Organizar"
 
 relative_time:
   just_now: "Justo ahora"
@@ -140,47 +143,6 @@ faucet_already_request: "Ya se ha solicitado. Puede tomar hasta 5 minutos para e
 faucet_failed: "Solicitud fallida. Por favor, inténtelo de nuevo más tarde."
 bio_auth_required: "Autenticación biométrica requerida"
 can_use_after_add_wallet: "Puede usarlo después de agregar la billetera."
-
-donation:
-  coconut: "Apoyar a Coconut"
-  donate: "Donar"
-  supportImpactMessage: "Gracias a tu apoyo, podemos llevar el dinero libre a más personas."
-  encourageSupportMessage: "Ayúdanos a mantener el proyecto vivo."
-  coffee: "☕️ Un café"
-  late_meal: "🍜️ Una cena"
-  maintenance: "⚒️️ Mantenimiento"
-  support_heart: "🩷 Un corazón de apoyo"
-  onchain: "Donación onchain"
-  lightning: "Donación Lightning"
-  under_dust_error: "${dust}(dust) es mayor que el valor ingresado\n"
-  over_donation_max_value_error: "El máximo es de $value sats\n"
-  donation_wallet: "Billetera de donación"
-  total_donation_amount: "Total de donación"
-  donation_address: "Dirección de donación"
-  empty_enough_balance_wallet: "No hay una billetera con saldo suficiente"
-  unsigned_qr_tooltip: "Escanea el QR para firmar"
-  signed_qr_tooltip: "Escanea la transacción firmada"
-  user_messages: [
-    "Con cariño",
-    "Con apoyo sincero",
-    "Te animamos",
-    "Para que sigas adelante",
-    "Mantente fuerte",
-    "Con gratitud",
-    "Porque nos enorgulleces",
-  ]
-  user_messages_description_1: "Al equipo de desarrollo de Coconut"
-  user_messages_description_2: "${amount} sats"
-  donate_confirm: "Confirmar donación"
-  complete:
-    thank_you: "¡Gracias!"
-    description: "Tu donación es más que Bitcoin.\nPermite que Coconut avance hacia mejores billeteras\ny llegue a más personas." 
-
-  donation_amount: "Cantidad de donación"
-  ln_invoice: "Factura Lightning"
-  ln_address: "Dirección Lightning"
-  ln_address_pow: "powbitcoiner@speed.app"
-  ln_invoice_api_error: "Error al generar la factura Lightning."
 
 utility:
   p2p_calculator:
@@ -464,6 +426,7 @@ send_screen:
   fee_subtracted_from_send_amount_disabled_description: "El destinatario recibe el monto exacto ingresado" 
   fee_subtracted_from_send_amount_enabled_description: "La comisión se restará del monto del destinatario"  
   my_address: "Mis direcciones"
+  current_wallet_label: "Actual"
   add_recipient: "Agregar destinatario"  
   use_btc_unit: "Usar unidad BTC"
   input_maximum_amount: "Enviar todo"
@@ -643,6 +606,7 @@ settings_screen:
     log_description_2: "La información compartida solo se usará para la resolución de problemas y se descartará inmediatamente después de resolver el problema."
     log_target: "[Objetivo de registro]"
     log_target_description_1: "Para la verificación de síntomas y resolución de problemas, estamos registrando información cuando agregamos la billetera Keystone 3 Pro. Algunos dispositivos pueden enfrentar problemas, por lo que el registro está en progreso para verificar esto."  
+    log_target_description_2: "Registra la causa de las fases de error en el broadcast."
     clear_log: "Limpiar registro"
     clear_log_description: "¿Estás seguro de querer limpiar el registro?"
     email_subject: "[Coconut Wallet] Registro de depuración"
@@ -661,6 +625,9 @@ address_list_screen:
   receiving: "Recibiendo"
   change: "Cambio"
   show_only_unused_address: "Mostrar solo direcciones sin usar"
+  set_amount: "establecer importe"
+  share: "compartir"
+  enter_receive_amount: "Ingrese la cantidad que debe recibir"
 utxo_overview_screen:
   by_amount: "Monto"
   by_tag: "Etiqueta"
@@ -719,6 +686,11 @@ utxo_detail_screen:
   utxo_all_already_unlocked: "Todos los UTXOs ya están disponibles."
   utxo_locked_count_toast_msg: "$count UTXOs han sido bloqueados."
   utxo_unlocked_count_toast_msg: "$count UTXOs han sido desbloqueados."
+  suspicious_dust_warning: "Se recibió una cantidad inesperadamente pequeña. Usar este UTXO con otros puede revelar relaciones entre direcciones.\nPuedes bloquear este UTXO para evitar que se gaste."
+  suspicious_dust_locked: "Se recibió una cantidad inesperadamente pequeña. Este UTXO ya está bloqueado."
+  utxo_locked_button: "Bloquear"
+  utxo_unlocked_button: "Desbloquear"
+  lock_status: "Estado de bloqueo"
 
 utxo_tag_screen:
   onboarding_title: "Puedes gestionar etiquetas UTXO"
@@ -792,6 +764,107 @@ transaction_fee_bumping_screen:
   toast:
     insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
 
+merge_utxos_screen:
+  title: "Combinar UTXOs"
+  not_enough_utxos: "No hay suficientes UTXOs para combinar en este momento"
+  efficient_utxo_state: "Actualmente tienes ${count} UTXOs\nNo es necesario combinarlos por ahora, ya es eficiente"
+  merge_anyway: "Combinar de todos modos"
+  select_merge_criteria: "¿Cómo quieres organizarlos?"
+  select_amount_criteria: "Selecciona un criterio de monto."
+  select_tag: "Selecciona una etiqueta."
+  merge_criteria: "Criterio de combinación"
+  merge_criteria_bottomsheet:
+    title: "Elegir criterio de combinación"
+    merge_small_amounts: "Combinar UTXOs de bajo monto"
+    merge_same_tag: "Combinar UTXOs con la misma etiqueta"
+    merge_same_address: "Combinar UTXOs recibidos en la misma dirección"
+  amount_criteria: "Criterio de monto"
+  amount_criteria_bottomsheet:
+    title: "Seleccionar criterio de monto"
+    recommendation_criteria: "criterio de recomendación"
+    below_001: "0.01 BTC o menos"
+    below_001_description: "Incluir más UTXOs"
+    below_0001: "0.001 BTC o menos"
+    below_0001_description: "Organizar UTXOs pequeños (Recomendado)"
+    below_00001: "0.0001 BTC o menos"
+    below_00001_description: "Limpieza mínima"
+    or_less: "o menos"
+    less_than: "menos de"
+    custom: "Personalizado"
+  receive_address: "Dirección de recepción"
+  receive_address_summary_count: "${count} UTXOs"
+  receive_address_summary_headline_or_less: "${count} UTXOs de ${amount} o menos"
+  receive_address_summary_headline_under: "${count} UTXOs por debajo de ${amount}"
+  receive_address_summary_total: "\ntotal ${amount}"
+  receive_address_summary_to_wallet: "\nse consolidarán en una nueva dirección de ${wallet_name}."
+  receive_address_summary_to_selected_address: "\nse consolidarán en la dirección seleccionada."
+  used_utxos_count: "${used} de ${total} usados"
+  receive_address_bottomsheet:
+    title: "Seleccionar dirección"
+    my_address: "Mi dirección"
+    custom: "Ingresar manualmente"
+    not_your_owned_wallet: "La dirección no se encontró en tus billeteras"
+  tag_criteria: "Criterio de etiqueta"
+  count:
+    one: "${count} UTXO"
+    other: "${count} UTXOs"
+  merge_action: "Fusionar"
+  selected_tag_title: "Etiqueta #${name}"
+  reused_address: "Dirección reutilizada"
+  dust_warning: "Se incluyen UTXOs sospechosos de ataque dust"
+  exclude_dust: "Excluir"
+  fee_rate_input_placeholder: "Por favor, introduce una tarifa."
+  no_utxos_for_amount_criteria: "No hay UTXOs que coincidan con este criterio."
+  single_utxo_for_amount_criteria: "Solo hay 1 UTXO que coincide con este criterio, por lo que no se puede consolidar."
+  future_fee_saving: "Si consolidas ahora, podrías ahorrar aproximadamente ${amount} sats"
+  merge_cta_neutral_low_saving: "Consolidar ahora no supondría un gran ahorro en comisiones"
+  merge_cta_efficient_without_merge: "Es suficientemente eficiente incluso sin consolidar"
+  merge_cta_high_fee_ratio: "La proporción de comisión es alta (${ratio}%)"
+  merge_cta_discouraged_high_fee: "La comisión actual es demasiado alta para consolidar ahora"
+  merge_cta_discouraged_costly: "El costo de consolidar es mayor que las comisiones que ahorrarías"
+  exception:
+    fee_too_high: "La comisión es demasiado alta"
+  transaction_build_error: "Ocurrió un error inesperado."
+  transaction_build_error_with_message: "Ocurrió un error inesperado.\n${error_msg}"
+
+split_utxo_screen:
+  title: "Dividir UTXO"
+  placeholder_utxo: "Selecciona un UTXO"
+  placeholder_criteria: "Selecciona un criterio de división"
+  placeholder_split_amount: "Ingresa el monto"
+  placeholder_expected_fee: "Ingresa la tasa de comisión"
+  question_select_utxo: "¿Qué UTXO quieres dividir?"
+  question_select_criteria: "¿Cómo quieres dividirlo?"
+  question_split_by_amount: "¿Cuánto por cada uno?"
+  question_split_evenly: "¿En cuántas partes?"
+  label_split_criteria: "Criterio de división"
+  label_selected_utxo: "UTXO seleccionado"
+  label_expected_fee: "Comisión estimada"
+  and_more_tags: "y ${count} más"
+  utxo_error: "Este monto es demasiado pequeño para dividir"
+  utxo_warning: "La proporción de comisión es alta y puede no ser adecuado dividirlo"
+  amount_error:
+    amount_too_large: "Por favor, introduce un importe menor que el UTXO seleccionado"
+    insufficient_after_fee: "No es posible dividir este importe al incluir la comisión"
+    manual_sum_over_input: "El importe es insuficiente"
+  fee_error: "La comisión es mayor que el importe del UTXO"
+  dust_error: "Dividir con esta cantidad generará montos pequeños (dust)"
+  criteria_bottom_sheet:
+    title: "Seleccionar criterio de división"
+    split_by_amount: "Dividir por monto fijo"
+    split_evenly: "Dividir en partes iguales"
+    split_manually: "Dividir manualmente"
+  expected_result:
+    split_by_amount: "Dividiremos ${utxoAmountText} en partes de ${formattedSplitAmount}"
+    split_evenly: "Dividiremos ${utxoAmountText} en ${splitCount} partes iguales"
+    split_manually: "Dividiremos ${utxoAmountText} de esta manera"
+    new_utxos: "Nuevos UTXO"
+    fee: "Comisión"
+    above_is_expected: "El resultado anterior es una estimación."
+  big_tx_confirm:
+    create: "Crear"
+    preview: "Vista previa"
+    description: "Hay muchas divisiones, por lo que la creación de la transacción puede tardar un poco. ¿Quieres ver primero el resultado estimado?"
 
 # lib/widgets/card
 wallet_list_add_guide_card:
@@ -952,6 +1025,9 @@ toast:
   tag_update_failed: "No se puede editar la etiqueta."
   tag_delete_failed: "No se puede eliminar la etiqueta."
   wallet_detail_refresh: "Arrastra la pantalla hacia abajo para obtener los datos más recientes."
+  merge_utxos_unavailable_description: "Se necesitan al menos 2 UTXO para combinarlos"
+  locked_utxo_unavailable_description: "Los UTXO bloqueados no se pueden combinar"
+  split_utxo_unavailable_description: "No hay UTXO disponibles para dividir"
 
 alert:
   error_tx:
@@ -1048,6 +1124,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+expected_fee_bottom_sheet:
+    title: "Comisión estimada"
+    expected_fee: "Comisión estimada"
+    fee_rate: "Tasa de comisión"
 
 long_pressed_menu:
   hide: "Ocultar"

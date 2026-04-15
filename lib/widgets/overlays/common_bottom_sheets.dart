@@ -1,63 +1,98 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/selectable_list_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:coconut_wallet/styles.dart';
 
 class CommonBottomSheets {
-  static void showBottomSheet({
+  static Future<T?> showBottomSheet<T>({
     required String title,
     required BuildContext context,
     required Widget child,
+    List<Widget>? actionList,
     TextStyle titleTextStyle = Styles.body2Bold,
     bool isDismissible = true,
     bool enableDrag = true,
-    bool isCloseButton = false,
+    bool showCloseButton = false,
+    bool showDragHandle = false,
+    bool adjustForKeyboardInset = true,
+    Color backgroundColor = CoconutColors.black,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
-    showModalBottomSheet(
+    return showModalBottomSheet<T>(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(topLeft: Radius.circular(24.0), topRight: Radius.circular(24.0)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 20),
-          child: Wrap(
+        final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.only(bottom: adjustForKeyboardInset ? keyboardInset + 20 : 0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              if (showDragHandle)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Center(
+                    child: Container(
+                      width: 55,
+                      height: 4,
+                      decoration: BoxDecoration(color: CoconutColors.gray400, borderRadius: BorderRadius.circular(4)),
+                    ),
+                  ),
+                ),
               Padding(
                 padding: titlePadding,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap:
-                          isCloseButton
-                              ? () {
-                                Navigator.pop(context);
-                              }
-                              : null,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        color: Colors.transparent,
-                        child:
-                            isCloseButton
-                                ? const Icon(Icons.close_rounded, color: CoconutColors.white)
-                                : Container(width: 16),
+                child: SizedBox(
+                  height: 32,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Center(
+                          child: Text(
+                            title,
+                            style: titleTextStyle,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(
-                      title,
-                      style: titleTextStyle,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Container(padding: const EdgeInsets.all(4), child: Container(width: 16)),
-                  ],
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          onTap:
+                              showCloseButton
+                                  ? () {
+                                    Navigator.pop(context);
+                                  }
+                                  : null,
+                          child:
+                              showCloseButton
+                                  ? const Icon(Icons.close_rounded, size: 24, color: CoconutColors.white)
+                                  : const SizedBox(width: 24, height: 24),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child:
+                            actionList != null
+                                ? Row(mainAxisSize: MainAxisSize.min, children: actionList)
+                                : const SizedBox(width: 28, height: 24),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               child,
@@ -65,7 +100,7 @@ class CommonBottomSheets {
           ),
         );
       },
-      backgroundColor: CoconutColors.black,
+      backgroundColor: backgroundColor,
       isDismissible: isDismissible,
       isScrollControlled: true,
       enableDrag: enableDrag,
@@ -75,10 +110,15 @@ class CommonBottomSheets {
 
   static Future<T?> showCustomHeightBottomSheet<T>({
     required BuildContext context,
-    required Widget child,
+    Widget? child,
+    Widget Function(ScrollController scrollController)? childBuilder,
     required double heightRatio,
   }) async {
     assert(heightRatio >= 0.4 && heightRatio <= 1.0);
+    assert(child != null || childBuilder != null);
+    final draggableController = DraggableScrollableController();
+    bool isAnimating = false;
+
     return showModalBottomSheet<T>(
       context: context,
       builder: (context) {
@@ -86,11 +126,61 @@ class CommonBottomSheets {
           borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
           child: Padding(
             padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * heightRatio,
-              width: MediaQuery.of(context).size.width,
-              child: child,
-            ),
+            child:
+                childBuilder == null
+                    ? SizedBox(
+                      height: MediaQuery.of(context).size.height * heightRatio,
+                      width: MediaQuery.of(context).size.width,
+                      child: child,
+                    )
+                    : DraggableScrollableSheet(
+                      controller: draggableController,
+                      expand: false,
+                      initialChildSize: heightRatio,
+                      minChildSize: 0.01,
+                      maxChildSize: heightRatio,
+                      shouldCloseOnMinExtent: true,
+                      builder: (context, scrollController) {
+                        void handleDragEnd() {
+                          if (isAnimating || !draggableController.isAttached) return;
+
+                          final extent = draggableController.size;
+                          final closeThreshold = heightRatio * 0.7;
+                          if ((extent - heightRatio).abs() < 0.001) return;
+
+                          isAnimating = true;
+                          final animation =
+                              extent <= closeThreshold
+                                  ? draggableController.animateTo(
+                                    0.01,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                  )
+                                  : draggableController.animateTo(
+                                    heightRatio,
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                  );
+
+                          animation.whenComplete(() {
+                            if (extent <= closeThreshold && context.mounted) {
+                              // Navigator.of(context).pop();
+                            }
+                            isAnimating = false;
+                          });
+                        }
+
+                        return NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification is ScrollEndNotification) {
+                              handleDragEnd();
+                            }
+                            return false;
+                          },
+                          child: childBuilder(scrollController),
+                        );
+                      },
+                    ),
           ),
         );
       },
@@ -137,6 +227,7 @@ class CommonBottomSheets {
     bool showDragHandle = true,
     String? title,
     String? subLabel,
+    Color backgroundColor = CoconutColors.black,
   }) async {
     final draggableController = DraggableScrollableController();
     bool isAnimating = false;
@@ -187,7 +278,7 @@ class CommonBottomSheets {
                   return false;
                 },
                 child: Container(
-                  color: CoconutColors.black,
+                  color: backgroundColor,
                   child: Column(
                     children: [
                       if (showDragHandle)
@@ -204,7 +295,7 @@ class CommonBottomSheets {
                             handleDrag();
                           },
                           child: Container(
-                            color: CoconutColors.black,
+                            color: backgroundColor,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Center(
                               child: Container(
@@ -239,6 +330,7 @@ class CommonBottomSheets {
                               subLabel ?? '',
                               style: CoconutTypography.body3_12.setColor(CoconutColors.black),
                             ),
+                            backgroundColor: backgroundColor,
                             showSubLabel: subLabel != null,
                             isBottom: true,
                           ),
@@ -282,8 +374,9 @@ class CommonBottomSheets {
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
       initialChildSize: initialChildSize,
+      backgroundColor: backgroundColor,
       childBuilder: (scrollController) {
-        return _SelectableDraggableSheetBody<T>(
+        return SelectableBottomSheetBody<T>(
           scrollController: scrollController,
           items: items,
           getItemId: getItemId,
@@ -341,32 +434,99 @@ class CommonBottomSheets {
   }
 }
 
-class _SelectableDraggableSheetBody<T> extends StatefulWidget {
-  final ScrollController scrollController;
+class SelectableBottomSheetTextItem extends StatelessWidget {
+  final Widget child;
+  final bool isSelected;
+  final VoidCallback? onTap;
+  final bool isDisabled;
+  final bool reserveCheckIconSpace;
+
+  const SelectableBottomSheetTextItem({
+    super.key,
+    required this.child,
+    required this.isSelected,
+    this.onTap,
+    this.isDisabled = false,
+    this.reserveCheckIconSpace = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: isDisabled ? 0.5 : 1.0,
+      child: ShrinkAnimationButton(
+        onPressed: () {
+          if (isDisabled) return;
+          if (onTap != null) onTap!();
+        },
+        defaultColor: CoconutColors.gray900,
+        pressedColor: CoconutColors.gray800,
+        borderRadius: 8,
+        borderWidth: 0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Row(
+            children: [
+              Expanded(child: child),
+              if (isSelected || reserveCheckIconSpace)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  width: 18,
+                  height: 18,
+                  child:
+                      isSelected
+                          ? SvgPicture.asset(
+                            'assets/svg/check.svg',
+                            width: 16,
+                            height: 16,
+                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                          ).scaleInAnimation(duration: const Duration(milliseconds: 300))
+                          : null,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SelectableBottomSheetBody<T> extends StatefulWidget {
+  final ScrollController? scrollController;
   final List<T> items;
   final Object Function(T item) getItemId;
   final SelectableItemBuilder<T> itemBuilder;
   final Object? initiallySelectedId;
   final String confirmText;
   final Color backgroundColor;
+  final bool showGradient;
+  final bool showConfirmButton;
+  final bool allowConfirmWhenSelectionUnchanged;
+  final ValueChanged<T?>? onSelectionChanged;
 
-  const _SelectableDraggableSheetBody({
+  const SelectableBottomSheetBody({
     super.key,
-    required this.scrollController,
+    this.scrollController,
     required this.items,
     required this.getItemId,
     required this.itemBuilder,
     this.initiallySelectedId,
     required this.confirmText,
     required this.backgroundColor,
+    this.showGradient = true,
+    this.showConfirmButton = true,
+    this.allowConfirmWhenSelectionUnchanged = false,
+    this.onSelectionChanged,
   });
 
   @override
-  State<_SelectableDraggableSheetBody<T>> createState() => _SelectableDraggableSheetBodyState<T>();
+  State<SelectableBottomSheetBody<T>> createState() => _SelectableBottomSheetBodyState<T>();
 }
 
-class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSheetBody<T>> {
+class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody<T>> {
   Object? _selectedId;
+
+  bool get _hasSelectionChanged => _selectedId != widget.initiallySelectedId;
 
   @override
   void initState() {
@@ -375,46 +535,84 @@ class _SelectableDraggableSheetBodyState<T> extends State<_SelectableDraggableSh
   }
 
   @override
+  void didUpdateWidget(covariant SelectableBottomSheetBody<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initiallySelectedId != widget.initiallySelectedId) {
+      _selectedId = widget.initiallySelectedId;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: widget.backgroundColor,
-      body: SafeArea(
+    final bottomSafeArea = MediaQuery.of(context).padding.bottom;
+    final buttonAreaHeight =
+        widget.showConfirmButton ? FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea : 0.0;
+
+    return Container(
+      color: widget.backgroundColor,
+      child: SafeArea(
+        top: false,
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-              child: ListView.builder(
-                controller: widget.scrollController,
-                padding: const EdgeInsets.only(bottom: Sizes.size96),
-                itemCount: widget.items.length,
-                itemBuilder: (context, index) {
-                  final item = widget.items[index];
-                  final id = widget.getItemId(item);
-                  final isSelected = _selectedId == id;
+            Positioned.fill(
+              top: 0,
+              bottom: buttonAreaHeight,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                child: ListView.builder(
+                  controller: widget.scrollController,
+                  shrinkWrap: false,
+                  primary: widget.scrollController == null,
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: Sizes.size16),
+                  itemCount: widget.items.length,
+                  itemBuilder: (context, index) {
+                    final item = widget.items[index];
+                    final id = widget.getItemId(item);
+                    final isSelected = _selectedId == id;
 
-                  void handleTap() {
-                    vibrateExtraLight();
-                    setState(() {
-                      _selectedId = _selectedId == id ? null : id;
-                    });
-                  }
+                    void handleTap() {
+                      vibrateExtraLight();
+                      setState(() {
+                        _selectedId = _selectedId == id ? null : id;
+                      });
+                      widget.onSelectionChanged?.call(
+                        _selectedId == null
+                            ? null
+                            : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
+                      );
+                    }
 
-                  return widget.itemBuilder(context, item, isSelected, handleTap);
-                },
+                    return widget.itemBuilder(context, item, isSelected, handleTap);
+                  },
+                ),
               ),
             ),
-            FixedBottomButton(
-              onButtonClicked: () {
-                final selectedItem =
-                    _selectedId == null
-                        ? null
-                        : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
-                Navigator.pop(context, selectedItem);
-              },
-              isActive: _selectedId != null,
-              text: widget.confirmText,
-              backgroundColor: CoconutColors.white,
-            ),
+            if (widget.showConfirmButton)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SizedBox(
+                  height: buttonAreaHeight,
+                  child: FixedBottomButton(
+                    showGradient: widget.showGradient,
+                    isVisibleAboveKeyboard: false,
+                    bottomPadding: 0,
+                    onButtonClicked: () {
+                      final selectedItem =
+                          _selectedId == null
+                              ? null
+                              : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                      Navigator.pop(context, selectedItem);
+                    },
+                    isActive:
+                        _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
+                    text: widget.confirmText,
+                    backgroundColor: CoconutColors.white,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

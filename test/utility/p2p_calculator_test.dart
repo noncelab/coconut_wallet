@@ -5,6 +5,7 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/view_model/utility/p2p_calculator_view_model.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakePreferenceProvider extends Fake implements PreferenceProvider {
@@ -66,6 +67,16 @@ class FakePriceProvider extends Fake implements PriceProvider {
   void removeListener(VoidCallback listener) {}
 }
 
+class FakeWalletProvider extends Fake implements WalletProvider {
+  FakeWalletProvider();
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
+}
+
 void main() {
   const int defaultBtcPriceKrw = 140000000;
 
@@ -78,8 +89,9 @@ void main() {
     final prefProvider = FakePreferenceProvider(selectedFiat: fiatCode, isBtcUnit: isBtcUnit);
     final connectivityProvider = FakeConnectivityProvider(isInternetOn: isNetworkOn);
     final priceProvider = FakePriceProvider(defaultPrice: btcPrice);
+    final walletProvider = FakeWalletProvider();
 
-    return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider);
+    return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider, walletProvider);
   }
 
   group('calculateSatsFromFiat - Fiat → Sats 변환', () {
