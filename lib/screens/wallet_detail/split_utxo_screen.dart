@@ -774,11 +774,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     final viewModel = context.read<SplitUtxoViewModel>();
     return Column(
       children: [
-        Selector<SplitUtxoViewModel, Tuple2<int, bool>>(
-          selector: (_, vm) => Tuple2(vm.splitCount, vm.isDustError),
+        Selector<SplitUtxoViewModel, Tuple3<int, bool, bool>>(
+          selector: (_, vm) => Tuple3(vm.splitCount, vm.isDustError, vm.splitCountFocusNode.hasFocus),
           builder: (context, data, _) {
             final splitCount = data.item1;
             final isDustError = data.item2;
+            final hasFocus = data.item3;
             final textColor = splitCount >= 2 && isDustError ? CoconutColors.hotPink : CoconutColors.white;
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -829,7 +830,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                             maxLines: 1,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          if (inputText.isEmpty)
+                          if (inputText.isEmpty && !hasFocus)
                             IgnorePointer(
                               child: Text(
                                 '0',
@@ -1558,29 +1559,50 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                             /// 개수 입력란
                             SizedBox(
                               width: 60,
-                              //height: 40,
-                              child: CoconutTextField(
-                                height: 40,
-                                fontHeight: 1,
-                                borderRadius: 8,
-                                enabled: !_isDeleteButtonVisible,
-                                controller: widget.item.countController,
-                                focusNode: widget.item.countFocusNode,
-                                textAlign: TextAlign.center,
-                                backgroundColor:
-                                    widget.item.countFocusNode.hasFocus ? CoconutColors.gray800 : Colors.transparent,
-                                activeColor: CoconutColors.white,
-                                placeholderColor: CoconutColors.gray500,
-                                fontSize: 24,
-                                isVisibleBorder: false,
-                                onChanged: (_) {},
-                                onEditingComplete: () => widget.item.countFocusNode.unfocus(),
-                                textInputAction: TextInputAction.done,
-                                textInputType: TextInputType.number,
-                                maxLines: 1,
-                                unfocusOnTapOutside: true,
-                                padding: const EdgeInsets.only(top: 8, bottom: 3),
-                                placeholderText: '0',
+                              child: ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: widget.item.countController,
+                                builder: (context, value, _) {
+                                  final inputText = value.text;
+                                  final hasFocus = widget.item.countFocusNode.hasFocus;
+                                  return Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      CoconutTextField(
+                                        height: 40,
+                                        fontHeight: 1,
+                                        borderRadius: 8,
+                                        enabled: !_isDeleteButtonVisible,
+                                        controller: widget.item.countController,
+                                        focusNode: widget.item.countFocusNode,
+                                        textAlign: TextAlign.center,
+                                        backgroundColor: hasFocus ? CoconutColors.gray800 : Colors.transparent,
+                                        activeColor: CoconutColors.white,
+                                        placeholderColor: CoconutColors.gray500,
+                                        fontSize: 24,
+                                        isVisibleBorder: false,
+                                        onChanged: (_) {},
+                                        onEditingComplete: () => widget.item.countFocusNode.unfocus(),
+                                        textInputAction: TextInputAction.done,
+                                        textInputType: TextInputType.number,
+                                        maxLines: 1,
+                                        unfocusOnTapOutside: true,
+                                        padding: const EdgeInsets.only(top: 8, bottom: 3),
+                                        placeholderText: '',
+                                      ),
+                                      if (inputText.isEmpty && !hasFocus)
+                                        IgnorePointer(
+                                          child: Text(
+                                            '0',
+                                            style: CoconutTypography.heading3_21_NumberBold.copyWith(
+                                              color: CoconutColors.gray500,
+                                              fontSize: 24,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                },
                               ),
                             ),
                             CoconutLayout.spacing_150w,
