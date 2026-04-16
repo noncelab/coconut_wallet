@@ -63,8 +63,8 @@ class MergeUtxosScreen extends StatefulWidget {
 }
 
 class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerProviderStateMixin {
-  static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
-  static const Duration _optionPickerAnimationDuration = Duration(milliseconds: 300);
+  static const Duration _headerAnimationDuration = Duration(milliseconds: 800);
+  static const Duration _optionPickerAnimationDuration = Duration(milliseconds: 600);
 
   late MergeUtxosViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
@@ -549,7 +549,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                     isReady || isInvalidSelection
                         ? isSingleSelectionSummary
                             ? (_currentMergeCriteria == UtxoMergeCriteria.sameTag ||
-                                      _currentMergeCriteria == UtxoMergeCriteria.sameAddress
+                                        _currentMergeCriteria == UtxoMergeCriteria.sameAddress
                                     ? RichText(
                                       key: ValueKey(
                                         _currentMergeCriteria == UtxoMergeCriteria.sameTag
@@ -649,7 +649,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                                   duration: const Duration(milliseconds: 260),
                                 )
                             : (_currentMergeCriteria == UtxoMergeCriteria.sameTag ||
-                                      _currentMergeCriteria == UtxoMergeCriteria.sameAddress
+                                        _currentMergeCriteria == UtxoMergeCriteria.sameAddress
                                     ? RichText(
                                       key: ValueKey(
                                         _currentMergeCriteria == UtxoMergeCriteria.sameTag
@@ -1300,7 +1300,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               child: picker.slideUpAnimation(
                 key: ValueKey('merge-picker-in-${step.name}-${_viewModel.optionPickerAnimationNonce}'),
                 duration: _optionPickerAnimationDuration,
-                delay: const Duration(milliseconds: 1500),
+                delay:
+                    _viewModel.currentStep == UtxoMergeStep.selectReceiveAddress
+                        ? const Duration(milliseconds: 2000)
+                        : const Duration(milliseconds: 2500),
                 offset: const Offset(0, 24),
                 onCompleted: () => _scheduleBottomSheetOpen(step),
               ),
