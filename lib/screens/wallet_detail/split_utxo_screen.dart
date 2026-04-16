@@ -1275,57 +1275,48 @@ class _SplitResultSkeletonContent extends StatelessWidget {
   const _SplitResultSkeletonContent({super.key});
 
   Widget _buildSkeletonBar({required double width, double height = 16}) {
-    return Shimmer.fromColors(
-      baseColor: CoconutColors.white.withValues(alpha: 0.12),
-      highlightColor: CoconutColors.white.withValues(alpha: 0.24),
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: CoconutColors.white.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ),
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(999)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSkeletonBar(width: double.infinity, height: 22),
-        CoconutLayout.spacing_200h,
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              t.split_utxo_screen.expected_result.new_utxos,
-              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
-                CoconutLayout.spacing_100h,
-                _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
-              ],
-            ),
-          ],
-        ),
-        CoconutLayout.spacing_100h,
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              t.split_utxo_screen.expected_result.fee,
-              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-            ),
-            _buildSkeletonBar(width: 92, height: 22),
-          ],
-        ),
-      ],
+    return Shimmer.fromColors(
+      baseColor: CoconutColors.white.withValues(alpha: 0.12),
+      highlightColor: CoconutColors.white.withValues(alpha: 0.24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSkeletonBar(width: double.infinity, height: 22),
+          CoconutLayout.spacing_200h,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(padding: const EdgeInsets.only(top: 2), child: _buildSkeletonBar(width: 72, height: 16)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
+                  CoconutLayout.spacing_100h,
+                  _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
+                ],
+              ),
+            ],
+          ),
+          CoconutLayout.spacing_100h,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Padding(padding: const EdgeInsets.only(top: 2), child: _buildSkeletonBar(width: 64, height: 16)),
+              _buildSkeletonBar(width: 92, height: 22),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
