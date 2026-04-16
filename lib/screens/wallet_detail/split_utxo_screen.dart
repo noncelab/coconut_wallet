@@ -1076,7 +1076,10 @@ class _HeaderTitleErrorText extends StatelessWidget {
           padding: const EdgeInsets.only(top: 2, bottom: 8),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(headerTitleErrorMessage, style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink)),
+            child: Text(
+              headerTitleErrorMessage,
+              style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink).copyWith(height: 1.0),
+            ),
           ),
         );
       },
