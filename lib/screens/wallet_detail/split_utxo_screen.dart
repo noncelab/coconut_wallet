@@ -29,6 +29,8 @@ import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../utils/logger.dart';
+
 enum SplitStep { selectUtxo, selectCriteria, enterDetails }
 
 class SplitUtxoScreen extends StatefulWidget {
@@ -1389,12 +1391,19 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
   bool _isDeleting = false;
   bool _isDeleteButtonVisible = false;
 
+  void _handleFocusChanged() {
+    Logger.log('-->handleFocusChanged');
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
     _swipeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
     _entranceController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
     _deleteController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200));
+    widget.item.countFocusNode.addListener(_handleFocusChanged);
     _entranceController.forward();
   }
 
@@ -1433,6 +1442,8 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
 
   @override
   void dispose() {
+    widget.item.amountFocusNode.removeListener(_handleFocusChanged);
+    widget.item.countFocusNode.removeListener(_handleFocusChanged);
     _swipeController.dispose();
     _entranceController.dispose();
     _deleteController.dispose();
@@ -1491,6 +1502,8 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                       child: Container(
                         color: CoconutColors.black,
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             /// 금액 입력란
                             Expanded(
@@ -1500,7 +1513,6 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 focusNode: widget.item.amountFocusNode,
                                 style: CoconutTextFieldStyle.underline,
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
                                 activeColor: CoconutColors.white,
                                 placeholderColor: CoconutColors.gray500,
                                 errorColor: CoconutColors.hotPink,
@@ -1510,7 +1522,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 textInputType: const TextInputType.numberWithOptions(decimal: true),
                                 placeholderText: t.split_utxo_screen.placeholder_split_amount,
                                 maxLines: 1,
-                                padding: const EdgeInsets.only(left: 0, right: 0, top: 0, bottom: 16),
+                                padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 4),
                                 unfocusOnTapOutside: true,
                                 suffix: Padding(
                                   padding: const EdgeInsets.only(top: 2),
@@ -1521,7 +1533,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 ),
                               ),
                             ),
-                            CoconutLayout.spacing_300w,
+                            CoconutLayout.spacing_150w,
 
                             /// - 버튼
                             RippleEffect(
@@ -1541,34 +1553,37 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 child: const Icon(Icons.remove, color: CoconutColors.white),
                               ),
                             ),
-                            CoconutLayout.spacing_300w,
+                            CoconutLayout.spacing_150w,
 
                             /// 개수 입력란
                             SizedBox(
-                              width: 50,
+                              width: 60,
+                              //height: 40,
                               child: CoconutTextField(
+                                height: 40,
+                                fontHeight: 1,
+                                borderRadius: 8,
                                 enabled: !_isDeleteButtonVisible,
                                 controller: widget.item.countController,
                                 focusNode: widget.item.countFocusNode,
                                 textAlign: TextAlign.center,
                                 backgroundColor:
-                                    widget.item.countFocusNode.hasFocus ? CoconutColors.gray850 : Colors.transparent,
+                                    widget.item.countFocusNode.hasFocus ? CoconutColors.gray800 : Colors.transparent,
                                 activeColor: CoconutColors.white,
                                 placeholderColor: CoconutColors.gray500,
                                 fontSize: 24,
-                                fontWeight: FontWeight.w700,
                                 isVisibleBorder: false,
                                 onChanged: (_) {},
                                 onEditingComplete: () => widget.item.countFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
                                 textInputType: TextInputType.number,
-                                placeholderText: '0',
                                 maxLines: 1,
-                                padding: const EdgeInsets.symmetric(vertical: 12),
                                 unfocusOnTapOutside: true,
+                                padding: const EdgeInsets.only(top: 8, bottom: 3),
+                                placeholderText: '0',
                               ),
                             ),
-                            CoconutLayout.spacing_300w,
+                            CoconutLayout.spacing_150w,
 
                             /// + 버튼
                             RippleEffect(
