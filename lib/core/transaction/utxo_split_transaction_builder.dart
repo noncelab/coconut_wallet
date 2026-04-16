@@ -402,11 +402,11 @@ class UtxoSplitTransactionBuilder {
 
     final remainder = availableAmount % splitCount;
     final List<int> desiredAmounts = [];
-    for (int i = 0; i < splitCount - remainder; i++) {
-      desiredAmounts.add(baseAmount);
-    }
     for (int i = 0; i < remainder; i++) {
       desiredAmounts.add(baseAmount + 1);
+    }
+    for (int i = 0; i < splitCount - remainder; i++) {
+      desiredAmounts.add(baseAmount);
     }
 
     return _buildSplitPreview(desiredAmounts.sublist(0, desiredAmounts.length - 1), fee);
