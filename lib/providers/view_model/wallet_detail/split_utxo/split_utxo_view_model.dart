@@ -186,10 +186,18 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   /// utxo.amount를 000 나눌게요
   String get splitSummaryTitle {
     if (_selectedCriteria == null || _selectedUtxoList.isEmpty) return '';
-    final utxoAmountText = currentUnit.displayBitcoinAmount(_selectedUtxoAmount, withUnit: true);
+    final utxoAmountText = currentUnit.displayBitcoinAmount(
+      _selectedUtxoAmount,
+      withUnit: true,
+      forceEightDecimals: currentUnit.isBtcUnit,
+    );
 
     if (_selectedCriteria == SplitCriteria.byAmount) {
-      final formattedSplitAmount = currentUnit.displayBitcoinAmount(splitAmountSats, withUnit: true);
+      final formattedSplitAmount = currentUnit.displayBitcoinAmount(
+        splitAmountSats,
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
       return t.split_utxo_screen.expected_result.split_by_amount(
         utxoAmountText: utxoAmountText,
         formattedSplitAmount: formattedSplitAmount,
@@ -208,7 +216,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (usePreview) {
       return _splitPreview!.amountCountMap.entries
           .map((e) {
-            final formattedAmount = currentUnit.displayBitcoinAmount(e.key, withUnit: true);
+            final formattedAmount = currentUnit.displayBitcoinAmount(
+              e.key,
+              withUnit: true,
+              forceEightDecimals: currentUnit.isBtcUnit,
+            );
             return '${e.value} × $formattedAmount';
           })
           .join('\n');
@@ -220,7 +232,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (outputMap.isNotEmpty) {
       return outputMap.entries
           .map((e) {
-            final formattedAmount = currentUnit.displayBitcoinAmount(e.key, withUnit: true);
+            final formattedAmount = currentUnit.displayBitcoinAmount(
+              e.key,
+              withUnit: true,
+              forceEightDecimals: currentUnit.isBtcUnit,
+            );
             return '${e.value} × $formattedAmount';
           })
           .join('\n');
@@ -695,14 +711,26 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   String get feePickerDisplayText {
     if (_errorEstimatedFee != null && _errorEstimatedFee! > 0) {
-      return currentUnit.displayBitcoinAmount(_errorEstimatedFee!.ceil(), withUnit: true);
+      return currentUnit.displayBitcoinAmount(
+        _errorEstimatedFee!.ceil(),
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
     }
 
     if (usePreview && _splitPreview != null && _splitPreview!.estimatedFee > 0) {
-      return currentUnit.displayBitcoinAmount(_splitPreview!.estimatedFee.ceil(), withUnit: true);
+      return currentUnit.displayBitcoinAmount(
+        _splitPreview!.estimatedFee.ceil(),
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
     }
     if (!usePreview && _splitResult != null && _splitResult!.estimatedFee > 0) {
-      return currentUnit.displayBitcoinAmount(_splitResult!.estimatedFee.ceil(), withUnit: true);
+      return currentUnit.displayBitcoinAmount(
+        _splitResult!.estimatedFee.ceil(),
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
     }
     return '-';
   }
