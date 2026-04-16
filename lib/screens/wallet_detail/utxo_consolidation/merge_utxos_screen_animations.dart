@@ -2,7 +2,7 @@ part of 'merge_utxos_screen.dart';
 
 extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
   void _scheduleHeaderAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step) || _viewModel.lastObservedHeaderStep == step) return;
+    if (!_viewModel.isAnimatedHeaderStep(step) || _viewModel.lastObservedHeaderStep == step) return;
     _viewModel.setLastObservedHeaderStep(step);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -12,7 +12,7 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
   }
 
   void _scheduleOptionPickerAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step) || _viewModel.lastObservedOptionPickerStep == step) return;
+    if (!_viewModel.isAnimatedHeaderStep(step) || _viewModel.lastObservedOptionPickerStep == step) return;
     _viewModel.setLastObservedOptionPickerStep(step);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -30,7 +30,7 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
   }
 
   void _syncHeaderAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step)) return;
+    if (!_viewModel.isAnimatedHeaderStep(step)) return;
     _handleReceiveAddressSummaryAnimation(step);
 
     _viewModel.setPendingHeaderStep(step);
@@ -83,10 +83,10 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
   }
 
   void _syncOptionPickerAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step)) return;
+    if (!_viewModel.isAnimatedHeaderStep(step)) return;
 
     _viewModel.setPendingOptionPickerStep(step);
-    final nextVisibleSteps = _visibleOptionPickerStepsFor(step);
+    final nextVisibleSteps = _viewModel.visibleOptionPickerStepsFor(step);
 
     if (_viewModel.displayedOptionPickerStep == null) {
       _setScreenState(() {

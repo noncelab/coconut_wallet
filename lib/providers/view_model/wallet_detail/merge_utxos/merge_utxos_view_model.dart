@@ -99,6 +99,29 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   int get dustThreshold => _dustThreshold;
   UtxoMergeCriteria get defaultMergeCriteria => UtxoMergeCriteria.smallAmounts;
   UtxoMergeCriteria get currentMergeCriteria => _selectedMergeCriteria ?? defaultMergeCriteria;
+  bool get hasUnexpectedError => unexpectedErrorMessage.isNotEmpty;
+  bool get isTransactionSummaryFailed => _mergeTransactionSummaryState == MergeTransactionSummaryState.failed;
+  bool get isMergeButtonEnabled =>
+      _mergeTransactionSummaryState == MergeTransactionSummaryState.ready && selectedUtxoCount >= 2;
+  bool get isSingleSelectionSummary =>
+      _mergeTransactionSummaryState == MergeTransactionSummaryState.invalidSelection && selectedUtxoCount == 1;
+  bool get isDirectInputReceiveAddressWarning {
+    return _customReceiveAddressText != null &&
+        _selectedReceiveAddress == _customReceiveAddressText &&
+        _isCustomReceiveAddressValidFormat &&
+        !_isCustomReceiveAddressOwnedByAnyWallet;
+  }
+
+  String get selectedUtxosTotalAmountText {
+    return '${BalanceFormatUtil.formatSatoshiToReadableBitcoin(selectedUtxosTotalAmountSats)} BTC';
+  }
+
+  String get estimatedMergeFeeTextDisplay {
+    if (_isEstimatedMergeFeeLoading) return '...';
+    if (_estimatedMergeFeeSats == null) return '-';
+    return '${BalanceFormatUtil.formatSatoshiToReadableBitcoin(_estimatedMergeFeeSats!, forceEightDecimals: true)} BTC';
+  }
+
   UtxoAmountCriteria get defaultAmountCriteria =>
       firstAvailableRecommendedAmountCriteria ?? UtxoAmountCriteria.below00001;
   UtxoAmountCriteria get currentAmountCriteria => _selectedAmountCriteria ?? defaultAmountCriteria;
@@ -247,6 +270,60 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
       ..addAll(steps);
   }
 
+  bool isAnimatedHeaderStep(UtxoMergeStep step) {
+    return step == UtxoMergeStep.selectMergeCriteria ||
+        step == UtxoMergeStep.selectAmountCriteria ||
+        step == UtxoMergeStep.selectTag ||
+        step == UtxoMergeStep.selectReceiveAddress;
+  }
+
+  List<UtxoMergeStep> visibleOptionPickerStepsFor(UtxoMergeStep step) {
+    switch (step) {
+      case UtxoMergeStep.selectMergeCriteria:
+        return const [UtxoMergeStep.selectMergeCriteria];
+      case UtxoMergeStep.selectAmountCriteria:
+        return const [UtxoMergeStep.selectAmountCriteria, UtxoMergeStep.selectMergeCriteria];
+      case UtxoMergeStep.selectTag:
+        return const [UtxoMergeStep.selectTag, UtxoMergeStep.selectMergeCriteria];
+      case UtxoMergeStep.selectReceiveAddress:
+        switch (currentMergeCriteria) {
+          case UtxoMergeCriteria.sameAddress:
+            return const [UtxoMergeStep.selectReceiveAddress, UtxoMergeStep.selectMergeCriteria];
+          case UtxoMergeCriteria.sameTag:
+            return const [
+              UtxoMergeStep.selectReceiveAddress,
+              UtxoMergeStep.selectTag,
+              UtxoMergeStep.selectMergeCriteria,
+            ];
+          case UtxoMergeCriteria.smallAmounts:
+            return const [
+              UtxoMergeStep.selectReceiveAddress,
+              UtxoMergeStep.selectAmountCriteria,
+              UtxoMergeStep.selectMergeCriteria,
+            ];
+        }
+      case UtxoMergeStep.entry:
+        return const [];
+    }
+  }
+
+  void toggleDustExclusion() {
+    final nextExcludeDustUtxos = !_excludeDustUtxos;
+    final selectedUtxoIdsBeforeToggle = selectedUtxosBeforeDustExclusion.map((utxo) => utxo.utxoId).toSet();
+
+    _excludeDustUtxos = nextExcludeDustUtxos;
+    if (nextExcludeDustUtxos) {
+      _editedSelectedUtxoIds =
+          selectedUtxoIdsBeforeToggle.where((utxoId) {
+            final utxo = candidateUtxosForCurrentCriteria.firstWhere((item) => item.utxoId == utxoId);
+            return utxo.amount > _dustThreshold;
+          }).toSet();
+      return;
+    }
+
+    _editedSelectedUtxoIds = null;
+  }
+
   void setPreparedMergeTransactionBuildResult(TransactionBuildResult? value) =>
       _preparedMergeTransactionBuildResult = value;
   void setMergeTransactionSummaryState(MergeTransactionSummaryState value) => _mergeTransactionSummaryState = value;
@@ -259,6 +336,10 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     if (_estimatedFeeText == text) return;
     _estimatedFeeText = text;
     notifyListeners();
+  }
+
+  void syncEstimatedFeeText() {
+    setEstimatedFeeText(estimatedMergeFeeTextDisplay);
   }
 
   bool onFeeRateChanged(String text) {
