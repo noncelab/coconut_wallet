@@ -430,9 +430,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
 
     if (step == UtxoMergeStep.selectReceiveAddress) {
-      if (_viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.invalidSelection ||
-          _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.idle ||
-          _viewModel.preparedMergeTransactionBuildResult?.isSuccess != true) {
+      if (_viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.idle) {
         return const SizedBox.shrink();
       }
 
@@ -486,16 +484,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildTransactionSummaryCard() {
-    return _buildTransactionSummaryCardBody();
-  }
-
-  Widget _buildTransactionSummaryCardBody() {
     final amountText = _summaryCardHeadlineText;
     final totalAmountText = _selectedUtxosTotalAmountText;
     final destinationText = _summaryCardDestinationText;
     final isPreparing = _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.preparing;
     final isReady = _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.ready;
     final isInvalidSelection = _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.invalidSelection;
+    final isSingleSelectionSummary = isInvalidSelection && _viewModel.selectedUtxoCount == 1;
 
     return Container(
       key: const ValueKey('merge-transaction-summary-card'),
@@ -517,7 +512,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               onLoaded: (composition) {
                 _receiveAddressSummaryLottieController.duration = composition.duration;
                 if (_viewModel.displayedHeaderStep == UtxoMergeStep.selectReceiveAddress) {
-                  if (isReady) {
+                  if (isReady || isSingleSelectionSummary) {
                     _receiveAddressSummaryLottieController.value = 1;
                   } else if (isPreparing && !_receiveAddressSummaryLottieController.isAnimating) {
                     _receiveAddressSummaryLottieController.repeat(
@@ -550,54 +545,97 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                 },
                 transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
                 child:
-                    isReady
-                        ? RichText(
-                          key: const ValueKey('receive-address-summary-text'),
-                          text: TextSpan(
-                            style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                            children: [
-                              TextSpan(
-                                text: amountText,
-                                style: TextStyle(
-                                  decoration: TextDecoration.underline,
-                                  color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
-                                ),
-                                recognizer:
-                                    TapGestureRecognizer()
-                                      ..onTapDown = (_) {
-                                        setState(() {
-                                          _isAmountTextHighlighted = true;
-                                        });
-                                      }
-                                      ..onTapUp = (_) {
-                                        setState(() {
-                                          _isAmountTextHighlighted = false;
-                                        });
-                                        _showSelectedUtxosPreviewBottomSheet();
-                                      }
-                                      ..onTapCancel = () {
-                                        setState(() {
-                                          _isAmountTextHighlighted = false;
-                                        });
-                                      },
+                    isReady || isInvalidSelection
+                        ? isSingleSelectionSummary
+                            ? RichText(
+                              key: const ValueKey('receive-address-summary-single-selection-text'),
+                              text: TextSpan(
+                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                                children: [
+                                  TextSpan(
+                                    text: _summaryCardHeadlineText,
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
+                                    ),
+                                    recognizer:
+                                        TapGestureRecognizer()
+                                          ..onTapDown = (_) {
+                                            setState(() {
+                                              _isAmountTextHighlighted = true;
+                                            });
+                                          }
+                                          ..onTapUp = (_) {
+                                            setState(() {
+                                              _isAmountTextHighlighted = false;
+                                            });
+                                            _showSelectedUtxosPreviewBottomSheet();
+                                          }
+                                          ..onTapCancel = () {
+                                            setState(() {
+                                              _isAmountTextHighlighted = false;
+                                            });
+                                          },
+                                  ),
+                                  TextSpan(
+                                    text: t.merge_utxos_screen.receive_address_summary_single_selection_total(
+                                      total: _selectedUtxosTotalAmountText,
+                                    ),
+                                  ),
+                                  TextSpan(text: _singleSelectionDestinationText),
+                                ],
                               ),
-                              TextSpan(
-                                text: t.merge_utxos_screen.receive_address_summary_total(amount: totalAmountText),
+                            ).fadeInAnimation(
+                              key: ValueKey(
+                                'receive-address-summary-text-fade-${_viewModel.receiveAddressSummaryAnimationNonce}',
                               ),
-                              TextSpan(text: destinationText),
-                            ],
-                          ),
-                        ).fadeInAnimation(
-                          key: ValueKey(
-                            'receive-address-summary-text-fade-${_viewModel.receiveAddressSummaryAnimationNonce}',
-                          ),
-                          duration: const Duration(milliseconds: 260),
-                        )
+                              duration: const Duration(milliseconds: 260),
+                            )
+                            : RichText(
+                              key: const ValueKey('receive-address-summary-text'),
+                              text: TextSpan(
+                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                                children: [
+                                  TextSpan(
+                                    text: amountText,
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                      color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
+                                    ),
+                                    recognizer:
+                                        TapGestureRecognizer()
+                                          ..onTapDown = (_) {
+                                            setState(() {
+                                              _isAmountTextHighlighted = true;
+                                            });
+                                          }
+                                          ..onTapUp = (_) {
+                                            setState(() {
+                                              _isAmountTextHighlighted = false;
+                                            });
+                                            _showSelectedUtxosPreviewBottomSheet();
+                                          }
+                                          ..onTapCancel = () {
+                                            setState(() {
+                                              _isAmountTextHighlighted = false;
+                                            });
+                                          },
+                                  ),
+                                  TextSpan(
+                                    text: t.merge_utxos_screen.receive_address_summary_total(amount: totalAmountText),
+                                  ),
+                                  TextSpan(text: destinationText),
+                                ],
+                              ),
+                            ).fadeInAnimation(
+                              key: ValueKey(
+                                'receive-address-summary-text-fade-${_viewModel.receiveAddressSummaryAnimationNonce}',
+                              ),
+                              duration: const Duration(milliseconds: 260),
+                            )
                         : isPreparing
                         ? _buildReceiveAddressSummarySkeleton()
-                        : _buildReceiveAddressSummaryFallback(
-                          message: isInvalidSelection ? t.merge_utxos_screen.not_enough_utxos : '',
-                        ),
+                        : _buildReceiveAddressSummaryFallback(message: ''),
               ),
             ),
           ),
@@ -791,6 +829,17 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     return t.merge_utxos_screen.receive_address_summary_to_selected_address;
   }
 
+  String get _singleSelectionDestinationText {
+    final walletName = _selectedReceiveWalletName;
+    if (walletName != null && walletName.isNotEmpty) {
+      return t.merge_utxos_screen.receive_address_summary_single_selection_to_wallet(wallet_name: walletName);
+    }
+    if (_isDirectInputReceiveAddressWarning) {
+      return t.merge_utxos_screen.receive_address_summary_single_selection_to_unowned_address;
+    }
+    return t.merge_utxos_screen.receive_address_summary_single_selection_to_selected_address;
+  }
+
   String get _summaryAmountThresholdText {
     switch (_currentAmountCriteria) {
       case UtxoAmountCriteria.below001:
@@ -894,9 +943,12 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               : MergeTransactionSummaryState.invalidSelection,
         );
       });
-      _receiveAddressSummaryLottieController
-        ..stop()
-        ..reset();
+      _receiveAddressSummaryLottieController.stop();
+      if (_viewModel.selectedUtxoCount == 1) {
+        _receiveAddressSummaryLottieController.value = 1;
+      } else {
+        _receiveAddressSummaryLottieController.reset();
+      }
       _syncEstimatedFeeTextToViewModel();
       return;
     }
@@ -925,9 +977,12 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         _viewModel.setAppliedMergeFeeRate(null);
         _viewModel.setMergeTransactionSummaryState(MergeTransactionSummaryState.invalidSelection);
       });
-      _receiveAddressSummaryLottieController
-        ..stop()
-        ..reset();
+      _receiveAddressSummaryLottieController.stop();
+      if (_viewModel.selectedUtxoCount == 1) {
+        _receiveAddressSummaryLottieController.value = 1;
+      } else {
+        _receiveAddressSummaryLottieController.reset();
+      }
       _syncEstimatedFeeTextToViewModel();
       return;
     }
