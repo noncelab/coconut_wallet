@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
@@ -41,6 +42,8 @@ class SplitUtxoScreen extends StatefulWidget {
 
 class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
+  static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
+  static const Duration _autoOpenUtxoBottomSheetDelay = Duration(milliseconds: 850);
   String? _displayedHeaderTitle;
   String? _pendingHeaderTitle;
   String? _lastObservedHeaderTitle;
@@ -53,9 +56,17 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   SplitStep? _lastObservedPickerStep;
   int _pickerAnimationNonce = 0;
   final List<SplitStep> _visiblePickerSteps = [];
+  Timer? _autoOpenUtxoPickerTimer;
+  Timer? _autoOpenCriteriaPickerTimer;
+  bool _hasAutoOpenedUtxoPicker = false;
+  bool _hasAutoOpenedCriteriaPicker = false;
+  bool _isUtxoSelectionBottomSheetOpen = false;
+  bool _isCriteriaBottomSheetOpen = false;
 
   @override
   void dispose() {
+    _autoOpenUtxoPickerTimer?.cancel();
+    _autoOpenCriteriaPickerTimer?.cancel();
     super.dispose();
   }
 
@@ -155,19 +166,22 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     });
   }
 
-  void _scheduleOptionPickerAnimation(SplitStep step) {
+  void _scheduleOptionPickerAnimation(SplitStep step, SplitUtxoViewModel viewModel) {
     if (_lastObservedPickerStep == step) return;
     _lastObservedPickerStep = step;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncOptionPickerAnimation(step);
+      _syncOptionPickerAnimation(step, viewModel);
     });
   }
 
-  void _syncOptionPickerAnimation(SplitStep step) {
+  void _syncOptionPickerAnimation(SplitStep step, SplitUtxoViewModel viewModel) {
     _pendingPickerStep = step;
     final nextVisibleSteps = _visiblePickerStepsFor(step);
+
+    _autoOpenUtxoPickerTimer?.cancel();
+    _autoOpenCriteriaPickerTimer?.cancel();
 
     if (_displayedPickerStep == null) {
       setState(() {
@@ -175,6 +189,9 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         _visiblePickerSteps.clear();
         _visiblePickerSteps.addAll(nextVisibleSteps);
       });
+      if (step == SplitStep.selectUtxo) {
+        _scheduleAutoOpenUtxoSelectionBottomSheet(viewModel);
+      }
       return;
     }
 
@@ -188,6 +205,9 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       _visiblePickerSteps.clear();
       _visiblePickerSteps.addAll(nextVisibleSteps);
     });
+    if (step == SplitStep.selectCriteria) {
+      _scheduleAutoOpenCriteriaBottomSheet(viewModel);
+    }
   }
 
   List<SplitStep> _visiblePickerStepsFor(SplitStep step) {
@@ -226,7 +246,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             return picker.slideUpAnimation(
               key: ValueKey('split-picker-in-${step.name}-$_pickerAnimationNonce'),
               duration: _pickerAnimationDuration,
-              delay: const Duration(milliseconds: 1500),
+              delay: _newestPickerRevealDelay,
               offset: const Offset(0, 24),
             );
           }
@@ -279,8 +299,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         if (finalErrorMessage.isEmpty) {
           return const SizedBox.shrink();
         }
-
-        return ErrorTooltip(isShown: true, errorMessage: finalErrorMessage);
+        final message = "${t.errors.unexpected}\n$finalErrorMessage";
+        return ErrorTooltip(isShown: true, errorMessage: message);
       },
     );
   }
@@ -289,6 +309,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     return Selector<SplitUtxoViewModel, Tuple3<List<UtxoState>, SplitCriteria?, String?>>(
       selector: (_, vm) => Tuple3(vm.selectedUtxoList, vm.selectedCriteria, vm.headerTitleErrorMessage),
       builder: (context, data, _) {
+        final viewModel = context.read<SplitUtxoViewModel>();
         final nextTitle = _getHeaderTitle(t, data.item1, data.item2);
         _scheduleHeaderAnimation(nextTitle);
 
@@ -296,7 +317,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             data.item1.isEmpty
                 ? SplitStep.selectUtxo
                 : (data.item2 == null ? SplitStep.selectCriteria : SplitStep.enterDetails);
-        _scheduleOptionPickerAnimation(currentStep);
+        _scheduleOptionPickerAnimation(currentStep, viewModel);
 
         final titleToDisplay = _displayedHeaderTitle ?? nextTitle;
 
@@ -320,7 +341,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [titleWidget, CoconutLayout.spacing_50h, const _HeaderTitleErrorText(), CoconutLayout.spacing_200h],
+          children: [titleWidget, CoconutLayout.spacing_50h, const _HeaderTitleErrorText(), CoconutLayout.spacing_150h],
         );
       },
     );
@@ -333,11 +354,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         final showSplitResultBox = data.item1;
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
           transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: SizeTransition(sizeFactor: animation, axisAlignment: -1.0, child: child),
-            );
+            return FadeTransition(opacity: animation, child: child);
           },
           child:
               showSplitResultBox
@@ -494,6 +514,62 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
+  void _scheduleAutoOpenUtxoSelectionBottomSheet(SplitUtxoViewModel viewModel) {
+    if (viewModel.isUtxoSelected ||
+        _displayedPickerStep != SplitStep.selectUtxo ||
+        _hasAutoOpenedUtxoPicker ||
+        _isUtxoSelectionBottomSheetOpen) {
+      _autoOpenUtxoPickerTimer?.cancel();
+      return;
+    }
+
+    if (_autoOpenUtxoPickerTimer?.isActive ?? false) {
+      return;
+    }
+
+    _autoOpenUtxoPickerTimer = Timer(_newestPickerRevealDelay + _autoOpenUtxoBottomSheetDelay, () {
+      if (!mounted ||
+          _displayedPickerStep != SplitStep.selectUtxo ||
+          _hasAutoOpenedUtxoPicker ||
+          _isUtxoSelectionBottomSheetOpen ||
+          viewModel.isUtxoSelected) {
+        return;
+      }
+
+      _hasAutoOpenedUtxoPicker = true;
+      _showUtxoSelectionBottomSheet(context, viewModel);
+    });
+  }
+
+  void _scheduleAutoOpenCriteriaBottomSheet(SplitUtxoViewModel viewModel) {
+    if (!viewModel.isUtxoSelected ||
+        viewModel.selectedCriteria != null ||
+        _displayedPickerStep != SplitStep.selectCriteria ||
+        _hasAutoOpenedCriteriaPicker ||
+        _isCriteriaBottomSheetOpen) {
+      _autoOpenCriteriaPickerTimer?.cancel();
+      return;
+    }
+
+    if (_autoOpenCriteriaPickerTimer?.isActive ?? false) {
+      return;
+    }
+
+    _autoOpenCriteriaPickerTimer = Timer(_newestPickerRevealDelay + _autoOpenUtxoBottomSheetDelay, () {
+      if (!mounted ||
+          !viewModel.isUtxoSelected ||
+          viewModel.selectedCriteria != null ||
+          _displayedPickerStep != SplitStep.selectCriteria ||
+          _hasAutoOpenedCriteriaPicker ||
+          _isCriteriaBottomSheetOpen) {
+        return;
+      }
+
+      _hasAutoOpenedCriteriaPicker = true;
+      _showSplitCriteriaBottomSheet(context, viewModel);
+    });
+  }
+
   Widget _buildFeePicker(BuildContext context) {
     return Selector<SplitUtxoViewModel, Tuple3<bool, Tuple2<bool, String?>, String>>(
       selector:
@@ -632,14 +708,20 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                           onTap: () => viewModel.onRecommendedAmountTapped(btc),
                           borderRadius: 8,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                             decoration: BoxDecoration(
                               border: Border.all(color: CoconutColors.gray700),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text(
-                              currentUnit.displayBitcoinAmount(sats, withUnit: true),
-                              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                            width: 47,
+                            height: 24,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                currentUnit.displayBitcoinAmount(sats, withUnit: false),
+                                style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                              ),
                             ),
                           ),
                         );
@@ -825,13 +907,13 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     borderRadius: 8,
                     child: Container(
                       alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                       decoration: BoxDecoration(
                         border: Border.all(color: CoconutColors.gray700),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      width: 50,
-                      height: 25,
+                      width: 47,
+                      height: 24,
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text('$count', style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
@@ -846,27 +928,41 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   void _showUtxoSelectionBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
-    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
-      context: context,
-      minChildSize: 0.6,
-      maxChildSize: 0.9,
-      initialChildSize: 0.6,
-      childBuilder:
-          (scrollController) => UtxoSelectionScreen(
-            selectedUtxoList: viewModel.selectedUtxoList,
-            walletId: widget.id,
-            currentUnit: viewModel.currentUnit,
-            scrollController: scrollController,
-            isSplitMode: true,
-          ),
-    );
+    if (_isUtxoSelectionBottomSheetOpen) return;
 
-    if (result != null && context.mounted) {
-      viewModel.setSelectedUtxoList(result);
+    _autoOpenUtxoPickerTimer?.cancel();
+    _isUtxoSelectionBottomSheetOpen = true;
+
+    try {
+      final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
+        context: context,
+        minChildSize: 0.6,
+        maxChildSize: 0.9,
+        initialChildSize: 0.6,
+        childBuilder:
+            (scrollController) => UtxoSelectionScreen(
+              selectedUtxoList: viewModel.selectedUtxoList,
+              walletId: widget.id,
+              currentUnit: viewModel.currentUnit,
+              scrollController: scrollController,
+              isSplitMode: true,
+            ),
+      );
+
+      if (result != null && context.mounted) {
+        viewModel.setSelectedUtxoList(result);
+      }
+    } finally {
+      _isUtxoSelectionBottomSheetOpen = false;
     }
   }
 
   void _showSplitCriteriaBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
+    if (_isCriteriaBottomSheetOpen) return;
+
+    _autoOpenCriteriaPickerTimer?.cancel();
+    _isCriteriaBottomSheetOpen = true;
+
     final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<SplitCriteria>(
       context: context,
       title: t.split_utxo_screen.criteria_bottom_sheet.title,
@@ -890,8 +986,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       },
     );
 
-    if (selectedItem != null && context.mounted) {
-      viewModel.setSelectedCriteria(selectedItem);
+    try {
+      if (selectedItem != null && context.mounted) {
+        viewModel.setSelectedCriteria(selectedItem);
+      }
+    } finally {
+      _isCriteriaBottomSheetOpen = false;
     }
   }
 
@@ -943,7 +1043,7 @@ class _HeaderTitleErrorText extends StatelessWidget {
   }
 }
 
-class _SplitResultContent extends StatelessWidget {
+class _SplitResultContent extends StatefulWidget {
   final bool showSkeletonResultBox;
   final bool usePreview;
   final UtxoSplitResult? splitResult;
@@ -956,23 +1056,133 @@ class _SplitResultContent extends StatelessWidget {
   });
 
   @override
+  State<_SplitResultContent> createState() => _SplitResultContentState();
+}
+
+class _SplitResultContentState extends State<_SplitResultContent> with SingleTickerProviderStateMixin {
+  late final AnimationController _lottieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _lottieController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+  }
+
+  @override
+  void didUpdateWidget(covariant _SplitResultContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final isPreparing = widget.showSkeletonResultBox;
+    final isReady = widget.splitResult != null || widget.usePreview;
+    final isDone = isReady && !isPreparing;
+
+    if (isDone) {
+      _lottieController.stop();
+      _lottieController.value = 1;
+    } else if (isPreparing && !_lottieController.isAnimating) {
+      _lottieController.repeat(period: _lottieController.duration ?? const Duration(seconds: 1));
+    } else if (!isPreparing && !isReady) {
+      _lottieController.stop();
+      _lottieController.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _lottieController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (showSkeletonResultBox) {
-      return const SplitResultSkeletonBox();
+    final isPreparing = widget.showSkeletonResultBox;
+    final isReady = widget.splitResult != null || widget.usePreview;
+    final isDone = isReady && !isPreparing;
+
+    if (!isPreparing && !isReady) {
+      return const SizedBox.shrink();
     }
 
-    if (splitResult != null || usePreview) {
-      return const SplitResultBox(isPreviewResult: false);
-    }
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: CoconutColors.gray800,
+              border: Border.all(color: CoconutColors.gray600),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Lottie.asset(
+                  'assets/lottie/three-stars-growing.json',
+                  controller: _lottieController,
+                  onLoaded: (composition) {
+                    _lottieController.duration = composition.duration;
+                    if (isDone) {
+                      _lottieController.value = 1;
+                    } else if (isPreparing && !_lottieController.isAnimating) {
+                      _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
+                    } else if (!isPreparing) {
+                      _lottieController.reset();
+                    }
+                  },
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                  repeat: false,
+                ),
 
-    return const SizedBox.shrink();
+                const SizedBox(width: 4),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    layoutBuilder: (currentChild, previousChildren) {
+                      return Stack(
+                        alignment: Alignment.topLeft,
+                        children: [...previousChildren, if (currentChild != null) currentChild],
+                      );
+                    },
+                    transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                    child:
+                        isDone
+                            ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
+                            : const _SplitResultSkeletonContent(key: ValueKey('split-skeleton')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Visibility(
+            visible: widget.usePreview || widget.showSkeletonResultBox,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CoconutLayout.spacing_200h,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    t.split_utxo_screen.expected_result.above_is_expected,
+                    style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class SplitResultBox extends StatelessWidget {
-  final bool isPreviewResult;
-
-  const SplitResultBox({super.key, required this.isPreviewResult});
+class _SplitResultReadyContent extends StatelessWidget {
+  const _SplitResultReadyContent({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -982,98 +1192,49 @@ class SplitResultBox extends StatelessWidget {
         final splitSummaryTitle = data.item1;
         final splitOutputText = data.item2;
         final previewFeeText = data.item3;
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: CoconutColors.gray800,
-                  border: Border.all(color: CoconutColors.gray600),
-                  borderRadius: BorderRadius.circular(8),
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+            CoconutLayout.spacing_200h,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t.split_utxo_screen.expected_result.new_utxos,
+                  style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
-                      child: SvgPicture.asset(
-                        'assets/svg/split-utxo.svg',
-                        width: 16,
-                        height: 16,
-                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
-                          CoconutLayout.spacing_200h,
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.split_utxo_screen.expected_result.new_utxos,
-                                style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                              ),
-                              Text(
-                                splitOutputText ?? '-',
-                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                                textAlign: TextAlign.right,
-                              ),
-                            ],
-                          ),
-                          CoconutLayout.spacing_100h,
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                t.split_utxo_screen.expected_result.fee,
-                                style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                              ),
-                              Text(
-                                previewFeeText,
-                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: Text(
+                    splitOutputText ?? '-',
+                    style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
-              ),
-              Visibility(
-                visible: isPreviewResult,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    CoconutLayout.spacing_200h,
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        t.split_utxo_screen.expected_result.above_is_expected,
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-                      ),
-                    ),
-                  ],
+              ],
+            ),
+            CoconutLayout.spacing_100h,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  t.split_utxo_screen.expected_result.fee,
+                  style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                 ),
-              ),
-            ],
-          ),
+                Text(previewFeeText, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+              ],
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class SplitResultSkeletonBox extends StatelessWidget {
-  const SplitResultSkeletonBox({super.key});
+class _SplitResultSkeletonContent extends StatelessWidget {
+  const _SplitResultSkeletonContent({super.key});
 
   Widget _buildSkeletonBar({required double width, double height = 16}) {
     return Shimmer.fromColors(
@@ -1092,81 +1253,41 @@ class SplitResultSkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              color: CoconutColors.gray800,
-              border: Border.all(color: CoconutColors.gray600),
-              borderRadius: BorderRadius.circular(8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSkeletonBar(width: double.infinity, height: 22),
+        CoconutLayout.spacing_200h,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t.split_utxo_screen.expected_result.new_utxos,
+              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Lottie.asset(
-                    'assets/lottie/three-stars-growing.json',
-                    width: 18,
-                    height: 18,
-                    fit: BoxFit.fill,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSkeletonBar(width: double.infinity, height: 22),
-                      CoconutLayout.spacing_200h,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t.split_utxo_screen.expected_result.new_utxos,
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                          ),
-                          Column(
-                            children: [
-                              _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
-                              CoconutLayout.spacing_100h,
-                              _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
-                            ],
-                          ),
-                        ],
-                      ),
-                      CoconutLayout.spacing_100h,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            t.split_utxo_screen.expected_result.fee,
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                          ),
-                          _buildSkeletonBar(width: 92, height: 22),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
+                CoconutLayout.spacing_100h,
+                _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
               ],
             ),
-          ),
-          CoconutLayout.spacing_200h,
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              t.split_utxo_screen.expected_result.above_is_expected,
-              style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+          ],
+        ),
+        CoconutLayout.spacing_100h,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              t.split_utxo_screen.expected_result.fee,
+              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
             ),
-          ),
-        ],
-      ),
+            _buildSkeletonBar(width: 92, height: 22),
+          ],
+        ),
+      ],
     );
   }
 }

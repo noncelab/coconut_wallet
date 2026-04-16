@@ -103,8 +103,8 @@ log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 name: "Name"
 account: "Account"
-merge_utxos: "Merge UTXOs"
-split_utxo: "Split UTXO"
+merge_utxos: "Merge"
+split_utxo: "Split"
 organize: "Organize"
 
 relative_time:
@@ -830,8 +830,6 @@ merge_utxos_screen:
   merge_cta_discouraged_costly: "The consolidation cost is higher than the fees you would save"
   exception:
     fee_too_high: "The fee is too high"
-  transaction_build_error: "An unexpected error occurred."
-  transaction_build_error_with_message: "An unexpected error occurred.\n${error_msg}"
 
 split_utxo_screen:
   title: "Split UTXO"
@@ -854,7 +852,7 @@ split_utxo_screen:
     insufficient_after_fee: "This amount can’t be split when the fee is included"
     manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
-  dust_error: "Splitting with this amount will create small amounts (dust)"
+  dust_error: "Splitting will create a small amount (dust)"
   criteria_bottom_sheet:
     title: "Select split method"
     split_by_amount: "Split by fixed amount"
@@ -981,6 +979,7 @@ errors:
   transaction_draft:
     invalid_id: "Cannot find transaction draft"
   empty_input: "Could not fetch transaction inputs. Please check mempool."
+  unexpected: "An unexpected error occurred."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"

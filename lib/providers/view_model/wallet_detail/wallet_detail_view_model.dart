@@ -165,9 +165,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   String? get masterFingerprint =>
       isMultisigWallet ? null : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
 
-  String _bitcoinPriceKrwInString = '';
+  String _fiatPriceString = '';
 
-  String get bitcoinPriceKrwInString => _bitcoinPriceKrwInString;
+  String get fiatPriceString => _fiatPriceString;
 
   bool isTransactionSuspicious(TransactionRecord tx) => _walletProvider.isTransactionSuspicious(tx);
 
@@ -180,7 +180,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _updateBitcoinPrice() {
-    _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance);
+    _fiatPriceString = _priceProvider.getFiatPrice(_balance);
     notifyListeners();
   }
 

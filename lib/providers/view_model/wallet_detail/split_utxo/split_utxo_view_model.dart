@@ -79,6 +79,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   SplitPreview? _splitPreview;
   CancelableTask<UtxoSplitResult>? _activeBuildTask;
   int _buildRequestId = 0;
+  bool _isCalculating = false;
 
   bool _isDustError = false;
   bool _isAmountInsufficientAfterFee = false; // byAmount or manual: 수수료를 제외하면 나눌 수 없는 금액이에요
@@ -114,7 +115,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _splitPreview!.amountCountMap.values.fold<int>(0, (sum, count) => sum + count) > _bigTxOutputThreshold &&
       _usePreview == true;
 
-  bool get showSkeletonResultBox => _activeBuildTask != null;
+  bool get showSkeletonResultBox => _isCalculating || _activeBuildTask != null;
   bool get showSplitResultBox =>
       shouldShowFeePicker && hasFeeRate && (showSkeletonResultBox || _splitResult != null || usePreview);
 
@@ -185,10 +186,18 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   /// utxo.amount를 000 나눌게요
   String get splitSummaryTitle {
     if (_selectedCriteria == null || _selectedUtxoList.isEmpty) return '';
-    final utxoAmountText = currentUnit.displayBitcoinAmount(_selectedUtxoAmount, withUnit: true);
+    final utxoAmountText = currentUnit.displayBitcoinAmount(
+      _selectedUtxoAmount,
+      withUnit: true,
+      forceEightDecimals: currentUnit.isBtcUnit,
+    );
 
     if (_selectedCriteria == SplitCriteria.byAmount) {
-      final formattedSplitAmount = currentUnit.displayBitcoinAmount(splitAmountSats, withUnit: true);
+      final formattedSplitAmount = currentUnit.displayBitcoinAmount(
+        splitAmountSats,
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
       return t.split_utxo_screen.expected_result.split_by_amount(
         utxoAmountText: utxoAmountText,
         formattedSplitAmount: formattedSplitAmount,
@@ -207,7 +216,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (usePreview) {
       return _splitPreview!.amountCountMap.entries
           .map((e) {
-            final formattedAmount = currentUnit.displayBitcoinAmount(e.key, withUnit: true);
+            final formattedAmount = currentUnit.displayBitcoinAmount(
+              e.key,
+              withUnit: true,
+              forceEightDecimals: currentUnit.isBtcUnit,
+            );
             return '${e.value} × $formattedAmount';
           })
           .join('\n');
@@ -219,7 +232,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (outputMap.isNotEmpty) {
       return outputMap.entries
           .map((e) {
-            final formattedAmount = currentUnit.displayBitcoinAmount(e.key, withUnit: true);
+            final formattedAmount = currentUnit.displayBitcoinAmount(
+              e.key,
+              withUnit: true,
+              forceEightDecimals: currentUnit.isBtcUnit,
+            );
             return '${e.value} × $formattedAmount';
           })
           .join('\n');
@@ -267,6 +284,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _onInputChanged() {
+    _isCalculating = true;
+    _splitResult = null;
+    _splitPreview = null;
+    notifyListeners();
+
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
       Logger.log('--> _onInputChanged');
@@ -287,6 +309,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       }
       if (preview == null) {
         Logger.log('--> SplitUtxoViewModel._onInputChanged preview is null requestId=$requestId');
+        _isCalculating = false;
         notifyListeners();
         return;
       }
@@ -333,6 +356,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
           }
         }
       }
+      _isCalculating = false;
       notifyListeners();
     });
   }
@@ -550,6 +574,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _usePreview = null;
     _unexpectedErrorMessage = "";
     _splitResult = _splitPreview = null;
+    _isCalculating = false;
     notifyListeners();
   }
 
@@ -686,14 +711,26 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   String get feePickerDisplayText {
     if (_errorEstimatedFee != null && _errorEstimatedFee! > 0) {
-      return currentUnit.displayBitcoinAmount(_errorEstimatedFee!.ceil(), withUnit: true);
+      return currentUnit.displayBitcoinAmount(
+        _errorEstimatedFee!.ceil(),
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
     }
 
     if (usePreview && _splitPreview != null && _splitPreview!.estimatedFee > 0) {
-      return currentUnit.displayBitcoinAmount(_splitPreview!.estimatedFee.ceil(), withUnit: true);
+      return currentUnit.displayBitcoinAmount(
+        _splitPreview!.estimatedFee.ceil(),
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
     }
     if (!usePreview && _splitResult != null && _splitResult!.estimatedFee > 0) {
-      return currentUnit.displayBitcoinAmount(_splitResult!.estimatedFee.ceil(), withUnit: true);
+      return currentUnit.displayBitcoinAmount(
+        _splitResult!.estimatedFee.ceil(),
+        withUnit: true,
+        forceEightDecimals: currentUnit.isBtcUnit,
+      );
     }
     return '-';
   }
