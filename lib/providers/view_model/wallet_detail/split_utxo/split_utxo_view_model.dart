@@ -79,6 +79,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   SplitPreview? _splitPreview;
   CancelableTask<UtxoSplitResult>? _activeBuildTask;
   int _buildRequestId = 0;
+  bool _isCalculating = false;
 
   bool _isDustError = false;
   bool _isAmountInsufficientAfterFee = false; // byAmount or manual: 수수료를 제외하면 나눌 수 없는 금액이에요
@@ -114,7 +115,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _splitPreview!.amountCountMap.values.fold<int>(0, (sum, count) => sum + count) > _bigTxOutputThreshold &&
       _usePreview == true;
 
-  bool get showSkeletonResultBox => _activeBuildTask != null;
+  bool get showSkeletonResultBox => _isCalculating || _activeBuildTask != null;
   bool get showSplitResultBox =>
       shouldShowFeePicker && hasFeeRate && (showSkeletonResultBox || _splitResult != null || usePreview);
 
@@ -267,6 +268,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _onInputChanged() {
+    _isCalculating = true;
+    _splitResult = null;
+    _splitPreview = null;
+    notifyListeners();
+
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
       Logger.log('--> _onInputChanged');
@@ -287,6 +293,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       }
       if (preview == null) {
         Logger.log('--> SplitUtxoViewModel._onInputChanged preview is null requestId=$requestId');
+        _isCalculating = false;
         notifyListeners();
         return;
       }
@@ -333,6 +340,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
           }
         }
       }
+      _isCalculating = false;
       notifyListeners();
     });
   }
@@ -550,6 +558,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _usePreview = null;
     _unexpectedErrorMessage = "";
     _splitResult = _splitPreview = null;
+    _isCalculating = false;
     notifyListeners();
   }
 
