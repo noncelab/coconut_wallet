@@ -846,7 +846,7 @@ split_utxo_screen:
     insufficient_after_fee: "手数料を含めると分割できない金額です"
     manual_sum_over_input: "金額が足りません"
   fee_error: "手数料がUTXOの金額より大きいです"
-  dust_error: "この数で分割すると少額（ダスト）が発生します"
+  dust_error: "分割すると少額（ダスト）が生じます"
   criteria_bottom_sheet:
     title: "分割基準を選択"
     split_by_amount: "一定額で分割します"

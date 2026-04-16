@@ -848,7 +848,7 @@ split_utxo_screen:
     insufficient_after_fee: "No es posible dividir este importe al incluir la comisión"
     manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
-  dust_error: "Dividir con esta cantidad generará montos pequeños (dust)"
+  dust_error: "Al dividir, se generará una pequeña cantidad (dust)"
   criteria_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
