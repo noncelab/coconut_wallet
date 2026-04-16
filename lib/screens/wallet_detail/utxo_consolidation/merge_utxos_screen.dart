@@ -595,7 +595,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                                                     .merge_utxos_screen
                                                     .receive_address_summary_tag_single_selection_suffix,
                                           ),
-                                          TextSpan(text: _singleSelectionDestinationText),
+                                          TextSpan(text: _summaryCardDestinationText),
                                         ],
                                       ),
                                     )
@@ -637,7 +637,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                                               total: _selectedUtxosTotalAmountText,
                                             ),
                                           ),
-                                          TextSpan(text: _singleSelectionDestinationText),
+                                          TextSpan(text: _summaryCardDestinationText),
                                         ],
                                       ),
                                     ))
@@ -941,17 +941,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       return t.merge_utxos_screen.receive_address_summary_to_wallet(wallet_name: walletName);
     }
     return t.merge_utxos_screen.receive_address_summary_to_selected_address;
-  }
-
-  String get _singleSelectionDestinationText {
-    final walletName = _selectedReceiveWalletName;
-    if (walletName != null && walletName.isNotEmpty) {
-      return t.merge_utxos_screen.receive_address_summary_single_selection_to_wallet(wallet_name: walletName);
-    }
-    if (_isDirectInputReceiveAddressWarning) {
-      return t.merge_utxos_screen.receive_address_summary_single_selection_to_unowned_address;
-    }
-    return t.merge_utxos_screen.receive_address_summary_single_selection_to_selected_address;
   }
 
   String get _tagSummaryHeadlineText {

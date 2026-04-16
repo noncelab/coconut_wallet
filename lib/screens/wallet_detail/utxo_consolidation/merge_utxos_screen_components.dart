@@ -182,7 +182,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 18.0),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -231,42 +231,45 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final section in sections) ...[
-          Stack(
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [CoconutColors.gray900, CoconutColors.gray800],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [CoconutColors.gray900, CoconutColors.gray800],
+                      ),
+                    ),
+                    child: Text(
+                      t.merge_utxos_screen.count(n: section.utxos.length, count: section.utxos.length),
+                      textAlign: TextAlign.end,
+                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
                     ),
                   ),
-                  child: Text(
-                    t.merge_utxos_screen.count(n: section.utxos.length, count: section.utxos.length),
-                    textAlign: TextAlign.end,
-                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                ),
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Wrap(spacing: 4, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
+                    ),
                   ),
                 ),
-              ),
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Wrap(spacing: 8, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
                 for (int start = 0; start < section.utxos.length; start += _columnCount) ...[
@@ -277,12 +280,11 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                     ),
                     isEditing,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 36),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 12),
         ],
       ],
     );
