@@ -370,7 +370,6 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
         final hasLockedUtxo = vm.selectedUtxoList.any((utxo) => utxo.status == UtxoStatus.locked);
 
         return BottomActionBar(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 16),
           child: Row(
             children: [
               Expanded(

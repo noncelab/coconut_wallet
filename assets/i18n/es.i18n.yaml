@@ -104,8 +104,8 @@ log_viewer: "Visor de registros"
 go_to_settings: "Ir a ajustes"
 name: "Nombre"
 account: "Cuenta"
-merge_utxos: "Combinar UTXOs"
-split_utxo: "Dividir UTXO"
+merge_utxos: "Combinar"
+split_utxo: "Dividir"
 organize: "Organizar"
 
 relative_time:

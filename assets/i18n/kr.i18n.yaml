@@ -103,8 +103,8 @@ log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
 name: "이름"
 account: "계정"
-merge_utxos: "UTXO 합치기"
-split_utxo: "UTXO 나누기"
+merge_utxos: "합치기"
+split_utxo: "나누기"
 organize: "정리하기"
 
 relative_time:

@@ -94,7 +94,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                           selector:
                               (_, viewModel) => Tuple4(
                                 AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                                viewModel.bitcoinPriceKrwInString,
+                                viewModel.fiatPriceString,
                                 viewModel.sendingAmount,
                                 viewModel.receivingAmount,
                               ),
@@ -103,7 +103,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                               key: _headerWidgetKey,
                               animatedBalanceData: data.item1,
                               currentUnit: _currentUnit,
-                              btcPriceInKrw: data.item2,
+                              fiatPrice: data.item2,
                               sendingAmount: data.item3,
                               receivingAmount: data.item4,
                               onPressedUnitToggle: _toggleUnit,
@@ -193,15 +193,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: _stickyHeaderVisibleNotifier,
       builder: (context, isVisible, child) {
-        return Selector<WalletDetailViewModel, int>(
-          selector: (_, viewModel) => viewModel.balance,
-          builder: (context, balance, child) {
+        return Selector<WalletDetailViewModel, Tuple2<AnimatedBalanceData, String>>(
+          selector:
+              (_, viewModel) =>
+                  Tuple2(AnimatedBalanceData(viewModel.balance, viewModel.prevBalance), viewModel.fiatPriceString),
+          builder: (context, data, child) {
             return WalletDetailStickyHeader(
               widgetKey: _stickyHeaderWidgetKey,
               height: _appBarSize.height,
               isVisible: isVisible,
               currentUnit: _currentUnit,
-              animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
+              animatedBalanceData: data.item1,
+              fiatPrice: data.item2,
             );
           },
         );
@@ -410,13 +413,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
 
     if (_viewModel.isWalletSyncing) {
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
-        text: t.toast.fetching_onchain_data,
-        level: CoconutToastLevel.info,
-      );
+      _showInfoToast(context, t.toast.fetching_onchain_data);
       return false;
     }
 
@@ -517,101 +514,62 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
             return BottomActionBarSlide(
               isVisible: isVisible,
               child: BottomActionBar(
-                padding: EdgeInsets.only(
-                  left: 8.0,
-                  right: 8.0,
-                  bottom: MediaQuery.of(context).padding.bottom,
-                  top: 8.0,
-                ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Expanded(
                       child: Opacity(
                         opacity: canMerge ? 1.0 : 0.3,
-                        child: BottomActionButton(
+                        child: _buildBottomActionBarButton(
                           iconPath: 'assets/svg/merge-utxos.svg',
                           label: t.merge_utxos,
                           onTap:
                               canMerge
                                   ? () {
                                     if (availableUtxoCount < 2) {
-                                      CoconutToast.showToast(
-                                        context: context,
-                                        isVisibleIcon: true,
-                                        iconPath: 'assets/svg/circle-info.svg',
-                                        text: t.toast.locked_utxo_unavailable_description,
-                                        level: CoconutToastLevel.info,
-                                      );
+                                      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
                                     } else {
                                       Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
                                     }
                                   }
                                   : () {
-                                    CoconutToast.showToast(
-                                      context: context,
-                                      isVisibleIcon: true,
-                                      iconPath: 'assets/svg/circle-info.svg',
-                                      text: t.toast.merge_utxos_unavailable_description,
-                                      level: CoconutToastLevel.info,
-                                    );
+                                    _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
                                   },
-                          buttonLayout: BottomActionButtonLayout.vertical,
-                          textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
                         ),
                       ),
                     ),
                     Expanded(
                       child: Opacity(
                         opacity: canSplit ? 1.0 : 0.3,
-                        child: BottomActionButton(
+                        child: _buildBottomActionBarButton(
                           iconPath: 'assets/svg/split-utxo.svg',
                           label: t.split_utxo,
                           onTap:
                               canSplit
                                   ? () {
                                     if (availableUtxoCount < 1) {
-                                      CoconutToast.showToast(
-                                        context: context,
-                                        isVisibleIcon: true,
-                                        iconPath: 'assets/svg/circle-info.svg',
-                                        text: t.toast.locked_utxo_unavailable_description,
-                                        level: CoconutToastLevel.info,
-                                      );
+                                      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
                                     } else {
                                       Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
                                     }
                                   }
                                   : () {
-                                    CoconutToast.showToast(
-                                      context: context,
-                                      isVisibleIcon: true,
-                                      iconPath: 'assets/svg/circle-info.svg',
-                                      text: t.toast.split_utxo_unavailable_description,
-                                      level: CoconutToastLevel.info,
-                                    );
+                                    _showInfoToast(context, t.toast.split_utxo_unavailable_description);
                                   },
-                          buttonLayout: BottomActionButtonLayout.vertical,
-                          textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
                         ),
                       ),
                     ),
                     Expanded(
-                      child: BottomActionButton(
+                      child: _buildBottomActionBarButton(
                         iconPath: 'assets/svg/receive-plane.svg',
                         label: t.receive,
                         onTap: _onTapReceive,
-                        buttonLayout: BottomActionButtonLayout.vertical,
-                        textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
                       ),
                     ),
                     Expanded(
-                      child: BottomActionButton(
+                      child: _buildBottomActionBarButton(
                         iconPath: 'assets/svg/send-plane.svg',
                         label: t.send,
                         onTap: _onTapSend,
-                        buttonLayout: BottomActionButtonLayout.vertical,
-                        textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
                       ),
                     ),
                   ],
@@ -621,6 +579,28 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           },
         );
       },
+    );
+  }
+
+  void _showInfoToast(BuildContext context, String text) {
+    CoconutToast.showToast(
+      context: context,
+      isVisibleIcon: true,
+      iconPath: 'assets/svg/circle-info.svg',
+      text: text,
+      level: CoconutToastLevel.info,
+    );
+  }
+
+  Widget _buildBottomActionBarButton({required String iconPath, required String label, required VoidCallback onTap}) {
+    return BottomActionButton(
+      iconPath: iconPath,
+      label: label,
+      onTap: onTap,
+      buttonLayout: BottomActionButtonLayout.vertical,
+      iconSize: 24,
+      spacing: 4,
+      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
     );
   }
 

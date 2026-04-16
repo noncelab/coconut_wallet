@@ -103,8 +103,8 @@ log_viewer: "ログビューアー"
 go_to_settings: "設定を開く"
 name: "名前"
 account: "アカウント"
-merge_utxos: "UTXOを統合"
-split_utxo: "UTXOを分割"
+merge_utxos: "を統合"
+split_utxo: "を分割"
 organize: "整理する"
 
 relative_time:

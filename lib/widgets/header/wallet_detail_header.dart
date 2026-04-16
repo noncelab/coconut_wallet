@@ -11,7 +11,7 @@ import 'package:lottie/lottie.dart';
 class WalletDetailHeader extends StatefulWidget {
   final AnimatedBalanceData animatedBalanceData;
   final BitcoinUnit currentUnit;
-  final String btcPriceInKrw;
+  final String fiatPrice;
   final int sendingAmount;
   final int receivingAmount;
   final void Function() onPressedUnitToggle;
@@ -20,7 +20,7 @@ class WalletDetailHeader extends StatefulWidget {
     super.key,
     required this.animatedBalanceData,
     required this.currentUnit,
-    required this.btcPriceInKrw,
+    required this.fiatPrice,
     required this.sendingAmount,
     required this.receivingAmount,
     required this.onPressedUnitToggle,
