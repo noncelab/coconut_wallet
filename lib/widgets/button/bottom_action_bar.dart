@@ -39,7 +39,7 @@ class BottomActionBarSlide extends StatelessWidget {
 }
 
 class BottomActionBar extends StatelessWidget {
-  static const double _gradientExtensionAboveChild = 36;
+  static const double _gradientExtensionAboveChild = 32;
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -54,7 +54,7 @@ class BottomActionBar extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Color.fromARGB(234, 29, 29, 29), Color.fromARGB(255, 29, 29, 29)],
+          colors: [Colors.transparent, Color.fromARGB(140, 29, 29, 29), Color.fromARGB(255, 29, 29, 29)],
           stops: [0.0, 0.4, 1.0],
         ),
       ),
