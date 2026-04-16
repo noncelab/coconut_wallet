@@ -547,92 +547,203 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                 child:
                     isReady || isInvalidSelection
                         ? isSingleSelectionSummary
-                            ? RichText(
-                              key: const ValueKey('receive-address-summary-single-selection-text'),
-                              text: TextSpan(
-                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                                children: [
-                                  TextSpan(
-                                    text: _summaryCardHeadlineText,
-                                    style: TextStyle(
-                                      decoration: TextDecoration.underline,
-                                      color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
-                                    ),
-                                    recognizer:
-                                        TapGestureRecognizer()
-                                          ..onTapDown = (_) {
-                                            setState(() {
-                                              _isAmountTextHighlighted = true;
-                                            });
-                                          }
-                                          ..onTapUp = (_) {
-                                            setState(() {
-                                              _isAmountTextHighlighted = false;
-                                            });
-                                            _showSelectedUtxosPreviewBottomSheet();
-                                          }
-                                          ..onTapCancel = () {
-                                            setState(() {
-                                              _isAmountTextHighlighted = false;
-                                            });
-                                          },
+                            ? (_currentMergeCriteria == UtxoMergeCriteria.sameTag ||
+                                      _currentMergeCriteria == UtxoMergeCriteria.sameAddress
+                                    ? RichText(
+                                      key: ValueKey(
+                                        _currentMergeCriteria == UtxoMergeCriteria.sameTag
+                                            ? 'receive-address-summary-single-selection-tag-text'
+                                            : 'receive-address-summary-single-selection-same-address-text',
+                                      ),
+                                      text: TextSpan(
+                                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                                        children: [
+                                          TextSpan(
+                                            text:
+                                                _currentMergeCriteria == UtxoMergeCriteria.sameTag
+                                                    ? _tagSummaryHeadlineText
+                                                    : _sameAddressSummaryHeadlineText,
+                                            style: TextStyle(
+                                              decoration: TextDecoration.underline,
+                                              color:
+                                                  _isAmountTextHighlighted
+                                                      ? CoconutColors.gray350
+                                                      : CoconutColors.white,
+                                            ),
+                                            recognizer:
+                                                TapGestureRecognizer()
+                                                  ..onTapDown = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = true;
+                                                    });
+                                                  }
+                                                  ..onTapUp = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                    _showSelectedUtxosPreviewBottomSheet();
+                                                  }
+                                                  ..onTapCancel = () {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                  },
+                                          ),
+                                          TextSpan(
+                                            text:
+                                                t
+                                                    .merge_utxos_screen
+                                                    .receive_address_summary_tag_single_selection_suffix,
+                                          ),
+                                          TextSpan(text: _singleSelectionDestinationText),
+                                        ],
+                                      ),
+                                    )
+                                    : RichText(
+                                      key: const ValueKey('receive-address-summary-single-selection-text'),
+                                      text: TextSpan(
+                                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                                        children: [
+                                          TextSpan(
+                                            text: _summaryCardHeadlineText,
+                                            style: TextStyle(
+                                              decoration: TextDecoration.underline,
+                                              color:
+                                                  _isAmountTextHighlighted
+                                                      ? CoconutColors.gray350
+                                                      : CoconutColors.white,
+                                            ),
+                                            recognizer:
+                                                TapGestureRecognizer()
+                                                  ..onTapDown = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = true;
+                                                    });
+                                                  }
+                                                  ..onTapUp = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                    _showSelectedUtxosPreviewBottomSheet();
+                                                  }
+                                                  ..onTapCancel = () {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                  },
+                                          ),
+                                          TextSpan(
+                                            text: t.merge_utxos_screen.receive_address_summary_single_selection_total(
+                                              total: _selectedUtxosTotalAmountText,
+                                            ),
+                                          ),
+                                          TextSpan(text: _singleSelectionDestinationText),
+                                        ],
+                                      ),
+                                    ))
+                                .fadeInAnimation(
+                                  key: ValueKey(
+                                    'receive-address-summary-text-fade-${_viewModel.receiveAddressSummaryAnimationNonce}',
                                   ),
-                                  TextSpan(
-                                    text: t.merge_utxos_screen.receive_address_summary_single_selection_total(
-                                      total: _selectedUtxosTotalAmountText,
-                                    ),
+                                  duration: const Duration(milliseconds: 260),
+                                )
+                            : (_currentMergeCriteria == UtxoMergeCriteria.sameTag ||
+                                      _currentMergeCriteria == UtxoMergeCriteria.sameAddress
+                                    ? RichText(
+                                      key: ValueKey(
+                                        _currentMergeCriteria == UtxoMergeCriteria.sameTag
+                                            ? 'receive-address-summary-tag-text'
+                                            : 'receive-address-summary-same-address-text',
+                                      ),
+                                      text: TextSpan(
+                                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                                        children: [
+                                          TextSpan(
+                                            text:
+                                                _currentMergeCriteria == UtxoMergeCriteria.sameTag
+                                                    ? _tagSummaryHeadlineTextWithObject
+                                                    : _sameAddressSummaryHeadlineText,
+                                            style: TextStyle(
+                                              decoration: TextDecoration.underline,
+                                              color:
+                                                  _isAmountTextHighlighted
+                                                      ? CoconutColors.gray350
+                                                      : CoconutColors.white,
+                                            ),
+                                            recognizer:
+                                                TapGestureRecognizer()
+                                                  ..onTapDown = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = true;
+                                                    });
+                                                  }
+                                                  ..onTapUp = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                    _showSelectedUtxosPreviewBottomSheet();
+                                                  }
+                                                  ..onTapCancel = () {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                  },
+                                          ),
+                                          TextSpan(
+                                            text: t.merge_utxos_screen.receive_address_summary_tag_object_suffix,
+                                          ),
+                                          TextSpan(text: _summaryCardDestinationText),
+                                        ],
+                                      ),
+                                    )
+                                    : RichText(
+                                      key: const ValueKey('receive-address-summary-text'),
+                                      text: TextSpan(
+                                        style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                                        children: [
+                                          TextSpan(
+                                            text: amountText,
+                                            style: TextStyle(
+                                              decoration: TextDecoration.underline,
+                                              color:
+                                                  _isAmountTextHighlighted
+                                                      ? CoconutColors.gray350
+                                                      : CoconutColors.white,
+                                            ),
+                                            recognizer:
+                                                TapGestureRecognizer()
+                                                  ..onTapDown = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = true;
+                                                    });
+                                                  }
+                                                  ..onTapUp = (_) {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                    _showSelectedUtxosPreviewBottomSheet();
+                                                  }
+                                                  ..onTapCancel = () {
+                                                    setState(() {
+                                                      _isAmountTextHighlighted = false;
+                                                    });
+                                                  },
+                                          ),
+                                          TextSpan(
+                                            text: t.merge_utxos_screen.receive_address_summary_total(
+                                              amount: totalAmountText,
+                                            ),
+                                          ),
+                                          TextSpan(text: destinationText),
+                                        ],
+                                      ),
+                                    ))
+                                .fadeInAnimation(
+                                  key: ValueKey(
+                                    'receive-address-summary-text-fade-${_viewModel.receiveAddressSummaryAnimationNonce}',
                                   ),
-                                  TextSpan(text: _singleSelectionDestinationText),
-                                ],
-                              ),
-                            ).fadeInAnimation(
-                              key: ValueKey(
-                                'receive-address-summary-text-fade-${_viewModel.receiveAddressSummaryAnimationNonce}',
-                              ),
-                              duration: const Duration(milliseconds: 260),
-                            )
-                            : RichText(
-                              key: const ValueKey('receive-address-summary-text'),
-                              text: TextSpan(
-                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                                children: [
-                                  TextSpan(
-                                    text: amountText,
-                                    style: TextStyle(
-                                      decoration: TextDecoration.underline,
-                                      color: _isAmountTextHighlighted ? CoconutColors.gray350 : CoconutColors.white,
-                                    ),
-                                    recognizer:
-                                        TapGestureRecognizer()
-                                          ..onTapDown = (_) {
-                                            setState(() {
-                                              _isAmountTextHighlighted = true;
-                                            });
-                                          }
-                                          ..onTapUp = (_) {
-                                            setState(() {
-                                              _isAmountTextHighlighted = false;
-                                            });
-                                            _showSelectedUtxosPreviewBottomSheet();
-                                          }
-                                          ..onTapCancel = () {
-                                            setState(() {
-                                              _isAmountTextHighlighted = false;
-                                            });
-                                          },
-                                  ),
-                                  TextSpan(
-                                    text: t.merge_utxos_screen.receive_address_summary_total(amount: totalAmountText),
-                                  ),
-                                  TextSpan(text: destinationText),
-                                ],
-                              ),
-                            ).fadeInAnimation(
-                              key: ValueKey(
-                                'receive-address-summary-text-fade-${_viewModel.receiveAddressSummaryAnimationNonce}',
-                              ),
-                              duration: const Duration(milliseconds: 260),
-                            )
+                                  duration: const Duration(milliseconds: 260),
+                                )
                         : isPreparing
                         ? _buildReceiveAddressSummarySkeleton()
                         : _buildReceiveAddressSummaryFallback(message: ''),
@@ -822,6 +933,9 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   String get _summaryCardDestinationText {
+    if (_isDirectInputReceiveAddressWarning) {
+      return t.merge_utxos_screen.receive_address_summary_to_unowned_address;
+    }
     final walletName = _selectedReceiveWalletName;
     if (walletName != null && walletName.isNotEmpty) {
       return t.merge_utxos_screen.receive_address_summary_to_wallet(wallet_name: walletName);
@@ -838,6 +952,23 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       return t.merge_utxos_screen.receive_address_summary_single_selection_to_unowned_address;
     }
     return t.merge_utxos_screen.receive_address_summary_single_selection_to_selected_address;
+  }
+
+  String get _tagSummaryHeadlineText {
+    final tagName = _effectiveSelectedTagName ?? '';
+    return t.merge_utxos_screen.receive_address_summary_tag_applied(tag_name: tagName) +
+        t.merge_utxos_screen.receive_address_summary_tag_amount_only(amount: _summaryCardHeadlineText);
+  }
+
+  String get _tagSummaryHeadlineTextWithObject {
+    final tagName = _effectiveSelectedTagName ?? '';
+    return t.merge_utxos_screen.receive_address_summary_tag_applied(tag_name: tagName) +
+        t.merge_utxos_screen.receive_address_summary_tag_amount_only(amount: _summaryCardHeadlineText);
+  }
+
+  String get _sameAddressSummaryHeadlineText {
+    return t.merge_utxos_screen.receive_address_summary_same_address_applied +
+        t.merge_utxos_screen.receive_address_summary_tag_amount_only(amount: _summaryCardHeadlineText);
   }
 
   String get _summaryAmountThresholdText {
@@ -1098,6 +1229,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                       unawaited(_calculateEstimatedMergeFee());
                     }
                     isEditingNotifier.value = !isEditing;
+                    vibrateExtraLight();
                   },
                 ),
           ),
