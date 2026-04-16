@@ -374,7 +374,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [titleWidget, CoconutLayout.spacing_50h, const _HeaderTitleErrorText(), CoconutLayout.spacing_150h],
+          children: [titleWidget, const _HeaderTitleErrorText()],
         );
       },
     );
@@ -1061,22 +1061,22 @@ class _HeaderTitleErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 14),
-      child: Selector<SplitUtxoViewModel, Tuple2<String?, String>>(
-        selector: (_, vm) => Tuple2(vm.headerTitleErrorMessage, vm.feePickerDisplayText),
-        builder: (_, data, __) {
-          final headerTitleErrorMessage = data.item1;
-          if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
-            return const SizedBox.shrink();
-          }
+    return Selector<SplitUtxoViewModel, Tuple2<String?, String>>(
+      selector: (_, vm) => Tuple2(vm.headerTitleErrorMessage, vm.feePickerDisplayText),
+      builder: (_, data, __) {
+        final headerTitleErrorMessage = data.item1;
+        if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
+          return const SizedBox(height: 16);
+        }
 
-          return Align(
+        return Padding(
+          padding: const EdgeInsets.only(top: 2, bottom: 8),
+          child: Align(
             alignment: Alignment.centerLeft,
             child: Text(headerTitleErrorMessage, style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink)),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1510,7 +1510,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 textInputType: const TextInputType.numberWithOptions(decimal: true),
                                 placeholderText: t.split_utxo_screen.placeholder_split_amount,
                                 maxLines: 1,
-                                padding: const EdgeInsets.only(left: 0, right: 0, top: 16, bottom: 16),
+                                padding: const EdgeInsets.only(left: 0, right: 0, top: 0, bottom: 16),
                                 unfocusOnTapOutside: true,
                                 suffix: Padding(
                                   padding: const EdgeInsets.only(top: 2),
