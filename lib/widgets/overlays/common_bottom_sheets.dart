@@ -469,19 +469,25 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
             children: [
               Expanded(child: child),
               if (isSelected || reserveCheckIconSpace)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 18,
-                  height: 18,
-                  child:
-                      isSelected
-                          ? SvgPicture.asset(
-                            'assets/svg/check.svg',
-                            width: 16,
-                            height: 16,
-                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                          ).scaleInAnimation(duration: const Duration(milliseconds: 300))
-                          : null,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child:
+                        isSelected
+                            ? Center(
+                              child: SizedBox(
+                                width: 14.7,
+                                height: 10.5,
+                                child: SvgPicture.asset(
+                                  'assets/svg/check.svg',
+                                  colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                ),
+                              ),
+                            ).scaleInAnimation(duration: const Duration(milliseconds: 300))
+                            : null,
+                  ),
                 ),
             ],
           ),

@@ -368,7 +368,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       backgroundColor: CoconutColors.gray900,
       title: t.merge_utxos_screen.receive_address,
       child: SizedBox(
-        height: bodyHeight + 16,
+        height: bodyHeight,
         child: StatefulBuilder(
           builder: (context, modalSetState) {
             return _SegmentedBottomSheetBody(

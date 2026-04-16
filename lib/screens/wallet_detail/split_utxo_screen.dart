@@ -280,7 +280,6 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                CoconutLayout.spacing_1000h,
                 _buildHeaderTitle(),
                 _buildVisibleOptionPickers(context),
               ],
@@ -339,9 +338,17 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           );
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [titleWidget, CoconutLayout.spacing_50h, const _HeaderTitleErrorText(), CoconutLayout.spacing_150h],
+        return Padding(
+          padding: const EdgeInsets.only(top: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleWidget,
+              CoconutLayout.spacing_50h,
+              const _HeaderTitleErrorText(),
+              CoconutLayout.spacing_150h,
+            ],
+          ),
         );
       },
     );

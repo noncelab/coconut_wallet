@@ -212,13 +212,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             child: Container(
               padding: EdgeInsets.fromLTRB(
                 16,
-                _viewModel.hasUnexpectedError ? 88 : 16,
+                _viewModel.hasUnexpectedError ? 88 : 32,
                 16,
                 showMergeBottomButton ? (showMergeButtonSubText ? 160 : 132) : 16,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [_buildAnimatedHeader(), CoconutLayout.spacing_1000h, _buildVisibleOptionPickers(context)],
+                children: [_buildAnimatedHeader(), CoconutLayout.spacing_500h, _buildVisibleOptionPickers(context)],
               ),
             ),
           ),
@@ -264,17 +264,23 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   Widget _getMergeButtonSubTextWidget() {
     switch (_viewModel.mergeTransactionSummaryState) {
       case MergeTransactionSummaryState.invalidSelection:
-        return Text(
-          t.toast.merge_utxos_unavailable_description,
-          style: CoconutTypography.body3_12.setColor(CoconutColors.warningText),
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: Text(
+            t.toast.merge_utxos_unavailable_description,
+            style: CoconutTypography.body3_12.setColor(CoconutColors.warningText),
+          ),
         );
       case MergeTransactionSummaryState.ready:
         final ctaAssistData = _mergeCtaAssistData;
         if (ctaAssistData == null) return const SizedBox.shrink();
-        return Text(
-          ctaAssistData.message,
-          style: CoconutTypography.body3_12.setColor(ctaAssistData.color),
-          textAlign: TextAlign.center,
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: Text(
+            ctaAssistData.message,
+            style: CoconutTypography.body3_12.setColor(ctaAssistData.color),
+            textAlign: TextAlign.center,
+          ),
         );
       case MergeTransactionSummaryState.idle:
       case MergeTransactionSummaryState.preparing:
@@ -409,6 +415,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             const SizedBox(height: 12),
             _buildDustWarningRow(),
           ],
+          const SizedBox(height: 12),
         ],
       );
 
@@ -455,13 +462,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     final destinationText = _summaryCardDestinationText;
     final isPreparing = _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.preparing;
     final isReady = _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.ready;
+    final isFailed = _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.failed;
     final isInvalidSelection = _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.invalidSelection;
     final isSingleSelectionSummary = _viewModel.isSingleSelectionSummary;
 
     return Container(
       key: const ValueKey('merge-transaction-summary-card'),
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: CoconutColors.gray800,
         borderRadius: BorderRadius.circular(12),
@@ -471,14 +479,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 0),
             child: Lottie.asset(
               'assets/lottie/three-stars-growing.json',
               controller: _receiveAddressSummaryLottieController,
               onLoaded: (composition) {
                 _receiveAddressSummaryLottieController.duration = composition.duration;
                 if (_viewModel.displayedHeaderStep == UtxoMergeStep.selectReceiveAddress) {
-                  if (isReady || isSingleSelectionSummary) {
+                  if (isReady || isFailed || isSingleSelectionSummary) {
                     _receiveAddressSummaryLottieController.value = 1;
                   } else if (isPreparing && !_receiveAddressSummaryLottieController.isAnimating) {
                     _receiveAddressSummaryLottieController.repeat(
@@ -511,7 +519,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                 },
                 transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
                 child:
-                    isReady || isInvalidSelection
+                    isReady || isFailed || isInvalidSelection
                         ? isSingleSelectionSummary
                             ? (_currentMergeCriteria == UtxoMergeCriteria.sameTag ||
                                         _currentMergeCriteria == UtxoMergeCriteria.sameAddress
@@ -1069,7 +1077,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       });
       _receiveAddressSummaryLottieController
         ..stop()
-        ..value = txBuildResult.isSuccess ? 1 : 0;
+        ..value = 1;
       _syncEstimatedFeeTextToViewModel();
     } catch (e) {
       if (!mounted || nonce != _viewModel.mergeTransactionPreparationNonce) return;
@@ -1084,7 +1092,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       });
       _receiveAddressSummaryLottieController
         ..stop()
-        ..reset();
+        ..value = 1;
       _syncEstimatedFeeTextToViewModel();
     }
   }
