@@ -232,6 +232,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
           _viewModel.initialize(widget.selectedUtxoList);
+          if (widget.isSplitMode) {
+            _viewModel.changeUtxoOrder(UtxoOrder.byAmountDesc);
+          }
         }
 
         _updateOrderDropdownButtonPosition();
