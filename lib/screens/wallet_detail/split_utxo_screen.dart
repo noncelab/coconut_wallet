@@ -63,11 +63,44 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   bool _isUtxoSelectionBottomSheetOpen = false;
   bool _isCriteriaBottomSheetOpen = false;
 
+  /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
+  final Map<ManualSplitItem, GlobalKey<_ManualSplitListItemState>> _manualSplitItemKeys = {};
+  ManualSplitItem? _visibleDeleteButtonItem;
+
   @override
   void dispose() {
     _autoOpenUtxoPickerTimer?.cancel();
     _autoOpenCriteriaPickerTimer?.cancel();
     super.dispose();
+  }
+
+  /// -------------------------------------------------
+  /// manual input delete button 단일 노출 관리
+  /// -------------------------------------------------
+  GlobalKey<_ManualSplitListItemState> _getManualSplitItemKey(ManualSplitItem item) {
+    return _manualSplitItemKeys.putIfAbsent(item, () => GlobalKey<_ManualSplitListItemState>());
+  }
+
+  void _syncManualSplitItemKeys(List<ManualSplitItem> manualSplitItems) {
+    _manualSplitItemKeys.removeWhere((item, _) => !manualSplitItems.contains(item));
+
+    if (_visibleDeleteButtonItem != null && !manualSplitItems.contains(_visibleDeleteButtonItem)) {
+      _visibleDeleteButtonItem = null;
+    }
+  }
+
+  void _onManualSplitDeleteButtonVisibilityChanged(ManualSplitItem item, bool isVisible) {
+    if (isVisible) {
+      if (_visibleDeleteButtonItem != null && _visibleDeleteButtonItem != item) {
+        _manualSplitItemKeys[_visibleDeleteButtonItem]?.currentState?.setDeleteButtonVisible(false);
+      }
+      _visibleDeleteButtonItem = item;
+      return;
+    }
+
+    if (_visibleDeleteButtonItem == item) {
+      _visibleDeleteButtonItem = null;
+    }
   }
 
   @override
@@ -841,15 +874,20 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     return Selector<SplitUtxoViewModel, List<ManualSplitItem>>(
       selector: (_, vm) => List<ManualSplitItem>.of(vm.manualSplitItems),
       builder: (context, manualSplitItems, _) {
+        _syncManualSplitItemKeys(manualSplitItems);
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ...manualSplitItems.asMap().entries.map((entry) {
               return _ManualSplitListItem(
-                key: ObjectKey(entry.value),
+                key: _getManualSplitItemKey(entry.value),
                 index: entry.key,
                 item: entry.value,
                 viewModel: viewModel,
+                onDeleteButtonVisibilityChanged: (isVisible) {
+                  _onManualSplitDeleteButtonVisibilityChanged(entry.value, isVisible);
+                },
               );
             }),
             CoconutLayout.spacing_300h,
@@ -1209,7 +1247,7 @@ class _SplitResultReadyContent extends StatelessWidget {
                 Expanded(
                   child: Text(
                     splitOutputText ?? '-',
-                    style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                    style: CoconutTypography.body1_16.setColor(CoconutColors.white),
                     textAlign: TextAlign.right,
                   ),
                 ),
@@ -1223,7 +1261,7 @@ class _SplitResultReadyContent extends StatelessWidget {
                   t.split_utxo_screen.expected_result.fee,
                   style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                 ),
-                Text(previewFeeText, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+                Text(previewFeeText, style: CoconutTypography.body1_16.setColor(CoconutColors.white)),
               ],
             ),
           ],
@@ -1338,8 +1376,15 @@ class _ManualSplitListItem extends StatefulWidget {
   final int index;
   final ManualSplitItem item;
   final SplitUtxoViewModel viewModel;
+  final ValueChanged<bool> onDeleteButtonVisibilityChanged;
 
-  const _ManualSplitListItem({super.key, required this.index, required this.item, required this.viewModel});
+  const _ManualSplitListItem({
+    super.key,
+    required this.index,
+    required this.item,
+    required this.viewModel,
+    required this.onDeleteButtonVisibilityChanged,
+  });
 
   @override
   State<_ManualSplitListItem> createState() => _ManualSplitListItemState();
@@ -1351,6 +1396,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
   late AnimationController _deleteController;
   final double _actionWidth = 60.0;
   bool _isDeleting = false;
+  bool _isDeleteButtonVisible = false;
 
   @override
   void initState() {
@@ -1361,11 +1407,35 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
     _entranceController.forward();
   }
 
+  void setDeleteButtonVisible(bool isVisible) {
+    if (_isDeleteButtonVisible == isVisible) return;
+
+    setState(() {
+      _isDeleteButtonVisible = isVisible;
+    });
+    widget.onDeleteButtonVisibilityChanged(isVisible);
+
+    if (!isVisible) {
+      widget.item.amountFocusNode.unfocus();
+      widget.item.countFocusNode.unfocus();
+      _swipeController.reverse();
+      return;
+    }
+
+    widget.item.amountFocusNode.unfocus();
+    widget.item.countFocusNode.unfocus();
+    _swipeController.forward();
+  }
+
   @override
   void didUpdateWidget(covariant _ManualSplitListItem oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (widget.viewModel.manualSplitItems.length <= 1 && _swipeController.value > 0) {
+      if (_isDeleteButtonVisible) {
+        widget.onDeleteButtonVisibilityChanged(false);
+        _isDeleteButtonVisible = false;
+      }
       _swipeController.reverse();
     }
   }
@@ -1380,6 +1450,11 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
 
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (widget.viewModel.manualSplitItems.length <= 1 || _isDeleting) return;
+
+    if (!_isDeleteButtonVisible) {
+      setDeleteButtonVisible(true);
+    }
+
     _swipeController.value -= details.primaryDelta! / _actionWidth;
   }
 
@@ -1426,8 +1501,10 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                         color: CoconutColors.black,
                         child: Row(
                           children: [
+                            /// 금액 입력란
                             Expanded(
                               child: CoconutTextField(
+                                enabled: !_isDeleteButtonVisible,
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
                                 style: CoconutTextFieldStyle.underline,
@@ -1454,8 +1531,13 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                               ),
                             ),
                             CoconutLayout.spacing_300w,
+
+                            /// - 버튼
                             RippleEffect(
-                              onTap: () => widget.viewModel.decrementManualSplitCount(widget.index),
+                              onTap: () {
+                                if (_isDeleteButtonVisible) return;
+                                widget.viewModel.decrementManualSplitCount(widget.index);
+                              },
                               borderRadius: 24,
                               child: Container(
                                 width: 32,
@@ -1469,9 +1551,12 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                               ),
                             ),
                             CoconutLayout.spacing_300w,
+
+                            /// 개수 입력란
                             SizedBox(
                               width: 50,
                               child: CoconutTextField(
+                                enabled: !_isDeleteButtonVisible,
                                 controller: widget.item.countController,
                                 focusNode: widget.item.countFocusNode,
                                 textAlign: TextAlign.center,
@@ -1493,8 +1578,13 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                               ),
                             ),
                             CoconutLayout.spacing_300w,
+
+                            /// + 버튼
                             RippleEffect(
-                              onTap: () => widget.viewModel.incrementManualSplitCount(widget.index),
+                              onTap: () {
+                                if (_isDeleteButtonVisible) return;
+                                widget.viewModel.incrementManualSplitCount(widget.index);
+                              },
                               borderRadius: 24,
                               child: Container(
                                 width: 32,
@@ -1527,36 +1617,42 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               CoconutLayout.spacing_300w,
-                              RippleEffect(
-                                onTap: () async {
-                                  if (_isDeleting) return;
-                                  setState(() => _isDeleting = true);
-
-                                  await _deleteController.forward();
-                                  if (!mounted) return;
-
-                                  await _entranceController.reverse();
-                                  if (!mounted) return;
-
-                                  final currentIndex = widget.viewModel.manualSplitItems.indexOf(widget.item);
-                                  if (currentIndex != -1) {
-                                    widget.viewModel.removeManualSplitItem(currentIndex);
-                                  }
+                              TapRegion(
+                                onTapOutside: (_) {
+                                  if (!_isDeleteButtonVisible || _isDeleting) return;
+                                  setDeleteButtonVisible(false);
                                 },
-                                borderRadius: 12,
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: CoconutColors.hotPink,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: SvgPicture.asset(
-                                    'assets/svg/trash.svg',
-                                    width: 20,
-                                    height: 20,
-                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                child: RippleEffect(
+                                  onTap: () async {
+                                    if (_isDeleting) return;
+                                    setState(() => _isDeleting = true);
+
+                                    await _deleteController.forward();
+                                    if (!mounted) return;
+
+                                    await _entranceController.reverse();
+                                    if (!mounted) return;
+
+                                    final currentIndex = widget.viewModel.manualSplitItems.indexOf(widget.item);
+                                    if (currentIndex != -1) {
+                                      widget.viewModel.removeManualSplitItem(currentIndex);
+                                    }
+                                  },
+                                  borderRadius: 12,
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: CoconutColors.hotPink,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: SvgPicture.asset(
+                                      'assets/svg/trash.svg',
+                                      width: 20,
+                                      height: 20,
+                                      colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                    ),
                                   ),
                                 ),
                               ),
