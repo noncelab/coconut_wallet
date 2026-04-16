@@ -18,7 +18,6 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
-import 'package:coconut_wallet/services/fee_service.dart';
 import 'package:coconut_wallet/screens/common/tag_select_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
@@ -35,6 +34,7 @@ import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.d
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -233,10 +233,11 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               switchInCurve: Curves.easeOut,
               switchOutCurve: Curves.easeIn,
               transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-              child:
-                  _viewModel.unexpectedErrorMessage.isNotEmpty
-                      ? _buildUnexpectedErrorTooltip(_viewModel.unexpectedErrorMessage)
-                      : const SizedBox.shrink(key: ValueKey('merge-transaction-summary-error-empty')),
+              child: ErrorTooltip(
+                key: const ValueKey('unexpected-error-tooltip'),
+                isShown: _viewModel.unexpectedErrorMessage.isNotEmpty,
+                errorMessage: '${t.errors.unexpected}\n${_viewModel.unexpectedErrorMessage}',
+              ),
             ),
           ),
           if (showMergeBottomButton)
@@ -602,31 +603,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildUnexpectedErrorTooltip(String errorMessage) {
-    // final rawErrorMessage = _viewModel.preparedMergeTransactionBuildResult?.exception?.toString();
-    // final errorMessage =
-    //     rawErrorMessage == null || rawErrorMessage.isEmpty
-    //         ? t.merge_utxos_screen.transaction_build_error
-    //         : t.merge_utxos_screen.transaction_build_error_with_message(error_msg: rawErrorMessage);
-
-    return SizedBox(
-      key: const ValueKey('merge-transaction-summary-error-tooltip'),
-      width: double.infinity,
-      child: CoconutToolTip(
-        tooltipType: CoconutTooltipType.fixed,
-        tooltipState: CoconutTooltipState.error,
-        showIcon: true,
-        icon: SvgPicture.asset(
-          'assets/svg/triangle-warning.svg',
-          colorFilter: const ColorFilter.mode(CoconutColors.hotPink, BlendMode.srcIn),
-        ),
-        richText: RichText(
-          text: TextSpan(text: errorMessage, style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
-        ),
       ),
     );
   }

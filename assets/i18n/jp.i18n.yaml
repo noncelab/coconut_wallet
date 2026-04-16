@@ -822,8 +822,6 @@ merge_utxos_screen:
   merge_cta_discouraged_costly: "まとめるコストが節約できる手数料より大きいです"
   exception:
     fee_too_high: "手数料が高すぎます"
-  transaction_build_error: "予期しないエラーが発生しました。"
-  transaction_build_error_with_message: "予期しないエラーが発生しました。\n${error_msg}"
 
 split_utxo_screen:
   title: "UTXOを分割"
@@ -973,6 +971,7 @@ errors:
   transaction_draft:
     invalid_id: 一時保存された情報が見つかりません。
   empty_input: "トランザクション入力情報を取得できません。メンポールを確認してください。"
+  unexpected: "予期しないエラーが発生しました。"
 
 text_field:
   enter_fee_with_two_decimal_places: "小数点以下2桁まで入力可能（sat/vB）"

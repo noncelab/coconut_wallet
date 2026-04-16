@@ -821,8 +821,6 @@ merge_utxos_screen:
   merge_cta_discouraged_costly: "The consolidation cost is higher than the fees you would save"
   exception:
     fee_too_high: "The fee is too high"
-  transaction_build_error: "An unexpected error occurred."
-  transaction_build_error_with_message: "An unexpected error occurred.\n${error_msg}"
 
 split_utxo_screen:
   title: "Split UTXO"
@@ -972,6 +970,7 @@ errors:
   transaction_draft:
     invalid_id: "Cannot find transaction draft"
   empty_input: "Could not fetch transaction inputs. Please check mempool."
+  unexpected: "An unexpected error occurred."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
