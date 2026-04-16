@@ -271,7 +271,7 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
-  self: "手動追加"
+  self: "ウォレット情報を入力"
   self_description: "他のアプリの情報でウォレットを追加できます。"
   select: "選択"
   guide_vault: "Coconut Vaultのホーム画面で、「ウォッチオンリーウォレットにエクスポート → ウォレット選択」 または 「ウォレット選択 → ウォレットエクスポート → ウォッチオンリーウォレットにエクスポート」 に進み、QRコードをスキャンしてください。"
@@ -473,9 +473,7 @@ send_address_screen:
   amount_placeholder: "送信金額を入力してください"
 send_confirm_screen:
   title: "取引情報の確認"
-  total_cost:
-    total: "合計$n"
-    sentence: "が必要です"
+  total_required_amount: "合計$nが必要です"
   output_detail_title: "出力詳細を見る"
   flow_input_title: "入力 #$index"
   flow_output_title: "出力 #$index"

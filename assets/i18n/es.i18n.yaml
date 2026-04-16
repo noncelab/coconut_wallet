@@ -272,8 +272,8 @@ wallet_add_scanner_screen:
   seed_signer: "SeedSigner"
   cold_card: "Coldcard"
   krux: "Krux"
-  self: "Añadir manualmente"
-  self_description: "Puedes añadir una billetera con información de otra app."
+  self: "Ingresar datos de wallet"
+  self_description: "Agrega una wallet watch-only desde otra app."
   select: "Seleccionar"
   guide_vault: "En la pantalla principal de Coconut Vault, ve a: 'Exportar a billetera de solo lectura → Seleccionar billetera' o 'Seleccionar billetera → Exportar billetera → Exportar a billetera de solo lectura'. Luego escanea el código QR."  
   guide_seedsigner:
@@ -475,9 +475,7 @@ send_address_screen:
   amount_placeholder: "Ingrese la cantidad para enviar"
 send_confirm_screen:
   title: "Detalles de la transacción"
-  total_cost:
-    total: "El total de $n"
-    sentence: " es necesario."
+  total_required_amount: "Se requiere un total de $n."
   output_detail_title: "Detalles de salida"
   flow_input_title: "Entrada #$index"
   flow_output_title: "Salida #$index"
