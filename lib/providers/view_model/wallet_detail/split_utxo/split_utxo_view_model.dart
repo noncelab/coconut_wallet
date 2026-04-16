@@ -117,7 +117,10 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   bool get showSkeletonResultBox => _isCalculating || _activeBuildTask != null;
   bool get showSplitResultBox =>
-      shouldShowFeePicker && hasFeeRate && (showSkeletonResultBox || _splitResult != null || usePreview);
+      shouldShowFeePicker &&
+      hasFeeRate &&
+      (showSkeletonResultBox || _splitResult != null || usePreview) &&
+      headerTitleErrorMessage == null;
 
   List<double> get recommendedSplitAmounts {
     if (_selectedUtxoAmount <= 0) return [];
@@ -580,8 +583,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   void _resetManualSplitItems() {
     for (final item in manualSplitItems) {
-      item.amountController.removeListener(_onInputChanged);
-      item.countController.removeListener(_onInputChanged);
       item.amountFocusNode.removeListener(notifyListeners);
       item.countFocusNode.removeListener(notifyListeners);
       item.dispose();
@@ -754,8 +755,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   /// -------------------------------------------------
   void addManualSplitItem() {
     final item = ManualSplitItem();
-    item.amountController.addListener(_onInputChanged);
-    item.countController.addListener(_onInputChanged);
+    item.setupListeners(_onInputChanged);
     item.amountFocusNode.addListener(notifyListeners);
     item.countFocusNode.addListener(notifyListeners);
     manualSplitItems.add(item);
@@ -765,8 +765,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   void removeManualSplitItem(int index) {
     if (manualSplitItems.length > 1) {
       final item = manualSplitItems.removeAt(index);
-      item.amountController.removeListener(_onInputChanged);
-      item.countController.removeListener(_onInputChanged);
       item.amountFocusNode.removeListener(notifyListeners);
       item.countFocusNode.removeListener(notifyListeners);
       item.dispose();
@@ -869,7 +867,40 @@ class ManualSplitItem {
   final TextEditingController countController = TextEditingController(text: '0');
   final FocusNode countFocusNode = FocusNode();
 
+  String _lastAmountText = '';
+  String _lastCountText = '0';
+  VoidCallback? _amountListener;
+  VoidCallback? _countListener;
+
+  void setupListeners(VoidCallback onInputChanged) {
+    _amountListener = () {
+      if (_lastAmountText != amountController.text) {
+        _lastAmountText = amountController.text;
+        onInputChanged();
+      }
+    };
+    amountController.addListener(_amountListener!);
+
+    _countListener = () {
+      if (_lastCountText != countController.text) {
+        _lastCountText = countController.text;
+        onInputChanged();
+      }
+    };
+    countController.addListener(_countListener!);
+  }
+
+  void teardownListeners() {
+    if (_amountListener != null) {
+      amountController.removeListener(_amountListener!);
+    }
+    if (_countListener != null) {
+      countController.removeListener(_countListener!);
+    }
+  }
+
   void dispose() {
+    teardownListeners();
     amountController.dispose();
     amountFocusNode.dispose();
     countController.dispose();
