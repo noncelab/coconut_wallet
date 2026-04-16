@@ -1522,7 +1522,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 textInputType: const TextInputType.numberWithOptions(decimal: true),
                                 placeholderText: t.split_utxo_screen.placeholder_split_amount,
                                 maxLines: 1,
-                                padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 4),
+                                padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 8),
                                 unfocusOnTapOutside: true,
                                 suffix: Padding(
                                   padding: const EdgeInsets.only(top: 2),
@@ -1533,7 +1533,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 ),
                               ),
                             ),
-                            CoconutLayout.spacing_150w,
+                            CoconutLayout.spacing_200w,
 
                             /// - 버튼
                             RippleEffect(
