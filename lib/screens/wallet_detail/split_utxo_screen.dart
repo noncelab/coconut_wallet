@@ -333,11 +333,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         final showSplitResultBox = data.item1;
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
           transitionBuilder: (child, animation) {
-            return FadeTransition(
-              opacity: animation,
-              child: SizeTransition(sizeFactor: animation, axisAlignment: -1.0, child: child),
-            );
+            return FadeTransition(opacity: animation, child: child);
           },
           child:
               showSplitResultBox
@@ -943,7 +942,7 @@ class _HeaderTitleErrorText extends StatelessWidget {
   }
 }
 
-class _SplitResultContent extends StatelessWidget {
+class _SplitResultContent extends StatefulWidget {
   final bool showSkeletonResultBox;
   final bool usePreview;
   final UtxoSplitResult? splitResult;
@@ -956,23 +955,133 @@ class _SplitResultContent extends StatelessWidget {
   });
 
   @override
+  State<_SplitResultContent> createState() => _SplitResultContentState();
+}
+
+class _SplitResultContentState extends State<_SplitResultContent> with SingleTickerProviderStateMixin {
+  late final AnimationController _lottieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _lottieController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+  }
+
+  @override
+  void didUpdateWidget(covariant _SplitResultContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final isPreparing = widget.showSkeletonResultBox;
+    final isReady = widget.splitResult != null || widget.usePreview;
+    final isDone = isReady && !isPreparing;
+
+    if (isDone) {
+      _lottieController.stop();
+      _lottieController.value = 1;
+    } else if (isPreparing && !_lottieController.isAnimating) {
+      _lottieController.repeat(period: _lottieController.duration ?? const Duration(seconds: 1));
+    } else if (!isPreparing && !isReady) {
+      _lottieController.stop();
+      _lottieController.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _lottieController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (showSkeletonResultBox) {
-      return const SplitResultSkeletonBox();
+    final isPreparing = widget.showSkeletonResultBox;
+    final isReady = widget.splitResult != null || widget.usePreview;
+    final isDone = isReady && !isPreparing;
+
+    if (!isPreparing && !isReady) {
+      return const SizedBox.shrink();
     }
 
-    if (splitResult != null || usePreview) {
-      return const SplitResultBox(isPreviewResult: false);
-    }
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: CoconutColors.gray800,
+              border: Border.all(color: CoconutColors.gray600),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Lottie.asset(
+                  'assets/lottie/three-stars-growing.json',
+                  controller: _lottieController,
+                  onLoaded: (composition) {
+                    _lottieController.duration = composition.duration;
+                    if (isDone) {
+                      _lottieController.value = 1;
+                    } else if (isPreparing && !_lottieController.isAnimating) {
+                      _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
+                    } else if (!isPreparing) {
+                      _lottieController.reset();
+                    }
+                  },
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                  repeat: false,
+                ),
 
-    return const SizedBox.shrink();
+                const SizedBox(width: 4),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 260),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    layoutBuilder: (currentChild, previousChildren) {
+                      return Stack(
+                        alignment: Alignment.topLeft,
+                        children: [...previousChildren, if (currentChild != null) currentChild],
+                      );
+                    },
+                    transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                    child:
+                        isDone
+                            ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
+                            : const _SplitResultSkeletonContent(key: ValueKey('split-skeleton')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Visibility(
+            visible: widget.usePreview || widget.showSkeletonResultBox,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CoconutLayout.spacing_200h,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    t.split_utxo_screen.expected_result.above_is_expected,
+                    style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class SplitResultBox extends StatelessWidget {
-  final bool isPreviewResult;
-
-  const SplitResultBox({super.key, required this.isPreviewResult});
+class _SplitResultReadyContent extends StatelessWidget {
+  const _SplitResultReadyContent({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -982,98 +1091,49 @@ class SplitResultBox extends StatelessWidget {
         final splitSummaryTitle = data.item1;
         final splitOutputText = data.item2;
         final previewFeeText = data.item3;
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: CoconutColors.gray800,
-                  border: Border.all(color: CoconutColors.gray600),
-                  borderRadius: BorderRadius.circular(8),
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+            CoconutLayout.spacing_200h,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  t.split_utxo_screen.expected_result.new_utxos,
+                  style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2.0),
-                      child: SvgPicture.asset(
-                        'assets/svg/split-utxo.svg',
-                        width: 16,
-                        height: 16,
-                        colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(splitSummaryTitle, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
-                          CoconutLayout.spacing_200h,
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.split_utxo_screen.expected_result.new_utxos,
-                                style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                              ),
-                              Text(
-                                splitOutputText ?? '-',
-                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                                textAlign: TextAlign.right,
-                              ),
-                            ],
-                          ),
-                          CoconutLayout.spacing_100h,
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                t.split_utxo_screen.expected_result.fee,
-                                style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                              ),
-                              Text(
-                                previewFeeText,
-                                style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                Expanded(
+                  child: Text(
+                    splitOutputText ?? '-',
+                    style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
-              ),
-              Visibility(
-                visible: isPreviewResult,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    CoconutLayout.spacing_200h,
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        t.split_utxo_screen.expected_result.above_is_expected,
-                        style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
-                      ),
-                    ),
-                  ],
+              ],
+            ),
+            CoconutLayout.spacing_100h,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  t.split_utxo_screen.expected_result.fee,
+                  style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
                 ),
-              ),
-            ],
-          ),
+                Text(previewFeeText, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
+              ],
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class SplitResultSkeletonBox extends StatelessWidget {
-  const SplitResultSkeletonBox({super.key});
+class _SplitResultSkeletonContent extends StatelessWidget {
+  const _SplitResultSkeletonContent({super.key});
 
   Widget _buildSkeletonBar({required double width, double height = 16}) {
     return Shimmer.fromColors(
@@ -1092,81 +1152,41 @@ class SplitResultSkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            decoration: BoxDecoration(
-              color: CoconutColors.gray800,
-              border: Border.all(color: CoconutColors.gray600),
-              borderRadius: BorderRadius.circular(8),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSkeletonBar(width: double.infinity, height: 22),
+        CoconutLayout.spacing_200h,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t.split_utxo_screen.expected_result.new_utxos,
+              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Lottie.asset(
-                    'assets/lottie/three-stars-growing.json',
-                    width: 18,
-                    height: 18,
-                    fit: BoxFit.fill,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSkeletonBar(width: double.infinity, height: 22),
-                      CoconutLayout.spacing_200h,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t.split_utxo_screen.expected_result.new_utxos,
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                          ),
-                          Column(
-                            children: [
-                              _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
-                              CoconutLayout.spacing_100h,
-                              _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
-                            ],
-                          ),
-                        ],
-                      ),
-                      CoconutLayout.spacing_100h,
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            t.split_utxo_screen.expected_result.fee,
-                            style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
-                          ),
-                          _buildSkeletonBar(width: 92, height: 22),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
+                CoconutLayout.spacing_100h,
+                _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
               ],
             ),
-          ),
-          CoconutLayout.spacing_200h,
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              t.split_utxo_screen.expected_result.above_is_expected,
-              style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+          ],
+        ),
+        CoconutLayout.spacing_100h,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              t.split_utxo_screen.expected_result.fee,
+              style: CoconutTypography.body2_14.setColor(CoconutColors.gray400),
             ),
-          ),
-        ],
-      ),
+            _buildSkeletonBar(width: 92, height: 22),
+          ],
+        ),
+      ],
     );
   }
 }
