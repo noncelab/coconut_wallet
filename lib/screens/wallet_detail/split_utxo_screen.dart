@@ -320,7 +320,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [titleWidget, CoconutLayout.spacing_50h, const _HeaderTitleErrorText(), CoconutLayout.spacing_200h],
+          children: [titleWidget, CoconutLayout.spacing_50h, const _HeaderTitleErrorText(), CoconutLayout.spacing_150h],
         );
       },
     );
@@ -631,14 +631,20 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                           onTap: () => viewModel.onRecommendedAmountTapped(btc),
                           borderRadius: 8,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                             decoration: BoxDecoration(
                               border: Border.all(color: CoconutColors.gray700),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            child: Text(
-                              currentUnit.displayBitcoinAmount(sats, withUnit: true),
-                              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                            width: 47,
+                            height: 24,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                currentUnit.displayBitcoinAmount(sats, withUnit: false),
+                                style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                              ),
                             ),
                           ),
                         );
@@ -824,13 +830,13 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     borderRadius: 8,
                     child: Container(
                       alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                       decoration: BoxDecoration(
                         border: Border.all(color: CoconutColors.gray700),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      width: 50,
-                      height: 25,
+                      width: 47,
+                      height: 24,
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text('$count', style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
