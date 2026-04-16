@@ -279,8 +279,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         if (finalErrorMessage.isEmpty) {
           return const SizedBox.shrink();
         }
-
-        return ErrorTooltip(isShown: true, errorMessage: finalErrorMessage);
+        final message = "${t.errors.unexpected}\n$finalErrorMessage";
+        return ErrorTooltip(isShown: true, errorMessage: message);
       },
     );
   }

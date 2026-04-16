@@ -824,8 +824,6 @@ merge_utxos_screen:
   merge_cta_discouraged_costly: "El costo de consolidar es mayor que las comisiones que ahorrarías"
   exception:
     fee_too_high: "La comisión es demasiado alta"
-  transaction_build_error: "Ocurrió un error inesperado."
-  transaction_build_error_with_message: "Ocurrió un error inesperado.\n${error_msg}"
 
 split_utxo_screen:
   title: "Dividir UTXO"
@@ -848,7 +846,7 @@ split_utxo_screen:
     insufficient_after_fee: "No es posible dividir este importe al incluir la comisión"
     manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
-  dust_error: "Dividir con esta cantidad generará montos pequeños (dust)"
+  dust_error: "Al dividir, se generará una pequeña cantidad (dust)"
   criteria_bottom_sheet:
     title: "Seleccionar criterio de división"
     split_by_amount: "Dividir por monto fijo"
@@ -975,6 +973,7 @@ errors:
   empty_input: "No se pueden obtener entradas. Por favor, verifique el mempool."
   transaction_draft:
     invalid_id: "No se pueden encontrar los datos del borrador de transacción"
+  unexpected: "Ocurrió un error inesperado."
   
 text_field:
   enter_fee_with_two_decimal_places: "Hasta dos decimales permitidos (sat/vB)"
