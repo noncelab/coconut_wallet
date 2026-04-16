@@ -5,6 +5,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -252,7 +253,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                   isActive:
                       _viewModel.mergeTransactionSummaryState == MergeTransactionSummaryState.ready &&
                       _viewModel.selectedUtxoCount >= 2,
-                  text: t.merge_utxos_screen.merge_action,
+                  text: t.organize,
                   backgroundColor: CoconutColors.white,
                   subWidget: _getMergeButtonSubTextWidget(),
                 ),
@@ -273,7 +274,11 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       case MergeTransactionSummaryState.ready:
         final ctaAssistData = _mergeCtaAssistData;
         if (ctaAssistData == null) return const SizedBox.shrink();
-        return Text(ctaAssistData.message, style: CoconutTypography.body3_12.setColor(ctaAssistData.color));
+        return Text(
+          ctaAssistData.message,
+          style: CoconutTypography.body3_12.setColor(ctaAssistData.color),
+          textAlign: TextAlign.center,
+        );
       case MergeTransactionSummaryState.idle:
       case MergeTransactionSummaryState.preparing:
       case MergeTransactionSummaryState.failed:

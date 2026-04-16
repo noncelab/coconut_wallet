@@ -815,7 +815,6 @@ merge_utxos_screen:
   count:
     one: "${count}個"
     other: "${count}個"
-  merge_action: "まとめる"
   selected_tag_title: "#${name}タグ"
   reused_address: "重複アドレス"
   dust_warning: "dust攻撃が疑われるUTXOが含まれています"

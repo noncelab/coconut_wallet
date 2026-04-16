@@ -819,7 +819,6 @@ merge_utxos_screen:
   count: 
     one: "${count}개"
     other: "${count}개"
-  merge_action: "정리하기"
   selected_tag_title: "#${name} 태그"
   reused_address: "중복 주소"
   dust_warning: "dust 공격으로 의심되는 UTXO가 포함되어 있어요"

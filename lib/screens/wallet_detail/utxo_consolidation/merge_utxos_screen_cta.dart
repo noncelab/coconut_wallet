@@ -59,7 +59,7 @@ extension _MergeUtxosScreenCtaExtension on _MergeUtxosScreenState {
     }
 
     textColor = CoconutColors.white;
-    final savingAmountText = savingAmount % 1 == 0 ? savingAmount.toInt() : savingAmount;
+    final savingAmountText = savingAmount.round().toThousandsSeparatedString();
 
     return _MergeCtaAssistData(
       message: t.merge_utxos_screen.future_fee_saving(amount: savingAmountText),

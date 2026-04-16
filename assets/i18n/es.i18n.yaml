@@ -817,7 +817,6 @@ merge_utxos_screen:
   count:
     one: "${count} UTXO"
     other: "${count} UTXOs"
-  merge_action: "Fusionar"
   selected_tag_title: "Etiqueta #${name}"
   reused_address: "Dirección reutilizada"
   dust_warning: "Se incluyen UTXOs sospechosos de ataque dust"

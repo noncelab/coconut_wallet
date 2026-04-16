@@ -814,7 +814,6 @@ merge_utxos_screen:
   count:
     one: "${count} UTXO"
     other: "${count} UTXOs"
-  merge_action: "Consolidate"
   selected_tag_title: "#${name} Tag"
   reused_address: "Reused Address"
   dust_warning: "UTXOs suspected of a dust attack are included"
