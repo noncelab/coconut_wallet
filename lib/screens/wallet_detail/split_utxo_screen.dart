@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
@@ -41,6 +42,8 @@ class SplitUtxoScreen extends StatefulWidget {
 
 class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
+  static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
+  static const Duration _autoOpenUtxoBottomSheetDelay = Duration(milliseconds: 850);
   String? _displayedHeaderTitle;
   String? _pendingHeaderTitle;
   String? _lastObservedHeaderTitle;
@@ -53,9 +56,17 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   SplitStep? _lastObservedPickerStep;
   int _pickerAnimationNonce = 0;
   final List<SplitStep> _visiblePickerSteps = [];
+  Timer? _autoOpenUtxoPickerTimer;
+  Timer? _autoOpenCriteriaPickerTimer;
+  bool _hasAutoOpenedUtxoPicker = false;
+  bool _hasAutoOpenedCriteriaPicker = false;
+  bool _isUtxoSelectionBottomSheetOpen = false;
+  bool _isCriteriaBottomSheetOpen = false;
 
   @override
   void dispose() {
+    _autoOpenUtxoPickerTimer?.cancel();
+    _autoOpenCriteriaPickerTimer?.cancel();
     super.dispose();
   }
 
@@ -155,19 +166,22 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     });
   }
 
-  void _scheduleOptionPickerAnimation(SplitStep step) {
+  void _scheduleOptionPickerAnimation(SplitStep step, SplitUtxoViewModel viewModel) {
     if (_lastObservedPickerStep == step) return;
     _lastObservedPickerStep = step;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncOptionPickerAnimation(step);
+      _syncOptionPickerAnimation(step, viewModel);
     });
   }
 
-  void _syncOptionPickerAnimation(SplitStep step) {
+  void _syncOptionPickerAnimation(SplitStep step, SplitUtxoViewModel viewModel) {
     _pendingPickerStep = step;
     final nextVisibleSteps = _visiblePickerStepsFor(step);
+
+    _autoOpenUtxoPickerTimer?.cancel();
+    _autoOpenCriteriaPickerTimer?.cancel();
 
     if (_displayedPickerStep == null) {
       setState(() {
@@ -175,6 +189,9 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         _visiblePickerSteps.clear();
         _visiblePickerSteps.addAll(nextVisibleSteps);
       });
+      if (step == SplitStep.selectUtxo) {
+        _scheduleAutoOpenUtxoSelectionBottomSheet(viewModel);
+      }
       return;
     }
 
@@ -188,6 +205,9 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       _visiblePickerSteps.clear();
       _visiblePickerSteps.addAll(nextVisibleSteps);
     });
+    if (step == SplitStep.selectCriteria) {
+      _scheduleAutoOpenCriteriaBottomSheet(viewModel);
+    }
   }
 
   List<SplitStep> _visiblePickerStepsFor(SplitStep step) {
@@ -226,7 +246,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             return picker.slideUpAnimation(
               key: ValueKey('split-picker-in-${step.name}-$_pickerAnimationNonce'),
               duration: _pickerAnimationDuration,
-              delay: const Duration(milliseconds: 1500),
+              delay: _newestPickerRevealDelay,
               offset: const Offset(0, 24),
             );
           }
@@ -289,6 +309,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     return Selector<SplitUtxoViewModel, Tuple3<List<UtxoState>, SplitCriteria?, String?>>(
       selector: (_, vm) => Tuple3(vm.selectedUtxoList, vm.selectedCriteria, vm.headerTitleErrorMessage),
       builder: (context, data, _) {
+        final viewModel = context.read<SplitUtxoViewModel>();
         final nextTitle = _getHeaderTitle(t, data.item1, data.item2);
         _scheduleHeaderAnimation(nextTitle);
 
@@ -296,7 +317,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             data.item1.isEmpty
                 ? SplitStep.selectUtxo
                 : (data.item2 == null ? SplitStep.selectCriteria : SplitStep.enterDetails);
-        _scheduleOptionPickerAnimation(currentStep);
+        _scheduleOptionPickerAnimation(currentStep, viewModel);
 
         final titleToDisplay = _displayedHeaderTitle ?? nextTitle;
 
@@ -491,6 +512,62 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         );
       },
     );
+  }
+
+  void _scheduleAutoOpenUtxoSelectionBottomSheet(SplitUtxoViewModel viewModel) {
+    if (viewModel.isUtxoSelected ||
+        _displayedPickerStep != SplitStep.selectUtxo ||
+        _hasAutoOpenedUtxoPicker ||
+        _isUtxoSelectionBottomSheetOpen) {
+      _autoOpenUtxoPickerTimer?.cancel();
+      return;
+    }
+
+    if (_autoOpenUtxoPickerTimer?.isActive ?? false) {
+      return;
+    }
+
+    _autoOpenUtxoPickerTimer = Timer(_newestPickerRevealDelay + _autoOpenUtxoBottomSheetDelay, () {
+      if (!mounted ||
+          _displayedPickerStep != SplitStep.selectUtxo ||
+          _hasAutoOpenedUtxoPicker ||
+          _isUtxoSelectionBottomSheetOpen ||
+          viewModel.isUtxoSelected) {
+        return;
+      }
+
+      _hasAutoOpenedUtxoPicker = true;
+      _showUtxoSelectionBottomSheet(context, viewModel);
+    });
+  }
+
+  void _scheduleAutoOpenCriteriaBottomSheet(SplitUtxoViewModel viewModel) {
+    if (!viewModel.isUtxoSelected ||
+        viewModel.selectedCriteria != null ||
+        _displayedPickerStep != SplitStep.selectCriteria ||
+        _hasAutoOpenedCriteriaPicker ||
+        _isCriteriaBottomSheetOpen) {
+      _autoOpenCriteriaPickerTimer?.cancel();
+      return;
+    }
+
+    if (_autoOpenCriteriaPickerTimer?.isActive ?? false) {
+      return;
+    }
+
+    _autoOpenCriteriaPickerTimer = Timer(_newestPickerRevealDelay + _autoOpenUtxoBottomSheetDelay, () {
+      if (!mounted ||
+          !viewModel.isUtxoSelected ||
+          viewModel.selectedCriteria != null ||
+          _displayedPickerStep != SplitStep.selectCriteria ||
+          _hasAutoOpenedCriteriaPicker ||
+          _isCriteriaBottomSheetOpen) {
+        return;
+      }
+
+      _hasAutoOpenedCriteriaPicker = true;
+      _showSplitCriteriaBottomSheet(context, viewModel);
+    });
   }
 
   Widget _buildFeePicker(BuildContext context) {
@@ -851,27 +928,41 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   void _showUtxoSelectionBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
-    final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
-      context: context,
-      minChildSize: 0.6,
-      maxChildSize: 0.9,
-      initialChildSize: 0.6,
-      childBuilder:
-          (scrollController) => UtxoSelectionScreen(
-            selectedUtxoList: viewModel.selectedUtxoList,
-            walletId: widget.id,
-            currentUnit: viewModel.currentUnit,
-            scrollController: scrollController,
-            isSplitMode: true,
-          ),
-    );
+    if (_isUtxoSelectionBottomSheetOpen) return;
 
-    if (result != null && context.mounted) {
-      viewModel.setSelectedUtxoList(result);
+    _autoOpenUtxoPickerTimer?.cancel();
+    _isUtxoSelectionBottomSheetOpen = true;
+
+    try {
+      final result = await CommonBottomSheets.showDraggableBottomSheet<List<UtxoState>>(
+        context: context,
+        minChildSize: 0.6,
+        maxChildSize: 0.9,
+        initialChildSize: 0.6,
+        childBuilder:
+            (scrollController) => UtxoSelectionScreen(
+              selectedUtxoList: viewModel.selectedUtxoList,
+              walletId: widget.id,
+              currentUnit: viewModel.currentUnit,
+              scrollController: scrollController,
+              isSplitMode: true,
+            ),
+      );
+
+      if (result != null && context.mounted) {
+        viewModel.setSelectedUtxoList(result);
+      }
+    } finally {
+      _isUtxoSelectionBottomSheetOpen = false;
     }
   }
 
   void _showSplitCriteriaBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
+    if (_isCriteriaBottomSheetOpen) return;
+
+    _autoOpenCriteriaPickerTimer?.cancel();
+    _isCriteriaBottomSheetOpen = true;
+
     final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<SplitCriteria>(
       context: context,
       title: t.split_utxo_screen.criteria_bottom_sheet.title,
@@ -895,8 +986,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       },
     );
 
-    if (selectedItem != null && context.mounted) {
-      viewModel.setSelectedCriteria(selectedItem);
+    try {
+      if (selectedItem != null && context.mounted) {
+        viewModel.setSelectedCriteria(selectedItem);
+      }
+    } finally {
+      _isCriteriaBottomSheetOpen = false;
     }
   }
 
