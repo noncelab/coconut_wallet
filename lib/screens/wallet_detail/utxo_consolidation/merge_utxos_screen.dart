@@ -66,6 +66,8 @@ class MergeUtxosScreen extends StatefulWidget {
 class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerProviderStateMixin {
   static const Duration _headerAnimationDuration = Duration(milliseconds: 800);
   static const Duration _optionPickerAnimationDuration = Duration(milliseconds: 600);
+  static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
+  static const Duration _autoOpenBottomSheetDelay = Duration(milliseconds: 850);
 
   late MergeUtxosViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
@@ -337,13 +339,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   void _scheduleBottomSheetOpen(UtxoMergeStep step) async {
-    await Future.delayed(const Duration(milliseconds: 50));
+    await Future.delayed(_autoOpenBottomSheetDelay);
     // 옵션 피커가 생긴 뒤 BottomSheet 자동 노출 예약
     switch (step) {
       case UtxoMergeStep.selectMergeCriteria:
         if (!_viewModel.didConfirmMergeCriteria) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_viewModel.isBottomSheetOpen) {
+            if (_canAutoOpenBottomSheet) {
               _showMergeCriteriaBottomSheet(context);
             }
           });
@@ -352,7 +354,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       case UtxoMergeStep.selectAmountCriteria:
         if (!_viewModel.didConfirmAmountCriteria) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_viewModel.isBottomSheetOpen) {
+            if (_canAutoOpenBottomSheet) {
               _showAmountCriteriaBottomSheet(context);
             }
           });
@@ -361,7 +363,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       case UtxoMergeStep.selectReceiveAddress:
         if (!_viewModel.didConfirmAmountCriteria) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_viewModel.isBottomSheetOpen) {
+            if (_canAutoOpenBottomSheet) {
               _showReceiveAddressBottomSheet(context);
             }
           });
@@ -370,7 +372,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       case UtxoMergeStep.selectTag:
         if (!_viewModel.didConfirmTagCriteria) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && !_viewModel.isBottomSheetOpen) {
+            if (_canAutoOpenBottomSheet) {
               _showTagSelectBottomSheet(context);
             }
           });
@@ -379,6 +381,11 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       default:
         break;
     }
+  }
+
+  bool get _canAutoOpenBottomSheet {
+    final route = ModalRoute.of(context);
+    return mounted && !_viewModel.isBottomSheetOpen && (route?.isCurrent ?? false);
   }
 
   String? _headerTextForStep(UtxoMergeStep? step) {
@@ -1249,10 +1256,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               child: picker.slideUpAnimation(
                 key: ValueKey('merge-picker-in-${step.name}-${_viewModel.optionPickerAnimationNonce}'),
                 duration: _optionPickerAnimationDuration,
-                delay:
-                    _viewModel.currentStep == UtxoMergeStep.selectReceiveAddress
-                        ? const Duration(milliseconds: 2000)
-                        : const Duration(milliseconds: 2500),
+                delay: _newestPickerRevealDelay,
                 offset: const Offset(0, 24),
                 onCompleted: () => _scheduleBottomSheetOpen(step),
               ),
@@ -1374,6 +1378,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   void _showEstimatedFeeBottomSheet() {
+    vibrateExtraLight();
     unawaited(_viewModel.refreshRecommendedFees());
     EstimatedFeeBottomSheet.show(
       context: context,

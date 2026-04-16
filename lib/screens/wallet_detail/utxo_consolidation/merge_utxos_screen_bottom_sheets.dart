@@ -14,6 +14,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
   void _showMergeCriteriaBottomSheet(BuildContext context) async {
     if (_viewModel.isBottomSheetOpen) return;
+    vibrateExtraLight();
 
     _setScreenState(() {
       _viewModel.setIsBottomSheetOpen(true);
@@ -107,6 +108,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
   void _showAmountCriteriaBottomSheet(BuildContext context) async {
     if (_viewModel.isBottomSheetOpen) return;
+    vibrateExtraLight();
 
     _setScreenState(() {
       _viewModel.setIsBottomSheetOpen(true);
@@ -269,6 +271,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
   void _showTagSelectBottomSheet(BuildContext context) async {
     if (_viewModel.isBottomSheetOpen) return;
+    vibrateExtraLight();
 
     _setScreenState(() {
       _viewModel.setIsBottomSheetOpen(true);
@@ -335,6 +338,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
   void _showReceiveAddressBottomSheet(BuildContext context) async {
     if (_viewModel.isBottomSheetOpen) return;
+    vibrateExtraLight();
 
     _setScreenState(() {
       _viewModel.setIsBottomSheetOpen(true);
