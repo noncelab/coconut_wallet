@@ -900,7 +900,6 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                 },
               );
             }),
-            CoconutLayout.spacing_300h,
             RippleEffect(
               onTap: viewModel.addManualSplitItem,
               borderRadius: 12,
@@ -1485,7 +1484,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
       child: FadeTransition(
         opacity: _entranceController,
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
+          padding: const EdgeInsets.only(bottom: 14),
           child: ClipRect(
             child: SlideTransition(
               position: Tween<Offset>(
