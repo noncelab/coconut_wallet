@@ -702,7 +702,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               placeholderText: t.split_utxo_screen.placeholder_split_amount,
               maxLines: 1,
               unfocusOnTapOutside: true,
-              padding: const EdgeInsets.only(left: 0, right: 0, top: 16, bottom: 16),
+              padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 8),
               suffix: Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(data.item2, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
@@ -798,13 +798,13 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     child: const Icon(Icons.remove, color: CoconutColors.white),
                   ),
                 ),
-                CoconutLayout.spacing_300w,
+                CoconutLayout.spacing_150w,
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: viewModel.splitCountController,
                   builder: (context, value, _) {
                     final inputText = value.text;
                     final visibleCharCount = inputText.isEmpty ? 3 : inputText.length.clamp(3, 6);
-                    final fieldWidth = (visibleCharCount * 16.0) + 2.0;
+                    final fieldWidth = (visibleCharCount * 16.0) + 12.0;
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
                       curve: Curves.easeOutCubic,
@@ -813,6 +813,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                         alignment: Alignment.center,
                         children: [
                           CoconutTextField(
+                            height: 40,
+                            fontHeight: 1,
+                            borderRadius: 8,
+                            backgroundColor: hasFocus ? CoconutColors.gray800 : Colors.transparent,
                             controller: viewModel.splitCountController,
                             focusNode: viewModel.splitCountFocusNode,
                             textAlign: TextAlign.center,
@@ -825,10 +829,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                             onEditingComplete: () => viewModel.splitCountFocusNode.unfocus(),
                             textInputAction: TextInputAction.done,
                             textInputType: TextInputType.number,
-                            placeholderText: '',
-                            unfocusOnTapOutside: true,
                             maxLines: 1,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            unfocusOnTapOutside: true,
+                            padding: const EdgeInsets.only(top: 8, bottom: 3),
+                            placeholderText: '',
                           ),
                           if (inputText.isEmpty && !hasFocus)
                             IgnorePointer(
@@ -846,7 +850,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     );
                   },
                 ),
-                CoconutLayout.spacing_300w,
+                CoconutLayout.spacing_150w,
                 RippleEffect(
                   onTap: viewModel.incrementSplitCount,
                   borderRadius: 24,
@@ -948,17 +952,14 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     borderRadius: 8,
                     child: Container(
                       alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
                         border: Border.all(color: CoconutColors.gray700),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       width: 47,
                       height: 24,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text('$count', style: CoconutTypography.body3_12.setColor(CoconutColors.white)),
-                      ),
+                      child: Text('$count', style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
                     ),
                   );
                 }).toList(),
