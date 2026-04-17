@@ -1723,6 +1723,10 @@ class _DecimalTextInputFormatter extends TextInputFormatter {
       return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: newValue.selection.end + 1));
     }
 
+    if (text.length > 1 && text.startsWith('0') && !text.startsWith('0.')) {
+      return oldValue;
+    }
+
     if (!RegExp(r'^\d*\.?\d*$').hasMatch(text)) {
       return oldValue;
     }
