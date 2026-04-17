@@ -12,7 +12,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     }
   }
 
-  void _showMergeCriteriaBottomSheet(BuildContext context) async {
+  void _showMergeCriteriaBottomSheet() async {
     if (_isBottomSheetOpened) return;
     _isBottomSheetOpened = true;
 
@@ -73,7 +73,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     _isBottomSheetOpened = false;
   }
 
-  void _showAmountCriteriaBottomSheet(BuildContext context) async {
+  void _showAmountCriteriaBottomSheet() async {
     if (_isBottomSheetOpened) return;
     _isBottomSheetOpened = true;
 
@@ -228,7 +228,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     _isBottomSheetOpened = false;
   }
 
-  void _showTagSelectBottomSheet(BuildContext context) async {
+  void _showTagSelectBottomSheet() async {
     if (_isBottomSheetOpened) return;
     _isBottomSheetOpened = true;
 

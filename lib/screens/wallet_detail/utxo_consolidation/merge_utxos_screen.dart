@@ -388,21 +388,21 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       case UtxoMergeStep.selectMergeCriteria:
         if (!_viewModel.didConfirmMergeCriteria) {
           if (_canAutoOpenBottomSheet) {
-            _showMergeCriteriaBottomSheet(context);
+            _showMergeCriteriaBottomSheet();
           }
         }
         break;
       case UtxoMergeStep.selectAmountCriteria:
         if (!_viewModel.didConfirmAmountCriteria) {
           if (_canAutoOpenBottomSheet) {
-            _showAmountCriteriaBottomSheet(context);
+            _showAmountCriteriaBottomSheet();
           }
         }
         break;
       case UtxoMergeStep.selectTag:
         if (!_viewModel.didConfirmTagCriteria) {
           if (_canAutoOpenBottomSheet) {
-            _showTagSelectBottomSheet(context);
+            _showTagSelectBottomSheet();
           }
         }
         break;
@@ -414,10 +414,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   bool get _canAutoOpenBottomSheet {
     final route = ModalRoute.of(context);
-    Logger.log(
-      '--> _canAutoOpenBottomSheet: ${mounted && !_viewModel.isBottomSheetOpen && (route?.isCurrent ?? false)}',
-    );
-    return mounted && !_viewModel.isBottomSheetOpen && (route?.isCurrent ?? false);
+    return mounted && !_isBottomSheetOpened && (route?.isCurrent ?? false);
   }
 
   String? _headerTextForStep(UtxoMergeStep? step) {
@@ -1263,13 +1260,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       UtxoMergeStep.selectMergeCriteria => CoconutOptionPicker(
         text: _currentMergeCriteriaText,
         label: _viewModel.currentStep == UtxoMergeStep.selectMergeCriteria ? null : t.merge_utxos_screen.merge_criteria,
-        onTap: _viewModel.isBottomSheetOpen ? null : () => _showMergeCriteriaBottomSheet(context),
+        onTap: _showMergeCriteriaBottomSheet,
       ),
       UtxoMergeStep.selectAmountCriteria => CoconutOptionPicker(
         text: _currentAmountCriteriaText,
         label:
             _viewModel.currentStep == UtxoMergeStep.selectAmountCriteria ? null : t.merge_utxos_screen.amount_criteria,
-        onTap: _viewModel.isBottomSheetOpen ? null : () => _showAmountCriteriaBottomSheet(context),
+        onTap: _showAmountCriteriaBottomSheet,
         coconutOptionStateEnum:
             _viewModel.hasDustUtxosInCurrentCandidates && !_viewModel.excludeDustUtxos
                 ? CoconutOptionStateEnum.warning
@@ -1280,14 +1277,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       UtxoMergeStep.selectTag => CoconutOptionPicker(
         text: _effectiveSelectedTagName == null ? t.merge_utxos_screen.select_tag : '',
         label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.select_tag,
-        onTap: _viewModel.isBottomSheetOpen ? null : () => _showTagSelectBottomSheet(context),
+        onTap: _showTagSelectBottomSheet,
         inlineWidgets: _buildSelectedTagInlineWidgets(context),
         inlineSpacing: 0,
       ),
       UtxoMergeStep.selectReceiveAddress => CoconutOptionPicker(
         inlineWidgets: [_buildReceiveAddressOptionText()],
         label: t.merge_utxos_screen.receive_address,
-        onTap: _viewModel.isBottomSheetOpen ? null : () => _showReceiveAddressBottomSheet(context),
+        onTap: _isBottomSheetOpened ? null : () => _showReceiveAddressBottomSheet(context),
         enableTextWrap: true,
         coconutOptionStateEnum:
             _viewModel.isDirectInputReceiveAddressWarning
