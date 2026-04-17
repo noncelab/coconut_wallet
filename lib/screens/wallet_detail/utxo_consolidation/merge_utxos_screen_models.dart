@@ -21,22 +21,6 @@ class _ReusedAddressSection {
   _ReusedAddressSection({required this.address, required this.utxos});
 }
 
-class _ReceiveAddressOption {
-  final String address;
-  final String walletName;
-  final String derivationPath;
-
-  const _ReceiveAddressOption({required this.address, required this.walletName, required this.derivationPath});
-
-  factory _ReceiveAddressOption.fromWalletAddress(WalletAddress walletAddress, {required String walletName}) {
-    return _ReceiveAddressOption(
-      address: walletAddress.address,
-      walletName: walletName,
-      derivationPath: walletAddress.derivationPath,
-    );
-  }
-}
-
 class _AmountCriteriaSelectionResult {
   final UtxoAmountCriteria criteria;
   final String? customAmountText;

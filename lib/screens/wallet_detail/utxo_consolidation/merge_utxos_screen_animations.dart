@@ -72,7 +72,7 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
       _viewModel.setMergeTransactionPreparationNonce(_viewModel.mergeTransactionPreparationNonce + 1);
       _viewModel.setPreparedMergeTransactionBuildResult(null);
       _viewModel.setPreparedMergeTransactionKeyState(null);
-      _viewModel.setMergeTransactionSummaryState(MergeTransactionSummaryState.idle);
+      _viewModel.setMergeTransactionSummaryState(MergeState.idle);
       _viewModel.setEstimatedMergeFeeSats(null);
       _viewModel.setIsEstimatedMergeFeeLoading(false);
       _viewModel.setAppliedMergeFeeRate(null);
