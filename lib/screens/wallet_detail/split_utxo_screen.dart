@@ -22,6 +22,7 @@ import 'package:coconut_wallet/widgets/loading_indicator/loading_indicator.dart'
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -699,6 +700,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               onEditingComplete: () => viewModel.amountFocusNode.unfocus(),
               textInputAction: TextInputAction.done,
               textInputType: const TextInputType.numberWithOptions(decimal: true),
+              textInputFormatter: [_DecimalTextInputFormatter()],
               placeholderText: t.split_utxo_screen.placeholder_split_amount,
               maxLines: 1,
               unfocusOnTapOutside: true,
@@ -829,6 +831,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                             onEditingComplete: () => viewModel.splitCountFocusNode.unfocus(),
                             textInputAction: TextInputAction.done,
                             textInputType: TextInputType.number,
+                            textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                             maxLines: 1,
                             unfocusOnTapOutside: true,
                             padding: const EdgeInsets.only(top: 8, bottom: 3),
@@ -1525,6 +1528,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
                                 textInputType: const TextInputType.numberWithOptions(decimal: true),
+                                textInputFormatter: [_DecimalTextInputFormatter()],
                                 placeholderText: t.split_utxo_screen.placeholder_split_amount,
                                 maxLines: 1,
                                 padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 8),
@@ -1588,6 +1592,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         onEditingComplete: () => widget.item.countFocusNode.unfocus(),
                                         textInputAction: TextInputAction.done,
                                         textInputType: TextInputType.number,
+                                        textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                                         maxLines: 1,
                                         unfocusOnTapOutside: true,
                                         padding: const EdgeInsets.only(top: 8, bottom: 3),
@@ -1700,5 +1705,25 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
         ),
       ),
     );
+  }
+}
+
+class _DecimalTextInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    String text = newValue.text;
+
+    if (text.isEmpty) return newValue;
+
+    if (text.startsWith('.')) {
+      text = '0$text';
+      return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: newValue.selection.end + 1));
+    }
+
+    if (!RegExp(r'^\d*\.?\d*$').hasMatch(text)) {
+      return oldValue;
+    }
+
+    return newValue;
   }
 }
