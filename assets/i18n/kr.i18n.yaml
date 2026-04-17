@@ -792,7 +792,7 @@ merge_utxos_screen:
     below_00001_description: "최소 정리"
     or_less: "이하"
     less_than: "미만"
-    custom: "직접 설정"
+    custom: "직접 입력"
   receive_address: "받는 주소"
   receive_address_summary_count: "UTXO ${count}개"
   receive_address_summary_headline_or_less: "${amount} 이하 UTXO ${count}개"
