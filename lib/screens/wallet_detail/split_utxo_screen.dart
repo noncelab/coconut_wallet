@@ -691,7 +691,6 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               controller: viewModel.amountController,
               focusNode: viewModel.amountFocusNode,
               style: CoconutTextFieldStyle.underline,
-              fontHeight: 1,
               fontSize: 18,
               fontWeight: FontWeight.bold,
               activeColor: CoconutColors.white,
@@ -707,10 +706,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               placeholderText: t.split_utxo_screen.placeholder_split_amount,
               maxLines: 1,
               unfocusOnTapOutside: true,
-              padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 8),
-              suffix: Text(
-                data.item2,
-                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white).copyWith(height: 1),
+              padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 4),
+              suffix: Padding(
+                padding: const EdgeInsets.only(top: 4, right: 4),
+                child: Text(data.item2, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
               ),
             );
           },
@@ -803,7 +802,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     child: const Icon(Icons.remove, color: CoconutColors.white),
                   ),
                 ),
-                CoconutLayout.spacing_150w,
+                const SizedBox(width: 10),
                 ValueListenableBuilder<TextEditingValue>(
                   valueListenable: viewModel.splitCountController,
                   builder: (context, value, _) {
@@ -856,7 +855,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     );
                   },
                 ),
-                CoconutLayout.spacing_150w,
+                const SizedBox(width: 10),
                 RippleEffect(
                   onTap: viewModel.incrementSplitCount,
                   borderRadius: 24,
@@ -903,6 +902,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                 },
               );
             }),
+            const SizedBox(height: 14),
             RippleEffect(
               onTap: viewModel.addManualSplitItem,
               borderRadius: 12,
@@ -1073,12 +1073,13 @@ class _HeaderTitleErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple2<String?, String>>(
-      selector: (_, vm) => Tuple2(vm.headerTitleErrorMessage, vm.feePickerDisplayText),
+    return Selector<SplitUtxoViewModel, Tuple3<String?, String, SplitCriteria?>>(
+      selector: (_, vm) => Tuple3(vm.headerTitleErrorMessage, vm.feePickerDisplayText, vm.selectedCriteria),
       builder: (_, data, __) {
         final headerTitleErrorMessage = data.item1;
+        final selectedCriteria = data.item3;
         if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
-          return const SizedBox(height: 16);
+          return SizedBox(height: selectedCriteria == SplitCriteria.manually ? 8 : 16);
         }
 
         return Padding(
@@ -1490,7 +1491,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
       child: FadeTransition(
         opacity: _entranceController,
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.only(bottom: 0),
           child: ClipRect(
             child: SlideTransition(
               position: Tween<Offset>(
@@ -1525,7 +1526,6 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
                                 style: CoconutTextFieldStyle.underline,
-                                fontHeight: 1,
                                 fontSize: 18,
                                 activeColor: CoconutColors.white,
                                 placeholderColor: CoconutColors.gray500,
@@ -1537,17 +1537,18 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 textInputFormatter: [_DecimalTextInputFormatter()],
                                 placeholderText: t.split_utxo_screen.placeholder_split_amount,
                                 maxLines: 1,
-                                padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 8),
+                                padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 4),
                                 unfocusOnTapOutside: true,
-                                suffix: Text(
-                                  widget.viewModel.currentUnit.symbol,
-                                  style: CoconutTypography.heading4_18
-                                      .setColor(CoconutColors.white)
-                                      .copyWith(height: 1),
+                                suffix: Padding(
+                                  padding: const EdgeInsets.only(top: 4, right: 4),
+                                  child: Text(
+                                    widget.viewModel.currentUnit.symbol,
+                                    style: CoconutTypography.heading4_18.setColor(CoconutColors.white),
+                                  ),
                                 ),
                               ),
                             ),
-                            CoconutLayout.spacing_200w,
+                            const SizedBox(width: 10),
 
                             /// - 버튼
                             RippleEffect(
@@ -1567,7 +1568,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 child: const Icon(Icons.remove, color: CoconutColors.white),
                               ),
                             ),
-                            CoconutLayout.spacing_150w,
+                            const SizedBox(width: 10),
 
                             /// 개수 입력란
                             SizedBox(
@@ -1619,7 +1620,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 },
                               ),
                             ),
-                            CoconutLayout.spacing_150w,
+                            const SizedBox(width: 10),
 
                             /// + 버튼
                             RippleEffect(
