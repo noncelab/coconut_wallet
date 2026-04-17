@@ -105,7 +105,7 @@ name: "Name"
 account: "Account"
 merge_utxos: "Merge"
 split_utxo: "Split"
-organize: "Organize"
+apply: "Apply"
 
 relative_time:
   just_now: "Just now"
@@ -827,14 +827,15 @@ split_utxo_screen:
   placeholder_utxo: "Select a UTXO"
   placeholder_criteria: "Select a split method"
   placeholder_split_amount: "Enter amount"
-  placeholder_expected_fee: "Enter fee rate"
+  placeholder_estimated_fee: "Enter fee rate"
   question_select_utxo: "Which UTXO would you like to split?"
   question_select_criteria: "How would you like to split it?"
   question_split_by_amount: "How much per split?"
   question_split_evenly: "Into how many parts?"
   label_split_criteria: "Split method"
   label_selected_utxo: "Selected UTXO"
-  label_expected_fee: "Expected fee"
+  label_estimated_fee: "Estimated fee"
+  add_new_amount: "Add amount"
   and_more_tags: "and ${count} more"
   utxo_error: "This amount is too small to split"
   utxo_warning: "The fee ratio is high and may not be suitable for splitting"
@@ -1121,9 +1122,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
 
-expected_fee_bottom_sheet:
-    title: "Expected fee"
-    expected_fee: "Expected fee"
+estimated_fee_bottom_sheet:
+    title: "Estimated fee"
+    estimated_fee: "Estimated fee"
     fee_rate: "Fee rate"
 
 long_pressed_menu:

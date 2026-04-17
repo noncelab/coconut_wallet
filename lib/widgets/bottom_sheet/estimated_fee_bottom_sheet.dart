@@ -61,7 +61,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
 
     CommonBottomSheets.showDraggableBottomSheet(
       context: context,
-      title: t.expected_fee_bottom_sheet.title,
+      title: t.estimated_fee_bottom_sheet.title,
       backgroundColor: CoconutColors.gray900,
       initialChildSize: 0.75,
       minChildSize: 0.74,
@@ -120,7 +120,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              t.expected_fee_bottom_sheet.expected_fee,
+              t.estimated_fee_bottom_sheet.estimated_fee,
               style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
             ),
             Text(estimatedFeeTextGetter(), style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
@@ -133,7 +133,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
   Widget _buildFeeRateInputRow(BuildContext context) {
     return Row(
       children: [
-        Text(t.expected_fee_bottom_sheet.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+        Text(t.estimated_fee_bottom_sheet.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
         Expanded(
           child: FittedBox(
             fit: BoxFit.scaleDown,

@@ -105,7 +105,7 @@ name: "이름"
 account: "계정"
 merge_utxos: "합치기"
 split_utxo: "나누기"
-organize: "정리하기"
+apply: "정리하기"
 
 relative_time:
   just_now: "방금 전"
@@ -833,14 +833,15 @@ split_utxo_screen:
   placeholder_utxo: "UTXO를 선택하세요"
   placeholder_criteria: "분할 기준을 선택하세요"
   placeholder_split_amount: "금액을 입력하세요"
-  placeholder_expected_fee: "수수료율을 입력해 주세요"
+  placeholder_estimated_fee: "수수료율을 입력해 주세요"
   question_select_utxo: "어떤 UTXO를 나눌까요?"
   question_select_criteria: "어떻게 나눌까요?"
   question_split_by_amount: "얼마씩 나눌까요?"
   question_split_evenly: "몇 개로 나눌까요?"
   label_split_criteria: "분할 기준"
   label_selected_utxo: "선택한 UTXO"
-  label_expected_fee: "예상 수수료"
+  label_estimated_fee: "예상 수수료"
+  add_new_amount: "금액 추가하기"
   and_more_tags: "외 ${count}개"
   utxo_error: "이 금액은 나누기에 너무 작아요"
   utxo_warning: "수수료 비중이 높아 나누기에 적합하지 않을 수 있어요"
@@ -1127,9 +1128,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
 
-expected_fee_bottom_sheet:
+estimated_fee_bottom_sheet:
     title: "예상 수수료"
-    expected_fee: "예상 수수료"
+    estimated_fee: "예상 수수료"
     fee_rate: "수수료율"
 
 long_pressed_menu:

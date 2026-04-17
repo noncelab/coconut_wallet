@@ -106,7 +106,7 @@ name: "Nombre"
 account: "Cuenta"
 merge_utxos: "Combinar"
 split_utxo: "Dividir"
-organize: "Organizar"
+apply: "Aplicar"
 
 relative_time:
   just_now: "Justo ahora"
@@ -830,14 +830,15 @@ split_utxo_screen:
   placeholder_utxo: "Selecciona un UTXO"
   placeholder_criteria: "Selecciona un criterio de división"
   placeholder_split_amount: "Ingresa el monto"
-  placeholder_expected_fee: "Ingresa la tasa de comisión"
+  placeholder_estimated_fee: "Ingresa la tasa de comisión"
   question_select_utxo: "¿Qué UTXO quieres dividir?"
   question_select_criteria: "¿Cómo quieres dividirlo?"
   question_split_by_amount: "¿Cuánto por cada uno?"
   question_split_evenly: "¿En cuántas partes?"
   label_split_criteria: "Criterio de división"
   label_selected_utxo: "UTXO seleccionado"
-  label_expected_fee: "Comisión estimada"
+  label_estimated_fee: "Comisión estimada"
+  add_new_amount: "Añadir monto"
   and_more_tags: "y ${count} más"
   utxo_error: "Este monto es demasiado pequeño para dividir"
   utxo_warning: "La proporción de comisión es alta y puede no ser adecuado dividirlo"
@@ -1124,9 +1125,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
 
-expected_fee_bottom_sheet:
+estimated_fee_bottom_sheet:
     title: "Comisión estimada"
-    expected_fee: "Comisión estimada"
+    estimated_fee: "Comisión estimada"
     fee_rate: "Tasa de comisión"
 
 long_pressed_menu:

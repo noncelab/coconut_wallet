@@ -86,7 +86,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     backgroundColor: CoconutColors.black,
                     appBar: CoconutAppBar.build(
                       backgroundColor: CoconutColors.black,
-                      title: t.utxo_selection_screen.title,
+                      title: widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title,
                       context: context,
                       actionButtonList: [
                         if (widget.showSkipButton)

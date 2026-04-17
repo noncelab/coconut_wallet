@@ -105,7 +105,7 @@ name: "名前"
 account: "アカウント"
 merge_utxos: "を統合"
 split_utxo: "を分割"
-organize: "整理する"
+apply: "適用する"
 
 relative_time:
   just_now: "たった今"
@@ -828,14 +828,15 @@ split_utxo_screen:
   placeholder_utxo: "UTXOを選択してください"
   placeholder_criteria: "分割基準を選択してください"
   placeholder_split_amount: "金額を入力してください"
-  placeholder_expected_fee: "手数料率を入力してください"
+  placeholder_estimated_fee: "手数料率を入力してください"
   question_select_utxo: "どのUTXOを分割しますか？"
   question_select_criteria: "どのように分割しますか？"
   question_split_by_amount: "いくらずつ分割しますか？"
   question_split_evenly: "いくつに分割しますか？"
   label_split_criteria: "分割基準"
   label_selected_utxo: "選択したUTXO"
-  label_expected_fee: "予想手数料"
+  label_estimated_fee: "予想手数料"
+  add_new_amount: "金額を追加"
   and_more_tags: "他${count}件"
   utxo_error: "この金額は分割するには小さすぎます"
   utxo_warning: "手数料の割合が高く、分割に適していない可能性があります"
@@ -1122,9 +1123,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
 
-expected_fee_bottom_sheet:
+estimated_fee_bottom_sheet:
     title: "予想手数料"
-    expected_fee: "予想手数料"
+    estimated_fee: "予想手数料"
     fee_rate: "手数料率"
 
 long_pressed_menu:

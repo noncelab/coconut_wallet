@@ -321,7 +321,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                 _buildVisibleOptionPickers(context),
               ],
             ),
-            _buildOrganizeButton(context),
+            _buildApplyButton(context),
           ],
         ),
       ),
@@ -409,7 +409,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  Widget _buildOrganizeButton(BuildContext context) {
+  Widget _buildApplyButton(BuildContext context) {
     return Selector<SplitUtxoViewModel, Tuple5<bool, bool, bool, String, double?>>(
       selector:
           (_, vm) => Tuple5(
@@ -432,7 +432,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           child: IgnorePointer(
             ignoring: !showSplitResultBox,
             child: FixedBottomButton(
-              text: t.organize,
+              text: t.apply,
               subWidget:
                   feeRatio != null && feeRatio >= 10
                       ? Text(
@@ -626,7 +626,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CoconutOptionPicker(
-              label: t.split_utxo_screen.label_expected_fee,
+              label: t.split_utxo_screen.label_estimated_fee,
               text: _getFeePickerText(t, hasFeeRate, previewFeeText),
               textColor: hasFeeRate ? CoconutColors.white : CoconutColors.gray500,
               coconutOptionStateEnum: viewModel.feeOptionState,
@@ -689,6 +689,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               controller: viewModel.amountController,
               focusNode: viewModel.amountFocusNode,
               style: CoconutTextFieldStyle.underline,
+              fontHeight: 1,
               fontSize: 18,
               fontWeight: FontWeight.bold,
               activeColor: CoconutColors.white,
@@ -705,14 +706,14 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               maxLines: 1,
               unfocusOnTapOutside: true,
               padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 8),
-              suffix: Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(data.item2, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+              suffix: Text(
+                data.item2,
+                style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white).copyWith(height: 1),
               ),
             );
           },
         ),
-        CoconutLayout.spacing_300h,
+        CoconutLayout.spacing_200h,
         _buildRecommendedAmounts(),
         CoconutLayout.spacing_1000h,
       ],
@@ -737,7 +738,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Wrap(
-                  spacing: 8,
+                  spacing: 4,
                   children:
                       recommendedSplitAmounts.map((btc) {
                         final sats = (btc * 1e8).toInt();
@@ -925,7 +926,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                         colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
                       ),
                       const SizedBox(width: 5),
-                      Text('금액 추가하기', style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                      Text(
+                        t.split_utxo_screen.add_new_amount,
+                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                      ),
                     ],
                   ),
                 ),
@@ -946,7 +950,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Wrap(
-            spacing: 8,
+            spacing: 4,
             children:
                 recommendedSplitCounts.map((count) {
                   return RippleEffect(
@@ -1058,7 +1062,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   String _getFeePickerText(Translations t, bool hasFeeRate, String previewFeeText) {
-    return hasFeeRate ? previewFeeText : t.split_utxo_screen.placeholder_expected_fee;
+    return hasFeeRate ? previewFeeText : t.split_utxo_screen.placeholder_estimated_fee;
   }
 }
 
@@ -1519,6 +1523,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 controller: widget.item.amountController,
                                 focusNode: widget.item.amountFocusNode,
                                 style: CoconutTextFieldStyle.underline,
+                                fontHeight: 1,
                                 fontSize: 18,
                                 activeColor: CoconutColors.white,
                                 placeholderColor: CoconutColors.gray500,
@@ -1532,12 +1537,11 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 maxLines: 1,
                                 padding: const EdgeInsets.only(left: 0, right: 0, top: 8, bottom: 8),
                                 unfocusOnTapOutside: true,
-                                suffix: Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    widget.viewModel.currentUnit.symbol,
-                                    style: CoconutTypography.heading4_18.setColor(CoconutColors.white),
-                                  ),
+                                suffix: Text(
+                                  widget.viewModel.currentUnit.symbol,
+                                  style: CoconutTypography.heading4_18
+                                      .setColor(CoconutColors.white)
+                                      .copyWith(height: 1),
                                 ),
                               ),
                             ),
