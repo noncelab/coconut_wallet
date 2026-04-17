@@ -13,12 +13,10 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   void _showMergeCriteriaBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
-    vibrateExtraLight();
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
     final selectedItem = await CommonBottomSheets.showBottomSheet<UtxoMergeCriteria>(
       showCloseButton: true,
@@ -58,61 +56,28 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
     if (selectedItem != null && context.mounted) {
       final nextStep = _nextStepForMergeCriteria(selectedItem);
-      final previousMergeCriteria = _viewModel.selectedMergeCriteria;
-      final didMergeCriteriaChange = previousMergeCriteria != selectedItem;
-
       _setScreenState(() {
-        _viewModel.setSelectedMergeCriteria(selectedItem);
-        _viewModel.setDidConfirmMergeCriteria(true);
-        if (didMergeCriteriaChange) {
-          switch (selectedItem) {
-            case UtxoMergeCriteria.smallAmounts:
-              _viewModel.setDidConfirmAmountCriteria(false);
-              _viewModel.setDidConfirmTagCriteria(false);
-              _viewModel.setSelectedTagName(null);
-              _viewModel.setEditedSelectedUtxoIds(null);
-              _viewModel.setEstimatedMergeFeeSats(null);
-              break;
-            case UtxoMergeCriteria.sameTag:
-              _viewModel.setDidConfirmTagCriteria(false);
-              _viewModel.setEditedSelectedUtxoIds(null);
-              _viewModel.setEstimatedMergeFeeSats(null);
-              break;
-            case UtxoMergeCriteria.sameAddress:
-              _viewModel.setDidConfirmTagCriteria(false);
-              _viewModel.setSelectedTagName(null);
-              _viewModel.setEditedSelectedUtxoIds(null);
-              _viewModel.setEstimatedMergeFeeSats(null);
-              break;
-          }
-        }
-        _viewModel.setIsBottomSheetOpen(false);
+        _viewModel.confirmMergeCriteriaSelection(selectedItem);
       });
 
       if (nextStep != null) {
         _viewModel.setCurrentStep(nextStep);
         _refreshAnimationsForCurrentStep();
         if (nextStep == UtxoMergeStep.selectReceiveAddress) {
-          unawaited(_handleEnterSelectReceiveAddressStep());
+          unawaited(_calculateEstimatedMergeFee());
         }
       }
       return;
     }
 
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
-    }
+    _isBottomSheetOpened = false;
   }
 
   void _showAmountCriteriaBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
-    vibrateExtraLight();
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
@@ -248,34 +213,26 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       const nextStep = UtxoMergeStep.selectReceiveAddress;
 
       _setScreenState(() {
-        _viewModel.setSelectedAmountCriteria(selectedItem.criteria);
-        _viewModel.setCustomAmountCriteriaText(selectedItem.customAmountText);
-        _viewModel.setIsCustomAmountLessThan(selectedItem.isLessThan);
-        _viewModel.setEditedSelectedUtxoIds(null);
-        _viewModel.setEstimatedMergeFeeSats(null);
-        _viewModel.setDidConfirmAmountCriteria(true);
-        _viewModel.setIsBottomSheetOpen(false);
+        _viewModel.confirmAmountCriteriaSelection(
+          criteria: selectedItem.criteria,
+          customAmountText: selectedItem.customAmountText,
+          isLessThan: selectedItem.isLessThan,
+        );
       });
 
       _viewModel.setCurrentStep(nextStep);
-      unawaited(_handleEnterSelectReceiveAddressStep());
+      unawaited(_calculateEstimatedMergeFee());
       return;
     }
 
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
-    }
+    _isBottomSheetOpened = false;
   }
 
   void _showTagSelectBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
-    vibrateExtraLight();
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
     final selectedItem = await showModalBottomSheet<TagSelectResult>(
       context: context,
@@ -287,24 +244,16 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
     if (selectedItem != null && context.mounted) {
       _setScreenState(() {
-        _viewModel.setSelectedTagName(selectedItem.selectedTagName);
-        _viewModel.setDidConfirmTagCriteria(selectedItem.selectedTagName != null);
-        _viewModel.setEditedSelectedUtxoIds(null);
-        _viewModel.setEstimatedMergeFeeSats(null);
-        _viewModel.setIsBottomSheetOpen(false);
+        _viewModel.confirmTagCriteriaSelection(selectedItem.selectedTagName);
       });
 
       _viewModel.setCurrentStep(UtxoMergeStep.selectReceiveAddress);
       _refreshAnimationsForCurrentStep();
-      unawaited(_handleEnterSelectReceiveAddressStep());
+      unawaited(_calculateEstimatedMergeFee());
       return;
     }
 
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
-    }
+    _isBottomSheetOpened = false;
   }
 
   List<Widget> _buildSelectedTagInlineWidgets(BuildContext context) {
@@ -337,12 +286,10 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   void _showReceiveAddressBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
-    vibrateExtraLight();
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
@@ -455,20 +402,15 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     directInputController.dispose();
     directInputFocusNode.dispose();
 
+    _isBottomSheetOpened = false;
+
     if (selectedItem != null && context.mounted) {
       _setScreenState(() {
         _viewModel.setSelectedReceiveAddress(selectedItem.address);
         _viewModel.setCustomReceiveAddressText(selectedItem.isDirectInput ? selectedItem.address : null);
-        _viewModel.setIsBottomSheetOpen(false);
       });
       unawaited(_calculateEstimatedMergeFee());
       return;
-    }
-
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
     }
   }
 

@@ -7,13 +7,6 @@ class _BottomSheetTab {
   const _BottomSheetTab({required this.label, required this.child});
 }
 
-class _MergeCtaAssistData {
-  final String message;
-  final Color color;
-
-  const _MergeCtaAssistData({required this.message, required this.color});
-}
-
 class _TagCombinationSection {
   final List<UtxoTag> tags;
   final List<UtxoState> utxos;
