@@ -410,14 +410,15 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildApplyButton(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple5<bool, bool, bool, String, double?>>(
+    return Selector<SplitUtxoViewModel, Tuple6<bool, bool, bool, String, double?, bool>>(
       selector:
-          (_, vm) => Tuple5(
+          (_, vm) => Tuple6(
             vm.showSplitResultBox,
             vm.isSplitValid,
             vm.isPreparingNextStep,
             vm.unexpectedErrorMessage,
             vm.feeRatio,
+            vm.showSkeletonResultBox,
           ),
       builder: (context, data, _) {
         final showSplitResultBox = data.item1;
@@ -425,6 +426,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         final isPreparingNextStep = data.item3;
         final finalErrorMessage = data.item4;
         final feeRatio = data.item5;
+        final showSkeletonResultBox = data.item6;
         final viewModel = context.read<SplitUtxoViewModel>();
         return AnimatedOpacity(
           opacity: showSplitResultBox ? 1.0 : 0.0,
@@ -452,7 +454,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                   vibrateLightDouble();
                 }
               },
-              isActive: isSplitValid && !isPreparingNextStep && finalErrorMessage.isEmpty,
+              isActive: isSplitValid && !isPreparingNextStep && finalErrorMessage.isEmpty && !showSkeletonResultBox,
               backgroundColor: CoconutColors.white,
             ),
           ),
