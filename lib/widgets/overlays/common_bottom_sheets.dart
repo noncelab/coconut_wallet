@@ -434,7 +434,7 @@ class CommonBottomSheets {
   }
 }
 
-class SelectableBottomSheetTextItem extends StatelessWidget {
+class SelectableBottomSheetTextItem extends StatefulWidget {
   final Widget child;
   final bool isSelected;
   final VoidCallback? onTap;
@@ -451,39 +451,58 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
   });
 
   @override
+  State<SelectableBottomSheetTextItem> createState() => _SelectableBottomSheetTextItemState();
+}
+
+class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTextItem> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: isDisabled ? 0.5 : 1.0,
-      child: ShrinkAnimationButton(
-        onPressed: () {
-          if (isDisabled) return;
-          if (onTap != null) onTap!();
-        },
-        defaultColor: CoconutColors.gray900,
-        pressedColor: CoconutColors.gray800,
-        borderRadius: 8,
-        borderWidth: 0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Row(
-            children: [
-              Expanded(child: child),
-              if (isSelected || reserveCheckIconSpace)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 18,
-                  height: 18,
-                  child:
-                      isSelected
-                          ? SvgPicture.asset(
-                            'assets/svg/check.svg',
-                            width: 16,
-                            height: 16,
-                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                          ).scaleInAnimation(duration: const Duration(milliseconds: 300))
-                          : null,
+      opacity: widget.isDisabled ? 0.5 : 1.0,
+      child: Listener(
+        onPointerDown: (_) => setState(() => _isPressed = true),
+        onPointerUp: (_) => setState(() => _isPressed = false),
+        onPointerCancel: (_) => setState(() => _isPressed = false),
+        behavior: HitTestBehavior.opaque,
+        child: ShrinkAnimationButton(
+          onPressed: () {
+            if (widget.isDisabled) return;
+            if (widget.onTap != null) widget.onTap!();
+          },
+          defaultColor: CoconutColors.gray900,
+          pressedColor: CoconutColors.gray800,
+          borderRadius: 8,
+          borderWidth: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 100),
+                    opacity: _isPressed ? 0.5 : 1.0,
+                    child: widget.child,
+                  ),
                 ),
-            ],
+                if (widget.isSelected || widget.reserveCheckIconSpace)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    width: 18,
+                    height: 18,
+                    child:
+                        widget.isSelected
+                            ? SvgPicture.asset(
+                              'assets/svg/check.svg',
+                              width: 16,
+                              height: 16,
+                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            ).scaleInAnimation(duration: const Duration(milliseconds: 300))
+                            : null,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
