@@ -1203,6 +1203,22 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
               ],
             ),
           ),
+          Visibility(
+            visible: widget.usePreview,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CoconutLayout.spacing_200h,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    t.split_utxo_screen.expected_result.above_is_expected,
+                    style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
