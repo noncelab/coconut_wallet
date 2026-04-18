@@ -65,7 +65,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
           _viewModel.setCurrentStep(nextStep);
           _refreshAnimationsForCurrentStep();
           if (nextStep == UtxoMergeStep.selectReceiveAddress) {
-            unawaited(_calculateEstimatedMergeFee());
+            unawaited(_viewModel.prepareMergeTransaction());
           }
         }
       }
@@ -220,7 +220,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
         });
 
         _viewModel.setCurrentStep(nextStep);
-        unawaited(_calculateEstimatedMergeFee());
+        unawaited(_viewModel.prepareMergeTransaction());
       }
     } finally {
       customAmountController.dispose();
@@ -251,7 +251,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
         _viewModel.setCurrentStep(UtxoMergeStep.selectReceiveAddress);
         _refreshAnimationsForCurrentStep();
-        unawaited(_calculateEstimatedMergeFee());
+        unawaited(_viewModel.prepareMergeTransaction());
       }
     } finally {
       _isBottomSheetOpened = false;
@@ -411,7 +411,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
         _viewModel.setSelectedReceiveAddress(selectedItem.address);
         _viewModel.setCustomReceiveAddressText(selectedItem.isDirectInput ? selectedItem.address : null);
       });
-      unawaited(_calculateEstimatedMergeFee());
+      unawaited(_viewModel.prepareMergeTransaction());
       return;
     }
   }

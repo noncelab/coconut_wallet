@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -14,6 +16,7 @@ import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 
@@ -59,11 +62,11 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   ) {
     _wallet = _walletProvider.getWalletById(walletId);
     _dustThreshold = _wallet.walletType.addressType.dustThreshold;
-    _initAddresses(_walletProvider);
+    _initAddresses();
     refreshRecommendedFees();
   }
 
-  void _initAddresses(WalletProvider provider) {
+  void _initAddresses() {
     _nextReceiveAddressesOfAllWallets =
         _walletProvider.walletItemList.map((wallet) {
           final addressObject = _walletProvider.getReceiveAddress(wallet.id);
@@ -97,13 +100,15 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   double? _appliedMergeFeeRate;
   TransactionBuildResult? _preparedMergeTransactionBuildResult;
   String? _preparedMergeTransactionKey;
-  MergeState _mergeTransactionSummaryState = MergeState.idle;
+  MergeState _mergeState = MergeState.idle;
   int _mergeTransactionPreparationNonce = 0;
   int _receiveAddressSummaryAnimationNonce = 0;
   final TextEditingController feeRateController = TextEditingController();
   final FocusNode feeRateFocusNode = FocusNode();
   String _estimatedFeeText = '-';
   String? _unexpectedErrorMessage;
+  Timer? _estimatePrepareDebounceTimer;
+  bool _isDisposed = false;
   String get unexpectedErrorMessage => _unexpectedErrorMessage ?? '';
   String get estimatedFeeText => _estimatedFeeText;
 
@@ -127,18 +132,16 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   double? get appliedMergeFeeRate => _appliedMergeFeeRate;
   TransactionBuildResult? get preparedMergeTransactionBuildResult => _preparedMergeTransactionBuildResult;
   String? get preparedMergeTransactionKeyState => _preparedMergeTransactionKey;
-  MergeState get mergeTransactionSummaryState => _mergeTransactionSummaryState;
+  MergeState get mergeTransactionSummaryState => _mergeState;
   int get mergeTransactionPreparationNonce => _mergeTransactionPreparationNonce;
   int get receiveAddressSummaryAnimationNonce => _receiveAddressSummaryAnimationNonce;
   UtxoMergeCriteria get defaultCriteria => UtxoMergeCriteria.smallAmounts;
   UtxoMergeCriteria get currentCriteria => _selectedMergeCriteria ?? defaultCriteria;
   bool get hasUnexpectedError => unexpectedErrorMessage.isNotEmpty;
-  bool get isTransactionSummaryFailed => _mergeTransactionSummaryState == MergeState.failed;
+  bool get isTransactionSummaryFailed => _mergeState == MergeState.failed;
 
-  bool get isMergeButtonVisible =>
-      _mergeTransactionSummaryState == MergeState.ready ||
-      _mergeTransactionSummaryState == MergeState.notEnoughSelectedUtxo;
-  bool get isMergeButtonEnabled => _mergeTransactionSummaryState == MergeState.ready;
+  bool get isMergeButtonVisible => _mergeState == MergeState.ready || _mergeState == MergeState.notEnoughSelectedUtxo;
+  bool get isMergeButtonEnabled => _mergeState == MergeState.ready;
   bool get isDirectInputReceiveAddressWarning {
     return _customReceiveAddressText != null &&
         _selectedReceiveAddress == _customReceiveAddressText &&
@@ -327,7 +330,6 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   void setIsCustomReceiveAddressOwnedByAnyWallet(bool value) => _isCustomReceiveAddressOwnedByAnyWallet = value;
   void setEstimatedMergeFeeSats(int? value) => _estimatedMergeFeeSats = value;
   void setIsEstimatedMergeFeeLoading(bool value) => _isEstimatedMergeFeeLoading = value;
-  void setExcludeDustUtxos(bool value) => _excludeDustUtxos = value;
   void setAppliedMergeFeeRate(double? value) => _appliedMergeFeeRate = value;
 
   bool isAnimatedHeaderStep(UtxoMergeStep step) {
@@ -394,7 +396,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   void setPreparedMergeTransactionBuildResult(TransactionBuildResult? value) =>
       _preparedMergeTransactionBuildResult = value;
   void setPreparedMergeTransactionKeyState(String? value) => _preparedMergeTransactionKey = value;
-  void setMergeTransactionSummaryState(MergeState value) => _mergeTransactionSummaryState = value;
+  void setMergeTransactionSummaryState(MergeState value) => _mergeState = value;
   void setMergeTransactionPreparationNonce(int value) => _mergeTransactionPreparationNonce = value;
   void setReceiveAddressSummaryAnimationNonce(int value) => _receiveAddressSummaryAnimationNonce = value;
   void setUnexpectedErrorMessage(String? value) => _unexpectedErrorMessage = value;
@@ -521,7 +523,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   int get selectedUtxoCount => selectedUtxosForCurrentCriteria.length;
 
   MergeRecommendationLevelAndInfo? get mergeRecommendationLevelAndInfo {
-    if (_mergeTransactionSummaryState != MergeState.ready) return null;
+    if (_mergeState != MergeState.ready) return null;
     if (_appliedMergeFeeRate == null) return null;
     if (_estimatedMergeFeeSats == null) return null;
 
@@ -614,7 +616,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   MergeTransactionInputSnapshot? get mergeTransactionInputSnapshot {
     final selectedReceiveAddress = _selectedReceiveAddress;
     final selectedUtxos = selectedUtxosForCurrentCriteria;
-    final inputFeeRate = double.tryParse(feeRateController.text.trim());
+    final inputFeeRate = double.tryParse(feeRateInput);
 
     if (_currentStep != UtxoMergeStep.selectReceiveAddress ||
         selectedReceiveAddress.isEmpty ||
@@ -644,7 +646,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
 
   bool shouldSkipMergeTransactionRebuild({required bool forceRebuild, required String preparationKey}) {
     return !forceRebuild &&
-        _mergeTransactionSummaryState != MergeState.preparing &&
+        _mergeState != MergeState.preparing &&
         _preparedMergeTransactionKey == preparationKey &&
         _preparedMergeTransactionBuildResult != null;
   }
@@ -655,14 +657,14 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     _estimatedMergeFeeSats = null;
     _isEstimatedMergeFeeLoading = false;
     _appliedMergeFeeRate = null;
-    _mergeTransactionSummaryState = summaryState;
+    _mergeState = summaryState;
   }
 
   void beginMergeTransactionPreparation({required int nonce, required String preparationKey}) {
     _mergeTransactionPreparationNonce = nonce;
     _preparedMergeTransactionKey = preparationKey;
     _isEstimatedMergeFeeLoading = true;
-    _mergeTransactionSummaryState = MergeState.preparing;
+    _mergeState = MergeState.preparing;
     _receiveAddressSummaryAnimationNonce = _receiveAddressSummaryAnimationNonce + 1;
   }
 
@@ -674,7 +676,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     _appliedMergeFeeRate = inputFeeRate;
     _estimatedMergeFeeSats = txBuildResult.estimatedFee - (txBuildResult.unintendedDustFee ?? 0);
     _isEstimatedMergeFeeLoading = false;
-    _mergeTransactionSummaryState = txBuildResult.isSuccess ? MergeState.ready : MergeState.failed;
+    _mergeState = txBuildResult.isSuccess ? MergeState.ready : MergeState.failed;
     _receiveAddressSummaryAnimationNonce = _receiveAddressSummaryAnimationNonce + 1;
   }
 
@@ -684,7 +686,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     _estimatedMergeFeeSats = null;
     _isEstimatedMergeFeeLoading = false;
     _appliedMergeFeeRate = null;
-    _mergeTransactionSummaryState = MergeState.failed;
+    _mergeState = MergeState.failed;
     _receiveAddressSummaryAnimationNonce = _receiveAddressSummaryAnimationNonce + 1;
   }
 
@@ -701,8 +703,79 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
 
   bool _isSuspiciousDustUtxo(UtxoState utxo) => _dustThreshold > 0 && utxo.amount <= _dustThreshold;
 
+  void scheduleMergeTransactionPreparation({Duration delay = const Duration(seconds: 1)}) {
+    _estimatePrepareDebounceTimer?.cancel();
+    _estimatePrepareDebounceTimer = Timer(delay, () {
+      if (_isDisposed) return;
+      unawaited(prepareMergeTransaction());
+    });
+  }
+
+  void runMergeTransactionPreparationNow() {
+    _estimatePrepareDebounceTimer?.cancel();
+    unawaited(prepareMergeTransaction());
+  }
+
+  Future<void> prepareMergeTransaction({bool forceRebuild = false}) async {
+    Logger.log('--> prepareMergeTransaction');
+    final preparationKey = mergeTransactionPreparationKey;
+    if (preparationKey == null) {
+      resetPreparedMergeTransaction(
+        summaryState: selectedUtxoCount >= 2 ? MergeState.idle : MergeState.notEnoughSelectedUtxo,
+      );
+      notifyListeners();
+      syncEstimatedFeeText();
+      return;
+    }
+
+    if (shouldSkipMergeTransactionRebuild(forceRebuild: forceRebuild, preparationKey: preparationKey)) {
+      return;
+    }
+
+    final inputSnapshot = mergeTransactionInputSnapshot;
+    if (inputSnapshot == null) {
+      resetPreparedMergeTransaction(summaryState: MergeState.notEnoughSelectedUtxo);
+      notifyListeners();
+      syncEstimatedFeeText();
+      return;
+    }
+
+    final nonce = _mergeTransactionPreparationNonce + 1;
+    beginMergeTransactionPreparation(nonce: nonce, preparationKey: preparationKey);
+    notifyListeners();
+    await Future<void>.delayed(Duration.zero);
+    if (_isDisposed || nonce != _mergeTransactionPreparationNonce) return;
+
+    try {
+      final changeAddress = _walletProvider.getChangeAddress(walletId);
+
+      final txBuildResult =
+          TransactionBuilder(
+            availableUtxos: inputSnapshot.selectedUtxos,
+            recipients: {inputSnapshot.selectedReceiveAddress: inputSnapshot.totalInputAmount},
+            feeRate: inputSnapshot.inputFeeRate,
+            changeDerivationPath: changeAddress.derivationPath,
+            walletListItemBase: _wallet,
+            isFeeSubtractedFromAmount: true,
+            isUtxoFixed: true,
+          ).build();
+
+      if (_isDisposed || nonce != _mergeTransactionPreparationNonce) return;
+      applyPreparedMergeTransactionResult(txBuildResult: txBuildResult, inputFeeRate: inputSnapshot.inputFeeRate);
+      notifyListeners();
+      syncEstimatedFeeText();
+    } catch (e) {
+      if (_isDisposed || nonce != _mergeTransactionPreparationNonce) return;
+      applyPreparedMergeTransactionUnexpectedFailure(e);
+      notifyListeners();
+      syncEstimatedFeeText();
+    }
+  }
+
   @override
   void dispose() {
+    _isDisposed = true;
+    _estimatePrepareDebounceTimer?.cancel();
     feeRateController.dispose();
     feeRateFocusNode.dispose();
     super.dispose();

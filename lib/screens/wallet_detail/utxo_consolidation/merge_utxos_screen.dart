@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
-import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
@@ -25,7 +24,6 @@ import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/bottom_sheet/estimated_fee_bottom_sheet.dart';
@@ -66,7 +64,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   late MergeUtxosViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
-  Timer? _estimateMergeFeeDebounceTimer;
+  MergeState? _lastObservedSummaryMergeState;
   bool _isAmountTextHighlighted = false;
   UtxoMergeStep? _displayedHeaderStep;
   UtxoMergeStep? _pendingHeaderStep;
@@ -91,32 +89,56 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       context.read<SendInfoProvider>(),
       context.read<WalletProvider>(),
     )..initialize();
+    _lastObservedSummaryMergeState = _viewModel.mergeTransactionSummaryState;
+    _viewModel.addListener(_handleMergeSummaryStateChanged);
   }
 
   @override
   void dispose() {
-    _estimateMergeFeeDebounceTimer?.cancel();
+    _viewModel.removeListener(_handleMergeSummaryStateChanged);
     _receiveAddressSummaryLottieController.dispose();
     _viewModel.dispose();
     super.dispose();
   }
 
+  void _handleMergeSummaryStateChanged() {
+    final state = _viewModel.mergeTransactionSummaryState;
+    if (state == _lastObservedSummaryMergeState) return;
+    _lastObservedSummaryMergeState = state;
+    _applyLottieForMergeState(state);
+  }
+
+  void _applyLottieForMergeState(MergeState state) {
+    switch (state) {
+      case MergeState.preparing:
+        if (!_receiveAddressSummaryLottieController.isAnimating) {
+          _receiveAddressSummaryLottieController
+            ..stop()
+            ..reset()
+            ..repeat(period: const Duration(seconds: 1));
+        }
+        break;
+      case MergeState.ready:
+      case MergeState.failed:
+      case MergeState.notEnoughSelectedUtxo:
+        _receiveAddressSummaryLottieController
+          ..stop()
+          ..value = 1;
+        break;
+      case MergeState.idle:
+        _receiveAddressSummaryLottieController.stop();
+        if (_viewModel.selectedUtxoCount == 1) {
+          _receiveAddressSummaryLottieController.value = 1;
+        } else {
+          _receiveAddressSummaryLottieController.reset();
+        }
+        break;
+    }
+  }
+
   void _setScreenState(VoidCallback fn) {
     if (!mounted) return;
     setState(fn);
-  }
-
-  void _scheduleCalculateEstimatedMergeFee({Duration delay = const Duration(seconds: 1)}) {
-    _estimateMergeFeeDebounceTimer?.cancel();
-    _estimateMergeFeeDebounceTimer = Timer(delay, () {
-      if (!mounted) return;
-      unawaited(_calculateEstimatedMergeFee());
-    });
-  }
-
-  void _runEstimatedMergeFeeCalculationNow() {
-    _estimateMergeFeeDebounceTimer?.cancel();
-    unawaited(_calculateEstimatedMergeFee());
   }
 
   @override
@@ -676,7 +698,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     setState(() {
       _viewModel.toggleDustExclusion();
     });
-    unawaited(_calculateEstimatedMergeFee());
+    unawaited(_viewModel.prepareMergeTransaction());
   }
 
   Widget _buildReceiveAddressSummaryContent({
@@ -934,101 +956,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   String? get _effectiveSelectedTagName => _viewModel.effectiveSelectedTagName;
 
-  void _syncEstimatedFeeTextToViewModel() {
-    _viewModel.syncEstimatedFeeText();
-  }
-
-  Future<void> _calculateEstimatedMergeFee({bool forceRebuild = false}) async {
-    Logger.log('--> calculateEstimatedMergeFee');
-    final preparationKey = _viewModel.mergeTransactionPreparationKey;
-    if (preparationKey == null) {
-      if (!mounted) return;
-      setState(() {
-        _viewModel.resetPreparedMergeTransaction(
-          summaryState: _viewModel.selectedUtxoCount >= 2 ? MergeState.idle : MergeState.notEnoughSelectedUtxo,
-        );
-      });
-      _receiveAddressSummaryLottieController.stop();
-      if (_viewModel.selectedUtxoCount == 1) {
-        _receiveAddressSummaryLottieController.value = 1;
-      } else {
-        _receiveAddressSummaryLottieController.reset();
-      }
-      _syncEstimatedFeeTextToViewModel();
-      return;
-    }
-
-    if (_viewModel.shouldSkipMergeTransactionRebuild(forceRebuild: forceRebuild, preparationKey: preparationKey)) {
-      return;
-    }
-
-    final inputSnapshot = _viewModel.mergeTransactionInputSnapshot;
-    if (inputSnapshot == null) {
-      if (!mounted) return;
-      setState(() {
-        _viewModel.resetPreparedMergeTransaction(summaryState: MergeState.notEnoughSelectedUtxo);
-      });
-      _receiveAddressSummaryLottieController.stop();
-      if (_viewModel.selectedUtxoCount == 1) {
-        _receiveAddressSummaryLottieController.value = 1;
-      } else {
-        _receiveAddressSummaryLottieController.reset();
-      }
-      _syncEstimatedFeeTextToViewModel();
-      return;
-    }
-
-    final selectedReceiveAddress = inputSnapshot.selectedReceiveAddress;
-    final selectedUtxos = inputSnapshot.selectedUtxos;
-    final inputFeeRate = inputSnapshot.inputFeeRate;
-
-    final nonce = _viewModel.mergeTransactionPreparationNonce + 1;
-    setState(() {
-      _viewModel.beginMergeTransactionPreparation(nonce: nonce, preparationKey: preparationKey);
-    });
-    _receiveAddressSummaryLottieController
-      ..stop()
-      ..reset()
-      ..repeat(period: const Duration(seconds: 1));
-    await Future<void>.delayed(Duration.zero);
-    if (!mounted || nonce != _viewModel.mergeTransactionPreparationNonce) return;
-
-    try {
-      final walletProvider = context.read<WalletProvider>();
-      final wallet = walletProvider.getWalletById(widget.id);
-      final changeAddress = walletProvider.getChangeAddress(widget.id);
-
-      final txBuildResult =
-          TransactionBuilder(
-            availableUtxos: selectedUtxos,
-            recipients: {selectedReceiveAddress: inputSnapshot.totalInputAmount},
-            feeRate: inputFeeRate,
-            changeDerivationPath: changeAddress.derivationPath,
-            walletListItemBase: wallet,
-            isFeeSubtractedFromAmount: true,
-            isUtxoFixed: true,
-          ).build();
-
-      if (!mounted || nonce != _viewModel.mergeTransactionPreparationNonce) return;
-      setState(() {
-        _viewModel.applyPreparedMergeTransactionResult(txBuildResult: txBuildResult, inputFeeRate: inputFeeRate);
-      });
-      _receiveAddressSummaryLottieController
-        ..stop()
-        ..value = 1;
-      _syncEstimatedFeeTextToViewModel();
-    } catch (e) {
-      if (!mounted || nonce != _viewModel.mergeTransactionPreparationNonce) return;
-      setState(() {
-        _viewModel.applyPreparedMergeTransactionUnexpectedFailure(e);
-      });
-      _receiveAddressSummaryLottieController
-        ..stop()
-        ..value = 1;
-      _syncEstimatedFeeTextToViewModel();
-    }
-  }
-
   String _getUtxosPreviewBottomSheetTitle(UtxoMergeCriteria criteria) {
     switch (criteria) {
       case UtxoMergeCriteria.smallAmounts:
@@ -1070,7 +997,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                       setState(() {
                         _viewModel.commitEditedSelectedUtxoIds(committedSelectedUtxoIds);
                       });
-                      unawaited(_calculateEstimatedMergeFee());
+                      unawaited(_viewModel.prepareMergeTransaction());
                     }
                     isEditingNotifier.value = !isEditing;
                     vibrateExtraLight();
@@ -1313,7 +1240,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         final isTooLow = _viewModel.onFeeRateChanged(text);
         final currentText = _viewModel.feeRateInput;
         if (currentText.isNotEmpty && !currentText.endsWith('.')) {
-          _scheduleCalculateEstimatedMergeFee();
+          _viewModel.scheduleMergeTransactionPreparation();
         }
         return isTooLow;
       },
@@ -1327,7 +1254,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       refreshRecommendedFees: _viewModel.refreshRecommendedFees,
       onFeeRateSelected: (sats) {
         _viewModel.setFeeRateFromRecommendation(sats);
-        _runEstimatedMergeFeeCalculationNow();
+        _viewModel.runMergeTransactionPreparationNow();
         FocusScope.of(context).unfocus();
         Navigator.pop(context);
       },
