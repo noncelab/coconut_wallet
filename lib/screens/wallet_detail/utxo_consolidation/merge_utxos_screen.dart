@@ -89,7 +89,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       context.read<SendInfoProvider>(),
       context.read<WalletProvider>(),
     )..initialize();
-    _lastObservedSummaryMergeState = _viewModel.mergeTransactionSummaryState;
+    _lastObservedSummaryMergeState = _viewModel.mergeState;
     _viewModel.addListener(_handleMergeSummaryStateChanged);
   }
 
@@ -102,7 +102,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   void _handleMergeSummaryStateChanged() {
-    final state = _viewModel.mergeTransactionSummaryState;
+    final state = _viewModel.mergeState;
     if (state == _lastObservedSummaryMergeState) return;
     _lastObservedSummaryMergeState = state;
     _applyLottieForMergeState(state);
@@ -295,7 +295,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
           (_, viewModel) => (
             isMergeButtonVisible: viewModel.isMergeButtonVisible,
             isMergeButtonEnabled: viewModel.isMergeButtonEnabled,
-            summaryState: viewModel.mergeTransactionSummaryState,
+            summaryState: viewModel.mergeState,
             mergeRecommendationLevelAndInfo: viewModel.mergeRecommendationLevelAndInfo,
           ),
       builder: (context, ctaState, child) {
@@ -363,7 +363,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Future<void> _onMergeButtonClicked() async {
-    if (_viewModel.mergeTransactionSummaryState != MergeState.ready) return;
+    if (_viewModel.mergeState != MergeState.ready) return;
 
     context.loaderOverlay.show();
 
@@ -444,7 +444,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
 
     if (step == UtxoMergeStep.selectReceiveAddress) {
-      if (_viewModel.mergeTransactionSummaryState == MergeState.idle) {
+      if (_viewModel.mergeState == MergeState.idle) {
         return const SizedBox.shrink();
       }
 
@@ -528,7 +528,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         selector:
             (_, vm) => (
               criteria: vm.currentCriteria,
-              mergeState: vm.mergeTransactionSummaryState,
+              mergeState: vm.mergeState,
               selectedUtxosTotalAmountText: vm.selectedUtxosTotalAmountText,
               selectedUtxoCount: vm.selectedUtxoCount,
             ),

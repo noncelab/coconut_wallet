@@ -7,7 +7,7 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncHeaderAnimation(step);
+      _playHeaderAnimation(step);
     });
   }
 
@@ -17,7 +17,7 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncOptionPickerAnimation(step);
+      _playOptionPickerAnimation(step);
     });
   }
 
@@ -29,9 +29,12 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
     _scheduleOptionPickerAnimation(step);
   }
 
-  void _syncHeaderAnimation(UtxoMergeStep step) {
+  /// 현재 헤더를 페이드아웃 후 새 문구로 스왑하는 크로스페이드 전환
+  void _playHeaderAnimation(UtxoMergeStep step) {
     if (!_viewModel.isAnimatedHeaderStep(step)) return;
-    _handleReceiveAddressSummaryAnimation(step);
+    if (_displayedHeaderStep == UtxoMergeStep.selectReceiveAddress && step != UtxoMergeStep.selectReceiveAddress) {
+      _resetReceiveAddressSummary();
+    }
 
     _pendingHeaderStep = step;
 
@@ -67,22 +70,14 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
     });
   }
 
-  void _handleReceiveAddressSummaryAnimation(UtxoMergeStep step) {
-    if (step != UtxoMergeStep.selectReceiveAddress) {
-      _viewModel.setMergeTransactionPreparationNonce(_viewModel.mergeTransactionPreparationNonce + 1);
-      _viewModel.setPreparedMergeTransactionBuildResult(null);
-      _viewModel.setPreparedMergeTransactionKeyState(null);
-      _viewModel.setMergeTransactionSummaryState(MergeState.idle);
-      _viewModel.setEstimatedMergeFeeSats(null);
-      _viewModel.setIsEstimatedMergeFeeLoading(false);
-      _viewModel.setAppliedMergeFeeRate(null);
-      _receiveAddressSummaryLottieController.stop();
-      _receiveAddressSummaryLottieController.reset();
-      return;
-    }
+  /// selectReceiveAddress 스텝에서 벗어날 때 진행 상태와 Lottie를 초기화한다.
+  void _resetReceiveAddressSummary() {
+    _viewModel.resetReceiveAddressSummaryForStepTransition();
+    _receiveAddressSummaryLottieController.stop();
+    _receiveAddressSummaryLottieController.reset();
   }
 
-  void _syncOptionPickerAnimation(UtxoMergeStep step) {
+  void _playOptionPickerAnimation(UtxoMergeStep step) {
     if (!_viewModel.isAnimatedHeaderStep(step)) return;
 
     _pendingOptionPickerStep = step;
