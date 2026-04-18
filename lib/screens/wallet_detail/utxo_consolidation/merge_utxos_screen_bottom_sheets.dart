@@ -304,7 +304,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       text: isUsingDirectInput ? (_viewModel.customReceiveAddressText ?? '') : '',
     );
     final directInputFocusNode = FocusNode();
-    _validateCustomReceiveAddress(directInputController.text);
+    _viewModel.validateCustomReceiveAddress(directInputController.text);
 
     if (selectedTabIndex == 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -389,7 +389,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
                     focusNode: directInputFocusNode,
                     onChanged: (value) {
                       modalSetState(() {
-                        _validateCustomReceiveAddress(value);
+                        _viewModel.validateCustomReceiveAddress(value);
                       });
                     },
                   ),
@@ -413,31 +413,6 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       });
       unawaited(_viewModel.prepareMergeTransaction());
       return;
-    }
-  }
-
-  void _validateCustomReceiveAddress(String rawAddress) {
-    final trimmed = rawAddress.trim();
-    _viewModel.setCustomReceiveAddressText(trimmed.isEmpty ? null : trimmed);
-
-    if (trimmed.isEmpty) {
-      _viewModel.setIsCustomReceiveAddressValidFormat(false);
-      _viewModel.setIsCustomReceiveAddressOwnedByAnyWallet(false);
-      return;
-    }
-
-    final normalized = normalizeAddress(trimmed);
-    final walletProvider = context.read<WalletProvider>();
-
-    try {
-      final isValid = WalletUtility.validateAddress(normalized);
-      _viewModel.setIsCustomReceiveAddressValidFormat(isValid);
-      _viewModel.setIsCustomReceiveAddressOwnedByAnyWallet(
-        isValid && walletProvider.containsAddressInAnyWallet(normalized),
-      );
-    } catch (_) {
-      _viewModel.setIsCustomReceiveAddressValidFormat(false);
-      _viewModel.setIsCustomReceiveAddressOwnedByAnyWallet(false);
     }
   }
 

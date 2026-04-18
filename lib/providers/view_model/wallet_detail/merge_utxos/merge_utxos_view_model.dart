@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
@@ -12,6 +13,7 @@ import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
+import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/bitcoin/transaction_util.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -326,8 +328,29 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
 
   void setSelectedReceiveAddress(String value) => _selectedReceiveAddress = value;
   void setCustomReceiveAddressText(String? value) => _customReceiveAddressText = value;
-  void setIsCustomReceiveAddressValidFormat(bool value) => _isCustomReceiveAddressValidFormat = value;
-  void setIsCustomReceiveAddressOwnedByAnyWallet(bool value) => _isCustomReceiveAddressOwnedByAnyWallet = value;
+
+  /// 직접 입력 주소 검증: 포맷 유효성과 내 지갑 여부를 계산하여 관련 상태를 갱신한다.
+  void validateCustomReceiveAddress(String rawAddress) {
+    final trimmed = rawAddress.trim();
+    _customReceiveAddressText = trimmed.isEmpty ? null : trimmed;
+
+    if (trimmed.isEmpty) {
+      _isCustomReceiveAddressValidFormat = false;
+      _isCustomReceiveAddressOwnedByAnyWallet = false;
+      return;
+    }
+
+    final normalized = normalizeAddress(trimmed);
+
+    try {
+      final isValid = WalletUtility.validateAddress(normalized);
+      _isCustomReceiveAddressValidFormat = isValid;
+      _isCustomReceiveAddressOwnedByAnyWallet = isValid && _walletProvider.containsAddressInAnyWallet(normalized);
+    } catch (_) {
+      _isCustomReceiveAddressValidFormat = false;
+      _isCustomReceiveAddressOwnedByAnyWallet = false;
+    }
+  }
 
   bool isAnimatedHeaderStep(UtxoMergeStep step) {
     return step == UtxoMergeStep.selectMergeCriteria ||
