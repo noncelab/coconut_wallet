@@ -794,9 +794,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
           style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
           children: [
             _buildSelectableSummaryHeadlineSpan(
-              criteria == UtxoMergeCriteria.sameTag
-                  ? _tagSummaryHeadlineTextWithObject
-                  : _sameAddressSummaryHeadlineText,
+              criteria == UtxoMergeCriteria.sameTag ? _tagSummaryHeadlineText : _sameAddressSummaryHeadlineText,
             ),
             TextSpan(text: t.merge_utxos_screen.receive_address_summary_tag_object_suffix),
             TextSpan(text: _summaryCardDestinationText),
@@ -877,15 +875,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   String get _tagSummaryHeadlineText {
-    final tagName = _effectiveSelectedTagName ?? '';
-    return t.merge_utxos_screen.receive_address_summary_tag_applied(tag_name: tagName) +
-        t.merge_utxos_screen.receive_address_summary_tag_amount_only(
-          amount: _getSummaryCardHeadlineText(_viewModel.currentCriteria, _viewModel.selectedUtxoCount),
-        );
-  }
-
-  String get _tagSummaryHeadlineTextWithObject {
-    final tagName = _effectiveSelectedTagName ?? '';
+    final tagName = _viewModel.effectiveSelectedTagName ?? '';
     return t.merge_utxos_screen.receive_address_summary_tag_applied(tag_name: tagName) +
         t.merge_utxos_screen.receive_address_summary_tag_amount_only(
           amount: _getSummaryCardHeadlineText(_viewModel.currentCriteria, _viewModel.selectedUtxoCount),
@@ -900,7 +890,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   String get _summaryAmountThresholdText {
-    switch (_currentAmountCriteria) {
+    switch (_viewModel.currentAmountCriteria) {
       case UtxoAmountCriteria.below001:
         return '0.01 BTC';
       case UtxoAmountCriteria.below0001:
@@ -953,8 +943,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     );
   }
 
-  String? get _effectiveSelectedTagName => _viewModel.effectiveSelectedTagName;
-
   String _getUtxosPreviewBottomSheetTitle(UtxoMergeCriteria criteria) {
     switch (criteria) {
       case UtxoMergeCriteria.smallAmounts:
@@ -962,7 +950,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       case UtxoMergeCriteria.sameAddress:
         return t.merge_utxos_screen.reused_address;
       case UtxoMergeCriteria.sameTag:
-        return t.merge_utxos_screen.selected_tag_title(name: _effectiveSelectedTagName ?? '');
+        return t.merge_utxos_screen.selected_tag_title(name: _viewModel.effectiveSelectedTagName ?? '');
     }
   }
 
@@ -1039,8 +1027,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
   }
 
-  UtxoAmountCriteria get _currentAmountCriteria => _viewModel.currentAmountCriteria;
-  String get _currentAmountCriteriaText => _amountCriteriaText(_currentAmountCriteria);
+  String get _currentAmountCriteriaText => _amountCriteriaText(_viewModel.currentAmountCriteria);
   String _amountCriteriaText(UtxoAmountCriteria criteria) {
     switch (criteria) {
       case UtxoAmountCriteria.below001:
@@ -1086,10 +1073,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         return null;
     }
   }
-
-  List<UtxoAmountCriteria> get _recommendedAmountCriteriaItems => MergeUtxosViewModel.recommendedAmountCriteriaItems;
-  UtxoAmountCriteria? get _firstAvailableRecommendedAmountCriteria =>
-      _viewModel.firstAvailableRecommendedAmountCriteria;
 
   Widget _buildVisibleOptionPickers(BuildContext context) {
     final pickerWidgets =
@@ -1149,7 +1132,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         subWidget: _viewModel.hasDustUtxosInInputs ? _buildDustWarningToggleCompact() : null,
       ),
       UtxoMergeStep.selectTag => CoconutOptionPicker(
-        text: _effectiveSelectedTagName == null ? t.merge_utxos_screen.select_tag : '',
+        text: _viewModel.effectiveSelectedTagName == null ? t.merge_utxos_screen.select_tag : '',
         label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.select_tag,
         onTap: _showTagSelectBottomSheet,
         inlineWidgets: _buildSelectedTagInlineWidgets(context),
@@ -1179,36 +1162,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     final boldStyle = CoconutTypography.body1_16_NumberBold.setColor(CoconutColors.white);
 
     return _buildHighlightedSegwitAddressText(address: address, baseStyle: baseStyle, highlightedStyle: boldStyle);
-  }
-
-  Widget _buildHighlightedSegwitAddressText({
-    required String address,
-    required TextStyle baseStyle,
-    required TextStyle highlightedStyle,
-  }) {
-    if (address.isEmpty) {
-      return Text('', style: baseStyle);
-    }
-
-    final bech32SeparatorIndex = address.indexOf('1');
-    final highlightStart =
-        bech32SeparatorIndex >= 0 && bech32SeparatorIndex + 2 < address.length ? bech32SeparatorIndex + 2 : 0;
-    final firstBoldEnd = (highlightStart + 4).clamp(0, address.length);
-    final lastBoldStart = address.length > 4 ? address.length - 4 : 0;
-
-    return RichText(
-      text: TextSpan(
-        style: baseStyle,
-        children: [
-          if (highlightStart > 0) TextSpan(text: address.substring(0, highlightStart)),
-          if (firstBoldEnd > highlightStart)
-            TextSpan(text: address.substring(highlightStart, firstBoldEnd), style: highlightedStyle),
-          if (lastBoldStart > firstBoldEnd) TextSpan(text: address.substring(firstBoldEnd, lastBoldStart)),
-          if (lastBoldStart < address.length) TextSpan(text: address.substring(lastBoldStart), style: highlightedStyle),
-        ],
-      ),
-      softWrap: true,
-    );
   }
 
   Widget _buildEstimatedFeeOptionPicker() {

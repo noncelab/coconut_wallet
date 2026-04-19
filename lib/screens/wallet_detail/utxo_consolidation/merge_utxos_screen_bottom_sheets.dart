@@ -82,13 +82,14 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
-    final firstAvailableRecommendedCriteria = _firstAvailableRecommendedAmountCriteria;
+    final firstAvailableRecommendedCriteria = _viewModel.firstAvailableRecommendedAmountCriteria;
     final hasRecommendedCandidates = firstAvailableRecommendedCriteria != null;
-    var selectedTabIndex = !hasRecommendedCandidates || _currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
+    final currentAmountCriteria = _viewModel.currentAmountCriteria;
+    var selectedTabIndex = !hasRecommendedCandidates || currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
     UtxoAmountCriteria? selectedRecommendedCriteria =
-        _recommendedAmountCriteriaItems.contains(_currentAmountCriteria) &&
-                _viewModel.hasCandidateUtxosForAmountCriteria(_currentAmountCriteria)
-            ? _currentAmountCriteria
+        MergeUtxosViewModel.recommendedAmountCriteriaItems.contains(currentAmountCriteria) &&
+                _viewModel.hasCandidateUtxosForAmountCriteria(currentAmountCriteria)
+            ? currentAmountCriteria
             : firstAvailableRecommendedCriteria;
     final customAmountController = TextEditingController(text: _viewModel.customAmountCriteriaText ?? '');
     final customAmountFocusNode = FocusNode();
@@ -241,7 +242,8 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder:
-            (context) => TagSelectBottomSheet(walletId: widget.id, initialSelectedTagName: _effectiveSelectedTagName),
+            (context) =>
+                TagSelectBottomSheet(walletId: widget.id, initialSelectedTagName: _viewModel.effectiveSelectedTagName),
       );
 
       if (selectedItem != null && context.mounted) {
@@ -259,7 +261,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   List<Widget> _buildSelectedTagInlineWidgets(BuildContext context) {
-    final selectedTagName = _effectiveSelectedTagName;
+    final selectedTagName = _viewModel.effectiveSelectedTagName;
     if (selectedTagName == null || selectedTagName.isEmpty) return const [];
 
     final utxoTagProvider = context.read<UtxoTagProvider>();
@@ -547,7 +549,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     return SelectableBottomSheetBody<UtxoAmountCriteria>(
       key: const ValueKey('recommended-amount-criteria'),
       allowConfirmWhenSelectionUnchanged: true,
-      items: _recommendedAmountCriteriaItems,
+      items: MergeUtxosViewModel.recommendedAmountCriteriaItems,
       showGradient: false,
       showConfirmButton: false,
       initiallySelectedId: selectedRecommendedCriteria,
