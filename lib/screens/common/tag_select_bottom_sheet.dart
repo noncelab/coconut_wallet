@@ -27,6 +27,7 @@ class TagSelectBottomSheet extends StatefulWidget {
 
 class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
   late final List<UtxoTag> _utxoTags;
+  late final Set<String> _currentUtxoIds;
   String? _selectedTagName;
 
   @override
@@ -34,13 +35,10 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
     super.initState();
     final utxoTagProvider = context.read<UtxoTagProvider>();
     final utxoRepository = context.read<UtxoRepository>();
-    final currentUtxoIds = utxoRepository.getUtxoStateList(widget.walletId).map((utxo) => utxo.utxoId).toSet();
+    _currentUtxoIds = utxoRepository.getUtxoStateList(widget.walletId).map((utxo) => utxo.utxoId).toSet();
 
     _utxoTags =
-        utxoTagProvider
-            .getUtxoTagList(widget.walletId)
-            .where((tag) => (tag.utxoIdList ?? []).where(currentUtxoIds.contains).length >= 2)
-            .toList();
+        utxoTagProvider.getUtxoTagList(widget.walletId).where((tag) => _selectedTagUtxoCount(tag) >= 2).toList();
     _selectedTagName = widget.initialSelectedTagName;
   }
 
@@ -50,6 +48,21 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
 
   void _confirm() {
     Navigator.pop(context, TagSelectResult(selectedTagName: _selectedTagName));
+  }
+
+  int _selectedTagUtxoCount(UtxoTag tag) {
+    return (tag.utxoIdList ?? []).where(_currentUtxoIds.contains).length;
+  }
+
+  int? get _selectedTagUtxoCountValue {
+    final selectedTagName = _selectedTagName;
+    if (selectedTagName == null) return null;
+    final selectedTag = _utxoTags.cast<UtxoTag?>().firstWhere(
+      (tag) => tag?.name == selectedTagName,
+      orElse: () => null,
+    );
+    if (selectedTag == null) return null;
+    return _selectedTagUtxoCount(selectedTag);
   }
 
   @override
@@ -114,6 +127,13 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
             text: t.complete,
             isActive: _selectedTagName != null,
             bottomPadding: 0,
+            subWidget:
+                _selectedTagUtxoCountValue == null
+                    ? null
+                    : Text(
+                      '${t.merge_utxos_screen.count(n: _selectedTagUtxoCountValue!, count: _selectedTagUtxoCountValue!)} ➔ ${t.merge_utxos_screen.count(n: 1, count: 1)}',
+                      style: CoconutTypography.body3_12.setColor(CoconutColors.gray300),
+                    ),
             onButtonClicked: _confirm,
             backgroundColor: CoconutColors.white,
           ),

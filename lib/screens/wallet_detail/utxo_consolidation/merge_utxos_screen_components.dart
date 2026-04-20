@@ -49,7 +49,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: CoconutSegmentedControl(
                     labels: tabs.map((tab) => tab.label).toList(),
                     isSelected: List.generate(tabs.length, (index) => selectedTabIndex == index),
@@ -182,7 +182,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 18.0),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -231,42 +231,45 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final section in sections) ...[
-          Stack(
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [CoconutColors.gray900, CoconutColors.gray800],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [CoconutColors.gray900, CoconutColors.gray800],
+                      ),
+                    ),
+                    child: Text(
+                      t.merge_utxos_screen.count(n: section.utxos.length, count: section.utxos.length),
+                      textAlign: TextAlign.end,
+                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
                     ),
                   ),
-                  child: Text(
-                    t.merge_utxos_screen.count(n: section.utxos.length, count: section.utxos.length),
-                    textAlign: TextAlign.end,
-                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                ),
+                Positioned.fill(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 16),
+                      child: Wrap(spacing: 4, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
+                    ),
                   ),
                 ),
-              ),
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Wrap(spacing: 8, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
               children: [
                 for (int start = 0; start < section.utxos.length; start += _columnCount) ...[
@@ -277,12 +280,11 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                     ),
                     isEditing,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 36),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 12),
         ],
       ],
     );
@@ -531,14 +533,29 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
           ],
         ),
         if (!isEditing)
-          AnimatedSize(
+          AnimatedSwitcher(
             duration: const Duration(milliseconds: 240),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) {
+              return SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                fixedCrossAxisSizeFactor: 1,
+                child: child,
+              );
+            },
+            layoutBuilder: (currentChild, previousChildren) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [...previousChildren, if (currentChild != null) currentChild],
+              );
+            },
             child:
                 expandedUtxo == null
-                    ? const SizedBox.shrink()
+                    ? const SizedBox.shrink(key: ValueKey('selected-utxo-detail-empty'))
                     : Padding(
+                      key: ValueKey(expandedUtxo.utxoId),
                       padding: const EdgeInsets.only(top: 18),
                       child: _SelectedUtxoDetailCard(utxo: expandedUtxo, selectedColumnIndex: expandedIndex),
                     ),
@@ -557,60 +574,71 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timestamp = DateTimeUtil.formatTimestamp(utxo.timestamp);
+    const horizontalOverflow = 16.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final slotWidth = constraints.maxWidth / _SelectedUtxosPreviewBottomSheetBodyState._columnCount;
-        final arrowLeft = (slotWidth * selectedColumnIndex) + (slotWidth / 2) - 10;
+        final baseWidth =
+            constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width - (horizontalOverflow * 2);
+        final slotWidth = baseWidth / _SelectedUtxosPreviewBottomSheetBodyState._columnCount;
+        final arrowLeft = (slotWidth * selectedColumnIndex) + (slotWidth / 2) - 10 + horizontalOverflow;
+        final cardWidth = baseWidth + (horizontalOverflow * 2);
 
-        return Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              decoration: BoxDecoration(
-                color: CoconutColors.black,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: CoconutColors.gray800, width: 1),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${timestamp[0]} | ${timestamp[1]}',
-                    style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                  ),
-                  const SizedBox(height: 2),
-                  _buildHighlightedSegwitAddressText(
-                    address: utxo.to,
-                    baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                    highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(utxo.derivationPath, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
-                ],
-              ),
-            ),
-            Positioned(
-              top: -9.3,
-              left: arrowLeft,
-              child: Transform.rotate(
-                angle: 0.78539816339,
+        return SizedBox(
+          width: baseWidth,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SizedBox(
+                width: cardWidth,
                 child: Container(
-                  width: 20,
-                  height: 20,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   decoration: const BoxDecoration(
                     color: CoconutColors.black,
-                    border: Border(
-                      top: BorderSide(color: CoconutColors.gray800),
-                      left: BorderSide(color: CoconutColors.gray800),
+                    border: Border.symmetric(horizontal: BorderSide(color: CoconutColors.gray800, width: 1)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${timestamp[0]} | ${timestamp[1]}',
+                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                      ),
+                      const SizedBox(height: 2),
+                      _buildHighlightedSegwitAddressText(
+                        address: utxo.to,
+                        baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                        highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(utxo.derivationPath, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: -9.3,
+                left: arrowLeft - 16,
+                child: Transform.rotate(
+                  angle: 0.78539816339,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: CoconutColors.black,
+                      border: Border(
+                        top: BorderSide(color: CoconutColors.gray800),
+                        left: BorderSide(color: CoconutColors.gray800),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

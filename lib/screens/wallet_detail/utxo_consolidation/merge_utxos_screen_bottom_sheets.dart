@@ -12,115 +12,84 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     }
   }
 
-  void _showMergeCriteriaBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
+  void _showMergeCriteriaBottomSheet() async {
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
-    final selectedItem = await CommonBottomSheets.showBottomSheet<UtxoMergeCriteria>(
-      showCloseButton: true,
-      context: context,
-      backgroundColor: CoconutColors.gray900,
-      title: t.merge_utxos_screen.merge_criteria_bottomsheet.title,
-      child: SizedBox(
-        height: 320,
-        child: SelectableBottomSheetBody<UtxoMergeCriteria>(
-          items: const [UtxoMergeCriteria.smallAmounts, UtxoMergeCriteria.sameTag, UtxoMergeCriteria.sameAddress],
-          showGradient: false,
-          initiallySelectedId: _currentMergeCriteria,
-          allowConfirmWhenSelectionUnchanged: true,
-          getItemId: (item) => item,
-          confirmText: t.complete,
-          backgroundColor: CoconutColors.gray900,
-          itemBuilder: (context, item, isSelected, onTap) {
-            final isTagMergeItem = item == UtxoMergeCriteria.sameTag;
-            final isAddressMergeItem = item == UtxoMergeCriteria.sameAddress;
-            final isDisabled =
-                (isTagMergeItem && !_viewModel.hasMergeableTaggedUtxos) ||
-                (isAddressMergeItem && !_viewModel.hasSameAddressUtxos);
+    try {
+      final selectedItem = await CommonBottomSheets.showBottomSheet<UtxoMergeCriteria>(
+        showCloseButton: true,
+        context: context,
+        backgroundColor: CoconutColors.gray900,
+        title: t.merge_utxos_screen.merge_criteria_bottomsheet.title,
+        child: SizedBox(
+          height: 320,
+          child: SelectableBottomSheetBody<UtxoMergeCriteria>(
+            items: const [UtxoMergeCriteria.smallAmounts, UtxoMergeCriteria.sameTag, UtxoMergeCriteria.sameAddress],
+            showGradient: false,
+            initiallySelectedId: _viewModel.currentCriteria,
+            allowConfirmWhenSelectionUnchanged: true,
+            getItemId: (item) => item,
+            confirmText: t.complete,
+            backgroundColor: CoconutColors.gray900,
+            itemBuilder: (context, item, isSelected, onTap) {
+              final isTagMergeItem = item == UtxoMergeCriteria.sameTag;
+              final isAddressMergeItem = item == UtxoMergeCriteria.sameAddress;
+              final isDisabled =
+                  (isTagMergeItem && !_viewModel.hasMergeableTaggedUtxos) ||
+                  (isAddressMergeItem && !_viewModel.hasSameAddressUtxos);
 
-            return SelectableBottomSheetTextItem(
-              isSelected: isSelected,
-              onTap: onTap,
-              isDisabled: isDisabled,
-              child: Text(
-                _mergeCriteriaText(item),
-                style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-              ),
-            );
-          },
+              return SelectableBottomSheetTextItem(
+                isSelected: isSelected,
+                onTap: onTap,
+                isDisabled: isDisabled,
+                child: Text(
+                  _getCurrentCriteriaText(item)!,
+                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    if (selectedItem != null && context.mounted) {
-      final nextStep = _nextStepForMergeCriteria(selectedItem);
-      final previousMergeCriteria = _viewModel.selectedMergeCriteria;
-      final didMergeCriteriaChange = previousMergeCriteria != selectedItem;
+      if (selectedItem != null && context.mounted) {
+        final nextStep = _nextStepForMergeCriteria(selectedItem);
+        _setScreenState(() {
+          _viewModel.confirmMergeCriteriaSelection(selectedItem);
+        });
 
-      _setScreenState(() {
-        _viewModel.setSelectedMergeCriteria(selectedItem);
-        _viewModel.setDidConfirmMergeCriteria(true);
-        if (didMergeCriteriaChange) {
-          switch (selectedItem) {
-            case UtxoMergeCriteria.smallAmounts:
-              _viewModel.setDidConfirmAmountCriteria(false);
-              _viewModel.setDidConfirmTagCriteria(false);
-              _viewModel.setSelectedTagName(null);
-              _viewModel.setEditedSelectedUtxoIds(null);
-              _viewModel.setEstimatedMergeFeeSats(null);
-              break;
-            case UtxoMergeCriteria.sameTag:
-              _viewModel.setDidConfirmTagCriteria(false);
-              _viewModel.setEditedSelectedUtxoIds(null);
-              _viewModel.setEstimatedMergeFeeSats(null);
-              break;
-            case UtxoMergeCriteria.sameAddress:
-              _viewModel.setDidConfirmTagCriteria(false);
-              _viewModel.setSelectedTagName(null);
-              _viewModel.setEditedSelectedUtxoIds(null);
-              _viewModel.setEstimatedMergeFeeSats(null);
-              break;
+        if (nextStep != null) {
+          _viewModel.setCurrentStep(nextStep);
+          _refreshAnimationsForCurrentStep();
+          if (nextStep == UtxoMergeStep.selectReceiveAddress) {
+            unawaited(_viewModel.prepareMergeTransaction());
           }
         }
-        _viewModel.setIsBottomSheetOpen(false);
-      });
-
-      if (nextStep != null) {
-        _viewModel.setCurrentStep(nextStep);
-        _refreshAnimationsForCurrentStep();
-        if (nextStep == UtxoMergeStep.selectReceiveAddress) {
-          unawaited(_handleEnterSelectReceiveAddressStep());
-        }
       }
-      return;
-    }
-
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
+    } finally {
+      _isBottomSheetOpened = false;
     }
   }
 
-  void _showAmountCriteriaBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
+  void _showAmountCriteriaBottomSheet() async {
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
-    final firstAvailableRecommendedCriteria = _firstAvailableRecommendedAmountCriteria;
+    final firstAvailableRecommendedCriteria = _viewModel.firstAvailableRecommendedAmountCriteria;
     final hasRecommendedCandidates = firstAvailableRecommendedCriteria != null;
-    var selectedTabIndex = !hasRecommendedCandidates || _currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
+    final currentAmountCriteria = _viewModel.currentAmountCriteria;
+    var selectedTabIndex = !hasRecommendedCandidates || currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
     UtxoAmountCriteria? selectedRecommendedCriteria =
-        _recommendedAmountCriteriaItems.contains(_currentAmountCriteria) &&
-                _viewModel.hasCandidateUtxosForAmountCriteria(_currentAmountCriteria)
-            ? _currentAmountCriteria
+        MergeUtxosViewModel.recommendedAmountCriteriaItems.contains(currentAmountCriteria) &&
+                _viewModel.hasCandidateUtxosForAmountCriteria(currentAmountCriteria)
+            ? currentAmountCriteria
             : firstAvailableRecommendedCriteria;
     final customAmountController = TextEditingController(text: _viewModel.customAmountCriteriaText ?? '');
     final customAmountFocusNode = FocusNode();
@@ -134,178 +103,165 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       });
     }
 
-    final selectedItem = await CommonBottomSheets.showBottomSheet<_AmountCriteriaSelectionResult>(
-      showCloseButton: true,
-      adjustForKeyboardInset: false,
-      context: context,
-      backgroundColor: CoconutColors.gray900,
-      title: t.merge_utxos_screen.amount_criteria_bottomsheet.title,
-      child: SizedBox(
-        height: bodyHeight + 16,
-        child: StatefulBuilder(
-          builder: (context, modalSetState) {
-            final customAmountText = customAmountController.text.trim();
-            final customAmountValue = double.tryParse(customAmountText);
-            final hasCustomAmountInput =
-                customAmountText.isNotEmpty && customAmountValue != null && customAmountValue != 0;
-            final matchingCustomAmountUtxoCount =
-                hasCustomAmountInput
-                    ? _viewModel.candidateUtxoCountForCustomAmountText(
-                      customAmountText,
+    try {
+      final selectedItem = await CommonBottomSheets.showBottomSheet<_AmountCriteriaSelectionResult>(
+        showCloseButton: true,
+        adjustForKeyboardInset: false,
+        context: context,
+        backgroundColor: CoconutColors.gray900,
+        title: t.merge_utxos_screen.amount_criteria_bottomsheet.title,
+        child: SizedBox(
+          height: bodyHeight + 16,
+          child: StatefulBuilder(
+            builder: (context, modalSetState) {
+              final customAmountText = customAmountController.text.trim();
+              final customAmountValue = double.tryParse(customAmountText);
+              final hasCustomAmountInput =
+                  customAmountText.isNotEmpty && customAmountValue != null && customAmountValue != 0;
+              final matchingCustomAmountUtxoCount =
+                  hasCustomAmountInput
+                      ? _viewModel.candidateUtxoCountForCustomAmountText(
+                        customAmountText,
+                        isLessThan: isCustomAmountLessThan,
+                      )
+                      : 0;
+              final hasMatchingCustomAmountUtxos = matchingCustomAmountUtxoCount >= 2;
+              final customAmountErrorText =
+                  !hasCustomAmountInput
+                      ? null
+                      : matchingCustomAmountUtxoCount == 0
+                      ? t.merge_utxos_screen.no_utxos_for_amount_criteria
+                      : matchingCustomAmountUtxoCount == 1
+                      ? t.merge_utxos_screen.single_utxo_for_amount_criteria
+                      : null;
+
+              return _SegmentedBottomSheetBody(
+                bodyHeight: bodyHeight,
+                selectedTabIndex: selectedTabIndex,
+                confirmText: t.complete,
+                isConfirmEnabled:
+                    selectedTabIndex == 0 ? selectedRecommendedCriteria != null : hasMatchingCustomAmountUtxos,
+                onConfirm: () {
+                  if (selectedTabIndex == 0) {
+                    if (selectedRecommendedCriteria == null) return;
+                    Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: selectedRecommendedCriteria!));
+                    return;
+                  }
+
+                  if (customAmountController.text.trim().isEmpty) return;
+                  Navigator.pop(
+                    context,
+                    _AmountCriteriaSelectionResult(
+                      criteria: UtxoAmountCriteria.custom,
+                      customAmountText: customAmountController.text.trim(),
                       isLessThan: isCustomAmountLessThan,
-                    )
-                    : 0;
-            final hasMatchingCustomAmountUtxos = matchingCustomAmountUtxoCount >= 2;
-            final customAmountErrorText =
-                !hasCustomAmountInput
-                    ? null
-                    : matchingCustomAmountUtxoCount == 0
-                    ? t.merge_utxos_screen.no_utxos_for_amount_criteria
-                    : matchingCustomAmountUtxoCount == 1
-                    ? t.merge_utxos_screen.single_utxo_for_amount_criteria
-                    : null;
-
-            return _SegmentedBottomSheetBody(
-              bodyHeight: bodyHeight,
-              selectedTabIndex: selectedTabIndex,
-              confirmText: t.complete,
-              isConfirmEnabled:
-                  selectedTabIndex == 0 ? selectedRecommendedCriteria != null : hasMatchingCustomAmountUtxos,
-              onConfirm: () {
-                if (selectedTabIndex == 0) {
-                  if (selectedRecommendedCriteria == null) return;
-                  Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: selectedRecommendedCriteria!));
-                  return;
-                }
-
-                if (customAmountController.text.trim().isEmpty) return;
-                Navigator.pop(
-                  context,
-                  _AmountCriteriaSelectionResult(
-                    criteria: UtxoAmountCriteria.custom,
-                    customAmountText: customAmountController.text.trim(),
-                    isLessThan: isCustomAmountLessThan,
-                  ),
-                );
-              },
-              onTabSelected: (index) {
-                modalSetState(() {
-                  selectedTabIndex = index;
-                });
-                if (index == 1) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      customAmountFocusNode.requestFocus();
-                    }
+                    ),
+                  );
+                },
+                onTabSelected: (index) {
+                  modalSetState(() {
+                    selectedTabIndex = index;
                   });
-                } else {
-                  customAmountFocusNode.unfocus();
-                }
-              },
-              tabs: [
-                _BottomSheetTab(
-                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
-                  child: _buildAmountCriteriaRecommendationTab(
-                    selectedRecommendedCriteria: selectedRecommendedCriteria,
-                    onSelectionChanged: (selected) {
-                      modalSetState(() {
-                        selectedRecommendedCriteria = selected;
-                      });
-                    },
+                  if (index == 1) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        customAmountFocusNode.requestFocus();
+                      }
+                    });
+                  } else {
+                    customAmountFocusNode.unfocus();
+                  }
+                },
+                tabs: [
+                  _BottomSheetTab(
+                    label: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
+                    child: _buildAmountCriteriaRecommendationTab(
+                      selectedRecommendedCriteria: selectedRecommendedCriteria,
+                      onSelectionChanged: (selected) {
+                        modalSetState(() {
+                          selectedRecommendedCriteria = selected;
+                        });
+                      },
+                    ),
                   ),
-                ),
-                _BottomSheetTab(
-                  label: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
-                  child: _buildCustomAmountTab(
-                    controller: customAmountController,
-                    focusNode: customAmountFocusNode,
-                    isLessThan: isCustomAmountLessThan,
-                    errorText: customAmountErrorText,
-                    onAmountChanged: () {
-                      modalSetState(() {});
-                    },
-                    onLessThanToggle: () {
-                      vibrateExtraLight();
-                      modalSetState(() {
-                        isCustomAmountLessThan = !isCustomAmountLessThan;
-                      });
-                    },
+                  _BottomSheetTab(
+                    label: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
+                    child: _buildCustomAmountTab(
+                      controller: customAmountController,
+                      focusNode: customAmountFocusNode,
+                      isLessThan: isCustomAmountLessThan,
+                      errorText: customAmountErrorText,
+                      onAmountChanged: () {
+                        modalSetState(() {});
+                      },
+                      onLessThanToggle: () {
+                        vibrateExtraLight();
+                        modalSetState(() {
+                          isCustomAmountLessThan = !isCustomAmountLessThan;
+                        });
+                      },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    customAmountController.dispose();
-    customAmountFocusNode.dispose();
+      if (selectedItem != null && context.mounted) {
+        const nextStep = UtxoMergeStep.selectReceiveAddress;
 
-    if (selectedItem != null && context.mounted) {
-      const nextStep = UtxoMergeStep.selectReceiveAddress;
+        _setScreenState(() {
+          _viewModel.confirmAmountCriteriaSelection(
+            criteria: selectedItem.criteria,
+            customAmountText: selectedItem.customAmountText,
+            isLessThan: selectedItem.isLessThan,
+          );
+        });
 
-      _setScreenState(() {
-        _viewModel.setSelectedAmountCriteria(selectedItem.criteria);
-        _viewModel.setCustomAmountCriteriaText(selectedItem.customAmountText);
-        _viewModel.setIsCustomAmountLessThan(selectedItem.isLessThan);
-        _viewModel.setEditedSelectedUtxoIds(null);
-        _viewModel.setEstimatedMergeFeeSats(null);
-        _viewModel.setDidConfirmAmountCriteria(true);
-        _viewModel.setIsBottomSheetOpen(false);
-      });
-
-      _viewModel.setCurrentStep(nextStep);
-      unawaited(_handleEnterSelectReceiveAddressStep());
-      return;
-    }
-
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
+        _viewModel.setCurrentStep(nextStep);
+        unawaited(_viewModel.prepareMergeTransaction());
+      }
+    } finally {
+      customAmountController.dispose();
+      customAmountFocusNode.dispose();
+      _isBottomSheetOpened = false;
     }
   }
 
-  void _showTagSelectBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
+  void _showTagSelectBottomSheet() async {
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
-    final selectedItem = await showModalBottomSheet<TagSelectResult>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (context) => TagSelectBottomSheet(walletId: widget.id, initialSelectedTagName: _effectiveSelectedTagName),
-    );
+    try {
+      final selectedItem = await showModalBottomSheet<TagSelectResult>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder:
+            (context) =>
+                TagSelectBottomSheet(walletId: widget.id, initialSelectedTagName: _viewModel.effectiveSelectedTagName),
+      );
 
-    if (selectedItem != null && context.mounted) {
-      _setScreenState(() {
-        _viewModel.setSelectedTagName(selectedItem.selectedTagName);
-        _viewModel.setDidConfirmTagCriteria(selectedItem.selectedTagName != null);
-        _viewModel.setEditedSelectedUtxoIds(null);
-        _viewModel.setEstimatedMergeFeeSats(null);
-        _viewModel.setIsBottomSheetOpen(false);
-      });
+      if (selectedItem != null && context.mounted) {
+        _setScreenState(() {
+          _viewModel.confirmTagCriteriaSelection(selectedItem.selectedTagName);
+        });
 
-      _viewModel.setCurrentStep(UtxoMergeStep.selectReceiveAddress);
-      _refreshAnimationsForCurrentStep();
-      unawaited(_handleEnterSelectReceiveAddressStep());
-      return;
-    }
-
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
+        _viewModel.setCurrentStep(UtxoMergeStep.selectReceiveAddress);
+        _refreshAnimationsForCurrentStep();
+        unawaited(_viewModel.prepareMergeTransaction());
+      }
+    } finally {
+      _isBottomSheetOpened = false;
     }
   }
 
   List<Widget> _buildSelectedTagInlineWidgets(BuildContext context) {
-    final selectedTagName = _effectiveSelectedTagName;
+    final selectedTagName = _viewModel.effectiveSelectedTagName;
     if (selectedTagName == null || selectedTagName.isEmpty) return const [];
 
     final utxoTagProvider = context.read<UtxoTagProvider>();
@@ -333,12 +289,11 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     ];
   }
 
-  void _showReceiveAddressBottomSheet(BuildContext context) async {
-    if (_viewModel.isBottomSheetOpen) return;
+  void _showReceiveAddressBottomSheet() async {
+    if (_isBottomSheetOpened) return;
+    _isBottomSheetOpened = true;
 
-    _setScreenState(() {
-      _viewModel.setIsBottomSheetOpen(true);
-    });
+    vibrateExtraLight();
 
     final screenHeight = MediaQuery.sizeOf(context).height;
     final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
@@ -351,7 +306,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       text: isUsingDirectInput ? (_viewModel.customReceiveAddressText ?? '') : '',
     );
     final directInputFocusNode = FocusNode();
-    _validateCustomReceiveAddress(directInputController.text);
+    _viewModel.validateCustomReceiveAddress(directInputController.text);
 
     if (selectedTabIndex == 1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -368,7 +323,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       backgroundColor: CoconutColors.gray900,
       title: t.merge_utxos_screen.receive_address,
       child: SizedBox(
-        height: bodyHeight + 16,
+        height: bodyHeight,
         child: StatefulBuilder(
           builder: (context, modalSetState) {
             return _SegmentedBottomSheetBody(
@@ -420,7 +375,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
                 _BottomSheetTab(
                   label: t.merge_utxos_screen.receive_address_bottomsheet.my_address,
                   child: _buildReceiveAddressOwnedTab(
-                    addresses: _receiveAddresses,
+                    addresses: _viewModel.nextReceiveAddressesOfAllWallets,
                     selectedAddress: selectedOwnedAddress,
                     onSelectionChanged: (address) {
                       modalSetState(() {
@@ -436,7 +391,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
                     focusNode: directInputFocusNode,
                     onChanged: (value) {
                       modalSetState(() {
-                        _validateCustomReceiveAddress(value);
+                        _viewModel.validateCustomReceiveAddress(value);
                       });
                     },
                   ),
@@ -451,45 +406,15 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     directInputController.dispose();
     directInputFocusNode.dispose();
 
+    _isBottomSheetOpened = false;
+
     if (selectedItem != null && context.mounted) {
       _setScreenState(() {
         _viewModel.setSelectedReceiveAddress(selectedItem.address);
         _viewModel.setCustomReceiveAddressText(selectedItem.isDirectInput ? selectedItem.address : null);
-        _viewModel.setIsBottomSheetOpen(false);
       });
-      unawaited(_calculateEstimatedMergeFee());
+      unawaited(_viewModel.prepareMergeTransaction());
       return;
-    }
-
-    if (mounted) {
-      _setScreenState(() {
-        _viewModel.setIsBottomSheetOpen(false);
-      });
-    }
-  }
-
-  void _validateCustomReceiveAddress(String rawAddress) {
-    final trimmed = rawAddress.trim();
-    _viewModel.setCustomReceiveAddressText(trimmed.isEmpty ? null : trimmed);
-
-    if (trimmed.isEmpty) {
-      _viewModel.setIsCustomReceiveAddressValidFormat(false);
-      _viewModel.setIsCustomReceiveAddressOwnedByAnyWallet(false);
-      return;
-    }
-
-    final normalized = normalizeAddress(trimmed);
-    final walletProvider = context.read<WalletProvider>();
-
-    try {
-      final isValid = WalletUtility.validateAddress(normalized);
-      _viewModel.setIsCustomReceiveAddressValidFormat(isValid);
-      _viewModel.setIsCustomReceiveAddressOwnedByAnyWallet(
-        isValid && walletProvider.containsAddressInAnyWallet(normalized),
-      );
-    } catch (_) {
-      _viewModel.setIsCustomReceiveAddressValidFormat(false);
-      _viewModel.setIsCustomReceiveAddressOwnedByAnyWallet(false);
     }
   }
 
@@ -516,11 +441,11 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   Widget _buildReceiveAddressOwnedTab({
-    required List<_ReceiveAddressOption> addresses,
+    required List<ReceiveAddressOption> addresses,
     required String? selectedAddress,
     required ValueChanged<String?> onSelectionChanged,
   }) {
-    return SelectableBottomSheetBody<_ReceiveAddressOption>(
+    return SelectableBottomSheetBody<ReceiveAddressOption>(
       key: const ValueKey('owned-receive-address-list'),
       items: addresses,
       showGradient: false,
@@ -617,17 +542,6 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     );
   }
 
-  List<_ReceiveAddressOption> get _receiveAddresses {
-    final walletProvider = context.read<WalletProvider>();
-    final seen = <String>{};
-
-    return walletProvider.walletItemList
-        .map((wallet) => (wallet: wallet, address: walletProvider.getReceiveAddress(wallet.id)))
-        .where((entry) => seen.add(entry.address.address))
-        .map((entry) => _ReceiveAddressOption.fromWalletAddress(entry.address, walletName: entry.wallet.name))
-        .toList();
-  }
-
   Widget _buildAmountCriteriaRecommendationTab({
     required UtxoAmountCriteria? selectedRecommendedCriteria,
     required ValueChanged<UtxoAmountCriteria?> onSelectionChanged,
@@ -635,7 +549,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     return SelectableBottomSheetBody<UtxoAmountCriteria>(
       key: const ValueKey('recommended-amount-criteria'),
       allowConfirmWhenSelectionUnchanged: true,
-      items: _recommendedAmountCriteriaItems,
+      items: MergeUtxosViewModel.recommendedAmountCriteriaItems,
       showGradient: false,
       showConfirmButton: false,
       initiallySelectedId: selectedRecommendedCriteria,

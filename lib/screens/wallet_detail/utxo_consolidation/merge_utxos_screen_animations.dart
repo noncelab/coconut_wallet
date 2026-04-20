@@ -2,109 +2,107 @@ part of 'merge_utxos_screen.dart';
 
 extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
   void _scheduleHeaderAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step) || _viewModel.lastObservedHeaderStep == step) return;
-    _viewModel.setLastObservedHeaderStep(step);
+    if (!_viewModel.isAnimatedHeaderStep(step) || _lastObservedHeaderStep == step) return;
+    _lastObservedHeaderStep = step;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncHeaderAnimation(step);
+      _playHeaderAnimation(step);
     });
   }
 
   void _scheduleOptionPickerAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step) || _viewModel.lastObservedOptionPickerStep == step) return;
-    _viewModel.setLastObservedOptionPickerStep(step);
+    if (!_viewModel.isAnimatedHeaderStep(step) || _lastObservedOptionPickerStep == step) return;
+    _lastObservedOptionPickerStep = step;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncOptionPickerAnimation(step);
+      _playOptionPickerAnimation(step);
     });
   }
 
   void _refreshAnimationsForCurrentStep() {
     final step = _viewModel.currentStep;
-    _viewModel.setLastObservedHeaderStep(null);
-    _viewModel.setLastObservedOptionPickerStep(null);
+    _lastObservedHeaderStep = null;
+    _lastObservedOptionPickerStep = null;
     _scheduleHeaderAnimation(step);
     _scheduleOptionPickerAnimation(step);
   }
 
-  void _syncHeaderAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step)) return;
-    _handleReceiveAddressSummaryAnimation(step);
+  /// 현재 헤더를 페이드아웃 후 새 문구로 스왑하는 크로스페이드 전환
+  void _playHeaderAnimation(UtxoMergeStep step) {
+    if (!_viewModel.isAnimatedHeaderStep(step)) return;
+    if (_displayedHeaderStep == UtxoMergeStep.selectReceiveAddress && step != UtxoMergeStep.selectReceiveAddress) {
+      _resetReceiveAddressSummary();
+    }
 
-    _viewModel.setPendingHeaderStep(step);
+    _pendingHeaderStep = step;
 
-    if (_viewModel.displayedHeaderStep == null) {
+    if (_displayedHeaderStep == null) {
       _setScreenState(() {
-        _viewModel.setDisplayedHeaderStep(step);
-        _viewModel.setIsHeaderFadingOut(false);
+        _displayedHeaderStep = step;
+        _isHeaderFadingOut = false;
       });
       return;
     }
 
-    if (_viewModel.displayedHeaderStep == step && !_viewModel.isHeaderFadingOut) {
+    if (_displayedHeaderStep == step && !_isHeaderFadingOut) {
       return;
     }
 
-    if (_viewModel.isHeaderFadingOut) {
+    if (_isHeaderFadingOut) {
       return;
     }
 
-    final token = _viewModel.headerAnimationNonce + 1;
-    _viewModel.setHeaderAnimationNonce(token);
+    final token = _headerAnimationNonce + 1;
+    _headerAnimationNonce = token;
     _setScreenState(() {
-      _viewModel.setIsHeaderFadingOut(true);
+      _isHeaderFadingOut = true;
     });
 
     Future.delayed(_MergeUtxosScreenState._headerAnimationDuration, () {
-      if (!mounted || token != _viewModel.headerAnimationNonce) return;
+      if (!mounted || token != _headerAnimationNonce) return;
 
       _setScreenState(() {
-        _viewModel.setDisplayedHeaderStep(_viewModel.pendingHeaderStep);
-        _viewModel.setIsHeaderFadingOut(false);
+        _displayedHeaderStep = _pendingHeaderStep;
+        _isHeaderFadingOut = false;
       });
     });
   }
 
-  void _handleReceiveAddressSummaryAnimation(UtxoMergeStep step) {
-    if (step != UtxoMergeStep.selectReceiveAddress) {
-      _viewModel.setMergeTransactionPreparationNonce(_viewModel.mergeTransactionPreparationNonce + 1);
-      _viewModel.setPreparedMergeTransactionBuildResult(null);
-      _preparedMergeTransactionKey = null;
-      _viewModel.setMergeTransactionSummaryState(MergeTransactionSummaryState.idle);
-      _viewModel.setEstimatedMergeFeeSats(null);
-      _viewModel.setIsEstimatedMergeFeeLoading(false);
-      _viewModel.setAppliedMergeFeeRate(null);
-      _receiveAddressSummaryLottieController.stop();
-      _receiveAddressSummaryLottieController.reset();
-      return;
-    }
+  /// selectReceiveAddress 스텝에서 벗어날 때 진행 상태와 Lottie를 초기화한다.
+  void _resetReceiveAddressSummary() {
+    _viewModel.resetReceiveAddressSummaryForStepTransition();
+    _receiveAddressSummaryLottieController.stop();
+    _receiveAddressSummaryLottieController.reset();
   }
 
-  void _syncOptionPickerAnimation(UtxoMergeStep step) {
-    if (!_isAnimatedHeaderStep(step)) return;
+  void _playOptionPickerAnimation(UtxoMergeStep step) {
+    if (!_viewModel.isAnimatedHeaderStep(step)) return;
 
-    _viewModel.setPendingOptionPickerStep(step);
-    final nextVisibleSteps = _visibleOptionPickerStepsFor(step);
+    _pendingOptionPickerStep = step;
+    final nextVisibleSteps = _viewModel.visibleOptionPickerStepsFor(step);
 
-    if (_viewModel.displayedOptionPickerStep == null) {
+    if (_displayedOptionPickerStep == null) {
       _setScreenState(() {
-        _viewModel.setDisplayedOptionPickerStep(step);
-        _viewModel.replaceVisibleOptionPickerSteps(nextVisibleSteps);
+        _displayedOptionPickerStep = step;
+        _visibleOptionPickerSteps
+          ..clear()
+          ..addAll(nextVisibleSteps);
       });
       return;
     }
 
-    if (_viewModel.displayedOptionPickerStep == step &&
-        listEquals(_viewModel.visibleOptionPickerSteps, nextVisibleSteps)) {
+    if (_displayedOptionPickerStep == step && listEquals(_visibleOptionPickerSteps, nextVisibleSteps)) {
       return;
     }
 
-    _viewModel.setOptionPickerAnimationNonce(_viewModel.optionPickerAnimationNonce + 1);
+    _optionPickerAnimationNonce = _optionPickerAnimationNonce + 1;
     _setScreenState(() {
-      _viewModel.setDisplayedOptionPickerStep(_viewModel.pendingOptionPickerStep);
-      _viewModel.replaceVisibleOptionPickerSteps(nextVisibleSteps);
+      _displayedOptionPickerStep = _pendingOptionPickerStep;
+      _visibleOptionPickerSteps
+        ..clear()
+        ..addAll(nextVisibleSteps);
     });
   }
 }

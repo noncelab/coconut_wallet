@@ -44,7 +44,7 @@ class SplitUtxoScreen extends StatefulWidget {
 }
 
 class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
-  static const Duration _headerAnimationDuration = Duration(milliseconds: 400);
+  static const Duration _headerAnimationDuration = Duration(milliseconds: 800);
   static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
   static const Duration _autoOpenUtxoBottomSheetDelay = Duration(milliseconds: 850);
   String? _displayedHeaderTitle;
@@ -53,7 +53,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   bool _isHeaderFadingOut = false;
   int _headerAnimationNonce = 0;
 
-  static const Duration _pickerAnimationDuration = Duration(milliseconds: 300);
+  static const Duration _pickerAnimationDuration = Duration(milliseconds: 600);
   SplitStep? _displayedPickerStep;
   SplitStep? _pendingPickerStep;
   SplitStep? _lastObservedPickerStep;
@@ -316,7 +316,6 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                CoconutLayout.spacing_1000h,
                 _buildHeaderTitle(),
                 _buildVisibleOptionPickers(context),
               ],
@@ -565,18 +564,21 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       return;
     }
 
-    _autoOpenUtxoPickerTimer = Timer(_newestPickerRevealDelay + _autoOpenUtxoBottomSheetDelay, () {
-      if (!mounted ||
-          _displayedPickerStep != SplitStep.selectUtxo ||
-          _hasAutoOpenedUtxoPicker ||
-          _isUtxoSelectionBottomSheetOpen ||
-          viewModel.isUtxoSelected) {
-        return;
-      }
+    _autoOpenUtxoPickerTimer = Timer(
+      _newestPickerRevealDelay + _pickerAnimationDuration + _autoOpenUtxoBottomSheetDelay,
+      () {
+        if (!mounted ||
+            _displayedPickerStep != SplitStep.selectUtxo ||
+            _hasAutoOpenedUtxoPicker ||
+            _isUtxoSelectionBottomSheetOpen ||
+            viewModel.isUtxoSelected) {
+          return;
+        }
 
-      _hasAutoOpenedUtxoPicker = true;
-      _showUtxoSelectionBottomSheet(context, viewModel);
-    });
+        _hasAutoOpenedUtxoPicker = true;
+        _showUtxoSelectionBottomSheet(context, viewModel);
+      },
+    );
   }
 
   void _scheduleAutoOpenCriteriaBottomSheet(SplitUtxoViewModel viewModel) {
@@ -593,19 +595,22 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       return;
     }
 
-    _autoOpenCriteriaPickerTimer = Timer(_newestPickerRevealDelay + _autoOpenUtxoBottomSheetDelay, () {
-      if (!mounted ||
-          !viewModel.isUtxoSelected ||
-          viewModel.selectedCriteria != null ||
-          _displayedPickerStep != SplitStep.selectCriteria ||
-          _hasAutoOpenedCriteriaPicker ||
-          _isCriteriaBottomSheetOpen) {
-        return;
-      }
+    _autoOpenCriteriaPickerTimer = Timer(
+      _newestPickerRevealDelay + _pickerAnimationDuration + _autoOpenUtxoBottomSheetDelay,
+      () {
+        if (!mounted ||
+            !viewModel.isUtxoSelected ||
+            viewModel.selectedCriteria != null ||
+            _displayedPickerStep != SplitStep.selectCriteria ||
+            _hasAutoOpenedCriteriaPicker ||
+            _isCriteriaBottomSheetOpen) {
+          return;
+        }
 
-      _hasAutoOpenedCriteriaPicker = true;
-      _showSplitCriteriaBottomSheet(context, viewModel);
-    });
+        _hasAutoOpenedCriteriaPicker = true;
+        _showSplitCriteriaBottomSheet(context, viewModel);
+      },
+    );
   }
 
   Widget _buildFeePicker(BuildContext context) {
