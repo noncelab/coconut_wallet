@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
@@ -974,6 +975,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         title: _getUtxosPreviewBottomSheetTitle(criteria),
         showDragHandle: true,
         context: context,
+        adjustForKeyboardInset: false,
         actionList: [
           ValueListenableBuilder<bool>(
             valueListenable: isEditingNotifier,
@@ -1008,6 +1010,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
           onSelectionChanged: (selectedUtxoIds) {
             draftSelectedUtxoIdsNotifier.value = Set<String>.from(selectedUtxoIds);
           },
+          addressType: _viewModel.addressType,
         ),
       );
     } finally {

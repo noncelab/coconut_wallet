@@ -79,6 +79,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
         }).toList();
   }
 
+  AddressType get addressType => _wallet.walletType.addressType;
   List<ReceiveAddressOption> get nextReceiveAddressesOfAllWallets => _nextReceiveAddressesOfAllWallets;
   List<UtxoState> _utxoList = [];
   List<UtxoState> get utxoList => _utxoList;
