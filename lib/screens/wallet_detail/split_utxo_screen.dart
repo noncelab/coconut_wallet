@@ -438,6 +438,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                         showSkeletonResultBox: vm.showSkeletonResultBox,
                         usePreview: vm.usePreview,
                         splitResult: vm.splitResult,
+                        splitOutputText: vm.splitOutputText,
+                        splitSummaryTitle: vm.splitSummaryTitle,
                       )
                       : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
             );
@@ -1192,12 +1194,16 @@ class _SplitResultContent extends StatefulWidget {
   final bool showSkeletonResultBox;
   final bool usePreview;
   final UtxoSplitResult? splitResult;
+  final String? splitOutputText;
+  final String splitSummaryTitle;
 
   const _SplitResultContent({
     super.key,
     required this.showSkeletonResultBox,
     required this.usePreview,
     required this.splitResult,
+    required this.splitOutputText,
+    required this.splitSummaryTitle,
   });
 
   @override
@@ -1206,16 +1212,30 @@ class _SplitResultContent extends StatefulWidget {
 
 class _SplitResultContentState extends State<_SplitResultContent> with SingleTickerProviderStateMixin {
   late final AnimationController _lottieController;
+  int _lastLineCount = 2;
+  String _lastTitle = '';
 
   @override
   void initState() {
     super.initState();
     _lottieController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    if (widget.splitOutputText != null) {
+      _lastLineCount = widget.splitOutputText!.split('\n').length;
+    }
+    if (widget.splitSummaryTitle.isNotEmpty) {
+      _lastTitle = widget.splitSummaryTitle;
+    }
   }
 
   @override
   void didUpdateWidget(covariant _SplitResultContent oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.splitOutputText != null) {
+      _lastLineCount = widget.splitOutputText!.split('\n').length;
+    }
+    if (widget.splitSummaryTitle.isNotEmpty) {
+      _lastTitle = widget.splitSummaryTitle;
+    }
     final isPreparing = widget.showSkeletonResultBox;
     final isReady = widget.splitResult != null || widget.usePreview;
     final isDone = isReady && !isPreparing;
@@ -1302,7 +1322,11 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
                       child:
                           isDone
                               ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
-                              : const _SplitResultSkeletonContent(key: ValueKey('split-skeleton')),
+                              : _SplitResultSkeletonContent(
+                                key: const ValueKey('split-skeleton'),
+                                lineCount: _lastLineCount,
+                                titleText: _lastTitle,
+                              ),
                     ),
                   ),
                 ),
@@ -1384,38 +1408,109 @@ class _SplitResultReadyContent extends StatelessWidget {
 }
 
 class _SplitResultSkeletonContent extends StatelessWidget {
-  const _SplitResultSkeletonContent({super.key});
+  final int lineCount;
+  final String titleText;
 
-  Widget _buildSkeletonBar({required double width, double height = 16}) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
-    );
-  }
+  const _SplitResultSkeletonContent({super.key, required this.lineCount, required this.titleText});
 
   @override
   Widget build(BuildContext context) {
+    int displayLineCount = lineCount;
+    if (displayLineCount > 10) displayLineCount = 10;
+    if (displayLineCount < 1) displayLineCount = 1;
+
+    final dummyTitle = titleText.isNotEmpty ? titleText : ' ';
+    final dummyOutput = List.generate(displayLineCount, (index) => '0').join('\n');
+
     return Shimmer.fromColors(
       baseColor: CoconutColors.gray700,
       highlightColor: CoconutColors.gray600,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSkeletonBar(width: double.infinity, height: 22),
+          Stack(
+            children: [
+              Text(dummyTitle, style: CoconutTypography.body1_16_Bold.copyWith(color: Colors.transparent)),
+              Positioned.fill(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    int titleLines = 1;
+                    final span = TextSpan(text: dummyTitle, style: CoconutTypography.body1_16_Bold);
+                    final tp = TextPainter(text: span, textDirection: TextDirection.ltr);
+                    tp.layout(maxWidth: constraints.maxWidth);
+                    titleLines = tp.computeLineMetrics().length;
+                    if (titleLines < 1) titleLines = 1;
+
+                    return Column(
+                      mainAxisAlignment: titleLines > 1 ? MainAxisAlignment.spaceAround : MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: List.generate(titleLines, (index) {
+                        return Container(
+                          width:
+                              index == titleLines - 1 && titleLines > 1 ? constraints.maxWidth * 0.6 : double.infinity,
+                          height: 18,
+                          decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                        );
+                      }),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
           CoconutLayout.spacing_200h,
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(padding: const EdgeInsets.only(top: 2), child: _buildSkeletonBar(width: 72, height: 16)),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Stack(
                 children: [
-                  _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
-                  CoconutLayout.spacing_100h,
-                  _buildSkeletonBar(width: MediaQuery.sizeOf(context).width / 2, height: 20),
+                  Text(
+                    t.split_utxo_screen.expected_result.new_utxos,
+                    style: CoconutTypography.body2_14.copyWith(color: Colors.transparent),
+                  ),
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: double.infinity,
+                        height: 16,
+                        decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                  ),
                 ],
+              ),
+              Expanded(
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: Text(
+                        dummyOutput,
+                        style: CoconutTypography.body1_16.copyWith(color: Colors.transparent),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: Column(
+                        mainAxisAlignment:
+                            displayLineCount > 1 ? MainAxisAlignment.spaceAround : MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(displayLineCount, (index) {
+                          return Container(
+                            width: MediaQuery.sizeOf(context).width / 2,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: CoconutColors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1423,8 +1518,40 @@ class _SplitResultSkeletonContent extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Padding(padding: const EdgeInsets.only(top: 2), child: _buildSkeletonBar(width: 64, height: 16)),
-              _buildSkeletonBar(width: 92, height: 22),
+              Stack(
+                children: [
+                  Text(
+                    t.split_utxo_screen.expected_result.fee,
+                    style: CoconutTypography.body2_14.copyWith(color: Colors.transparent),
+                  ),
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        width: double.infinity,
+                        height: 16,
+                        decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Stack(
+                children: [
+                  Text('0', style: CoconutTypography.body1_16.copyWith(color: Colors.transparent)),
+                  Container(width: 92),
+                  Positioned.fill(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        width: 92,
+                        height: 18,
+                        decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ],
