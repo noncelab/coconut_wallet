@@ -842,7 +842,7 @@ split_utxo_screen:
   question_select_criteria: "How would you like to split it?"
   question_split_by_amount: "How much per split?"
   question_split_evenly: "Into how many parts?"
-  label_split_criteria: "Split method"
+  label_split_criteria: "Split Method"
   label_selected_utxo: "Selected UTXO"
   label_estimated_fee: "Estimated fee"
   add_new_amount: "Add amount"

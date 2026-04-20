@@ -50,6 +50,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   String? _displayedHeaderTitle;
   String? _pendingHeaderTitle;
   String? _lastObservedHeaderTitle;
+  SplitCriteria? _displayedCriteria;
+  SplitCriteria? _pendingCriteria;
+  SplitCriteria? _lastObservedCriteria;
+  bool _isCriteriaBodyVisible = false;
   bool _isHeaderFadingOut = false;
   int _headerAnimationNonce = 0;
 
@@ -164,40 +168,55 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  void _scheduleHeaderAnimation(String nextTitle) {
-    if (_lastObservedHeaderTitle == nextTitle) return;
+  void _scheduleHeaderAnimation(String nextTitle, SplitCriteria? nextCriteria) {
+    if (_lastObservedHeaderTitle == nextTitle && _lastObservedCriteria == nextCriteria) return;
     _lastObservedHeaderTitle = nextTitle;
+    _lastObservedCriteria = nextCriteria;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncHeaderAnimation(nextTitle);
+      _syncHeaderAnimation(nextTitle, nextCriteria);
     });
   }
 
-  void _syncHeaderAnimation(String nextTitle) {
+  void _syncHeaderAnimation(String nextTitle, SplitCriteria? nextCriteria) {
     _pendingHeaderTitle = nextTitle;
+    _pendingCriteria = nextCriteria;
 
     if (_displayedHeaderTitle == null) {
       setState(() {
         _displayedHeaderTitle = nextTitle;
+        _displayedCriteria = nextCriteria;
         _isHeaderFadingOut = false;
+        _isCriteriaBodyVisible = true;
       });
       return;
     }
 
-    if (_displayedHeaderTitle == nextTitle && !_isHeaderFadingOut) return;
+    if (_displayedHeaderTitle == nextTitle && _displayedCriteria == nextCriteria && !_isHeaderFadingOut) return;
     if (_isHeaderFadingOut) return;
 
     final token = _headerAnimationNonce + 1;
     _headerAnimationNonce = token;
-    setState(() => _isHeaderFadingOut = true);
+    setState(() {
+      _isHeaderFadingOut = true;
+      _isCriteriaBodyVisible = false;
+    });
 
     Future.delayed(_headerAnimationDuration, () {
       if (!mounted || token != _headerAnimationNonce) return;
 
       setState(() {
         _displayedHeaderTitle = _pendingHeaderTitle;
+        _displayedCriteria = _pendingCriteria;
         _isHeaderFadingOut = false;
+      });
+
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!mounted || token != _headerAnimationNonce) return;
+        setState(() {
+          _isCriteriaBodyVisible = true;
+        });
       });
     });
   }
@@ -352,7 +371,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       builder: (context, data, _) {
         final viewModel = context.read<SplitUtxoViewModel>();
         final nextTitle = _getHeaderTitle(t, data.item1, data.item2);
-        _scheduleHeaderAnimation(nextTitle);
+        final nextCriteria = data.item2;
+        _scheduleHeaderAnimation(nextTitle, nextCriteria);
 
         final currentStep =
             data.item1.isEmpty
@@ -676,19 +696,47 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildSplitContent(BuildContext context) {
-    return Selector<SplitUtxoViewModel, SplitCriteria?>(
-      selector: (_, vm) => vm.selectedCriteria,
-      builder: (context, criteria, _) {
-        if (criteria == null) return const SizedBox.shrink();
-        switch (criteria) {
-          case SplitCriteria.byAmount:
-            return _buildSplitByAmountBody(context);
-          case SplitCriteria.evenly:
-            return _buildSplitEvenlyBody(context);
-          case SplitCriteria.manually:
-            return _buildSplitManuallyBody(context);
-        }
+    final criteria = _displayedCriteria;
+    if (criteria == null) return const SizedBox.shrink();
+
+    Widget content;
+    switch (criteria) {
+      case SplitCriteria.byAmount:
+        content = _buildSplitByAmountBody(context);
+        break;
+      case SplitCriteria.evenly:
+        content = _buildSplitEvenlyBody(context);
+        break;
+      case SplitCriteria.manually:
+        content = _buildSplitManuallyBody(context);
+        break;
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 600),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      layoutBuilder: (currentChild, previousChildren) {
+        return Stack(
+          alignment: Alignment.topCenter,
+          children: [...previousChildren, if (currentChild != null) currentChild],
+        );
       },
+      transitionBuilder: (child, animation) {
+        final offsetAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation);
+        return FadeTransition(opacity: animation, child: SlideTransition(position: offsetAnimation, child: child));
+      },
+      child:
+          _isCriteriaBodyVisible
+              ? KeyedSubtree(key: ValueKey('split_criteria_${criteria.name}'), child: content)
+              : Visibility(
+                key: ValueKey('empty_criteria_${criteria.name}'),
+                visible: false,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: content,
+              ),
     );
   }
 
