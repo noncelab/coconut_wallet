@@ -781,7 +781,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               onEditingComplete: () => viewModel.amountFocusNode.unfocus(),
               textInputAction: TextInputAction.done,
               textInputType: const TextInputType.numberWithOptions(decimal: true),
-              textInputFormatter: [_DecimalTextInputFormatter()],
+              textInputFormatter: [_DecimalTextInputFormatter(decimalRange: viewModel.currentUnit.isBtcUnit ? 8 : 0)],
               placeholderText: t.split_utxo_screen.placeholder_split_amount,
               maxLines: 1,
               unfocusOnTapOutside: true,
@@ -1630,8 +1630,12 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 onEditingComplete: () => widget.item.amountFocusNode.unfocus(),
                                 textInputAction: TextInputAction.done,
                                 textInputType: const TextInputType.numberWithOptions(decimal: true),
-                                textInputFormatter: [_DecimalTextInputFormatter()],
-                                placeholderText: t.split_utxo_screen.placeholder_split_amount,
+                                textInputFormatter: [
+                                  _DecimalTextInputFormatter(
+                                    decimalRange: widget.viewModel.currentUnit.isBtcUnit ? 8 : 0,
+                                  ),
+                                ],
+                                placeholderText: widget.viewModel.currentUnit.isBtcUnit ? '0.00' : '0',
                                 maxLines: 1,
                                 padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 4),
                                 unfocusOnTapOutside: true,
@@ -1811,11 +1815,19 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
 }
 
 class _DecimalTextInputFormatter extends TextInputFormatter {
+  final int decimalRange;
+
+  _DecimalTextInputFormatter({required this.decimalRange});
+
   @override
   TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
     String text = newValue.text;
 
     if (text.isEmpty) return newValue;
+
+    if (decimalRange == 0 && text.contains('.')) {
+      return oldValue;
+    }
 
     if (text.startsWith('.')) {
       text = '0$text';
@@ -1828,6 +1840,12 @@ class _DecimalTextInputFormatter extends TextInputFormatter {
 
     if (!RegExp(r'^\d*\.?\d*$').hasMatch(text)) {
       return oldValue;
+    }
+
+    if (text.contains('.')) {
+      if (text.split('.')[1].length > decimalRange) {
+        return oldValue;
+      }
     }
 
     return newValue;
