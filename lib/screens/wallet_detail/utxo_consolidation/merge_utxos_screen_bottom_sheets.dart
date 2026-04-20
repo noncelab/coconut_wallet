@@ -620,7 +620,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
                       suffix: Text(
                         t.btc,
                         style: CoconutTypography.heading4_18.copyWith(
-                          color: CoconutColors.gray600,
+                          color: CoconutColors.white,
                           height: 1.4,
                           letterSpacing: -0.4,
                         ),
