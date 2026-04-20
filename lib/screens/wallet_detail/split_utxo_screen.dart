@@ -312,11 +312,16 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         child: Stack(
           children: [
             ListView(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                CoconutLayout.spacing_800h,
+                Selector<SplitUtxoViewModel, bool>(
+                  selector: (_, vm) => vm.showSplitResultBox,
+                  builder: (context, showSplitResultBox, _) {
+                    return SizedBox(height: showSplitResultBox ? 40 : 32);
+                  },
+                ),
                 _buildHeaderTitle(),
                 _buildVisibleOptionPickers(context),
               ],
@@ -1081,13 +1086,20 @@ class _HeaderTitleErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple3<String?, String, SplitCriteria?>>(
-      selector: (_, vm) => Tuple3(vm.headerTitleErrorMessage, vm.feePickerDisplayText, vm.selectedCriteria),
+    return Selector<SplitUtxoViewModel, Tuple4<String?, String, SplitCriteria?, bool>>(
+      selector:
+          (_, vm) =>
+              Tuple4(vm.headerTitleErrorMessage, vm.feePickerDisplayText, vm.selectedCriteria, vm.showSplitResultBox),
       builder: (_, data, __) {
         final headerTitleErrorMessage = data.item1;
         final selectedCriteria = data.item3;
+        final showSplitResultBox = data.item4;
         if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
-          return SizedBox(height: selectedCriteria == SplitCriteria.manually ? 8 : 16);
+          double height = 20;
+          if (selectedCriteria == SplitCriteria.manually) {
+            height = showSplitResultBox ? 16 : 24;
+          }
+          return SizedBox(height: height);
         }
 
         return Padding(
@@ -1171,51 +1183,56 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: CoconutColors.gray800,
-              border: Border.all(color: CoconutColors.gray600),
-              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: CoconutColors.gray600, width: 1),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Lottie.asset(
-                  'assets/lottie/three-stars-growing.json',
-                  controller: _lottieController,
-                  onLoaded: (composition) {
-                    _lottieController.duration = composition.duration;
-                    if (isDone) {
-                      _lottieController.value = 1;
-                    } else if (isPreparing && !_lottieController.isAnimating) {
-                      _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
-                    } else if (!isPreparing) {
-                      _lottieController.reset();
-                    }
-                  },
-                  width: 24,
-                  height: 24,
-                  fit: BoxFit.contain,
-                  repeat: false,
-                ),
-
-                const SizedBox(width: 4),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    layoutBuilder: (currentChild, previousChildren) {
-                      return Stack(
-                        alignment: Alignment.topLeft,
-                        children: [...previousChildren, if (currentChild != null) currentChild],
-                      );
+                Padding(
+                  padding: const EdgeInsets.only(top: 0),
+                  child: Lottie.asset(
+                    'assets/lottie/three-stars-growing.json',
+                    controller: _lottieController,
+                    onLoaded: (composition) {
+                      _lottieController.duration = composition.duration;
+                      if (isDone) {
+                        _lottieController.value = 1;
+                      } else if (isPreparing && !_lottieController.isAnimating) {
+                        _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
+                      } else if (!isPreparing) {
+                        _lottieController.reset();
+                      }
                     },
-                    transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-                    child:
-                        isDone
-                            ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
-                            : const _SplitResultSkeletonContent(key: ValueKey('split-skeleton')),
+                    width: 24,
+                    height: 24,
+                    fit: BoxFit.contain,
+                    repeat: false,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 260),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      layoutBuilder: (currentChild, previousChildren) {
+                        return Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [...previousChildren, if (currentChild != null) currentChild],
+                        );
+                      },
+                      transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                      child:
+                          isDone
+                              ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
+                              : const _SplitResultSkeletonContent(key: ValueKey('split-skeleton')),
+                    ),
                   ),
                 ),
               ],
@@ -1302,15 +1319,15 @@ class _SplitResultSkeletonContent extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(color: CoconutColors.white, borderRadius: BorderRadius.circular(4)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: CoconutColors.white.withValues(alpha: 0.12),
-      highlightColor: CoconutColors.white.withValues(alpha: 0.24),
+      baseColor: CoconutColors.gray700,
+      highlightColor: CoconutColors.gray600,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1548,10 +1565,10 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 4),
                                 unfocusOnTapOutside: true,
                                 suffix: Padding(
-                                  padding: const EdgeInsets.only(top: 4, right: 4),
+                                  padding: const EdgeInsets.only(right: 4),
                                   child: Text(
                                     widget.viewModel.currentUnit.symbol,
-                                    style: CoconutTypography.heading4_18.setColor(CoconutColors.white),
+                                    style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
                                   ),
                                 ),
                               ),
