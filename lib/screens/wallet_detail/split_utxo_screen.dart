@@ -316,6 +316,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
+                CoconutLayout.spacing_800h,
                 _buildHeaderTitle(),
                 _buildVisibleOptionPickers(context),
               ],
@@ -568,6 +569,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       _newestPickerRevealDelay + _pickerAnimationDuration + _autoOpenUtxoBottomSheetDelay,
       () {
         if (!mounted ||
+            ModalRoute.of(context)?.isCurrent != true ||
             _displayedPickerStep != SplitStep.selectUtxo ||
             _hasAutoOpenedUtxoPicker ||
             _isUtxoSelectionBottomSheetOpen ||
@@ -599,6 +601,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       _newestPickerRevealDelay + _pickerAnimationDuration + _autoOpenUtxoBottomSheetDelay,
       () {
         if (!mounted ||
+            ModalRoute.of(context)?.isCurrent != true ||
             !viewModel.isUtxoSelected ||
             viewModel.selectedCriteria != null ||
             _displayedPickerStep != SplitStep.selectCriteria ||
