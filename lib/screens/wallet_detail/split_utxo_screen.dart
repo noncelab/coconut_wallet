@@ -921,7 +921,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                           if (inputText.isEmpty && !hasFocus)
                             IgnorePointer(
                               child: Text(
-                                '0',
+                                '1',
                                 style: CoconutTypography.heading3_21_NumberBold.copyWith(
                                   color: CoconutColors.gray500,
                                   fontSize: 24,
@@ -1698,7 +1698,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                       if (inputText.isEmpty && !hasFocus)
                                         IgnorePointer(
                                           child: Text(
-                                            '0',
+                                            '1',
                                             style: CoconutTypography.heading3_21_NumberBold.copyWith(
                                               color: CoconutColors.gray500,
                                               fontSize: 24,
