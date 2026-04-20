@@ -30,7 +30,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
             items: const [UtxoMergeCriteria.smallAmounts, UtxoMergeCriteria.sameTag, UtxoMergeCriteria.sameAddress],
             showGradient: false,
             initiallySelectedId: _viewModel.currentCriteria,
-            allowConfirmWhenSelectionUnchanged: true,
+            allowConfirmWhenSelectionUnchanged: _viewModel.mergeState == MergeState.idle,
             getItemId: (item) => item,
             confirmText: t.complete,
             backgroundColor: CoconutColors.gray900,

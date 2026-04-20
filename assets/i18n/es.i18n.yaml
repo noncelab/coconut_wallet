@@ -772,6 +772,8 @@ merge_utxos_screen:
   select_merge_criteria: "¿Cómo quieres organizarlos?"
   select_amount_criteria: "Selecciona un criterio de monto."
   select_tag: "Selecciona una etiqueta."
+  select_tag_bottomsheet_title: "Seleccionar etiqueta"
+  selected_tag: "Etiqueta seleccionada"
   merge_criteria: "Criterio de combinación"
   merge_criteria_bottomsheet:
     title: "Elegir criterio de combinación"
