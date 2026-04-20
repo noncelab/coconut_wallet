@@ -9,13 +9,11 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/merge_utxos/merge_utxos_view_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
-import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/screens/common/tag_select_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
@@ -163,12 +161,16 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildBody(BuildContext context) {
-    if (_viewModel.currentStep == UtxoMergeStep.entry) {
-      // 2개 <= n(UTXO) < 11
-      return _buildFewUtxosWarning();
-    }
-
-    return _buildMergeContent(context);
+    return Selector<MergeUtxosViewModel, UtxoMergeStep>(
+      selector: (_, vm) => vm.currentStep,
+      builder: (context, currentStep, _) {
+        if (currentStep == UtxoMergeStep.entry) {
+          // 2개 <= n(UTXO) < 11
+          return _buildFewUtxosWarning();
+        }
+        return _buildMergeContent(context);
+      },
+    );
   }
 
   Widget _buildFewUtxosWarning() {
