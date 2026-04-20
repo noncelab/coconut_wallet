@@ -370,12 +370,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       selector: (_, vm) => Tuple3(vm.selectedUtxoList, vm.selectedCriteria, vm.headerTitleErrorMessage),
       builder: (context, data, _) {
         final viewModel = context.read<SplitUtxoViewModel>();
-        final nextTitle = _getHeaderTitle(t, data.item1, data.item2);
+        final nextTitle = _getHeaderTitle(t, data.item1, data.item2, viewModel.hasSelectedUtxoAmountError);
         final nextCriteria = data.item2;
         _scheduleHeaderAnimation(nextTitle, nextCriteria);
 
         final currentStep =
-            data.item1.isEmpty
+            data.item1.isEmpty || viewModel.hasSelectedUtxoAmountError
                 ? SplitStep.selectUtxo
                 : (data.item2 == null ? SplitStep.selectCriteria : SplitStep.enterDetails);
         _scheduleOptionPickerAnimation(currentStep, viewModel);
@@ -1124,8 +1124,13 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     }
   }
 
-  String _getHeaderTitle(Translations t, List<UtxoState> selectedUtxoList, SplitCriteria? selectedCriteria) {
-    if (selectedUtxoList.isEmpty) {
+  String _getHeaderTitle(
+    Translations t,
+    List<UtxoState> selectedUtxoList,
+    SplitCriteria? selectedCriteria,
+    bool hasError,
+  ) {
+    if (selectedUtxoList.isEmpty || hasError) {
       return t.split_utxo_screen.question_select_utxo;
     }
     if (selectedCriteria == null) {

@@ -546,6 +546,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _splitBuilder.setUtxo(null);
     } else {
       _splitBuilder.setUtxo(_selectedUtxoList.first);
+      if (hasSelectedUtxoAmountError) {
+        _selectedCriteria = null;
+      }
     }
 
     _updateRecommendedSplitCounts();
