@@ -743,37 +743,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     required int selectedUtxoCount,
     required String selectedUtxosTotalAmountText,
   }) {
-    if (criteria == UtxoMergeCriteria.sameTag || criteria == UtxoMergeCriteria.sameAddress) {
-      return RichText(
-        key: ValueKey(
-          criteria == UtxoMergeCriteria.sameTag
-              ? 'receive-address-summary-single-selection-tag-text'
-              : 'receive-address-summary-single-selection-same-address-text',
-        ),
-        text: TextSpan(
-          style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-          children: [
-            _buildSelectableSummaryHeadlineSpan(
-              criteria == UtxoMergeCriteria.sameTag ? _tagSummaryHeadlineText : _sameAddressSummaryHeadlineText,
-            ),
-            TextSpan(text: t.merge_utxos_screen.receive_address_summary_tag_single_selection_suffix),
-            TextSpan(text: _summaryCardDestinationText),
-          ],
-        ),
-      );
-    }
-
     return RichText(
       key: const ValueKey('receive-address-summary-single-selection-text'),
       text: TextSpan(
         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
         children: [
           _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(criteria, selectedUtxoCount)),
-          TextSpan(
-            text: t.merge_utxos_screen.receive_address_summary_single_selection_total(
-              total: selectedUtxosTotalAmountText,
-            ),
-          ),
+          const TextSpan(text: ','),
+          TextSpan(text: t.merge_utxos_screen.summary_card_total(amount: selectedUtxosTotalAmountText)),
           TextSpan(text: _summaryCardDestinationText),
         ],
       ),
@@ -785,33 +762,14 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     required int selectedUtxoCount,
     required String selectedUtxosTotalAmountText,
   }) {
-    if (criteria == UtxoMergeCriteria.sameTag || criteria == UtxoMergeCriteria.sameAddress) {
-      return RichText(
-        key: ValueKey(
-          criteria == UtxoMergeCriteria.sameTag
-              ? 'receive-address-summary-tag-text'
-              : 'receive-address-summary-same-address-text',
-        ),
-        text: TextSpan(
-          style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
-          children: [
-            _buildSelectableSummaryHeadlineSpan(
-              criteria == UtxoMergeCriteria.sameTag ? _tagSummaryHeadlineText : _sameAddressSummaryHeadlineText,
-            ),
-            TextSpan(text: t.merge_utxos_screen.receive_address_summary_tag_object_suffix),
-            TextSpan(text: _summaryCardDestinationText),
-          ],
-        ),
-      );
-    }
-
     return RichText(
       key: const ValueKey('receive-address-summary-text'),
       text: TextSpan(
         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
         children: [
           _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(criteria, selectedUtxoCount)),
-          TextSpan(text: t.merge_utxos_screen.receive_address_summary_total(amount: selectedUtxosTotalAmountText)),
+          const TextSpan(text: ','),
+          TextSpan(text: t.merge_utxos_screen.summary_card_total(amount: selectedUtxosTotalAmountText)),
           TextSpan(text: _summaryCardDestinationText),
         ],
       ),
@@ -847,48 +805,27 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   String _getSummaryCardHeadlineText(UtxoMergeCriteria criteria, int utxoCount) {
-    switch (criteria) {
-      case UtxoMergeCriteria.smallAmounts:
-        return _viewModel.isCustomAmountLessThan
-            ? t.merge_utxos_screen.receive_address_summary_headline_under(
-              amount: _summaryAmountThresholdText,
-              count: utxoCount,
-            )
-            : t.merge_utxos_screen.receive_address_summary_headline_or_less(
-              amount: _summaryAmountThresholdText,
-              count: utxoCount,
-            );
-      case UtxoMergeCriteria.sameTag:
-        return t.merge_utxos_screen.receive_address_summary_count(count: utxoCount);
-      case UtxoMergeCriteria.sameAddress:
-        return t.merge_utxos_screen.receive_address_summary_count(count: utxoCount);
-    }
+    return t.merge_utxos_screen.summary_card_headline(
+      count: utxoCount,
+      amount_range: _summaryCardAmountRangeText(criteria),
+    );
   }
 
   String get _summaryCardDestinationText {
     if (_viewModel.isDirectInputReceiveAddressWarning) {
-      return t.merge_utxos_screen.receive_address_summary_to_unowned_address;
+      return t.merge_utxos_screen.summary_card_destination(
+        destination: t.merge_utxos_screen.summary_card_to_unowned_address_destination,
+      );
     }
     final walletName = _viewModel.selectedReceiveAddressWalletName;
     if (walletName != null && walletName.isNotEmpty) {
-      return t.merge_utxos_screen.receive_address_summary_to_wallet(wallet_name: walletName);
+      return t.merge_utxos_screen.summary_card_destination(
+        destination: t.merge_utxos_screen.summary_card_to_wallet_destination(wallet_name: walletName),
+      );
     }
-    return t.merge_utxos_screen.receive_address_summary_to_selected_address;
-  }
-
-  String get _tagSummaryHeadlineText {
-    final tagName = _viewModel.effectiveSelectedTagName ?? '';
-    return t.merge_utxos_screen.receive_address_summary_tag_applied(tag_name: tagName) +
-        t.merge_utxos_screen.receive_address_summary_tag_amount_only(
-          amount: _getSummaryCardHeadlineText(_viewModel.currentCriteria, _viewModel.selectedUtxoCount),
-        );
-  }
-
-  String get _sameAddressSummaryHeadlineText {
-    return t.merge_utxos_screen.receive_address_summary_same_address_applied +
-        t.merge_utxos_screen.receive_address_summary_tag_amount_only(
-          amount: _getSummaryCardHeadlineText(_viewModel.currentCriteria, _viewModel.selectedUtxoCount),
-        );
+    return t.merge_utxos_screen.summary_card_destination(
+      destination: t.merge_utxos_screen.summary_card_to_selected_address_destination,
+    );
   }
 
   String get _summaryAmountThresholdText {
@@ -903,6 +840,19 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         final customAmount = _viewModel.customAmountCriteriaText ?? '';
         final formattedAmount = customAmount.isEmpty ? customAmount : '${_formatCustomAmountText(customAmount)} BTC';
         return formattedAmount;
+    }
+  }
+
+  String _summaryCardAmountRangeText(UtxoMergeCriteria criteria) {
+    switch (criteria) {
+      case UtxoMergeCriteria.smallAmounts:
+        return _viewModel.isCustomAmountLessThan
+            ? t.merge_utxos_screen.summary_card_headline_under(amount: _summaryAmountThresholdText)
+            : t.merge_utxos_screen.summary_card_headline_or_less(amount: _summaryAmountThresholdText);
+      case UtxoMergeCriteria.sameTag:
+        return t.merge_utxos_screen.selected_tag_title(name: _viewModel.effectiveSelectedTagName ?? '');
+      case UtxoMergeCriteria.sameAddress:
+        return t.merge_utxos_screen.reused_address;
     }
   }
 
