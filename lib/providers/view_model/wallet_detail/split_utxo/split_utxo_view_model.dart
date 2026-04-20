@@ -192,14 +192,14 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     final utxoAmountText = currentUnit.displayBitcoinAmount(
       _selectedUtxoAmount,
       withUnit: true,
-      forceEightDecimals: currentUnit.isBtcUnit,
+      forceEightDecimals: false,
     );
 
     if (_selectedCriteria == SplitCriteria.byAmount) {
       final formattedSplitAmount = currentUnit.displayBitcoinAmount(
         splitAmountSats,
         withUnit: true,
-        forceEightDecimals: currentUnit.isBtcUnit,
+        forceEightDecimals: false,
       );
       return t.split_utxo_screen.expected_result.split_by_amount(
         utxoAmountText: utxoAmountText,
