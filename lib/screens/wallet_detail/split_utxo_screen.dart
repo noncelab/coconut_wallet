@@ -409,26 +409,39 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildExpectedResult() {
-    return Selector<SplitUtxoViewModel, Tuple4<bool, bool, bool, UtxoSplitResult?>>(
-      selector: (_, vm) => Tuple4(vm.showSplitResultBox, vm.showSkeletonResultBox, vm.usePreview, vm.splitResult),
-      builder: (context, data, _) {
-        final showSplitResultBox = data.item1;
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, animation) {
-            return FadeTransition(opacity: animation, child: child);
+    return Consumer<SplitUtxoViewModel>(
+      builder: (context, vm, _) {
+        final focusNodes = [
+          vm.amountFocusNode,
+          vm.splitCountFocusNode,
+          vm.feeRateFocusNode,
+          ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
+        ];
+
+        return AnimatedBuilder(
+          animation: Listenable.merge(focusNodes),
+          builder: (context, _) {
+            final isFocused = focusNodes.any((node) => node.hasFocus);
+            final showSplitResultBox = vm.showSplitResultBox && !isFocused;
+
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child:
+                  showSplitResultBox
+                      ? _SplitResultContent(
+                        key: const ValueKey('split_result_box_content'),
+                        showSkeletonResultBox: vm.showSkeletonResultBox,
+                        usePreview: vm.usePreview,
+                        splitResult: vm.splitResult,
+                      )
+                      : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
+            );
           },
-          child:
-              showSplitResultBox
-                  ? _SplitResultContent(
-                    key: const ValueKey('split_result_box_content'),
-                    showSkeletonResultBox: data.item2,
-                    usePreview: data.item3,
-                    splitResult: data.item4,
-                  )
-                  : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
         );
       },
     );
