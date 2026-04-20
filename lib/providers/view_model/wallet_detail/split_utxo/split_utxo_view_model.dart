@@ -265,7 +265,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   String? get headerTitleErrorMessage {
-    if (isOutputSumOverInput) {
+    if (isOutputSumOverInput && _selectedCriteria == SplitCriteria.manually) {
       return t.split_utxo_screen.amount_error.manual_sum_over_input;
     }
 
@@ -287,9 +287,29 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _onInputChanged() {
+    if (!isSplitInputValid) {
+      if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+      _cancelActiveBuild();
+      _isCalculating = false;
+      _splitResult = null;
+      _splitPreview = null;
+      _isDustError = false;
+      _isAmountInsufficientAfterFee = false;
+      _isFeeExceedsUtxoAmount = false;
+      _errorEstimatedFee = null;
+      _unexpectedErrorMessage = "";
+      notifyListeners();
+      return;
+    }
+
     _isCalculating = true;
     _splitResult = null;
     _splitPreview = null;
+    _isDustError = false;
+    _isAmountInsufficientAfterFee = false;
+    _isFeeExceedsUtxoAmount = false;
+    _errorEstimatedFee = null;
+    _unexpectedErrorMessage = "";
     notifyListeners();
 
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
@@ -423,10 +443,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool get isOutputSumOverInput {
-    // byAmount일 때, splitAmountErrorText로 반환 중
-    // if (_selectedCriteria == SplitCriteria.byAmount) {
-    //   return _selectedUtxoList.isNotEmpty && splitAmountSats >= _selectedUtxoAmount;
-    // }
+    if (_selectedCriteria == SplitCriteria.byAmount) {
+      return _selectedUtxoList.isNotEmpty && splitAmountSats >= _selectedUtxoAmount;
+    }
 
     if (_selectedCriteria == SplitCriteria.manually) {
       return _doesManualSplitRequestedTotalExceedInput;
