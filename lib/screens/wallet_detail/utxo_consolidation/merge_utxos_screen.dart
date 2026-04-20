@@ -1077,6 +1077,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildVisibleOptionPickers(BuildContext context) {
+    const gapBetweenWidgets = 40.0;
     final pickerWidgets =
         _visibleOptionPickerSteps.indexed.map(((int, UtxoMergeStep) entry) {
           final index = entry.$1;
@@ -1086,7 +1087,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
           if (isNewest) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 40),
+              padding: const EdgeInsets.only(bottom: gapBetweenWidgets),
               child: picker.slideUpAnimation(
                 key: ValueKey('merge-picker-in-${step.name}-$_optionPickerAnimationNonce'),
                 duration: _optionPickerAnimationDuration,
@@ -1099,11 +1100,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             );
           }
 
-          return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : 40), child: picker);
+          return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : gapBetweenWidgets), child: picker);
         }).toList();
 
     if (_viewModel.currentStep == UtxoMergeStep.selectReceiveAddress) {
-      pickerWidgets.add(Padding(padding: const EdgeInsets.only(bottom: 40), child: _buildEstimatedFeeOptionPicker()));
+      pickerWidgets.add(
+        Padding(padding: const EdgeInsets.only(bottom: gapBetweenWidgets), child: _buildEstimatedFeeOptionPicker()),
+      );
     }
 
     return AnimatedSize(
@@ -1135,7 +1138,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       ),
       UtxoMergeStep.selectTag => CoconutOptionPicker(
         text: _viewModel.effectiveSelectedTagName == null ? t.merge_utxos_screen.select_tag : '',
-        label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.select_tag,
+        label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.selected_tag,
         onTap: _showTagSelectBottomSheet,
         inlineWidgets: _buildSelectedTagInlineWidgets(context),
         inlineSpacing: 0,

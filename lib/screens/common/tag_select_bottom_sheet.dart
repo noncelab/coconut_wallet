@@ -80,7 +80,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
           isBottom: true,
           context: context,
           onBackPressed: _dismiss,
-          title: t.merge_utxos_screen.select_tag,
+          title: t.merge_utxos_screen.select_tag_bottomsheet_title,
         ),
         body: SafeArea(
           child: Padding(
@@ -97,10 +97,9 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CoconutLayout.spacing_400h,
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          constraints: const BoxConstraints(minHeight: 30, maxHeight: 296),
+          constraints: const BoxConstraints(minHeight: 120, maxHeight: 296),
           child: SingleChildScrollView(
             child: Wrap(
               spacing: 8,
@@ -120,7 +119,6 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
             ),
           ),
         ),
-        CoconutLayout.spacing_600h,
         SizedBox(
           height: 120,
           child: FixedBottomButton(
