@@ -712,31 +712,36 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         break;
     }
 
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 600),
-      switchInCurve: Curves.easeOut,
-      switchOutCurve: Curves.easeIn,
-      layoutBuilder: (currentChild, previousChildren) {
-        return Stack(
-          alignment: Alignment.topCenter,
-          children: [...previousChildren, if (currentChild != null) currentChild],
-        );
-      },
-      transitionBuilder: (child, animation) {
-        final offsetAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation);
-        return FadeTransition(opacity: animation, child: SlideTransition(position: offsetAnimation, child: child));
-      },
-      child:
-          _isCriteriaBodyVisible
-              ? KeyedSubtree(key: ValueKey('split_criteria_${criteria.name}'), child: content)
-              : Visibility(
-                key: ValueKey('empty_criteria_${criteria.name}'),
-                visible: false,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: content,
-              ),
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 600),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        layoutBuilder: (currentChild, previousChildren) {
+          return Stack(
+            alignment: Alignment.topCenter,
+            children: [...previousChildren, if (currentChild != null) currentChild],
+          );
+        },
+        transitionBuilder: (child, animation) {
+          final offsetAnimation = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation);
+          return FadeTransition(opacity: animation, child: SlideTransition(position: offsetAnimation, child: child));
+        },
+        child:
+            _isCriteriaBodyVisible
+                ? KeyedSubtree(key: ValueKey('split_criteria_${criteria.name}'), child: content)
+                : Visibility(
+                  key: ValueKey('empty_criteria_${criteria.name}'),
+                  visible: false,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: content,
+                ),
+      ),
     );
   }
 
