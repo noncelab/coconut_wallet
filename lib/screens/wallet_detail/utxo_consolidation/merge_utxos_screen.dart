@@ -316,7 +316,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             child: FixedBottomButton(
               onButtonClicked: _onMergeButtonClicked,
               isActive: ctaState.isMergeButtonEnabled,
-              text: t.organize,
+              text: t.apply,
               backgroundColor: CoconutColors.white,
               subWidget: subWidget,
             ),
