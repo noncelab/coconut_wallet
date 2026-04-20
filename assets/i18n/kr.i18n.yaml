@@ -773,7 +773,9 @@ merge_utxos_screen:
   merge_anyway: "그래도 합치기"
   select_merge_criteria: "어떤 기준으로 정리할까요?"
   select_amount_criteria: "금액 기준을 선택하세요."
-  select_tag: "태그를 선택하세요."
+  select_tag: "태그를 선택하세요"
+  select_tag_bottomsheet_title: "태그 선택"
+  selected_tag: "태그 기준"
   merge_criteria: "정리 기준"
   merge_criteria_bottomsheet:
     title: "정리 기준 선택"

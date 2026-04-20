@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
@@ -974,6 +975,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         title: _getUtxosPreviewBottomSheetTitle(criteria),
         showDragHandle: true,
         context: context,
+        adjustForKeyboardInset: false,
         actionList: [
           ValueListenableBuilder<bool>(
             valueListenable: isEditingNotifier,
@@ -1008,6 +1010,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
           onSelectionChanged: (selectedUtxoIds) {
             draftSelectedUtxoIdsNotifier.value = Set<String>.from(selectedUtxoIds);
           },
+          addressType: _viewModel.addressType,
         ),
       );
     } finally {
@@ -1077,6 +1080,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildVisibleOptionPickers(BuildContext context) {
+    const gapBetweenWidgets = 40.0;
     final pickerWidgets =
         _visibleOptionPickerSteps.indexed.map(((int, UtxoMergeStep) entry) {
           final index = entry.$1;
@@ -1086,7 +1090,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
           if (isNewest) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 40),
+              padding: const EdgeInsets.only(bottom: gapBetweenWidgets),
               child: picker.slideUpAnimation(
                 key: ValueKey('merge-picker-in-${step.name}-$_optionPickerAnimationNonce'),
                 duration: _optionPickerAnimationDuration,
@@ -1099,11 +1103,13 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             );
           }
 
-          return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : 40), child: picker);
+          return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : gapBetweenWidgets), child: picker);
         }).toList();
 
     if (_viewModel.currentStep == UtxoMergeStep.selectReceiveAddress) {
-      pickerWidgets.add(Padding(padding: const EdgeInsets.only(bottom: 40), child: _buildEstimatedFeeOptionPicker()));
+      pickerWidgets.add(
+        Padding(padding: const EdgeInsets.only(bottom: gapBetweenWidgets), child: _buildEstimatedFeeOptionPicker()),
+      );
     }
 
     return AnimatedSize(
@@ -1135,7 +1141,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       ),
       UtxoMergeStep.selectTag => CoconutOptionPicker(
         text: _viewModel.effectiveSelectedTagName == null ? t.merge_utxos_screen.select_tag : '',
-        label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.select_tag,
+        label: _viewModel.currentStep == UtxoMergeStep.selectTag ? null : t.merge_utxos_screen.selected_tag,
         onTap: _showTagSelectBottomSheet,
         inlineWidgets: _buildSelectedTagInlineWidgets(context),
         inlineSpacing: 0,

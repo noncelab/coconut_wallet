@@ -770,6 +770,8 @@ merge_utxos_screen:
   select_merge_criteria: "どの基準で整理しますか？"
   select_amount_criteria: "金額の基準を選択してください。"
   select_tag: "タグを選択してください。"
+  select_tag_bottomsheet_title: "タグを選択"
+  selected_tag: "選択されたタグ"
   merge_criteria: "整理基準"
   merge_criteria_bottomsheet:
     title: "統合方法を選択"
