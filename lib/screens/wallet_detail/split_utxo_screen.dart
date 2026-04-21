@@ -359,7 +359,6 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     final focusNodes = [
                       vm.amountFocusNode,
                       vm.splitCountFocusNode,
-                      vm.feeRateFocusNode,
                       ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
                     ];
 
@@ -481,7 +480,6 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         final focusNodes = [
           vm.amountFocusNode,
           vm.splitCountFocusNode,
-          vm.feeRateFocusNode,
           ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
         ];
 
@@ -1288,7 +1286,6 @@ class _HeaderTitleErrorText extends StatelessWidget {
         final focusNodes = [
           vm.amountFocusNode,
           vm.splitCountFocusNode,
-          vm.feeRateFocusNode,
           ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
         ];
 
