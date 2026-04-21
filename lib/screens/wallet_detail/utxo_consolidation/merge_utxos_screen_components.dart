@@ -302,7 +302,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
         for (final section in sections) ...[
           _SectionSummaryHeader(
             showGradient: false,
-            padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size10),
+            padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
             utxoCount: section.utxos.length,
             leading: _buildHighlightedSegwitAddressText(
               address: section.address,
@@ -641,10 +641,10 @@ class _SectionSummaryHeader extends StatelessWidget {
           ),
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: leading),
-            const SizedBox(width: 8),
+            CoconutLayout.spacing_400w,
             Text(
               t.merge_utxos_screen.count(n: utxoCount, count: utxoCount),
               style: CoconutTypography.body3_12.setColor(CoconutColors.white),
