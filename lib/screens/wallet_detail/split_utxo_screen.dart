@@ -25,7 +25,7 @@ import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/card/animated_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:shimmer/shimmer.dart';
@@ -1286,66 +1286,26 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: CoconutColors.gray800,
-              border: Border.all(color: CoconutColors.gray600, width: 1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 0),
-                  child: Lottie.asset(
-                    'assets/lottie/three-stars-growing.json',
-                    controller: _lottieController,
-                    onLoaded: (composition) {
-                      _lottieController.duration = composition.duration;
-                      if (isDone) {
-                        _lottieController.value = 1;
-                      } else if (isPreparing && !_lottieController.isAnimating) {
-                        _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
-                      } else if (!isPreparing) {
-                        _lottieController.reset();
-                      }
-                    },
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.contain,
-                    repeat: false,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      layoutBuilder: (currentChild, previousChildren) {
-                        return Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [...previousChildren, if (currentChild != null) currentChild],
-                        );
-                      },
-                      transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-                      child:
-                          isDone
-                              ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
-                              : _SplitResultSkeletonContent(
-                                key: const ValueKey('split-skeleton'),
-                                lineCount: _lastLineCount,
-                                titleText: _lastTitle,
-                              ),
+          AnimatedSummaryCard(
+            lottieController: _lottieController,
+            onLottieLoaded: (composition) {
+              _lottieController.duration = composition.duration;
+              if (isDone) {
+                _lottieController.value = 1;
+              } else if (isPreparing && !_lottieController.isAnimating) {
+                _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
+              } else if (!isPreparing) {
+                _lottieController.reset();
+              }
+            },
+            child:
+                isDone
+                    ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
+                    : _SplitResultSkeletonContent(
+                      key: const ValueKey('split-skeleton'),
+                      lineCount: _lastLineCount,
+                      titleText: _lastTitle,
                     ),
-                  ),
-                ),
-              ],
-            ),
           ),
           Visibility(
             visible: widget.usePreview,

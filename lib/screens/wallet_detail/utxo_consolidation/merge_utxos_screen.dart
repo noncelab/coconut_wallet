@@ -34,7 +34,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/card/animated_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -517,99 +517,51 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildTransactionSummaryCard() {
-    //final amountText = _summaryCardHeadlineText;
-    //final totalAmountText = _viewModel.selectedUtxosTotalAmountText;
-
-    return Container(
-      key: const ValueKey('merge-transaction-summary-card'),
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CoconutColors.gray800,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: CoconutColors.gray600, width: 1),
-      ),
-      child: Selector<
-        MergeUtxosViewModel,
-        ({
-          UtxoMergeCriteria criteria,
-          MergeState mergeState,
-          String selectedUtxosTotalAmountText,
-          int selectedUtxoCount,
-        })
-      >(
-        selector:
-            (_, vm) => (
-              criteria: vm.currentCriteria,
-              mergeState: vm.mergeState,
-              selectedUtxosTotalAmountText: vm.selectedUtxosTotalAmountText,
-              selectedUtxoCount: vm.selectedUtxoCount,
-            ),
-        builder: (context, selector, _) {
-          final isPreparing = selector.mergeState == MergeState.preparing;
-          final isReady = selector.mergeState == MergeState.ready;
-          final isFailed = selector.mergeState == MergeState.failed;
-          final isInputOne = selector.mergeState == MergeState.notEnoughSelectedUtxo;
-          final summaryContent = _buildReceiveAddressSummaryContent(
-            criteria: selector.criteria,
-            selectedUtxoCount: selector.selectedUtxoCount,
-            selectedUtxosTotalAmountText: selector.selectedUtxosTotalAmountText,
-            isPreparing: isPreparing,
-            isReady: isReady,
-            isFailed: isFailed,
-            isInputOne: isInputOne,
-          );
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 0),
-                child: Lottie.asset(
-                  'assets/lottie/three-stars-growing.json',
-                  controller: _receiveAddressSummaryLottieController,
-                  onLoaded: (composition) {
-                    _receiveAddressSummaryLottieController.duration = composition.duration;
-                    if (_displayedHeaderStep == UtxoMergeStep.selectReceiveAddress) {
-                      if (isReady || isFailed || isInputOne) {
-                        _receiveAddressSummaryLottieController.value = 1;
-                      } else if (isPreparing && !_receiveAddressSummaryLottieController.isAnimating) {
-                        _receiveAddressSummaryLottieController.repeat(
-                          period: _receiveAddressSummaryLottieController.duration ?? composition.duration,
-                        );
-                      } else if (!isPreparing) {
-                        _receiveAddressSummaryLottieController.reset();
-                      }
-                    }
-                  },
-                  width: 24,
-                  height: 24,
-                  fit: BoxFit.contain,
-                  repeat: false,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    layoutBuilder: (currentChild, previousChildren) {
-                      return Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [...previousChildren, if (currentChild != null) currentChild],
-                      );
-                    },
-                    transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-                    child: summaryContent,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+    return Selector<
+      MergeUtxosViewModel,
+      ({UtxoMergeCriteria criteria, MergeState mergeState, String selectedUtxosTotalAmountText, int selectedUtxoCount})
+    >(
+      selector:
+          (_, vm) => (
+            criteria: vm.currentCriteria,
+            mergeState: vm.mergeState,
+            selectedUtxosTotalAmountText: vm.selectedUtxosTotalAmountText,
+            selectedUtxoCount: vm.selectedUtxoCount,
+          ),
+      builder: (context, selector, _) {
+        final isPreparing = selector.mergeState == MergeState.preparing;
+        final isReady = selector.mergeState == MergeState.ready;
+        final isFailed = selector.mergeState == MergeState.failed;
+        final isInputOne = selector.mergeState == MergeState.notEnoughSelectedUtxo;
+        final summaryContent = _buildReceiveAddressSummaryContent(
+          criteria: selector.criteria,
+          selectedUtxoCount: selector.selectedUtxoCount,
+          selectedUtxosTotalAmountText: selector.selectedUtxosTotalAmountText,
+          isPreparing: isPreparing,
+          isReady: isReady,
+          isFailed: isFailed,
+          isInputOne: isInputOne,
+        );
+        return AnimatedSummaryCard(
+          cardKey: const ValueKey('merge-transaction-summary-card'),
+          lottieController: _receiveAddressSummaryLottieController,
+          onLottieLoaded: (composition) {
+            _receiveAddressSummaryLottieController.duration = composition.duration;
+            if (_displayedHeaderStep == UtxoMergeStep.selectReceiveAddress) {
+              if (isReady || isFailed || isInputOne) {
+                _receiveAddressSummaryLottieController.value = 1;
+              } else if (isPreparing && !_receiveAddressSummaryLottieController.isAnimating) {
+                _receiveAddressSummaryLottieController.repeat(
+                  period: _receiveAddressSummaryLottieController.duration ?? composition.duration,
+                );
+              } else if (!isPreparing) {
+                _receiveAddressSummaryLottieController.reset();
+              }
+            }
+          },
+          child: summaryContent,
+        );
+      },
     );
   }
 
