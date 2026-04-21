@@ -845,7 +845,7 @@ split_utxo_screen:
   utxo_warning: "手数料の割合が高く、分割に適していない可能性があります"
   amount_error:
     amount_too_large: "選択したUTXOの金額より小さく入力してください"
-    insufficient_after_fee: "手数料を含めると分割できない金額です"
+    insufficient_after_fee: "手数料を含めると大きすぎる金額です"
     manual_sum_over_input: "金額が足りません"
   fee_error: "手数料がUTXOの金額より大きいです"
   dust_error: "分割すると少額（ダスト）が生じます"

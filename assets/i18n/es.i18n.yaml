@@ -847,7 +847,7 @@ split_utxo_screen:
   utxo_warning: "La proporción de comisión es alta y puede no ser adecuado dividirlo"
   amount_error:
     amount_too_large: "Por favor, introduce un importe menor que el UTXO seleccionado"
-    insufficient_after_fee: "No es posible dividir este importe al incluir la comisión"
+    insufficient_after_fee: "Este importe es demasiado grande al incluir la comisión"
     manual_sum_over_input: "El importe es insuficiente"
   fee_error: "La comisión es mayor que el importe del UTXO"
   dust_error: "Al dividir, se generará una pequeña cantidad (dust)"

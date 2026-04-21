@@ -844,8 +844,8 @@ split_utxo_screen:
   utxo_warning: "The fee ratio is high, so splitting may not be efficient"
   amount_error:
     amount_too_large: "Enter an amount smaller than the selected UTXO"
-    insufficient_after_fee: "This amount is too small after including the fee"
-    manual_sum_over_input: "The total exceeds the selected UTXO"
+    insufficient_after_fee: "This amount is too big when the fee is included"
+    manual_sum_over_input: "Insufficient amount"
   fee_error: "The fee is greater than the UTXO amount"
   dust_error: "Splitting will create a small amount (dust)"
   criteria_bottom_sheet:
