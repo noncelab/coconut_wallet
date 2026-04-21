@@ -886,11 +886,30 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     final criteria = _viewModel.currentCriteria;
 
     try {
-      await CommonBottomSheets.showBottomSheet<void>(
+      await CommonBottomSheets.showDraggableBottomSheet<void>(
+        minChildSize: 0.6,
+        maxChildSize: 0.9,
+        initialChildSize: 0.6,
         title: _getUtxosPreviewBottomSheetTitle(criteria),
-        showDragHandle: true,
         context: context,
         adjustForKeyboardInset: false,
+        childBuilder:
+            (scrollController) => _SelectedUtxosPreviewBottomSheetBody(
+              scrollController: scrollController,
+              utxos: candidateUtxos,
+              currentUnit: currentUnit,
+              reusedAddresses: reusedAddresses,
+              mergeCriteria: criteria,
+              amountCriteriaText: _currentAmountCriteriaText,
+              selectedTagInlineWidgets:
+                  criteria == UtxoMergeCriteria.sameTag ? _buildSelectedTagInlineWidgets(context) : const [],
+              isEditingListenable: isEditingNotifier,
+              initialSelectedUtxoIds: initialSelectedUtxoIds,
+              onSelectionChanged: (selectedUtxoIds) {
+                draftSelectedUtxoIdsNotifier.value = Set<String>.from(selectedUtxoIds);
+              },
+              addressType: _viewModel.addressType,
+            ),
         actionList: [
           ValueListenableBuilder<bool>(
             valueListenable: isEditingNotifier,
@@ -912,21 +931,6 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
           ),
         ],
         backgroundColor: CoconutColors.gray900,
-        child: _SelectedUtxosPreviewBottomSheetBody(
-          utxos: candidateUtxos,
-          currentUnit: currentUnit,
-          reusedAddresses: reusedAddresses,
-          mergeCriteria: criteria,
-          amountCriteriaText: _currentAmountCriteriaText,
-          selectedTagInlineWidgets:
-              criteria == UtxoMergeCriteria.sameTag ? _buildSelectedTagInlineWidgets(context) : const [],
-          isEditingListenable: isEditingNotifier,
-          initialSelectedUtxoIds: initialSelectedUtxoIds,
-          onSelectionChanged: (selectedUtxoIds) {
-            draftSelectedUtxoIdsNotifier.value = Set<String>.from(selectedUtxoIds);
-          },
-          addressType: _viewModel.addressType,
-        ),
       );
     } finally {
       isEditingNotifier.dispose();

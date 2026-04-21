@@ -227,9 +227,13 @@ class CommonBottomSheets {
     String? title,
     String? subLabel,
     TextStyle? titleTextStyle,
+    List<Widget>? actionList,
     Color backgroundColor = CoconutColors.black,
+    bool adjustForKeyboardInset = true,
+    ValueChanged<DraggableScrollableController>? onControllerReady,
   }) async {
     final draggableController = DraggableScrollableController();
+    onControllerReady?.call(draggableController);
     bool isAnimating = false;
 
     // initialChildSize가 지정되지 않은 경우에만 자동 계산
@@ -256,7 +260,7 @@ class CommonBottomSheets {
             expand: false,
             builder: (context, scrollController) {
               void handleDrag() {
-                if (isAnimating) return;
+                if (isAnimating || !draggableController.isAttached) return;
                 final extent = draggableController.size;
                 final targetExtent =
                     (extent - minChildSize).abs() < (extent - maxChildSize).abs() ? minChildSize + 0.01 : maxChildSize;
@@ -285,6 +289,7 @@ class CommonBottomSheets {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
+                            if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
                             draggableController.jumpTo(draggableController.size + delta);
                           },
@@ -313,6 +318,7 @@ class CommonBottomSheets {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
+                            if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
                             draggableController.jumpTo(draggableController.size + delta);
                           },
@@ -339,11 +345,14 @@ class CommonBottomSheets {
                             backgroundColor: backgroundColor,
                             showSubLabel: subLabel != null,
                             isBottom: true,
+                            actionButtonList: actionList,
                           ),
                         ),
                       Expanded(
                         child: Padding(
-                          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          padding: EdgeInsets.only(
+                            bottom: adjustForKeyboardInset ? MediaQuery.of(context).viewInsets.bottom : 0,
+                          ),
                           child: childBuilder(scrollController),
                         ),
                       ),
@@ -364,9 +373,9 @@ class CommonBottomSheets {
   static Future<T?> showSelectableDraggableSheet<T>({
     required BuildContext context,
     required String title,
-    required List<T> items,
-    required Object Function(T item) getItemId,
-    required SelectableItemBuilder<T> itemBuilder,
+    List<T>? items,
+    Object Function(T item)? getItemId,
+    SelectableItemBuilder<T>? itemBuilder,
     Object? initiallySelectedId,
     String? confirmText,
     double minChildSize = 0.5,
@@ -376,7 +385,15 @@ class CommonBottomSheets {
     TextStyle? titleTextStyle,
     bool showGradient = true,
     bool allowConfirmWhenSelectionUnchanged = false,
+    Widget Function(ScrollController scrollController)? childBuilder,
+    bool adjustForKeyboardInset = true,
+    ValueChanged<DraggableScrollableController>? onControllerReady,
   }) async {
+    assert(
+      childBuilder != null || (items != null && getItemId != null && itemBuilder != null),
+      'Either childBuilder or items/getItemId/itemBuilder must be provided.',
+    );
+
     return showDraggableBottomSheet<T>(
       context: context,
       title: title,
@@ -385,19 +402,23 @@ class CommonBottomSheets {
       initialChildSize: initialChildSize,
       backgroundColor: backgroundColor,
       titleTextStyle: titleTextStyle,
-      childBuilder: (scrollController) {
-        return SelectableBottomSheetBody<T>(
-          scrollController: scrollController,
-          items: items,
-          getItemId: getItemId,
-          itemBuilder: itemBuilder,
-          initiallySelectedId: initiallySelectedId,
-          confirmText: confirmText ?? t.select,
-          backgroundColor: backgroundColor,
-          showGradient: showGradient,
-          allowConfirmWhenSelectionUnchanged: allowConfirmWhenSelectionUnchanged,
-        );
-      },
+      adjustForKeyboardInset: adjustForKeyboardInset,
+      onControllerReady: onControllerReady,
+      childBuilder:
+          childBuilder ??
+          (scrollController) {
+            return SelectableBottomSheetBody<T>(
+              scrollController: scrollController,
+              items: items!,
+              getItemId: getItemId!,
+              itemBuilder: itemBuilder!,
+              initiallySelectedId: initiallySelectedId,
+              confirmText: confirmText ?? t.select,
+              backgroundColor: backgroundColor,
+              showGradient: showGradient,
+              allowConfirmWhenSelectionUnchanged: allowConfirmWhenSelectionUnchanged,
+            );
+          },
     );
   }
 
@@ -575,12 +596,13 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
 
   @override
   Widget build(BuildContext context) {
-    final bottomSafeArea = MediaQuery.of(context).padding.bottom;
+    const buttonSpacingHeight = Sizes.size12;
+    const platformButtonHeightAdjustment = 3.0;
     final buttonAreaHeight =
         widget.showConfirmButton
             ? FixedBottomButton.fixedBottomButtonDefaultHeight +
-                FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
-                bottomSafeArea
+                platformButtonHeightAdjustment +
+                buttonSpacingHeight
             : 0.0;
 
     return Container(
@@ -590,7 +612,6 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
         child: Stack(
           children: [
             Positioned.fill(
-              top: 0,
               bottom: buttonAreaHeight,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
@@ -633,6 +654,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                   child: FixedBottomButton(
                     showGradient: widget.showGradient,
                     isVisibleAboveKeyboard: false,
+                    bottomPadding: 0,
                     onButtonClicked: () {
                       final selectedItem =
                           _selectedId == null

@@ -1,35 +1,32 @@
 part of 'merge_utxos_screen.dart';
 
 class _SegmentedBottomSheetBody extends StatelessWidget {
-  final double bodyHeight;
+  final ScrollController? scrollController;
   final int selectedTabIndex;
   final List<_BottomSheetTab> tabs;
   final String confirmText;
   final Widget? confirmSubWidget;
   final bool isConfirmEnabled;
+  final bool adjustForKeyboardInset;
   final ValueChanged<int> onTabSelected;
   final VoidCallback onConfirm;
 
   const _SegmentedBottomSheetBody({
-    required this.bodyHeight,
+    this.scrollController,
     required this.selectedTabIndex,
     required this.tabs,
     required this.confirmText,
     this.confirmSubWidget,
     required this.isConfirmEnabled,
+    this.adjustForKeyboardInset = true,
     required this.onTabSelected,
     required this.onConfirm,
   });
 
-  double _tabBodyHeight(BuildContext context) {
-    return bodyHeight - 230;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final tabBodyHeight = _tabBodyHeight(context);
     final bottomSafeArea = MediaQuery.of(context).padding.bottom;
-    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+    final keyboardInset = adjustForKeyboardInset ? MediaQuery.of(context).viewInsets.bottom : 0.0;
     const buttonBottomSpacing = 16.0;
     const confirmSubWidgetHeight = 32;
     final buttonAreaHeight =
@@ -38,15 +35,15 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
         buttonBottomSpacing +
         3 +
         (confirmSubWidget != null ? confirmSubWidgetHeight : 0);
+    final contentBottomInset = buttonAreaHeight + keyboardInset + 2;
 
     return SafeArea(
       top: false,
       child: Stack(
         children: [
-          Padding(
-            padding: EdgeInsets.only(bottom: buttonAreaHeight),
+          Positioned.fill(
+            bottom: contentBottomInset,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -57,20 +54,28 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                   ),
                 ),
                 CoconutLayout.spacing_400h,
-                SizedBox(
-                  height: tabBodyHeight - confirmSubWidgetHeight,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    layoutBuilder: (currentChild, previousChildren) {
-                      return Stack(
-                        alignment: Alignment.topCenter,
-                        children: [...previousChildren, if (currentChild != null) currentChild],
-                      );
-                    },
-                    child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
-                  ),
+                Expanded(
+                  child:
+                      scrollController == null
+                          ? AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            layoutBuilder: (currentChild, previousChildren) {
+                              return Stack(
+                                alignment: Alignment.topCenter,
+                                children: [...previousChildren, if (currentChild != null) currentChild],
+                              );
+                            },
+                            child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
+                          )
+                          : PrimaryScrollController(
+                            controller: scrollController!,
+                            child: KeyedSubtree(
+                              key: ValueKey(selectedTabIndex),
+                              child: tabs[selectedTabIndex].child,
+                            ),
+                          ),
                 ),
               ],
             ),
@@ -100,6 +105,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
 }
 
 class _SelectedUtxosPreviewBottomSheetBody extends StatefulWidget {
+  final ScrollController scrollController;
   final List<UtxoState> utxos;
   final BitcoinUnit currentUnit;
   final Set<String> reusedAddresses;
@@ -112,6 +118,7 @@ class _SelectedUtxosPreviewBottomSheetBody extends StatefulWidget {
   final AddressType addressType;
 
   const _SelectedUtxosPreviewBottomSheetBody({
+    required this.scrollController,
     required this.utxos,
     required this.currentUnit,
     required this.reusedAddresses,
@@ -236,6 +243,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
     final items = _buildSummaryListItems();
 
     return ListView.builder(
+      controller: widget.scrollController,
       padding: const EdgeInsets.only(top: 12, bottom: 50),
       itemCount: items.length,
       itemBuilder: (context, index) {
