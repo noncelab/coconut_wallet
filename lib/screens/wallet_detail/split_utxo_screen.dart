@@ -367,7 +367,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                       builder: (context, _) {
                         final isFocused = focusNodes.any((node) => node.hasFocus);
                         final actuallyShowResultBox = showSplitResultBox && !isFocused;
-                        return SizedBox(height: actuallyShowResultBox ? 40 : 32);
+                        return SizedBox(height: actuallyShowResultBox ? 32 : 24);
                       },
                     );
                   },
