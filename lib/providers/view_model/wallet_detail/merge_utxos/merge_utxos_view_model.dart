@@ -551,8 +551,8 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
       totalSignerCount: _wallet.multisigConfig?.totalSigner,
     );
 
-    const expectedfutureFeeRate = 15.0;
-    final futureSavingFee = (inputCount - 1) * inputSize * expectedfutureFeeRate;
+    const expectedFutureFeeRate = 15.0;
+    final futureSavingFee = (inputCount - 1) * inputSize * expectedFutureFeeRate;
     final currentFeeRate = _appliedMergeFeeRate!;
     final currentFee = _estimatedMergeFeeSats!;
     const discouragedFeeRateThreshold = 5.0;
