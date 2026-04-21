@@ -198,9 +198,18 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
     final token = _headerAnimationNonce + 1;
     _headerAnimationNonce = token;
+
+    final isCriteriaChanging = _displayedCriteria != null && nextCriteria != null && _displayedCriteria != nextCriteria;
+    final isFirstTimeCriteria = _displayedCriteria == null && nextCriteria != null;
+
     setState(() {
       _isHeaderFadingOut = true;
-      _isCriteriaBodyVisible = false;
+      if (isCriteriaChanging) {
+        _isCriteriaBodyVisible = false;
+      } else if (isFirstTimeCriteria) {
+        _isCriteriaBodyVisible = true;
+        _displayedCriteria = nextCriteria;
+      }
     });
 
     Future.delayed(_headerAnimationDuration, () {
@@ -208,16 +217,20 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
       setState(() {
         _displayedHeaderTitle = _pendingHeaderTitle;
-        _displayedCriteria = _pendingCriteria;
+        if (!isFirstTimeCriteria) {
+          _displayedCriteria = _pendingCriteria;
+        }
         _isHeaderFadingOut = false;
       });
 
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (!mounted || token != _headerAnimationNonce) return;
-        setState(() {
-          _isCriteriaBodyVisible = true;
+      if (isCriteriaChanging) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (!mounted || token != _headerAnimationNonce) return;
+          setState(() {
+            _isCriteriaBodyVisible = true;
+          });
         });
-      });
+      }
     });
   }
 
