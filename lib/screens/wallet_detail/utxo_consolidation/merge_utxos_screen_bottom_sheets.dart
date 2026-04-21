@@ -607,6 +607,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
                       isError: errorText != null,
                       errorColor: CoconutColors.hotPink,
                       textInputType: const TextInputType.numberWithOptions(decimal: true),
+                      isErrorTextMultiline: true,
                       textInputFormatter: [
                         FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                         SingleDotInputFormatter(),
@@ -625,7 +626,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
                   ),
                   const SizedBox(width: 12),
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.only(top: 16),
                     child: ShrinkAnimationButton(
                       onPressed: onLessThanToggle,
                       defaultColor: CoconutColors.gray800,
