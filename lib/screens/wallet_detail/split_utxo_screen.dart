@@ -1137,6 +1137,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       minChildSize: 0.49,
       maxChildSize: 0.9,
       backgroundColor: CoconutColors.gray900,
+      showGradient: false,
       itemBuilder: (context, item, isSelected, onTap) {
         return SelectableBottomSheetTextItem(
           isSelected: isSelected,

@@ -366,6 +366,7 @@ class CommonBottomSheets {
     double maxChildSize = 0.9,
     double? initialChildSize,
     Color backgroundColor = CoconutColors.black,
+    bool showGradient = true,
   }) async {
     return showDraggableBottomSheet<T>(
       context: context,
@@ -383,6 +384,7 @@ class CommonBottomSheets {
           initiallySelectedId: initiallySelectedId,
           confirmText: confirmText ?? t.select,
           backgroundColor: backgroundColor,
+          showGradient: showGradient,
         );
       },
     );
@@ -564,7 +566,11 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
   Widget build(BuildContext context) {
     final bottomSafeArea = MediaQuery.of(context).padding.bottom;
     final buttonAreaHeight =
-        widget.showConfirmButton ? FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea : 0.0;
+        widget.showConfirmButton
+            ? FixedBottomButton.fixedBottomButtonDefaultHeight +
+                FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+                bottomSafeArea
+            : 0.0;
 
     return Container(
       color: widget.backgroundColor,
@@ -616,7 +622,6 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                   child: FixedBottomButton(
                     showGradient: widget.showGradient,
                     isVisibleAboveKeyboard: false,
-                    bottomPadding: 0,
                     onButtonClicked: () {
                       final selectedItem =
                           _selectedId == null
