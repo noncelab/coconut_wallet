@@ -233,75 +233,101 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
   }
 
   Widget _buildSummaryBody(bool isEditing) {
-    final items = _buildSummaryListItems();
+    switch (widget.mergeCriteria) {
+      case UtxoMergeCriteria.sameTag:
+        return _buildSameTagSummaryBody(isEditing);
+      case UtxoMergeCriteria.smallAmounts:
+        return _buildSmallAmountsSummaryBody(isEditing);
+      case UtxoMergeCriteria.sameAddress:
+        return _buildSameAddressSummaryBody(isEditing);
+    }
+  }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 12, bottom: 50),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-
-        if (item is _SummarySpacingItem) {
-          return SizedBox(height: item.height);
-        }
-
-        if (item is _SummaryRowItem) {
-          return _buildUtxoRow(item.rowUtxos, isEditing, horizontalPadding: item.horizontalPadding);
-        }
-
-        if (item is _SummaryTagHeaderItem) {
-          return _SectionSummaryHeader(
-            utxoCount: item.section.utxos.length,
-            leading: Wrap(spacing: 4, runSpacing: 8, children: item.section.tags.map(_buildTagChip).toList()),
-          );
-        }
-
-        final addressItem = item as _SummaryAddressHeaderItem;
-        return Stack(
-          children: [
-            Container(
-              width: double.infinity,
-              height: 40,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [CoconutColors.gray900, CoconutColors.gray800],
-                ),
-              ),
+  Widget _buildSmallAmountsSummaryBody(bool isEditing) {
+    return Column(
+      children: [
+        for (int start = 0; start < widget.utxos.length; start += _columnCount) ...[
+          _buildUtxoRow(
+            widget.utxos.sublist(
+              start,
+              (start + _columnCount) > widget.utxos.length ? widget.utxos.length : start + _columnCount,
             ),
-            Positioned.fill(
-              child: MediaQuery(
-                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildHighlightedSegwitAddressText(
-                          address: addressItem.section.address,
-                          baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                          highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        t.merge_utxos_screen.count(
-                          n: addressItem.section.utxos.length,
-                          count: addressItem.section.utxos.length,
-                        ),
-                        textAlign: TextAlign.end,
-                        style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-                      ),
-                    ],
+            isEditing,
+            horizontalPadding: 18,
+          ),
+          CoconutLayout.spacing_500h,
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSameTagSummaryBody(bool isEditing) {
+    final sections = _buildTagCombinationSections();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final section in sections) ...[
+          _SectionSummaryHeader(
+            utxoCount: section.utxos.length,
+            leading: Wrap(spacing: 4, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
+          ),
+          CoconutLayout.spacing_400h,
+          Column(
+            children: [
+              for (int start = 0; start < section.utxos.length; start += _columnCount) ...[
+                _buildUtxoRow(
+                  section.utxos.sublist(
+                    start,
+                    (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
                   ),
+                  isEditing,
+                  horizontalPadding: 18,
                 ),
-              ),
+                CoconutLayout.spacing_500h,
+              ],
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSameAddressSummaryBody(bool isEditing) {
+    final sections = _buildReusedAddressSections();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final section in sections) ...[
+          _SectionSummaryHeader(
+            showGradient: false,
+            padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size10),
+            utxoCount: section.utxos.length,
+            leading: _buildHighlightedSegwitAddressText(
+              address: section.address,
+              baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+              highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
             ),
-          ],
-        );
-      },
+          ),
+          CoconutLayout.spacing_400h,
+          Column(
+            children: [
+              for (int start = 0; start < section.utxos.length; start += _columnCount) ...[
+                _buildUtxoRow(
+                  section.utxos.sublist(
+                    start,
+                    (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
+                  ),
+                  isEditing,
+                  horizontalPadding: 18,
+                ),
+                CoconutLayout.spacing_500h,
+              ],
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -354,99 +380,6 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
     return sections;
   }
 
-  List<_SummaryListItem> _buildSummaryListItems() {
-    switch (widget.mergeCriteria) {
-      case UtxoMergeCriteria.smallAmounts:
-        return _buildSmallAmountsSummaryItems();
-      case UtxoMergeCriteria.sameTag:
-        return _buildSameTagSummaryItems();
-      case UtxoMergeCriteria.sameAddress:
-        return _buildSameAddressSummaryItems();
-    }
-  }
-
-  List<_SummaryListItem> _buildSmallAmountsSummaryItems() {
-    final items = <_SummaryListItem>[];
-
-    for (int start = 0; start < widget.utxos.length; start += _columnCount) {
-      items.add(
-        _SummaryRowItem(
-          widget.utxos.sublist(
-            start,
-            (start + _columnCount) > widget.utxos.length ? widget.utxos.length : start + _columnCount,
-          ),
-          horizontalPadding: 18,
-        ),
-      );
-      items.add(const _SummarySpacingItem(20));
-    }
-
-    return items;
-  }
-
-  List<_SummaryListItem> _buildSameTagSummaryItems() {
-    final items = <_SummaryListItem>[];
-
-    for (final section in _buildTagCombinationSections()) {
-      items.add(_SummaryTagHeaderItem(section));
-      items.add(const _SummarySpacingItem(16));
-
-      for (int start = 0; start < section.utxos.length; start += _columnCount) {
-        items.add(
-          _SummaryRowItem(
-            section.utxos.sublist(
-              start,
-              (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
-            ),
-            horizontalPadding: 18,
-          ),
-        );
-        items.add(const _SummarySpacingItem(20));
-      }
-    }
-
-    return items;
-  }
-
-  List<_SummaryListItem> _buildSameAddressSummaryItems() {
-    final items = <_SummaryListItem>[];
-
-    for (final section in _buildReusedAddressSections()) {
-      items.add(_SummaryAddressHeaderItem(section));
-      items.add(const _SummarySpacingItem(20));
-
-      for (int start = 0; start < section.utxos.length; start += _columnCount) {
-        items.add(
-          _SummaryRowItem(
-            section.utxos.sublist(
-              start,
-              (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
-            ),
-            horizontalPadding: 18,
-          ),
-        );
-        items.add(const _SummarySpacingItem(20));
-      }
-
-      items.add(const _SummarySpacingItem(16));
-
-      for (int start = 0; start < section.utxos.length; start += _columnCount) {
-        items.add(
-          _SummaryRowItem(
-            section.utxos.sublist(
-              start,
-              (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
-            ),
-            horizontalPadding: 18,
-          ),
-        );
-        items.add(const _SummarySpacingItem(20));
-      }
-    }
-
-    return items;
-  }
-
   Widget _buildTagChip(UtxoTag tag) {
     final foregroundColor = tagColorPalette[tag.colorIndex];
 
@@ -479,7 +412,15 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                 Expanded(
                   child: Stack(
                     children: [
-                      _buildSummaryBody(isEditing),
+                      SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            CoconutLayout.spacing_300h,
+                            _buildSummaryBody(isEditing),
+                            const SizedBox(height: 50),
+                          ],
+                        ),
+                      ),
                       // 상단 그림자
                       Positioned(
                         left: 0,
@@ -609,14 +550,14 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
         final arrowLeft = cardCenter - 10;
         final cardWidth = baseWidth + (horizontalOverflow * 2);
 
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-          child: SizedBox(
-            width: baseWidth,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                SizedBox(
+        return SizedBox(
+          width: baseWidth,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 1),
+                child: SizedBox(
                   width: cardWidth,
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -635,35 +576,35 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
                         const SizedBox(height: 2),
                         _buildHighlightedSegwitAddressText(
                           address: utxo.to,
-                          baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                          highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+                          baseStyle: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+                          highlightedStyle: CoconutTypography.body2_14.setColor(CoconutColors.white),
                         ),
                         const SizedBox(height: 2),
-                        Text(utxo.derivationPath, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+                        Text(utxo.derivationPath, style: CoconutTypography.body2_14.setColor(CoconutColors.gray500)),
                       ],
                     ),
                   ),
                 ),
-                Positioned(
-                  top: -9.3,
-                  left: arrowLeft,
-                  child: Transform.rotate(
-                    angle: 0.78539816339,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: CoconutColors.black,
-                        border: Border(
-                          top: BorderSide(color: CoconutColors.gray800),
-                          left: BorderSide(color: CoconutColors.gray800),
-                        ),
+              ),
+              Positioned(
+                top: -8.3,
+                left: arrowLeft,
+                child: Transform.rotate(
+                  angle: 0.78539816339,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: CoconutColors.black,
+                      border: Border(
+                        top: BorderSide(color: CoconutColors.gray800),
+                        left: BorderSide(color: CoconutColors.gray800),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -674,8 +615,15 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
 class _SectionSummaryHeader extends StatelessWidget {
   final Widget leading;
   final int utxoCount;
+  final EdgeInsetsGeometry padding;
+  final bool showGradient;
 
-  const _SectionSummaryHeader({required this.leading, required this.utxoCount});
+  const _SectionSummaryHeader({
+    required this.leading,
+    required this.utxoCount,
+    this.padding = const EdgeInsets.fromLTRB(0, 4, 12, 4),
+    this.showGradient = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -683,13 +631,13 @@ class _SectionSummaryHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(0, 4, 12, 4),
+        padding: padding,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-          gradient: const LinearGradient(
+          gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [Colors.transparent, CoconutColors.gray800],
+            colors: [showGradient ? Colors.transparent : CoconutColors.gray800, CoconutColors.gray800],
           ),
         ),
         child: Row(
@@ -706,35 +654,6 @@ class _SectionSummaryHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-abstract class _SummaryListItem {
-  const _SummaryListItem();
-}
-
-class _SummarySpacingItem extends _SummaryListItem {
-  final double height;
-
-  const _SummarySpacingItem(this.height);
-}
-
-class _SummaryRowItem extends _SummaryListItem {
-  final List<UtxoState> rowUtxos;
-  final double horizontalPadding;
-
-  const _SummaryRowItem(this.rowUtxos, {this.horizontalPadding = 0});
-}
-
-class _SummaryTagHeaderItem extends _SummaryListItem {
-  final _TagCombinationSection section;
-
-  const _SummaryTagHeaderItem(this.section);
-}
-
-class _SummaryAddressHeaderItem extends _SummaryListItem {
-  final _ReusedAddressSection section;
-
-  const _SummaryAddressHeaderItem(this.section);
 }
 
 Widget _buildHighlightedSegwitAddressText({
