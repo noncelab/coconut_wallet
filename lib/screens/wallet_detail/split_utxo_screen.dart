@@ -931,7 +931,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                             textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                             maxLines: 1,
                             unfocusOnTapOutside: true,
-                            padding: const EdgeInsets.only(top: 8, bottom: 3),
+                            padding: EdgeInsets.zero,
                             placeholderText: '',
                           ),
                           if (inputText.isEmpty && !hasFocus)
@@ -1712,6 +1712,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                       },
                       child: Container(
                         color: CoconutColors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1802,7 +1803,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                                         maxLines: 1,
                                         unfocusOnTapOutside: true,
-                                        padding: const EdgeInsets.only(top: 8, bottom: 3),
+                                        padding: EdgeInsets.zero,
                                         placeholderText: '',
                                       ),
                                       if (inputText.isEmpty && !hasFocus)
