@@ -242,7 +242,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                 child: Container(
                   padding: EdgeInsets.fromLTRB(
                     16,
-                    selector.hasUnexpectedError ? 88 : 32,
+                    selector.hasUnexpectedError ? 100 : 8,
                     16,
                     selector.isMergeButtonVisible ? 160 : 16,
                   ),

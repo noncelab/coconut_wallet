@@ -794,13 +794,6 @@ merge_utxos_screen:
     less_than: "menos de"
     custom: "Manual"
   receive_address: "Dirección de recepción"
-  
-  used_utxos_count: "${used} de ${total} usados"
-  receive_address_bottomsheet:
-    title: "Seleccionar dirección"
-    my_address: "Mi dirección"
-    custom: "Ingresar manualmente"
-    not_your_owned_wallet: "La dirección no se encontró en tus billeteras"
   summary_card_headline: "${count} UTXOs (${amount_range})"
   summary_card_headline_or_less: "${amount} o menos"
   summary_card_headline_under: "por debajo de ${amount}"
@@ -809,6 +802,12 @@ merge_utxos_screen:
   summary_card_to_wallet_destination: "una nueva dirección en ${wallet_name}"
   summary_card_to_unowned_address_destination: "una dirección no encontrada en tus billeteras"
   summary_card_to_selected_address_destination: "la dirección seleccionada"
+  used_utxos_count: "${used} de ${total} usados"
+  receive_address_bottomsheet:
+    title: "Seleccionar dirección"
+    my_address: "Mi dirección"
+    custom: "Ingresar manualmente"
+    not_your_owned_wallet: "La dirección no se encontró en tus billeteras"
   tag_criteria: "Criterio de etiqueta"
   count:
     one: "${count} UTXO"
@@ -819,13 +818,13 @@ merge_utxos_screen:
   exclude_dust: "Excluir"
   fee_rate_input_placeholder: "Por favor, introduce una tarifa."
   no_utxos_for_amount_criteria: "No hay UTXOs que coincidan con este criterio."
-  single_utxo_for_amount_criteria: "Solo hay 1 UTXO que coincide con este criterio, por lo que no se puede consolidar."
-  future_fee_saving: "Si consolidas ahora, podrías ahorrar aproximadamente ${amount} sats"
-  merge_cta_neutral_low_saving: "Consolidar ahora no supondría un gran ahorro en comisiones"
-  merge_cta_efficient_without_merge: "Es suficientemente eficiente incluso sin consolidar"
+  single_utxo_for_amount_criteria: "Solo hay 1 UTXO que coincide con este criterio, por lo que no se puede fusionar."
+  future_fee_saving: "Si fusionas ahora, podrías ahorrar aproximadamente ${amount} sats"
+  merge_cta_neutral_low_saving: "Fusionar ahora no supondría un gran ahorro en comisiones"
+  merge_cta_efficient_without_merge: "Es suficientemente eficiente incluso sin fusionar"
   merge_cta_high_fee_ratio: "La proporción de comisión es alta (${ratio}%)"
-  merge_cta_discouraged_high_fee: "La comisión actual es demasiado alta para consolidar ahora"
-  merge_cta_discouraged_costly: "El costo de consolidar es mayor que las comisiones que ahorrarías"
+  merge_cta_discouraged_high_fee: "La comisión actual es demasiado alta para fusionar ahora"
+  merge_cta_discouraged_costly: "El costo de fusionar es mayor que las comisiones que ahorrarías"
   exception:
     fee_too_high: "La comisión es demasiado alta"
 
