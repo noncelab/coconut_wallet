@@ -19,40 +19,36 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     vibrateExtraLight();
 
     try {
-      final selectedItem = await CommonBottomSheets.showBottomSheet<UtxoMergeCriteria>(
-        showCloseButton: true,
+      final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<UtxoMergeCriteria>(
         context: context,
         backgroundColor: CoconutColors.gray900,
         title: t.merge_utxos_screen.merge_criteria_bottomsheet.title,
-        child: SizedBox(
-          height: 320,
-          child: SelectableBottomSheetBody<UtxoMergeCriteria>(
-            items: const [UtxoMergeCriteria.smallAmounts, UtxoMergeCriteria.sameTag, UtxoMergeCriteria.sameAddress],
-            showGradient: false,
-            initiallySelectedId: _viewModel.currentCriteria,
-            allowConfirmWhenSelectionUnchanged: _viewModel.mergeState == MergeState.idle,
-            getItemId: (item) => item,
-            confirmText: t.done,
-            backgroundColor: CoconutColors.gray900,
-            itemBuilder: (context, item, isSelected, onTap) {
-              final isTagMergeItem = item == UtxoMergeCriteria.sameTag;
-              final isAddressMergeItem = item == UtxoMergeCriteria.sameAddress;
-              final isDisabled =
-                  (isTagMergeItem && !_viewModel.hasMergeableTaggedUtxos) ||
-                  (isAddressMergeItem && !_viewModel.hasSameAddressUtxos);
+        items: const [UtxoMergeCriteria.smallAmounts, UtxoMergeCriteria.sameTag, UtxoMergeCriteria.sameAddress],
+        showGradient: false,
+        initiallySelectedId: _viewModel.currentCriteria,
+        allowConfirmWhenSelectionUnchanged: _viewModel.mergeState == MergeState.idle,
+        getItemId: (item) => item,
+        initialChildSize: 0.5,
+        minChildSize: 0.499,
+        maxChildSize: 0.9,
+        confirmText: t.done,
+        itemBuilder: (context, item, isSelected, onTap) {
+          final isTagMergeItem = item == UtxoMergeCriteria.sameTag;
+          final isAddressMergeItem = item == UtxoMergeCriteria.sameAddress;
+          final isDisabled =
+              (isTagMergeItem && !_viewModel.hasMergeableTaggedUtxos) ||
+              (isAddressMergeItem && !_viewModel.hasSameAddressUtxos);
 
-              return SelectableBottomSheetTextItem(
-                isSelected: isSelected,
-                onTap: onTap,
-                isDisabled: isDisabled,
-                child: Text(
-                  _getCurrentCriteriaText(item)!,
-                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-                ),
-              );
-            },
-          ),
-        ),
+          return SelectableBottomSheetTextItem(
+            isSelected: isSelected,
+            onTap: onTap,
+            isDisabled: isDisabled,
+            child: Text(
+              _getCurrentCriteriaText(item)!,
+              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+            ),
+          );
+        },
       );
 
       if (selectedItem != null && context.mounted) {

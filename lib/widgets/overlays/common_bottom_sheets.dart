@@ -374,6 +374,8 @@ class CommonBottomSheets {
     double? initialChildSize,
     Color backgroundColor = CoconutColors.black,
     TextStyle? titleTextStyle,
+    bool showGradient = true,
+    bool allowConfirmWhenSelectionUnchanged = false,
   }) async {
     return showDraggableBottomSheet<T>(
       context: context,
@@ -392,6 +394,8 @@ class CommonBottomSheets {
           initiallySelectedId: initiallySelectedId,
           confirmText: confirmText ?? t.select,
           backgroundColor: backgroundColor,
+          showGradient: showGradient,
+          allowConfirmWhenSelectionUnchanged: allowConfirmWhenSelectionUnchanged,
         );
       },
     );

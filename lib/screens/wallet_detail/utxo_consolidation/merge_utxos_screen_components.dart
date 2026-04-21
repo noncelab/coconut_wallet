@@ -646,7 +646,7 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
                 ),
                 Positioned(
                   top: -9.3,
-                  left: arrowLeft - 16,
+                  left: arrowLeft,
                   child: Transform.rotate(
                     angle: 0.78539816339,
                     child: Container(
