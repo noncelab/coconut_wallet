@@ -109,6 +109,7 @@ class _SelectedUtxosPreviewBottomSheetBody extends StatefulWidget {
   final ValueListenable<bool> isEditingListenable;
   final Set<String> initialSelectedUtxoIds;
   final ValueChanged<Set<String>> onSelectionChanged;
+  final AddressType addressType;
 
   const _SelectedUtxosPreviewBottomSheetBody({
     required this.utxos,
@@ -120,6 +121,7 @@ class _SelectedUtxosPreviewBottomSheetBody extends StatefulWidget {
     required this.isEditingListenable,
     required this.initialSelectedUtxoIds,
     required this.onSelectionChanged,
+    required this.addressType,
   });
 
   @override
@@ -128,7 +130,7 @@ class _SelectedUtxosPreviewBottomSheetBody extends StatefulWidget {
 
 class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPreviewBottomSheetBody> {
   static const int _columnCount = 4;
-  static const double _coinSize = 72;
+  static const double _columnSpacing = 14;
 
   late Set<String> _selectedUtxoIds;
   String? _expandedUtxoId;
@@ -159,6 +161,40 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
     }
   }
 
+  Widget _buildCoinCardWithGlow({
+    required UtxoState utxo,
+    required double cardSize,
+    required bool isExpanded,
+    required Widget child,
+  }) {
+    final isBill = UtxoCoinCard.isBillShape(utxo.amount);
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        // 카드 모양/크기에 맞춘 shadow layer. Stack으로 카드 뒤에 배치해 테두리 전체를 감쌈.
+        if (isExpanded)
+          IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: isExpanded ? 1 : 0,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              child: Container(
+                width: isBill ? cardSize * 1.35 : cardSize,
+                height: isBill ? cardSize * 0.85 : cardSize,
+                decoration: BoxDecoration(
+                  shape: isBill ? BoxShape.rectangle : BoxShape.circle,
+                  borderRadius: isBill ? BorderRadius.circular(8) : null,
+                  boxShadow: [BoxShadow(color: CoconutColors.white.withValues(alpha: 0.23), blurRadius: 12)],
+                ),
+              ),
+            ),
+          ),
+        child,
+      ],
+    );
+  }
+
   void _handleUtxoTap(UtxoState utxo, bool isEditing) {
     setState(() {
       if (isEditing) {
@@ -185,10 +221,10 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       padding: const EdgeInsets.symmetric(horizontal: 18.0),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: CoconutColors.gray800,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: CoconutColors.gray700, width: 1),
         ),
         child: Text(usedCountText, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
@@ -217,8 +253,9 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
               (start + _columnCount) > widget.utxos.length ? widget.utxos.length : start + _columnCount,
             ),
             isEditing,
+            horizontalPadding: 18,
           ),
-          const SizedBox(height: 20),
+          CoconutLayout.spacing_500h,
         ],
       ],
     );
@@ -231,59 +268,25 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (final section in sections) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
-            child: Stack(
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [CoconutColors.gray900, CoconutColors.gray800],
-                      ),
-                    ),
-                    child: Text(
-                      t.merge_utxos_screen.count(n: section.utxos.length, count: section.utxos.length),
-                      textAlign: TextAlign.end,
-                      style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-                    ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 16),
-                      child: Wrap(spacing: 4, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          _SectionSummaryHeader(
+            utxoCount: section.utxos.length,
+            leading: Wrap(spacing: 4, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
           ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                for (int start = 0; start < section.utxos.length; start += _columnCount) ...[
-                  _buildUtxoRow(
-                    section.utxos.sublist(
-                      start,
-                      (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
-                    ),
-                    isEditing,
+          CoconutLayout.spacing_400h,
+          Column(
+            children: [
+              for (int start = 0; start < section.utxos.length; start += _columnCount) ...[
+                _buildUtxoRow(
+                  section.utxos.sublist(
+                    start,
+                    (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
                   ),
-                  const SizedBox(height: 36),
-                ],
+                  isEditing,
+                  horizontalPadding: 18,
+                ),
+                CoconutLayout.spacing_500h,
               ],
-            ),
+            ],
           ),
         ],
       ],
@@ -356,7 +359,22 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          CoconutLayout.spacing_400h,
+          Column(
+            children: [
+              for (int start = 0; start < section.utxos.length; start += _columnCount) ...[
+                _buildUtxoRow(
+                  section.utxos.sublist(
+                    start,
+                    (start + _columnCount) > section.utxos.length ? section.utxos.length : start + _columnCount,
+                  ),
+                  isEditing,
+                  horizontalPadding: 18,
+                ),
+                CoconutLayout.spacing_500h,
+              ],
+            ],
+          ),
         ],
       ],
     );
@@ -420,7 +438,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
         color: CoconutColors.backgroundColorPaletteDark[tag.colorIndex],
         borderColor: foregroundColor,
         label: '#${tag.name}',
-        labelSize: 12,
+        labelSize: 14,
         labelColor: foregroundColor,
       ),
     );
@@ -432,7 +450,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       top: false,
       bottom: false,
       child: SizedBox(
-        height: (MediaQuery.sizeOf(context).height * 0.68).clamp(420.0, 720.0),
+        height: (MediaQuery.sizeOf(context).height * 0.78).clamp(420.0, 720.0),
         child: ValueListenableBuilder<bool>(
           valueListenable: widget.isEditingListenable,
           builder: (context, isEditing, _) {
@@ -440,19 +458,19 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSummaryCard(),
-                const SizedBox(height: 24),
                 Expanded(
                   child: Stack(
                     children: [
                       SingleChildScrollView(
                         child: Column(
                           children: [
-                            const SizedBox(height: 24),
+                            CoconutLayout.spacing_300h,
                             _buildSummaryBody(isEditing),
                             const SizedBox(height: 50),
                           ],
                         ),
                       ),
+                      // 상단 그림자
                       Positioned(
                         left: 0,
                         right: 0,
@@ -470,23 +488,6 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                           ),
                         ),
                       ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: IgnorePointer(
-                          child: Container(
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [CoconutColors.gray900, Color(0x001F1F1F)],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -498,71 +499,68 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
     );
   }
 
-  Widget _buildUtxoRow(List<UtxoState> rowUtxos, bool isEditing) {
+  Widget _buildUtxoRow(List<UtxoState> rowUtxos, bool isEditing, {double horizontalPadding = 0}) {
     final expandedIndex = rowUtxos.indexWhere((utxo) => utxo.utxoId == _expandedUtxoId);
     final expandedUtxo = expandedIndex >= 0 ? rowUtxos[expandedIndex] : null;
 
     return Column(
       children: [
-        Row(
-          children: [
-            for (int column = 0; column < _columnCount; column++)
-              Expanded(
-                child:
-                    column < rowUtxos.length
-                        ? Center(
-                          child: AnimatedScale(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                            scale: (!isEditing && expandedIndex == column) ? 1.08 : 1,
-                            child: UtxoCoinCard(
-                              utxo: rowUtxos[column],
-                              size: _coinSize,
-                              compact: true,
-                              isFocused: isEditing || _selectedUtxoIds.contains(rowUtxos[column].utxoId),
-                              isSelected: isEditing && _selectedUtxoIds.contains(rowUtxos[column].utxoId),
-                              currentUnit: widget.currentUnit,
-                              isAddressReused: false,
-                              isSuspiciousDust: false,
-                              showSelectedCheckIcon: false,
-                              onTap: () => _handleUtxoTap(rowUtxos[column], isEditing),
-                              dustThreshold:
-                                  DustThresholds
-                                      .p2wpkh, // TODO: selectedUtxoPreviewBottomSheetBody에 AddressType을 생성자 매개변수로 받아서 사용해야함
-                            ),
-                          ),
-                        )
-                        : const SizedBox.shrink(),
-              ),
-          ],
-        ),
-        if (!isEditing)
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 240),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, animation) {
-              return SizeTransition(
-                sizeFactor: animation,
-                axisAlignment: -1,
-                fixedCrossAxisSizeFactor: 1,
-                child: child,
-              );
-            },
-            layoutBuilder: (currentChild, previousChildren) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [...previousChildren, if (currentChild != null) currentChild],
-              );
-            },
-            child:
-                expandedUtxo == null
-                    ? const SizedBox.shrink(key: ValueKey('selected-utxo-detail-empty'))
-                    : Padding(
-                      key: ValueKey(expandedUtxo.utxoId),
-                      padding: const EdgeInsets.only(top: 18),
-                      child: _SelectedUtxoDetailCard(utxo: expandedUtxo, selectedColumnIndex: expandedIndex),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const totalSpacing = _columnSpacing * (_columnCount - 1);
+              final cardSize = (constraints.maxWidth - totalSpacing) / _columnCount;
+              return Row(
+                children: [
+                  for (int column = 0; column < _columnCount; column++) ...[
+                    if (column > 0) const SizedBox(width: _columnSpacing),
+                    SizedBox(
+                      width: cardSize,
+                      child:
+                          column < rowUtxos.length
+                              ? Center(
+                                child: AnimatedScale(
+                                  duration: const Duration(milliseconds: 220),
+                                  curve: Curves.easeOutCubic,
+                                  scale: (!isEditing && expandedIndex == column) ? 1.2 : 1,
+                                  child: _buildCoinCardWithGlow(
+                                    utxo: rowUtxos[column],
+                                    cardSize: cardSize,
+                                    isExpanded: !isEditing && expandedIndex == column,
+                                    child: UtxoCoinCard(
+                                      utxo: rowUtxos[column],
+                                      size: cardSize,
+                                      compact: true,
+                                      isFocused: isEditing || _selectedUtxoIds.contains(rowUtxos[column].utxoId),
+                                      isSelected: isEditing && _selectedUtxoIds.contains(rowUtxos[column].utxoId),
+                                      currentUnit: widget.currentUnit,
+                                      isAddressReused: false,
+                                      isSuspiciousDust: false,
+                                      showSelectedCheckIcon: false,
+                                      onTap: () => _handleUtxoTap(rowUtxos[column], isEditing),
+                                      dustThreshold: widget.addressType.dustThreshold,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              : const SizedBox.shrink(),
                     ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
+        if (!isEditing && expandedUtxo != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 18),
+            child: _SelectedUtxoDetailCard(
+              utxo: expandedUtxo,
+              selectedColumnIndex: expandedIndex,
+              rowHorizontalPadding: horizontalPadding,
+              columnSpacing: _columnSpacing,
+            ),
           ),
       ],
     );
@@ -572,13 +570,21 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
 class _SelectedUtxoDetailCard extends StatelessWidget {
   final UtxoState utxo;
   final int selectedColumnIndex;
+  final double rowHorizontalPadding;
+  final double columnSpacing;
 
-  const _SelectedUtxoDetailCard({required this.utxo, required this.selectedColumnIndex});
+  const _SelectedUtxoDetailCard({
+    required this.utxo,
+    required this.selectedColumnIndex,
+    this.rowHorizontalPadding = 0,
+    this.columnSpacing = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
     final timestamp = DateTimeUtil.formatTimestamp(utxo.timestamp);
     const horizontalOverflow = 16.0;
+    const columnCount = _SelectedUtxosPreviewBottomSheetBodyState._columnCount;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -586,8 +592,11 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
             constraints.hasBoundedWidth
                 ? constraints.maxWidth
                 : MediaQuery.sizeOf(context).width - (horizontalOverflow * 2);
-        final slotWidth = baseWidth / _SelectedUtxosPreviewBottomSheetBodyState._columnCount;
-        final arrowLeft = (slotWidth * selectedColumnIndex) + (slotWidth / 2) - 10 + horizontalOverflow;
+        // 코인 행 레이아웃과 동일한 계산: 좌우 padding과 컬럼 간 간격을 반영한 실제 카드 중앙 좌표.
+        final totalSpacing = columnSpacing * (columnCount - 1);
+        final cardSize = (baseWidth - (rowHorizontalPadding * 2) - totalSpacing) / columnCount;
+        final cardCenter = rowHorizontalPadding + selectedColumnIndex * (cardSize + columnSpacing) + cardSize / 2;
+        final arrowLeft = cardCenter - 10;
         final cardWidth = baseWidth + (horizontalOverflow * 2);
 
         return MediaQuery(
@@ -648,6 +657,50 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _SectionSummaryHeader extends StatelessWidget {
+  final Widget leading;
+  final int utxoCount;
+  final EdgeInsetsGeometry padding;
+  final bool showGradient;
+
+  const _SectionSummaryHeader({
+    required this.leading,
+    required this.utxoCount,
+    this.padding = const EdgeInsets.fromLTRB(0, 4, 12, 4),
+    this.showGradient = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Container(
+        width: double.infinity,
+        padding: padding,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [showGradient ? Colors.transparent : CoconutColors.gray800, CoconutColors.gray800],
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: leading),
+            const SizedBox(width: 8),
+            Text(
+              t.merge_utxos_screen.count(n: utxoCount, count: utxoCount),
+              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

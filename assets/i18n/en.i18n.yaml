@@ -835,9 +835,9 @@ split_utxo_screen:
   question_select_criteria: "How would you like to split it?"
   question_split_by_amount: "How much per split?"
   question_split_evenly: "Into how many parts?"
-  label_split_criteria: "Split method"
+  label_split_criteria: "Split Method"
   label_selected_utxo: "Selected UTXO"
-  label_estimated_fee: "Estimated fee"
+  label_estimated_fee: "Estimated Fee"
   add_new_amount: "Add amount"
   and_more_tags: "and ${count} more"
   utxo_error: "This UTXO is too small to split"
@@ -1126,9 +1126,9 @@ language_bottom_sheet:
   spanish: "Español"
 
 estimated_fee_bottom_sheet:
-    title: "Estimated fee"
-    estimated_fee: "Estimated fee"
-    fee_rate: "Fee rate"
+  title: "Estimated Fee"
+  estimated_fee: "Estimated Fee"
+  fee_rate: "Fee Rate"
 
 long_pressed_menu:
   hide: "Hide"

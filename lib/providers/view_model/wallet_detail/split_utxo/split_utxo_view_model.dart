@@ -55,11 +55,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   final FocusNode amountFocusNode = FocusNode();
   final TextEditingController feeRateController = TextEditingController();
   final FocusNode feeRateFocusNode = FocusNode();
-  final TextEditingController splitCountController = TextEditingController();
+  final TextEditingController splitCountController = TextEditingController(text: '1');
   final FocusNode splitCountFocusNode = FocusNode();
   String _lastFeeRateText = '';
   String _lastAmountText = '';
-  String _lastSplitCountText = '';
+  String _lastSplitCountText = '1';
   late final WalletListItemBase _wallet;
   late final UtxoSplitTransactionBuilder _splitBuilder;
 
@@ -192,14 +192,14 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     final utxoAmountText = currentUnit.displayBitcoinAmount(
       _selectedUtxoAmount,
       withUnit: true,
-      forceEightDecimals: currentUnit.isBtcUnit,
+      forceEightDecimals: false,
     );
 
     if (_selectedCriteria == SplitCriteria.byAmount) {
       final formattedSplitAmount = currentUnit.displayBitcoinAmount(
         splitAmountSats,
         withUnit: true,
-        forceEightDecimals: currentUnit.isBtcUnit,
+        forceEightDecimals: false,
       );
       return t.split_utxo_screen.expected_result.split_by_amount(
         utxoAmountText: utxoAmountText,
@@ -265,7 +265,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   String? get headerTitleErrorMessage {
-    if (isOutputSumOverInput) {
+    if (isOutputSumOverInput && _selectedCriteria == SplitCriteria.manually) {
       return t.split_utxo_screen.amount_error.manual_sum_over_input;
     }
 
@@ -287,9 +287,29 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _onInputChanged() {
+    if (!isSplitInputValid) {
+      if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+      _cancelActiveBuild();
+      _isCalculating = false;
+      _splitResult = null;
+      _splitPreview = null;
+      _isDustError = false;
+      _isAmountInsufficientAfterFee = false;
+      _isFeeExceedsUtxoAmount = false;
+      _errorEstimatedFee = null;
+      _unexpectedErrorMessage = "";
+      notifyListeners();
+      return;
+    }
+
     _isCalculating = true;
     _splitResult = null;
     _splitPreview = null;
+    _isDustError = false;
+    _isAmountInsufficientAfterFee = false;
+    _isFeeExceedsUtxoAmount = false;
+    _errorEstimatedFee = null;
+    _unexpectedErrorMessage = "";
     notifyListeners();
 
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
@@ -423,10 +443,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool get isOutputSumOverInput {
-    // byAmount일 때, splitAmountErrorText로 반환 중
-    // if (_selectedCriteria == SplitCriteria.byAmount) {
-    //   return _selectedUtxoList.isNotEmpty && splitAmountSats >= _selectedUtxoAmount;
-    // }
+    if (_selectedCriteria == SplitCriteria.byAmount) {
+      return _selectedUtxoList.isNotEmpty && splitAmountSats >= _selectedUtxoAmount;
+    }
 
     if (_selectedCriteria == SplitCriteria.manually) {
       return _doesManualSplitRequestedTotalExceedInput;
@@ -546,6 +565,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _splitBuilder.setUtxo(null);
     } else {
       _splitBuilder.setUtxo(_selectedUtxoList.first);
+      if (hasSelectedUtxoAmountError) {
+        _selectedCriteria = null;
+      }
     }
 
     _updateRecommendedSplitCounts();
@@ -566,9 +588,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   void _clearResult() {
     _lastAmountText = '';
-    _lastSplitCountText = '';
+    _lastSplitCountText = '1';
     amountController.text = '';
-    splitCountController.text = '';
+    splitCountController.text = '1';
     _resetManualSplitItems();
     _isDustError = false;
     _isAmountInsufficientAfterFee = false;
@@ -747,7 +769,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   void decrementSplitCount() {
     splitCountFocusNode.unfocus();
     final current = int.tryParse(splitCountController.text) ?? 0;
-    if (current > 0) {
+    if (current > 1) {
       splitCountController.text = (current - 1).toString();
     }
   }
@@ -782,7 +804,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   void decrementManualSplitCount(int index) {
     manualSplitItems[index].countFocusNode.unfocus();
     final current = int.tryParse(manualSplitItems[index].countController.text) ?? 0;
-    if (current > 0) {
+    if (current > 1) {
       manualSplitItems[index].countController.text = (current - 1).toString();
     }
   }
@@ -864,11 +886,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 class ManualSplitItem {
   final TextEditingController amountController = TextEditingController();
   final FocusNode amountFocusNode = FocusNode();
-  final TextEditingController countController = TextEditingController(text: '0');
+  final TextEditingController countController = TextEditingController(text: '1');
   final FocusNode countFocusNode = FocusNode();
 
   String _lastAmountText = '';
-  String _lastCountText = '0';
+  String _lastCountText = '1';
   VoidCallback? _amountListener;
   VoidCallback? _countListener;
 
