@@ -53,7 +53,6 @@ class CommonBottomSheets {
               Padding(
                 padding: titlePadding,
                 child: SizedBox(
-                  height: 32,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [

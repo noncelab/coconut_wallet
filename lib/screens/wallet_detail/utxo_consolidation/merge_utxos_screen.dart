@@ -186,7 +186,11 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             children: [
               CoconutSlideUpAnimation(
                 delay: const Duration(milliseconds: 600),
-                child: Text(t.merge_utxos_screen.not_enough_utxos, style: CoconutTypography.heading4_18_Bold),
+                child: Text(
+                  t.merge_utxos_screen.not_enough_utxos,
+                  style: CoconutTypography.heading4_18_Bold,
+                  textAlign: TextAlign.center,
+                ),
               ),
               CoconutLayout.spacing_800h,
               CoconutSlideUpAnimation(
@@ -241,9 +245,16 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
                     16,
                     selector.isMergeButtonVisible ? 160 : 16,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [_buildAnimatedHeader(), CoconutLayout.spacing_500h, _buildVisibleOptionPickers(context)],
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildAnimatedHeader(),
+                        CoconutLayout.spacing_500h,
+                        _buildVisibleOptionPickers(context),
+                      ],
+                    ),
                   ),
                 ),
               ),

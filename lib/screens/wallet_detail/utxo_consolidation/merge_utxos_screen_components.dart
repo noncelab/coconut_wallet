@@ -299,35 +299,39 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
         for (final section in sections) ...[
           Stack(
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [CoconutColors.gray900, CoconutColors.gray800],
-                    ),
-                  ),
-                  child: Text(
-                    t.merge_utxos_screen.count(n: section.utxos.length, count: section.utxos.length),
-                    textAlign: TextAlign.end,
-                    style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+              Container(
+                width: double.infinity,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: const LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [CoconutColors.gray900, CoconutColors.gray800],
                   ),
                 ),
               ),
               Positioned.fill(
-                child: Align(
-                  alignment: Alignment.centerLeft,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildHighlightedSegwitAddressText(
-                      address: section.address,
-                      baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                      highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildHighlightedSegwitAddressText(
+                            address: section.address,
+                            baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                            highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          t.merge_utxos_screen.count(n: section.utxos.length, count: section.utxos.length),
+                          textAlign: TextAlign.end,
+                          style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -586,58 +590,61 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
         final arrowLeft = (slotWidth * selectedColumnIndex) + (slotWidth / 2) - 10 + horizontalOverflow;
         final cardWidth = baseWidth + (horizontalOverflow * 2);
 
-        return SizedBox(
-          width: baseWidth,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              SizedBox(
-                width: cardWidth,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  decoration: const BoxDecoration(
-                    color: CoconutColors.black,
-                    border: Border.symmetric(horizontal: BorderSide(color: CoconutColors.gray800, width: 1)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${timestamp[0]} | ${timestamp[1]}',
-                        style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                      ),
-                      const SizedBox(height: 2),
-                      _buildHighlightedSegwitAddressText(
-                        address: utxo.to,
-                        baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                        highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(utxo.derivationPath, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
-                    ],
-                  ),
-                ),
-              ),
-              Positioned(
-                top: -9.3,
-                left: arrowLeft - 16,
-                child: Transform.rotate(
-                  angle: 0.78539816339,
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: SizedBox(
+            width: baseWidth,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                SizedBox(
+                  width: cardWidth,
                   child: Container(
-                    width: 20,
-                    height: 20,
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                     decoration: const BoxDecoration(
                       color: CoconutColors.black,
-                      border: Border(
-                        top: BorderSide(color: CoconutColors.gray800),
-                        left: BorderSide(color: CoconutColors.gray800),
+                      border: Border.symmetric(horizontal: BorderSide(color: CoconutColors.gray800, width: 1)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${timestamp[0]} | ${timestamp[1]}',
+                          style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                        ),
+                        const SizedBox(height: 2),
+                        _buildHighlightedSegwitAddressText(
+                          address: utxo.to,
+                          baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                          highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(utxo.derivationPath, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: -9.3,
+                  left: arrowLeft - 16,
+                  child: Transform.rotate(
+                    angle: 0.78539816339,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: CoconutColors.black,
+                        border: Border(
+                          top: BorderSide(color: CoconutColors.gray800),
+                          left: BorderSide(color: CoconutColors.gray800),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
