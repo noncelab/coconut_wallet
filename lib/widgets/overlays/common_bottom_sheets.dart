@@ -475,7 +475,7 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               children: [
                 Expanded(
