@@ -717,6 +717,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     },
                   ),
             ),
+            CoconutLayout.spacing_1000h,
           ],
         );
       },
