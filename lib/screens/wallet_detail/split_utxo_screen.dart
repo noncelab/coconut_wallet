@@ -348,10 +348,23 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                Selector<SplitUtxoViewModel, bool>(
-                  selector: (_, vm) => vm.showSplitResultBox,
-                  builder: (context, showSplitResultBox, _) {
-                    return SizedBox(height: showSplitResultBox ? 40 : 32);
+                Consumer<SplitUtxoViewModel>(
+                  builder: (context, vm, _) {
+                    final focusNodes = [
+                      vm.amountFocusNode,
+                      vm.splitCountFocusNode,
+                      vm.feeRateFocusNode,
+                      ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
+                    ];
+
+                    return AnimatedBuilder(
+                      animation: Listenable.merge(focusNodes),
+                      builder: (context, _) {
+                        final isFocused = focusNodes.any((node) => node.hasFocus);
+                        final actuallyShowResultBox = vm.showSplitResultBox && !isFocused;
+                        return SizedBox(height: actuallyShowResultBox ? 40 : 32);
+                      },
+                    );
                   },
                 ),
                 _buildHeaderTitle(),
@@ -437,24 +450,29 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             final isFocused = focusNodes.any((node) => node.hasFocus);
             final showSplitResultBox = vm.showSplitResultBox && !isFocused;
 
-            return AnimatedSwitcher(
+            return AnimatedSize(
               duration: const Duration(milliseconds: 300),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child:
-                  showSplitResultBox
-                      ? _SplitResultContent(
-                        key: const ValueKey('split_result_box_content'),
-                        showSkeletonResultBox: vm.showSkeletonResultBox,
-                        usePreview: vm.usePreview,
-                        splitResult: vm.splitResult,
-                        splitOutputText: vm.splitOutputText,
-                        splitSummaryTitle: vm.splitSummaryTitle,
-                      )
-                      : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child:
+                    showSplitResultBox
+                        ? _SplitResultContent(
+                          key: const ValueKey('split_result_box_content'),
+                          showSkeletonResultBox: vm.showSkeletonResultBox,
+                          usePreview: vm.usePreview,
+                          splitResult: vm.splitResult,
+                          splitOutputText: vm.splitOutputText,
+                          splitSummaryTitle: vm.splitSummaryTitle,
+                        )
+                        : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
+              ),
             );
           },
         );
@@ -1173,31 +1191,43 @@ class _HeaderTitleErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple4<String?, String, SplitCriteria?, bool>>(
-      selector:
-          (_, vm) =>
-              Tuple4(vm.headerTitleErrorMessage, vm.feePickerDisplayText, vm.selectedCriteria, vm.showSplitResultBox),
-      builder: (_, data, __) {
-        final headerTitleErrorMessage = data.item1;
-        final selectedCriteria = data.item3;
-        final showSplitResultBox = data.item4;
-        if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
-          double height = 20;
-          if (selectedCriteria == SplitCriteria.manually) {
-            height = showSplitResultBox ? 16 : 24;
-          }
-          return SizedBox(height: height);
-        }
+    return Consumer<SplitUtxoViewModel>(
+      builder: (context, vm, _) {
+        final focusNodes = [
+          vm.amountFocusNode,
+          vm.splitCountFocusNode,
+          vm.feeRateFocusNode,
+          ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
+        ];
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 2, bottom: 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              headerTitleErrorMessage,
-              style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink).copyWith(height: 1.0),
-            ),
-          ),
+        return AnimatedBuilder(
+          animation: Listenable.merge(focusNodes),
+          builder: (context, _) {
+            final isFocused = focusNodes.any((node) => node.hasFocus);
+            final headerTitleErrorMessage = vm.headerTitleErrorMessage;
+            final selectedCriteria = vm.selectedCriteria;
+            final vmShowSplitResultBox = vm.showSplitResultBox;
+
+            if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
+              double height = 20;
+              if (selectedCriteria == SplitCriteria.manually) {
+                final isResultBoxActuallyVisible = vmShowSplitResultBox && !isFocused;
+                height = isResultBoxActuallyVisible ? 16 : 24;
+              }
+              return SizedBox(height: height);
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  headerTitleErrorMessage,
+                  style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink).copyWith(height: 1.0),
+                ),
+              ),
+            );
+          },
         );
       },
     );
