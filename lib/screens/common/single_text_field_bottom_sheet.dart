@@ -312,7 +312,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       collapsedHeight: widget.collapsedHeight ?? 240,
       isCompleteEnabled: _isCompleteButtonEnabled,
       onComplete: _onComplete,
-      completeLabel: widget.completeButtonText ?? t.complete,
+      completeLabel: widget.completeButtonText ?? t.done,
       textField: field,
     );
 

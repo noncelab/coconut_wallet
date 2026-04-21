@@ -32,7 +32,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
             initiallySelectedId: _viewModel.currentCriteria,
             allowConfirmWhenSelectionUnchanged: _viewModel.mergeState == MergeState.idle,
             getItemId: (item) => item,
-            confirmText: t.complete,
+            confirmText: t.done,
             backgroundColor: CoconutColors.gray900,
             itemBuilder: (context, item, isSelected, onTap) {
               final isTagMergeItem = item == UtxoMergeCriteria.sameTag;
@@ -138,7 +138,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
               return _SegmentedBottomSheetBody(
                 bodyHeight: bodyHeight,
                 selectedTabIndex: selectedTabIndex,
-                confirmText: t.complete,
+                confirmText: t.done,
                 isConfirmEnabled:
                     selectedTabIndex == 0 ? selectedRecommendedCriteria != null : hasMatchingCustomAmountUtxos,
                 onConfirm: () {
@@ -329,7 +329,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
             return _SegmentedBottomSheetBody(
               bodyHeight: bodyHeight,
               selectedTabIndex: selectedTabIndex,
-              confirmText: t.complete,
+              confirmText: t.done,
               confirmSubWidget:
                   selectedTabIndex == 1
                       ? _buildReceiveAddressValidationSubWidget(directInputController.text.trim())
@@ -452,7 +452,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       showConfirmButton: false,
       initiallySelectedId: selectedAddress,
       getItemId: (item) => item.address,
-      confirmText: t.complete,
+      confirmText: t.done,
       backgroundColor: CoconutColors.gray900,
       onSelectionChanged: (selected) {
         onSelectionChanged(selected?.address);
@@ -554,7 +554,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       showConfirmButton: false,
       initiallySelectedId: selectedRecommendedCriteria,
       getItemId: (item) => item,
-      confirmText: t.complete,
+      confirmText: t.done,
       backgroundColor: CoconutColors.gray900,
       onSelectionChanged: onSelectionChanged,
       itemBuilder: (context, item, isSelected, onTap) {

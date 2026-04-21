@@ -58,7 +58,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   static const Duration _headerAnimationDuration = Duration(milliseconds: 800);
   static const Duration _optionPickerAnimationDuration = Duration(milliseconds: 600);
   static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
-  static const Duration _autoOpenBottomSheetDelay = Duration(milliseconds: 850);
+  static const Duration _autoOpenBottomSheetDelay = Duration(milliseconds: 0);
 
   late MergeUtxosViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
@@ -981,7 +981,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
             valueListenable: isEditingNotifier,
             builder:
                 (context, isEditing, _) => CoconutUnderlinedButton(
-                  text: isEditing ? t.complete : t.edit,
+                  text: isEditing ? t.done : t.edit,
                   onTap: () {
                     if (isEditing) {
                       final committedSelectedUtxoIds = Set<String>.from(draftSelectedUtxoIdsNotifier.value);

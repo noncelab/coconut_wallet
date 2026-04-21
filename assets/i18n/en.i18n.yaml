@@ -1133,9 +1133,9 @@ language_bottom_sheet:
   spanish: "Español"
 
 estimated_fee_bottom_sheet:
-    title: "Estimated Fee"
-    estimated_fee: "Estimated fee"
-    fee_rate: "Fee rate"
+  title: "Estimated Fee"
+  estimated_fee: "Estimated Fee"
+  fee_rate: "Fee Rate"
 
 long_pressed_menu:
   hide: "Hide"

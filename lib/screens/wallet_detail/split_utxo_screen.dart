@@ -46,7 +46,7 @@ class SplitUtxoScreen extends StatefulWidget {
 class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   static const Duration _headerAnimationDuration = Duration(milliseconds: 800);
   static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
-  static const Duration _autoOpenUtxoBottomSheetDelay = Duration(milliseconds: 850);
+  static const Duration _autoOpenUtxoBottomSheetDelay = Duration(milliseconds: 0);
   String? _displayedHeaderTitle;
   String? _pendingHeaderTitle;
   String? _lastObservedHeaderTitle;
@@ -1114,7 +1114,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       getItemId: (item) => item.name,
       initiallySelectedId: viewModel.selectedCriteria?.name,
       initialChildSize: 0.5,
-      confirmText: t.complete,
+      confirmText: t.done,
       minChildSize: 0.49,
       maxChildSize: 0.9,
       backgroundColor: CoconutColors.gray900,

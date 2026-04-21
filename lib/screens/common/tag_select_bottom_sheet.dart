@@ -122,7 +122,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
         SizedBox(
           height: 120,
           child: FixedBottomButton(
-            text: t.complete,
+            text: t.done,
             isActive: _selectedTagName != null,
             bottomPadding: 0,
             subWidget:

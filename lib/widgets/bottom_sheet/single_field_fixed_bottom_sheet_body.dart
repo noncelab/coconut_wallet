@@ -48,7 +48,7 @@ class SingleFieldFixedBottomSheetBody extends StatelessWidget {
               if (!isCompleteEnabled) return;
               onComplete();
             },
-            text: completeLabel ?? t.complete,
+            text: completeLabel ?? t.done,
           ),
         ],
       ),
