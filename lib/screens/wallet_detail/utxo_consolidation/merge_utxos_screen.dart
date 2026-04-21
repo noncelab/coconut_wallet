@@ -383,7 +383,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     context.loaderOverlay.show();
 
     try {
-      if (!_viewModel.saveForNext()) {
+      if (!await _viewModel.saveForNext()) {
         return;
       }
 
