@@ -823,7 +823,7 @@ merge_utxos_screen:
   fee_rate_input_placeholder: "Please enter a fee rate."
   no_utxos_for_amount_criteria: "There are no UTXOs matching this range."
   single_utxo_for_amount_criteria: "Only 1 UTXO matches this range, so it cannot be merged."
-  future_fee_saving: "Consolidating now could save about ${amount} sats"
+  future_fee_saving: "Merging now could save about ${amount} sats"
   merge_cta_neutral_low_saving: "Merging now would not save much on fees"
   merge_cta_efficient_without_merge: "It’s already efficient enough without merging"
   merge_cta_high_fee_ratio: "The fee share is high (${ratio}%)"
