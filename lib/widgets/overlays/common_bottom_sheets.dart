@@ -226,6 +226,7 @@ class CommonBottomSheets {
     bool showDragHandle = true,
     String? title,
     String? subLabel,
+    TextStyle? titleTextStyle,
     Color backgroundColor = CoconutColors.black,
   }) async {
     final draggableController = DraggableScrollableController();
@@ -322,9 +323,15 @@ class CommonBottomSheets {
                             handleDrag();
                           },
                           child: CoconutAppBar.build(
-                            title: title,
                             context: context,
                             onBackPressed: null,
+                            customTitle: Text(
+                              title,
+                              style: titleTextStyle ?? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
                             subLabel: Text(
                               subLabel ?? '',
                               style: CoconutTypography.body3_12.setColor(CoconutColors.black),
@@ -366,6 +373,7 @@ class CommonBottomSheets {
     double maxChildSize = 0.9,
     double? initialChildSize,
     Color backgroundColor = CoconutColors.black,
+    TextStyle? titleTextStyle,
   }) async {
     return showDraggableBottomSheet<T>(
       context: context,
@@ -374,6 +382,7 @@ class CommonBottomSheets {
       maxChildSize: maxChildSize,
       initialChildSize: initialChildSize,
       backgroundColor: backgroundColor,
+      titleTextStyle: titleTextStyle,
       childBuilder: (scrollController) {
         return SelectableBottomSheetBody<T>(
           scrollController: scrollController,

@@ -63,6 +63,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String titleText = widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title;
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
@@ -86,7 +87,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     backgroundColor: CoconutColors.black,
                     appBar: CoconutAppBar.build(
                       backgroundColor: CoconutColors.black,
-                      title: widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title,
+                      customTitle: Text(
+                        titleText,
+                        style:
+                            widget.isSplitMode
+                                ? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)
+                                : CoconutTypography.body2_14.setColor(CoconutColors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                       context: context,
                       actionButtonList: [
                         if (widget.showSkipButton)
