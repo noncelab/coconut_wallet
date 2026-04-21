@@ -778,8 +778,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   void addManualSplitItem() {
     final item = ManualSplitItem();
     item.setupListeners(_onInputChanged);
-    item.amountFocusNode.addListener(notifyListeners);
-    item.countFocusNode.addListener(notifyListeners);
     manualSplitItems.add(item);
     notifyListeners();
   }
@@ -787,8 +785,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   void removeManualSplitItem(int index) {
     if (manualSplitItems.length > 1) {
       final item = manualSplitItems.removeAt(index);
-      item.amountFocusNode.removeListener(notifyListeners);
-      item.countFocusNode.removeListener(notifyListeners);
       item.dispose();
       _onInputChanged();
       notifyListeners();
