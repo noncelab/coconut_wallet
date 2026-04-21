@@ -1088,18 +1088,30 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildEstimatedFeeOptionPicker() {
-    final shouldShowFeeRatePlaceholder = _viewModel.feeRateInput.isEmpty;
-    bool isFeeTooHigh =
-        _viewModel.preparedMergeTransactionBuildResult?.exception is InsufficientBalanceException ||
-        _viewModel.preparedMergeTransactionBuildResult?.exception is SendAmountTooLowException;
-    return CoconutOptionPicker(
-      text:
-          shouldShowFeeRatePlaceholder ? t.merge_utxos_screen.fee_rate_input_placeholder : _viewModel.estimatedFeeText,
-      label: t.estimated_fee,
-      textColor: shouldShowFeeRatePlaceholder ? CoconutColors.gray500 : CoconutColors.white,
-      onTap: _showEstimatedFeeBottomSheet,
-      coconutOptionStateEnum: isFeeTooHigh ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,
-      guideText: isFeeTooHigh ? t.merge_utxos_screen.exception.fee_too_high : null,
+    return Selector<MergeUtxosViewModel, ({bool isFeeRateInputEmpty, String estimatedFeeText, bool isFeeTooHigh})>(
+      selector: (_, vm) {
+        final exception = vm.preparedMergeTransactionBuildResult?.exception;
+        return (
+          isFeeRateInputEmpty: vm.feeRateInput.isEmpty,
+          estimatedFeeText: vm.estimatedFeeText,
+          isFeeTooHigh: exception is InsufficientBalanceException || exception is SendAmountTooLowException,
+        );
+      },
+      builder: (context, selector, _) {
+        final shouldShowFeeRatePlaceholder = selector.isFeeRateInputEmpty;
+        final isFeeTooHigh = selector.isFeeTooHigh;
+        return CoconutOptionPicker(
+          text:
+              shouldShowFeeRatePlaceholder
+                  ? t.merge_utxos_screen.fee_rate_input_placeholder
+                  : selector.estimatedFeeText,
+          label: t.estimated_fee,
+          textColor: shouldShowFeeRatePlaceholder ? CoconutColors.gray500 : CoconutColors.white,
+          onTap: _showEstimatedFeeBottomSheet,
+          coconutOptionStateEnum: isFeeTooHigh ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,
+          guideText: isFeeTooHigh ? t.merge_utxos_screen.exception.fee_too_high : null,
+        );
+      },
     );
   }
 
