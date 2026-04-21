@@ -5,7 +5,6 @@ import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
-import 'package:tuple/tuple.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -348,8 +347,15 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                Consumer<SplitUtxoViewModel>(
-                  builder: (context, vm, _) {
+                Selector<SplitUtxoViewModel, ({bool showSplitResultBox, int manualSplitItemsLength})>(
+                  selector:
+                      (_, vm) => (
+                        showSplitResultBox: vm.showSplitResultBox,
+                        manualSplitItemsLength: vm.manualSplitItems.length,
+                      ),
+                  builder: (context, data, _) {
+                    final showSplitResultBox = data.showSplitResultBox;
+                    final vm = context.read<SplitUtxoViewModel>();
                     final focusNodes = [
                       vm.amountFocusNode,
                       vm.splitCountFocusNode,
@@ -361,7 +367,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                       animation: Listenable.merge(focusNodes),
                       builder: (context, _) {
                         final isFocused = focusNodes.any((node) => node.hasFocus);
-                        final actuallyShowResultBox = vm.showSplitResultBox && !isFocused;
+                        final actuallyShowResultBox = showSplitResultBox && !isFocused;
                         return SizedBox(height: actuallyShowResultBox ? 40 : 32);
                       },
                     );
@@ -392,18 +398,31 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildHeaderTitle() {
-    return Selector<SplitUtxoViewModel, Tuple3<List<UtxoState>, SplitCriteria?, String?>>(
-      selector: (_, vm) => Tuple3(vm.selectedUtxoList, vm.selectedCriteria, vm.headerTitleErrorMessage),
+    return Selector<
+      SplitUtxoViewModel,
+      ({List<UtxoState> selectedUtxoList, SplitCriteria? selectedCriteria, String? headerTitleErrorMessage})
+    >(
+      selector:
+          (_, vm) => (
+            selectedUtxoList: vm.selectedUtxoList,
+            selectedCriteria: vm.selectedCriteria,
+            headerTitleErrorMessage: vm.headerTitleErrorMessage,
+          ),
       builder: (context, data, _) {
         final viewModel = context.read<SplitUtxoViewModel>();
-        final nextTitle = _getHeaderTitle(t, data.item1, data.item2, viewModel.hasSelectedUtxoAmountError);
-        final nextCriteria = data.item2;
+        final nextTitle = _getHeaderTitle(
+          t,
+          data.selectedUtxoList,
+          data.selectedCriteria,
+          viewModel.hasSelectedUtxoAmountError,
+        );
+        final nextCriteria = data.selectedCriteria;
         _scheduleHeaderAnimation(nextTitle, nextCriteria);
 
         final currentStep =
-            data.item1.isEmpty || viewModel.hasSelectedUtxoAmountError
+            data.selectedUtxoList.isEmpty || viewModel.hasSelectedUtxoAmountError
                 ? SplitStep.selectUtxo
-                : (data.item2 == null ? SplitStep.selectCriteria : SplitStep.enterDetails);
+                : (data.selectedCriteria == null ? SplitStep.selectCriteria : SplitStep.enterDetails);
         _scheduleOptionPickerAnimation(currentStep, viewModel);
 
         final titleToDisplay = _displayedHeaderTitle ?? nextTitle;
@@ -435,8 +454,30 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildExpectedResult() {
-    return Consumer<SplitUtxoViewModel>(
-      builder: (context, vm, _) {
+    return Selector<
+      SplitUtxoViewModel,
+      ({
+        bool showSplitResultBox,
+        bool showSkeletonResultBox,
+        bool usePreview,
+        UtxoSplitResult? splitResult,
+        String? splitOutputText,
+        String splitSummaryTitle,
+        int manualSplitItemsLength,
+      })
+    >(
+      selector:
+          (_, vm) => (
+            showSplitResultBox: vm.showSplitResultBox,
+            showSkeletonResultBox: vm.showSkeletonResultBox,
+            usePreview: vm.usePreview,
+            splitResult: vm.splitResult,
+            splitOutputText: vm.splitOutputText,
+            splitSummaryTitle: vm.splitSummaryTitle,
+            manualSplitItemsLength: vm.manualSplitItems.length,
+          ),
+      builder: (context, data, _) {
+        final vm = context.read<SplitUtxoViewModel>();
         final focusNodes = [
           vm.amountFocusNode,
           vm.splitCountFocusNode,
@@ -448,7 +489,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           animation: Listenable.merge(focusNodes),
           builder: (context, _) {
             final isFocused = focusNodes.any((node) => node.hasFocus);
-            final showSplitResultBox = vm.showSplitResultBox && !isFocused;
+            final showSplitResultBox = data.showSplitResultBox && !isFocused;
 
             return AnimatedSize(
               duration: const Duration(milliseconds: 300),
@@ -465,11 +506,11 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     showSplitResultBox
                         ? _SplitResultContent(
                           key: const ValueKey('split_result_box_content'),
-                          showSkeletonResultBox: vm.showSkeletonResultBox,
-                          usePreview: vm.usePreview,
-                          splitResult: vm.splitResult,
-                          splitOutputText: vm.splitOutputText,
-                          splitSummaryTitle: vm.splitSummaryTitle,
+                          showSkeletonResultBox: data.showSkeletonResultBox,
+                          usePreview: data.usePreview,
+                          splitResult: data.splitResult,
+                          splitOutputText: data.splitOutputText,
+                          splitSummaryTitle: data.splitSummaryTitle,
                         )
                         : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
               ),
@@ -481,23 +522,33 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildApplyButton(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple6<bool, bool, bool, String, double?, bool>>(
+    return Selector<
+      SplitUtxoViewModel,
+      ({
+        bool showSplitResultBox,
+        bool isSplitValid,
+        bool isPreparingNextStep,
+        String unexpectedErrorMessage,
+        double? feeRatio,
+        bool showSkeletonResultBox,
+      })
+    >(
       selector:
-          (_, vm) => Tuple6(
-            vm.showSplitResultBox,
-            vm.isSplitValid,
-            vm.isPreparingNextStep,
-            vm.unexpectedErrorMessage,
-            vm.feeRatio,
-            vm.showSkeletonResultBox,
+          (_, vm) => (
+            showSplitResultBox: vm.showSplitResultBox,
+            isSplitValid: vm.isSplitValid,
+            isPreparingNextStep: vm.isPreparingNextStep,
+            unexpectedErrorMessage: vm.unexpectedErrorMessage,
+            feeRatio: vm.feeRatio,
+            showSkeletonResultBox: vm.showSkeletonResultBox,
           ),
       builder: (context, data, _) {
-        final showSplitResultBox = data.item1;
-        final isSplitValid = data.item2;
-        final isPreparingNextStep = data.item3;
-        final finalErrorMessage = data.item4;
-        final feeRatio = data.item5;
-        final showSkeletonResultBox = data.item6;
+        final showSplitResultBox = data.showSplitResultBox;
+        final isSplitValid = data.isSplitValid;
+        final isPreparingNextStep = data.isPreparingNextStep;
+        final finalErrorMessage = data.unexpectedErrorMessage;
+        final feeRatio = data.feeRatio;
+        final showSkeletonResultBox = data.showSkeletonResultBox;
         final viewModel = context.read<SplitUtxoViewModel>();
         return AnimatedOpacity(
           opacity: showSplitResultBox ? 1.0 : 0.0,
@@ -535,11 +586,11 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildCriteriaPicker(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple2<bool, SplitCriteria?>>(
-      selector: (_, vm) => Tuple2(vm.selectedUtxoList.isNotEmpty, vm.selectedCriteria),
+    return Selector<SplitUtxoViewModel, ({bool isUtxoSelected, SplitCriteria? selectedCriteria})>(
+      selector: (_, vm) => (isUtxoSelected: vm.selectedUtxoList.isNotEmpty, selectedCriteria: vm.selectedCriteria),
       builder: (context, data, _) {
-        final isUtxoSelected = data.item1;
-        final criteria = data.item2;
+        final isUtxoSelected = data.isUtxoSelected;
+        final criteria = data.selectedCriteria;
         if (!isUtxoSelected) return const SizedBox.shrink();
 
         final viewModel = context.read<SplitUtxoViewModel>();
@@ -560,14 +611,23 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildUtxoPicker(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple4<bool, String?, CoconutOptionStateEnum, List<UtxoState>>>(
-      selector: (_, vm) => Tuple4(vm.isUtxoSelected, vm.getUtxoGuideText(t), vm.utxoOptionState, vm.selectedUtxoList),
+    return Selector<
+      SplitUtxoViewModel,
+      ({bool isSelected, String? guideText, CoconutOptionStateEnum optionState, List<UtxoState> selectedUtxoList})
+    >(
+      selector:
+          (_, vm) => (
+            isSelected: vm.isUtxoSelected,
+            guideText: vm.getUtxoGuideText(t),
+            optionState: vm.utxoOptionState,
+            selectedUtxoList: vm.selectedUtxoList,
+          ),
       builder: (context, data, _) {
         List<Widget> inlineWidgets = [];
-        final isSelected = data.item1;
-        final guideText = data.item2;
-        final optionState = data.item3;
-        final selectedUtxoList = data.item4;
+        final isSelected = data.isSelected;
+        final guideText = data.guideText;
+        final optionState = data.optionState;
+        final selectedUtxoList = data.selectedUtxoList;
 
         if (isSelected) {
           final utxoTagProvider = context.read<UtxoTagProvider>();
@@ -688,15 +748,22 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildFeePicker(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple3<bool, Tuple2<bool, String?>, String>>(
+    return Selector<
+      SplitUtxoViewModel,
+      ({bool shouldShow, bool hasFeeRate, String? feeExceedsAmountErrorText, String previewFeeText})
+    >(
       selector:
-          (_, vm) =>
-              Tuple3(vm.shouldShowFeePicker, Tuple2(vm.hasFeeRate, vm.errorTextAboutFee), vm.feePickerDisplayText),
+          (_, vm) => (
+            shouldShow: vm.shouldShowFeePicker,
+            hasFeeRate: vm.hasFeeRate,
+            feeExceedsAmountErrorText: vm.errorTextAboutFee,
+            previewFeeText: vm.feePickerDisplayText,
+          ),
       builder: (context, data, _) {
-        final shouldShow = data.item1;
-        final hasFeeRate = data.item2.item1;
-        final feeExceedsAmountErrorText = data.item2.item2;
-        final previewFeeText = data.item3;
+        final shouldShow = data.shouldShow;
+        final hasFeeRate = data.hasFeeRate;
+        final feeExceedsAmountErrorText = data.feeExceedsAmountErrorText;
+        final previewFeeText = data.previewFeeText;
 
         if (!shouldShow) {
           return const SizedBox.shrink();
@@ -797,8 +864,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Selector<SplitUtxoViewModel, Tuple2<String?, String>>(
-          selector: (_, vm) => Tuple2(vm.splitAmountErrorText, vm.currentUnit.symbol),
+        Selector<SplitUtxoViewModel, ({String? splitAmountErrorText, String unitSymbol})>(
+          selector: (_, vm) => (splitAmountErrorText: vm.splitAmountErrorText, unitSymbol: vm.currentUnit.symbol),
           builder: (context, data, _) {
             return CoconutTextField(
               controller: viewModel.amountController,
@@ -809,8 +876,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               activeColor: CoconutColors.white,
               placeholderColor: CoconutColors.gray500,
               errorColor: CoconutColors.hotPink,
-              isError: data.item1 != null,
-              errorText: data.item1 ?? '',
+              isError: data.splitAmountErrorText != null,
+              errorText: data.splitAmountErrorText ?? '',
               onChanged: (_) {},
               onEditingComplete: () => viewModel.amountFocusNode.unfocus(),
               textInputAction: TextInputAction.done,
@@ -822,7 +889,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 4),
               suffix: Padding(
                 padding: const EdgeInsets.only(top: 4, right: 4),
-                child: Text(data.item2, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+                child: Text(data.unitSymbol, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
               ),
             );
           },
@@ -835,11 +902,11 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildRecommendedAmounts() {
-    return Selector<SplitUtxoViewModel, Tuple2<List<double>, BitcoinUnit>>(
-      selector: (_, vm) => Tuple2(vm.recommendedSplitAmounts, vm.currentUnit),
+    return Selector<SplitUtxoViewModel, ({List<double> recommendedSplitAmounts, BitcoinUnit currentUnit})>(
+      selector: (_, vm) => (recommendedSplitAmounts: vm.recommendedSplitAmounts, currentUnit: vm.currentUnit),
       builder: (context, data, _) {
-        final recommendedSplitAmounts = data.item1;
-        final currentUnit = data.item2;
+        final recommendedSplitAmounts = data.recommendedSplitAmounts;
+        final currentUnit = data.currentUnit;
         final viewModel = context.read<SplitUtxoViewModel>();
         final screenWidth = MediaQuery.sizeOf(context).width;
         return LayoutBuilder(
@@ -891,12 +958,17 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     final viewModel = context.read<SplitUtxoViewModel>();
     return Column(
       children: [
-        Selector<SplitUtxoViewModel, Tuple3<int, bool, bool>>(
-          selector: (_, vm) => Tuple3(vm.splitCount, vm.isDustError, vm.splitCountFocusNode.hasFocus),
+        Selector<SplitUtxoViewModel, ({int splitCount, bool isDustError, bool hasFocus})>(
+          selector:
+              (_, vm) => (
+                splitCount: vm.splitCount,
+                isDustError: vm.isDustError,
+                hasFocus: vm.splitCountFocusNode.hasFocus,
+              ),
           builder: (context, data, _) {
-            final splitCount = data.item1;
-            final isDustError = data.item2;
-            final hasFocus = data.item3;
+            final splitCount = data.splitCount;
+            final isDustError = data.isDustError;
+            final hasFocus = data.hasFocus;
             final textColor = splitCount >= 2 && isDustError ? CoconutColors.hotPink : CoconutColors.white;
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1192,8 +1264,27 @@ class _HeaderTitleErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SplitUtxoViewModel>(
-      builder: (context, vm, _) {
+    return Selector<
+      SplitUtxoViewModel,
+      ({
+        String? headerTitleErrorMessage,
+        SplitCriteria? selectedCriteria,
+        bool showSplitResultBox,
+        int manualSplitItemsLength,
+      })
+    >(
+      selector:
+          (_, vm) => (
+            headerTitleErrorMessage: vm.headerTitleErrorMessage,
+            selectedCriteria: vm.selectedCriteria,
+            showSplitResultBox: vm.showSplitResultBox,
+            manualSplitItemsLength: vm.manualSplitItems.length,
+          ),
+      builder: (context, data, _) {
+        final headerTitleErrorMessage = data.headerTitleErrorMessage;
+        final selectedCriteria = data.selectedCriteria;
+        final vmShowSplitResultBox = data.showSplitResultBox;
+        final vm = context.read<SplitUtxoViewModel>();
         final focusNodes = [
           vm.amountFocusNode,
           vm.splitCountFocusNode,
@@ -1205,9 +1296,6 @@ class _HeaderTitleErrorText extends StatelessWidget {
           animation: Listenable.merge(focusNodes),
           builder: (context, _) {
             final isFocused = focusNodes.any((node) => node.hasFocus);
-            final headerTitleErrorMessage = vm.headerTitleErrorMessage;
-            final selectedCriteria = vm.selectedCriteria;
-            final vmShowSplitResultBox = vm.showSplitResultBox;
 
             if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
               double height = 20;
@@ -1365,12 +1453,17 @@ class _SplitResultReadyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple3<String, String?, String>>(
-      selector: (_, vm) => Tuple3(vm.splitSummaryTitle, vm.splitOutputText, vm.feePickerDisplayText),
+    return Selector<SplitUtxoViewModel, ({String splitSummaryTitle, String? splitOutputText, String previewFeeText})>(
+      selector:
+          (_, vm) => (
+            splitSummaryTitle: vm.splitSummaryTitle,
+            splitOutputText: vm.splitOutputText,
+            previewFeeText: vm.feePickerDisplayText,
+          ),
       builder: (context, data, _) {
-        final splitSummaryTitle = data.item1;
-        final splitOutputText = data.item2;
-        final previewFeeText = data.item3;
+        final splitSummaryTitle = data.splitSummaryTitle;
+        final splitOutputText = data.splitOutputText;
+        final previewFeeText = data.previewFeeText;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
