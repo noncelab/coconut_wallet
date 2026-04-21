@@ -611,7 +611,9 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     );
   }
 
-  bool saveForNext() {
+  Future<bool> saveForNext() async {
+    await Future.delayed(Duration.zero);
+
     final txBuildResult = _txBuildResult;
     if (txBuildResult == null || !txBuildResult.isSuccess || txBuildResult.transaction == null) {
       return false;

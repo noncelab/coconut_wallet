@@ -420,11 +420,9 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return true;
   }
 
-  void _onTapReceive() {
-    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
-  }
-
-  Future<void> _onTapSend() async {
+  /// MFP(master fingerprint)가 누락된 싱글시그 지갑이면 안내 다이얼로그를 띄우고 true를 반환.
+  /// 호출부에서는 true일 때 이후 동작을 중단해야 한다.
+  bool _showNoMfpDialogIfNeeded() {
     if (!_viewModel.isMultisigWallet &&
         (_viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder ||
             isWalletWithoutMfp(_viewModel.walletListBaseItem))) {
@@ -436,8 +434,47 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           arguments: {'id': widget.id, 'isMultisig': false, 'entryPoint': widget.entryPoint, 'showMfpInput': true},
         );
       });
+      return true;
+    }
+    return false;
+  }
+
+  void _onTapMerge({required bool canMerge, required int availableUtxoCount}) {
+    if (!canMerge) {
+      _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
       return;
     }
+    if (availableUtxoCount < 2) {
+      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
+      return;
+    }
+    if (_showNoMfpDialogIfNeeded()) return;
+    if (!_checkStateAndShowToast()) return;
+    _viewModel.clearSendInfo();
+    Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+  }
+
+  void _onTapSplit({required bool canSplit, required int availableUtxoCount}) {
+    if (!canSplit) {
+      _showInfoToast(context, t.toast.split_utxo_unavailable_description);
+      return;
+    }
+    if (availableUtxoCount < 1) {
+      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
+      return;
+    }
+    if (_showNoMfpDialogIfNeeded()) return;
+    if (!_checkStateAndShowToast()) return;
+    _viewModel.clearSendInfo();
+    Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
+  }
+
+  void _onTapReceive() {
+    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
+  }
+
+  Future<void> _onTapSend() async {
+    if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
     _viewModel.clearSendInfo();
 
@@ -522,18 +559,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         child: _buildBottomActionBarButton(
                           iconPath: 'assets/svg/merge-utxos.svg',
                           label: t.merge_utxos,
-                          onTap:
-                              canMerge
-                                  ? () {
-                                    if (availableUtxoCount < 2) {
-                                      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
-                                    } else {
-                                      Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
-                                    }
-                                  }
-                                  : () {
-                                    _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
-                                  },
+                          onTap: () => _onTapMerge(canMerge: canMerge, availableUtxoCount: availableUtxoCount),
                         ),
                       ),
                     ),
@@ -543,18 +569,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                         child: _buildBottomActionBarButton(
                           iconPath: 'assets/svg/split-utxo.svg',
                           label: t.split_utxo,
-                          onTap:
-                              canSplit
-                                  ? () {
-                                    if (availableUtxoCount < 1) {
-                                      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
-                                    } else {
-                                      Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
-                                    }
-                                  }
-                                  : () {
-                                    _showInfoToast(context, t.toast.split_utxo_unavailable_description);
-                                  },
+                          onTap: () => _onTapSplit(canSplit: canSplit, availableUtxoCount: availableUtxoCount),
                         ),
                       ),
                     ),

@@ -25,7 +25,7 @@ import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:lottie/lottie.dart';
+import 'package:coconut_wallet/widgets/card/animated_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:shimmer/shimmer.dart';
@@ -348,10 +348,23 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                Selector<SplitUtxoViewModel, bool>(
-                  selector: (_, vm) => vm.showSplitResultBox,
-                  builder: (context, showSplitResultBox, _) {
-                    return SizedBox(height: showSplitResultBox ? 40 : 32);
+                Consumer<SplitUtxoViewModel>(
+                  builder: (context, vm, _) {
+                    final focusNodes = [
+                      vm.amountFocusNode,
+                      vm.splitCountFocusNode,
+                      vm.feeRateFocusNode,
+                      ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
+                    ];
+
+                    return AnimatedBuilder(
+                      animation: Listenable.merge(focusNodes),
+                      builder: (context, _) {
+                        final isFocused = focusNodes.any((node) => node.hasFocus);
+                        final actuallyShowResultBox = vm.showSplitResultBox && !isFocused;
+                        return SizedBox(height: actuallyShowResultBox ? 40 : 32);
+                      },
+                    );
                   },
                 ),
                 _buildHeaderTitle(),
@@ -437,24 +450,29 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             final isFocused = focusNodes.any((node) => node.hasFocus);
             final showSplitResultBox = vm.showSplitResultBox && !isFocused;
 
-            return AnimatedSwitcher(
+            return AnimatedSize(
               duration: const Duration(milliseconds: 300),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              child:
-                  showSplitResultBox
-                      ? _SplitResultContent(
-                        key: const ValueKey('split_result_box_content'),
-                        showSkeletonResultBox: vm.showSkeletonResultBox,
-                        usePreview: vm.usePreview,
-                        splitResult: vm.splitResult,
-                        splitOutputText: vm.splitOutputText,
-                        splitSummaryTitle: vm.splitSummaryTitle,
-                      )
-                      : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child:
+                    showSplitResultBox
+                        ? _SplitResultContent(
+                          key: const ValueKey('split_result_box_content'),
+                          showSkeletonResultBox: vm.showSkeletonResultBox,
+                          usePreview: vm.usePreview,
+                          splitResult: vm.splitResult,
+                          splitOutputText: vm.splitOutputText,
+                          splitSummaryTitle: vm.splitSummaryTitle,
+                        )
+                        : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
+              ),
             );
           },
         );
@@ -931,7 +949,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                             textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                             maxLines: 1,
                             unfocusOnTapOutside: true,
-                            padding: const EdgeInsets.only(top: 8, bottom: 3),
+                            padding: EdgeInsets.zero,
                             placeholderText: '',
                           ),
                           if (inputText.isEmpty && !hasFocus)
@@ -1119,6 +1137,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       minChildSize: 0.49,
       maxChildSize: 0.9,
       backgroundColor: CoconutColors.gray900,
+      showGradient: false,
       itemBuilder: (context, item, isSelected, onTap) {
         return SelectableBottomSheetTextItem(
           isSelected: isSelected,
@@ -1173,31 +1192,43 @@ class _HeaderTitleErrorText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SplitUtxoViewModel, Tuple4<String?, String, SplitCriteria?, bool>>(
-      selector:
-          (_, vm) =>
-              Tuple4(vm.headerTitleErrorMessage, vm.feePickerDisplayText, vm.selectedCriteria, vm.showSplitResultBox),
-      builder: (_, data, __) {
-        final headerTitleErrorMessage = data.item1;
-        final selectedCriteria = data.item3;
-        final showSplitResultBox = data.item4;
-        if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
-          double height = 20;
-          if (selectedCriteria == SplitCriteria.manually) {
-            height = showSplitResultBox ? 16 : 24;
-          }
-          return SizedBox(height: height);
-        }
+    return Consumer<SplitUtxoViewModel>(
+      builder: (context, vm, _) {
+        final focusNodes = [
+          vm.amountFocusNode,
+          vm.splitCountFocusNode,
+          vm.feeRateFocusNode,
+          ...vm.manualSplitItems.expand((item) => [item.amountFocusNode, item.countFocusNode]),
+        ];
 
-        return Padding(
-          padding: const EdgeInsets.only(top: 2, bottom: 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              headerTitleErrorMessage,
-              style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink).copyWith(height: 1.0),
-            ),
-          ),
+        return AnimatedBuilder(
+          animation: Listenable.merge(focusNodes),
+          builder: (context, _) {
+            final isFocused = focusNodes.any((node) => node.hasFocus);
+            final headerTitleErrorMessage = vm.headerTitleErrorMessage;
+            final selectedCriteria = vm.selectedCriteria;
+            final vmShowSplitResultBox = vm.showSplitResultBox;
+
+            if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
+              double height = 20;
+              if (selectedCriteria == SplitCriteria.manually) {
+                final isResultBoxActuallyVisible = vmShowSplitResultBox && !isFocused;
+                height = isResultBoxActuallyVisible ? 16 : 24;
+              }
+              return SizedBox(height: height);
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  headerTitleErrorMessage,
+                  style: CoconutTypography.caption_10.setColor(CoconutColors.hotPink).copyWith(height: 1.0),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -1286,66 +1317,26 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: CoconutColors.gray800,
-              border: Border.all(color: CoconutColors.gray600, width: 1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 0),
-                  child: Lottie.asset(
-                    'assets/lottie/three-stars-growing.json',
-                    controller: _lottieController,
-                    onLoaded: (composition) {
-                      _lottieController.duration = composition.duration;
-                      if (isDone) {
-                        _lottieController.value = 1;
-                      } else if (isPreparing && !_lottieController.isAnimating) {
-                        _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
-                      } else if (!isPreparing) {
-                        _lottieController.reset();
-                      }
-                    },
-                    width: 24,
-                    height: 24,
-                    fit: BoxFit.contain,
-                    repeat: false,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
-                      layoutBuilder: (currentChild, previousChildren) {
-                        return Stack(
-                          alignment: Alignment.centerLeft,
-                          children: [...previousChildren, if (currentChild != null) currentChild],
-                        );
-                      },
-                      transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-                      child:
-                          isDone
-                              ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
-                              : _SplitResultSkeletonContent(
-                                key: const ValueKey('split-skeleton'),
-                                lineCount: _lastLineCount,
-                                titleText: _lastTitle,
-                              ),
+          AnimatedSummaryCard(
+            lottieController: _lottieController,
+            onLottieLoaded: (composition) {
+              _lottieController.duration = composition.duration;
+              if (isDone) {
+                _lottieController.value = 1;
+              } else if (isPreparing && !_lottieController.isAnimating) {
+                _lottieController.repeat(period: _lottieController.duration ?? composition.duration);
+              } else if (!isPreparing) {
+                _lottieController.reset();
+              }
+            },
+            child:
+                isDone
+                    ? const _SplitResultReadyContent(key: ValueKey('split-ready'))
+                    : _SplitResultSkeletonContent(
+                      key: const ValueKey('split-skeleton'),
+                      lineCount: _lastLineCount,
+                      titleText: _lastTitle,
                     ),
-                  ),
-                ),
-              ],
-            ),
           ),
           Visibility(
             visible: widget.usePreview,
@@ -1752,6 +1743,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                       },
                       child: Container(
                         color: CoconutColors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -1842,7 +1834,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                         textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                                         maxLines: 1,
                                         unfocusOnTapOutside: true,
-                                        padding: const EdgeInsets.only(top: 8, bottom: 3),
+                                        padding: EdgeInsets.zero,
                                         placeholderText: '',
                                       ),
                                       if (inputText.isEmpty && !hasFocus)

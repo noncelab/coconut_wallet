@@ -488,7 +488,7 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
           borderRadius: 8,
           borderWidth: 0,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               children: [
                 Expanded(
@@ -577,7 +577,11 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
   Widget build(BuildContext context) {
     final bottomSafeArea = MediaQuery.of(context).padding.bottom;
     final buttonAreaHeight =
-        widget.showConfirmButton ? FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea : 0.0;
+        widget.showConfirmButton
+            ? FixedBottomButton.fixedBottomButtonDefaultHeight +
+                FixedBottomButton.fixedBottomButtonDefaultBottomPadding +
+                bottomSafeArea
+            : 0.0;
 
     return Container(
       color: widget.backgroundColor,
@@ -629,7 +633,6 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                   child: FixedBottomButton(
                     showGradient: widget.showGradient,
                     isVisibleAboveKeyboard: false,
-                    bottomPadding: 0,
                     onButtonClicked: () {
                       final selectedItem =
                           _selectedId == null
