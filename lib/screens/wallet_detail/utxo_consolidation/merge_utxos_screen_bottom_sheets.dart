@@ -76,12 +76,13 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
     vibrateExtraLight();
 
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
     final firstAvailableRecommendedCriteria = _viewModel.firstAvailableRecommendedAmountCriteria;
     final hasRecommendedCandidates = firstAvailableRecommendedCriteria != null;
     final currentAmountCriteria = _viewModel.currentAmountCriteria;
+    const amountRecommendedExtent = 0.75;
+    const amountCustomExtent = 0.9;
     var selectedTabIndex = !hasRecommendedCandidates || currentAmountCriteria == UtxoAmountCriteria.custom ? 1 : 0;
+    DraggableScrollableController? draggableController;
     UtxoAmountCriteria? selectedRecommendedCriteria =
         MergeUtxosViewModel.recommendedAmountCriteriaItems.contains(currentAmountCriteria) &&
                 _viewModel.hasCandidateUtxosForAmountCriteria(currentAmountCriteria)
@@ -100,109 +101,127 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     }
 
     try {
-      final selectedItem = await CommonBottomSheets.showBottomSheet<_AmountCriteriaSelectionResult>(
-        showCloseButton: true,
-        adjustForKeyboardInset: false,
+      final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_AmountCriteriaSelectionResult>(
         context: context,
         backgroundColor: CoconutColors.gray900,
         title: t.merge_utxos_screen.amount_criteria_bottomsheet.title,
-        child: SizedBox(
-          height: bodyHeight + 16,
-          child: StatefulBuilder(
-            builder: (context, modalSetState) {
-              final customAmountText = customAmountController.text.trim();
-              final customAmountValue = double.tryParse(customAmountText);
-              final hasCustomAmountInput =
-                  customAmountText.isNotEmpty && customAmountValue != null && customAmountValue != 0;
-              final matchingCustomAmountUtxoCount =
-                  hasCustomAmountInput
-                      ? _viewModel.candidateUtxoCountForCustomAmountText(
-                        customAmountText,
+        initialChildSize: 0.75,
+        minChildSize: 0.749,
+        maxChildSize: 0.9,
+        adjustForKeyboardInset: false,
+        onControllerReady: (controller) {
+          draggableController = controller;
+        },
+        childBuilder:
+            (scrollController) => StatefulBuilder(
+              builder: (context, modalSetState) {
+                final customAmountText = customAmountController.text.trim();
+                final customAmountValue = double.tryParse(customAmountText);
+                final hasCustomAmountInput =
+                    customAmountText.isNotEmpty && customAmountValue != null && customAmountValue != 0;
+                final matchingCustomAmountUtxoCount =
+                    hasCustomAmountInput
+                        ? _viewModel.candidateUtxoCountForCustomAmountText(
+                          customAmountText,
+                          isLessThan: isCustomAmountLessThan,
+                        )
+                        : 0;
+                final hasMatchingCustomAmountUtxos = matchingCustomAmountUtxoCount >= 2;
+                final customAmountErrorText =
+                    !hasCustomAmountInput
+                        ? null
+                        : matchingCustomAmountUtxoCount == 0
+                        ? t.merge_utxos_screen.no_utxos_for_amount_criteria
+                        : matchingCustomAmountUtxoCount == 1
+                        ? t.merge_utxos_screen.single_utxo_for_amount_criteria
+                        : null;
+
+                return _SegmentedBottomSheetBody(
+                  scrollController: scrollController,
+                  selectedTabIndex: selectedTabIndex,
+                  confirmText: t.done,
+                  isConfirmEnabled:
+                      selectedTabIndex == 0 ? selectedRecommendedCriteria != null : hasMatchingCustomAmountUtxos,
+                  onConfirm: () {
+                    if (selectedTabIndex == 0) {
+                      if (selectedRecommendedCriteria == null) return;
+                      Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: selectedRecommendedCriteria!));
+                      return;
+                    }
+
+                    if (customAmountController.text.trim().isEmpty) return;
+                    Navigator.pop(
+                      context,
+                      _AmountCriteriaSelectionResult(
+                        criteria: UtxoAmountCriteria.custom,
+                        customAmountText: customAmountController.text.trim(),
                         isLessThan: isCustomAmountLessThan,
-                      )
-                      : 0;
-              final hasMatchingCustomAmountUtxos = matchingCustomAmountUtxoCount >= 2;
-              final customAmountErrorText =
-                  !hasCustomAmountInput
-                      ? null
-                      : matchingCustomAmountUtxoCount == 0
-                      ? t.merge_utxos_screen.no_utxos_for_amount_criteria
-                      : matchingCustomAmountUtxoCount == 1
-                      ? t.merge_utxos_screen.single_utxo_for_amount_criteria
-                      : null;
-
-              return _SegmentedBottomSheetBody(
-                bodyHeight: bodyHeight,
-                selectedTabIndex: selectedTabIndex,
-                confirmText: t.done,
-                isConfirmEnabled:
-                    selectedTabIndex == 0 ? selectedRecommendedCriteria != null : hasMatchingCustomAmountUtxos,
-                onConfirm: () {
-                  if (selectedTabIndex == 0) {
-                    if (selectedRecommendedCriteria == null) return;
-                    Navigator.pop(context, _AmountCriteriaSelectionResult(criteria: selectedRecommendedCriteria!));
-                    return;
-                  }
-
-                  if (customAmountController.text.trim().isEmpty) return;
-                  Navigator.pop(
-                    context,
-                    _AmountCriteriaSelectionResult(
-                      criteria: UtxoAmountCriteria.custom,
-                      customAmountText: customAmountController.text.trim(),
-                      isLessThan: isCustomAmountLessThan,
-                    ),
-                  );
-                },
-                onTabSelected: (index) {
-                  modalSetState(() {
-                    selectedTabIndex = index;
-                  });
-                  if (index == 1) {
+                      ),
+                    );
+                  },
+                  onTabSelected: (index) {
+                    modalSetState(() {
+                      selectedTabIndex = index;
+                    });
+                    final targetExtent = index == 1 ? amountCustomExtent : amountRecommendedExtent;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        customAmountFocusNode.requestFocus();
+                      final controller = draggableController;
+                      if (controller != null && controller.isAttached) {
+                        unawaited(
+                          controller.animateTo(
+                            targetExtent,
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                          ),
+                        );
                       }
                     });
-                  } else {
-                    customAmountFocusNode.unfocus();
-                  }
-                },
-                tabs: [
-                  _BottomSheetTab(
-                    label: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
-                    child: _buildAmountCriteriaRecommendationTab(
-                      selectedRecommendedCriteria: selectedRecommendedCriteria,
-                      onSelectionChanged: (selected) {
-                        modalSetState(() {
-                          selectedRecommendedCriteria = selected;
-                        });
-                      },
+                    if (index == 1) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          customAmountFocusNode.requestFocus();
+                        }
+                      });
+                    } else {
+                      customAmountFocusNode.unfocus();
+                    }
+                  },
+                  tabs: [
+                    _BottomSheetTab(
+                      label: t.merge_utxos_screen.amount_criteria_bottomsheet.recommendation_criteria,
+                      child: _buildAmountCriteriaRecommendationTab(
+                        scrollController: scrollController,
+                        selectedRecommendedCriteria: selectedRecommendedCriteria,
+                        onSelectionChanged: (selected) {
+                          modalSetState(() {
+                            selectedRecommendedCriteria = selected;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  _BottomSheetTab(
-                    label: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
-                    child: _buildCustomAmountTab(
-                      controller: customAmountController,
-                      focusNode: customAmountFocusNode,
-                      isLessThan: isCustomAmountLessThan,
-                      errorText: customAmountErrorText,
-                      onAmountChanged: () {
-                        modalSetState(() {});
-                      },
-                      onLessThanToggle: () {
-                        vibrateExtraLight();
-                        modalSetState(() {
-                          isCustomAmountLessThan = !isCustomAmountLessThan;
-                        });
-                      },
+                    _BottomSheetTab(
+                      label: t.merge_utxos_screen.amount_criteria_bottomsheet.custom,
+                      child: _buildCustomAmountTab(
+                        scrollController: scrollController,
+                        controller: customAmountController,
+                        focusNode: customAmountFocusNode,
+                        isLessThan: isCustomAmountLessThan,
+                        errorText: customAmountErrorText,
+                        onAmountChanged: () {
+                          modalSetState(() {});
+                        },
+                        onLessThanToggle: () {
+                          vibrateExtraLight();
+                          modalSetState(() {
+                            isCustomAmountLessThan = !isCustomAmountLessThan;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
+                  ],
+                );
+              },
+            ),
       );
 
       if (selectedItem != null && context.mounted) {
@@ -233,13 +252,21 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     vibrateExtraLight();
 
     try {
-      final selectedItem = await showModalBottomSheet<TagSelectResult>(
+      final selectedItem = await CommonBottomSheets.showDraggableBottomSheet<TagSelectResult>(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder:
-            (context) =>
-                TagSelectBottomSheet(walletId: widget.id, initialSelectedTagName: _viewModel.effectiveSelectedTagName),
+        title: t.merge_utxos_screen.select_tag_bottomsheet_title,
+        minChildSize: 0.45,
+        maxChildSize: 0.8,
+        initialChildSize: 0.45,
+        backgroundColor: CoconutColors.black,
+        adjustForKeyboardInset: false,
+        childBuilder:
+            (scrollController) => TagSelectBottomSheet(
+              walletId: widget.id,
+              initialSelectedTagName: _viewModel.effectiveSelectedTagName,
+              scrollController: scrollController,
+              useSheetContainer: false,
+            ),
       );
 
       if (selectedItem != null && context.mounted) {
@@ -291,8 +318,6 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
     vibrateExtraLight();
 
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final bodyHeight = (screenHeight * 0.9).clamp(340.0, 580.0);
     final isUsingDirectInput =
         _viewModel.customReceiveAddressText != null &&
         _viewModel.selectedReceiveAddress == _viewModel.customReceiveAddressText;
@@ -312,91 +337,115 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
       });
     }
 
-    final selectedItem = await CommonBottomSheets.showBottomSheet<_ReceiveAddressSelectionResult>(
-      showCloseButton: true,
-      adjustForKeyboardInset: false,
+    const receiveOwnedExtent = 0.6;
+    const receiveDirectInputExtent = 0.9;
+    DraggableScrollableController? draggableController;
+    final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_ReceiveAddressSelectionResult>(
       context: context,
       backgroundColor: CoconutColors.gray900,
       title: t.merge_utxos_screen.receive_address,
-      child: SizedBox(
-        height: bodyHeight,
-        child: StatefulBuilder(
-          builder: (context, modalSetState) {
-            return _SegmentedBottomSheetBody(
-              bodyHeight: bodyHeight,
-              selectedTabIndex: selectedTabIndex,
-              confirmText: t.done,
-              confirmSubWidget:
-                  selectedTabIndex == 1
-                      ? _buildReceiveAddressValidationSubWidget(directInputController.text.trim())
-                      : null,
-              isConfirmEnabled:
-                  selectedTabIndex == 0
-                      ? selectedOwnedAddress != null
-                      : directInputController.text.trim().isNotEmpty && _viewModel.isCustomReceiveAddressValidFormat,
-              onConfirm: () {
-                if (selectedTabIndex == 0) {
-                  if (selectedOwnedAddress == null) return;
+      adjustForKeyboardInset: true,
+      initialChildSize: 0.6,
+      minChildSize: 0.599,
+      maxChildSize: 0.9,
+      onControllerReady: (controller) {
+        draggableController = controller;
+      },
+      childBuilder:
+          (scrollController) => StatefulBuilder(
+            builder: (context, modalSetState) {
+              return _SegmentedBottomSheetBody(
+                scrollController: scrollController,
+                adjustForKeyboardInset: false,
+                selectedTabIndex: selectedTabIndex,
+                confirmText: t.done,
+                confirmSubWidget:
+                    selectedTabIndex == 1
+                        ? _buildReceiveAddressValidationSubWidget(directInputController.text.trim())
+                        : null,
+                isConfirmEnabled:
+                    selectedTabIndex == 0
+                        ? selectedOwnedAddress != null
+                        : directInputController.text.trim().isNotEmpty && _viewModel.isCustomReceiveAddressValidFormat,
+                onConfirm: () {
+                  if (selectedTabIndex == 0) {
+                    if (selectedOwnedAddress == null) return;
+                    Navigator.pop(
+                      context,
+                      _ReceiveAddressSelectionResult(address: selectedOwnedAddress!, isDirectInput: false),
+                    );
+                    return;
+                  }
+
+                  if (directInputController.text.trim().isEmpty || !_viewModel.isCustomReceiveAddressValidFormat) {
+                    return;
+                  }
                   Navigator.pop(
                     context,
-                    _ReceiveAddressSelectionResult(address: selectedOwnedAddress!, isDirectInput: false),
+                    _ReceiveAddressSelectionResult(
+                      address: normalizeAddress(directInputController.text.trim()),
+                      isDirectInput: true,
+                    ),
                   );
-                  return;
-                }
-
-                if (directInputController.text.trim().isEmpty || !_viewModel.isCustomReceiveAddressValidFormat) return;
-                Navigator.pop(
-                  context,
-                  _ReceiveAddressSelectionResult(
-                    address: normalizeAddress(directInputController.text.trim()),
-                    isDirectInput: true,
-                  ),
-                );
-              },
-              onTabSelected: (index) {
-                modalSetState(() {
-                  selectedTabIndex = index;
-                });
-                if (index == 1) {
+                },
+                onTabSelected: (index) {
+                  modalSetState(() {
+                    selectedTabIndex = index;
+                  });
+                  final targetExtent = index == 1 ? receiveDirectInputExtent : receiveOwnedExtent;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      directInputFocusNode.requestFocus();
+                    final controller = draggableController;
+                    if (controller != null && controller.isAttached) {
+                      unawaited(
+                        controller.animateTo(
+                          targetExtent,
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                        ),
+                      );
                     }
                   });
-                } else {
-                  directInputFocusNode.unfocus();
-                }
-              },
-              tabs: [
-                _BottomSheetTab(
-                  label: t.merge_utxos_screen.receive_address_bottomsheet.my_address,
-                  child: _buildReceiveAddressOwnedTab(
-                    addresses: _viewModel.nextReceiveAddressesOfAllWallets,
-                    selectedAddress: selectedOwnedAddress,
-                    onSelectionChanged: (address) {
-                      modalSetState(() {
-                        selectedOwnedAddress = address;
-                      });
-                    },
+                  if (index == 1) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        directInputFocusNode.requestFocus();
+                      }
+                    });
+                  } else {
+                    directInputFocusNode.unfocus();
+                  }
+                },
+                tabs: [
+                  _BottomSheetTab(
+                    label: t.merge_utxos_screen.receive_address_bottomsheet.my_address,
+                    child: _buildReceiveAddressOwnedTab(
+                      scrollController: scrollController,
+                      addresses: _viewModel.nextReceiveAddressesOfAllWallets,
+                      selectedAddress: selectedOwnedAddress,
+                      onSelectionChanged: (address) {
+                        modalSetState(() {
+                          selectedOwnedAddress = address;
+                        });
+                      },
+                    ),
                   ),
-                ),
-                _BottomSheetTab(
-                  label: t.merge_utxos_screen.receive_address_bottomsheet.custom,
-                  child: _buildReceiveAddressDirectInputTab(
-                    controller: directInputController,
-                    focusNode: directInputFocusNode,
-                    onChanged: (value) {
-                      modalSetState(() {
-                        _viewModel.validateCustomReceiveAddress(value);
-                      });
-                    },
+                  _BottomSheetTab(
+                    label: t.merge_utxos_screen.receive_address_bottomsheet.custom,
+                    child: _buildReceiveAddressDirectInputTab(
+                      scrollController: scrollController,
+                      controller: directInputController,
+                      focusNode: directInputFocusNode,
+                      onChanged: (value) {
+                        modalSetState(() {
+                          _viewModel.validateCustomReceiveAddress(value);
+                        });
+                      },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                ],
+              );
+            },
+          ),
     );
 
     directInputController.dispose();
@@ -437,12 +486,14 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   Widget _buildReceiveAddressOwnedTab({
+    required ScrollController scrollController,
     required List<ReceiveAddressOption> addresses,
     required String? selectedAddress,
     required ValueChanged<String?> onSelectionChanged,
   }) {
     return SelectableBottomSheetBody<ReceiveAddressOption>(
       key: const ValueKey('owned-receive-address-list'),
+      scrollController: scrollController,
       items: addresses,
       showGradient: false,
       showConfirmButton: false,
@@ -474,6 +525,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   Widget _buildReceiveAddressDirectInputTab({
+    required ScrollController scrollController,
     required TextEditingController controller,
     required FocusNode focusNode,
     required ValueChanged<String> onChanged,
@@ -485,6 +537,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
+            controller: scrollController,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: CoconutTextField(
@@ -539,11 +592,13 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   Widget _buildAmountCriteriaRecommendationTab({
+    required ScrollController scrollController,
     required UtxoAmountCriteria? selectedRecommendedCriteria,
     required ValueChanged<UtxoAmountCriteria?> onSelectionChanged,
   }) {
     return SelectableBottomSheetBody<UtxoAmountCriteria>(
       key: const ValueKey('recommended-amount-criteria'),
+      scrollController: scrollController,
       allowConfirmWhenSelectionUnchanged: true,
       items: MergeUtxosViewModel.recommendedAmountCriteriaItems,
       showGradient: false,
@@ -576,6 +631,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
   }
 
   Widget _buildCustomAmountTab({
+    required ScrollController scrollController,
     required TextEditingController controller,
     required FocusNode focusNode,
     required bool isLessThan,
@@ -590,6 +646,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
+            controller: scrollController,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(

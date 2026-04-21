@@ -18,8 +18,16 @@ class TagSelectResult {
 class TagSelectBottomSheet extends StatefulWidget {
   final int walletId;
   final String? initialSelectedTagName;
+  final ScrollController? scrollController;
+  final bool useSheetContainer;
 
-  const TagSelectBottomSheet({super.key, required this.walletId, this.initialSelectedTagName});
+  const TagSelectBottomSheet({
+    super.key,
+    required this.walletId,
+    this.initialSelectedTagName,
+    this.scrollController,
+    this.useSheetContainer = true,
+  });
 
   @override
   State<TagSelectBottomSheet> createState() => _TagSelectBottomSheetState();
@@ -67,6 +75,10 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    if (!widget.useSheetContainer) {
+      return _buildDraggableContent();
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -93,14 +105,38 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
   }
 
   Widget _buildContent() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      constraints: const BoxConstraints(minHeight: 120, maxHeight: 296),
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              _utxoTags.map((tag) {
+                return _SelectableTagChip(
+                  tag: tag,
+                  isSelected: _selectedTagName == tag.name,
+                  onTap: () {
+                    setState(() {
+                      _selectedTagName = _selectedTagName == tag.name ? null : tag.name;
+                    });
+                  },
+                );
+              }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDraggableContent() {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          constraints: const BoxConstraints(minHeight: 120, maxHeight: 296),
+        Expanded(
           child: SingleChildScrollView(
+            controller: widget.scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -120,7 +156,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
           ),
         ),
         SizedBox(
-          height: 120,
+          height: 150,
           child: FixedBottomButton(
             text: t.done,
             isActive: _selectedTagName != null,
