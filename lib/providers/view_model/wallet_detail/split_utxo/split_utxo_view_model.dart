@@ -120,7 +120,9 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       shouldShowFeePicker &&
       hasFeeRate &&
       (showSkeletonResultBox || _splitResult != null || usePreview) &&
-      headerTitleErrorMessage == null;
+      headerTitleErrorMessage == null &&
+      splitAmountErrorText == null &&
+      hasSelectedUtxoAmountError == false;
 
   List<double> get recommendedSplitAmounts {
     if (_selectedUtxoAmount <= 0) return [];
@@ -251,7 +253,6 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   String? get splitAmountErrorText {
     if (_selectedUtxoList.isEmpty) return null;
     if (_splitAmountInput.isEmpty) return null;
-    // TODO: dustThreshold check
 
     if (splitAmountSats >= _selectedUtxoAmount) {
       return t.split_utxo_screen.amount_error.amount_too_large;
@@ -558,6 +559,12 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void setSelectedUtxoList(List<UtxoState> utxoList) {
+    final isChanged =
+        _selectedUtxoList.isEmpty != utxoList.isEmpty ||
+        (_selectedUtxoList.isNotEmpty &&
+            utxoList.isNotEmpty &&
+            _selectedUtxoList.first.utxoId != utxoList.first.utxoId);
+
     _selectedUtxoList = utxoList;
 
     if (_selectedUtxoList.isEmpty) {
@@ -568,6 +575,10 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       if (hasSelectedUtxoAmountError) {
         _selectedCriteria = null;
       }
+    }
+
+    if (isChanged) {
+      _clearResult();
     }
 
     _updateRecommendedSplitCounts();
@@ -589,8 +600,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   void _clearResult() {
     _lastAmountText = '';
     _lastSplitCountText = '1';
+    _lastFeeRateText = '';
     amountController.text = '';
     splitCountController.text = '1';
+    feeRateController.text = '';
+    refreshRecommendedFees();
     _resetManualSplitItems();
     _isDustError = false;
     _isAmountInsufficientAfterFee = false;

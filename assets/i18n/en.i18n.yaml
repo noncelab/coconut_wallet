@@ -847,7 +847,7 @@ split_utxo_screen:
   fee_error: "The fee is greater than the UTXO amount"
   dust_error: "Splitting will create a small amount (dust)"
   criteria_bottom_sheet:
-    title: "Select split method"
+    title: "Select Split Method"
     split_by_amount: "Split by fixed amount"
     split_evenly: "Split evenly"
     split_manually: "Split by custom amounts"

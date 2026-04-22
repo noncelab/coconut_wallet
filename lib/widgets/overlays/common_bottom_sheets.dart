@@ -600,9 +600,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
     const platformButtonHeightAdjustment = 3.0;
     final buttonAreaHeight =
         widget.showConfirmButton
-            ? FixedBottomButton.fixedBottomButtonDefaultHeight +
-                platformButtonHeightAdjustment +
-                buttonSpacingHeight
+            ? FixedBottomButton.fixedBottomButtonDefaultHeight + platformButtonHeightAdjustment + buttonSpacingHeight
             : 0.0;
 
     return Container(
