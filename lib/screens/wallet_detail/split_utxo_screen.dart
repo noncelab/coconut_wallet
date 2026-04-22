@@ -1178,12 +1178,15 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         maxChildSize: 0.9,
         initialChildSize: 0.6,
         childBuilder:
-            (scrollController) => UtxoSelectionScreen(
-              selectedUtxoList: viewModel.selectedUtxoList,
-              walletId: widget.id,
-              currentUnit: viewModel.currentUnit,
-              scrollController: scrollController,
-              isSplitMode: true,
+            (scrollController) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: UtxoSelectionScreen(
+                selectedUtxoList: viewModel.selectedUtxoList,
+                walletId: widget.id,
+                currentUnit: viewModel.currentUnit,
+                scrollController: scrollController,
+                isSplitMode: true,
+              ),
             ),
       );
 

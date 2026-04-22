@@ -261,11 +261,14 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
         backgroundColor: CoconutColors.black,
         adjustForKeyboardInset: false,
         childBuilder:
-            (scrollController) => TagSelectBottomSheet(
-              walletId: widget.id,
-              initialSelectedTagName: _viewModel.effectiveSelectedTagName,
-              scrollController: scrollController,
-              useSheetContainer: false,
+            (scrollController) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: TagSelectBottomSheet(
+                walletId: widget.id,
+                initialSelectedTagName: _viewModel.effectiveSelectedTagName,
+                scrollController: scrollController,
+                useSheetContainer: false,
+              ),
             ),
       );
 

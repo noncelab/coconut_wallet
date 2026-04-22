@@ -86,28 +86,31 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: Column(
-                    children: [_buildExpectedFeeRow(), CoconutLayout.spacing_200h, _buildFeeRateInputRow(context)],
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: Column(
+                      children: [_buildExpectedFeeRow(), CoconutLayout.spacing_200h, _buildFeeRateInputRow(context)],
+                    ),
                   ),
-                ),
-                CoconutLayout.spacing_400h,
-              ],
+                  CoconutLayout.spacing_400h,
+                ],
+              ),
             ),
           ),
-        ),
-        _buildFeeRateKeyboardToolbar(context),
-      ],
+          _buildFeeRateKeyboardToolbar(context),
+        ],
+      ),
     );
   }
 

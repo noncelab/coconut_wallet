@@ -37,65 +37,68 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
         (confirmSubWidget != null ? confirmSubWidgetHeight : 0);
     final contentBottomInset = buttonAreaHeight + keyboardInset + 2;
 
-    return SafeArea(
-      top: false,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            bottom: contentBottomInset,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: CoconutSegmentedControl(
-                    labels: tabs.map((tab) => tab.label).toList(),
-                    isSelected: List.generate(tabs.length, (index) => selectedTabIndex == index),
-                    onPressed: onTabSelected,
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: SafeArea(
+        top: false,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              bottom: contentBottomInset,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: CoconutSegmentedControl(
+                      labels: tabs.map((tab) => tab.label).toList(),
+                      isSelected: List.generate(tabs.length, (index) => selectedTabIndex == index),
+                      onPressed: onTabSelected,
+                    ),
                   ),
-                ),
-                CoconutLayout.spacing_400h,
-                Expanded(
-                  child:
-                      scrollController == null
-                          ? AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 220),
-                            switchInCurve: Curves.easeOutCubic,
-                            switchOutCurve: Curves.easeInCubic,
-                            layoutBuilder: (currentChild, previousChildren) {
-                              return Stack(
-                                alignment: Alignment.topCenter,
-                                children: [...previousChildren, if (currentChild != null) currentChild],
-                              );
-                            },
-                            child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
-                          )
-                          : PrimaryScrollController(
-                            controller: scrollController!,
-                            child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
-                          ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: keyboardInset + 2,
-            child: SizedBox(
-              height: buttonAreaHeight,
-              child: FixedBottomButton(
-                showGradient: false,
-                isVisibleAboveKeyboard: false,
-                bottomPadding: buttonBottomSpacing,
-                subWidget: confirmSubWidget,
-                onButtonClicked: onConfirm,
-                isActive: isConfirmEnabled,
-                text: confirmText,
-                backgroundColor: CoconutColors.white,
+                  CoconutLayout.spacing_400h,
+                  Expanded(
+                    child:
+                        scrollController == null
+                            ? AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              switchInCurve: Curves.easeOutCubic,
+                              switchOutCurve: Curves.easeInCubic,
+                              layoutBuilder: (currentChild, previousChildren) {
+                                return Stack(
+                                  alignment: Alignment.topCenter,
+                                  children: [...previousChildren, if (currentChild != null) currentChild],
+                                );
+                              },
+                              child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
+                            )
+                            : PrimaryScrollController(
+                              controller: scrollController!,
+                              child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
+                            ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: keyboardInset + 2,
+              child: SizedBox(
+                height: buttonAreaHeight,
+                child: FixedBottomButton(
+                  showGradient: false,
+                  isVisibleAboveKeyboard: false,
+                  bottomPadding: buttonBottomSpacing,
+                  subWidget: confirmSubWidget,
+                  onButtonClicked: onConfirm,
+                  isActive: isConfirmEnabled,
+                  text: confirmText,
+                  backgroundColor: CoconutColors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -403,55 +406,58 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      bottom: false,
-      child: SizedBox(
-        height: (MediaQuery.sizeOf(context).height * 0.78).clamp(420.0, 720.0),
-        child: ValueListenableBuilder<bool>(
-          valueListenable: widget.isEditingListenable,
-          builder: (context, isEditing, _) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSummaryCard(),
-                Expanded(
-                  child: Stack(
-                    children: [
-                      SingleChildScrollView(
-                        controller: widget.scrollController,
-                        child: Column(
-                          children: [
-                            CoconutLayout.spacing_300h,
-                            _buildSummaryBody(isEditing),
-                            const SizedBox(height: 50),
-                          ],
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: SafeArea(
+        top: false,
+        bottom: false,
+        child: SizedBox(
+          height: (MediaQuery.sizeOf(context).height * 0.78).clamp(420.0, 720.0),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: widget.isEditingListenable,
+            builder: (context, isEditing, _) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSummaryCard(),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        SingleChildScrollView(
+                          controller: widget.scrollController,
+                          child: Column(
+                            children: [
+                              CoconutLayout.spacing_300h,
+                              _buildSummaryBody(isEditing),
+                              const SizedBox(height: 50),
+                            ],
+                          ),
                         ),
-                      ),
-                      // 상단 그림자
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        top: 0,
-                        child: IgnorePointer(
-                          child: Container(
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [CoconutColors.gray900, Color(0x001F1F1F)],
+                        // 상단 그림자
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          top: 0,
+                          child: IgnorePointer(
+                            child: Container(
+                              height: 32,
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [CoconutColors.gray900, Color(0x001F1F1F)],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

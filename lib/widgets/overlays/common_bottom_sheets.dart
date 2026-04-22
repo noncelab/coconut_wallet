@@ -521,7 +521,7 @@ class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTex
                 ),
                 if (widget.isSelected || widget.reserveCheckIconSpace)
                   Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    margin: const EdgeInsets.only(left: 20, right: 8),
                     width: 18,
                     height: 18,
                     child:
@@ -603,71 +603,74 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
             ? FixedBottomButton.fixedBottomButtonDefaultHeight + platformButtonHeightAdjustment + buttonSpacingHeight
             : 0.0;
 
-    return Container(
-      color: widget.backgroundColor,
-      child: SafeArea(
-        top: false,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              bottom: buttonAreaHeight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-                child: ListView.builder(
-                  controller: widget.scrollController,
-                  shrinkWrap: false,
-                  primary: widget.scrollController == null,
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: Sizes.size16),
-                  itemCount: widget.items.length,
-                  itemBuilder: (context, index) {
-                    final item = widget.items[index];
-                    final id = widget.getItemId(item);
-                    final isSelected = _selectedId == id;
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Container(
+        color: widget.backgroundColor,
+        child: SafeArea(
+          top: false,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                bottom: buttonAreaHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                  child: ListView.builder(
+                    controller: widget.scrollController,
+                    shrinkWrap: false,
+                    primary: widget.scrollController == null,
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: Sizes.size16),
+                    itemCount: widget.items.length,
+                    itemBuilder: (context, index) {
+                      final item = widget.items[index];
+                      final id = widget.getItemId(item);
+                      final isSelected = _selectedId == id;
 
-                    void handleTap() {
-                      vibrateExtraLight();
-                      setState(() {
-                        _selectedId = _selectedId == id ? null : id;
-                      });
-                      widget.onSelectionChanged?.call(
-                        _selectedId == null
-                            ? null
-                            : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
-                      );
-                    }
-
-                    return widget.itemBuilder(context, item, isSelected, handleTap);
-                  },
-                ),
-              ),
-            ),
-            if (widget.showConfirmButton)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: SizedBox(
-                  height: buttonAreaHeight,
-                  child: FixedBottomButton(
-                    showGradient: widget.showGradient,
-                    isVisibleAboveKeyboard: false,
-                    bottomPadding: 0,
-                    onButtonClicked: () {
-                      final selectedItem =
+                      void handleTap() {
+                        vibrateExtraLight();
+                        setState(() {
+                          _selectedId = _selectedId == id ? null : id;
+                        });
+                        widget.onSelectionChanged?.call(
                           _selectedId == null
                               ? null
-                              : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
-                      Navigator.pop(context, selectedItem);
+                              : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
+                        );
+                      }
+
+                      return widget.itemBuilder(context, item, isSelected, handleTap);
                     },
-                    isActive:
-                        _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
-                    text: widget.confirmText,
-                    backgroundColor: CoconutColors.white,
                   ),
                 ),
               ),
-          ],
+              if (widget.showConfirmButton)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SizedBox(
+                    height: buttonAreaHeight,
+                    child: FixedBottomButton(
+                      showGradient: widget.showGradient,
+                      isVisibleAboveKeyboard: false,
+                      bottomPadding: 0,
+                      onButtonClicked: () {
+                        final selectedItem =
+                            _selectedId == null
+                                ? null
+                                : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                        Navigator.pop(context, selectedItem);
+                      },
+                      isActive:
+                          _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
+                      text: widget.confirmText,
+                      backgroundColor: CoconutColors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
