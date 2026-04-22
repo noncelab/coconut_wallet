@@ -405,7 +405,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       return splitCount >= 2; // TODO: max 이하인지도 확인해야함
     }
     if (_selectedCriteria == SplitCriteria.manually) {
-      return manualSplitItems.any(_isValidManualSplitItem) && !isOutputSumOverInput;
+      return manualSplitItems.any((item) => item.isInputValid) && !isOutputSumOverInput;
     }
     return false;
   }
@@ -418,19 +418,15 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       return splitCount >= 2;
     }
     if (_selectedCriteria == SplitCriteria.manually) {
-      return manualSplitItems.any(_isValidManualSplitItem);
+      return manualSplitItems.any((item) => item.isInputValid);
     }
     return false;
-  }
-
-  bool _isValidManualSplitItem(ManualSplitItem item) {
-    return (double.tryParse(item.amountController.text) ?? 0) > 0 && (int.tryParse(item.countController.text) ?? 0) > 0;
   }
 
   int get _manualSplitRequestedTotal {
     int total = 0;
     for (final item in manualSplitItems) {
-      if (_isValidManualSplitItem(item)) {
+      if (item.isInputValid) {
         final amount = currentUnit.toSatoshi(double.tryParse(item.amountController.text) ?? 0.0);
         final count = int.tryParse(item.countController.text) ?? 0;
         total += amount * count;
@@ -458,7 +454,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   Map<int, int> get _manualSplitInput {
     final Map<int, int> amountCountMap = {};
     for (var item in manualSplitItems) {
-      if (_isValidManualSplitItem(item)) {
+      if (item.isInputValid) {
         final amount = currentUnit.toSatoshi(double.tryParse(item.amountController.text) ?? 0.0);
         final count = int.tryParse(item.countController.text) ?? 0;
         amountCountMap[amount] = (amountCountMap[amount] ?? 0) + count;
@@ -798,9 +794,12 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   void removeManualSplitItem(int index) {
     if (manualSplitItems.length > 1) {
+      bool wasValid = manualSplitItems[index].isInputValid;
       final item = manualSplitItems.removeAt(index);
       item.dispose();
-      _onInputChanged();
+      if (wasValid) {
+        _onInputChanged();
+      }
       notifyListeners();
     }
   }
@@ -903,6 +902,13 @@ class ManualSplitItem {
   String _lastCountText = '1';
   VoidCallback? _amountListener;
   VoidCallback? _countListener;
+
+  bool get isInputValid {
+    final amount = num.tryParse(amountController.text);
+    final count = num.tryParse(countController.text);
+
+    return amount != null && amount != 0 && count != null && count != 0;
+  }
 
   void setupListeners(VoidCallback onInputChanged) {
     _amountListener = () {
