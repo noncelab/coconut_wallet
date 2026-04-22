@@ -9,6 +9,7 @@ import 'package:coconut_wallet/utils/text_field_filter_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
+import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -466,8 +467,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                 },
                                 defaultColor: CoconutColors.gray800,
                                 pressedColor: CoconutColors.gray750,
-                                child: MediaQuery(
-                                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                child: FixedTextScale(
                                   child: Container(
                                     height: 100,
                                     width: 100,
@@ -481,10 +481,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                             children: [
                                               Align(
                                                 alignment: Alignment.topLeft,
-                                                child: MediaQuery(
-                                                  data: MediaQuery.of(
-                                                    context,
-                                                  ).copyWith(textScaler: const TextScaler.linear(1.0)),
+                                                child: FixedTextScale(
                                                   child: FittedBox(
                                                     fit: BoxFit.scaleDown,
                                                     alignment: Alignment.centerLeft,
