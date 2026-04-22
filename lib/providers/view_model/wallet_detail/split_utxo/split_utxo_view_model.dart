@@ -80,6 +80,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   CancelableTask<UtxoSplitResult>? _activeBuildTask;
   int _buildRequestId = 0;
   bool _isCalculating = false;
+  bool _isDisposed = false;
 
   bool _isDustError = false;
   bool _isAmountInsufficientAfterFee = false; // byAmount or manual: 수수료를 제외하면 나눌 수 없는 금액이에요
@@ -124,6 +125,12 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       splitAmountErrorText == null &&
       hasSelectedUtxoAmountError == false;
 
+  void notifyIfNotDisposed() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
   List<double> get recommendedSplitAmounts {
     if (_selectedUtxoAmount <= 0) return [];
 
@@ -157,7 +164,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
         _onInputChanged();
       }
     });
-    feeRateFocusNode.addListener(notifyListeners);
+    feeRateFocusNode.addListener(notifyIfNotDisposed);
 
     amountController.addListener(() {
       if (_lastAmountText != amountController.text) {
@@ -165,7 +172,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
         _onInputChanged();
       }
     });
-    amountFocusNode.addListener(notifyListeners);
+    amountFocusNode.addListener(notifyIfNotDisposed);
 
     splitCountController.addListener(() {
       if (_lastSplitCountText != splitCountController.text) {
@@ -173,7 +180,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
         _onInputChanged();
       }
     });
-    splitCountFocusNode.addListener(notifyListeners);
+    splitCountFocusNode.addListener(notifyIfNotDisposed);
 
     _wallet = _walletProvider.getWalletById(walletId);
     _splitBuilder = UtxoSplitTransactionBuilder(
@@ -299,7 +306,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _isFeeExceedsUtxoAmount = false;
       _errorEstimatedFee = null;
       _unexpectedErrorMessage = "";
-      notifyListeners();
+      notifyIfNotDisposed();
       return;
     }
 
@@ -311,7 +318,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _isFeeExceedsUtxoAmount = false;
     _errorEstimatedFee = null;
     _unexpectedErrorMessage = "";
-    notifyListeners();
+    notifyIfNotDisposed();
 
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 1000), () async {
@@ -334,7 +341,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       if (preview == null) {
         Logger.log('--> SplitUtxoViewModel._onInputChanged preview is null requestId=$requestId');
         _isCalculating = false;
-        notifyListeners();
+        notifyIfNotDisposed();
         return;
       }
       Logger.log(
@@ -381,7 +388,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
         }
       }
       _isCalculating = false;
-      notifyListeners();
+      notifyIfNotDisposed();
     });
   }
 
@@ -476,7 +483,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       Logger.log(
         '--> SplitUtxoViewModel._updatePreview skipped invalid input criteria=$_selectedCriteria feeRate=$feeRate splitAmountSats=$splitAmountSats splitCount=$splitCount manualSplitInput=$_manualSplitInput',
       );
-      notifyListeners();
+      notifyIfNotDisposed();
       return null;
     }
 
@@ -511,7 +518,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _unexpectedErrorMessage = e.toString();
     }
 
-    notifyListeners();
+    notifyIfNotDisposed();
     return _splitPreview;
   }
 
@@ -610,13 +617,11 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     _unexpectedErrorMessage = "";
     _splitResult = _splitPreview = null;
     _isCalculating = false;
-    notifyListeners();
+    notifyIfNotDisposed();
   }
 
   void _resetManualSplitItems() {
-    for (final item in manualSplitItems) {
-      item.amountFocusNode.removeListener(notifyListeners);
-      item.countFocusNode.removeListener(notifyListeners);
+    for (var item in manualSplitItems) {
       item.dispose();
     }
     manualSplitItems.clear();
@@ -674,7 +679,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       if (identical(_activeBuildTask, task)) {
         _activeBuildTask = null;
       }
-      notifyListeners();
+      notifyIfNotDisposed();
     }
     return null;
   }
@@ -683,7 +688,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     if (!isSplitValid || _isPreparingNextStep) return false;
 
     _isPreparingNextStep = true;
-    notifyListeners();
+    notifyIfNotDisposed();
 
     try {
       _splitResult ??= await _buildTransaction();
@@ -707,7 +712,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
       _unexpectedErrorMessage = e.toString();
     } finally {
       _isPreparingNextStep = false;
-      notifyListeners();
+      notifyIfNotDisposed();
     }
     return false;
   }
@@ -789,18 +794,18 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
     final item = ManualSplitItem();
     item.setupListeners(_onInputChanged);
     manualSplitItems.add(item);
-    notifyListeners();
+    notifyIfNotDisposed();
   }
 
   void removeManualSplitItem(int index) {
     if (manualSplitItems.length > 1) {
-      bool wasValid = manualSplitItems[index].isInputValid;
+      final wasValid = manualSplitItems[index].isInputValid;
       final item = manualSplitItems.removeAt(index);
       item.dispose();
       if (wasValid) {
         _onInputChanged();
       }
-      notifyListeners();
+      notifyIfNotDisposed();
     }
   }
 
@@ -864,12 +869,12 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
   Future<void> _updateRecommendedSplitCounts() async {
     if (_selectedUtxoList.isEmpty) {
       _recommendedSplitCounts = [];
-      notifyListeners();
+      notifyIfNotDisposed();
       return;
     }
     try {
       _recommendedSplitCounts = await _splitBuilder.getNiceSplitCounts();
-      notifyListeners();
+      notifyIfNotDisposed();
     } catch (e) {
       Logger.log('Error getting recommended split counts: $e');
     }
@@ -877,6 +882,7 @@ class SplitUtxoViewModel extends ChangeNotifier with FeeRateMixin {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _cancelActiveBuild();
     amountController.dispose();
     amountFocusNode.dispose();
