@@ -372,8 +372,13 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     );
                   },
                 ),
-                _buildHeaderTitle(),
-                _buildVisibleOptionPickers(context),
+                MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [_buildHeaderTitle(), _buildVisibleOptionPickers(context)],
+                  ),
+                ),
               ],
             ),
             _buildApplyButton(context),
