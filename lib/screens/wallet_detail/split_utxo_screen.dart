@@ -1866,7 +1866,7 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                                 ],
                                 placeholderText: widget.viewModel.currentUnit.isBtcUnit ? '0.00' : '0',
                                 maxLines: 1,
-                                padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 4),
+                                padding: const EdgeInsets.only(left: 4, right: 4, top: 4, bottom: 4),
                                 unfocusOnTapOutside: true,
                                 suffix: Padding(
                                   padding: const EdgeInsets.only(right: 4),
