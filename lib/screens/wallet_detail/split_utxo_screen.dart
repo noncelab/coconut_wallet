@@ -508,7 +508,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                           usePreview: data.usePreview,
                           splitResult: data.splitResult,
                           splitOutputText: data.splitOutputText,
-                          splitSummaryTitle: data.splitSummaryTitle,
+                          splitSummaryTitle: data.splitSummaryTitle.replaceAllMapped(
+                            RegExp(r'(\S+)'),
+                            (match) => match[0]!.split('').join('\u200D'),
+                          ),
                         )
                         : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
               ),
@@ -1456,7 +1459,10 @@ class _SplitResultReadyContent extends StatelessWidget {
             previewFeeText: vm.feePickerDisplayText,
           ),
       builder: (context, data, _) {
-        final splitSummaryTitle = data.splitSummaryTitle;
+        final splitSummaryTitle = data.splitSummaryTitle.replaceAllMapped(
+          RegExp(r'(\S+)'),
+          (match) => match[0]!.split('').join('\u200D'),
+        );
         final splitOutputText = data.splitOutputText;
         final previewFeeText = data.previewFeeText;
 
