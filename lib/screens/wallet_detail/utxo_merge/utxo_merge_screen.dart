@@ -11,7 +11,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/utxo/utxo_tag.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/merge_utxos/merge_utxos_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_merge/utxo_merge_view_model.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
@@ -41,27 +41,27 @@ import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shimmer/shimmer.dart';
 
-part 'merge_utxos_screen_components.dart';
-part 'merge_utxos_screen_models.dart';
-part 'merge_utxos_screen_animations.dart';
-part 'merge_utxos_screen_bottom_sheets.dart';
+part 'utxo_merge_screen_components.dart';
+part 'utxo_merge_screen_models.dart';
+part 'utxo_merge_screen_animations.dart';
+part 'utxo_merge_screen_bottom_sheets.dart';
 
-class MergeUtxosScreen extends StatefulWidget {
+class UtxoMergeScreen extends StatefulWidget {
   final int id;
 
-  const MergeUtxosScreen({super.key, required this.id});
+  const UtxoMergeScreen({super.key, required this.id});
 
   @override
-  State<MergeUtxosScreen> createState() => _MergeUtxosScreenState();
+  State<UtxoMergeScreen> createState() => _UtxoMergeScreenState();
 }
 
-class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerProviderStateMixin {
+class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProviderStateMixin {
   static const Duration _headerAnimationDuration = Duration(milliseconds: 800);
   static const Duration _optionPickerAnimationDuration = Duration(milliseconds: 600);
   static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
   static const Duration _autoOpenBottomSheetDelay = Duration(milliseconds: 0);
 
-  late MergeUtxosViewModel _viewModel;
+  late UtxoMergeViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
   MergeState? _lastObservedSummaryMergeState;
   bool _isAmountTextHighlighted = false;
@@ -81,7 +81,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   void initState() {
     super.initState();
     _receiveAddressSummaryLottieController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
-    _viewModel = MergeUtxosViewModel(
+    _viewModel = UtxoMergeViewModel(
       widget.id,
       context.read<UtxoRepository>(),
       context.read<UtxoTagProvider>(),
@@ -142,7 +142,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<MergeUtxosViewModel>.value(
+    return ChangeNotifierProvider<UtxoMergeViewModel>.value(
       value: _viewModel,
       child: Scaffold(
         backgroundColor: CoconutColors.black,
@@ -163,7 +163,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildBody(BuildContext context) {
-    return Selector<MergeUtxosViewModel, UtxoMergeStep>(
+    return Selector<UtxoMergeViewModel, UtxoMergeStep>(
       selector: (_, vm) => vm.currentStep,
       builder: (context, currentStep, _) {
         if (currentStep == UtxoMergeStep.entry) {
@@ -210,7 +210,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
           delay: const Duration(milliseconds: 1200),
           child: FixedBottomButton(
             onButtonClicked: () {
-              _viewModel.setCurrentStep(UtxoMergeStep.selectMergeCriteria);
+              _viewModel.setCurrentStep(UtxoMergeStep.selectMergeMethod);
               debugPrint(_viewModel.currentStep.toString());
             },
             text: t.merge_utxos_screen.merge_anyway,
@@ -223,7 +223,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   Widget _buildMergeContent(BuildContext context) {
     return Selector<
-      MergeUtxosViewModel,
+      UtxoMergeViewModel,
       ({bool hasUnexpectedError, bool isMergeButtonVisible, UtxoMergeStep currentStep})
     >(
       selector:
@@ -274,7 +274,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildUnexpectedErrorTooltip() {
-    return Selector<MergeUtxosViewModel, ({bool hasUnexpectedError})>(
+    return Selector<UtxoMergeViewModel, ({bool hasUnexpectedError})>(
       selector: (context, viewModel) => (hasUnexpectedError: viewModel.hasUnexpectedError),
       builder: (context, selector, child) {
         return Positioned(
@@ -299,7 +299,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   Widget _buildMergeCta() {
     return Selector<
-      MergeUtxosViewModel,
+      UtxoMergeViewModel,
       ({
         bool isMergeButtonVisible,
         bool isMergeButtonEnabled,
@@ -407,17 +407,17 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     await Future.delayed(_autoOpenBottomSheetDelay);
     // 옵션 피커가 생긴 뒤 BottomSheet 자동 노출 예약
     switch (step) {
-      case UtxoMergeStep.selectMergeCriteria:
-        if (!_viewModel.didConfirmMergeCriteria) {
+      case UtxoMergeStep.selectMergeMethod:
+        if (!_viewModel.didConfirmMergeMethod) {
           if (_canAutoOpenBottomSheet) {
-            _showMergeCriteriaBottomSheet();
+            _showMergeOptionBottomSheet();
           }
         }
         break;
-      case UtxoMergeStep.selectAmountCriteria:
-        if (!_viewModel.didConfirmAmountCriteria) {
+      case UtxoMergeStep.selectAmountRange:
+        if (!_viewModel.didConfirmAmountRange) {
           if (_canAutoOpenBottomSheet) {
-            _showAmountCriteriaBottomSheet();
+            _showAmountRangeBottomSheet();
           }
         }
         break;
@@ -441,10 +441,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   String? _headerTextForStep(UtxoMergeStep? step) {
     switch (step) {
-      case UtxoMergeStep.selectMergeCriteria:
-        return t.merge_utxos_screen.select_merge_criteria;
-      case UtxoMergeStep.selectAmountCriteria:
-        return t.merge_utxos_screen.select_amount_criteria;
+      case UtxoMergeStep.selectMergeMethod:
+        return t.merge_utxos_screen.select_merge_method;
+      case UtxoMergeStep.selectAmountRange:
+        return t.merge_utxos_screen.select_amount_range;
       case UtxoMergeStep.selectTag:
         return t.merge_utxos_screen.select_tag;
       default:
@@ -468,10 +468,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildTransactionSummaryCard(),
-          Selector<MergeUtxosViewModel, ({bool hasDustUtxosInInputs, UtxoMergeCriteria currentCriteria})>(
-            selector: (_, vm) => (hasDustUtxosInInputs: vm.hasDustUtxosInInputs, currentCriteria: vm.currentCriteria),
+          Selector<UtxoMergeViewModel, ({bool hasDustUtxosInInputs, UtxoMergeMethod currentMethod})>(
+            selector: (_, vm) => (hasDustUtxosInInputs: vm.hasDustUtxosInInputs, currentMethod: vm.currentMethod),
             builder: (context, value, _) {
-              if (!value.hasDustUtxosInInputs || value.currentCriteria == UtxoMergeCriteria.smallAmounts) {
+              if (!value.hasDustUtxosInInputs || value.currentMethod == UtxoMergeMethod.smallAmounts) {
                 return const SizedBox.shrink();
               }
 
@@ -521,12 +521,12 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
 
   Widget _buildTransactionSummaryCard() {
     return Selector<
-      MergeUtxosViewModel,
-      ({UtxoMergeCriteria criteria, MergeState mergeState, String selectedUtxosTotalAmountText, int selectedUtxoCount})
+      UtxoMergeViewModel,
+      ({UtxoMergeMethod method, MergeState mergeState, String selectedUtxosTotalAmountText, int selectedUtxoCount})
     >(
       selector:
           (_, vm) => (
-            criteria: vm.currentCriteria,
+            method: vm.currentMethod,
             mergeState: vm.mergeState,
             selectedUtxosTotalAmountText: vm.selectedUtxosTotalAmountText,
             selectedUtxoCount: vm.selectedUtxoCount,
@@ -537,7 +537,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         final isFailed = selector.mergeState == MergeState.failed;
         final isInputOne = selector.mergeState == MergeState.notEnoughSelectedUtxo;
         final summaryContent = _buildReceiveAddressSummaryContent(
-          criteria: selector.criteria,
+          method: selector.method,
           selectedUtxoCount: selector.selectedUtxoCount,
           selectedUtxosTotalAmountText: selector.selectedUtxosTotalAmountText,
           isPreparing: isPreparing,
@@ -670,7 +670,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildReceiveAddressSummaryContent({
-    required UtxoMergeCriteria criteria,
+    required UtxoMergeMethod method,
     required int selectedUtxoCount,
     required String selectedUtxosTotalAmountText,
     required bool isPreparing,
@@ -682,12 +682,12 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       final content =
           isInputOne
               ? _buildSingleSelectionSummaryText(
-                criteria: criteria,
+                method: method,
                 selectedUtxoCount: selectedUtxoCount,
                 selectedUtxosTotalAmountText: selectedUtxosTotalAmountText,
               )
               : _buildMultiSelectionSummaryText(
-                criteria: criteria,
+                method: method,
                 selectedUtxoCount: selectedUtxoCount,
                 selectedUtxosTotalAmountText: selectedUtxosTotalAmountText,
               );
@@ -706,7 +706,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildSingleSelectionSummaryText({
-    required UtxoMergeCriteria criteria,
+    required UtxoMergeMethod method,
     required int selectedUtxoCount,
     required String selectedUtxosTotalAmountText,
   }) {
@@ -715,7 +715,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       text: TextSpan(
         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
         children: [
-          _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(criteria, selectedUtxoCount)),
+          _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(method, selectedUtxoCount)),
           const TextSpan(text: ','),
           TextSpan(text: t.merge_utxos_screen.summary_card_total(amount: selectedUtxosTotalAmountText)),
           TextSpan(text: _summaryCardDestinationText),
@@ -725,7 +725,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildMultiSelectionSummaryText({
-    required UtxoMergeCriteria criteria,
+    required UtxoMergeMethod method,
     required int selectedUtxoCount,
     required String selectedUtxosTotalAmountText,
   }) {
@@ -734,7 +734,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
       text: TextSpan(
         style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white),
         children: [
-          _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(criteria, selectedUtxoCount)),
+          _buildSelectableSummaryHeadlineSpan(_getSummaryCardHeadlineText(method, selectedUtxoCount)),
           const TextSpan(text: ','),
           TextSpan(text: t.merge_utxos_screen.summary_card_total(amount: selectedUtxosTotalAmountText)),
           TextSpan(text: _summaryCardDestinationText),
@@ -771,10 +771,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     );
   }
 
-  String _getSummaryCardHeadlineText(UtxoMergeCriteria criteria, int utxoCount) {
+  String _getSummaryCardHeadlineText(UtxoMergeMethod method, int utxoCount) {
     return t.merge_utxos_screen.summary_card_headline(
       count: utxoCount,
-      amount_range: _summaryCardAmountRangeText(criteria),
+      amount_range: _summaryCardAmountRangeText(method),
     );
   }
 
@@ -796,29 +796,29 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   String get _summaryAmountThresholdText {
-    switch (_viewModel.currentAmountCriteria) {
-      case UtxoAmountCriteria.below001:
+    switch (_viewModel.currentAmountRange) {
+      case UtxoAmountRange.below001:
         return '0.01 BTC';
-      case UtxoAmountCriteria.below0001:
+      case UtxoAmountRange.below0001:
         return '0.001 BTC';
-      case UtxoAmountCriteria.below00001:
+      case UtxoAmountRange.below00001:
         return '0.0001 BTC';
-      case UtxoAmountCriteria.custom:
-        final customAmount = _viewModel.customAmountCriteriaText ?? '';
+      case UtxoAmountRange.custom:
+        final customAmount = _viewModel.customAmountRangeText ?? '';
         final formattedAmount = customAmount.isEmpty ? customAmount : '${_formatCustomAmountText(customAmount)} BTC';
         return formattedAmount;
     }
   }
 
-  String _summaryCardAmountRangeText(UtxoMergeCriteria criteria) {
-    switch (criteria) {
-      case UtxoMergeCriteria.smallAmounts:
+  String _summaryCardAmountRangeText(UtxoMergeMethod method) {
+    switch (method) {
+      case UtxoMergeMethod.smallAmounts:
         return _viewModel.isCustomAmountLessThan
             ? t.merge_utxos_screen.summary_card_headline_under(amount: _summaryAmountThresholdText)
             : t.merge_utxos_screen.summary_card_headline_or_less(amount: _summaryAmountThresholdText);
-      case UtxoMergeCriteria.sameTag:
+      case UtxoMergeMethod.sameTag:
         return t.merge_utxos_screen.selected_tag_title(name: _viewModel.effectiveSelectedTagName ?? '');
-      case UtxoMergeCriteria.sameAddress:
+      case UtxoMergeMethod.sameAddress:
         return t.merge_utxos_screen.reused_address;
     }
   }
@@ -862,36 +862,36 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     );
   }
 
-  String _getUtxosPreviewBottomSheetTitle(UtxoMergeCriteria criteria) {
-    switch (criteria) {
-      case UtxoMergeCriteria.smallAmounts:
-        return _currentAmountCriteriaText;
-      case UtxoMergeCriteria.sameAddress:
+  String _getUtxosPreviewBottomSheetTitle(UtxoMergeMethod method) {
+    switch (method) {
+      case UtxoMergeMethod.smallAmounts:
+        return _currentAmountRangeText;
+      case UtxoMergeMethod.sameAddress:
         return t.merge_utxos_screen.reused_address;
-      case UtxoMergeCriteria.sameTag:
+      case UtxoMergeMethod.sameTag:
         return t.merge_utxos_screen.selected_tag_title(name: _viewModel.effectiveSelectedTagName ?? '');
     }
   }
 
   Future<void> _showSelectedUtxosPreviewBottomSheet() async {
     // 합치기 대상 후보 UTXO들
-    final candidateUtxos = _viewModel.candidateUtxosForCurrentCriteria;
+    final candidateUtxos = _viewModel.candidateUtxosForCurrentMethod;
 
     // BTC 단위로 고정
     const currentUnit = BitcoinUnit.btc;
 
     final reusedAddresses = _viewModel.reusedAddressesInWallet;
     final isEditingNotifier = ValueNotifier(false);
-    final initialSelectedUtxoIds = _viewModel.selectedUtxosForCurrentCriteria.map((utxo) => utxo.utxoId).toSet();
+    final initialSelectedUtxoIds = _viewModel.selectedUtxosForCurrentMethod.map((utxo) => utxo.utxoId).toSet();
     final draftSelectedUtxoIdsNotifier = ValueNotifier<Set<String>>(initialSelectedUtxoIds);
-    final criteria = _viewModel.currentCriteria;
+    final method = _viewModel.currentMethod;
 
     try {
       await CommonBottomSheets.showDraggableBottomSheet<void>(
         minChildSize: 0.6,
         maxChildSize: 0.9,
         initialChildSize: 0.6,
-        title: _getUtxosPreviewBottomSheetTitle(criteria),
+        title: _getUtxosPreviewBottomSheetTitle(method),
         context: context,
         adjustForKeyboardInset: false,
         childBuilder:
@@ -900,10 +900,10 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
               utxos: candidateUtxos,
               currentUnit: currentUnit,
               reusedAddresses: reusedAddresses,
-              mergeCriteria: criteria,
-              amountCriteriaText: _currentAmountCriteriaText,
+              mergeMethod: method,
+              amountRangeText: _currentAmountRangeText,
               selectedTagInlineWidgets:
-                  criteria == UtxoMergeCriteria.sameTag ? _buildSelectedTagInlineWidgets(context) : const [],
+                  method == UtxoMergeMethod.sameTag ? _buildSelectedTagInlineWidgets(context) : const [],
               isEditingListenable: isEditingNotifier,
               initialSelectedUtxoIds: initialSelectedUtxoIds,
               onSelectionChanged: (selectedUtxoIds) {
@@ -942,33 +942,33 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     }
   }
 
-  String? _getCurrentCriteriaText(UtxoMergeCriteria? criteria) {
-    switch (criteria) {
-      case UtxoMergeCriteria.smallAmounts:
-        return t.merge_utxos_screen.merge_criteria_bottomsheet.merge_small_amounts;
-      case UtxoMergeCriteria.sameTag:
-        return t.merge_utxos_screen.merge_criteria_bottomsheet.merge_same_tag;
-      case UtxoMergeCriteria.sameAddress:
-        return t.merge_utxos_screen.merge_criteria_bottomsheet.merge_same_address;
+  String? _getCurrentMethodText(UtxoMergeMethod? method) {
+    switch (method) {
+      case UtxoMergeMethod.smallAmounts:
+        return t.merge_utxos_screen.merge_method_bottomsheet.merge_small_amounts;
+      case UtxoMergeMethod.sameTag:
+        return t.merge_utxos_screen.merge_method_bottomsheet.merge_same_tag;
+      case UtxoMergeMethod.sameAddress:
+        return t.merge_utxos_screen.merge_method_bottomsheet.merge_same_address;
       default:
         return null;
     }
   }
 
-  String get _currentAmountCriteriaText => _amountCriteriaText(_viewModel.currentAmountCriteria);
-  String _amountCriteriaText(UtxoAmountCriteria criteria) {
-    switch (criteria) {
-      case UtxoAmountCriteria.below001:
-        return t.merge_utxos_screen.amount_criteria_bottomsheet.below_001;
-      case UtxoAmountCriteria.below0001:
-        return t.merge_utxos_screen.amount_criteria_bottomsheet.below_0001;
-      case UtxoAmountCriteria.below00001:
-        return t.merge_utxos_screen.amount_criteria_bottomsheet.below_00001;
-      case UtxoAmountCriteria.custom:
-        if (_viewModel.customAmountCriteriaText != null && _viewModel.customAmountCriteriaText!.isNotEmpty) {
-          return '${_viewModel.isCustomAmountLessThan ? '${t.merge_utxos_screen.amount_criteria_bottomsheet.less_than} ' : ''}${_formatCustomAmountText(_viewModel.customAmountCriteriaText!)}${t.btc} ${_viewModel.isCustomAmountLessThan ? '' : ' ${t.merge_utxos_screen.amount_criteria_bottomsheet.or_less}'}';
+  String get _currentAmountRangeText => _amountRangeText(_viewModel.currentAmountRange);
+  String _amountRangeText(UtxoAmountRange range) {
+    switch (range) {
+      case UtxoAmountRange.below001:
+        return t.merge_utxos_screen.amount_range_bottomsheet.below_001;
+      case UtxoAmountRange.below0001:
+        return t.merge_utxos_screen.amount_range_bottomsheet.below_0001;
+      case UtxoAmountRange.below00001:
+        return t.merge_utxos_screen.amount_range_bottomsheet.below_00001;
+      case UtxoAmountRange.custom:
+        if (_viewModel.customAmountRangeText != null && _viewModel.customAmountRangeText!.isNotEmpty) {
+          return '${_viewModel.isCustomAmountLessThan ? '${t.merge_utxos_screen.amount_range_bottomsheet.less_than} ' : ''}${_formatCustomAmountText(_viewModel.customAmountRangeText!)}${t.btc} ${_viewModel.isCustomAmountLessThan ? '' : ' ${t.merge_utxos_screen.amount_range_bottomsheet.or_less}'}';
         }
-        return t.merge_utxos_screen.amount_criteria_bottomsheet.custom;
+        return t.merge_utxos_screen.amount_range_bottomsheet.custom;
     }
   }
 
@@ -989,15 +989,15 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     return '$integerPart.${chunks.join(' ')}';
   }
 
-  String? _amountCriteriaDescription(UtxoAmountCriteria criteria) {
-    switch (criteria) {
-      case UtxoAmountCriteria.below001:
-        return t.merge_utxos_screen.amount_criteria_bottomsheet.below_001_description;
-      case UtxoAmountCriteria.below0001:
-        return t.merge_utxos_screen.amount_criteria_bottomsheet.below_0001_description;
-      case UtxoAmountCriteria.below00001:
-        return t.merge_utxos_screen.amount_criteria_bottomsheet.below_00001_description;
-      case UtxoAmountCriteria.custom:
+  String? _amountRangeDescription(UtxoAmountRange range) {
+    switch (range) {
+      case UtxoAmountRange.below001:
+        return t.merge_utxos_screen.amount_range_bottomsheet.below_001_description;
+      case UtxoAmountRange.below0001:
+        return t.merge_utxos_screen.amount_range_bottomsheet.below_0001_description;
+      case UtxoAmountRange.below00001:
+        return t.merge_utxos_screen.amount_range_bottomsheet.below_00001_description;
+      case UtxoAmountRange.custom:
         return null;
     }
   }
@@ -1008,7 +1008,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         _visibleOptionPickerSteps.indexed.map(((int, UtxoMergeStep) entry) {
           final index = entry.$1;
           final step = entry.$2;
-          final picker = _buildStepOptionPicker(context, step, _viewModel.currentCriteria);
+          final picker = _buildStepOptionPicker(context, step, _viewModel.currentMethod);
           final isNewest = step == _displayedOptionPickerStep && index == 0;
 
           if (isNewest) {
@@ -1043,18 +1043,17 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildStepOptionPicker(BuildContext context, UtxoMergeStep step, UtxoMergeCriteria? mergeCriteria) {
+  Widget _buildStepOptionPicker(BuildContext context, UtxoMergeStep step, UtxoMergeMethod? mergeMethod) {
     return switch (step) {
-      UtxoMergeStep.selectMergeCriteria => CoconutOptionPicker(
-        text: _getCurrentCriteriaText(mergeCriteria),
-        label: _viewModel.currentStep == UtxoMergeStep.selectMergeCriteria ? null : t.merge_utxos_screen.merge_criteria,
-        onTap: _showMergeCriteriaBottomSheet,
+      UtxoMergeStep.selectMergeMethod => CoconutOptionPicker(
+        text: _getCurrentMethodText(mergeMethod),
+        label: _viewModel.currentStep == UtxoMergeStep.selectMergeMethod ? null : t.merge_utxos_screen.merge_method,
+        onTap: _showMergeOptionBottomSheet,
       ),
-      UtxoMergeStep.selectAmountCriteria => CoconutOptionPicker(
-        text: _currentAmountCriteriaText,
-        label:
-            _viewModel.currentStep == UtxoMergeStep.selectAmountCriteria ? null : t.merge_utxos_screen.amount_criteria,
-        onTap: _showAmountCriteriaBottomSheet,
+      UtxoMergeStep.selectAmountRange => CoconutOptionPicker(
+        text: _currentAmountRangeText,
+        label: _viewModel.currentStep == UtxoMergeStep.selectAmountRange ? null : t.merge_utxos_screen.amount_range,
+        onTap: _showAmountRangeBottomSheet,
         coconutOptionStateEnum:
             _viewModel.hasDustUtxosInInputs && !_viewModel.excludeDustUtxos
                 ? CoconutOptionStateEnum.warning
@@ -1096,7 +1095,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
   }
 
   Widget _buildEstimatedFeeOptionPicker() {
-    return Selector<MergeUtxosViewModel, ({bool isFeeRateInputEmpty, String estimatedFeeText, bool isFeeTooHigh})>(
+    return Selector<UtxoMergeViewModel, ({bool isFeeRateInputEmpty, String estimatedFeeText, bool isFeeTooHigh})>(
       selector: (_, vm) {
         final exception = vm.preparedMergeTransactionBuildResult?.exception;
         return (

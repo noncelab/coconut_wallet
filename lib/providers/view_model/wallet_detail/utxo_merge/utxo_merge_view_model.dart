@@ -22,7 +22,7 @@ import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 
-part 'merge_utxos_models.dart';
+part 'utxo_merge_models.dart';
 
 enum MergeState { idle, preparing, ready, notEnoughSelectedUtxo, failed }
 
@@ -44,7 +44,7 @@ class MergeTransactionInputSnapshot {
   });
 }
 
-class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
+class UtxoMergeViewModel extends ChangeNotifier with FeeRateMixin {
   final int walletId;
   final UtxoRepository _utxoRepository;
   final UtxoTagProvider _utxoTagProvider;
@@ -55,7 +55,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   late String _selectedReceiveAddress;
   late final List<ReceiveAddressOption> _nextReceiveAddressesOfAllWallets;
 
-  MergeUtxosViewModel(
+  UtxoMergeViewModel(
     this.walletId,
     this._utxoRepository,
     this._utxoTagProvider,
@@ -85,12 +85,12 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   List<UtxoState> get utxoList => _utxoList;
   late UtxoMergeStep _currentStep;
   UtxoMergeStep get currentStep => _currentStep;
-  UtxoMergeCriteria? _selectedMergeCriteria;
-  bool _didConfirmMergeCriteria = false;
-  UtxoAmountCriteria? _selectedAmountCriteria;
-  String? _customAmountCriteriaText;
+  UtxoMergeMethod? _selectedMergeMethod;
+  bool _didConfirmMergeMethod = false;
+  UtxoAmountRange? _selectedAmountRange;
+  String? _customAmountRangeText;
   bool _isCustomAmountLessThan = false;
-  bool _didConfirmAmountCriteria = false;
+  bool _didConfirmAmountRange = false;
   bool _didConfirmTagCriteria = false;
   String? _selectedTagName;
   String? _customReceiveAddressText;
@@ -116,10 +116,10 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   String get estimatedFeeText => _estimatedFeeText;
 
   int get utxoCount => _utxoList.length;
-  bool get didConfirmMergeCriteria => _didConfirmMergeCriteria;
-  String? get customAmountCriteriaText => _customAmountCriteriaText;
+  bool get didConfirmMergeMethod => _didConfirmMergeMethod;
+  String? get customAmountRangeText => _customAmountRangeText;
   bool get isCustomAmountLessThan => _isCustomAmountLessThan;
-  bool get didConfirmAmountCriteria => _didConfirmAmountCriteria;
+  bool get didConfirmAmountRange => _didConfirmAmountRange;
   bool get didConfirmTagCriteria => _didConfirmTagCriteria;
   String? get selectedReceiveAddress => _selectedReceiveAddress;
   String? get customReceiveAddressText => _customReceiveAddressText;
@@ -132,8 +132,8 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   TransactionBuildResult? get preparedMergeTransactionBuildResult => _txBuildResult;
   MergeState get mergeState => _mergeState;
   int get receiveAddressSummaryAnimationNonce => _receiveAddressSummaryAnimationNonce;
-  UtxoMergeCriteria get defaultCriteria => UtxoMergeCriteria.smallAmounts;
-  UtxoMergeCriteria get currentCriteria => _selectedMergeCriteria ?? defaultCriteria;
+  UtxoMergeMethod get defaultMethod => UtxoMergeMethod.smallAmounts;
+  UtxoMergeMethod get currentMethod => _selectedMergeMethod ?? defaultMethod;
   bool get hasUnexpectedError => unexpectedErrorMessage.isNotEmpty;
 
   bool get isMergeButtonVisible => _mergeState == MergeState.ready || _mergeState == MergeState.notEnoughSelectedUtxo;
@@ -155,15 +155,14 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     return '${BalanceFormatUtil.formatSatoshiToReadableBitcoin(_estimatedMergeFeeSats!, forceEightDecimals: true)} BTC';
   }
 
-  UtxoAmountCriteria get defaultAmountCriteria =>
-      firstAvailableRecommendedAmountCriteria ?? UtxoAmountCriteria.below00001;
-  UtxoAmountCriteria get currentAmountCriteria => _selectedAmountCriteria ?? defaultAmountCriteria;
+  UtxoAmountRange get defaultAmountRange => firstAvailableRecommendedAmountRange ?? UtxoAmountRange.below00001;
+  UtxoAmountRange get currentAmountRange => _selectedAmountRange ?? defaultAmountRange;
   int? get currentAmountThresholdSats {
-    return switch (currentAmountCriteria) {
-      UtxoAmountCriteria.below001 => 1_000_000,
-      UtxoAmountCriteria.below0001 => 100_000,
-      UtxoAmountCriteria.below00001 => 10_000,
-      UtxoAmountCriteria.custom => _customAmountThresholdSats,
+    return switch (currentAmountRange) {
+      UtxoAmountRange.below001 => 1_000_000,
+      UtxoAmountRange.below0001 => 100_000,
+      UtxoAmountRange.below00001 => 10_000,
+      UtxoAmountRange.custom => _customAmountThresholdSats,
     };
   }
 
@@ -189,22 +188,22 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   String? get effectiveSelectedTagName => _selectedTagName ?? mostUsedTagName;
-  List<UtxoState> get candidateUtxosForCurrentCriteria {
+  List<UtxoState> get candidateUtxosForCurrentMethod {
     final utxos = _utxoList.where((utxo) => !utxo.isLocked).toList();
-    switch (currentCriteria) {
-      case UtxoMergeCriteria.smallAmounts:
+    switch (currentMethod) {
+      case UtxoMergeMethod.smallAmounts:
         final satsThreshold = currentAmountThresholdSats;
         return utxos.where((utxo) {
           if (satsThreshold == null) return false;
           return _isCustomAmountLessThan ? utxo.amount < satsThreshold : utxo.amount <= satsThreshold;
         }).toList();
-      case UtxoMergeCriteria.sameAddress:
+      case UtxoMergeMethod.sameAddress:
         final addressCounts = <String, int>{};
         for (final utxo in utxos) {
           addressCounts[utxo.to] = (addressCounts[utxo.to] ?? 0) + 1;
         }
         return utxos.where((utxo) => (addressCounts[utxo.to] ?? 0) >= 2).toList();
-      case UtxoMergeCriteria.sameTag:
+      case UtxoMergeMethod.sameTag:
         final tagName = effectiveSelectedTagName;
         if (tagName == null || tagName.isEmpty) return [];
         return utxos.where((utxo) => (utxo.tags ?? []).any((tag) => tag.name == tagName)).toList();
@@ -212,19 +211,19 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   List<UtxoState> get selectedUtxosBeforeDustExclusion {
-    final candidateUtxos = candidateUtxosForCurrentCriteria;
+    final candidateUtxos = candidateUtxosForCurrentMethod;
     final editedSelectedUtxoIds = _editedSelectedUtxoIds;
     if (editedSelectedUtxoIds == null) return candidateUtxos;
     return candidateUtxos.where((utxo) => editedSelectedUtxoIds.contains(utxo.utxoId)).toList();
   }
 
-  List<UtxoState> get selectedUtxosForCurrentCriteria {
+  List<UtxoState> get selectedUtxosForCurrentMethod {
     final selectedUtxos = selectedUtxosBeforeDustExclusion;
     if (!_excludeDustUtxos) return selectedUtxos;
     return selectedUtxos.where((utxo) => !_isSuspiciousDustUtxo(utxo)).toList();
   }
 
-  bool get hasDustUtxosInInputs => candidateUtxosForCurrentCriteria.any(_isSuspiciousDustUtxo);
+  bool get hasDustUtxosInInputs => candidateUtxosForCurrentMethod.any(_isSuspiciousDustUtxo);
   Set<String> get reusedAddressesInWallet {
     final counts = <String, int>{};
     for (final utxo in _utxoList) {
@@ -233,29 +232,28 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     return counts.entries.where((entry) => entry.value >= 2).map((entry) => entry.key).toSet();
   }
 
-  UtxoAmountCriteria? get firstAvailableRecommendedAmountCriteria {
-    for (final criteria in recommendedAmountCriteriaItems.reversed) {
-      if (hasCandidateUtxosForAmountCriteria(criteria)) {
-        if (criteria == UtxoAmountCriteria.below00001) {
+  UtxoAmountRange? get firstAvailableRecommendedAmountRange {
+    for (final range in recommendedAmountRangeItems.reversed) {
+      if (hasCandidateUtxosForAmountRange(range)) {
+        if (range == UtxoAmountRange.below00001) {
           continue;
         }
-        return criteria;
+        return range;
       }
     }
     return null;
   }
 
-  static const List<UtxoAmountCriteria> recommendedAmountCriteriaItems = [
-    UtxoAmountCriteria.below001,
-    UtxoAmountCriteria.below0001,
-    UtxoAmountCriteria.below00001,
+  static const List<UtxoAmountRange> recommendedAmountRangeItems = [
+    UtxoAmountRange.below001,
+    UtxoAmountRange.below0001,
+    UtxoAmountRange.below00001,
   ];
 
   void initialize() {
     final allUtxos = _utxoRepository.getUtxoStateList(walletId);
     _utxoList = allUtxos.where((utxo) => utxo.status == UtxoStatus.unspent).toList();
-    _currentStep =
-        utxoList.length >= 2 && utxoList.length < 11 ? UtxoMergeStep.entry : UtxoMergeStep.selectMergeCriteria;
+    _currentStep = utxoList.length >= 2 && utxoList.length < 11 ? UtxoMergeStep.entry : UtxoMergeStep.selectMergeMethod;
 
     for (var utxo in _utxoList) {
       utxo.tags = _utxoTagProvider.getUtxoTagsByUtxoId(walletId, utxo.utxoId);
@@ -269,28 +267,28 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     notifyListeners();
   }
 
-  void confirmMergeCriteriaSelection(UtxoMergeCriteria selectedItem) {
-    final previousMergeCriteria = _selectedMergeCriteria;
-    final didMergeCriteriaChange = previousMergeCriteria != selectedItem;
+  void confirmMergeMethodSelection(UtxoMergeMethod selectedItem) {
+    final previousMergeMethod = _selectedMergeMethod;
+    final didMergeMethodChange = previousMergeMethod != selectedItem;
 
-    _selectedMergeCriteria = selectedItem;
-    _didConfirmMergeCriteria = true;
+    _selectedMergeMethod = selectedItem;
+    _didConfirmMergeMethod = true;
 
-    if (didMergeCriteriaChange) {
+    if (didMergeMethodChange) {
       switch (selectedItem) {
-        case UtxoMergeCriteria.smallAmounts:
-          _didConfirmAmountCriteria = false;
+        case UtxoMergeMethod.smallAmounts:
+          _didConfirmAmountRange = false;
           _didConfirmTagCriteria = false;
           _selectedTagName = null;
           _editedSelectedUtxoIds = null;
           _estimatedMergeFeeSats = null;
           break;
-        case UtxoMergeCriteria.sameTag:
+        case UtxoMergeMethod.sameTag:
           _didConfirmTagCriteria = false;
           _editedSelectedUtxoIds = null;
           _estimatedMergeFeeSats = null;
           break;
-        case UtxoMergeCriteria.sameAddress:
+        case UtxoMergeMethod.sameAddress:
           _didConfirmTagCriteria = false;
           _selectedTagName = null;
           _editedSelectedUtxoIds = null;
@@ -300,17 +298,17 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     }
   }
 
-  void confirmAmountCriteriaSelection({
-    required UtxoAmountCriteria criteria,
+  void confirmAmountRangeSelection({
+    required UtxoAmountRange range,
     required String? customAmountText,
     required bool isLessThan,
   }) {
-    _selectedAmountCriteria = criteria;
-    _customAmountCriteriaText = customAmountText;
+    _selectedAmountRange = range;
+    _customAmountRangeText = customAmountText;
     _isCustomAmountLessThan = isLessThan;
     _editedSelectedUtxoIds = null;
     _estimatedMergeFeeSats = null;
-    _didConfirmAmountCriteria = true;
+    _didConfirmAmountRange = true;
   }
 
   void confirmTagCriteriaSelection(String? selectedTagName) {
@@ -347,35 +345,31 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool isAnimatedHeaderStep(UtxoMergeStep step) {
-    return step == UtxoMergeStep.selectMergeCriteria ||
-        step == UtxoMergeStep.selectAmountCriteria ||
+    return step == UtxoMergeStep.selectMergeMethod ||
+        step == UtxoMergeStep.selectAmountRange ||
         step == UtxoMergeStep.selectTag ||
         step == UtxoMergeStep.selectReceiveAddress;
   }
 
   List<UtxoMergeStep> visibleOptionPickerStepsFor(UtxoMergeStep step) {
     switch (step) {
-      case UtxoMergeStep.selectMergeCriteria:
-        return const [UtxoMergeStep.selectMergeCriteria];
-      case UtxoMergeStep.selectAmountCriteria:
-        return const [UtxoMergeStep.selectAmountCriteria, UtxoMergeStep.selectMergeCriteria];
+      case UtxoMergeStep.selectMergeMethod:
+        return const [UtxoMergeStep.selectMergeMethod];
+      case UtxoMergeStep.selectAmountRange:
+        return const [UtxoMergeStep.selectAmountRange, UtxoMergeStep.selectMergeMethod];
       case UtxoMergeStep.selectTag:
-        return const [UtxoMergeStep.selectTag, UtxoMergeStep.selectMergeCriteria];
+        return const [UtxoMergeStep.selectTag, UtxoMergeStep.selectMergeMethod];
       case UtxoMergeStep.selectReceiveAddress:
-        switch (currentCriteria) {
-          case UtxoMergeCriteria.sameAddress:
-            return const [UtxoMergeStep.selectReceiveAddress, UtxoMergeStep.selectMergeCriteria];
-          case UtxoMergeCriteria.sameTag:
+        switch (currentMethod) {
+          case UtxoMergeMethod.sameAddress:
+            return const [UtxoMergeStep.selectReceiveAddress, UtxoMergeStep.selectMergeMethod];
+          case UtxoMergeMethod.sameTag:
+            return const [UtxoMergeStep.selectReceiveAddress, UtxoMergeStep.selectTag, UtxoMergeStep.selectMergeMethod];
+          case UtxoMergeMethod.smallAmounts:
             return const [
               UtxoMergeStep.selectReceiveAddress,
-              UtxoMergeStep.selectTag,
-              UtxoMergeStep.selectMergeCriteria,
-            ];
-          case UtxoMergeCriteria.smallAmounts:
-            return const [
-              UtxoMergeStep.selectReceiveAddress,
-              UtxoMergeStep.selectAmountCriteria,
-              UtxoMergeStep.selectMergeCriteria,
+              UtxoMergeStep.selectAmountRange,
+              UtxoMergeStep.selectMergeMethod,
             ];
         }
       case UtxoMergeStep.entry:
@@ -391,7 +385,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     if (nextExcludeDustUtxos) {
       _editedSelectedUtxoIds =
           selectedUtxoIdsBeforeToggle.where((utxoId) {
-            final utxo = candidateUtxosForCurrentCriteria.firstWhere((item) => item.utxoId == utxoId);
+            final utxo = candidateUtxosForCurrentMethod.firstWhere((item) => item.utxoId == utxoId);
             return utxo.amount > _dustThreshold;
           }).toSet();
       return;
@@ -448,13 +442,13 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     );
   }
 
-  int candidateUtxoCountForAmountCriteria(UtxoAmountCriteria criteria) {
+  int candidateUtxoCountForAmountRange(UtxoAmountRange range) {
     final utxos = _utxoList.where((utxo) => !utxo.isLocked).toList();
-    final satsThreshold = switch (criteria) {
-      UtxoAmountCriteria.below001 => 1_000_000,
-      UtxoAmountCriteria.below0001 => 100_000,
-      UtxoAmountCriteria.below00001 => 10_000,
-      UtxoAmountCriteria.custom => null,
+    final satsThreshold = switch (range) {
+      UtxoAmountRange.below001 => 1_000_000,
+      UtxoAmountRange.below0001 => 100_000,
+      UtxoAmountRange.below00001 => 10_000,
+      UtxoAmountRange.custom => null,
     };
 
     if (satsThreshold == null) return 0;
@@ -473,12 +467,12 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
     return utxos.where((utxo) => isLessThan ? utxo.amount < satsThreshold : utxo.amount <= satsThreshold).length;
   }
 
-  bool hasCandidateUtxosForAmountCriteria(UtxoAmountCriteria criteria) {
-    return candidateUtxoCountForAmountCriteria(criteria) >= 2;
+  bool hasCandidateUtxosForAmountRange(UtxoAmountRange range) {
+    return candidateUtxoCountForAmountRange(range) >= 2;
   }
 
   bool selectionContainsDust(Set<String> selectedUtxoIds) {
-    return candidateUtxosForCurrentCriteria.any(
+    return candidateUtxosForCurrentMethod.any(
       (utxo) => selectedUtxoIds.contains(utxo.utxoId) && _isSuspiciousDustUtxo(utxo),
     );
   }
@@ -488,7 +482,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   bool get canPrepareMergeTransaction {
     return _currentStep == UtxoMergeStep.selectReceiveAddress &&
         _selectedReceiveAddress.isNotEmpty &&
-        selectedUtxosForCurrentCriteria.length >= 2 &&
+        selectedUtxosForCurrentMethod.length >= 2 &&
         feeRateInput.isNotEmpty;
   }
 
@@ -496,10 +490,10 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   String? get mergeTransactionPreparationKey {
     if (!canPrepareMergeTransaction) return null;
 
-    final selectedUtxoIds = selectedUtxosForCurrentCriteria.map((utxo) => utxo.utxoId).toList()..sort();
+    final selectedUtxoIds = selectedUtxosForCurrentMethod.map((utxo) => utxo.utxoId).toList()..sort();
     return [
-      currentCriteria.name,
-      currentAmountCriteria.name,
+      currentMethod.name,
+      currentAmountRange.name,
       _selectedReceiveAddress,
       feeRateInput.isEmpty ? 'auto' : feeRateInput,
       _excludeDustUtxos,
@@ -532,10 +526,10 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   int get selectedUtxosTotalAmountSats {
-    return selectedUtxosForCurrentCriteria.fold<int>(0, (sum, utxo) => sum + utxo.amount);
+    return selectedUtxosForCurrentMethod.fold<int>(0, (sum, utxo) => sum + utxo.amount);
   }
 
-  int get selectedUtxoCount => selectedUtxosForCurrentCriteria.length;
+  int get selectedUtxoCount => selectedUtxosForCurrentMethod.length;
 
   MergeRecommendationLevelAndInfo? get mergeRecommendationLevelAndInfo {
     if (_mergeState != MergeState.ready) return null;
@@ -632,7 +626,7 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
 
   MergeTransactionInputSnapshot? get mergeTransactionInputSnapshot {
     final selectedReceiveAddress = _selectedReceiveAddress;
-    final selectedUtxos = selectedUtxosForCurrentCriteria;
+    final selectedUtxos = selectedUtxosForCurrentMethod;
     final inputFeeRate = double.tryParse(feeRateInput);
 
     if (_currentStep != UtxoMergeStep.selectReceiveAddress ||
@@ -705,11 +699,11 @@ class MergeUtxosViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   int? get _customAmountThresholdSats {
-    if (_customAmountCriteriaText == null || _customAmountCriteriaText!.trim().isEmpty) {
+    if (_customAmountRangeText == null || _customAmountRangeText!.trim().isEmpty) {
       return null;
     }
     try {
-      return UnitUtil.convertBitcoinToSatoshi(double.parse(_customAmountCriteriaText!.trim()));
+      return UnitUtil.convertBitcoinToSatoshi(double.parse(_customAmountRangeText!.trim()));
     } catch (_) {
       return null;
     }

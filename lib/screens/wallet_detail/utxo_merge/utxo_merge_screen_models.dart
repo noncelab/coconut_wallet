@@ -1,4 +1,4 @@
-part of 'merge_utxos_screen.dart';
+part of 'utxo_merge_screen.dart';
 
 class _BottomSheetTab {
   final String label;
@@ -7,11 +7,11 @@ class _BottomSheetTab {
   const _BottomSheetTab({required this.label, required this.child});
 }
 
-class _TagCombinationSection {
+class _TaggedUtxoGroup {
   final List<UtxoTag> tags;
   final List<UtxoState> utxos;
 
-  _TagCombinationSection({required this.tags, required this.utxos});
+  _TaggedUtxoGroup({required this.tags, required this.utxos});
 }
 
 class _ReusedAddressSection {
@@ -21,17 +21,17 @@ class _ReusedAddressSection {
   _ReusedAddressSection({required this.address, required this.utxos});
 }
 
-class _AmountCriteriaSelectionResult {
-  final UtxoAmountCriteria criteria;
+class _AmountRangeSelectionResult {
+  final UtxoAmountRange range;
   final String? customAmountText;
   final bool isLessThan;
 
-  const _AmountCriteriaSelectionResult({required this.criteria, this.customAmountText, this.isLessThan = false});
+  const _AmountRangeSelectionResult({required this.range, this.customAmountText, this.isLessThan = false});
 }
 
-class _ReceiveAddressSelectionResult {
+class _ReceivingAddressSelectionResult {
   final String address;
   final bool isDirectInput;
 
-  const _ReceiveAddressSelectionResult({required this.address, required this.isDirectInput});
+  const _ReceivingAddressSelectionResult({required this.address, required this.isDirectInput});
 }

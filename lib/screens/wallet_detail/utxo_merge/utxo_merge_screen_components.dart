@@ -1,4 +1,4 @@
-part of 'merge_utxos_screen.dart';
+part of 'utxo_merge_screen.dart';
 
 class _SegmentedBottomSheetBody extends StatelessWidget {
   final ScrollController? scrollController;
@@ -109,8 +109,8 @@ class _SelectedUtxosPreviewBottomSheetBody extends StatefulWidget {
   final List<UtxoState> utxos;
   final BitcoinUnit currentUnit;
   final Set<String> reusedAddresses;
-  final UtxoMergeCriteria mergeCriteria;
-  final String amountCriteriaText;
+  final UtxoMergeMethod mergeMethod;
+  final String amountRangeText;
   final List<Widget> selectedTagInlineWidgets;
   final ValueListenable<bool> isEditingListenable;
   final Set<String> initialSelectedUtxoIds;
@@ -122,8 +122,8 @@ class _SelectedUtxosPreviewBottomSheetBody extends StatefulWidget {
     required this.utxos,
     required this.currentUnit,
     required this.reusedAddresses,
-    required this.mergeCriteria,
-    required this.amountCriteriaText,
+    required this.mergeMethod,
+    required this.amountRangeText,
     required this.selectedTagInlineWidgets,
     required this.isEditingListenable,
     required this.initialSelectedUtxoIds,
@@ -240,12 +240,12 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
   }
 
   Widget _buildSummaryBody(bool isEditing) {
-    switch (widget.mergeCriteria) {
-      case UtxoMergeCriteria.sameTag:
+    switch (widget.mergeMethod) {
+      case UtxoMergeMethod.sameTag:
         return _buildSameTagSummaryBody(isEditing);
-      case UtxoMergeCriteria.smallAmounts:
+      case UtxoMergeMethod.smallAmounts:
         return _buildSmallAmountsSummaryBody(isEditing);
-      case UtxoMergeCriteria.sameAddress:
+      case UtxoMergeMethod.sameAddress:
         return _buildSameAddressSummaryBody(isEditing);
     }
   }
@@ -269,7 +269,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
   }
 
   Widget _buildSameTagSummaryBody(bool isEditing) {
-    final sections = _buildTagCombinationSections();
+    final sections = _buildTaggedUtxoGroup();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,8 +340,8 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
     );
   }
 
-  List<_TagCombinationSection> _buildTagCombinationSections() {
-    final sectionMap = <String, _TagCombinationSection>{};
+  List<_TaggedUtxoGroup> _buildTaggedUtxoGroup() {
+    final sectionMap = <String, _TaggedUtxoGroup>{};
 
     for (final utxo in widget.utxos) {
       final tags = [...?utxo.tags]..sort((a, b) => a.name.compareTo(b.name));
@@ -350,7 +350,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
       final key = tags.map((tag) => tag.name).join('|');
       final existing = sectionMap[key];
       if (existing == null) {
-        sectionMap[key] = _TagCombinationSection(tags: tags, utxos: [utxo]);
+        sectionMap[key] = _TaggedUtxoGroup(tags: tags, utxos: [utxo]);
       } else {
         existing.utxos.add(utxo);
       }

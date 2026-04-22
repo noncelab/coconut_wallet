@@ -10,7 +10,7 @@ import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/utxo_tag_provider.dart';
-import 'package:coconut_wallet/providers/view_model/wallet_detail/split_utxo/split_utxo_view_model.dart';
+import 'package:coconut_wallet/providers/view_model/wallet_detail/utxo_split/utxo_split_view_model.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/address_repository.dart';
 import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart';
@@ -32,28 +32,28 @@ import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
 
 import '../../utils/logger.dart';
 
-enum SplitStep { selectUtxo, selectCriteria, enterDetails }
+enum SplitStep { selectUtxo, selectMethod, enterDetails }
 
-class SplitUtxoScreen extends StatefulWidget {
+class UtxoSplitScreen extends StatefulWidget {
   final int id;
 
-  const SplitUtxoScreen({super.key, required this.id});
+  const UtxoSplitScreen({super.key, required this.id});
 
   @override
-  State<SplitUtxoScreen> createState() => _SplitUtxoScreenState();
+  State<UtxoSplitScreen> createState() => _UtxoSplitScreenState();
 }
 
-class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
+class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
   static const Duration _headerAnimationDuration = Duration(milliseconds: 800);
   static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
   static const Duration _autoOpenUtxoBottomSheetDelay = Duration(milliseconds: 0);
   String? _displayedHeaderTitle;
   String? _pendingHeaderTitle;
   String? _lastObservedHeaderTitle;
-  SplitCriteria? _displayedCriteria;
-  SplitCriteria? _pendingCriteria;
-  SplitCriteria? _lastObservedCriteria;
-  bool _isCriteriaBodyVisible = false;
+  SplitMethod? _displayedMethod;
+  SplitMethod? _pendingMethod;
+  SplitMethod? _lastObservedMethod;
+  bool _isMethodBodyVisible = false;
   bool _isHeaderFadingOut = false;
   int _headerAnimationNonce = 0;
 
@@ -64,11 +64,11 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   int _pickerAnimationNonce = 0;
   final List<SplitStep> _visiblePickerSteps = [];
   Timer? _autoOpenUtxoPickerTimer;
-  Timer? _autoOpenCriteriaPickerTimer;
+  Timer? _autoOpenMethodPickerTimer;
   bool _hasAutoOpenedUtxoPicker = false;
-  bool _hasAutoOpenedCriteriaPicker = false;
+  bool _hasAutoOpenedMethodPicker = false;
   bool _isUtxoSelectionBottomSheetOpen = false;
-  bool _isCriteriaBottomSheetOpen = false;
+  bool _isMethodBottomSheetOpen = false;
 
   /// manual input 삭제 버튼은 딱 1개만 노출되어야 함
   final Map<ManualSplitItem, GlobalKey<_ManualSplitListItemState>> _manualSplitItemKeys = {};
@@ -77,7 +77,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   @override
   void dispose() {
     _autoOpenUtxoPickerTimer?.cancel();
-    _autoOpenCriteriaPickerTimer?.cancel();
+    _autoOpenMethodPickerTimer?.cancel();
     super.dispose();
   }
 
@@ -112,9 +112,9 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<SplitUtxoViewModel>(
+    return ChangeNotifierProvider<UtxoSplitViewModel>(
       create:
-          (context) => SplitUtxoViewModel(
+          (context) => UtxoSplitViewModel(
             widget.id,
             context.read<PreferenceProvider>(),
             context.read<WalletProvider>(),
@@ -168,47 +168,47 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  void _scheduleHeaderAnimation(String nextTitle, SplitCriteria? nextCriteria) {
-    if (_lastObservedHeaderTitle == nextTitle && _lastObservedCriteria == nextCriteria) return;
+  void _scheduleHeaderAnimation(String nextTitle, SplitMethod? nextMethod) {
+    if (_lastObservedHeaderTitle == nextTitle && _lastObservedMethod == nextMethod) return;
     _lastObservedHeaderTitle = nextTitle;
-    _lastObservedCriteria = nextCriteria;
+    _lastObservedMethod = nextMethod;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _syncHeaderAnimation(nextTitle, nextCriteria);
+      _syncHeaderAnimation(nextTitle, nextMethod);
     });
   }
 
-  void _syncHeaderAnimation(String nextTitle, SplitCriteria? nextCriteria) {
+  void _syncHeaderAnimation(String nextTitle, SplitMethod? nextMethod) {
     _pendingHeaderTitle = nextTitle;
-    _pendingCriteria = nextCriteria;
+    _pendingMethod = nextMethod;
 
     if (_displayedHeaderTitle == null) {
       setState(() {
         _displayedHeaderTitle = nextTitle;
-        _displayedCriteria = nextCriteria;
+        _displayedMethod = nextMethod;
         _isHeaderFadingOut = false;
-        _isCriteriaBodyVisible = true;
+        _isMethodBodyVisible = true;
       });
       return;
     }
 
-    if (_displayedHeaderTitle == nextTitle && _displayedCriteria == nextCriteria && !_isHeaderFadingOut) return;
+    if (_displayedHeaderTitle == nextTitle && _displayedMethod == nextMethod && !_isHeaderFadingOut) return;
     if (_isHeaderFadingOut) return;
 
     final token = _headerAnimationNonce + 1;
     _headerAnimationNonce = token;
 
-    final isCriteriaChanging = _displayedCriteria != null && nextCriteria != null && _displayedCriteria != nextCriteria;
-    final isFirstTimeCriteria = _displayedCriteria == null && nextCriteria != null;
+    final isMethodChanging = _displayedMethod != null && nextMethod != null && _displayedMethod != nextMethod;
+    final isFirstTimeMethod = _displayedMethod == null && nextMethod != null;
 
     setState(() {
       _isHeaderFadingOut = true;
-      if (isCriteriaChanging) {
-        _isCriteriaBodyVisible = false;
-      } else if (isFirstTimeCriteria) {
-        _isCriteriaBodyVisible = true;
-        _displayedCriteria = nextCriteria;
+      if (isMethodChanging) {
+        _isMethodBodyVisible = false;
+      } else if (isFirstTimeMethod) {
+        _isMethodBodyVisible = true;
+        _displayedMethod = nextMethod;
       }
     });
 
@@ -217,24 +217,24 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
       setState(() {
         _displayedHeaderTitle = _pendingHeaderTitle;
-        if (!isFirstTimeCriteria) {
-          _displayedCriteria = _pendingCriteria;
+        if (!isFirstTimeMethod) {
+          _displayedMethod = _pendingMethod;
         }
         _isHeaderFadingOut = false;
       });
 
-      if (isCriteriaChanging) {
+      if (isMethodChanging) {
         Future.delayed(const Duration(milliseconds: 500), () {
           if (!mounted || token != _headerAnimationNonce) return;
           setState(() {
-            _isCriteriaBodyVisible = true;
+            _isMethodBodyVisible = true;
           });
         });
       }
     });
   }
 
-  void _scheduleOptionPickerAnimation(SplitStep step, SplitUtxoViewModel viewModel) {
+  void _scheduleOptionPickerAnimation(SplitStep step, UtxoSplitViewModel viewModel) {
     if (_lastObservedPickerStep == step) return;
     _lastObservedPickerStep = step;
 
@@ -244,12 +244,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     });
   }
 
-  void _syncOptionPickerAnimation(SplitStep step, SplitUtxoViewModel viewModel) {
+  void _syncOptionPickerAnimation(SplitStep step, UtxoSplitViewModel viewModel) {
     _pendingPickerStep = step;
     final nextVisibleSteps = _visiblePickerStepsFor(step);
 
     _autoOpenUtxoPickerTimer?.cancel();
-    _autoOpenCriteriaPickerTimer?.cancel();
+    _autoOpenMethodPickerTimer?.cancel();
 
     if (_displayedPickerStep == null) {
       setState(() {
@@ -273,8 +273,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       _visiblePickerSteps.clear();
       _visiblePickerSteps.addAll(nextVisibleSteps);
     });
-    if (step == SplitStep.selectCriteria) {
-      _scheduleAutoOpenCriteriaBottomSheet(viewModel);
+    if (step == SplitStep.selectMethod) {
+      _scheduleAutoOpenMethodBottomSheet(viewModel);
     }
   }
 
@@ -282,10 +282,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     switch (step) {
       case SplitStep.selectUtxo:
         return const [SplitStep.selectUtxo];
-      case SplitStep.selectCriteria:
-        return const [SplitStep.selectCriteria, SplitStep.selectUtxo];
+      case SplitStep.selectMethod:
+        return const [SplitStep.selectMethod, SplitStep.selectUtxo];
       case SplitStep.enterDetails:
-        return const [SplitStep.enterDetails, SplitStep.selectCriteria, SplitStep.selectUtxo];
+        return const [SplitStep.enterDetails, SplitStep.selectMethod, SplitStep.selectUtxo];
     }
   }
 
@@ -300,8 +300,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             case SplitStep.selectUtxo:
               picker = _buildUtxoPicker(context);
               break;
-            case SplitStep.selectCriteria:
-              picker = _buildCriteriaPicker(context);
+            case SplitStep.selectMethod:
+              picker = _buildMethodPicker(context);
               break;
             case SplitStep.enterDetails:
               picker = _buildSplitContent(context);
@@ -336,7 +336,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   Widget _buildBody(BuildContext context) {
     return SafeArea(
-      child: Selector<SplitUtxoViewModel, bool>(
+      child: Selector<UtxoSplitViewModel, bool>(
         selector: (_, vm) => vm.isPreparingNextStep,
         builder: (context, isPreparingNextStep, child) {
           return LoadingOverlay(isLoading: isPreparingNextStep, child: child!);
@@ -348,7 +348,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               children: [
                 _buildUnexpectedErrorTooltip(),
                 _buildExpectedResult(),
-                Selector<SplitUtxoViewModel, ({bool showSplitResultBox, int manualSplitItemsLength})>(
+                Selector<UtxoSplitViewModel, ({bool showSplitResultBox, int manualSplitItemsLength})>(
                   selector:
                       (_, vm) => (
                         showSplitResultBox: vm.showSplitResultBox,
@@ -356,7 +356,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                       ),
                   builder: (context, data, _) {
                     final showSplitResultBox = data.showSplitResultBox;
-                    final vm = context.read<SplitUtxoViewModel>();
+                    final vm = context.read<UtxoSplitViewModel>();
                     final focusNodes = [
                       vm.amountFocusNode,
                       vm.splitCountFocusNode,
@@ -389,7 +389,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildUnexpectedErrorTooltip() {
-    return Selector<SplitUtxoViewModel, String>(
+    return Selector<UtxoSplitViewModel, String>(
       selector: (_, vm) => vm.unexpectedErrorMessage,
       builder: (context, finalErrorMessage, _) {
         if (finalErrorMessage.isEmpty) {
@@ -403,30 +403,30 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   Widget _buildHeaderTitle() {
     return Selector<
-      SplitUtxoViewModel,
-      ({List<UtxoState> selectedUtxoList, SplitCriteria? selectedCriteria, String? headerTitleErrorMessage})
+      UtxoSplitViewModel,
+      ({List<UtxoState> selectedUtxoList, SplitMethod? selectedMethod, String? headerTitleErrorMessage})
     >(
       selector:
           (_, vm) => (
             selectedUtxoList: vm.selectedUtxoList,
-            selectedCriteria: vm.selectedCriteria,
+            selectedMethod: vm.selectedMethod,
             headerTitleErrorMessage: vm.headerTitleErrorMessage,
           ),
       builder: (context, data, _) {
-        final viewModel = context.read<SplitUtxoViewModel>();
+        final viewModel = context.read<UtxoSplitViewModel>();
         final nextTitle = _getHeaderTitle(
           t,
           data.selectedUtxoList,
-          data.selectedCriteria,
+          data.selectedMethod,
           viewModel.hasSelectedUtxoAmountError,
         );
-        final nextCriteria = data.selectedCriteria;
-        _scheduleHeaderAnimation(nextTitle, nextCriteria);
+        final nextMethod = data.selectedMethod;
+        _scheduleHeaderAnimation(nextTitle, nextMethod);
 
         final currentStep =
             data.selectedUtxoList.isEmpty || viewModel.hasSelectedUtxoAmountError
                 ? SplitStep.selectUtxo
-                : (data.selectedCriteria == null ? SplitStep.selectCriteria : SplitStep.enterDetails);
+                : (data.selectedMethod == null ? SplitStep.selectMethod : SplitStep.enterDetails);
         _scheduleOptionPickerAnimation(currentStep, viewModel);
 
         final titleToDisplay = _displayedHeaderTitle ?? nextTitle;
@@ -459,7 +459,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   Widget _buildExpectedResult() {
     return Selector<
-      SplitUtxoViewModel,
+      UtxoSplitViewModel,
       ({
         bool showSplitResultBox,
         bool showSkeletonResultBox,
@@ -481,7 +481,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             manualSplitItemsLength: vm.manualSplitItems.length,
           ),
       builder: (context, data, _) {
-        final vm = context.read<SplitUtxoViewModel>();
+        final vm = context.read<UtxoSplitViewModel>();
         final focusNodes = [
           vm.amountFocusNode,
           vm.splitCountFocusNode,
@@ -529,7 +529,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   Widget _buildApplyButton(BuildContext context) {
     return Selector<
-      SplitUtxoViewModel,
+      UtxoSplitViewModel,
       ({
         bool showSplitResultBox,
         bool isSplitValid,
@@ -555,7 +555,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         final finalErrorMessage = data.unexpectedErrorMessage;
         final feeRatio = data.feeRatio;
         final showSkeletonResultBox = data.showSkeletonResultBox;
-        final viewModel = context.read<SplitUtxoViewModel>();
+        final viewModel = context.read<UtxoSplitViewModel>();
         return AnimatedOpacity(
           opacity: showSplitResultBox ? 1.0 : 0.0,
           duration: const Duration(milliseconds: 300),
@@ -591,23 +591,23 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  Widget _buildCriteriaPicker(BuildContext context) {
-    return Selector<SplitUtxoViewModel, ({bool isUtxoSelected, SplitCriteria? selectedCriteria})>(
-      selector: (_, vm) => (isUtxoSelected: vm.selectedUtxoList.isNotEmpty, selectedCriteria: vm.selectedCriteria),
+  Widget _buildMethodPicker(BuildContext context) {
+    return Selector<UtxoSplitViewModel, ({bool isUtxoSelected, SplitMethod? selectedMethod})>(
+      selector: (_, vm) => (isUtxoSelected: vm.selectedUtxoList.isNotEmpty, selectedMethod: vm.selectedMethod),
       builder: (context, data, _) {
         final isUtxoSelected = data.isUtxoSelected;
-        final criteria = data.selectedCriteria;
+        final method = data.selectedMethod;
         if (!isUtxoSelected) return const SizedBox.shrink();
 
-        final viewModel = context.read<SplitUtxoViewModel>();
+        final viewModel = context.read<UtxoSplitViewModel>();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CoconutOptionPicker(
-              label: criteria != null ? t.split_utxo_screen.label_split_criteria : null,
-              text: criteria?.getLabel(t) ?? t.split_utxo_screen.criteria_bottom_sheet.split_by_amount,
+              label: method != null ? t.split_utxo_screen.label_split_method : null,
+              text: method?.getLabel(t) ?? t.split_utxo_screen.method_bottom_sheet.split_by_amount,
               textColor: CoconutColors.white,
-              onTap: () => _showSplitCriteriaBottomSheet(context, viewModel),
+              onTap: () => _showSplitMethodBottomSheet(context, viewModel),
             ),
             CoconutLayout.spacing_1000h,
           ],
@@ -618,7 +618,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
   Widget _buildUtxoPicker(BuildContext context) {
     return Selector<
-      SplitUtxoViewModel,
+      UtxoSplitViewModel,
       ({bool isSelected, String? guideText, CoconutOptionStateEnum optionState, List<UtxoState> selectedUtxoList})
     >(
       selector:
@@ -669,7 +669,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           }
         }
 
-        final viewModel = context.read<SplitUtxoViewModel>();
+        final viewModel = context.read<UtxoSplitViewModel>();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -689,7 +689,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  void _scheduleAutoOpenUtxoSelectionBottomSheet(SplitUtxoViewModel viewModel) {
+  void _scheduleAutoOpenUtxoSelectionBottomSheet(UtxoSplitViewModel viewModel) {
     if (viewModel.isUtxoSelected ||
         _displayedPickerStep != SplitStep.selectUtxo ||
         _hasAutoOpenedUtxoPicker ||
@@ -720,42 +720,42 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  void _scheduleAutoOpenCriteriaBottomSheet(SplitUtxoViewModel viewModel) {
+  void _scheduleAutoOpenMethodBottomSheet(UtxoSplitViewModel viewModel) {
     if (!viewModel.isUtxoSelected ||
-        viewModel.selectedCriteria != null ||
-        _displayedPickerStep != SplitStep.selectCriteria ||
-        _hasAutoOpenedCriteriaPicker ||
-        _isCriteriaBottomSheetOpen) {
-      _autoOpenCriteriaPickerTimer?.cancel();
+        viewModel.selectedMethod != null ||
+        _displayedPickerStep != SplitStep.selectMethod ||
+        _hasAutoOpenedMethodPicker ||
+        _isMethodBottomSheetOpen) {
+      _autoOpenMethodPickerTimer?.cancel();
       return;
     }
 
-    if (_autoOpenCriteriaPickerTimer?.isActive ?? false) {
+    if (_autoOpenMethodPickerTimer?.isActive ?? false) {
       return;
     }
 
-    _autoOpenCriteriaPickerTimer = Timer(
+    _autoOpenMethodPickerTimer = Timer(
       _newestPickerRevealDelay + _pickerAnimationDuration + _autoOpenUtxoBottomSheetDelay,
       () {
         if (!mounted ||
             ModalRoute.of(context)?.isCurrent != true ||
             !viewModel.isUtxoSelected ||
-            viewModel.selectedCriteria != null ||
-            _displayedPickerStep != SplitStep.selectCriteria ||
-            _hasAutoOpenedCriteriaPicker ||
-            _isCriteriaBottomSheetOpen) {
+            viewModel.selectedMethod != null ||
+            _displayedPickerStep != SplitStep.selectMethod ||
+            _hasAutoOpenedMethodPicker ||
+            _isMethodBottomSheetOpen) {
           return;
         }
 
-        _hasAutoOpenedCriteriaPicker = true;
-        _showSplitCriteriaBottomSheet(context, viewModel);
+        _hasAutoOpenedMethodPicker = true;
+        _showSplitMethodBottomSheet(context, viewModel);
       },
     );
   }
 
   Widget _buildFeePicker(BuildContext context) {
     return Selector<
-      SplitUtxoViewModel,
+      UtxoSplitViewModel,
       ({bool shouldShow, bool hasFeeRate, String? feeExceedsAmountErrorText, String previewFeeText})
     >(
       selector:
@@ -775,7 +775,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           return const SizedBox.shrink();
         }
 
-        final viewModel = context.read<SplitUtxoViewModel>();
+        final viewModel = context.read<UtxoSplitViewModel>();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -816,18 +816,18 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildSplitContent(BuildContext context) {
-    final criteria = _displayedCriteria;
-    if (criteria == null) return const SizedBox.shrink();
+    final method = _displayedMethod;
+    if (method == null) return const SizedBox.shrink();
 
     Widget content;
-    switch (criteria) {
-      case SplitCriteria.byAmount:
+    switch (method) {
+      case SplitMethod.byAmount:
         content = _buildSplitByAmountBody(context);
         break;
-      case SplitCriteria.evenly:
+      case SplitMethod.evenly:
         content = _buildSplitEvenlyBody(context);
         break;
-      case SplitCriteria.manually:
+      case SplitMethod.manually:
         content = _buildSplitManuallyBody(context);
         break;
     }
@@ -851,10 +851,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           return FadeTransition(opacity: animation, child: SlideTransition(position: offsetAnimation, child: child));
         },
         child:
-            _isCriteriaBodyVisible
-                ? KeyedSubtree(key: ValueKey('split_criteria_${criteria.name}'), child: content)
+            _isMethodBodyVisible
+                ? KeyedSubtree(key: ValueKey('split_method_${method.name}'), child: content)
                 : Visibility(
-                  key: ValueKey('empty_criteria_${criteria.name}'),
+                  key: ValueKey('empty_method_${method.name}'),
                   visible: false,
                   maintainSize: true,
                   maintainAnimation: true,
@@ -866,11 +866,11 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildSplitByAmountBody(BuildContext context) {
-    final viewModel = context.read<SplitUtxoViewModel>();
+    final viewModel = context.read<UtxoSplitViewModel>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Selector<SplitUtxoViewModel, ({String? splitAmountErrorText, String unitSymbol})>(
+        Selector<UtxoSplitViewModel, ({String? splitAmountErrorText, String unitSymbol})>(
           selector: (_, vm) => (splitAmountErrorText: vm.splitAmountErrorText, unitSymbol: vm.currentUnit.symbol),
           builder: (context, data, _) {
             return CoconutTextField(
@@ -908,12 +908,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildRecommendedAmounts() {
-    return Selector<SplitUtxoViewModel, ({List<double> recommendedSplitAmounts, BitcoinUnit currentUnit})>(
+    return Selector<UtxoSplitViewModel, ({List<double> recommendedSplitAmounts, BitcoinUnit currentUnit})>(
       selector: (_, vm) => (recommendedSplitAmounts: vm.recommendedSplitAmounts, currentUnit: vm.currentUnit),
       builder: (context, data, _) {
         final recommendedSplitAmounts = data.recommendedSplitAmounts;
         final currentUnit = data.currentUnit;
-        final viewModel = context.read<SplitUtxoViewModel>();
+        final viewModel = context.read<UtxoSplitViewModel>();
         final screenWidth = MediaQuery.sizeOf(context).width;
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -959,10 +959,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildSplitEvenlyBody(BuildContext context) {
-    final viewModel = context.read<SplitUtxoViewModel>();
+    final viewModel = context.read<UtxoSplitViewModel>();
     return Column(
       children: [
-        Selector<SplitUtxoViewModel, ({int splitCount, bool isDustError, bool hasFocus})>(
+        Selector<UtxoSplitViewModel, ({int splitCount, bool isDustError, bool hasFocus})>(
           selector:
               (_, vm) => (
                 splitCount: vm.splitCount,
@@ -1049,8 +1049,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildSplitManuallyBody(BuildContext context) {
-    final viewModel = context.read<SplitUtxoViewModel>();
-    return Selector<SplitUtxoViewModel, List<ManualSplitItem>>(
+    final viewModel = context.read<UtxoSplitViewModel>();
+    return Selector<UtxoSplitViewModel, List<ManualSplitItem>>(
       selector: (_, vm) => List<ManualSplitItem>.of(vm.manualSplitItems),
       builder: (context, manualSplitItems, _) {
         _syncManualSplitItemKeys(manualSplitItems);
@@ -1112,10 +1112,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
   }
 
   Widget _buildRecommendedCounts() {
-    return Selector<SplitUtxoViewModel, List<int>>(
+    return Selector<UtxoSplitViewModel, List<int>>(
       selector: (_, vm) => vm.recommendedSplitCounts,
       builder: (context, recommendedSplitCounts, _) {
-        final viewModel = context.read<SplitUtxoViewModel>();
+        final viewModel = context.read<UtxoSplitViewModel>();
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Wrap(
@@ -1144,7 +1144,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     );
   }
 
-  void _showUtxoSelectionBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
+  void _showUtxoSelectionBottomSheet(BuildContext context, UtxoSplitViewModel viewModel) async {
     if (_isUtxoSelectionBottomSheetOpen) return;
 
     _autoOpenUtxoPickerTimer?.cancel();
@@ -1176,19 +1176,19 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
     }
   }
 
-  void _showSplitCriteriaBottomSheet(BuildContext context, SplitUtxoViewModel viewModel) async {
-    if (_isCriteriaBottomSheetOpen) return;
+  void _showSplitMethodBottomSheet(BuildContext context, UtxoSplitViewModel viewModel) async {
+    if (_isMethodBottomSheetOpen) return;
 
-    _autoOpenCriteriaPickerTimer?.cancel();
-    _isCriteriaBottomSheetOpen = true;
+    _autoOpenMethodPickerTimer?.cancel();
+    _isMethodBottomSheetOpen = true;
 
-    final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<SplitCriteria>(
+    final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<SplitMethod>(
       context: context,
-      title: t.split_utxo_screen.criteria_bottom_sheet.title,
-      items: SplitCriteria.values,
+      title: t.split_utxo_screen.method_bottom_sheet.title,
+      items: SplitMethod.values,
       getItemId: (item) => item.name,
-      initiallySelectedId: viewModel.selectedCriteria?.name ?? SplitCriteria.byAmount.name,
-      allowConfirmWhenSelectionUnchanged: viewModel.selectedCriteria == null,
+      initiallySelectedId: viewModel.selectedMethod?.name ?? SplitMethod.byAmount.name,
+      allowConfirmWhenSelectionUnchanged: viewModel.selectedMethod == null,
       initialChildSize: 0.5,
       confirmText: t.done,
       minChildSize: 0.49,
@@ -1209,33 +1209,28 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
 
     try {
       if (selectedItem != null && context.mounted) {
-        viewModel.setSelectedCriteria(selectedItem);
+        viewModel.setSelectedMethod(selectedItem);
       }
     } finally {
-      _isCriteriaBottomSheetOpen = false;
+      _isMethodBottomSheetOpen = false;
     }
   }
 
-  String _getHeaderTitle(
-    Translations t,
-    List<UtxoState> selectedUtxoList,
-    SplitCriteria? selectedCriteria,
-    bool hasError,
-  ) {
+  String _getHeaderTitle(Translations t, List<UtxoState> selectedUtxoList, SplitMethod? selectedMethod, bool hasError) {
     if (selectedUtxoList.isEmpty || hasError) {
       return t.split_utxo_screen.question_select_utxo;
     }
-    if (selectedCriteria == null) {
-      return t.split_utxo_screen.question_select_criteria;
+    if (selectedMethod == null) {
+      return t.split_utxo_screen.question_select_method;
     }
 
-    switch (selectedCriteria) {
-      case SplitCriteria.byAmount:
+    switch (selectedMethod) {
+      case SplitMethod.byAmount:
         return t.split_utxo_screen.question_split_by_amount;
-      case SplitCriteria.evenly:
+      case SplitMethod.evenly:
         return t.split_utxo_screen.question_split_evenly;
-      case SplitCriteria.manually:
-        return t.split_utxo_screen.question_select_criteria;
+      case SplitMethod.manually:
+        return t.split_utxo_screen.question_select_method;
     }
   }
 
@@ -1250,10 +1245,10 @@ class _HeaderTitleErrorText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<
-      SplitUtxoViewModel,
+      UtxoSplitViewModel,
       ({
         String? headerTitleErrorMessage,
-        SplitCriteria? selectedCriteria,
+        SplitMethod? selectedMethod,
         bool showSplitResultBox,
         int manualSplitItemsLength,
       })
@@ -1261,15 +1256,15 @@ class _HeaderTitleErrorText extends StatelessWidget {
       selector:
           (_, vm) => (
             headerTitleErrorMessage: vm.headerTitleErrorMessage,
-            selectedCriteria: vm.selectedCriteria,
+            selectedMethod: vm.selectedMethod,
             showSplitResultBox: vm.showSplitResultBox,
             manualSplitItemsLength: vm.manualSplitItems.length,
           ),
       builder: (context, data, _) {
         final headerTitleErrorMessage = data.headerTitleErrorMessage;
-        final selectedCriteria = data.selectedCriteria;
+        final selectedMethod = data.selectedMethod;
         final vmShowSplitResultBox = data.showSplitResultBox;
-        final vm = context.read<SplitUtxoViewModel>();
+        final vm = context.read<UtxoSplitViewModel>();
         final focusNodes = [
           vm.amountFocusNode,
           vm.splitCountFocusNode,
@@ -1283,7 +1278,7 @@ class _HeaderTitleErrorText extends StatelessWidget {
 
             if (headerTitleErrorMessage == null || headerTitleErrorMessage.isEmpty) {
               double height = 20;
-              if (selectedCriteria == SplitCriteria.manually) {
+              if (selectedMethod == SplitMethod.manually) {
                 final isResultBoxActuallyVisible = vmShowSplitResultBox && !isFocused;
                 height = isResultBoxActuallyVisible ? 16 : 24;
               }
@@ -1436,7 +1431,7 @@ class _SplitResultReadyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SplitUtxoViewModel, ({String splitSummaryTitle, String? splitOutputText, String previewFeeText})>(
+    return Selector<UtxoSplitViewModel, ({String splitSummaryTitle, String? splitOutputText, String previewFeeText})>(
       selector:
           (_, vm) => (
             splitSummaryTitle: vm.splitSummaryTitle,
@@ -1689,7 +1684,7 @@ class DashedBorderPainter extends CustomPainter {
 class _ManualSplitListItem extends StatefulWidget {
   final int index;
   final ManualSplitItem item;
-  final SplitUtxoViewModel viewModel;
+  final UtxoSplitViewModel viewModel;
   final ValueChanged<bool> onDeleteButtonVisibilityChanged;
 
   const _ManualSplitListItem({

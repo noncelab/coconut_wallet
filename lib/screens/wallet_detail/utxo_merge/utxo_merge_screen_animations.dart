@@ -1,6 +1,6 @@
-part of 'merge_utxos_screen.dart';
+part of 'utxo_merge_screen.dart';
 
-extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
+extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
   void _scheduleHeaderAnimation(UtxoMergeStep step) {
     if (!_viewModel.isAnimatedHeaderStep(step) || _lastObservedHeaderStep == step) return;
     _lastObservedHeaderStep = step;
@@ -60,7 +60,7 @@ extension _MergeUtxosScreenAnimationsExtension on _MergeUtxosScreenState {
       _isHeaderFadingOut = true;
     });
 
-    Future.delayed(_MergeUtxosScreenState._headerAnimationDuration, () {
+    Future.delayed(_UtxoMergeScreenState._headerAnimationDuration, () {
       if (!mounted || token != _headerAnimationNonce) return;
 
       _setScreenState(() {

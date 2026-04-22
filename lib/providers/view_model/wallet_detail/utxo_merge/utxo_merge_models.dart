@@ -1,4 +1,4 @@
-part of 'merge_utxos_view_model.dart';
+part of 'utxo_merge_view_model.dart';
 
 class ReceiveAddressOption {
   final String address;
