@@ -926,19 +926,17 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                           borderRadius: 8,
                           child: Container(
                             alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            constraints: const BoxConstraints(minWidth: 47),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               border: Border.all(color: CoconutColors.gray700),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            width: 47,
                             height: 24,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                currentUnit.displayBitcoinAmount(sats, withUnit: false),
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                              ),
+                            child: Text(
+                              currentUnit.displayBitcoinAmount(sats, withUnit: false),
+                              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         );
@@ -1143,12 +1141,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     borderRadius: 8,
                     child: Container(
                       alignment: Alignment.center,
+                      constraints: const BoxConstraints(minWidth: 47),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
                         border: Border.all(color: CoconutColors.gray700),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      width: 47,
                       height: 24,
                       child: Text('$count', style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
                     ),
