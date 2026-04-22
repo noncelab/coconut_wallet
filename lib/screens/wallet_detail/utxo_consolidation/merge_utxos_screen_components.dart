@@ -71,10 +71,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                           )
                           : PrimaryScrollController(
                             controller: scrollController!,
-                            child: KeyedSubtree(
-                              key: ValueKey(selectedTabIndex),
-                              child: tabs[selectedTabIndex].child,
-                            ),
+                            child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
                           ),
                 ),
               ],
@@ -420,6 +417,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
                   child: Stack(
                     children: [
                       SingleChildScrollView(
+                        controller: widget.scrollController,
                         child: Column(
                           children: [
                             CoconutLayout.spacing_300h,
@@ -557,61 +555,64 @@ class _SelectedUtxoDetailCard extends StatelessWidget {
         final arrowLeft = cardCenter - 10;
         final cardWidth = baseWidth + (horizontalOverflow * 2);
 
-        return SizedBox(
-          width: baseWidth,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 1),
-                child: SizedBox(
-                  width: cardWidth,
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                    decoration: const BoxDecoration(
-                      color: CoconutColors.black,
-                      border: Border.symmetric(horizontal: BorderSide(color: CoconutColors.gray800, width: 1)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${timestamp[0]} | ${timestamp[1]}',
-                          style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
-                        ),
-                        const SizedBox(height: 2),
-                        _buildHighlightedSegwitAddressText(
-                          address: utxo.to,
-                          baseStyle: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
-                          highlightedStyle: CoconutTypography.body2_14.setColor(CoconutColors.white),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(utxo.derivationPath, style: CoconutTypography.body2_14.setColor(CoconutColors.gray500)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: -8.3,
-                left: arrowLeft,
-                child: Transform.rotate(
-                  angle: 0.78539816339,
-                  child: Container(
-                    width: 20,
-                    height: 20,
-                    decoration: const BoxDecoration(
-                      color: CoconutColors.black,
-                      border: Border(
-                        top: BorderSide(color: CoconutColors.gray800),
-                        left: BorderSide(color: CoconutColors.gray800),
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: SizedBox(
+            width: baseWidth,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: SizedBox(
+                    width: cardWidth,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                      decoration: const BoxDecoration(
+                        color: CoconutColors.black,
+                        border: Border.symmetric(horizontal: BorderSide(color: CoconutColors.gray800, width: 1)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${timestamp[0]} | ${timestamp[1]}',
+                            style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                          ),
+                          const SizedBox(height: 2),
+                          _buildHighlightedSegwitAddressText(
+                            address: utxo.to,
+                            baseStyle: CoconutTypography.body2_14.setColor(CoconutColors.gray500),
+                            highlightedStyle: CoconutTypography.body2_14.setColor(CoconutColors.white),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(utxo.derivationPath, style: CoconutTypography.body2_14.setColor(CoconutColors.gray500)),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                Positioned(
+                  top: -8.3,
+                  left: arrowLeft,
+                  child: Transform.rotate(
+                    angle: 0.78539816339,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: CoconutColors.black,
+                        border: Border(
+                          top: BorderSide(color: CoconutColors.gray800),
+                          left: BorderSide(color: CoconutColors.gray800),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
