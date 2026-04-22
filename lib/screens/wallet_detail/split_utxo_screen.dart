@@ -605,8 +605,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
           children: [
             CoconutOptionPicker(
               label: criteria != null ? t.split_utxo_screen.label_split_criteria : null,
-              text: criteria?.getLabel(t) ?? t.split_utxo_screen.placeholder_criteria,
-              textColor: criteria != null ? CoconutColors.white : CoconutColors.gray500,
+              text: criteria?.getLabel(t) ?? t.split_utxo_screen.criteria_bottom_sheet.split_by_amount,
+              textColor: CoconutColors.white,
               onTap: () => _showSplitCriteriaBottomSheet(context, viewModel),
             ),
             CoconutLayout.spacing_1000h,
@@ -1188,7 +1188,8 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
       title: t.split_utxo_screen.criteria_bottom_sheet.title,
       items: SplitCriteria.values,
       getItemId: (item) => item.name,
-      initiallySelectedId: viewModel.selectedCriteria?.name,
+      initiallySelectedId: viewModel.selectedCriteria?.name ?? SplitCriteria.byAmount.name,
+      allowConfirmWhenSelectionUnchanged: viewModel.selectedCriteria == null,
       initialChildSize: 0.5,
       confirmText: t.done,
       minChildSize: 0.49,
