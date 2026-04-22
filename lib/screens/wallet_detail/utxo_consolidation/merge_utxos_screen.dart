@@ -966,7 +966,7 @@ class _MergeUtxosScreenState extends State<MergeUtxosScreen> with SingleTickerPr
         return t.merge_utxos_screen.amount_criteria_bottomsheet.below_00001;
       case UtxoAmountCriteria.custom:
         if (_viewModel.customAmountCriteriaText != null && _viewModel.customAmountCriteriaText!.isNotEmpty) {
-          return '${_formatCustomAmountText(_viewModel.customAmountCriteriaText!)} ${t.btc} ${_viewModel.isCustomAmountLessThan ? t.merge_utxos_screen.amount_criteria_bottomsheet.less_than : t.merge_utxos_screen.amount_criteria_bottomsheet.or_less}';
+          return '${_viewModel.isCustomAmountLessThan ? '${t.merge_utxos_screen.amount_criteria_bottomsheet.less_than} ' : ''}${_formatCustomAmountText(_viewModel.customAmountCriteriaText!)}${t.btc} ${_viewModel.isCustomAmountLessThan ? '' : ' ${t.merge_utxos_screen.amount_criteria_bottomsheet.or_less}'}';
         }
         return t.merge_utxos_screen.amount_criteria_bottomsheet.custom;
     }

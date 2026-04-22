@@ -791,7 +791,7 @@ merge_utxos_screen:
   receive_address: "Receiving Address"
   summary_card_headline: "${count} UTXOs (${amount_range})"
   summary_card_headline_or_less: "${amount} or less"
-  summary_card_headline_under: "under ${amount}"
+  summary_card_headline_under: "less than ${amount}"
   summary_card_total: "\ntotaling ${amount},"
   summary_card_destination: "\nwill be merged into ${destination}."
   summary_card_to_wallet_destination: "a new address in ${wallet_name}"
