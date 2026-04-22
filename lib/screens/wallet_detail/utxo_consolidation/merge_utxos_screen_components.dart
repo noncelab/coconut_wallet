@@ -71,10 +71,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
                           )
                           : PrimaryScrollController(
                             controller: scrollController!,
-                            child: KeyedSubtree(
-                              key: ValueKey(selectedTabIndex),
-                              child: tabs[selectedTabIndex].child,
-                            ),
+                            child: KeyedSubtree(key: ValueKey(selectedTabIndex), child: tabs[selectedTabIndex].child),
                           ),
                 ),
               ],
