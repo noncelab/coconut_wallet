@@ -28,6 +28,7 @@ import 'package:coconut_wallet/widgets/card/animated_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/ripple_effect.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
 
 import '../../utils/logger.dart';
 
@@ -372,8 +373,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     );
                   },
                 ),
-                MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                FixedTextScale(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [_buildHeaderTitle(), _buildVisibleOptionPickers(context)],
@@ -892,9 +892,9 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
               placeholderText: t.split_utxo_screen.placeholder_split_amount,
               maxLines: 1,
               unfocusOnTapOutside: true,
-              padding: const EdgeInsets.only(left: 4, right: 4, top: 8, bottom: 4),
+              padding: const EdgeInsets.only(left: 4, right: 4, top: 6, bottom: 6),
               suffix: Padding(
-                padding: const EdgeInsets.only(top: 4, right: 4),
+                padding: const EdgeInsets.only(right: 4),
                 child: Text(data.unitSymbol, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
               ),
             );
@@ -1157,8 +1157,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
         maxChildSize: 0.9,
         initialChildSize: 0.6,
         childBuilder:
-            (scrollController) => MediaQuery(
-              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+            (scrollController) => FixedTextScale(
               child: UtxoSelectionScreen(
                 selectedUtxoList: viewModel.selectedUtxoList,
                 walletId: widget.id,
@@ -1385,8 +1384,7 @@ class _SplitResultContentState extends State<_SplitResultContent> with SingleTic
       return const SizedBox.shrink();
     }
 
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+    return FixedTextScale(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
