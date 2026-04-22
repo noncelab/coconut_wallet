@@ -275,6 +275,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
           _SectionSummaryHeader(
             utxoCount: section.utxos.length,
             leading: Wrap(spacing: 4, runSpacing: 8, children: section.tags.map(_buildTagChip).toList()),
+            countTopPadding: 6,
           ),
           CoconutLayout.spacing_400h,
           Column(
@@ -313,6 +314,7 @@ class _SelectedUtxosPreviewBottomSheetBodyState extends State<_SelectedUtxosPrev
               baseStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
               highlightedStyle: CoconutTypography.body3_12_Number.setColor(CoconutColors.white),
             ),
+            countTopPadding: 1,
           ),
           CoconutLayout.spacing_400h,
           Column(
@@ -621,12 +623,14 @@ class _SectionSummaryHeader extends StatelessWidget {
   final int utxoCount;
   final EdgeInsetsGeometry padding;
   final bool showGradient;
+  final double countTopPadding;
 
   const _SectionSummaryHeader({
     required this.leading,
     required this.utxoCount,
     this.padding = const EdgeInsets.fromLTRB(0, 4, 12, 4),
     this.showGradient = true,
+    this.countTopPadding = 0,
   });
 
   @override
@@ -644,16 +648,21 @@ class _SectionSummaryHeader extends StatelessWidget {
             colors: [showGradient ? Colors.transparent : CoconutColors.gray800, CoconutColors.gray800],
           ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: leading),
-            CoconutLayout.spacing_400w,
-            Text(
-              t.merge_utxos_screen.count(n: utxoCount, count: utxoCount),
-              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-            ),
-          ],
+        child: FixedTextScale(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: leading),
+              CoconutLayout.spacing_400w,
+              Padding(
+                padding: EdgeInsets.only(top: countTopPadding),
+                child: Text(
+                  t.merge_utxos_screen.count(n: utxoCount, count: utxoCount),
+                  style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
