@@ -95,7 +95,7 @@ dependencies:
   coconut_design_system:
     git:
       url: https://github.com/noncelab/coconut_design_system.git
-      ref: main
+      ref: feat/coconut-option-picker
 
 dev_dependencies:
   flutter_oss_licenses: ^3.0.2
@@ -238,6 +238,7 @@ flutter:
     - assets/lottie/swipe-left.json
     - assets/lottie/online-offline-switch.json
     - assets/lottie/fireworks.json
+    - assets/lottie/three-stars-growing.json
     - assets/images/hand-with-laid-heart.png
     - assets/images/pow-full-logo.jpg
     - assets/images/x-logo.jpg
@@ -314,9 +315,12 @@ flutter:
     - assets/svg/search-not-found.svg
     - assets/svg/remove-minus.svg
     - assets/svg/send-plane.svg
+    - assets/svg/receive-plane.svg
     - assets/svg/bitcoin.svg
     - assets/svg/wallet-outlined.svg
     - assets/svg/pie.svg
+    - assets/svg/merge-utxos.svg
+    - assets/svg/split-utxo.svg
     - assets/svg/dust.svg
 
   fonts:

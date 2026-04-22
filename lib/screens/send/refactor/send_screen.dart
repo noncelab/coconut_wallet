@@ -19,13 +19,13 @@ import 'package:coconut_wallet/screens/send/refactor/utxo_selection_screen.dart'
 import 'package:coconut_wallet/screens/wallet_detail/address_list_screen.dart';
 import 'package:coconut_wallet/styles.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
-import 'package:coconut_wallet/utils/text_field_filter_util.dart';
+import 'package:coconut_wallet/utils/fee_rate_mixin.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info_screen.dart';
-import 'package:coconut_wallet/widgets/body/address_qr_scanner_body.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_tap_wrapper.dart';
@@ -39,7 +39,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tuple/tuple.dart';
@@ -112,8 +111,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   late bool hasSeenAddRecipientCard;
   bool _isLeftDragGuideViewVisible = false;
 
-  MobileScannerController? _qrViewController;
-  bool _isQrDataHandling = false;
   String _previousAmountText = "";
 
   bool get _hasKeyboard => _amountFocusNode.hasFocus || _feeRateFocusNode.hasFocus || _isAddressFocused;
@@ -1040,22 +1037,17 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                     height: 30,
                     padding: const EdgeInsets.only(left: 12, right: 2),
                     onChanged: (text) {
-                      if (text == "-") return;
-                      String formattedText = filterNumericInput(text, integerPlaces: 8, decimalPlaces: 2);
-                      double? parsedFeeRate = double.tryParse(formattedText);
-
-                      if ((formattedText != '0' && formattedText != '0.' && formattedText != '0.0') &&
-                          (parsedFeeRate != null && parsedFeeRate < 0.1)) {
+                      final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
+                        _feeRateController.text = formattedText;
+                        _viewModel.setFeeRateText(formattedText);
+                      });
+                      if (isTooLow) {
                         Fluttertoast.showToast(
                           msg: t.send_screen.fee_rate_too_low,
                           backgroundColor: CoconutColors.gray700,
                           toastLength: Toast.LENGTH_SHORT,
                         );
-                        _feeRateController.text = '0.';
-                        return;
                       }
-                      _feeRateController.text = formattedText;
-                      _viewModel.setFeeRateText(formattedText);
                     },
                     maxLines: 1,
                     fontFamily: 'SpaceGrotesk',
@@ -1447,7 +1439,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         _setDropdownMenuVisiblility(false);
                         bool needToValidateAllFields = true;
                         if (controller.text.isEmpty) {
-                          final String? scannedData = await _showAddressScanner(index);
+                          final String? scannedData = await showAddressScannerBottomSheet(context, title: t.send);
+                          if (scannedData != null) {
+                            _applyIncomingBitcoinUri(scannedData, index);
+                          }
                           if (scannedData == null) {
                             needToValidateAllFields = false;
                           }
@@ -1880,77 +1875,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     );
   }
 
-  void _onDetect(BarcodeCapture capture) {
-    final codes = capture.barcodes;
-    if (codes.isEmpty) return;
-
-    final barcode = codes.first;
-    if (barcode.rawValue == null) return;
-
-    final scanData = barcode.rawValue;
-
-    if (_isQrDataHandling || scanData == null || scanData.isEmpty) {
-      return;
-    }
-
-    _isQrDataHandling = true;
-
-    final validationResult = _viewModel.validateScannedAddress(scanData);
-    if (mounted) {
-      if (validationResult == null) {
-        Navigator.pop(context, scanData);
-      } else {
-        CoconutToast.showToast(isVisibleIcon: true, context: context, text: validationResult.message);
-      }
-
-      _isQrDataHandling = false;
-    }
-  }
-
-  Future<String?> _showAddressScanner(int index) async {
-    final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-    final String? scannedData = await CommonBottomSheets.showBottomSheet_100(
-      context: context,
-      child: Builder(
-        builder:
-            (sheetContext) => Scaffold(
-              backgroundColor: CoconutColors.black,
-              appBar: CoconutAppBar.build(
-                title: t.send,
-                context: sheetContext,
-                actionButtonList: [
-                  IconButton(
-                    icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),
-                    color: CoconutColors.white,
-                    onPressed: () {
-                      _qrViewController?.switchCamera();
-                    },
-                  ),
-                ],
-                onBackPressed: () {
-                  _clearQrScanController();
-                  Navigator.of(sheetContext).pop<String?>(null);
-                },
-              ),
-              body: AddressQrScannerBody(
-                qrKey: qrKey,
-                onDetect: _onDetect,
-                setMobileScannerController: (controller) {
-                  _qrViewController = controller;
-                },
-              ),
-            ),
-      ),
-    );
-
-    if (scannedData != null) {
-      _applyIncomingBitcoinUri(scannedData, index);
-    }
-    _clearQrScanController();
-
-    return scannedData;
-  }
-
   void _applyIncomingBitcoinUri(String scannedData, int index) {
     if (scannedData.startsWith('bitcoin:')) {
       final bip21Data = parseBip21Uri(scannedData);
@@ -1971,12 +1895,6 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     final normalized = normalizeAddress(scannedData);
     _addressControllerList[index].text = normalized;
     _viewModel.setAddressText(normalized, index);
-  }
-
-  void _clearQrScanController() {
-    // dispose는 MobileScanner에서 함 (or error occurred)
-    //_qrViewController?.dispose();
-    _qrViewController = null;
   }
 
   void _recipientPageListener() {
@@ -2217,5 +2135,3 @@ class FinalButtonMessage {
 
   FinalButtonMessage({required this.textColor, required this.message});
 }
-
-enum RecommendedFeeFetchStatus { fetching, succeed, failed }

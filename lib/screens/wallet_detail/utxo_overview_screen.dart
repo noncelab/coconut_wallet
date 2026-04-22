@@ -516,15 +516,8 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> {
 
     final lockFilter = _selectionBarExiting ? _lastLockFilterForBar : _lockFilterIndex;
     final isLockedFilter = lockFilter == 1;
-    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return BottomActionBar(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: _selectionBarTopPadding + bottomInset,
-        bottom: _selectionBarInnerBottomPadding + bottomInset,
-      ),
       child:
           _isByAmount
               ? (isLockedFilter

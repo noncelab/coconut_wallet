@@ -365,6 +365,7 @@ class UtxoCoinCard extends StatefulWidget {
   final int dustThreshold;
   final bool isAddressReused;
   final bool isSuspiciousDust;
+  final bool showSelectedCheckIcon;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -380,6 +381,7 @@ class UtxoCoinCard extends StatefulWidget {
     required this.dustThreshold,
     this.isAddressReused = false,
     this.isSuspiciousDust = false,
+    this.showSelectedCheckIcon = true,
     required this.onTap,
     this.onLongPress,
   });
@@ -468,7 +470,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
     final cardHeight = isBill ? widget.size * 0.85 : widget.size;
     final tierTheme = context.watch<PreferenceProvider>().utxoTierTheme;
     final bucketCol = tierTheme.colorForSats(widget.utxo.amount, dustThreshold: widget.dustThreshold);
-    final bgColor = widget.isFocused ? bucketCol : Color.lerp(const Color(0xFF1A1A1A), bucketCol, 0.68)!;
+    final bgColor = widget.isFocused ? bucketCol : Color.lerp(CoconutColors.black, bucketCol, 0.68)!;
     final iconColor = bgColor;
     final shadowBlur = widget.isFocused ? 16.0 : 6.0;
     final innerStrokeColor =
@@ -579,7 +581,7 @@ class _UtxoCoinCardState extends State<UtxoCoinCard> {
                         )
                         : ClipOval(child: Container(color: CoconutColors.black.withValues(alpha: 0.5))),
               ),
-            if (widget.isSelected)
+            if (widget.isSelected && widget.showSelectedCheckIcon)
               Positioned(
                 top: isLarge ? 6 : 4,
                 right: isLarge ? 6 : 4,

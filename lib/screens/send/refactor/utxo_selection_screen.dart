@@ -13,7 +13,7 @@ import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/card/locked_utxo_item_card.dart';
 import 'package:coconut_wallet/widgets/card/selectable_utxo_item_card.dart';
-import 'package:coconut_wallet/widgets/overlays/network_error_tooltip.dart';
+import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
 import 'package:coconut_wallet/widgets/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +25,7 @@ class UtxoSelectionScreen extends StatefulWidget {
   final BitcoinUnit currentUnit;
   final ScrollController? scrollController;
   final bool showSkipButton;
+  final bool isSplitMode;
 
   const UtxoSelectionScreen({
     super.key,
@@ -33,6 +34,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     required this.walletId,
     this.scrollController,
     this.showSkipButton = false,
+    this.isSplitMode = false,
   });
 
   @override
@@ -55,10 +57,13 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   final GlobalKey _orderDropdownButtonKey = GlobalKey();
   final GlobalKey _dropdownLayerKey = GlobalKey();
   bool _isOrderDropdownVisible = false; // 필터 드롭다운
-  late Offset _orderDropdownButtonPosition;
+  double _dropdownTop = 0;
+  double? _dropdownLeft;
+  double? _dropdownRight;
 
   @override
   Widget build(BuildContext context) {
+    String titleText = widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title;
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
@@ -82,7 +87,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     backgroundColor: CoconutColors.black,
                     appBar: CoconutAppBar.build(
                       backgroundColor: CoconutColors.black,
-                      title: t.utxo_selection_screen.title,
+                      customTitle: Text(
+                        titleText,
+                        style:
+                            widget.isSplitMode
+                                ? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)
+                                : CoconutTypography.body2_14.setColor(CoconutColors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                       context: context,
                       actionButtonList: [
                         if (widget.showSkipButton)
@@ -111,23 +125,54 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                 maintainState: false,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
-                                  child: NetworkErrorTooltip(isNetworkOn: viewModel.isNetworkOn),
+                                  child: ErrorTooltip(
+                                    isShown: !viewModel.isNetworkOn,
+                                    errorMessage: t.errors.network_error,
+                                  ),
                                 ),
                               ),
-                              SelectedUtxoAmountHeader(
-                                orderDropdownButtonKey: _orderDropdownButtonKey,
-                                orderText: _viewModel.utxoOrder.text,
-                                selectedUtxoCount: viewModel.selectedUtxoList.length,
-                                selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
-                                currentUnit: widget.currentUnit,
-                                onSelectAll: _selectAll,
-                                onUnselectAll: _deselectAll,
-                                onToggleOrderDropdown: () {
-                                  setState(() {
-                                    _isOrderDropdownVisible = !_isOrderDropdownVisible;
-                                  });
-                                },
-                              ),
+                              if (!widget.isSplitMode)
+                                SelectedUtxoAmountHeader(
+                                  orderDropdownButtonKey: _orderDropdownButtonKey,
+                                  orderText: _viewModel.utxoOrder.text,
+                                  selectedUtxoCount: viewModel.selectedUtxoList.length,
+                                  selectedUtxoAmountSum: viewModel.selectedUtxoAmountSum,
+                                  currentUnit: widget.currentUnit,
+                                  onSelectAll: _selectAll,
+                                  onUnselectAll: _deselectAll,
+                                  onToggleOrderDropdown: () {
+                                    setState(() {
+                                      _isOrderDropdownVisible = !_isOrderDropdownVisible;
+                                    });
+                                  },
+                                )
+                              else
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 16.0, bottom: 12.0, top: 4.0),
+                                  child: Align(
+                                    alignment: Alignment.centerRight,
+                                    child: GestureDetector(
+                                      key: _orderDropdownButtonKey,
+                                      onTap: () {
+                                        setState(() {
+                                          _isOrderDropdownVisible = !_isOrderDropdownVisible;
+                                        });
+                                      },
+                                      behavior: HitTestBehavior.opaque,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            _viewModel.utxoOrder.text,
+                                            style: CoconutTypography.caption_10.setColor(CoconutColors.gray400),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          const Icon(Icons.keyboard_arrow_down, color: CoconutColors.gray400, size: 16),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               _buildUtxoTagList(viewModel),
                               Expanded(
                                 child:
@@ -140,7 +185,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                                 vibrateLight();
                                                 Navigator.pop(context, _viewModel.selectedUtxoList);
                                               },
-                                              text: t.complete,
+                                              text: t.done,
                                               isActive: _viewModel.hasSelectionChanged,
                                               showGradient: true,
                                               horizontalPadding: 16,
@@ -186,7 +231,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
         Provider.of<PreferenceProvider>(context, listen: false),
         Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
         widget.walletId,
-      );
+      )..isSplitMode = widget.isSplitMode;
 
       _scrollController.addListener(() {
         if (_isOrderDropdownVisible) {
@@ -197,6 +242,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
           _viewModel.initialize(widget.selectedUtxoList);
+          if (widget.isSplitMode) {
+            _viewModel.changeUtxoOrder(UtxoOrder.byAmountDesc);
+          }
         }
 
         _updateOrderDropdownButtonPosition();
@@ -237,10 +285,19 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     final dropdownLayerRenderBox = dropdownLayerContext.findRenderObject();
     if (buttonRenderBox is! RenderBox || dropdownLayerRenderBox is! RenderBox) return;
 
-    _orderDropdownButtonPosition = buttonRenderBox.localToGlobal(
-      Offset(0, buttonRenderBox.size.height),
-      ancestor: dropdownLayerRenderBox,
-    );
+    final topLeft = buttonRenderBox.localToGlobal(Offset.zero, ancestor: dropdownLayerRenderBox);
+
+    _dropdownTop = topLeft.dy + buttonRenderBox.size.height + 4;
+    final layerWidth = dropdownLayerRenderBox.size.width;
+    final buttonRight = topLeft.dx + buttonRenderBox.size.width;
+
+    if (topLeft.dx > layerWidth / 2) {
+      _dropdownRight = layerWidth - buttonRight;
+      _dropdownLeft = null;
+    } else {
+      _dropdownLeft = topLeft.dx;
+      _dropdownRight = null;
+    }
   }
 
   void _selectAll() {
@@ -296,11 +353,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   Widget _buildUtxoOrderDropdown(UtxoSelectionViewModel viewModel) {
     if (_isOrderDropdownVisible && viewModel.confirmedUtxoList.isNotEmpty) {
-      return Positioned(
-        top: _orderDropdownButtonPosition.dy,
-        left: _orderDropdownButtonPosition.dx,
-        child: _utxoOrderDropdownMenu(),
-      );
+      return Positioned(top: _dropdownTop, left: _dropdownLeft, right: _dropdownRight, child: _utxoOrderDropdownMenu());
     }
 
     return Container();
@@ -329,7 +382,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return ListView.separated(
       key: ValueKey(viewModel.selectedUtxoTagName),
       controller: _scrollController,
-      padding: const EdgeInsets.only(top: 0, bottom: 80, left: 16, right: 16),
+      padding: const EdgeInsets.only(top: 0, bottom: 100, left: 16, right: 16),
       itemCount: filteredUtxoList.length,
       separatorBuilder: (context, index) => const SizedBox(height: 0),
       itemBuilder: (context, index) {
@@ -347,16 +400,24 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
           );
         }
 
+        final bool isDisabledForSplit = widget.isSplitMode && utxo.amount < 1000;
+
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
-          child: SelectableUtxoItemCard(
-            key: ValueKey(utxo.utxoId),
-            currentUnit: widget.currentUnit,
-            utxo: utxo,
-            isSelectable: true,
-            isSelected: viewModel.selectedUtxoIdSet.contains(utxo.utxoId),
-            utxoTags: viewModel.utxoTagMap[utxo.utxoId],
-            onSelected: _toggleSelection,
+          child: IgnorePointer(
+            ignoring: isDisabledForSplit,
+            child: Opacity(
+              opacity: isDisabledForSplit ? 0.4 : 1.0,
+              child: SelectableUtxoItemCard(
+                key: ValueKey(utxo.utxoId),
+                currentUnit: widget.currentUnit,
+                utxo: utxo,
+                isSelectable: true,
+                isSelected: viewModel.selectedUtxoIdSet.contains(utxo.utxoId),
+                utxoTags: viewModel.utxoTagMap[utxo.utxoId],
+                onSelected: _toggleSelection,
+              ),
+            ),
           ),
         );
       },

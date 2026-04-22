@@ -365,19 +365,11 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
   }
 
   Widget _buildSelectionButtons() {
-    final double bottomPadding = MediaQuery.of(context).padding.bottom;
-
     return Consumer<UtxoListViewModel>(
       builder: (context, vm, _) {
         final hasLockedUtxo = vm.selectedUtxoList.any((utxo) => utxo.status == UtxoStatus.locked);
 
         return BottomActionBar(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 40 + bottomPadding,
-            bottom: bottomPadding > 0 ? bottomPadding : 16,
-          ),
           child: Row(
             children: [
               Expanded(
@@ -465,7 +457,7 @@ class _UtxoListScreenState extends State<UtxoListScreen> {
       buttonLayout: BottomActionButtonLayout.vertical,
       iconSize: 24,
       spacing: 4,
-      textStyle: const TextStyle(color: CoconutColors.gray100, fontSize: 12, fontWeight: FontWeight.bold),
+      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
     );
   }
 

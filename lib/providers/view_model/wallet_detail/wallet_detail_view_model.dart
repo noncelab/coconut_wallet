@@ -5,6 +5,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_address.dart';
@@ -81,6 +82,9 @@ class WalletDetailViewModel extends ChangeNotifier {
 
   late int _balance;
   int get balance => _balance;
+
+  int get utxoCount => _walletProvider.getUtxoList(_walletId).length;
+  int get availableUtxoCount => _walletProvider.getUtxoListByStatus(_walletId, UtxoStatus.unspent).length;
 
   int _receivingAmount = 0;
   int _sendingAmount = 0;
@@ -161,9 +165,9 @@ class WalletDetailViewModel extends ChangeNotifier {
   String? get masterFingerprint =>
       isMultisigWallet ? null : (_walletListBaseItem.walletBase as SingleSignatureWallet).keyStore.masterFingerprint;
 
-  String _bitcoinPriceKrwInString = '';
+  String _fiatPriceString = '';
 
-  String get bitcoinPriceKrwInString => _bitcoinPriceKrwInString;
+  String get fiatPriceString => _fiatPriceString;
 
   bool isTransactionSuspicious(TransactionRecord tx) => _walletProvider.isTransactionSuspicious(tx);
 
@@ -176,7 +180,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   }
 
   void _updateBitcoinPrice() {
-    _bitcoinPriceKrwInString = _priceProvider.getFiatPrice(_balance);
+    _fiatPriceString = _priceProvider.getFiatPrice(_balance);
     notifyListeners();
   }
 

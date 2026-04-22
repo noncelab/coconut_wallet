@@ -52,7 +52,7 @@ tutorial: "Tutorial"
 settings: "Settings"
 app_settings: "App Settings"
 home_screen_settings: "Home Settings"
-tx_list: "Transaction History"
+tx_list: "Transactions"
 utxo_list: "UTXO List"
 wallet_id: "Wallet ID"
 tag_manage: "Tag Management"
@@ -64,7 +64,7 @@ block_num: "Block Number"
 inquiry_details: "Inquiry"
 utxo_total: "Amount"
 receiver: "Send To"
-estimated_fee: "Est. Fee"
+estimated_fee: "Estimated Fee"
 total_cost: "Total Cost"
 input_directly: "Fee Rate"
 mnemonic_wordlist: "Mnemonic Wordlist"
@@ -103,6 +103,9 @@ log_viewer: "Log Viewer"
 go_to_settings: "Go to Settings"
 name: "Name"
 account: "Account"
+merge_utxos: "Merge"
+split_utxo: "Split"
+apply: "Apply"
 
 relative_time:
   just_now: "Just now"
@@ -116,7 +119,7 @@ relative_time:
 apply_item: "$count items"
 fee_sats: " ($value sat/vB)"
 utxo_count: "($count items)"
-total_item_count: "(Total $count items)"
+total_item_count: "($count items)"
 
 view_app_info: "App Info"
 view_tx_details: "Transaction"
@@ -756,6 +759,110 @@ transaction_fee_bumping_screen:
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 
+merge_utxos_screen:
+  title: "Merge UTXOs"
+  not_enough_utxos: "Not enough UTXOs to merge right now"
+  efficient_utxo_state: "You currently have ${count} UTXOs\nIt’s already efficient right now"
+  merge_anyway: "Merge anyway"
+  select_merge_criteria: "How would you like to merge?"
+  select_amount_criteria: "Which amount range would you like to merge?"
+  select_tag: "Select a Tag"
+  select_tag_bottomsheet_title: "Select Tag"
+  selected_tag: "Selected Tag"
+  merge_criteria: "Merge Method"
+  merge_criteria_bottomsheet:
+    title: "Select Merge Method"
+    merge_small_amounts: "Merge smaller UTXOs"
+    merge_same_tag: "Merge UTXOs with the same tag"
+    merge_same_address: "Merge UTXOs from the same address"
+  amount_criteria: "Amount Range"
+  amount_criteria_bottomsheet:
+    title: "Select Amount Range"
+    recommendation_criteria: "Recommended"
+    below_001: "Up to 0.01 BTC"
+    below_001_description: "Include more UTXOs"
+    below_0001: "Up to 0.001 BTC"
+    below_0001_description: "Merge smaller UTXOs (Recommended)"
+    below_00001: "Up to 0.0001 BTC"
+    below_00001_description: "Merge fewer UTXOs"
+    or_less: "or less"
+    less_than: "less than"
+    custom: "Custom"
+  receive_address: "Receiving Address"
+  summary_card_headline: "${count} UTXOs (${amount_range})"
+  summary_card_headline_or_less: "${amount} or less"
+  summary_card_headline_under: "under ${amount}"
+  summary_card_total: "\ntotaling ${amount},"
+  summary_card_destination: "\nwill be merged into ${destination}."
+  summary_card_to_wallet_destination: "a new address in ${wallet_name}"
+  summary_card_to_unowned_address_destination: "an address not found in your wallets"
+  summary_card_to_selected_address_destination: "the selected address"
+  used_utxos_count: "${used} of ${total} used"
+  receive_address_bottomsheet:
+    title: "Receiving Address"
+    my_address: "My Addresses"
+    custom: "Enter Manually"
+    not_your_owned_wallet: "This address was not found in your wallets"
+  tag_criteria: "Tag Criteria"
+  count:
+    one: "${count} UTXO"
+    other: "${count} UTXOs"
+  selected_tag_title: "#${name} Tag"
+  reused_address: "Reused Addresses"
+  dust_warning: "UTXOs suspected of a dust attack are included"
+  exclude_dust: "Exclude"
+  fee_rate_input_placeholder: "Please enter a fee rate."
+  no_utxos_for_amount_criteria: "There are no UTXOs matching this range."
+  single_utxo_for_amount_criteria: "Only 1 UTXO matches this range, so it cannot be merged."
+  future_fee_saving: "Merging now could save about ${amount} sats"
+  merge_cta_neutral_low_saving: "Merging now would not save much on fees"
+  merge_cta_efficient_without_merge: "It’s already efficient enough without merging"
+  merge_cta_high_fee_ratio: "The fee share is high (${ratio}%)"
+  merge_cta_discouraged_high_fee: "The current fee rate is too high to merge now"
+  merge_cta_discouraged_costly: "The cost to merge is higher than the fees you would save"
+  exception:
+    fee_too_high: "The fee is too high"
+
+split_utxo_screen:
+  title: "Split UTXO"
+  placeholder_utxo: "Select a UTXO"
+  placeholder_criteria: "Choose a split method"
+  placeholder_split_amount: "Enter amount"
+  placeholder_estimated_fee: "Enter fee rate"
+  question_select_utxo: "Which UTXO would you like to split?"
+  question_select_criteria: "How would you like to split it?"
+  question_split_by_amount: "How much per split?"
+  question_split_evenly: "Into how many parts?"
+  label_split_criteria: "Split Method"
+  label_selected_utxo: "Selected UTXO"
+  label_estimated_fee: "Estimated Fee"
+  add_new_amount: "Add amount"
+  and_more_tags: "and ${count} more"
+  utxo_error: "This UTXO is too small to split"
+  utxo_warning: "The fee ratio is high, so splitting may not be efficient"
+  amount_error:
+    amount_too_large: "Enter an amount smaller than the selected UTXO"
+    insufficient_after_fee: "This amount is too big when the fee is included"
+    manual_sum_over_input: "Insufficient amount"
+  fee_error: "The fee is greater than the UTXO amount"
+  dust_error: "Splitting will create a small amount (dust)"
+  criteria_bottom_sheet:
+    title: "Select split method"
+    split_by_amount: "Split by fixed amount"
+    split_evenly: "Split evenly"
+    split_manually: "Split by custom amounts"
+  expected_result:
+    split_by_amount: "We’ll split ${utxoAmountText} into ${formattedSplitAmount} each"
+    split_evenly: "We’ll split ${utxoAmountText} into ${splitCount} equal parts"
+    split_manually: "We’ll split ${utxoAmountText} into the amounts below"
+    new_utxos: "New UTXOs"
+    fee: "Fee"
+    above_is_expected: "The result above is an estimate"
+  big_tx_confirm:
+    create: "Create"
+    preview: "Preview"
+    description: "This split creates many outputs, so creating the transaction may take some time. Preview the result first?"
+
 # lib/widgets/card
 wallet_list_add_guide_card:
   add_watch_only: "Try adding a watch-only wallet!"
@@ -865,6 +972,7 @@ errors:
   transaction_draft:
     invalid_id: "Cannot find transaction draft"
   empty_input: "Could not fetch transaction inputs. Please check mempool."
+  unexpected: "An unexpected error occurred."
 
 text_field:
   enter_fee_with_two_decimal_places: "Up to two decimal places allowed (sat/vB)"
@@ -915,6 +1023,9 @@ toast:
   tag_update_failed: "Cannot edit tag."
   tag_delete_failed: "Cannot delete tag."
   wallet_detail_refresh: "Pull down the screen to get the latest data."
+  merge_utxos_unavailable_description: "At least 2 UTXOs are required to merge"
+  locked_utxo_unavailable_description: "Locked UTXOs cannot be merged"
+  split_utxo_unavailable_description: "There are no UTXOs available to split"
 
 alert:
   error_tx:
@@ -1011,6 +1122,11 @@ language_bottom_sheet:
   english: "English"
   japanese: "日本語"
   spanish: "Español"
+
+estimated_fee_bottom_sheet:
+  title: "Estimated Fee"
+  estimated_fee: "Estimated Fee"
+  fee_rate: "Fee Rate"
 
 long_pressed_menu:
   hide: "Hide"

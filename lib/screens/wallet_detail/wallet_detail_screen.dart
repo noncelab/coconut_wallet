@@ -23,6 +23,7 @@ import 'package:coconut_wallet/services/wallet_add_service.dart';
 import 'package:coconut_wallet/utils/amimation_util.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/utils/wallet_util.dart';
+import 'package:coconut_wallet/widgets/button/bottom_action_bar.dart';
 import 'package:coconut_wallet/widgets/card/transaction_item_card.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_header.dart';
 import 'package:coconut_wallet/widgets/header/wallet_detail_sticky_header.dart';
@@ -52,6 +53,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
   late BitcoinUnit _currentUnit;
   late WalletDetailViewModel _viewModel;
 
+  final ValueNotifier<bool> _bottomActionBarVisibleNotifier = ValueNotifier<bool>(true);
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
@@ -68,39 +71,52 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
               Scaffold(
                 backgroundColor: CoconutColors.black,
                 appBar: _buildAppBar(context),
-                body: CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  controller: _scrollController,
-                  slivers: [
-                    CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
-                    SliverToBoxAdapter(
-                      child: Selector<WalletDetailViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
-                        selector:
-                            (_, viewModel) => Tuple4(
-                              AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
-                              viewModel.bitcoinPriceKrwInString,
-                              viewModel.sendingAmount,
-                              viewModel.receivingAmount,
-                            ),
-                        builder: (_, data, __) {
-                          return WalletDetailHeader(
-                            key: _headerWidgetKey,
-                            animatedBalanceData: data.item1,
-                            currentUnit: _currentUnit,
-                            btcPriceInKrw: data.item2,
-                            sendingAmount: data.item3,
-                            receivingAmount: data.item4,
-                            onPressedUnitToggle: _toggleUnit,
-                            onTapReceive: _onTapReceive,
-                            onTapSend: _onTapSend,
-                          );
-                        },
+                body: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollStartNotification || notification is ScrollUpdateNotification) {
+                      if (_bottomActionBarVisibleNotifier.value) {
+                        _bottomActionBarVisibleNotifier.value = false;
+                      }
+                    } else if (notification is ScrollEndNotification) {
+                      if (!_bottomActionBarVisibleNotifier.value) {
+                        _bottomActionBarVisibleNotifier.value = true;
+                      }
+                    }
+                    return false;
+                  },
+                  child: CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    slivers: [
+                      CupertinoSliverRefreshControl(onRefresh: () async => _onRefresh()),
+                      SliverToBoxAdapter(
+                        child: Selector<WalletDetailViewModel, Tuple4<AnimatedBalanceData, String, int, int>>(
+                          selector:
+                              (_, viewModel) => Tuple4(
+                                AnimatedBalanceData(viewModel.balance, viewModel.prevBalance),
+                                viewModel.fiatPriceString,
+                                viewModel.sendingAmount,
+                                viewModel.receivingAmount,
+                              ),
+                          builder: (_, data, __) {
+                            return WalletDetailHeader(
+                              key: _headerWidgetKey,
+                              animatedBalanceData: data.item1,
+                              currentUnit: _currentUnit,
+                              fiatPrice: data.item2,
+                              sendingAmount: data.item3,
+                              receivingAmount: data.item4,
+                              onPressedUnitToggle: _toggleUnit,
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    _buildLoadingWidget(),
-                    _buildTxListLabel(),
-                    TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
-                  ],
+                      _buildTxListLabel(),
+                      TransactionList(currentUnit: _currentUnit, walldtId: widget.id),
+
+                      SliverToBoxAdapter(child: SizedBox(height: 35 + MediaQuery.of(context).padding.bottom)),
+                    ],
+                  ),
                 ),
               ),
               _buildStickyHeader(),
@@ -110,6 +126,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
                   return _buildFaucetTooltip(isFaucetTooltipVisible);
                 },
               ),
+              _buildbottomActionBar(),
             ],
           ),
         ),
@@ -176,23 +193,18 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: _stickyHeaderVisibleNotifier,
       builder: (context, isVisible, child) {
-        return Selector<WalletDetailViewModel, int>(
-          selector: (_, viewModel) => viewModel.balance,
-          builder: (context, balance, child) {
+        return Selector<WalletDetailViewModel, Tuple2<AnimatedBalanceData, String>>(
+          selector:
+              (_, viewModel) =>
+                  Tuple2(AnimatedBalanceData(viewModel.balance, viewModel.prevBalance), viewModel.fiatPriceString),
+          builder: (context, data, child) {
             return WalletDetailStickyHeader(
               widgetKey: _stickyHeaderWidgetKey,
               height: _appBarSize.height,
               isVisible: isVisible,
               currentUnit: _currentUnit,
-              animatedBalanceData: AnimatedBalanceData(_viewModel.balance, _viewModel.prevBalance),
-              onTapReceive: () {
-                _viewModel.removeFaucetTooltip();
-                _onTapReceive();
-              },
-              onTapSend: () {
-                _viewModel.removeFaucetTooltip();
-                _onTapSend();
-              },
+              animatedBalanceData: data.item1,
+              fiatPrice: data.item2,
             );
           },
         );
@@ -200,61 +212,57 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     );
   }
 
-  Selector<WalletDetailViewModel, bool> _buildLoadingWidget() {
-    return Selector<WalletDetailViewModel, bool>(
-      selector: (_, viewModel) => viewModel.isWalletSyncing,
-      builder: (_, isWalletSyncing, __) {
-        return SliverToBoxAdapter(
-          child: SizedBox(
-            height: 32,
-            child:
-                isWalletSyncing
-                    ? Padding(
-                      padding: const EdgeInsets.only(right: 16.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            t.status_updating,
-                            style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.primary),
-                          ),
-                          CoconutLayout.spacing_100w,
-                          LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
-                        ],
-                      ),
-                    )
-                    : null,
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildTxListLabel() {
     return SliverToBoxAdapter(
-      child: Selector<WalletDetailViewModel, int>(
-        selector: (_, viewModel) => viewModel.txList.length,
-        builder: (_, txCount, __) {
+      child: Selector<WalletDetailViewModel, Tuple2<int, bool>>(
+        selector: (_, viewModel) => Tuple2(viewModel.txList.length, viewModel.isWalletSyncing),
+        builder: (_, data, __) {
+          final txCount = data.item1;
+          final isWalletSyncing = data.item2;
+
           return Padding(
             key: _txListLabelWidgetKey,
             padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(t.tx_list, style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white)),
+            child: SizedBox(
+              height: 32,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              t.tx_list,
+                              style: CoconutTypography.heading4_18_Bold.setColor(CoconutColors.white),
+                            ),
+                          ),
+                        ),
+                        CoconutLayout.spacing_100w,
+                        if (txCount > 0)
+                          Text(
+                            t.total_item_count(count: txCount),
+                            style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                CoconutLayout.spacing_100w,
-                if (txCount > 0)
-                  Text(
-                    t.total_item_count(count: txCount),
-                    style: CoconutTypography.body3_12.setColor(CoconutColors.gray400),
-                  ),
-              ],
+
+                  if (isWalletSyncing)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(t.status_updating, style: CoconutTypography.body3_12_Bold.setColor(CoconutColors.primary)),
+                        CoconutLayout.spacing_100w,
+                        LottieBuilder.asset('assets/files/status_loading.json', width: 16, height: 16),
+                      ],
+                    ),
+                ],
+              ),
             ),
           );
         },
@@ -282,6 +290,8 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
   final GlobalKey _txListLabelWidgetKey = GlobalKey();
 
+  static const double _stickyHeaderScrollThresholdOffset = 45;
+
   @override
   void initState() {
     super.initState();
@@ -299,7 +309,6 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Size topSelectorWidgetSize = const Size(0, 0);
-      Size topHeaderWidgetSize = const Size(0, 0);
       Size positionedTopWidgetSize = const Size(0, 0);
 
       if (_appBarKey.currentContext != null) {
@@ -324,11 +333,11 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       }
 
       setState(() {
-        _topPadding = topSelectorWidgetSize.height + topHeaderWidgetSize.height - positionedTopWidgetSize.height;
+        _topPadding = topSelectorWidgetSize.height - positionedTopWidgetSize.height;
       });
 
       _scrollController.addListener(() {
-        if (_scrollController.offset > _topPadding) {
+        if (_scrollController.offset > _topPadding + _stickyHeaderScrollThresholdOffset) {
           if (!_isPullToRefreshing) {
             _stickyHeaderVisibleNotifier.value = true;
             _stickyHeaderRenderBox ??= _stickyHeaderWidgetKey.currentContext?.findRenderObject() as RenderBox;
@@ -352,6 +361,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     _statusBarTapOverlayEntry = null;
     _scrollController.dispose();
     _stickyHeaderVisibleNotifier.dispose();
+    _bottomActionBarVisibleNotifier.dispose();
     super.dispose();
   }
 
@@ -403,24 +413,16 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
     }
 
     if (_viewModel.isWalletSyncing) {
-      CoconutToast.showToast(
-        context: context,
-        isVisibleIcon: true,
-        iconPath: 'assets/svg/circle-info.svg',
-        text: t.toast.fetching_onchain_data,
-        level: CoconutToastLevel.info,
-      );
+      _showInfoToast(context, t.toast.fetching_onchain_data);
       return false;
     }
 
     return true;
   }
 
-  void _onTapReceive() {
-    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
-  }
-
-  Future<void> _onTapSend() async {
+  /// MFP(master fingerprint)가 누락된 싱글시그 지갑이면 안내 다이얼로그를 띄우고 true를 반환.
+  /// 호출부에서는 true일 때 이후 동작을 중단해야 한다.
+  bool _showNoMfpDialogIfNeeded() {
     if (!_viewModel.isMultisigWallet &&
         (_viewModel.masterFingerprint == WalletAddService.masterFingerprintPlaceholder ||
             isWalletWithoutMfp(_viewModel.walletListBaseItem))) {
@@ -432,8 +434,47 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
           arguments: {'id': widget.id, 'isMultisig': false, 'entryPoint': widget.entryPoint, 'showMfpInput': true},
         );
       });
+      return true;
+    }
+    return false;
+  }
+
+  void _onTapMerge({required bool canMerge, required int availableUtxoCount}) {
+    if (!canMerge) {
+      _showInfoToast(context, t.toast.merge_utxos_unavailable_description);
       return;
     }
+    if (availableUtxoCount < 2) {
+      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
+      return;
+    }
+    if (_showNoMfpDialogIfNeeded()) return;
+    if (!_checkStateAndShowToast()) return;
+    _viewModel.clearSendInfo();
+    Navigator.pushNamed(context, '/merge-utxos', arguments: {'id': widget.id});
+  }
+
+  void _onTapSplit({required bool canSplit, required int availableUtxoCount}) {
+    if (!canSplit) {
+      _showInfoToast(context, t.toast.split_utxo_unavailable_description);
+      return;
+    }
+    if (availableUtxoCount < 1) {
+      _showInfoToast(context, t.toast.locked_utxo_unavailable_description);
+      return;
+    }
+    if (_showNoMfpDialogIfNeeded()) return;
+    if (!_checkStateAndShowToast()) return;
+    _viewModel.clearSendInfo();
+    Navigator.pushNamed(context, '/split-utxo', arguments: {'id': widget.id});
+  }
+
+  void _onTapReceive() {
+    Navigator.of(context).pushNamed("/receive-address", arguments: {"id": widget.id});
+  }
+
+  Future<void> _onTapSend() async {
+    if (_showNoMfpDialogIfNeeded()) return;
     if (!_checkStateAndShowToast()) return;
     _viewModel.clearSendInfo();
 
@@ -491,6 +532,90 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> {
       iconPosition: _faucetIconPosition,
       iconSize: _faucetIconSize,
       onTapRemove: _viewModel.removeFaucetTooltip,
+    );
+  }
+
+  Widget _buildbottomActionBar() {
+    return Selector<WalletDetailViewModel, Tuple2<int, int>>(
+      selector: (_, viewModel) => Tuple2(viewModel.utxoCount, viewModel.availableUtxoCount),
+      builder: (_, data, __) {
+        final int utxoCount = data.item1;
+        final int availableUtxoCount = data.item2;
+
+        final bool canMerge = utxoCount > 1;
+        final bool canSplit = utxoCount > 0;
+
+        return ValueListenableBuilder<bool>(
+          valueListenable: _bottomActionBarVisibleNotifier,
+          builder: (context, isVisible, child) {
+            return BottomActionBarSlide(
+              isVisible: isVisible,
+              child: BottomActionBar(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Opacity(
+                        opacity: canMerge ? 1.0 : 0.3,
+                        child: _buildBottomActionBarButton(
+                          iconPath: 'assets/svg/merge-utxos.svg',
+                          label: t.merge_utxos,
+                          onTap: () => _onTapMerge(canMerge: canMerge, availableUtxoCount: availableUtxoCount),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Opacity(
+                        opacity: canSplit ? 1.0 : 0.3,
+                        child: _buildBottomActionBarButton(
+                          iconPath: 'assets/svg/split-utxo.svg',
+                          label: t.split_utxo,
+                          onTap: () => _onTapSplit(canSplit: canSplit, availableUtxoCount: availableUtxoCount),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildBottomActionBarButton(
+                        iconPath: 'assets/svg/receive-plane.svg',
+                        label: t.receive,
+                        onTap: _onTapReceive,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildBottomActionBarButton(
+                        iconPath: 'assets/svg/send-plane.svg',
+                        label: t.send,
+                        onTap: _onTapSend,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showInfoToast(BuildContext context, String text) {
+    CoconutToast.showToast(
+      context: context,
+      isVisibleIcon: true,
+      iconPath: 'assets/svg/circle-info.svg',
+      text: text,
+      level: CoconutToastLevel.info,
+    );
+  }
+
+  Widget _buildBottomActionBarButton({required String iconPath, required String label, required VoidCallback onTap}) {
+    return BottomActionButton(
+      iconPath: iconPath,
+      label: label,
+      onTap: onTap,
+      buttonLayout: BottomActionButtonLayout.vertical,
+      iconSize: 24,
+      spacing: 4,
+      textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
     );
   }
 

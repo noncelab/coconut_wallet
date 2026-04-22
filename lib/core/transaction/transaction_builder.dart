@@ -246,14 +246,8 @@ class TransactionBuilder {
           walletListItemBase.walletBase,
         );
         if (tx.outputs.first.amount <= _dustThreshold) {
-          throw SendAmountTooLowException(
-            estimatedFee: tx.estimateFee(
-              feeRate,
-              walletListItemBase.walletType.addressType,
-              requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-              totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-            ),
-          );
+          final outputSum = tx.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+          throw SendAmountTooLowException(estimatedFee: totalInputAmount - outputSum);
         }
         return tx;
       } on TransactionCreationException catch (_) {
@@ -366,14 +360,8 @@ class TransactionBuilder {
           walletListItemBase.walletBase,
         );
         if (tx.outputs.last.amount <= _dustThreshold) {
-          throw SendAmountTooLowException(
-            estimatedFee: tx.estimateFee(
-              feeRate,
-              walletListItemBase.walletType.addressType,
-              requiredSignature: walletListItemBase.multisigConfig?.requiredSignature,
-              totalSigner: walletListItemBase.multisigConfig?.totalSigner,
-            ),
-          );
+          final outputSum = tx.outputs.fold(0, (previousValue, element) => previousValue + element.amount);
+          throw SendAmountTooLowException(estimatedFee: totalInputAmount - outputSum);
         }
         return tx;
       } on Exception catch (e) {

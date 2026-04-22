@@ -82,7 +82,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     return CommonBottomSheets.showBottomSheet<T>(
       context: context,
       title: title,
-      isCloseButton: true,
+      showCloseButton: true,
       showDragHandle: true,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: child,
@@ -118,7 +118,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     return CommonBottomSheets.showBottomSheet<R>(
       context: context,
       title: title,
-      isCloseButton: true,
+      showCloseButton: true,
       showDragHandle: true,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: SingleTextFieldBottomSheet(
@@ -175,7 +175,7 @@ class SingleTextFieldBottomSheet extends StatefulWidget {
     return CommonBottomSheets.showBottomSheet<void>(
       context: context,
       title: title,
-      isCloseButton: true,
+      showCloseButton: true,
       showDragHandle: true,
       titlePadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: SingleTextFieldBottomSheet(
@@ -312,7 +312,7 @@ class _SingleTextFieldBottomSheetState extends State<SingleTextFieldBottomSheet>
       collapsedHeight: widget.collapsedHeight ?? 240,
       isCompleteEnabled: _isCompleteButtonEnabled,
       onComplete: _onComplete,
-      completeLabel: widget.completeButtonText ?? t.complete,
+      completeLabel: widget.completeButtonText ?? t.done,
       textField: field,
     );
 

@@ -1,6 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/balance.dart';
 import 'package:coconut_wallet/widgets/animated_balance.dart';
 import 'package:coconut_wallet/widgets/bitcoin_amount_unit.dart';
@@ -12,8 +11,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
   final bool isVisible;
   final BitcoinUnit currentUnit;
   final AnimatedBalanceData animatedBalanceData;
-  final Function() onTapReceive;
-  final Function() onTapSend;
+  final String fiatPrice;
 
   const WalletDetailStickyHeader({
     required this.widgetKey,
@@ -21,8 +19,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
     required this.isVisible,
     required this.currentUnit,
     required this.animatedBalanceData,
-    required this.onTapReceive,
-    required this.onTapSend,
+    required this.fiatPrice,
   }) : super(key: widgetKey);
 
   @override
@@ -45,29 +42,33 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
             children: [
               Container(
                 color: CoconutColors.black,
-                padding: const EdgeInsets.only(left: 16.0, right: 16, top: 20.0),
-                child: Row(
+                padding: const EdgeInsets.only(left: 16.0, right: 16, top: 0),
+                alignment: Alignment.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: FittedBox(
+                    if (widget.fiatPrice.isNotEmpty)
+                      FittedBox(
                         fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: BitcoinAmountUnit(
-                          currentUnit: widget.currentUnit,
-                          unitStyle: CoconutTypography.body2_14_Number,
-                          child: AnimatedBalance(
-                            prevValue: widget.animatedBalanceData.previous,
-                            value: widget.animatedBalanceData.current,
-                            currentUnit: widget.currentUnit,
-                            textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
-                          ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          widget.fiatPrice,
+                          style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
                         ),
                       ),
-                    ),
-                    CoconutLayout.spacing_200w,
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: SizedBox(width: MediaQuery.of(context).size.width / 3, child: _buildButtonRow()),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: BitcoinAmountUnit(
+                        currentUnit: widget.currentUnit,
+                        unitStyle: CoconutTypography.body2_14_Number,
+                        child: AnimatedBalance(
+                          prevValue: widget.animatedBalanceData.previous,
+                          value: widget.animatedBalanceData.current,
+                          currentUnit: widget.currentUnit,
+                          textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -83,9 +84,9 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           color: CoconutColors.black,
                           boxShadow: [
                             BoxShadow(
-                              color: Color.fromRGBO(255, 255, 255, 0.2),
+                              color: Color.fromRGBO(255, 255, 255, 0.12),
                               offset: Offset(0, 5),
-                              blurRadius: 4,
+                              blurRadius: 12,
                               spreadRadius: -2,
                             ),
                           ],
@@ -97,45 +98,6 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                 ],
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildButtonRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionButton(
-            label: t.receive,
-            onPressed: widget.onTapReceive,
-            backgroundColor: CoconutColors.white,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildActionButton(label: t.send, onPressed: widget.onTapSend, backgroundColor: CoconutColors.primary),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton({required String label, required VoidCallback onPressed, required Color backgroundColor}) {
-    return CupertinoButton(
-      minSize: 32,
-      onPressed: onPressed,
-      color: backgroundColor,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          overflow: TextOverflow.fade,
-          softWrap: false,
-          maxLines: 1,
-          style: CoconutTypography.body3_12.merge(
-            const TextStyle(color: CoconutColors.black, fontWeight: FontWeight.w600),
           ),
         ),
       ),

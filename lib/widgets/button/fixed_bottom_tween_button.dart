@@ -87,7 +87,12 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                 child: Container(
                   padding:
                       widget.gradientPadding ??
-                      EdgeInsets.only(left: 16, right: 16, bottom: 40, top: buttonHeight + bottomInset + 24),
+                      EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 40,
+                        top: buttonHeight + bottomInset + (widget.subWidget != null ? 75 : 50),
+                      ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
@@ -96,10 +101,11 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                         Colors.transparent,
                         CoconutColors.black.withValues(alpha: 0.1),
                         CoconutColors.black.withValues(alpha: 0.4),
-                        CoconutColors.black.withValues(alpha: 0.7),
+                        CoconutColors.black.withValues(alpha: 0.8),
+                        CoconutColors.black,
                         CoconutColors.black,
                       ],
-                      stops: const [0.0, 0.03, 0.07, 0.15, 0.23],
+                      stops: const [0.0, 0.1, 0.2, 0.35, 0.5, 1.0],
                     ),
                   ),
                 ),
