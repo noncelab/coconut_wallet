@@ -513,7 +513,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                           usePreview: data.usePreview,
                           splitResult: data.splitResult,
                           splitOutputText: data.splitOutputText,
-                          splitSummaryTitle: data.splitSummaryTitle,
+                          splitSummaryTitle: data.splitSummaryTitle.replaceAllMapped(
+                            RegExp(r'(\S+)'),
+                            (match) => match[0]!.split('').join('\u200D'),
+                          ),
                         )
                         : const SizedBox.shrink(key: ValueKey('split_result_box_empty')),
               ),
@@ -931,19 +934,17 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                           borderRadius: 8,
                           child: Container(
                             alignment: Alignment.center,
-                            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                            constraints: const BoxConstraints(minWidth: 47),
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               border: Border.all(color: CoconutColors.gray700),
                               borderRadius: BorderRadius.circular(6),
                             ),
-                            width: 47,
                             height: 24,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                currentUnit.displayBitcoinAmount(sats, withUnit: false),
-                                style: CoconutTypography.body3_12.setColor(CoconutColors.white),
-                              ),
+                            child: Text(
+                              currentUnit.displayBitcoinAmount(sats, withUnit: false),
+                              style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         );
@@ -976,19 +977,10 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                RippleEffect(
+                _SplitCountStepButton(
+                  icon: Icons.remove,
+                  isActive: splitCount > 1,
                   onTap: viewModel.decrementSplitCount,
-                  borderRadius: 24,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: CoconutColors.gray800,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: CoconutColors.gray300),
-                    ),
-                    child: const Icon(Icons.remove, color: CoconutColors.white),
-                  ),
                 ),
                 const SizedBox(width: 10),
                 ValueListenableBuilder<TextEditingValue>(
@@ -1044,20 +1036,7 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                   },
                 ),
                 const SizedBox(width: 10),
-                RippleEffect(
-                  onTap: viewModel.incrementSplitCount,
-                  borderRadius: 24,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: CoconutColors.gray800,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: CoconutColors.gray300),
-                    ),
-                    child: const Icon(Icons.add, color: CoconutColors.white),
-                  ),
-                ),
+                _SplitCountStepButton(icon: Icons.add, onTap: viewModel.incrementSplitCount),
               ],
             );
           },
@@ -1148,12 +1127,12 @@ class _SplitUtxoScreenState extends State<SplitUtxoScreen> {
                     borderRadius: 8,
                     child: Container(
                       alignment: Alignment.center,
+                      constraints: const BoxConstraints(minWidth: 47),
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
                         border: Border.all(color: CoconutColors.gray700),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      width: 47,
                       height: 24,
                       child: Text('$count', style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
                     ),
@@ -1466,7 +1445,10 @@ class _SplitResultReadyContent extends StatelessWidget {
             previewFeeText: vm.feePickerDisplayText,
           ),
       builder: (context, data, _) {
-        final splitSummaryTitle = data.splitSummaryTitle;
+        final splitSummaryTitle = data.splitSummaryTitle.replaceAllMapped(
+          RegExp(r'(\S+)'),
+          (match) => match[0]!.split('').join('\u200D'),
+        );
         final splitOutputText = data.splitOutputText;
         final previewFeeText = data.previewFeeText;
 
@@ -1793,11 +1775,18 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (widget.viewModel.manualSplitItems.length <= 1 || _isDeleting) return;
 
+    final delta = details.primaryDelta;
+    if (delta == null) return;
+
+    if (delta >= 0) {
+      return;
+    }
+
     if (!_isDeleteButtonVisible) {
       setDeleteButtonVisible(true);
     }
 
-    _swipeController.value -= details.primaryDelta! / _actionWidth;
+    _swipeController.value = (_swipeController.value - (delta / _actionWidth)).clamp(0.0, 1.0);
   }
 
   void _onHorizontalDragEnd(DragEndDetails details) {
@@ -1807,6 +1796,14 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
     } else {
       _swipeController.reverse();
     }
+  }
+
+  bool _isManualSplitDecrementButtonActive() {
+    final countText = widget.viewModel.manualSplitItems[widget.index].countController.text;
+    final count = num.tryParse(countText);
+    final isActive = !_isDeleteButtonVisible && count != null && count > 1;
+
+    return isActive;
   }
 
   @override
@@ -1880,24 +1877,17 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                               ),
                             ),
                             const SizedBox(width: 10),
-
-                            /// - 버튼
-                            RippleEffect(
-                              onTap: () {
-                                if (_isDeleteButtonVisible) return;
-                                widget.viewModel.decrementManualSplitCount(widget.index);
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: widget.item.countController,
+                              builder: (context, value, _) {
+                                return _SplitCountStepButton(
+                                  icon: Icons.remove,
+                                  isActive: _isManualSplitDecrementButtonActive(),
+                                  onTap: () {
+                                    widget.viewModel.decrementManualSplitCount(widget.index);
+                                  },
+                                );
                               },
-                              borderRadius: 24,
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: CoconutColors.gray800,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: CoconutColors.gray300),
-                                ),
-                                child: const Icon(Icons.remove, color: CoconutColors.white),
-                              ),
                             ),
                             const SizedBox(width: 10),
 
@@ -1952,30 +1942,17 @@ class _ManualSplitListItemState extends State<_ManualSplitListItem> with TickerP
                               ),
                             ),
                             const SizedBox(width: 10),
-
-                            /// + 버튼
-                            RippleEffect(
+                            _SplitCountStepButton(
+                              icon: Icons.add,
+                              isActive: !_isDeleteButtonVisible,
                               onTap: () {
-                                if (_isDeleteButtonVisible) return;
                                 widget.viewModel.incrementManualSplitCount(widget.index);
                               },
-                              borderRadius: 24,
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: CoconutColors.gray800,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: CoconutColors.gray300),
-                                ),
-                                child: const Icon(Icons.add, color: CoconutColors.white),
-                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
-
                     if (widget.viewModel.manualSplitItems.length > 1)
                       Positioned(
                         right: 0,
@@ -2080,5 +2057,31 @@ class _DecimalTextInputFormatter extends TextInputFormatter {
     }
 
     return newValue;
+  }
+}
+
+class _SplitCountStepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isActive;
+
+  const _SplitCountStepButton({required this.icon, required this.onTap, this.isActive = true});
+
+  @override
+  Widget build(BuildContext context) {
+    return RippleEffect(
+      onTap: isActive ? onTap : null,
+      borderRadius: 24,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isActive ? CoconutColors.gray800 : CoconutColors.gray850,
+          shape: BoxShape.circle,
+          border: Border.all(color: isActive ? CoconutColors.gray300 : CoconutColors.gray700),
+        ),
+        child: Icon(icon, color: isActive ? CoconutColors.white : CoconutColors.gray500),
+      ),
+    );
   }
 }
