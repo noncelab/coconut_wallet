@@ -342,124 +342,140 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
 
     const receiveOwnedExtent = 0.6;
     const receiveDirectInputExtent = 0.9;
+    final initialReceiveExtent = selectedTabIndex == 1 ? receiveDirectInputExtent : receiveOwnedExtent;
     DraggableScrollableController? draggableController;
-    final selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_ReceiveAddressSelectionResult>(
-      context: context,
-      backgroundColor: CoconutColors.gray900,
-      title: t.merge_utxos_screen.receive_address,
-      adjustForKeyboardInset: true,
-      initialChildSize: 0.6,
-      minChildSize: 0.599,
-      maxChildSize: 0.9,
-      onControllerReady: (controller) {
-        draggableController = controller;
-      },
-      childBuilder:
-          (scrollController) => StatefulBuilder(
-            builder: (context, modalSetState) {
-              return _SegmentedBottomSheetBody(
-                scrollController: scrollController,
-                adjustForKeyboardInset: false,
-                selectedTabIndex: selectedTabIndex,
-                confirmText: t.done,
-                confirmSubWidget:
-                    selectedTabIndex == 1
-                        ? _buildReceiveAddressValidationSubWidget(directInputController.text.trim())
-                        : null,
-                isConfirmEnabled:
-                    selectedTabIndex == 0
-                        ? selectedOwnedAddress != null
-                        : directInputController.text.trim().isNotEmpty && _viewModel.isCustomReceiveAddressValidFormat,
-                onConfirm: () {
-                  if (selectedTabIndex == 0) {
-                    if (selectedOwnedAddress == null) return;
+    void animateReceiveSheetTo(double targetExtent) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final controller = draggableController;
+        if (controller != null && controller.isAttached) {
+          unawaited(
+            controller.animateTo(targetExtent, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic),
+          );
+        }
+      });
+    }
+
+    void handleDirectInputFocusChange() {
+      if (!directInputFocusNode.hasFocus || selectedTabIndex != 1) return;
+      animateReceiveSheetTo(receiveDirectInputExtent);
+    }
+
+    directInputFocusNode.addListener(handleDirectInputFocusChange);
+
+    _ReceiveAddressSelectionResult? selectedItem;
+    try {
+      selectedItem = await CommonBottomSheets.showSelectableDraggableSheet<_ReceiveAddressSelectionResult>(
+        context: context,
+        backgroundColor: CoconutColors.gray900,
+        title: t.merge_utxos_screen.receive_address,
+        adjustForKeyboardInset: true,
+        initialChildSize: initialReceiveExtent,
+        minChildSize: 0.599,
+        maxChildSize: 0.9,
+        onControllerReady: (controller) {
+          draggableController = controller;
+          if (selectedTabIndex == 1) {
+            animateReceiveSheetTo(receiveDirectInputExtent);
+          }
+        },
+        childBuilder:
+            (scrollController) => StatefulBuilder(
+              builder: (context, modalSetState) {
+                return _SegmentedBottomSheetBody(
+                  scrollController: scrollController,
+                  adjustForKeyboardInset: false,
+                  selectedTabIndex: selectedTabIndex,
+                  confirmText: t.done,
+                  confirmSubWidget:
+                      selectedTabIndex == 1
+                          ? _buildReceiveAddressValidationSubWidget(directInputController.text.trim())
+                          : null,
+                  isConfirmEnabled:
+                      selectedTabIndex == 0
+                          ? selectedOwnedAddress != null
+                          : directInputController.text.trim().isNotEmpty &&
+                              _viewModel.isCustomReceiveAddressValidFormat,
+                  onConfirm: () {
+                    if (selectedTabIndex == 0) {
+                      if (selectedOwnedAddress == null) return;
+                      Navigator.pop(
+                        context,
+                        _ReceiveAddressSelectionResult(address: selectedOwnedAddress!, isDirectInput: false),
+                      );
+                      return;
+                    }
+
+                    if (directInputController.text.trim().isEmpty || !_viewModel.isCustomReceiveAddressValidFormat) {
+                      return;
+                    }
                     Navigator.pop(
                       context,
-                      _ReceiveAddressSelectionResult(address: selectedOwnedAddress!, isDirectInput: false),
+                      _ReceiveAddressSelectionResult(
+                        address: normalizeAddress(directInputController.text.trim()),
+                        isDirectInput: true,
+                      ),
                     );
-                    return;
-                  }
-
-                  if (directInputController.text.trim().isEmpty || !_viewModel.isCustomReceiveAddressValidFormat) {
-                    return;
-                  }
-                  Navigator.pop(
-                    context,
-                    _ReceiveAddressSelectionResult(
-                      address: normalizeAddress(directInputController.text.trim()),
-                      isDirectInput: true,
-                    ),
-                  );
-                },
-                onTabSelected: (index) {
-                  modalSetState(() {
-                    selectedTabIndex = index;
-                  });
-                  final targetExtent = index == 1 ? receiveDirectInputExtent : receiveOwnedExtent;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    final controller = draggableController;
-                    if (controller != null && controller.isAttached) {
-                      unawaited(
-                        controller.animateTo(
-                          targetExtent,
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutCubic,
-                        ),
-                      );
-                    }
-                  });
-                  if (index == 1) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) {
-                        directInputFocusNode.requestFocus();
-                      }
+                  },
+                  onTabSelected: (index) {
+                    modalSetState(() {
+                      selectedTabIndex = index;
                     });
-                  } else {
-                    directInputFocusNode.unfocus();
-                  }
-                },
-                tabs: [
-                  _BottomSheetTab(
-                    label: t.merge_utxos_screen.receive_address_bottomsheet.my_address,
-                    child: _buildReceiveAddressOwnedTab(
-                      scrollController: scrollController,
-                      addresses: _viewModel.nextReceiveAddressesOfAllWallets,
-                      selectedAddress: selectedOwnedAddress,
-                      onSelectionChanged: (address) {
-                        modalSetState(() {
-                          selectedOwnedAddress = address;
-                        });
-                      },
+                    final targetExtent = index == 1 ? receiveDirectInputExtent : receiveOwnedExtent;
+                    animateReceiveSheetTo(targetExtent);
+                    if (index == 1) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          directInputFocusNode.requestFocus();
+                        }
+                      });
+                    } else {
+                      directInputFocusNode.unfocus();
+                    }
+                  },
+                  tabs: [
+                    _BottomSheetTab(
+                      label: t.merge_utxos_screen.receive_address_bottomsheet.my_address,
+                      child: _buildReceiveAddressOwnedTab(
+                        scrollController: scrollController,
+                        addresses: _viewModel.nextReceiveAddressesOfAllWallets,
+                        selectedAddress: selectedOwnedAddress,
+                        onSelectionChanged: (address) {
+                          modalSetState(() {
+                            selectedOwnedAddress = address;
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  _BottomSheetTab(
-                    label: t.merge_utxos_screen.receive_address_bottomsheet.custom,
-                    child: _buildReceiveAddressDirectInputTab(
-                      scrollController: scrollController,
-                      controller: directInputController,
-                      focusNode: directInputFocusNode,
-                      onChanged: (value) {
-                        modalSetState(() {
-                          _viewModel.validateCustomReceiveAddress(value);
-                        });
-                      },
+                    _BottomSheetTab(
+                      label: t.merge_utxos_screen.receive_address_bottomsheet.custom,
+                      child: _buildReceiveAddressDirectInputTab(
+                        scrollController: scrollController,
+                        controller: directInputController,
+                        focusNode: directInputFocusNode,
+                        onChanged: (value) {
+                          modalSetState(() {
+                            _viewModel.validateCustomReceiveAddress(value);
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-    );
-
-    directInputController.dispose();
-    directInputFocusNode.dispose();
-
-    _isBottomSheetOpened = false;
+                  ],
+                );
+              },
+            ),
+      );
+    } finally {
+      directInputFocusNode.removeListener(handleDirectInputFocusChange);
+      directInputController.dispose();
+      directInputFocusNode.dispose();
+      _isBottomSheetOpened = false;
+    }
 
     if (selectedItem != null && context.mounted) {
+      final confirmedSelection = selectedItem;
       _setScreenState(() {
-        _viewModel.setSelectedReceiveAddress(selectedItem.address);
-        _viewModel.setCustomReceiveAddressText(selectedItem.isDirectInput ? selectedItem.address : null);
+        _viewModel.setSelectedReceiveAddress(confirmedSelection.address);
+        _viewModel.setCustomReceiveAddressText(confirmedSelection.isDirectInput ? confirmedSelection.address : null);
       });
       unawaited(_viewModel.prepareMergeTransaction());
       return;
@@ -480,7 +496,7 @@ extension _MergeUtxosScreenBottomSheetsExtension on _MergeUtxosScreenState {
     if (!_viewModel.isCustomReceiveAddressOwnedByAnyWallet) {
       return Text(
         t.merge_utxos_screen.receive_address_bottomsheet.not_your_owned_wallet,
-        style: CoconutTypography.body3_12.setColor(CoconutColors.white),
+        style: CoconutTypography.body3_12.setColor(CoconutColors.hotPink),
         textAlign: TextAlign.center,
       );
     }
