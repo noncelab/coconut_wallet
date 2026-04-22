@@ -654,7 +654,7 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
                     child: FixedBottomButton(
                       showGradient: widget.showGradient,
                       isVisibleAboveKeyboard: false,
-                      bottomPadding: 0,
+                      bottomPadding: 16,
                       onButtonClicked: () {
                         final selectedItem =
                             _selectedId == null

@@ -82,7 +82,7 @@ class _SegmentedBottomSheetBody extends StatelessWidget {
             Positioned(
               left: 0,
               right: 0,
-              bottom: keyboardInset + 2,
+              bottom: keyboardInset,
               child: SizedBox(
                 height: buttonAreaHeight,
                 child: FixedBottomButton(

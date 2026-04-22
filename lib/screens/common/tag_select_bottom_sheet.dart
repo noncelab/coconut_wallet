@@ -160,7 +160,7 @@ class _TagSelectBottomSheetState extends State<TagSelectBottomSheet> {
           child: FixedBottomButton(
             text: t.done,
             isActive: _selectedTagName != null,
-            bottomPadding: 0,
+            bottomPadding: 16,
             subWidget:
                 _selectedTagUtxoCountValue == null
                     ? null
