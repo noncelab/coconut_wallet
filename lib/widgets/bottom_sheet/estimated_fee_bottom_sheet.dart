@@ -40,7 +40,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
     required this.onFeeRateSelected,
   });
 
-  static void show({
+  static Future<T?> show<T>({
     required BuildContext context,
     required Listenable listenable,
     required String Function() estimatedFeeTextGetter,
@@ -52,6 +52,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
     required List<FeeInfoWithLevel> Function() feeInfosGetter,
     required VoidCallback refreshRecommendedFees,
     required void Function(double) onFeeRateSelected,
+    VoidCallback? onClosed,
   }) {
     Future.delayed(const Duration(milliseconds: 150), () {
       if (context.mounted) {
@@ -59,7 +60,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
       }
     });
 
-    CommonBottomSheets.showDraggableBottomSheet(
+    return CommonBottomSheets.showDraggableBottomSheet<T>(
       context: context,
       title: t.estimated_fee_bottom_sheet.title,
       backgroundColor: CoconutColors.gray900,
@@ -81,7 +82,9 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
           onFeeRateSelected: onFeeRateSelected,
         );
       },
-    );
+    ).whenComplete(() {
+      onClosed?.call();
+    });
   }
 
   @override

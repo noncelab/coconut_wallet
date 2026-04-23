@@ -794,7 +794,6 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                     feeRateFocusNode: viewModel.feeRateFocusNode,
                     onFeeRateChanged: viewModel.onFeeRateChanged,
                     onEditingComplete: () {
-                      viewModel.removeTrailingDotInFeeRate();
                       FocusScope.of(context).unfocus();
                       Navigator.pop(context);
                     },
@@ -805,6 +804,10 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                       viewModel.setFeeRateFromRecommendation(sats);
                       FocusScope.of(context).unfocus();
                       Navigator.pop(context);
+                    },
+                    onClosed: () {
+                      viewModel.removeTrailingDotInFeeRate();
+                      viewModel.restoreFeeRateIfZero();
                     },
                   ),
             ),
@@ -1209,7 +1212,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
 
     try {
       if (selectedItem != null && context.mounted) {
-        viewModel.setSelectedMethod(selectedItem);
+        viewModel.setSplitMethod(selectedItem);
       }
     } finally {
       _isMethodBottomSheetOpen = false;

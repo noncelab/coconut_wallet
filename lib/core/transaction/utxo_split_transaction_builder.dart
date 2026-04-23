@@ -187,7 +187,6 @@ class UtxoSplitTransactionBuilder {
 
     () async {
       try {
-        Logger.log("--> splitCount: $splitCount");
         final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount);
         if (isCancelled) {
           if (!completer.isCompleted) {
@@ -389,7 +388,7 @@ class UtxoSplitTransactionBuilder {
         ((_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
                 (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0))
             .ceil();
-    Logger.log('--> UtxoSplitBuilder 균등분할 estimatedFee: $fee');
+
     if (fee >= utxo.amount) {
       throw FeeExceedsUtxoAmountException(estimatedFee: fee.toDouble());
     }
