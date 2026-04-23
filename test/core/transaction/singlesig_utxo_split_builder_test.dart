@@ -167,12 +167,12 @@ void main() {
       printSplitOutputs(result, '기본 균등 분할');
     });
 
-    test('기본 균등 분할 - 나머지가 있는 경우2', () async {
+    test('기본 균등 분할 - 수수료율이 소수점', () async {
       // P2WPKH: 1 input, 5 outputs → vSize 약 203 → fee = 203 sats (feeRate 1.0)
       // 50000000 - 203 = 49999797 → 49999797 / 5 = 9999959 remainder 2
       // splitAmountMap: {9999959: 3, 9999960: 2}
       final utxo = createUtxo(50000000);
-      final builder = createBuilder(utxo);
+      final builder = createBuilder(utxo, 0.15);
 
       final result = await builder.buildEqualAmountSplit(splitCount: 5).future;
 
