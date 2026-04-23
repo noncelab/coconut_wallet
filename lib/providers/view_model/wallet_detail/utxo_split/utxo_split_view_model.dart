@@ -57,7 +57,6 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final FocusNode feeRateFocusNode = FocusNode();
   final TextEditingController splitCountController = TextEditingController(text: '1');
   final FocusNode splitCountFocusNode = FocusNode();
-  String _lastFeeRateText = '';
   String _lastAmountText = '';
   String _lastSplitCountText = '1';
   late final WalletListItemBase _wallet;
@@ -157,15 +156,6 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     this._sendInfoProvider,
     this._showUsePreviewConfirmPrompt,
   ) {
-    feeRateController.addListener(() {
-      if (_lastFeeRateText != feeRateController.text) {
-        _lastFeeRateText = feeRateController.text;
-        Logger.log('--> feeRateController.addListener');
-        _onInputChanged();
-      }
-    });
-    feeRateFocusNode.addListener(notifyIfNotDisposed);
-
     amountController.addListener(() {
       if (_lastAmountText != amountController.text) {
         _lastAmountText = amountController.text;
@@ -514,7 +504,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       onDefaultFeeRateSet: (text) {
         feeRateController.text = text;
         _splitBuilder.feeRate = double.parse(text);
-        _updateRecommendedSplitCounts();
+        _updateRecommendedSplitCountsIfNeeded();
       },
     );
   }
@@ -542,25 +532,23 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       _clearResult();
     }
 
-    _updateRecommendedSplitCounts();
+    _updateRecommendedSplitCountsIfNeeded();
     _onInputChanged();
   }
 
-  void setSelectedMethod(SplitMethod method) {
+  void setSplitMethod(SplitMethod method) {
     ++_buildRequestId;
     _cancelActiveBuild();
     _selectedMethod = method;
     _clearResult();
+    _updateRecommendedSplitCountsIfNeeded();
   }
 
   void _clearResult() {
     _lastAmountText = '';
     _lastSplitCountText = '1';
-    _lastFeeRateText = '';
     amountController.text = '';
     splitCountController.text = '1';
-    feeRateController.text = '';
-    refreshRecommendedFees();
     _resetManualSplitItems();
     _isDustError = false;
     _isAmountInsufficientAfterFee = false;
@@ -571,6 +559,9 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     _splitResult = _splitPreview = null;
     _isCalculating = false;
     notifyIfNotDisposed();
+
+    //feeRateController.text = '';
+    //refreshRecommendedFees();
   }
 
   void _resetManualSplitItems() {
@@ -647,6 +638,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
     _isPreparingNextStep = true;
     notifyIfNotDisposed();
+    await Future.delayed(const Duration(milliseconds: 200));
 
     try {
       _splitResult ??= await _buildTransaction();
@@ -806,9 +798,9 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
     if (!isTooLow && updatedText != null) {
       final parsed = double.tryParse(updatedText!);
-      if (parsed != null && parsed > 0) {
+      if (parsed != null && parsed > 0 && parsed != _splitBuilder.feeRate) {
         _splitBuilder.feeRate = parsed;
-        _updateRecommendedSplitCounts();
+        _updateRecommendedSplitCountsIfNeeded();
         _onInputChanged();
       }
     }
@@ -820,8 +812,24 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     feeRateController.text = removeTrailingDotInFeeRateText(feeRateController.text);
   }
 
+  void restoreFeeRateIfZero() {
+    if (feeRate != 0) {
+      return;
+    }
+
+    feeRateController.text = _splitBuilder.feeRate.toString();
+  }
+
   void setFeeRateFromRecommendation(double sats) {
     feeRateController.text = sats.toStringAsFixed(1);
+  }
+
+  void _updateRecommendedSplitCountsIfNeeded() {
+    if (_selectedMethod != SplitMethod.evenly) {
+      return;
+    }
+
+    _updateRecommendedSplitCounts();
   }
 
   Future<void> _updateRecommendedSplitCounts() async {

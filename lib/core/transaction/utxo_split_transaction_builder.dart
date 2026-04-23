@@ -187,7 +187,6 @@ class UtxoSplitTransactionBuilder {
 
     () async {
       try {
-        Logger.log("--> splitCount: $splitCount");
         final splitPreview = await getEqualAmountSplitPreview(splitCount: splitCount);
         if (isCancelled) {
           if (!completer.isCompleted) {
@@ -385,19 +384,20 @@ class UtxoSplitTransactionBuilder {
     assert(splitCount >= 2);
     await _initOutputVBytes();
     final utxo = _requiredUtxo;
-    final fee =
-        (_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
-        (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0);
-    Logger.log('--> UtxoSplitBuilder 균등분할 estimatedFee: $fee');
+    final int fee =
+        ((_oneOutputTxVBytes! + (_outputVBytes! * (splitCount - 1))) * feeRate +
+                (splitCount >= _outputCountVarIntThreshold ? _outputCountVarIntFeeMargin : 0))
+            .ceil();
+
     if (fee >= utxo.amount) {
-      throw FeeExceedsUtxoAmountException(estimatedFee: fee);
+      throw FeeExceedsUtxoAmountException(estimatedFee: fee.toDouble());
     }
 
     final availableAmount = utxo.amount - fee;
     final baseAmount = availableAmount ~/ splitCount;
 
     if (baseAmount <= dustThreshold) {
-      throw SplitOutputDustException(estimatedFee: fee);
+      throw SplitOutputDustException(estimatedFee: fee.toDouble());
     }
 
     final remainder = availableAmount % splitCount;
@@ -409,7 +409,7 @@ class UtxoSplitTransactionBuilder {
       desiredAmounts.add(baseAmount);
     }
 
-    return _buildSplitPreview(desiredAmounts.sublist(0, desiredAmounts.length - 1), fee);
+    return _buildSplitPreview(desiredAmounts.sublist(0, desiredAmounts.length - 1), fee.toDouble());
   }
 
   /// UTXO를 niceAmounts로 나누어지게 하는 count 최대 5개를 반환
