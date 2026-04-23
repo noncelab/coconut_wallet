@@ -638,6 +638,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
     _isPreparingNextStep = true;
     notifyIfNotDisposed();
+    await Future.delayed(const Duration(milliseconds: 200));
 
     try {
       _splitResult ??= await _buildTransaction();
