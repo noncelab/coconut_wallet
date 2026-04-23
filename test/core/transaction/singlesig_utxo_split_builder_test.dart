@@ -167,6 +167,32 @@ void main() {
       printSplitOutputs(result, '기본 균등 분할');
     });
 
+    test('기본 균등 분할 - 나머지가 있는 경우2', () async {
+      // P2WPKH: 1 input, 5 outputs → vSize 약 203 → fee = 203 sats (feeRate 1.0)
+      // 50000000 - 203 = 49999797 → 49999797 / 5 = 9999959 remainder 2
+      // splitAmountMap: {9999959: 3, 9999960: 2}
+      final utxo = createUtxo(50000000);
+      final builder = createBuilder(utxo);
+
+      final result = await builder.buildEqualAmountSplit(splitCount: 5).future;
+
+      expect(result.isSuccess, isTrue);
+      expectSuccessfulTransaction(result);
+
+      // splitAmountMap의 총 개수가 5인지 확인
+      final totalCount = result.splitAmountMap.values.fold<int>(0, (sum, c) => sum + c);
+      expect(totalCount, 5);
+
+      // 금액 합 + fee = utxo amount 검증
+      final totalAmount = result.splitAmountMap.entries.fold<int>(0, (sum, entry) => sum + entry.key * entry.value);
+      expect(totalAmount + result.estimatedFee, utxo.amount);
+
+      // feeRatio 검증 (소숫점 2자리)
+      expect(result.feeRatio, isA<double>());
+      expect(result.feeRatio.toString().split('.').last.length, lessThanOrEqualTo(2));
+      printSplitOutputs(result, '기본 균등 분할');
+    });
+
     test('나머지 없이 딱 떨어지는 경우', () async {
       // fee를 빼고 splitCount로 나누어 떨어지는 금액을 찾아야 함
       // 1 input, 2 outputs → vSize 약 135 → fee = 135 sats (feeRate 1.0)
@@ -599,6 +625,24 @@ void main() {
       print(formatAmountCountMap(result.splitAmountMap));
 
       expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+
+    /// feeRate 커질수록 예상 수수료 예측값이 차이가 커지는 상황
+    test('EqualAmountSplit 989807 / 20개로 나누기 / feeRate 1000', () async {
+      final utxo = createUtxo(989807);
+      final builder = createBuilder(utxo, 1000.0);
+
+      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 20);
+      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 20).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+      print('--- fee ---');
+      print(preview.estimatedFee);
+      print(result.estimatedFee);
+      expect(preview.estimatedFee, isNot(equals(result.estimatedFee)));
     });
   });
 }

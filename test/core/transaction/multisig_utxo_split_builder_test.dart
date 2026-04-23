@@ -33,7 +33,7 @@ void main() {
     timestamp: DateTime.now(),
   );
 
-  UtxoSplitTransactionBuilder createBuilder(UtxoState utxo, {double feeRate = 1.0}) => UtxoSplitTransactionBuilder(
+  UtxoSplitTransactionBuilder createBuilder([UtxoState? utxo, double feeRate = 1.0]) => UtxoSplitTransactionBuilder(
     utxo: utxo,
     dustThreshold: DustThresholds.p2wsh,
     feeRate: feeRate,
@@ -153,7 +153,7 @@ void main() {
 
     test('fee가 UTXO amount 대비 너무 크면 SplitInsufficientAmountException', () async {
       final utxo = createUtxo(50000);
-      final builder = createBuilder(utxo, feeRate: 1000.0);
+      final builder = createBuilder(utxo, 1000.0);
 
       expect(
         () => builder.buildEqualAmountSplit(splitCount: 2).future,
@@ -224,7 +224,7 @@ void main() {
 
     test('1BTC UTXO를 300000 sats씩 나누기 - feeRate 12.5, outputCount varInt threshold 초과', () async {
       final utxo = createUtxo(100000000);
-      final builder = createBuilder(utxo, feeRate: 12.5);
+      final builder = createBuilder(utxo, 12.5);
 
       final result = await builder.buildFixedAmountSplit(amountPerOutput: 300000).future;
 
@@ -254,7 +254,7 @@ void main() {
 
     test('feeRate가 너무 높아서 fee 포함 불가 → SplitInsufficientAmountException', () async {
       final utxo = createUtxo(100000);
-      final builder = createBuilder(utxo, feeRate: 100000);
+      final builder = createBuilder(utxo, 100000);
 
       expect(
         () => builder.buildFixedAmountSplit(amountPerOutput: 5000).future,
@@ -266,7 +266,7 @@ void main() {
   group('직접 나누기 (Custom Split)', () {
     test('1BTC를 0.1 x 5, 0.05 x 9로 나누기', () async {
       final utxo = createUtxo(100000000); // 1 BTC
-      final builder = createBuilder(utxo, feeRate: 1.0);
+      final builder = createBuilder(utxo, 1.0);
 
       final result = await builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 9}).future;
 
@@ -283,7 +283,7 @@ void main() {
 
     test('1BTC를 300000 sats 332개로 나누기', () async {
       final utxo = createUtxo(100000000); // 1 BTC
-      final builder = createBuilder(utxo, feeRate: 1.0);
+      final builder = createBuilder(utxo, 1.0);
 
       final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332}).future;
 
@@ -301,7 +301,7 @@ void main() {
 
     test('1BTC를 300000 sats 332개로 나누기, feeRate 12.5', () async {
       final utxo = createUtxo(100000000); // 1 BTC
-      final builder = createBuilder(utxo, feeRate: 12.5);
+      final builder = createBuilder(utxo, 12.5);
 
       final result = await builder.buildCustomAmountSplit(amountCountMap: {300000: 332}).future;
 
@@ -319,7 +319,7 @@ void main() {
 
     test('1BTC를 0.1 x 5, 0.05 x 10로 나누려 하면 SplitInsufficientAmountException', () async {
       final utxo = createUtxo(100000000); // 1 BTC
-      final builder = createBuilder(utxo, feeRate: 1.0);
+      final builder = createBuilder(utxo, 1.0);
 
       expect(
         () => builder.buildCustomAmountSplit(amountCountMap: {10000000: 5, 5000000: 10}).future,
@@ -329,7 +329,7 @@ void main() {
 
     test('1BTC를 0.5 x 1, 0.49999828 x 1로 나누려 하면 SplitOutputDustException', () async {
       final utxo = createUtxo(100000000); // 1 BTC
-      final builder = createBuilder(utxo, feeRate: 1.0);
+      final builder = createBuilder(utxo, 1.0);
 
       expect(
         () => builder.buildCustomAmountSplit(amountCountMap: {50000000: 1, 49999781: 1}).future,
@@ -339,7 +339,7 @@ void main() {
 
     test('feeRate 10000000에서 0.1BTC를 0.05 x 20으로 나누려 하면 SplitInsufficientAmountException이고 estimatedFee가 있다', () async {
       final utxo = createUtxo(10000000); // 0.1 BTC
-      final builder = createBuilder(utxo, feeRate: 10000000);
+      final builder = createBuilder(utxo, 10000000);
 
       try {
         await builder.buildCustomAmountSplit(amountCountMap: {5000000: 20}).future;
@@ -379,7 +379,7 @@ void main() {
 
     test('feeRatio 소숫점 2자리 검증', () async {
       final utxo = createUtxo(100000);
-      final builder = createBuilder(utxo, feeRate: 3.5);
+      final builder = createBuilder(utxo, 3.5);
 
       final result = await builder.buildEqualAmountSplit(splitCount: 3).future;
 
@@ -393,7 +393,7 @@ void main() {
 
     test('높은 fee rate에서도 정상 동작', () async {
       final utxo = createUtxo(1000000);
-      final builder = createBuilder(utxo, feeRate: 100.0);
+      final builder = createBuilder(utxo, 100.0);
 
       final result = await builder.buildEqualAmountSplit(splitCount: 2).future;
 
@@ -421,7 +421,7 @@ void main() {
     for (final (amount, feeRate, description) in testCases) {
       test('$description (amount: $amount, feeRate: $feeRate)', () async {
         final utxo = createUtxo(amount);
-        final builder = createBuilder(utxo, feeRate: feeRate);
+        final builder = createBuilder(utxo, feeRate);
         final maxCount = await builder.getMaxEqualSplitCount();
 
         print('[$description] amount: $amount, feeRate: $feeRate, maxCount: $maxCount');
@@ -449,5 +449,111 @@ void main() {
         expect(totalAmount + result.estimatedFee, utxo.amount);
       }, timeout: const Timeout(Duration(minutes: 10)));
     }
+  });
+
+  group('Preview compare with buildResult', () {
+    test('FixedAmountSplit 21000 / 10000', () async {
+      final utxo = createUtxo(21000);
+      final builder = createBuilder(utxo, 1.0);
+
+      final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
+      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+
+      expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+
+    test('FixedAmountSplit 50000 / 10000', () async {
+      final utxo = createUtxo(50000);
+      final builder = createBuilder(utxo, 1.0);
+
+      final SplitPreview preview = await builder.getFixedAmountSplitPreview(amountPerOutput: 10000);
+      final UtxoSplitResult result = await builder.buildFixedAmountSplit(amountPerOutput: 10000).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+
+      expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+
+    test('CustomAmountSplit 21000 / 10000', () async {
+      final utxo = createUtxo(21000);
+      final builder = createBuilder(utxo, 1.0);
+
+      final SplitPreview preview = await builder.getCustomAmountSplitPreview(amountCountMap: {10000: 2});
+      final UtxoSplitResult result = await builder.buildCustomAmountSplit(amountCountMap: {10000: 2}).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+
+      expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+
+    test('EqualAmountSplit 99990000 / 5000개로 나누기', () async {
+      final utxo = createUtxo(99990000);
+      final builder = createBuilder(utxo, 1.0);
+
+      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 5000);
+      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 5000).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+
+      expect(preview.estimatedFee, equals(result.estimatedFee));
+    });
+
+    test('EqualAmountSplit 989807 / 20개로 나누기 / feeRate 1000', () async {
+      final utxo = createUtxo(989807);
+      final builder = createBuilder(utxo, 5.0);
+
+      final SplitPreview preview = await builder.getEqualAmountSplitPreview(splitCount: 20);
+      final UtxoSplitResult result = await builder.buildEqualAmountSplit(splitCount: 20).future;
+
+      print('--- preview.amountCountMap ---');
+      print(formatAmountCountMap(preview.amountCountMap));
+      print('--- result.splitAmountMap ---');
+      print(formatAmountCountMap(result.splitAmountMap));
+      print('--- fee ---');
+      print(preview.estimatedFee);
+      print(result.estimatedFee);
+      expect(preview.estimatedFee, equals(result.estimatedFee));
+
+      builder.feeRate = 1000;
+
+      final SplitPreview preview2 = await builder.getEqualAmountSplitPreview(splitCount: 20);
+      final UtxoSplitResult result2 = await builder.buildEqualAmountSplit(splitCount: 20).future;
+
+      print('--- preview2.amountCountMap ---');
+      print(formatAmountCountMap(preview2.amountCountMap));
+      print('--- result2.splitAmountMap ---');
+      print(formatAmountCountMap(result2.splitAmountMap));
+      print('--- fee2 ---');
+      print(preview2.estimatedFee);
+      print(result2.estimatedFee);
+      expect(preview2.estimatedFee, equals(result2.estimatedFee));
+
+      final builder2 = createBuilder(utxo, 1000.0);
+      final SplitPreview preview3 = await builder2.getEqualAmountSplitPreview(splitCount: 20);
+      final UtxoSplitResult result3 = await builder2.buildEqualAmountSplit(splitCount: 20).future;
+
+      print('--- preview3.amountCountMap ---');
+      print(formatAmountCountMap(preview3.amountCountMap));
+      print('--- result3.splitAmountMap ---');
+      print(formatAmountCountMap(result3.splitAmountMap));
+      print('--- fee3 ---');
+      print(preview3.estimatedFee);
+      print(result3.estimatedFee);
+      expect(preview3.estimatedFee, equals(result3.estimatedFee));
+    });
   });
 }

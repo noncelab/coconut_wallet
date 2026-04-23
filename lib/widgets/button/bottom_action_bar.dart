@@ -39,24 +39,26 @@ class BottomActionBarSlide extends StatelessWidget {
 }
 
 class BottomActionBar extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
+  static const double _gradientExtensionAboveChild = 48;
 
-  const BottomActionBar({super.key, required this.child, required this.padding});
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  const BottomActionBar({super.key, required this.child, this.padding});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: padding,
+      padding: padding ?? EdgeInsets.only(left: 16.0, right: 16.0, bottom: MediaQuery.paddingOf(context).bottom + 16),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Color(0xFF1D1D1D), Color(0xFF1D1D1D)],
-          stops: [0.0, 0.5, 1.0],
+          colors: [Colors.transparent, Color.fromARGB(255, 29, 29, 29)],
+          stops: [0.0, 0.6],
         ),
       ),
-      child: child,
+      child: Padding(padding: const EdgeInsets.only(top: _gradientExtensionAboveChild), child: child),
     );
   }
 }

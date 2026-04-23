@@ -61,7 +61,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
 
     CommonBottomSheets.showDraggableBottomSheet(
       context: context,
-      title: t.expected_fee_bottom_sheet.title,
+      title: t.estimated_fee_bottom_sheet.title,
       backgroundColor: CoconutColors.gray900,
       initialChildSize: 0.75,
       minChildSize: 0.74,
@@ -86,28 +86,31 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                  child: Column(
-                    children: [_buildExpectedFeeRow(), CoconutLayout.spacing_200h, _buildFeeRateInputRow(context)],
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              controller: scrollController,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: Column(
+                      children: [_buildExpectedFeeRow(), CoconutLayout.spacing_200h, _buildFeeRateInputRow(context)],
+                    ),
                   ),
-                ),
-                CoconutLayout.spacing_400h,
-              ],
+                  CoconutLayout.spacing_400h,
+                ],
+              ),
             ),
           ),
-        ),
-        _buildFeeRateKeyboardToolbar(context),
-      ],
+          _buildFeeRateKeyboardToolbar(context),
+        ],
+      ),
     );
   }
 
@@ -120,10 +123,20 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              t.expected_fee_bottom_sheet.expected_fee,
+              t.estimated_fee_bottom_sheet.estimated_fee,
               style: CoconutTypography.body3_12.setColor(CoconutColors.gray500),
             ),
-            Text(estimatedFeeTextGetter(), style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+            CoconutLayout.spacing_200w,
+            Expanded(
+              child: FittedBox(
+                alignment: Alignment.centerRight,
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  estimatedFeeTextGetter(),
+                  style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -133,7 +146,7 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
   Widget _buildFeeRateInputRow(BuildContext context) {
     return Row(
       children: [
-        Text(t.expected_fee_bottom_sheet.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
+        Text(t.estimated_fee_bottom_sheet.fee_rate, style: CoconutTypography.body3_12.setColor(CoconutColors.gray500)),
         Expanded(
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -141,39 +154,45 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
             child: IntrinsicWidth(
               child: Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: CoconutTextField(
-                  textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                  textInputAction: TextInputAction.done,
-                  textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                  enableInteractiveSelection: false,
-                  textAlign: TextAlign.end,
-                  controller: feeRateController,
-                  focusNode: feeRateFocusNode,
-                  backgroundColor: CoconutColors.gray700,
-                  onEditingComplete: onEditingComplete,
-                  height: 30,
-                  padding: const EdgeInsets.only(left: 12, right: 2),
-                  onChanged: (text) {
-                    final isTooLow = onFeeRateChanged(text);
-                    if (isTooLow) {
-                      Fluttertoast.showToast(
-                        msg: t.send_screen.fee_rate_too_low,
-                        backgroundColor: CoconutColors.gray700,
-                        toastLength: Toast.LENGTH_SHORT,
-                      );
-                    }
-                  },
-                  maxLines: 1,
-                  fontFamily: 'SpaceGrotesk',
-                  fontSize: 14,
-                  activeColor: CoconutColors.white,
-                  fontWeight: FontWeight.bold,
-                  borderRadius: 8,
-                  suffix: Container(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Text(
-                      t.send_screen.fee_rate_suffix,
-                      style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minWidth: 110),
+                    child: CoconutTextField(
+                      textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputAction: TextInputAction.done,
+                      textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      enableInteractiveSelection: false,
+                      textAlign: TextAlign.end,
+                      controller: feeRateController,
+                      focusNode: feeRateFocusNode,
+                      backgroundColor: CoconutColors.gray700,
+                      onEditingComplete: onEditingComplete,
+                      height: 30,
+                      padding: const EdgeInsets.only(left: 12, right: 2),
+                      onChanged: (text) {
+                        final isTooLow = onFeeRateChanged(text);
+                        if (isTooLow) {
+                          Fluttertoast.showToast(
+                            msg: t.send_screen.fee_rate_too_low,
+                            backgroundColor: CoconutColors.gray700,
+                            toastLength: Toast.LENGTH_SHORT,
+                          );
+                        }
+                      },
+                      maxLines: 1,
+                      fontFamily: 'SpaceGrotesk',
+                      fontSize: 14,
+                      activeColor: CoconutColors.white,
+                      fontWeight: FontWeight.bold,
+                      borderRadius: 8,
+                      suffix: Container(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Text(
+                          t.send_screen.fee_rate_suffix,
+                          style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -248,30 +267,29 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
   }
 
   Widget _buildFeeItem(BuildContext context, String imagePath, double? sats, bool isFetching) {
-    final child = Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        border: Border.all(width: 1, color: CoconutColors.gray700),
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            imagePath,
-            height: 12,
-            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-          ),
-          CoconutLayout.spacing_100w,
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: Text(
+    final child = MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(width: 1, color: CoconutColors.gray700),
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              imagePath,
+              height: 12,
+              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+            ),
+            CoconutLayout.spacing_100w,
+            Text(
               "${sats != null ? sats.toStringAsFixed(1) : "-"} ${t.send_screen.fee_rate_suffix}",
               style: CoconutTypography.body2_14.setColor(CoconutColors.white),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
 

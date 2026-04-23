@@ -53,7 +53,6 @@ class CommonBottomSheets {
               Padding(
                 padding: titlePadding,
                 child: SizedBox(
-                  height: 32,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
@@ -227,9 +226,14 @@ class CommonBottomSheets {
     bool showDragHandle = true,
     String? title,
     String? subLabel,
+    TextStyle? titleTextStyle,
+    List<Widget>? actionList,
     Color backgroundColor = CoconutColors.black,
+    bool adjustForKeyboardInset = true,
+    ValueChanged<DraggableScrollableController>? onControllerReady,
   }) async {
     final draggableController = DraggableScrollableController();
+    onControllerReady?.call(draggableController);
     bool isAnimating = false;
 
     // initialChildSize가 지정되지 않은 경우에만 자동 계산
@@ -256,7 +260,7 @@ class CommonBottomSheets {
             expand: false,
             builder: (context, scrollController) {
               void handleDrag() {
-                if (isAnimating) return;
+                if (isAnimating || !draggableController.isAttached) return;
                 final extent = draggableController.size;
                 final targetExtent =
                     (extent - minChildSize).abs() < (extent - maxChildSize).abs() ? minChildSize + 0.01 : maxChildSize;
@@ -285,6 +289,7 @@ class CommonBottomSheets {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
+                            if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
                             draggableController.jumpTo(draggableController.size + delta);
                           },
@@ -313,6 +318,7 @@ class CommonBottomSheets {
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: (details) {
+                            if (!draggableController.isAttached) return;
                             final delta = -details.primaryDelta! / MediaQuery.of(context).size.height;
                             draggableController.jumpTo(draggableController.size + delta);
                           },
@@ -323,9 +329,15 @@ class CommonBottomSheets {
                             handleDrag();
                           },
                           child: CoconutAppBar.build(
-                            title: title,
                             context: context,
                             onBackPressed: null,
+                            customTitle: Text(
+                              title,
+                              style: titleTextStyle ?? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
                             subLabel: Text(
                               subLabel ?? '',
                               style: CoconutTypography.body3_12.setColor(CoconutColors.black),
@@ -333,11 +345,14 @@ class CommonBottomSheets {
                             backgroundColor: backgroundColor,
                             showSubLabel: subLabel != null,
                             isBottom: true,
+                            actionButtonList: actionList,
                           ),
                         ),
                       Expanded(
                         child: Padding(
-                          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                          padding: EdgeInsets.only(
+                            bottom: adjustForKeyboardInset ? MediaQuery.of(context).viewInsets.bottom : 0,
+                          ),
                           child: childBuilder(scrollController),
                         ),
                       ),
@@ -358,16 +373,27 @@ class CommonBottomSheets {
   static Future<T?> showSelectableDraggableSheet<T>({
     required BuildContext context,
     required String title,
-    required List<T> items,
-    required Object Function(T item) getItemId,
-    required SelectableItemBuilder<T> itemBuilder,
+    List<T>? items,
+    Object Function(T item)? getItemId,
+    SelectableItemBuilder<T>? itemBuilder,
     Object? initiallySelectedId,
     String? confirmText,
     double minChildSize = 0.5,
     double maxChildSize = 0.9,
     double? initialChildSize,
     Color backgroundColor = CoconutColors.black,
+    TextStyle? titleTextStyle,
+    bool showGradient = true,
+    bool allowConfirmWhenSelectionUnchanged = false,
+    Widget Function(ScrollController scrollController)? childBuilder,
+    bool adjustForKeyboardInset = true,
+    ValueChanged<DraggableScrollableController>? onControllerReady,
   }) async {
+    assert(
+      childBuilder != null || (items != null && getItemId != null && itemBuilder != null),
+      'Either childBuilder or items/getItemId/itemBuilder must be provided.',
+    );
+
     return showDraggableBottomSheet<T>(
       context: context,
       title: title,
@@ -375,17 +401,24 @@ class CommonBottomSheets {
       maxChildSize: maxChildSize,
       initialChildSize: initialChildSize,
       backgroundColor: backgroundColor,
-      childBuilder: (scrollController) {
-        return SelectableBottomSheetBody<T>(
-          scrollController: scrollController,
-          items: items,
-          getItemId: getItemId,
-          itemBuilder: itemBuilder,
-          initiallySelectedId: initiallySelectedId,
-          confirmText: confirmText ?? t.select,
-          backgroundColor: backgroundColor,
-        );
-      },
+      titleTextStyle: titleTextStyle,
+      adjustForKeyboardInset: adjustForKeyboardInset,
+      onControllerReady: onControllerReady,
+      childBuilder:
+          childBuilder ??
+          (scrollController) {
+            return SelectableBottomSheetBody<T>(
+              scrollController: scrollController,
+              items: items!,
+              getItemId: getItemId!,
+              itemBuilder: itemBuilder!,
+              initiallySelectedId: initiallySelectedId,
+              confirmText: confirmText ?? t.select,
+              backgroundColor: backgroundColor,
+              showGradient: showGradient,
+              allowConfirmWhenSelectionUnchanged: allowConfirmWhenSelectionUnchanged,
+            );
+          },
     );
   }
 
@@ -434,7 +467,7 @@ class CommonBottomSheets {
   }
 }
 
-class SelectableBottomSheetTextItem extends StatelessWidget {
+class SelectableBottomSheetTextItem extends StatefulWidget {
   final Widget child;
   final bool isSelected;
   final VoidCallback? onTap;
@@ -451,39 +484,58 @@ class SelectableBottomSheetTextItem extends StatelessWidget {
   });
 
   @override
+  State<SelectableBottomSheetTextItem> createState() => _SelectableBottomSheetTextItemState();
+}
+
+class _SelectableBottomSheetTextItemState extends State<SelectableBottomSheetTextItem> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: isDisabled ? 0.5 : 1.0,
-      child: ShrinkAnimationButton(
-        onPressed: () {
-          if (isDisabled) return;
-          if (onTap != null) onTap!();
-        },
-        defaultColor: CoconutColors.gray900,
-        pressedColor: CoconutColors.gray800,
-        borderRadius: 8,
-        borderWidth: 0,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Row(
-            children: [
-              Expanded(child: child),
-              if (isSelected || reserveCheckIconSpace)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  width: 18,
-                  height: 18,
-                  child:
-                      isSelected
-                          ? SvgPicture.asset(
-                            'assets/svg/check.svg',
-                            width: 16,
-                            height: 16,
-                            colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
-                          ).scaleInAnimation(duration: const Duration(milliseconds: 300))
-                          : null,
+      opacity: widget.isDisabled ? 0.5 : 1.0,
+      child: Listener(
+        onPointerDown: (_) => setState(() => _isPressed = true),
+        onPointerUp: (_) => setState(() => _isPressed = false),
+        onPointerCancel: (_) => setState(() => _isPressed = false),
+        behavior: HitTestBehavior.opaque,
+        child: ShrinkAnimationButton(
+          onPressed: () {
+            if (widget.isDisabled) return;
+            if (widget.onTap != null) widget.onTap!();
+          },
+          defaultColor: CoconutColors.gray900,
+          pressedColor: CoconutColors.gray800,
+          borderRadius: 8,
+          borderWidth: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 100),
+                    opacity: _isPressed ? 0.5 : 1.0,
+                    child: widget.child,
+                  ),
                 ),
-            ],
+                if (widget.isSelected || widget.reserveCheckIconSpace)
+                  Container(
+                    margin: const EdgeInsets.only(left: 20, right: 8),
+                    width: 18,
+                    height: 18,
+                    child:
+                        widget.isSelected
+                            ? SvgPicture.asset(
+                              'assets/svg/check.svg',
+                              width: 16,
+                              height: 16,
+                              colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                            ).scaleInAnimation(duration: const Duration(milliseconds: 300))
+                            : null,
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -544,76 +596,81 @@ class _SelectableBottomSheetBodyState<T> extends State<SelectableBottomSheetBody
 
   @override
   Widget build(BuildContext context) {
-    final bottomSafeArea = MediaQuery.of(context).padding.bottom;
+    const buttonSpacingHeight = Sizes.size12;
+    const platformButtonHeightAdjustment = 3.0;
     final buttonAreaHeight =
-        widget.showConfirmButton ? FixedBottomButton.fixedBottomButtonDefaultHeight + bottomSafeArea : 0.0;
+        widget.showConfirmButton
+            ? FixedBottomButton.fixedBottomButtonDefaultHeight + platformButtonHeightAdjustment + buttonSpacingHeight
+            : 0.0;
 
-    return Container(
-      color: widget.backgroundColor,
-      child: SafeArea(
-        top: false,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              top: 0,
-              bottom: buttonAreaHeight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
-                child: ListView.builder(
-                  controller: widget.scrollController,
-                  shrinkWrap: false,
-                  primary: widget.scrollController == null,
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: Sizes.size16),
-                  itemCount: widget.items.length,
-                  itemBuilder: (context, index) {
-                    final item = widget.items[index];
-                    final id = widget.getItemId(item);
-                    final isSelected = _selectedId == id;
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+      child: Container(
+        color: widget.backgroundColor,
+        child: SafeArea(
+          top: false,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                bottom: buttonAreaHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+                  child: ListView.builder(
+                    controller: widget.scrollController,
+                    shrinkWrap: false,
+                    primary: widget.scrollController == null,
+                    physics: const ClampingScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: Sizes.size16),
+                    itemCount: widget.items.length,
+                    itemBuilder: (context, index) {
+                      final item = widget.items[index];
+                      final id = widget.getItemId(item);
+                      final isSelected = _selectedId == id;
 
-                    void handleTap() {
-                      vibrateExtraLight();
-                      setState(() {
-                        _selectedId = _selectedId == id ? null : id;
-                      });
-                      widget.onSelectionChanged?.call(
-                        _selectedId == null
-                            ? null
-                            : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
-                      );
-                    }
-
-                    return widget.itemBuilder(context, item, isSelected, handleTap);
-                  },
-                ),
-              ),
-            ),
-            if (widget.showConfirmButton)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: SizedBox(
-                  height: buttonAreaHeight,
-                  child: FixedBottomButton(
-                    showGradient: widget.showGradient,
-                    isVisibleAboveKeyboard: false,
-                    bottomPadding: 0,
-                    onButtonClicked: () {
-                      final selectedItem =
+                      void handleTap() {
+                        vibrateExtraLight();
+                        setState(() {
+                          _selectedId = _selectedId == id ? null : id;
+                        });
+                        widget.onSelectionChanged?.call(
                           _selectedId == null
                               ? null
-                              : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
-                      Navigator.pop(context, selectedItem);
+                              : widget.items.firstWhere((candidate) => widget.getItemId(candidate) == _selectedId),
+                        );
+                      }
+
+                      return widget.itemBuilder(context, item, isSelected, handleTap);
                     },
-                    isActive:
-                        _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
-                    text: widget.confirmText,
-                    backgroundColor: CoconutColors.white,
                   ),
                 ),
               ),
-          ],
+              if (widget.showConfirmButton)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SizedBox(
+                    height: buttonAreaHeight,
+                    child: FixedBottomButton(
+                      showGradient: widget.showGradient,
+                      isVisibleAboveKeyboard: false,
+                      bottomPadding: 16,
+                      onButtonClicked: () {
+                        final selectedItem =
+                            _selectedId == null
+                                ? null
+                                : widget.items.firstWhere((item) => widget.getItemId(item) == _selectedId);
+                        Navigator.pop(context, selectedItem);
+                      },
+                      isActive:
+                          _selectedId != null && (widget.allowConfirmWhenSelectionUnchanged || _hasSelectionChanged),
+                      text: widget.confirmText,
+                      backgroundColor: CoconutColors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

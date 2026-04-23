@@ -63,6 +63,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String titleText = widget.isSplitMode ? t.select_utxo : t.utxo_selection_screen.title;
     return ChangeNotifierProxyProvider<ConnectivityProvider, UtxoSelectionViewModel>(
       create: (_) => _viewModel,
       update: (_, connectivityProvider, viewModel) {
@@ -86,7 +87,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                     backgroundColor: CoconutColors.black,
                     appBar: CoconutAppBar.build(
                       backgroundColor: CoconutColors.black,
-                      title: t.utxo_selection_screen.title,
+                      customTitle: Text(
+                        titleText,
+                        style:
+                            widget.isSplitMode
+                                ? CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)
+                                : CoconutTypography.body2_14.setColor(CoconutColors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                       context: context,
                       actionButtonList: [
                         if (widget.showSkipButton)
@@ -175,7 +185,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                                 vibrateLight();
                                                 Navigator.pop(context, _viewModel.selectedUtxoList);
                                               },
-                                              text: t.complete,
+                                              text: t.done,
                                               isActive: _viewModel.hasSelectionChanged,
                                               showGradient: true,
                                               horizontalPadding: 16,
@@ -232,6 +242,9 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (mounted) {
           _viewModel.initialize(widget.selectedUtxoList);
+          if (widget.isSplitMode) {
+            _viewModel.changeUtxoOrder(UtxoOrder.byAmountDesc);
+          }
         }
 
         _updateOrderDropdownButtonPosition();

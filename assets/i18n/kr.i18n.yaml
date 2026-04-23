@@ -103,9 +103,9 @@ log_viewer: "로그 뷰어"
 go_to_settings: "설정하러 가기"
 name: "이름"
 account: "계정"
-merge_utxos: "UTXO 합치기"
-split_utxo: "UTXO 나누기"
-organize: "정리하기"
+merge_utxos: "합치기"
+split_utxo: "나누기"
+apply: "정리하기"
 
 relative_time:
   just_now: "방금 전"
@@ -231,7 +231,7 @@ wallet_home_screen:
       fake_balance_input_placeholder: "총 가짜 잔액을 설정해 주세요.(BTC 단위)"
       fake_balance_input_description: "여러 지갑이 있을 경우, 각 지갑의 잔액은 자동으로 계산돼요."
       fake_balance_input_exceeds_error: "최대 2100만 BTC까지 설정할 수 있어요"
-    hide_fiat_price: "법정화폐 잔액 숨기기"
+    hide_fiat_price: "법정 화폐 잔액 숨기기"
     hide_fiat_price_on_home: "홈 화면에 법정 화폐 잔액을 표시하지 않아요."
     category:
       total_balance: "잔액 합계"
@@ -380,8 +380,8 @@ wallet_list:
     finish: "편집 종료"
     unsaved_changes_confirm_exit: "저장되지 않은 변경 사항이 있어요.\n그래도 나가시겠어요?"
   bottom_sheet:
-    hide_fiat_price: "법정화폐 잔액 숨기기"
-    hide_fiat_price_description: "이 화면에 법정화폐 잔액을 표시하지 않아요."
+    hide_fiat_price: "법정 화폐 잔액 숨기기"
+    hide_fiat_price_description: "이 화면에 법정 화폐 잔액을 표시하지 않아요."
     visible: "표시 중"
 
 # lib/screens/review
@@ -475,9 +475,7 @@ send_address_screen:
   amount_placeholder: "수량을 입력해 주세요"
 send_confirm_screen:
   title: "거래 정보 확인"
-  total_cost:
-    total: "총 $n"
-    sentence: "가 소요됩니다"
+  total_required_amount: "총 $n가 소요됩니다"
   output_detail_title: "출력 상세 보기"
   flow_input_title: "입력 #$index"
   flow_output_title: "출력 #$index"
@@ -771,19 +769,21 @@ merge_utxos_screen:
   not_enough_utxos: "지금은 정리할 UTXO가 많지 않아요"
   efficient_utxo_state: "현재 ${count}개의 UTXO가 있어요\n지금은 합치지 않아도 충분히 효율적이에요"
   merge_anyway: "그래도 합치기"
-  select_merge_criteria: "어떤 기준으로 정리할까요?"
-  select_amount_criteria: "금액 기준을 선택하세요."
-  select_tag: "태그를 선택하세요."
-  merge_criteria: "정리 기준"
-  merge_criteria_bottomsheet:
+  select_merge_method: "어떤 기준으로 정리할까요?"
+  select_amount_range: "금액 기준을 선택하세요."
+  select_tag: "태그를 선택하세요"
+  select_tag_bottomsheet_title: "태그 선택"
+  selected_tag: "태그 기준"
+  merge_method: "정리 기준"
+  merge_method_bottomsheet:
     title: "정리 기준 선택"
     merge_small_amounts: "금액이 작은 UTXO를 합쳐요"
     merge_same_tag: "같은 태그의 UTXO를 합쳐요"
     merge_same_address: "같은 주소로 받은 UTXO를 합쳐요"
-  amount_criteria: "금액 기준"
-  amount_criteria_bottomsheet:
+  amount_range: "금액 기준"
+  amount_range_bottomsheet:
     title: "금액 기준 선택"
-    recommendation_criteria: "추천 기준"
+    recommendation_range: "추천 기준"
     below_001: "0.01 BTC 이하"
     below_001_description: "정리 대상 늘리기"
     below_0001: "0.001 BTC 이하"
@@ -792,14 +792,16 @@ merge_utxos_screen:
     below_00001_description: "최소 정리"
     or_less: "이하"
     less_than: "미만"
-    custom: "직접 설정"
+    custom: "직접 입력"
   receive_address: "받는 주소"
-  receive_address_summary_count: "UTXO ${count}개"
-  receive_address_summary_headline_or_less: "${amount} UTXO ${count}개"
-  receive_address_summary_headline_under: "${amount} UTXO ${count}개"
-  receive_address_summary_total: "\n총 ${amount}를"
-  receive_address_summary_to_wallet: "\n${wallet_name}의 새로운 주소로 합칠게요"
-  receive_address_summary_to_selected_address: "\n선택한 주소로 합칠게요"
+  summary_card_headline: "${amount_range} UTXO ${count}개"
+  summary_card_headline_or_less: "${amount} 이하"
+  summary_card_headline_under: "${amount} 미만"
+  summary_card_total: "\n총 ${amount}를"
+  summary_card_destination: "\n${destination} 주소로 합칠게요."
+  summary_card_to_wallet_destination: "${wallet_name}의 새로운"
+  summary_card_to_unowned_address_destination: "지갑에서 확인되지 않는"
+  summary_card_to_selected_address_destination: "선택한" 
   used_utxos_count: "${total}개 중 ${used}개 사용"
   receive_address_bottomsheet:
     title: "주소 선택"
@@ -810,14 +812,13 @@ merge_utxos_screen:
   count: 
     one: "${count}개"
     other: "${count}개"
-  merge_action: "정리하기"
   selected_tag_title: "#${name} 태그"
   reused_address: "중복 주소"
   dust_warning: "dust 공격으로 의심되는 UTXO가 포함되어 있어요"
   exclude_dust: "제외하기"
   fee_rate_input_placeholder: "수수료율을 입력해 주세요."
-  no_utxos_for_amount_criteria: "기준에 해당하는 UTXO가 없어요."
-  single_utxo_for_amount_criteria: "기준에 해당하는 UTXO가 1개뿐이라 합칠 수 없어요."
+  no_utxos_for_amount_range: "기준에 해당하는 UTXO가 없어요."
+  single_utxo_for_amount_range: "기준에 해당하는 UTXO가 1개뿐이라 합칠 수 없어요."
   future_fee_saving: "지금 합치면 약 ${amount} sats를 절약할 수 있어요"
   merge_cta_neutral_low_saving: "합쳐도 수수료 절감 효과가 크지 않아요"
   merge_cta_efficient_without_merge: "합치지 않아도 충분히 효율적이에요"
@@ -826,23 +827,21 @@ merge_utxos_screen:
   merge_cta_discouraged_costly: "합치는 비용이 절약되는 수수료보다 더 커요"
   exception:
     fee_too_high: "수수료가 너무 커요"
-  transaction_build_error: "예측하지 못한 오류가 발생했습니다."
-  transaction_build_error_with_message: "예측하지 못한 오류가 발생했습니다.\n${error_msg}"
 
 
 split_utxo_screen:
   title: "UTXO 나누기"
   placeholder_utxo: "UTXO를 선택하세요"
-  placeholder_criteria: "분할 기준을 선택하세요"
   placeholder_split_amount: "금액을 입력하세요"
-  placeholder_expected_fee: "수수료율을 입력해 주세요"
+  placeholder_estimated_fee: "수수료율을 입력해 주세요"
   question_select_utxo: "어떤 UTXO를 나눌까요?"
-  question_select_criteria: "어떻게 나눌까요?"
+  question_select_method: "어떻게 나눌까요?"
   question_split_by_amount: "얼마씩 나눌까요?"
   question_split_evenly: "몇 개로 나눌까요?"
-  label_split_criteria: "분할 기준"
+  label_split_method: "분할 기준"
   label_selected_utxo: "선택한 UTXO"
-  label_expected_fee: "예상 수수료"
+  label_estimated_fee: "예상 수수료"
+  add_new_amount: "금액 추가하기"
   and_more_tags: "외 ${count}개"
   utxo_error: "이 금액은 나누기에 너무 작아요"
   utxo_warning: "수수료 비중이 높아 나누기에 적합하지 않을 수 있어요"
@@ -851,8 +850,8 @@ split_utxo_screen:
     insufficient_after_fee: "수수료를 포함하면 나눌 수 없는 금액이에요"
     manual_sum_over_input: "금액이 부족해요"
   fee_error: "수수료가 UTXO 금액보다 커요"
-  dust_error: "이 개수로 나누면 작은 금액(dust)이 생성돼요"
-  criteria_bottom_sheet:
+  dust_error: "나누면 작은 금액(dust)이 생겨요"
+  method_bottom_sheet:
     title: "분할 기준 선택"
     split_by_amount: "일정 금액으로 나눌게요"
     split_evenly: "균등하게 나눌게요"
@@ -978,7 +977,8 @@ errors:
   transaction_draft:
     invalid_id: "임시 저장 정보를 찾을 수 없습니다"
   empty_input: "트랜잭션 입력 정보를 불러올 수 없어요. 멤풀에서 확인해 주세요."
-  
+  unexpected: "예상치 못한 오류가 발생했어요."
+
 text_field:
   enter_fee_with_two_decimal_places: "소수점 두자리까지 가능해요 (sat/vB)"
   enter_fee_directly: "직접 입력하기"
@@ -1128,9 +1128,9 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
 
-expected_fee_bottom_sheet:
+estimated_fee_bottom_sheet:
     title: "예상 수수료"
-    expected_fee: "예상 수수료"
+    estimated_fee: "예상 수수료"
     fee_rate: "수수료율"
 
 long_pressed_menu:

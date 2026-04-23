@@ -105,6 +105,12 @@ String _formatBtcText(String text) {
 
 int _calculateSelectionOffset({required String originalText, required String formattedText, required int baseOffset}) {
   final clampedOffset = baseOffset.clamp(0, originalText.length);
+
+  // .을 입력하면 0.으로 바뀌는 경우(BTC 단위 입력 시 해당) .뒤에 커서를 두기 위해 따로 처리
+  if (originalText.startsWith('.') && formattedText.startsWith('0.')) {
+    return (clampedOffset + 1).clamp(0, formattedText.length);
+  }
+
   final meaningfulCharCount = originalText.substring(0, clampedOffset).replaceAll(',', '').length;
 
   var seenMeaningfulChars = 0;

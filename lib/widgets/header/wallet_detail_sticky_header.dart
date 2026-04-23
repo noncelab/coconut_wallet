@@ -11,6 +11,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
   final bool isVisible;
   final BitcoinUnit currentUnit;
   final AnimatedBalanceData animatedBalanceData;
+  final String fiatPrice;
 
   const WalletDetailStickyHeader({
     required this.widgetKey,
@@ -18,6 +19,7 @@ class WalletDetailStickyHeader extends StatefulWidget {
     required this.isVisible,
     required this.currentUnit,
     required this.animatedBalanceData,
+    required this.fiatPrice,
   }) : super(key: widgetKey);
 
   @override
@@ -40,21 +42,35 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
             children: [
               Container(
                 color: CoconutColors.black,
-                padding: const EdgeInsets.only(left: 16.0, right: 16, top: 20.0),
+                padding: const EdgeInsets.only(left: 16.0, right: 16, top: 0),
                 alignment: Alignment.center,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.center,
-                  child: BitcoinAmountUnit(
-                    currentUnit: widget.currentUnit,
-                    unitStyle: CoconutTypography.body2_14_Number,
-                    child: AnimatedBalance(
-                      prevValue: widget.animatedBalanceData.previous,
-                      value: widget.animatedBalanceData.current,
-                      currentUnit: widget.currentUnit,
-                      textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.fiatPrice.isNotEmpty)
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.center,
+                        child: Text(
+                          widget.fiatPrice,
+                          style: CoconutTypography.body3_12_Number.setColor(CoconutColors.gray500),
+                        ),
+                      ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: BitcoinAmountUnit(
+                        currentUnit: widget.currentUnit,
+                        unitStyle: CoconutTypography.body2_14_Number,
+                        child: AnimatedBalance(
+                          prevValue: widget.animatedBalanceData.previous,
+                          value: widget.animatedBalanceData.current,
+                          currentUnit: widget.currentUnit,
+                          textStyle: CoconutTypography.body1_16_NumberBold.merge(const TextStyle(fontSize: 18)),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
               Stack(
@@ -68,9 +84,9 @@ class _WalletDetailStickyHeaderState extends State<WalletDetailStickyHeader> {
                           color: CoconutColors.black,
                           boxShadow: [
                             BoxShadow(
-                              color: Color.fromRGBO(255, 255, 255, 0.2),
+                              color: Color.fromRGBO(255, 255, 255, 0.12),
                               offset: Offset(0, 5),
-                              blurRadius: 4,
+                              blurRadius: 12,
                               spreadRadius: -2,
                             ),
                           ],

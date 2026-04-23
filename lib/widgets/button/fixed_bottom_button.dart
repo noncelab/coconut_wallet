@@ -23,6 +23,7 @@ class FixedBottomButton extends StatefulWidget {
     this.backgroundColor = CoconutColors.primary,
     this.pressedBackgroundColor,
     this.textColor = CoconutColors.black,
+    this.gradientColor = CoconutColors.black,
     this.gradientKey,
     this.buttonKey,
   });
@@ -40,6 +41,7 @@ class FixedBottomButton extends StatefulWidget {
   final Color backgroundColor;
   final Color? pressedBackgroundColor;
   final Color textColor;
+  final Color gradientColor;
   final Key? gradientKey;
   final Key? buttonKey;
 
@@ -75,19 +77,25 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                 child: Container(
                   padding:
                       widget.gradientPadding ??
-                      EdgeInsets.only(left: 16, right: 16, bottom: 40, top: buttonHeight + widget.bottomPadding),
+                      EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 40,
+                        top: buttonHeight + widget.bottomPadding + (widget.subWidget != null ? 75 : 50),
+                      ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        CoconutColors.black.withValues(alpha: 0.15),
-                        CoconutColors.black.withValues(alpha: 0.4),
-                        CoconutColors.black.withValues(alpha: 0.7),
-                        CoconutColors.black,
+                        widget.gradientColor.withValues(alpha: 0.1),
+                        widget.gradientColor.withValues(alpha: 0.4),
+                        widget.gradientColor.withValues(alpha: 0.8),
+                        widget.gradientColor,
+                        widget.gradientColor,
                       ],
-                      stops: const [0.0, 0.03, 0.07, 0.15, 0.23],
+                      stops: const [0.0, 0.1, 0.2, 0.35, 0.5, 1.0],
                     ),
                   ),
                 ),

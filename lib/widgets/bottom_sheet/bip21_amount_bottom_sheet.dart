@@ -200,7 +200,7 @@ class _Bip21AmountBottomSheetState extends State<Bip21AmountBottomSheet> {
               if (!_didEditAmount) return;
               Navigator.pop(context, Bip21AmountBottomSheetResult(didEdit: true, amountInSats: _amountInSats));
             },
-            text: t.complete,
+            text: t.done,
           ),
         ],
       ),
