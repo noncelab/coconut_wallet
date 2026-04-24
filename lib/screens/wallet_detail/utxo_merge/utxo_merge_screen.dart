@@ -4,7 +4,7 @@ import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/exceptions/transaction_creation/transaction_creation_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/utxo_merge_enums.dart';
+import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -18,7 +18,10 @@ import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/screens/common/tag_select_bottom_sheet.dart';
 import 'package:coconut_wallet/screens/send/refactor/send_screen.dart';
 import 'package:coconut_wallet/screens/wallet_detail/utxo_overview/utxo_bucket_card_row.dart';
+import 'package:coconut_wallet/utils/bottom_sheet_auto_open_scheduler.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/utils/bottom_sheet_open_guard.dart';
+import 'package:coconut_wallet/utils/step_transition_controller.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
 import 'package:coconut_wallet/utils/colors_util.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
@@ -29,7 +32,8 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/fixed_text_scale.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
-import 'package:coconut_wallet/widgets/overlays/error_tooltip.dart';
+import 'package:coconut_wallet/widgets/wallet_detail/utxo_management/utxo_estimated_fee_option_picker.dart';
+import 'package:coconut_wallet/widgets/wallet_detail/utxo_management/utxo_unexpected_error_tooltip.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -42,7 +46,7 @@ import 'package:loader_overlay/loader_overlay.dart';
 import 'package:shimmer/shimmer.dart';
 
 part 'utxo_merge_screen_components.dart';
-part 'utxo_merge_screen_models.dart';
+part 'utxo_merge_screen_types.dart';
 part 'utxo_merge_screen_animations.dart';
 part 'utxo_merge_screen_bottom_sheets.dart';
 
@@ -61,21 +65,20 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   static const Duration _newestPickerRevealDelay = Duration(milliseconds: 1500);
   static const Duration _autoOpenBottomSheetDelay = Duration(milliseconds: 0);
 
+  final StepTransitionController<UtxoMergeStep> _headerTransitionController = StepTransitionController<UtxoMergeStep>();
+  final StepTransitionController<UtxoMergeStep> _optionPickerTransitionController =
+      StepTransitionController<UtxoMergeStep>();
+
+  bool _isHeaderFadingOut = false;
+  bool _isAmountTextHighlighted = false;
+
   late UtxoMergeViewModel _viewModel;
   late final AnimationController _receiveAddressSummaryLottieController;
   MergeState? _lastObservedSummaryMergeState;
-  bool _isAmountTextHighlighted = false;
-  UtxoMergeStep? _displayedHeaderStep;
-  UtxoMergeStep? _pendingHeaderStep;
-  UtxoMergeStep? _lastObservedHeaderStep;
-  bool _isHeaderFadingOut = false;
-  int _headerAnimationNonce = 0;
-  UtxoMergeStep? _displayedOptionPickerStep;
-  UtxoMergeStep? _pendingOptionPickerStep;
-  UtxoMergeStep? _lastObservedOptionPickerStep;
-  int _optionPickerAnimationNonce = 0;
+
   final List<UtxoMergeStep> _visibleOptionPickerSteps = [];
-  bool _isBottomSheetOpened = false;
+  final BottomSheetOpenGuard _bottomSheetOpenGuard = BottomSheetOpenGuard();
+  final BottomSheetAutoOpenScheduler _autoOpenBottomSheetScheduler = BottomSheetAutoOpenScheduler();
 
   @override
   void initState() {
@@ -94,6 +97,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
   @override
   void dispose() {
+    _autoOpenBottomSheetScheduler.cancel();
     _viewModel.removeListener(_handleMergeSummaryStateChanged);
     _receiveAddressSummaryLottieController.dispose();
     _viewModel.dispose();
@@ -245,7 +249,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
                     16,
                     selector.hasUnexpectedError
                         ? 100
-                        : (selector.currentStep == UtxoMergeStep.selectReceiveAddress ? 8 : 32),
+                        : (selector.currentStep == UtxoMergeStep.selectReceivingAddress ? 8 : 32),
                     16,
                     selector.isMergeButtonVisible ? 160 : 16,
                   ),
@@ -281,16 +285,9 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           top: 16,
           left: 16,
           right: 16,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
-            child: ErrorTooltip(
-              key: const ValueKey('unexpected-error-tooltip'),
-              isShown: selector.hasUnexpectedError,
-              errorMessage: '${t.errors.unexpected}\n${_viewModel.unexpectedErrorMessage}',
-            ),
+          child: UtxoUnexpectedErrorTooltip(
+            isShown: selector.hasUnexpectedError,
+            errorMessage: '${t.errors.unexpected}\n${_viewModel.unexpectedErrorMessage}',
           ),
         );
       },
@@ -403,63 +400,48 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   }
 
   void _scheduleBottomSheetOpen(UtxoMergeStep step) async {
-    if (step == UtxoMergeStep.selectReceiveAddress) return;
-    await Future.delayed(_autoOpenBottomSheetDelay);
-    // 옵션 피커가 생긴 뒤 BottomSheet 자동 노출 예약
-    switch (step) {
-      case UtxoMergeStep.selectMergeMethod:
-        if (!_viewModel.didConfirmMergeMethod) {
-          if (_canAutoOpenBottomSheet) {
-            _showMergeOptionBottomSheet();
-          }
+    if (step == UtxoMergeStep.selectReceivingAddress) return;
+    _autoOpenBottomSheetScheduler.schedule(
+      delay: _autoOpenBottomSheetDelay,
+      action: () {
+        if (!_canAutoOpenBottomSheet) return;
+        switch (step) {
+          case UtxoMergeStep.selectMergeMethod:
+            if (!_viewModel.didConfirmMergeMethod) {
+              _showMergeOptionBottomSheet();
+            }
+            break;
+          case UtxoMergeStep.selectAmountRange:
+            if (!_viewModel.didConfirmAmountRange) {
+              _showAmountRangeBottomSheet();
+            }
+            break;
+          case UtxoMergeStep.selectTag:
+            if (!_viewModel.didConfirmTagCriteria) {
+              _showTagSelectBottomSheet();
+            }
+            break;
+          case UtxoMergeStep.selectReceivingAddress:
+          default:
+            break;
         }
-        break;
-      case UtxoMergeStep.selectAmountRange:
-        if (!_viewModel.didConfirmAmountRange) {
-          if (_canAutoOpenBottomSheet) {
-            _showAmountRangeBottomSheet();
-          }
-        }
-        break;
-      case UtxoMergeStep.selectTag:
-        if (!_viewModel.didConfirmTagCriteria) {
-          if (_canAutoOpenBottomSheet) {
-            _showTagSelectBottomSheet();
-          }
-        }
-        break;
-      case UtxoMergeStep.selectReceiveAddress:
-      default:
-        break;
-    }
+      },
+    );
   }
 
   bool get _canAutoOpenBottomSheet {
     final route = ModalRoute.of(context);
-    return mounted && !_isBottomSheetOpened && (route?.isCurrent ?? false);
-  }
-
-  String? _headerTextForStep(UtxoMergeStep? step) {
-    switch (step) {
-      case UtxoMergeStep.selectMergeMethod:
-        return t.merge_utxos_screen.select_merge_method;
-      case UtxoMergeStep.selectAmountRange:
-        return t.merge_utxos_screen.select_amount_range;
-      case UtxoMergeStep.selectTag:
-        return t.merge_utxos_screen.select_tag;
-      default:
-        return null;
-    }
+    return mounted && !_bottomSheetOpenGuard.isOpen && (route?.isCurrent ?? false);
   }
 
   Widget _buildAnimatedHeader() {
-    final step = _displayedHeaderStep;
+    final step = _headerTransitionController.displayedStep;
 
     if (step == null) {
       return const SizedBox.shrink();
     }
 
-    if (step == UtxoMergeStep.selectReceiveAddress) {
+    if (step == UtxoMergeStep.selectReceivingAddress) {
       if (_viewModel.mergeState == MergeState.idle) {
         return const SizedBox.shrink();
       }
@@ -484,26 +466,26 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
       if (_isHeaderFadingOut) {
         return summaryCard.fadeOutAnimation(
-          key: ValueKey('merge-header-out-${step.name}-$_headerAnimationNonce'),
+          key: ValueKey('merge-header-out-${step.name}-${_headerTransitionController.nonce}'),
           duration: const Duration(milliseconds: 100),
         );
       }
 
       return summaryCard.fadeInAnimation(
-        key: ValueKey('merge-header-in-${step.name}-$_headerAnimationNonce'),
+        key: ValueKey('merge-header-in-${step.name}-${_headerTransitionController.nonce}'),
         duration: _headerAnimationDuration,
         delay: const Duration(milliseconds: 300),
       );
     }
 
-    final text = _headerTextForStep(step);
+    final text = step.getHeaderText(t);
     if (text == null) {
       return const SizedBox.shrink();
     }
 
     if (_isHeaderFadingOut) {
       return text.characterFadeOutAnimation(
-        key: ValueKey('merge-header-out-${step.name}-$_headerAnimationNonce'),
+        key: ValueKey('merge-header-out-${step.name}-${_headerTransitionController.nonce}'),
         textStyle: CoconutTypography.heading4_18_Bold,
         duration: const Duration(milliseconds: 100),
         slideDirection: CoconutCharacterFadeSlideDirection.slideUp,
@@ -511,7 +493,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     }
 
     return text.characterFadeInAnimation(
-      key: ValueKey('merge-header-in-${step.name}-$_headerAnimationNonce'),
+      key: ValueKey('merge-header-in-${step.name}-${_headerTransitionController.nonce}'),
       textStyle: CoconutTypography.heading4_18_Bold,
       duration: _headerAnimationDuration,
       delay: const Duration(milliseconds: 300),
@@ -550,7 +532,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           lottieController: _receiveAddressSummaryLottieController,
           onLottieLoaded: (composition) {
             _receiveAddressSummaryLottieController.duration = composition.duration;
-            if (_displayedHeaderStep == UtxoMergeStep.selectReceiveAddress) {
+            if (_headerTransitionController.displayedStep == UtxoMergeStep.selectReceivingAddress) {
               if (isReady || isFailed || isInputOne) {
                 _receiveAddressSummaryLottieController.value = 1;
               } else if (isPreparing && !_receiveAddressSummaryLottieController.isAnimating) {
@@ -796,31 +778,20 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   }
 
   String get _summaryAmountThresholdText {
-    switch (_viewModel.currentAmountRange) {
-      case UtxoAmountRange.below001:
-        return '0.01 BTC';
-      case UtxoAmountRange.below0001:
-        return '0.001 BTC';
-      case UtxoAmountRange.below00001:
-        return '0.0001 BTC';
-      case UtxoAmountRange.custom:
-        final customAmount = _viewModel.customAmountRangeText ?? '';
-        final formattedAmount = customAmount.isEmpty ? customAmount : '${_formatCustomAmountText(customAmount)} BTC';
-        return formattedAmount;
+    if (_viewModel.currentAmountRange == UtxoAmountRange.custom) {
+      final customAmount = _viewModel.customAmountRangeText ?? '';
+      return customAmount.isEmpty ? customAmount : '${_formatCustomAmountText(customAmount)} BTC';
     }
+    return _viewModel.currentAmountRange.getDisplayAmountText();
   }
 
   String _summaryCardAmountRangeText(UtxoMergeMethod method) {
-    switch (method) {
-      case UtxoMergeMethod.smallAmounts:
-        return _viewModel.isCustomAmountLessThan
-            ? t.merge_utxos_screen.summary_card_headline_under(amount: _summaryAmountThresholdText)
-            : t.merge_utxos_screen.summary_card_headline_or_less(amount: _summaryAmountThresholdText);
-      case UtxoMergeMethod.sameTag:
-        return t.merge_utxos_screen.selected_tag_title(name: _viewModel.effectiveSelectedTagName ?? '');
-      case UtxoMergeMethod.sameAddress:
-        return t.merge_utxos_screen.reused_address;
-    }
+    return method.getSummaryText(
+      t,
+      isCustomAmountLessThan: _viewModel.isCustomAmountLessThan,
+      summaryAmountThresholdText: _summaryAmountThresholdText,
+      effectiveSelectedTagName: _viewModel.effectiveSelectedTagName,
+    );
   }
 
   Widget _buildReceiveAddressSummarySkeleton() {
@@ -942,27 +913,14 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
     }
   }
 
-  String? _getCurrentMethodText(UtxoMergeMethod? method) {
-    switch (method) {
-      case UtxoMergeMethod.smallAmounts:
-        return t.merge_utxos_screen.merge_method_bottomsheet.merge_small_amounts;
-      case UtxoMergeMethod.sameTag:
-        return t.merge_utxos_screen.merge_method_bottomsheet.merge_same_tag;
-      case UtxoMergeMethod.sameAddress:
-        return t.merge_utxos_screen.merge_method_bottomsheet.merge_same_address;
-      default:
-        return null;
-    }
-  }
-
   String get _currentAmountRangeText => _amountRangeText(_viewModel.currentAmountRange);
   String _amountRangeText(UtxoAmountRange range) {
     switch (range) {
-      case UtxoAmountRange.below001:
+      case UtxoAmountRange.below0_01:
         return t.merge_utxos_screen.amount_range_bottomsheet.below_001;
-      case UtxoAmountRange.below0001:
+      case UtxoAmountRange.below0_001:
         return t.merge_utxos_screen.amount_range_bottomsheet.below_0001;
-      case UtxoAmountRange.below00001:
+      case UtxoAmountRange.below0_0001:
         return t.merge_utxos_screen.amount_range_bottomsheet.below_00001;
       case UtxoAmountRange.custom:
         if (_viewModel.customAmountRangeText != null && _viewModel.customAmountRangeText!.isNotEmpty) {
@@ -991,11 +949,11 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
 
   String? _amountRangeDescription(UtxoAmountRange range) {
     switch (range) {
-      case UtxoAmountRange.below001:
+      case UtxoAmountRange.below0_01:
         return t.merge_utxos_screen.amount_range_bottomsheet.below_001_description;
-      case UtxoAmountRange.below0001:
+      case UtxoAmountRange.below0_001:
         return t.merge_utxos_screen.amount_range_bottomsheet.below_0001_description;
-      case UtxoAmountRange.below00001:
+      case UtxoAmountRange.below0_0001:
         return t.merge_utxos_screen.amount_range_bottomsheet.below_00001_description;
       case UtxoAmountRange.custom:
         return null;
@@ -1009,13 +967,13 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           final index = entry.$1;
           final step = entry.$2;
           final picker = _buildStepOptionPicker(context, step, _viewModel.currentMethod);
-          final isNewest = step == _displayedOptionPickerStep && index == 0;
+          final isNewest = step == _optionPickerTransitionController.displayedStep && index == 0;
 
           if (isNewest) {
             return Padding(
               padding: const EdgeInsets.only(bottom: gapBetweenWidgets),
               child: picker.slideUpAnimation(
-                key: ValueKey('merge-picker-in-${step.name}-$_optionPickerAnimationNonce'),
+                key: ValueKey('merge-picker-in-${step.name}-${_optionPickerTransitionController.nonce}'),
                 duration: _optionPickerAnimationDuration,
                 delay: _newestPickerRevealDelay,
                 offset: const Offset(0, 24),
@@ -1029,7 +987,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
           return Padding(padding: EdgeInsets.only(bottom: index == 0 ? 0 : gapBetweenWidgets), child: picker);
         }).toList();
 
-    if (_viewModel.currentStep == UtxoMergeStep.selectReceiveAddress) {
+    if (_viewModel.currentStep == UtxoMergeStep.selectReceivingAddress) {
       pickerWidgets.add(
         Padding(padding: const EdgeInsets.only(bottom: gapBetweenWidgets), child: _buildEstimatedFeeOptionPicker()),
       );
@@ -1046,7 +1004,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
   Widget _buildStepOptionPicker(BuildContext context, UtxoMergeStep step, UtxoMergeMethod? mergeMethod) {
     return switch (step) {
       UtxoMergeStep.selectMergeMethod => CoconutOptionPicker(
-        text: _getCurrentMethodText(mergeMethod),
+        text: mergeMethod?.getLabel(t) ?? UtxoMergeMethod.smallAmounts.getLabel(t),
         label: _viewModel.currentStep == UtxoMergeStep.selectMergeMethod ? null : t.merge_utxos_screen.merge_method,
         onTap: _showMergeOptionBottomSheet,
       ),
@@ -1068,7 +1026,7 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         inlineWidgets: _buildSelectedTagInlineWidgets(context),
         inlineSpacing: 0,
       ),
-      UtxoMergeStep.selectReceiveAddress => CoconutOptionPicker(
+      UtxoMergeStep.selectReceivingAddress => CoconutOptionPicker(
         inlineWidgets: [_buildReceiveAddressOptionText()],
         label: t.merge_utxos_screen.receive_address,
         onTap: _showReceiveAddressBottomSheet,
@@ -1107,15 +1065,13 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
       builder: (context, selector, _) {
         final shouldShowFeeRatePlaceholder = selector.isFeeRateInputEmpty;
         final isFeeTooHigh = selector.isFeeTooHigh;
-        return CoconutOptionPicker(
-          text:
-              shouldShowFeeRatePlaceholder
-                  ? t.merge_utxos_screen.fee_rate_input_placeholder
-                  : selector.estimatedFeeText,
+        return UtxoEstimatedFeeOptionPicker(
           label: t.estimated_fee,
-          textColor: shouldShowFeeRatePlaceholder ? CoconutColors.gray500 : CoconutColors.white,
+          valueText: selector.estimatedFeeText,
+          placeholderText: t.merge_utxos_screen.fee_rate_input_placeholder,
+          hasValue: !shouldShowFeeRatePlaceholder,
           onTap: _showEstimatedFeeBottomSheet,
-          coconutOptionStateEnum: isFeeTooHigh ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,
+          optionState: isFeeTooHigh ? CoconutOptionStateEnum.error : CoconutOptionStateEnum.normal,
           guideText: isFeeTooHigh ? t.merge_utxos_screen.exception.fee_too_high : null,
         );
       },

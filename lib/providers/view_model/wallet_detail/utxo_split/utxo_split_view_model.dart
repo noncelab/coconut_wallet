@@ -5,6 +5,7 @@ import 'package:coconut_wallet/base/async/cancelable_task.dart';
 import 'package:coconut_wallet/core/transaction/utxo_split_transaction_builder.dart';
 import 'package:coconut_wallet/core/exceptions/utxo_split/utxo_split_exception.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/enums/utxo_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -21,23 +22,6 @@ typedef UsePreviewConfirmPrompt = Future<bool> Function(int outputCount);
 
 enum SplitErrorType { none, feeExceedsAmount, dust }
 
-enum SplitMethod {
-  byAmount,
-  evenly,
-  manually;
-
-  String getLabel(Translations t) {
-    switch (this) {
-      case SplitMethod.byAmount:
-        return t.split_utxo_screen.method_bottom_sheet.split_by_amount;
-      case SplitMethod.evenly:
-        return t.split_utxo_screen.method_bottom_sheet.split_evenly;
-      case SplitMethod.manually:
-        return t.split_utxo_screen.method_bottom_sheet.split_manually;
-    }
-  }
-}
-
 class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   final int walletId;
   final PreferenceProvider _preferenceProvider;
@@ -48,7 +32,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
   // State
   List<UtxoState> _selectedUtxoList = [];
-  SplitMethod? _selectedMethod;
+  UtxoSplitMethod? _selectedMethod;
   List<int> _recommendedSplitCounts = [];
 
   final TextEditingController amountController = TextEditingController();
@@ -97,7 +81,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   bool get isDustError => _isDustError;
   bool get isPreparingNextStep => _isPreparingNextStep;
   List<UtxoState> get selectedUtxoList => _selectedUtxoList;
-  SplitMethod? get selectedMethod => _selectedMethod;
+  UtxoSplitMethod? get selectedMethod => _selectedMethod;
   bool get isUtxoSelected => _selectedUtxoList.isNotEmpty;
   bool get hasFeeRate => feeRateController.text.isNotEmpty;
   BitcoinUnit get currentUnit => _preferenceProvider.currentUnit;
@@ -194,7 +178,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       forceEightDecimals: false,
     );
 
-    if (_selectedMethod == SplitMethod.byAmount) {
+    if (_selectedMethod == UtxoSplitMethod.byAmount) {
       final formattedSplitAmount = currentUnit.displayBitcoinAmount(
         splitAmountSats,
         withUnit: true,
@@ -204,9 +188,9 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
         utxoAmountText: utxoAmountText,
         formattedSplitAmount: formattedSplitAmount,
       );
-    } else if (_selectedMethod == SplitMethod.evenly) {
+    } else if (_selectedMethod == UtxoSplitMethod.evenly) {
       return t.split_utxo_screen.expected_result.split_evenly(utxoAmountText: utxoAmountText, splitCount: splitCount);
-    } else if (_selectedMethod == SplitMethod.manually) {
+    } else if (_selectedMethod == UtxoSplitMethod.manually) {
       return t.split_utxo_screen.expected_result.split_manually(utxoAmountText: utxoAmountText);
     } else {
       return '-';
@@ -255,7 +239,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       return t.split_utxo_screen.amount_error.amount_too_large;
     }
 
-    if (_isAmountInsufficientAfterFee && _selectedMethod == SplitMethod.byAmount) {
+    if (_isAmountInsufficientAfterFee && _selectedMethod == UtxoSplitMethod.byAmount) {
       return t.split_utxo_screen.amount_error.insufficient_after_fee;
     }
 
@@ -263,7 +247,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   String? get headerTitleErrorMessage {
-    if (isOutputSumOverInput && _selectedMethod == SplitMethod.manually) {
+    if (isOutputSumOverInput && _selectedMethod == UtxoSplitMethod.manually) {
       return t.split_utxo_screen.amount_error.manual_sum_over_input;
     }
 
@@ -271,7 +255,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       return t.split_utxo_screen.dust_error;
     }
 
-    if (_isAmountInsufficientAfterFee && _selectedMethod == SplitMethod.manually) {
+    if (_isAmountInsufficientAfterFee && _selectedMethod == UtxoSplitMethod.manually) {
       return t.split_utxo_screen.amount_error.insufficient_after_fee;
     }
 
@@ -367,26 +351,26 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
       return false;
     }
 
-    if (_selectedMethod == SplitMethod.byAmount) {
+    if (_selectedMethod == UtxoSplitMethod.byAmount) {
       return splitAmountSats > 0 && splitAmountSats < _selectedUtxoAmount;
     }
-    if (_selectedMethod == SplitMethod.evenly) {
+    if (_selectedMethod == UtxoSplitMethod.evenly) {
       return splitCount >= 2; // TODO: max 이하인지도 확인해야함
     }
-    if (_selectedMethod == SplitMethod.manually) {
+    if (_selectedMethod == UtxoSplitMethod.manually) {
       return manualSplitItems.any((item) => item.isInputValid) && !isOutputSumOverInput;
     }
     return false;
   }
 
   bool get shouldShowFeePicker {
-    if (_selectedMethod == SplitMethod.byAmount) {
+    if (_selectedMethod == UtxoSplitMethod.byAmount) {
       return splitAmountSats > 0;
     }
-    if (_selectedMethod == SplitMethod.evenly) {
+    if (_selectedMethod == UtxoSplitMethod.evenly) {
       return splitCount >= 2;
     }
-    if (_selectedMethod == SplitMethod.manually) {
+    if (_selectedMethod == UtxoSplitMethod.manually) {
       return manualSplitItems.any((item) => item.isInputValid);
     }
     return false;
@@ -409,11 +393,11 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   bool get isOutputSumOverInput {
-    if (_selectedMethod == SplitMethod.byAmount) {
+    if (_selectedMethod == UtxoSplitMethod.byAmount) {
       return _selectedUtxoList.isNotEmpty && splitAmountSats >= _selectedUtxoAmount;
     }
 
-    if (_selectedMethod == SplitMethod.manually) {
+    if (_selectedMethod == UtxoSplitMethod.manually) {
       return _doesManualSplitRequestedTotalExceedInput;
     }
 
@@ -447,11 +431,11 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     }
 
     try {
-      if (_selectedMethod == SplitMethod.byAmount) {
+      if (_selectedMethod == UtxoSplitMethod.byAmount) {
         _splitPreview = await _splitBuilder.getFixedAmountSplitPreview(amountPerOutput: splitAmountSats);
-      } else if (_selectedMethod == SplitMethod.evenly) {
+      } else if (_selectedMethod == UtxoSplitMethod.evenly) {
         _splitPreview = await _splitBuilder.getEqualAmountSplitPreview(splitCount: splitCount);
-      } else if (_selectedMethod == SplitMethod.manually) {
+      } else if (_selectedMethod == UtxoSplitMethod.manually) {
         _splitPreview = await _splitBuilder.getCustomAmountSplitPreview(amountCountMap: _manualSplitInput);
       }
     } on SplitOutputDustException {
@@ -487,10 +471,10 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
 
     if (_isDustError || _isAmountInsufficientAfterFee || _isFeeExceedsUtxoAmount || isOutputSumOverInput) return false;
     if (_splitPreview == null) return false;
-    if (_selectedMethod == SplitMethod.byAmount) {
+    if (_selectedMethod == UtxoSplitMethod.byAmount) {
       if (splitAmountSats <= 0) return false;
       if (splitAmountSats >= _selectedUtxoAmount) return false;
-    } else if (_selectedMethod == SplitMethod.evenly) {
+    } else if (_selectedMethod == UtxoSplitMethod.evenly) {
       if (splitCount < 2) return false;
     }
 
@@ -536,7 +520,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
     _onInputChanged();
   }
 
-  void setSplitMethod(SplitMethod method) {
+  void setSplitMethod(UtxoSplitMethod method) {
     ++_buildRequestId;
     _cancelActiveBuild();
     _selectedMethod = method;
@@ -604,11 +588,11 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
         '  preview: ${_splitPreview?.amountCountMap}',
       );
 
-      if (_selectedMethod == SplitMethod.byAmount) {
+      if (_selectedMethod == UtxoSplitMethod.byAmount) {
         task = _splitBuilder.buildFixedAmountSplit(amountPerOutput: splitAmountSats);
-      } else if (_selectedMethod == SplitMethod.evenly) {
+      } else if (_selectedMethod == UtxoSplitMethod.evenly) {
         task = _splitBuilder.buildEqualAmountSplit(splitCount: splitCount);
-      } else if (_selectedMethod == SplitMethod.manually) {
+      } else if (_selectedMethod == UtxoSplitMethod.manually) {
         task = _splitBuilder.buildCustomAmountSplit(amountCountMap: _manualSplitInput);
       }
 
@@ -825,7 +809,7 @@ class UtxoSplitViewModel extends ChangeNotifier with FeeRateMixin {
   }
 
   void _updateRecommendedSplitCountsIfNeeded() {
-    if (_selectedMethod != SplitMethod.evenly) {
+    if (_selectedMethod != UtxoSplitMethod.evenly) {
       return;
     }
 

@@ -8,13 +8,12 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       case UtxoMergeMethod.sameTag:
         return UtxoMergeStep.selectTag;
       case UtxoMergeMethod.sameAddress:
-        return UtxoMergeStep.selectReceiveAddress;
+        return UtxoMergeStep.selectReceivingAddress;
     }
   }
 
   void _showMergeOptionBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (!_bottomSheetOpenGuard.tryOpen()) return;
 
     vibrateExtraLight();
 
@@ -43,10 +42,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
             isSelected: isSelected,
             onTap: onTap,
             isDisabled: isDisabled,
-            child: Text(
-              _getCurrentMethodText(item)!,
-              style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white),
-            ),
+            child: Text(item.getLabel(t), style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
           );
         },
       );
@@ -60,19 +56,18 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
         if (nextStep != null) {
           _viewModel.setCurrentStep(nextStep);
           _refreshAnimationsForCurrentStep();
-          if (nextStep == UtxoMergeStep.selectReceiveAddress) {
+          if (nextStep == UtxoMergeStep.selectReceivingAddress) {
             unawaited(_viewModel.prepareMergeTransaction());
           }
         }
       }
     } finally {
-      _isBottomSheetOpened = false;
+      _bottomSheetOpenGuard.close();
     }
   }
 
   void _showAmountRangeBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (!_bottomSheetOpenGuard.tryOpen()) return;
 
     vibrateExtraLight();
 
@@ -225,7 +220,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       );
 
       if (selectedItem != null && context.mounted) {
-        const nextStep = UtxoMergeStep.selectReceiveAddress;
+        const nextStep = UtxoMergeStep.selectReceivingAddress;
 
         _setScreenState(() {
           _viewModel.confirmAmountRangeSelection(
@@ -241,13 +236,12 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
     } finally {
       customAmountController.dispose();
       customAmountFocusNode.dispose();
-      _isBottomSheetOpened = false;
+      _bottomSheetOpenGuard.close();
     }
   }
 
   void _showTagSelectBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (!_bottomSheetOpenGuard.tryOpen()) return;
 
     vibrateExtraLight();
 
@@ -277,12 +271,12 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
           _viewModel.confirmTagCriteriaSelection(selectedItem.selectedTagName);
         });
 
-        _viewModel.setCurrentStep(UtxoMergeStep.selectReceiveAddress);
+        _viewModel.setCurrentStep(UtxoMergeStep.selectReceivingAddress);
         _refreshAnimationsForCurrentStep();
         unawaited(_viewModel.prepareMergeTransaction());
       }
     } finally {
-      _isBottomSheetOpened = false;
+      _bottomSheetOpenGuard.close();
     }
   }
 
@@ -316,8 +310,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
   }
 
   void _showReceiveAddressBottomSheet() async {
-    if (_isBottomSheetOpened) return;
-    _isBottomSheetOpened = true;
+    if (!_bottomSheetOpenGuard.tryOpen()) return;
 
     vibrateExtraLight();
 
@@ -468,7 +461,7 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
       directInputFocusNode.removeListener(handleDirectInputFocusChange);
       directInputController.dispose();
       directInputFocusNode.dispose();
-      _isBottomSheetOpened = false;
+      _bottomSheetOpenGuard.close();
     }
 
     if (selectedItem != null && context.mounted) {
@@ -506,11 +499,11 @@ extension _UtxoMergeScreenBottomSheetsExtension on _UtxoMergeScreenState {
 
   Widget _buildReceiveAddressOwnedTab({
     required ScrollController scrollController,
-    required List<ReceiveAddressOption> addresses,
+    required List<ReceivingAddressOption> addresses,
     required String? selectedAddress,
     required ValueChanged<String?> onSelectionChanged,
   }) {
-    return SelectableBottomSheetBody<ReceiveAddressOption>(
+    return SelectableBottomSheetBody<ReceivingAddressOption>(
       key: const ValueKey('owned-receive-address-list'),
       scrollController: scrollController,
       items: addresses,

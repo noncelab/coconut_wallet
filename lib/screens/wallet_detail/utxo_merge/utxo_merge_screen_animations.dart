@@ -2,8 +2,7 @@ part of 'utxo_merge_screen.dart';
 
 extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
   void _scheduleHeaderAnimation(UtxoMergeStep step) {
-    if (!_viewModel.isAnimatedHeaderStep(step) || _lastObservedHeaderStep == step) return;
-    _lastObservedHeaderStep = step;
+    if (!_viewModel.isAnimatedHeaderStep(step) || !_headerTransitionController.markObserved(step)) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -12,8 +11,7 @@ extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
   }
 
   void _scheduleOptionPickerAnimation(UtxoMergeStep step) {
-    if (!_viewModel.isAnimatedHeaderStep(step) || _lastObservedOptionPickerStep == step) return;
-    _lastObservedOptionPickerStep = step;
+    if (!_viewModel.isAnimatedHeaderStep(step) || !_optionPickerTransitionController.markObserved(step)) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -23,8 +21,8 @@ extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
 
   void _refreshAnimationsForCurrentStep() {
     final step = _viewModel.currentStep;
-    _lastObservedHeaderStep = null;
-    _lastObservedOptionPickerStep = null;
+    _headerTransitionController.resetObserved();
+    _optionPickerTransitionController.resetObserved();
     _scheduleHeaderAnimation(step);
     _scheduleOptionPickerAnimation(step);
   }
@@ -32,21 +30,22 @@ extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
   /// 현재 헤더를 페이드아웃 후 새 문구로 스왑하는 크로스페이드 전환
   void _playHeaderAnimation(UtxoMergeStep step) {
     if (!_viewModel.isAnimatedHeaderStep(step)) return;
-    if (_displayedHeaderStep == UtxoMergeStep.selectReceiveAddress && step != UtxoMergeStep.selectReceiveAddress) {
+    if (_headerTransitionController.displayedStep == UtxoMergeStep.selectReceivingAddress &&
+        step != UtxoMergeStep.selectReceivingAddress) {
       _resetReceiveAddressSummary();
     }
 
-    _pendingHeaderStep = step;
+    _headerTransitionController.pendingStep = step;
 
-    if (_displayedHeaderStep == null) {
+    if (_headerTransitionController.displayedStep == null) {
       _setScreenState(() {
-        _displayedHeaderStep = step;
+        _headerTransitionController.displayedStep = step;
         _isHeaderFadingOut = false;
       });
       return;
     }
 
-    if (_displayedHeaderStep == step && !_isHeaderFadingOut) {
+    if (_headerTransitionController.displayedStep == step && !_isHeaderFadingOut) {
       return;
     }
 
@@ -54,17 +53,16 @@ extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
       return;
     }
 
-    final token = _headerAnimationNonce + 1;
-    _headerAnimationNonce = token;
+    final token = _headerTransitionController.bumpNonce();
     _setScreenState(() {
       _isHeaderFadingOut = true;
     });
 
     Future.delayed(_UtxoMergeScreenState._headerAnimationDuration, () {
-      if (!mounted || token != _headerAnimationNonce) return;
+      if (!mounted || token != _headerTransitionController.nonce) return;
 
       _setScreenState(() {
-        _displayedHeaderStep = _pendingHeaderStep;
+        _headerTransitionController.displayedStep = _headerTransitionController.pendingStep;
         _isHeaderFadingOut = false;
       });
     });
@@ -80,12 +78,12 @@ extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
   void _playOptionPickerAnimation(UtxoMergeStep step) {
     if (!_viewModel.isAnimatedHeaderStep(step)) return;
 
-    _pendingOptionPickerStep = step;
+    _optionPickerTransitionController.pendingStep = step;
     final nextVisibleSteps = _viewModel.visibleOptionPickerStepsFor(step);
 
-    if (_displayedOptionPickerStep == null) {
+    if (_optionPickerTransitionController.displayedStep == null) {
       _setScreenState(() {
-        _displayedOptionPickerStep = step;
+        _optionPickerTransitionController.displayedStep = step;
         _visibleOptionPickerSteps
           ..clear()
           ..addAll(nextVisibleSteps);
@@ -93,13 +91,14 @@ extension _UtxoMergeScreenAnimationsExtension on _UtxoMergeScreenState {
       return;
     }
 
-    if (_displayedOptionPickerStep == step && listEquals(_visibleOptionPickerSteps, nextVisibleSteps)) {
+    if (_optionPickerTransitionController.displayedStep == step &&
+        listEquals(_visibleOptionPickerSteps, nextVisibleSteps)) {
       return;
     }
 
-    _optionPickerAnimationNonce = _optionPickerAnimationNonce + 1;
+    _optionPickerTransitionController.bumpNonce();
     _setScreenState(() {
-      _displayedOptionPickerStep = _pendingOptionPickerStep;
+      _optionPickerTransitionController.displayedStep = _optionPickerTransitionController.pendingStep;
       _visibleOptionPickerSteps
         ..clear()
         ..addAll(nextVisibleSteps);
