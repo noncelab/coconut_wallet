@@ -1,21 +1,16 @@
 import 'dart:io';
 
+import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class ClipboardCopyUtil {
   static const MethodChannel _channel = MethodChannel(methodChannelOS);
 
-  static Future<void> copyWithToast(
-    BuildContext context, {
-    required String text,
-    String? toastMessage,
-  }) async {
+  static Future<void> copyWithToast(BuildContext context, {required String text, String? toastMessage}) async {
     await Clipboard.setData(ClipboardData(text: text));
 
     if (Platform.isAndroid) {
@@ -33,12 +28,6 @@ class ClipboardCopyUtil {
 
     if (!context.mounted) return;
 
-    final fToast = FToast()..init(context);
-    final toast = MyToast.getToastWidget(toastMessage ?? t.copied);
-    fToast.showToast(
-      child: toast,
-      gravity: ToastGravity.BOTTOM,
-      toastDuration: const Duration(seconds: 2),
-    );
+    CoconutToast.showBottomToast(context: context, text: t.copied);
   }
 }
