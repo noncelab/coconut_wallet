@@ -814,7 +814,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             text: t.utility.p2p_calculator.copy_all,
             textStyle: CoconutTypography.body3_12.setColor(CoconutColors.white),
             onTap: () async {
-              final textToCopy = _viewModel.buildCopyAllText(
+              final textToCopy = _viewModel.generateTransactionBill(
                 btcPriceStr,
                 fiatAmountStr,
                 btcAmountStr,
@@ -823,7 +823,6 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 premiumAmountStr,
                 premiumSatsStr,
               );
-              if (textToCopy == null) return;
               await ClipboardCopyUtil.copyWithToast(context, text: textToCopy);
             },
           ),

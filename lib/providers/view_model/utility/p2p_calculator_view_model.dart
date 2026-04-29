@@ -333,7 +333,7 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     }
   }
 
-  String _generateTransactionBill(
+  String generateTransactionBill(
     String btcPriceStr,
     String fiatAmountStr,
     String btcAmountStr,
@@ -375,26 +375,5 @@ class P2PCalculatorViewModel extends ChangeNotifier {
     vibrateExtraLight();
     _isOfflineMode = !_isOfflineMode;
     notifyListeners();
-  }
-
-  String? buildCopyAllText(
-    String btcPriceStr,
-    String fiatAmountStr,
-    String btcAmountStr,
-    String referenceDateTime,
-    String feeRateStr,
-    String feeAmountStr,
-    String feeSatsStr,
-  ) {
-    if (inputAmount == null || inputAmount == 0) return null;
-    return _generateTransactionBill(
-      btcPriceStr,
-      fiatAmountStr,
-      btcAmountStr,
-      referenceDateTime,
-      feeRateStr,
-      feeAmountStr,
-      feeSatsStr,
-    );
   }
 }
