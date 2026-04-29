@@ -178,7 +178,6 @@ class EstimatedFeeBottomSheet extends StatelessWidget {
                           CoconutToast.showBottomToast(
                             context: context,
                             text: t.send_screen.fee_rate_too_low,
-                            backgroundColor: CoconutColors.gray700,
                             seconds: 1,
                           );
                         }
