@@ -1,16 +1,9 @@
-import 'dart:io';
-
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
-import 'package:coconut_wallet/utils/logger.dart';
-import 'package:coconut_wallet/utils/toast.dart';
+import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class CopyTextContainer extends StatefulWidget {
   final String text;
@@ -41,9 +34,6 @@ class CopyTextContainer extends StatefulWidget {
     this.isAddress = false,
     this.padding,
   });
-
-  static const MethodChannel _channel = MethodChannel(methodChannelOS);
-
   @override
   State<CopyTextContainer> createState() => _CopyTextContainerState();
 }
@@ -73,27 +63,11 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
           _iconColor = CoconutColors.white;
         });
 
-        Clipboard.setData(ClipboardData(text: widget.copyText ?? widget.text)).then((value) => null);
-        if (Platform.isAndroid) {
-          try {
-            final int version = await CopyTextContainer._channel.invokeMethod('getSdkVersion');
-
-            // 안드로이드13 부터는 클립보드 복사 메세지가 나오기 때문에 예외 적용
-            if (version > 31) {
-              return;
-            }
-          } on PlatformException catch (e) {
-            Logger.log("Failed to get platform version: '${e.message}'.");
-          }
-        }
-
-        FToast fToast = FToast();
-
-        if (!context.mounted) return;
-
-        fToast.init(context);
-        final toast = MyToast.getToastWidget(widget.toastMsg ?? t.copied);
-        fToast.showToast(child: toast, gravity: ToastGravity.BOTTOM, toastDuration: const Duration(seconds: 2));
+        await ClipboardCopyUtil.copyWithToast(
+          context,
+          text: widget.copyText ?? widget.text,
+          toastMessage: widget.toastMsg,
+        );
       },
       onTapDown: (details) {
         setState(() {
