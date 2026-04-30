@@ -28,14 +28,13 @@ class _StartScreenState extends State<StartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ColoredBox(
       color:
           Platform.isIOS
               ? CoconutColors.black
               : (NetworkType.currentNetworkType.isTestnet
                   ? splashBackgroundColorRegtest
                   : splashBackgroundColorMainnet),
-      padding: Platform.isIOS ? null : const EdgeInsets.only(top: Sizes.size48),
       child: Center(
         child: Image.asset(
           'assets/images/splash_logo_${NetworkType.currentNetworkType.isTestnet ? "regtest" : "mainnet"}.png',
