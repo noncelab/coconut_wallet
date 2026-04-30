@@ -37,7 +37,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
@@ -1042,10 +1041,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                         _viewModel.setFeeRateText(formattedText);
                       });
                       if (isTooLow) {
-                        Fluttertoast.showToast(
-                          msg: t.send_screen.fee_rate_too_low,
-                          backgroundColor: CoconutColors.gray700,
-                          toastLength: Toast.LENGTH_SHORT,
+                        CoconutToast.showBottomToast(
+                          context: context,
+                          text: t.send_screen.fee_rate_too_low,
+                          seconds: 1,
                         );
                       }
                     },

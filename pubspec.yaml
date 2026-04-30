@@ -48,7 +48,6 @@ dependencies:
   shared_preferences: ^2.2.2
   qr_flutter: ^4.1.0
   flutter_svg: ^2.0.10+1
-  fluttertoast: ^8.2.12
   loader_overlay: ^4.0.0
   carousel_slider: ^5.1.1
   modal_bottom_sheet: ^3.0.0
