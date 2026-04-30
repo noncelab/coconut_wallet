@@ -73,6 +73,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                                   child: _buildToolTip(),
                                 ),
                                 AdaptiveQrImage(
+                                  key:
+                                      viewModel.isBbqrType && viewModel.hasBbqrParts
+                                          ? ValueKey('bbqr-${viewModel.currentBbqrIndex}')
+                                          : const ValueKey('ur'),
                                   qrData:
                                       viewModel.isBbqrType && viewModel.hasBbqrParts
                                           ? viewModel.bbqrParts[viewModel.currentBbqrIndex]

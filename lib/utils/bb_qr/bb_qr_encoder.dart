@@ -8,7 +8,7 @@ class BbQrEncoder {
   final String encodingTypeInstance;
   final String dataTypeInstance;
 
-  BbQrEncoder({this.maxChunkSize = 800, String encodingType = 'Z', String dataType = 'P'})
+  BbQrEncoder({this.maxChunkSize = 700, String encodingType = 'Z', String dataType = 'P'})
     : encodingTypeInstance = encodingType,
       dataTypeInstance = dataType;
 
