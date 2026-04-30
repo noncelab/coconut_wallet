@@ -705,7 +705,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                   );
                 }
               },
-              formatInput: (s) => s.trim(),
             );
           },
           child: Text(
