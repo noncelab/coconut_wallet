@@ -178,26 +178,21 @@ class _BlockExplorerScreenState extends State<BlockExplorerScreen> {
                         focusNode: _customExplorerFocusNode,
                         onChanged: (value) {},
                         placeholderText: t.settings_screen.block_explorer.custom_explorer_input_placeholder,
-                        suffix: IconButton(
-                          iconSize: 14,
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            _customExplorerController.clear();
-                            _viewModel.clearCustomUrl();
-                          },
-                          icon:
-                              _customExplorerController.text.isNotEmpty
-                                  ? SvgPicture.asset(
+                        suffix:
+                            _customExplorerController.text.isNotEmpty
+                                ? IconButton(
+                                  iconSize: 14,
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    _customExplorerController.clear();
+                                    _viewModel.clearCustomUrl();
+                                  },
+                                  icon: SvgPicture.asset(
                                     'assets/svg/text-field-clear.svg',
-                                    colorFilter: ColorFilter.mode(
-                                      _customExplorerController.text.isNotEmpty
-                                          ? CoconutColors.white
-                                          : CoconutColors.gray700,
-                                      BlendMode.srcIn,
-                                    ),
-                                  )
-                                  : Container(),
-                        ),
+                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                  ),
+                                )
+                                : null,
                         onEditingComplete: () {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             _clearFocus();

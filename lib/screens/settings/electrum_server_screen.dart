@@ -512,27 +512,22 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     textInputFormatter: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
                     textInputType: TextInputType.text,
                     maxLines: 1,
-                    suffix: IconButton(
-                      iconSize: 14,
-                      padding: EdgeInsets.zero,
-                      onPressed: () {
-                        setState(() {
-                          _serverAddressController.text = '';
-                        });
-                      },
-                      icon:
-                          _serverAddressController.text.isNotEmpty
-                              ? SvgPicture.asset(
+                    suffix:
+                        _serverAddressController.text.isNotEmpty
+                            ? IconButton(
+                              iconSize: 14,
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                setState(() {
+                                  _serverAddressController.text = '';
+                                });
+                              },
+                              icon: SvgPicture.asset(
                                 'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(
-                                  _serverAddressController.text.isNotEmpty
-                                      ? CoconutColors.white
-                                      : CoconutColors.gray700,
-                                  BlendMode.srcIn,
-                                ),
-                              )
-                              : Container(),
-                    ),
+                                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                              ),
+                            )
+                            : null,
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {
@@ -595,25 +590,22 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
                     errorText: t.settings_screen.electrum_server.error_msg.port_out_of_range,
                     textInputFormatter: [FilteringTextInputFormatter.digitsOnly],
                     textInputType: TextInputType.number,
-                    suffix: IconButton(
-                      iconSize: 14,
-                      padding: EdgeInsets.zero,
-                      onPressed: () {
-                        setState(() {
-                          _portController.text = '';
-                        });
-                      },
-                      icon:
-                          _portController.text.isNotEmpty
-                              ? SvgPicture.asset(
+                    suffix:
+                        _portController.text.isNotEmpty
+                            ? IconButton(
+                              iconSize: 14,
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                setState(() {
+                                  _portController.text = '';
+                                });
+                              },
+                              icon: SvgPicture.asset(
                                 'assets/svg/text-field-clear.svg',
-                                colorFilter: ColorFilter.mode(
-                                  _portController.text.isNotEmpty ? CoconutColors.white : CoconutColors.gray700,
-                                  BlendMode.srcIn,
-                                ),
-                              )
-                              : Container(),
-                    ),
+                                colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                              ),
+                            )
+                            : null,
                     onChanged: (text) {
                       _onServerInputChanged(); // 입력 변경 감지
                       setState(() {
