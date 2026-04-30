@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -947,7 +948,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerRight,
                           child: Text(
-                            "${_viewModel.estimatedFeeInSats ?? '-'} sats",
+                            "${_viewModel.estimatedFeeInSats?.toThousandsSeparatedString() ?? '-'} sats",
                             style: CoconutTypography.body2_14_NumberBold.setColor(
                               _viewModel.isEstimatedFeeGreaterThanBalance ? CoconutColors.hotPink : CoconutColors.white,
                             ),
@@ -1205,21 +1206,22 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
           child: Column(
             children: [
-              Selector<SendViewModel, Tuple7<BitcoinUnit, String, bool, bool, bool, bool, int?>>(
+              Selector<SendViewModel, Tuple7<String, bool, bool, BitcoinUnit, bool, bool, int?>>(
                 selector:
                     (_, viewModel) => Tuple7(
-                      viewModel.currentUnit,
                       viewModel.recipientList[index].amount,
-                      viewModel.isMaxMode,
-                      viewModel.isTotalSendAmountExceedsBalance,
                       viewModel.isLastAmountInsufficient,
                       viewModel.recipientList[index].minimumAmountError.isError,
+                      // 이하 리빌드를 위한 값들
+                      viewModel.currentUnit,
+                      viewModel.isMaxMode,
+                      viewModel.isTotalSendAmountExceedsBalance,
                       viewModel.estimatedFeeInSats,
                     ),
                 builder: (context, data, child) {
-                  String amountText = data.item2;
-                  final isMinimumAmount = data.item6;
-                  final hasInsufficientBalanceErrorOfLastRecipient = data.item5 && index == _viewModel.lastIndex;
+                  String amountText = data.item1;
+                  final hasInsufficientBalanceErrorOfLastRecipient = data.item2 && index == _viewModel.lastIndex;
+                  final isMinimumAmount = data.item3;
 
                   Color amountTextColor;
                   if (_viewModel.isTotalSendAmountExceedsBalance ||
