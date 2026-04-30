@@ -152,8 +152,9 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
     if (_serverAddressController.text.isEmpty ||
         _portController.text.isEmpty ||
         !_viewModel.isValidDomain(_serverAddressController.text) ||
-        !_viewModel.isValidPort(_portController.text))
+        !_viewModel.isValidPort(_portController.text)) {
       return false;
+    }
 
     return !_viewModel.isSameWithCurrentServer(_serverAddressController.text, _portController.text, _currentSslState);
   }
