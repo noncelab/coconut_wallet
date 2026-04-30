@@ -268,6 +268,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                         },
                         backgroundColor: CoconutColors.white.withValues(alpha: 0.15),
                         errorColor: CoconutColors.hotPink,
+                        placeholderText: t.name,
                         placeholderColor: CoconutColors.gray700,
                         activeColor: CoconutColors.white,
                         cursorColor: CoconutColors.white,
