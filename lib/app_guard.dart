@@ -118,16 +118,34 @@ class _AppGuardState extends State<AppGuard> {
 
   /// NodeProvider 재연결
   void _handleNodeProviderReconnect() {
-    // 1. 이미 초기화되어 있고 연결이 정상인 경우 재연결하지 않음
-    if (_nodeProvider.isInitialized &&
-        !_nodeProvider.hasConnectionError &&
-        _nodeProvider.state.nodeSyncState != NodeSyncState.failed) {
+    // 1. 초기화가 진행 중이면 reconnect 무시
+    if (_nodeProvider.isInitializing) {
+      Logger.log('AppGuard: NodeProvider is initializing, skipping reconnect');
+      return;
+    }
+
+    // 2. 초기화 미완료 시 initialize 호출
+    if (!_nodeProvider.isInitialized) {
+      Logger.log('AppGuard: NodeProvider is not initialized yet, initializing instead of reconnect');
+      _nodeProvider.initialize();
+      return;
+    }
+
+    // 3. 초기 동기화(init/syncing) 중 reconnect 보류
+    final nodeSyncState = _nodeProvider.state.nodeSyncState;
+    if (nodeSyncState == NodeSyncState.init || nodeSyncState == NodeSyncState.syncing) {
+      Logger.log('AppGuard: NodeProvider is syncing, skipping reconnect');
+      return;
+    }
+
+    // 4. 이미 초기화되어 있고 연결이 정상인 경우 reconnect 무시
+    if (_nodeProvider.isInitialized && !_nodeProvider.hasConnectionError && nodeSyncState != NodeSyncState.failed) {
       Logger.log('AppGuard: Connection is healthy, skipping reconnect');
       return;
     }
 
-    // 2. 연결 에러가 있거나 ping이 실패한 경우 재연결
-    if (_nodeProvider.hasConnectionError || _nodeProvider.state.nodeSyncState == NodeSyncState.failed) {
+    // 5. 연결 에러가 있거나 ping이 실패한 경우 재연결
+    if (_nodeProvider.hasConnectionError || nodeSyncState == NodeSyncState.failed) {
       Logger.log('AppGuard: Connection issues detected, attempting reconnect');
       _nodeProvider.reconnect();
     }
@@ -135,6 +153,12 @@ class _AppGuardState extends State<AppGuard> {
 
   /// NodeProvider 연결 해제
   void _handleNodeProviderDisconnect() {
+    // 초기화 중/미초기화 상태에서 연결 해제 시도 시 연결 해제 무시
+    if (_nodeProvider.isInitializing || !_nodeProvider.isInitialized) {
+      Logger.log('AppGuard: NodeProvider is not ready for disconnect, skipping closeConnection');
+      return;
+    }
+
     // 1. 네트워크가 끊어진 경우 연결 해제
     if (!_connectivityProvider.isInternetOn) {
       Logger.log('AppGuard: Network disconnected, closing connection');
