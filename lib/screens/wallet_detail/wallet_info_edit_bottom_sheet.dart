@@ -280,6 +280,20 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                 : '',
                         isError: _isFirst ? false : isError,
                         maxLines: 1,
+                        suffix:
+                            _textEditingController.text.isNotEmpty
+                                ? IconButton(
+                                  iconSize: 14,
+                                  padding: EdgeInsets.zero,
+                                  onPressed: () {
+                                    _textEditingController.clear();
+                                  },
+                                  icon: SvgPicture.asset(
+                                    'assets/svg/text-field-clear.svg',
+                                    colorFilter: const ColorFilter.mode(CoconutColors.white, BlendMode.srcIn),
+                                  ),
+                                )
+                                : null,
                       ),
                     ),
                   ],
