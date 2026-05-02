@@ -254,7 +254,10 @@ class WalletHomeViewModel extends ChangeNotifier {
       return NetworkStatus.offline;
     }
 
-    if (_nodeSyncState == NodeSyncState.completed || _nodeProvider.isInitializing) {
+    if (_nodeSyncState == NodeSyncState.completed ||
+        _nodeSyncState == NodeSyncState.init ||
+        _nodeSyncState == NodeSyncState.syncing ||
+        _nodeProvider.isInitializing) {
       return NetworkStatus.online;
     }
 
