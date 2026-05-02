@@ -26,12 +26,14 @@ class UnsignedTransactionQrViewModel extends ChangeNotifier {
   void initializeBbqr(String psbtBase64, WalletImportSource walletImportSource) {
     _isBbqrType = walletImportSource == WalletImportSource.coldCard;
 
-    if (walletImportSource == WalletImportSource.coldCard) {
-      _bbqrParts = BbQrEncoder().encodeBase64(psbtBase64);
-      if (_isBbqrType) {
-        startBbqrTimer();
-      }
+    if (!_isBbqrType) {
+      notifyListeners();
+      return;
     }
+
+    _bbqrParts = BbQrEncoder().encodeBase64(psbtBase64);
+    startBbqrTimer();
+
     notifyListeners();
   }
 
