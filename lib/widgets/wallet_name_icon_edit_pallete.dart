@@ -129,25 +129,25 @@ class _WalletNameIconEditPaletteState extends State<WalletNameIconEditPalette> {
                     maxLines: 1,
                     controller: _controller,
                     focusNode: _focusNode,
-                    suffix: IconButton(
-                      highlightColor: CoconutColors.gray200,
-                      iconSize: 14,
-                      padding: EdgeInsets.zero,
-                      onPressed: () {
-                        _controller.clear();
-                        setState(() {
-                          _name = '';
-                          widget.onNameChanged('');
-                        });
-                      },
-                      icon:
-                          _controller.text.isNotEmpty
-                              ? SvgPicture.asset(
+                    suffix:
+                        _controller.text.isNotEmpty
+                            ? IconButton(
+                              highlightColor: CoconutColors.gray200,
+                              iconSize: 14,
+                              padding: EdgeInsets.zero,
+                              onPressed: () {
+                                _controller.clear();
+                                setState(() {
+                                  _name = '';
+                                  widget.onNameChanged('');
+                                });
+                              },
+                              icon: SvgPicture.asset(
                                 'assets/svg/text-field-clear.svg',
                                 colorFilter: const ColorFilter.mode(CoconutColors.gray400, BlendMode.srcIn),
-                              )
-                              : const SizedBox.shrink(),
-                    ),
+                              ),
+                            )
+                            : null,
                     onChanged: (text) {
                       setState(() {
                         _name = text;
