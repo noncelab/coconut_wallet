@@ -1019,48 +1019,51 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerRight,
             child: IntrinsicWidth(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                  child: CoconutTextField(
-                    textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
-                    textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
-                    enableInteractiveSelection: false,
-                    textAlign: TextAlign.end,
-                    controller: _feeRateController,
-                    focusNode: _feeRateFocusNode,
-                    backgroundColor: feeRateFieldGray,
-                    onEditingComplete: () {
-                      _feeRateController.text = _removeTrailingDot(_feeRateController.text);
-                      FocusScope.of(context).unfocus();
-                    },
-                    height: 30,
-                    padding: const EdgeInsets.only(left: 12, right: 2),
-                    onChanged: (text) {
-                      final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
-                        _feeRateController.text = formattedText;
-                        _viewModel.setFeeRateText(formattedText);
-                      });
-                      if (isTooLow) {
-                        Fluttertoast.showToast(
-                          msg: t.send_screen.fee_rate_too_low,
-                          backgroundColor: CoconutColors.gray700,
-                          toastLength: Toast.LENGTH_SHORT,
-                        );
-                      }
-                    },
-                    maxLines: 1,
-                    fontFamily: 'SpaceGrotesk',
-                    fontSize: 14,
-                    activeColor: CoconutColors.white,
-                    fontWeight: FontWeight.bold,
-                    borderRadius: 8,
-                    suffix: Container(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Text(
-                        t.send_screen.fee_rate_suffix,
-                        style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 75),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                    child: CoconutTextField(
+                      textInputType: const TextInputType.numberWithOptions(signed: false, decimal: true),
+                      textInputFormatter: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                      enableInteractiveSelection: false,
+                      textAlign: TextAlign.end,
+                      controller: _feeRateController,
+                      focusNode: _feeRateFocusNode,
+                      backgroundColor: feeRateFieldGray,
+                      onEditingComplete: () {
+                        _feeRateController.text = _removeTrailingDot(_feeRateController.text);
+                        FocusScope.of(context).unfocus();
+                      },
+                      height: 30,
+                      padding: const EdgeInsets.only(left: 12, right: 2),
+                      onChanged: (text) {
+                        final isTooLow = _viewModel.handleFeeRateChanged(text, (formattedText) {
+                          _feeRateController.text = formattedText;
+                          _viewModel.setFeeRateText(formattedText);
+                        });
+                        if (isTooLow) {
+                          Fluttertoast.showToast(
+                            msg: t.send_screen.fee_rate_too_low,
+                            backgroundColor: CoconutColors.gray700,
+                            toastLength: Toast.LENGTH_SHORT,
+                          );
+                        }
+                      },
+                      maxLines: 1,
+                      fontFamily: 'SpaceGrotesk',
+                      fontSize: 14,
+                      activeColor: CoconutColors.white,
+                      fontWeight: FontWeight.bold,
+                      borderRadius: 8,
+                      suffix: Container(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Text(
+                          t.send_screen.fee_rate_suffix,
+                          style: CoconutTypography.body2_14_NumberBold.setColor(CoconutColors.white),
+                        ),
                       ),
                     ),
                   ),
