@@ -87,13 +87,9 @@ class _CopyTextContainerState extends State<CopyTextContainer> {
           }
         }
 
-        FToast fToast = FToast();
-
         if (!context.mounted) return;
 
-        fToast.init(context);
-        final toast = MyToast.getToastWidget(widget.toastMsg ?? t.copied);
-        fToast.showToast(child: toast, gravity: ToastGravity.BOTTOM, toastDuration: const Duration(seconds: 2));
+        CoconutToast.showBottomToast(context: context, text: widget.toastMsg ?? t.copied);
       },
       onTapDown: (details) {
         setState(() {
