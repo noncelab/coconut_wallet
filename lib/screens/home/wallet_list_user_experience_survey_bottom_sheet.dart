@@ -84,7 +84,7 @@ class UserExperienceSurveyBottomSheet extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: CoconutColors.white.withOpacity(0.5),
+                        color: CoconutColors.white.withValues(alpha: 0.5),
                       ),
                       child: Text(
                         t.user_experience_survey_bottom_sheet.text4,

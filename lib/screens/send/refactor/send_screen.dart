@@ -1994,7 +1994,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
           Future.delayed(const Duration(milliseconds: 1000), () {
             if (!mounted) return;
             final context = _viewMoreButtonKey.currentContext;
-            if (context == null) return;
+            if (context == null || !context.mounted) return;
             final viewMoreButtonRect = context.findRenderObject() as RenderBox?;
             if (viewMoreButtonRect == null) return;
             final viewMoreButtonPosition = viewMoreButtonRect.localToGlobal(Offset.zero);

@@ -187,7 +187,7 @@ class _SelectableTagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor = tagColorPalette[tag.colorIndex];
-    final backgroundColor = foregroundColor.withOpacity(0.18);
+    final backgroundColor = foregroundColor.withValues(alpha: 0.18);
     final style = _styleFor(foregroundColor);
 
     Widget chipForeground = AnimatedContainer(
@@ -231,7 +231,7 @@ class _SelectableTagChip extends StatelessWidget {
       );
     }
 
-    final inactiveColor = foregroundColor.withOpacity(0.4);
+    final inactiveColor = foregroundColor.withValues(alpha: 0.4);
     return _SelectableChipStyle(
       borderColor: inactiveColor,
       textColor: inactiveColor,

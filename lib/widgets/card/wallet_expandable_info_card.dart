@@ -102,7 +102,7 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: context.coconutColors.background,
-                    borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
+                    borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
                   child: RichText(

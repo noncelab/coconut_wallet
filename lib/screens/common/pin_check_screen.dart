@@ -158,6 +158,8 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           description: t.alert.forgot_password.description,
           onTapRight: () async {
             await _authProvider.resetPassword();
+            if (!context.mounted) return;
+            // FIXME: 여기 await 안 넣어줘도 되는지??
             Provider.of<RealmManager>(context, listen: false).reset();
             widget.onComplete?.call();
             if (mounted) {

@@ -13,6 +13,7 @@ const defaultBoxDecoration = BoxDecoration(
 
 const defaultCardColor = Color.fromRGBO(255, 255, 255, 0.06);
 
+// FIXME: deprecated
 class ColorSet {
   final Color color;
   final Color backgroundColor;

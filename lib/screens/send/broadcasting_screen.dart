@@ -300,6 +300,7 @@ class _BroadcastingScreenState extends State<BroadcastingScreen> {
         }
       } catch (e) {
         vibrateMedium();
+        if (!mounted) return;
         showAlertDialog(context: context, content: t.alert.error_tx.not_parsed(error: e));
       }
 

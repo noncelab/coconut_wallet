@@ -157,7 +157,7 @@ class _CoconutQrScannerState extends State<CoconutQrScanner> with SingleTickerPr
                   WidgetsBinding.instance.addPostFrameCallback((_) async {
                     if (!mounted) return;
                     await _showCameraPermissionDialog();
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                   });
                 }

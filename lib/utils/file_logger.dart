@@ -88,7 +88,7 @@ class FileLogger {
       }
 
       if (entries.isNotEmpty) {
-        final logContent = entries.join('\n') + '\n';
+        final logContent = '${entries.join('\n')}\n';
         await _logFile!.writeAsString(logContent, mode: FileMode.append);
       }
     } catch (e) {
