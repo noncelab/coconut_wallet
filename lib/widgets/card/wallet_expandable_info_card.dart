@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 
 class WalletExpandableInfoCard extends StatefulWidget {
@@ -16,11 +17,12 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Container(
       padding: const EdgeInsets.all(CoconutStyles.radius_200),
-      decoration: const BoxDecoration(
-        color: CoconutColors.gray800,
-        borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.all(Radius.circular(CoconutStyles.radius_200)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -55,12 +57,14 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
           if (_isExpanded) ...[
             CoconutLayout.spacing_200h,
             _buildWalletInfoSection(
+              context: context,
               titleText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[0],
               descriptionList: [...t.wallet_add_scanner_screen.paste.blue_wallet_texts.getRange(1, 3)],
               addressText: t.wallet_add_scanner_screen.paste.blue_wallet_texts[3],
             ),
             CoconutLayout.spacing_200h,
             _buildWalletInfoSection(
+              context: context,
               titleText: t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts[0],
               descriptionList: [...t.wallet_add_scanner_screen.paste.nunchuck_wallet_texts.getRange(1, 2)],
               addressText:
@@ -76,6 +80,7 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
   }
 
   Widget _buildWalletInfoSection({
+    required BuildContext context,
     required String titleText,
     required List<String> descriptionList,
     required String addressText,
@@ -95,8 +100,8 @@ class _WalletExpandableInfoCardState extends State<WalletExpandableInfoCard> {
                 padding: const EdgeInsets.symmetric(horizontal: Sizes.size8),
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: CoconutColors.black,
+                  decoration: BoxDecoration(
+                    color: context.coconutColors.background,
                     borderRadius: BorderRadius.all(Radius.circular(CoconutStyles.radius_100)),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),

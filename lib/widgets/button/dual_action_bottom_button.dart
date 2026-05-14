@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 
 class DualActionBottomButton extends StatefulWidget {
   final String text1;

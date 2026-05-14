@@ -10,7 +10,6 @@ import 'package:coconut_wallet/providers/view_model/send/signed_psbt_scanner_vie
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/widgets/animated_qr/coconut_qr_scanner.dart';
 import 'package:coconut_wallet/widgets/animated_qr/scan_data_handler/signed_psbt_scan_data_handler.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -48,7 +47,7 @@ class _SignedPsbtScannerScreenState extends State<SignedPsbtScannerScreen> {
         appBar: CoconutAppBar.build(
           title: t.signed_psbt_scanner_screen.title,
           context: context,
-          backgroundColor: CoconutColors.black.withOpacity(0.95),
+          backgroundColor: CoconutColors.black.withValues(alpha: 0.95),
           actionButtonList: [
             IconButton(
               icon: SvgPicture.asset('assets/svg/arrow-reload.svg', width: 20, height: 20),

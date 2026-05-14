@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -161,8 +162,9 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: colors.background,
       appBar: CoconutAppBar.build(context: context, title: t.app_info_screen.coconut_crew),
       body: Stack(
         children: [
@@ -202,7 +204,7 @@ class _CoconutCrewScreenState extends State<CoconutCrewScreen> {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: ShrinkAnimationButton(
                       defaultColor: CoconutColors.gray800,
-                      pressedColor: CoconutColors.gray750,
+                      pressedColor: context.coconutColors.surfacePressed,
                       borderRadius: 12,
                       onPressed: () {
                         if (link != null) {

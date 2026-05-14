@@ -147,7 +147,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
     return CoconutAppBar.build(
       context: context,
       entireWidgetKey: _appBarKey,
-      backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
+      backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withValues(alpha: 0.5) : CoconutColors.black,
       title: t.address_list_screen.wallet_name(name: viewModel.walletBaseItem!.name),
       actionButtonList: [
         IconButton(
@@ -385,7 +385,7 @@ class _AddressListScreenState extends State<AddressListScreen> {
                                     qrcodeTopWidget: Text(
                                       addressList[index].derivationPath,
                                       style: CoconutTypography.body2_14.merge(
-                                        TextStyle(color: CoconutColors.white.withOpacity(0.7)),
+                                        TextStyle(color: CoconutColors.white.withValues(alpha: 0.7)),
                                       ),
                                     ),
                                     qrData: addressList[index].address,

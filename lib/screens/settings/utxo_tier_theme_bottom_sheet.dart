@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/utxo_tier_theme.dart';
@@ -15,8 +16,9 @@ class UtxoTierThemeBottomSheet extends StatelessWidget {
     return Selector<PreferenceProvider, UtxoTierTheme>(
       selector: (_, provider) => provider.utxoTierTheme,
       builder: (context, currentTheme, child) {
+        final colors = context.coconutColors;
         return Scaffold(
-          backgroundColor: CoconutColors.black,
+          backgroundColor: colors.background,
           appBar: CoconutAppBar.build(
             title: t.settings_screen.utxo_tier_theme,
             context: context,

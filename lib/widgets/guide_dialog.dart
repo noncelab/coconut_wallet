@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:coconut_wallet/widgets/button/action_bottom_button.dart';
 
 class GuideDialog extends StatelessWidget {

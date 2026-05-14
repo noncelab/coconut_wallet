@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/model/wallet/multisig_signer.dart';
 import 'package:coconut_wallet/model/wallet/multisig_wallet_list_item.dart';
@@ -302,6 +303,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
   }
 
   Widget _buildIcon() {
+    final colors = context.coconutColors;
     final bool isExternalWallet = walletImportSource != null && walletImportSource != WalletImportSource.coconutVault;
     final bool shouldShowEditIcon = isExternalWallet || isCustomAccount;
 
@@ -320,7 +322,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
             child: Container(
               padding: const EdgeInsets.all(4.3),
               decoration: BoxDecoration(
-                color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
+                color: isItemTapped ? colors.surfacePressed : CoconutColors.gray800,
                 shape: BoxShape.circle,
                 boxShadow: const [
                   BoxShadow(color: CoconutColors.gray900, offset: Offset(2, 2), blurRadius: 10, spreadRadius: 0),
@@ -329,7 +331,7 @@ class _WalletInfoItemCardState extends State<WalletInfoItemCard> {
               child: Container(
                 padding: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
-                  color: isItemTapped ? CoconutColors.gray750 : CoconutColors.gray800,
+                  color: isItemTapped ? colors.surfacePressed : CoconutColors.gray800,
                   shape: BoxShape.circle,
                 ),
                 child: SvgPicture.asset(

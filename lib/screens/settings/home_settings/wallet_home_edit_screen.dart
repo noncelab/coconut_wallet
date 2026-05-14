@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/preference/home_feature.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -127,6 +128,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return ChangeNotifierProxyProvider2<WalletProvider, PreferenceProvider, WalletHomeEditViewModel>(
       create: (context) => _createViewModel(),
       update: (context, walletProvider, preferenceProvider, previous) {
@@ -137,10 +139,10 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
-          backgroundColor: CoconutColors.black,
+          backgroundColor: colors.background,
           resizeToAvoidBottomInset: false,
           appBar: CoconutAppBar.build(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: colors.background,
             context: context,
             isBottom: true,
             title: t.home_screen_settings,
@@ -180,7 +182,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   bottom: 0,
                   child: Container(
                     height: MediaQuery.sizeOf(context).height,
-                    color: CoconutColors.black,
+                    color: colors.background,
                     child: SingleChildScrollView(
                       controller: _scrollController,
                       child: Column(
@@ -217,7 +219,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         }
                                         viewModel.setTempIsBalanceHidden(!viewModel.tempIsBalanceHidden);
                                       },
-                                      backgroundColor: CoconutColors.black,
+                                      backgroundColor: colors.background,
                                       rightElement: CoconutSwitch(
                                         isOn: viewModel.tempIsBalanceHidden,
                                         scale: 0.7,
@@ -269,7 +271,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                         }
                                         viewModel.setTempIsFiatBalanceHidden(!viewModel.tempIsFiatBalanceHidden);
                                       },
-                                      backgroundColor: CoconutColors.black,
+                                      backgroundColor: colors.background,
                                       rightElement: CoconutSwitch(
                                         isOn: viewModel.tempIsFiatBalanceHidden,
                                         scale: 0.7,
@@ -466,7 +468,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                                   _viewModel.toggleTempHomeFeatureEnabled(widget['homeFeatureTypeString'].toString());
                                 },
                                 defaultColor: CoconutColors.gray800,
-                                pressedColor: CoconutColors.gray750,
+                                pressedColor: context.coconutColors.surfacePressed,
                                 child: FixedTextScale(
                                   child: Container(
                                     height: 100,
@@ -595,7 +597,7 @@ class _WalletHomeEditScreenState extends State<WalletHomeEditScreen> with Ticker
                   controller: _textEditingController,
                   focusNode: _textFieldFocusNode,
                   onChanged: (text) {},
-                  backgroundColor: CoconutColors.black,
+                  backgroundColor: context.coconutColors.background,
                   errorColor: CoconutColors.hotPink,
                   placeholderColor: CoconutColors.gray700,
                   activeColor: CoconutColors.white,

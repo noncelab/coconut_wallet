@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
@@ -47,7 +48,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
           onTapRight: () async {
             await FileLogger.clearLog();
             await _loadLogContent();
-            if (mounted) {
+            if (context.mounted) {
               Navigator.pop(context);
             }
           },
@@ -63,12 +64,13 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: colors.background,
       appBar: CoconutAppBar.build(
         title: t.log_viewer,
         context: context,
-        backgroundColor: CoconutColors.black.withOpacity(0.95),
+        backgroundColor: colors.background.withValues(alpha: 0.95),
         actionButtonList: [
           IconButton(
             icon: const Icon(Icons.share, color: CoconutColors.white),
@@ -118,7 +120,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: CoconutColors.white.withOpacity(0.1),
+                        color: CoconutColors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
@@ -159,7 +161,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: CoconutColors.white.withOpacity(0.1),
+                          color: CoconutColors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: SelectableText(

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
@@ -52,6 +53,7 @@ class FixedBottomButton extends StatefulWidget {
 class _FixedBottomButtonState extends State<FixedBottomButton> {
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     final mediaQuery = MediaQuery.of(context);
     final keyboardHeight = widget.isVisibleAboveKeyboard ? mediaQuery.viewInsets.bottom : 0.0;
     final anchoredBottomBase = keyboardHeight > 0 ? keyboardHeight : mediaQuery.padding.bottom;
@@ -119,7 +121,7 @@ class _FixedBottomButtonState extends State<FixedBottomButton> {
                     isActive: widget.isActive,
                     defaultColor: widget.backgroundColor,
                     pressedColor: widget.pressedBackgroundColor ?? getDarkerColor(widget.backgroundColor),
-                    disabledColor: CoconutColors.gray800,
+                    disabledColor: colors.surfaceDisabled,
                     borderRadius: 12,
                     child: SizedBox(
                       width: MediaQuery.sizeOf(context).width,

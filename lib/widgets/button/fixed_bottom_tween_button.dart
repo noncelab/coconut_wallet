@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -59,6 +60,7 @@ class FixedBottomTweenButton extends StatefulWidget {
 class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     double keyboardHeight = (widget.isVisibleAboveKeyboard ? MediaQuery.of(context).viewInsets.bottom : 0);
     double bottomInset = MediaQuery.of(context).padding.bottom;
 
@@ -130,7 +132,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                         },
                         defaultColor: widget.leftButtonBackgroundColor,
                         pressedColor: getDarkerColor(widget.leftButtonBackgroundColor),
-                        disabledColor: CoconutColors.gray800,
+                        disabledColor: colors.surfaceDisabled,
                         borderRadius: 12,
                         child: SizedBox(
                           width: leftButtonWidth,
@@ -159,7 +161,7 @@ class _FixedBottomTweenButtonState extends State<FixedBottomTweenButton> {
                         },
                         defaultColor: widget.rightButtonBackgroundColor,
                         pressedColor: getDarkerColor(widget.rightButtonBackgroundColor),
-                        disabledColor: CoconutColors.gray800,
+                        disabledColor: colors.surfaceDisabled,
                         borderRadius: 12,
                         child: SizedBox(
                           width: rightButtonWidth,

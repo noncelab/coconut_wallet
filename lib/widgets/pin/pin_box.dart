@@ -19,7 +19,7 @@ class PinBox extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            color: CoconutColors.white.withOpacity(0.2),
+            color: CoconutColors.white.withValues(alpha: 0.2),
           ),
           child:
               isSet

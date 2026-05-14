@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/dashed_border_painter.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
@@ -17,11 +18,12 @@ class WalletAdditionGuideCard extends StatefulWidget {
 class _WalletAdditionGuideCardState extends State<WalletAdditionGuideCard> {
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
       child: ShrinkAnimationButton(
         defaultColor: CoconutColors.gray800,
-        pressedColor: CoconutColors.gray750,
+        pressedColor: colors.surfacePressed,
         onPressed: widget.onPressed,
         child: CustomPaint(
           painter: DashedBorderPainter(dashSpace: 4.0, dashWidth: 4.0),

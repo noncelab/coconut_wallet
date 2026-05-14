@@ -122,17 +122,17 @@ class WebSocketService {
 
       switch (_exchangeType) {
         case ExchangeType.upbit:
-          if (decodedData is Map<String, dynamic> && decodedData['trade_price'] != null) {
+          if (decodedData['trade_price'] != null) {
             priceResponse = UpbitResponse.fromJson(decodedData);
           }
           break;
         case ExchangeType.binance:
-          if (decodedData is Map<String, dynamic> && decodedData['c'] != null) {
+          if (decodedData['c'] != null) {
             priceResponse = BinanceResponse.fromJson(decodedData);
           }
           break;
         case ExchangeType.bitflyer:
-          if (decodedData is Map<String, dynamic> && decodedData['method'] == 'channelMessage') {
+          if (decodedData['method'] == 'channelMessage') {
             final message = decodedData['params']['message'];
             if (message != null) {
               priceResponse = BitflyerResponse.fromJson(message);

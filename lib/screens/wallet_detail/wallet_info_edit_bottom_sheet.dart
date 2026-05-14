@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/wallet_detail/wallet_info_edit_view_model.dart';
@@ -11,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:tuple/tuple.dart';
-import 'package:coconut_wallet/styles.dart';
 
 class WalletInfoEditBottomSheet extends StatelessWidget {
   final int id;
@@ -105,6 +105,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
     return Selector<WalletInfoEditViewModel, Tuple3<bool, bool, String>>(
       selector: (_, viewModel) => Tuple3(viewModel.canUpdateName, viewModel.isProcessing, viewModel.walletName),
       builder: (context, data, child) {
+        final typography = context.coconutTypography;
         final canUpdateName = data.item1;
         final isProcessing = data.item2;
         final walletName = data.item3;
@@ -170,7 +171,7 @@ class _WalletInfoEditBottomSheetState extends State<_WalletInfoEditBottomSheetCo
                                 Expanded(
                                   child: Text(
                                     walletName,
-                                    style: Styles.body2Bold.copyWith(color: CoconutColors.white),
+                                    style: typography.bodyBold.copyWith(color: CoconutColors.white),
                                     textAlign: TextAlign.center,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,

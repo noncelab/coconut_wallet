@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
@@ -118,28 +118,18 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: CoconutColors.black,
-      appBar: AppBar(
-        scrolledUnderElevation: 0,
-        backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
-        toolbarHeight: kToolbarHeight,
-        flexibleSpace:
-            _isScrollOverTitleHeight
-                ? ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(color: CoconutColors.black.withOpacity(0.06)),
-                  ),
-                )
-                : null,
-        title: AnimatedOpacity(
+      backgroundColor: colors.background,
+      appBar: CoconutAppBar.build(
+        context: context,
+        backgroundColor: _isScrollOverTitleHeight ? colors.background.withValues(alpha: 0.5) : colors.background,
+        customTitle: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: _appbarTitleVisible ? 1 : 0,
-          child: Text(t.app_info, style: CoconutTypography.heading4_18.setColor(CoconutColors.white)),
+          child: Text(t.app_info, style: CoconutTypography.body1_16_Bold.setColor(CoconutColors.white)),
         ),
-        centerTitle: true,
       ),
       body: Stack(
         children: [
@@ -148,7 +138,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
               Container(
                 width: MediaQuery.sizeOf(context).width,
                 height: MediaQuery.sizeOf(context).height / 2,
-                color: CoconutColors.black,
+                color: colors.background,
               ),
               Container(
                 width: MediaQuery.sizeOf(context).width,
@@ -161,7 +151,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
             physics: const BouncingScrollPhysics(),
             controller: _scrollController,
             child: Container(
-              color: CoconutColors.black,
+              color: colors.background,
               child: Column(
                 children: [
                   SizedBox(height: kToolbarHeight + MediaQuery.of(context).padding.top + 30),
@@ -201,7 +191,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
 
         return Container(
           padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-          decoration: const BoxDecoration(color: CoconutColors.black),
+          decoration: BoxDecoration(color: context.coconutColors.background),
           child: Row(
             children: [
               Container(
@@ -255,7 +245,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: ShrinkAnimationButton(
         defaultColor: CoconutColors.gray800,
-        pressedColor: CoconutColors.gray750,
+        pressedColor: context.coconutColors.surfacePressed,
         onPressed: () {
           Navigator.pushNamed(context, '/coconut-crew');
         },
@@ -283,7 +273,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
   Widget socialMediaWidget() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(color: CoconutColors.black),
+      decoration: BoxDecoration(color: context.coconutColors.background),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -356,7 +346,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
     Widget githubLogo = SvgPicture.asset('assets/svg/github-logo-white.svg', width: 24, height: 24, fit: BoxFit.cover);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(color: CoconutColors.black),
+      decoration: BoxDecoration(color: context.coconutColors.background),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -408,7 +398,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
   Widget termsOfServiceWidget() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(color: CoconutColors.black),
+      decoration: BoxDecoration(color: context.coconutColors.background),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -497,7 +487,7 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                     style: CoconutTypography.body2_14.merge(
                       TextStyle(
                         decoration: TextDecoration.underline,
-                        decorationColor: CoconutColors.white.withOpacity(0.3),
+                        decorationColor: CoconutColors.white.withValues(alpha: 0.3),
                       ),
                     ),
                   ),

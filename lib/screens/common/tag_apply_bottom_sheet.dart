@@ -181,7 +181,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
             ),
           ),
           CoconutLayout.spacing_500h,
-          Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
+          Divider(color: CoconutColors.white.withValues(alpha: 0.12), height: 1),
         ],
       ),
     );
@@ -312,7 +312,7 @@ class _TagApplyBottomSheetState extends State<TagApplyBottomSheet> {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Divider(color: CoconutColors.white.withOpacity(0.12), height: 1),
+          Divider(color: CoconutColors.white.withValues(alpha: 0.12), height: 1),
           _buildMenuItem(_isDeletionMode ? t.tag_bottom_sheet.exit_deletion : t.tag_bottom_sheet.delete_tag, () {
             _toggleDeletionMode();
           }),
@@ -358,7 +358,7 @@ class TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foregroundColor = tagColorPalette[tag.colorIndex];
-    final backgroundColor = foregroundColor.withOpacity(0.18);
+    final backgroundColor = foregroundColor.withValues(alpha: 0.18);
 
     final style = _getStyle(foregroundColor);
 
@@ -426,7 +426,7 @@ class TagChip extends StatelessWidget {
             key: const ValueKey('original'),
             width: 16,
             height: 16,
-            colorFilter: ColorFilter.mode(foregroundColor.withOpacity(0.6), BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(foregroundColor.withValues(alpha: 0.6), BlendMode.srcIn),
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -447,7 +447,7 @@ class TagChip extends StatelessWidget {
           ),
         );
       case TagApplyState.unchecked:
-        final opacColor = foregroundColor.withOpacity(0.4);
+        final opacColor = foregroundColor.withValues(alpha: 0.4);
         return _ChipStyle(
           borderColor: opacColor,
           textColor: opacColor,

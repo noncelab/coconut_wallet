@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/transaction_draft.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -41,6 +42,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                 ..initializeDraftList(),
       child: Consumer<TransactionDraftViewModel>(
         builder: (context, viewModel, child) {
+          final colors = context.coconutColors;
           // 초기 선택 상태 설정 (한 번만 실행, initializeDraftList 완료 후)
           if (!_initialSelectionSet && viewModel.isInitialized) {
             if (widget.isSignedTabActive != null) {
@@ -65,7 +67,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
                   : viewModel.unsignedTransactionDraftList;
 
           return Scaffold(
-            backgroundColor: CoconutColors.black,
+            backgroundColor: colors.background,
             appBar: _buildAppBar(context),
             body: Column(
               children: [
@@ -100,7 +102,7 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return CoconutAppBar.build(
       context: context,
-      backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withOpacity(0.5) : CoconutColors.black,
+      backgroundColor: _isScrollOverTitleHeight ? CoconutColors.black.withValues(alpha: 0.5) : CoconutColors.black,
       title: t.transaction_draft.title,
       isBottom: true,
     );
@@ -283,9 +285,5 @@ class _TransactionDraftScreenState extends State<TransactionDraftScreen> {
         },
       );
     }
-  }
-
-  Future<void> _refreshList(TransactionDraftViewModel viewModel) async {
-    await viewModel.initializeDraftList();
   }
 }

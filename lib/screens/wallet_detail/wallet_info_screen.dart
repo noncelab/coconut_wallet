@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -548,6 +549,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: Column(
@@ -560,7 +562,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
               Expanded(
                 child: ShrinkAnimationButton(
                   defaultColor: CoconutColors.gray800,
-                  pressedColor: CoconutColors.gray750,
+                  pressedColor: colors.surfacePressed,
                   borderRadius: 24,
                   onPressed: () {
                     Navigator.pushNamed(context, '/utxo-overview', arguments: {'id': walletId});
@@ -573,7 +575,7 @@ class _WalletInfoStatsSection extends StatelessWidget {
           const SizedBox(height: 12),
           ShrinkAnimationButton(
             defaultColor: CoconutColors.gray800,
-            pressedColor: CoconutColors.gray750,
+            pressedColor: colors.surfacePressed,
             borderRadius: 24,
             onPressed: onEditTargetTap,
             child: _TargetQuantityCard(

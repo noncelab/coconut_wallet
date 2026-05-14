@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class SingleButton extends StatelessWidget {
   final Widget? leftElement;
   final SingleButtonPosition buttonPosition;
   final TextStyle? subtitleStyle;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final double? betweenGap;
   final EdgeInsets? customPadding;
   final bool enableShrinkAnim;
@@ -59,7 +60,7 @@ class SingleButton extends StatelessWidget {
     this.leftElement,
     this.buttonPosition = SingleButtonPosition.none,
     this.subtitleStyle,
-    this.backgroundColor = CoconutColors.gray800,
+    this.backgroundColor,
     this.betweenGap = 0,
     this.customPadding,
     this.enableShrinkAnim = false,
@@ -69,13 +70,15 @@ class SingleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final resolvedBackgroundColor = backgroundColor ?? colors.surface;
     final buttonContent = _buildButtonContent();
 
     return enableShrinkAnim
         ? ShrinkAnimationButton(
           onPressed: onPressed ?? () {},
-          defaultColor: backgroundColor,
-          pressedColor: CoconutColors.gray750,
+          defaultColor: resolvedBackgroundColor,
+          pressedColor: colors.surfacePressed,
           borderRadius: 24,
           animationEndValue: animationEndValue,
           child: Container(
@@ -87,7 +90,7 @@ class SingleButton extends StatelessWidget {
         : GestureDetector(
           onTap: onPressed,
           child: Container(
-            decoration: BoxDecoration(color: backgroundColor, borderRadius: buttonPosition.radius),
+            decoration: BoxDecoration(color: resolvedBackgroundColor, borderRadius: buttonPosition.radius),
             padding: getPadding(),
             child: buttonContent,
           ),

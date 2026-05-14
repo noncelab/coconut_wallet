@@ -1,9 +1,16 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 
-typedef SelectableItemBuilder<T> = Widget Function(BuildContext context, T item, bool isSelected, VoidCallback? onTap);
+typedef SelectableItemBuilder<T> =
+    Widget Function(
+      BuildContext context,
+      T item,
+      bool isSelected,
+      VoidCallback? onTap,
+    );
 
 class SelectableListBottomSheet<T> extends StatefulWidget {
   final String title; // AppBar 제목
@@ -30,10 +37,12 @@ class SelectableListBottomSheet<T> extends StatefulWidget {
   });
 
   @override
-  State<SelectableListBottomSheet<T>> createState() => _SelectableListBottomSheetState<T>();
+  State<SelectableListBottomSheet<T>> createState() =>
+      _SelectableListBottomSheetState<T>();
 }
 
-class _SelectableListBottomSheetState<T> extends State<SelectableListBottomSheet<T>> {
+class _SelectableListBottomSheetState<T>
+    extends State<SelectableListBottomSheet<T>> {
   Object? _selectedId;
 
   @override
@@ -54,9 +63,14 @@ class _SelectableListBottomSheetState<T> extends State<SelectableListBottomSheet
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
-      backgroundColor: CoconutColors.black,
-      appBar: CoconutAppBar.build(title: widget.title, context: context, isBottom: true),
+      backgroundColor: colors.background,
+      appBar: CoconutAppBar.build(
+        title: widget.title,
+        context: context,
+        isBottom: true,
+      ),
       body: SafeArea(
         child: Stack(
           children: [
@@ -82,7 +96,12 @@ class _SelectableListBottomSheetState<T> extends State<SelectableListBottomSheet
                     });
                   }
 
-                  return widget.itemBuilder(context, item, isSelected, handleTap);
+                  return widget.itemBuilder(
+                    context,
+                    item,
+                    isSelected,
+                    handleTap,
+                  );
                 },
               ),
             ),
@@ -96,7 +115,9 @@ class _SelectableListBottomSheetState<T> extends State<SelectableListBottomSheet
                           orElse: () => widget.items.first,
                         );
 
-                await widget.onConfirm(_selectedId == null ? null : selectedItem);
+                await widget.onConfirm(
+                  _selectedId == null ? null : selectedItem,
+                );
               },
               isActive: _selectedId != null,
               text: widget.confirmText,

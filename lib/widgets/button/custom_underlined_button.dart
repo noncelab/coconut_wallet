@@ -70,7 +70,7 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
                         ? _isPressing
                             ? widget.pressingColor ?? CoconutColors.gray500
                             : widget.defaultColor ?? CoconutColors.white
-                        : CoconutColors.white.withOpacity(0.2),
+                        : CoconutColors.white.withValues(alpha: 0.2),
                 width: 0.5,
               ),
             ),
@@ -86,7 +86,7 @@ class _CustomUnderlinedButtonState extends State<CustomUnderlinedButton> {
                       ? _isPressing
                           ? widget.pressingColor ?? CoconutColors.gray500
                           : widget.defaultColor ?? CoconutColors.white
-                      : CoconutColors.white.withOpacity(0.2),
+                      : CoconutColors.white.withValues(alpha: 0.2),
             ),
           ),
         ),

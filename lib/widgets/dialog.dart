@@ -18,7 +18,7 @@ Future<void> showInfoDialog(
       return CoconutPopup(
         languageCode: languageCode,
         title: title,
-        backgroundColor: CoconutColors.black.withOpacity(0.7),
+        backgroundColor: CoconutColors.black.withValues(alpha: 0.7),
         description: description,
         descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
         insetPadding: const EdgeInsets.symmetric(horizontal: 50),
@@ -52,7 +52,7 @@ Future<void> showConfirmDialog(
       return CoconutPopup(
         languageCode: languageCode,
         title: title,
-        backgroundColor: CoconutColors.black.withOpacity(0.7),
+        backgroundColor: CoconutColors.black.withValues(alpha: 0.7),
         description: description,
         descriptionPadding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 12),
         insetPadding: const EdgeInsets.symmetric(horizontal: 50),

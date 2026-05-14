@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -54,10 +55,11 @@ class _LicenseBottomSheetState extends State<LicenseBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return ClipRRect(
       borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: colors.background,
         appBar: CoconutAppBar.build(
           title: t.license_bottom_sheet.title,
           context: context,

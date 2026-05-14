@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/node/electrum_server.dart';
@@ -170,6 +171,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
       },
       child: Consumer<ElectrumServerViewModel>(
         builder: (context, viewModel, child) {
+          final colors = context.coconutColors;
           final canPop = viewModel.nodeConnectionStatus != NodeConnectionStatus.connecting;
 
           return PopScope(
@@ -178,7 +180,7 @@ class _ElectrumServerScreen extends State<ElectrumServerScreen> {
               onTap: _unFocus,
               child: Scaffold(
                 resizeToAvoidBottomInset: false,
-                backgroundColor: CoconutColors.black,
+                backgroundColor: colors.background,
                 appBar: PreferredSize(
                   preferredSize: const Size.fromHeight(kToolbarHeight),
                   child: Selector<ElectrumServerViewModel, NodeConnectionStatus>(

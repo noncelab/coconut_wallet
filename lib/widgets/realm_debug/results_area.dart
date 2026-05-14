@@ -46,7 +46,10 @@ class ResultsArea extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '잠시만 기다려주세요',
-              style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7)),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -102,9 +105,9 @@ class ResultsArea extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainer.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -261,9 +264,11 @@ class ResultsArea extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isModified ? Colors.amber : Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+          border: Border.all(
+            color: isModified ? Colors.amber : Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+          ),
         ),
         child: Text(
           value.toString(),

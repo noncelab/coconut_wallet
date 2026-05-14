@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -9,7 +10,12 @@ class SelectionItem<T> {
   final T value;
   final VoidCallback onTap;
 
-  SelectionItem({required this.title, this.subtitle, required this.value, required this.onTap});
+  SelectionItem({
+    required this.title,
+    this.subtitle,
+    required this.value,
+    required this.onTap,
+  });
 }
 
 class SelectionBottomSheet<T> extends StatelessWidget {
@@ -28,9 +34,15 @@ class SelectionBottomSheet<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
-      backgroundColor: CoconutColors.black,
-      appBar: CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true),
+      backgroundColor: colors.background,
+      appBar: CoconutAppBar.build(
+        title: title,
+        context: context,
+        onBackPressed: null,
+        isBottom: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.only(left: Sizes.size16, right: Sizes.size16),
         child: Column(
@@ -40,7 +52,12 @@ class SelectionBottomSheet<T> extends StatelessWidget {
                 alignment: Alignment.topRight,
                 child: Padding(
                   padding: const EdgeInsets.only(right: Sizes.size8),
-                  child: Text(headerText!, style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                  child: Text(
+                    headerText!,
+                    style: CoconutTypography.body3_12_Number.setColor(
+                      CoconutColors.white,
+                    ),
+                  ),
                 ),
               ),
             ..._buildItemsWithDividers(),
@@ -60,7 +77,12 @@ class SelectionBottomSheet<T> extends StatelessWidget {
       widgets.add(_buildItem(item, isSelected));
 
       if (i < items.length - 1) {
-        widgets.add(Divider(color: CoconutColors.white.withOpacity(0.12), height: 1));
+        widgets.add(
+          Divider(
+            color: CoconutColors.white.withValues(alpha: 0.12),
+            height: 1,
+          ),
+        );
       }
     }
 
@@ -82,9 +104,19 @@ class SelectionBottomSheet<T> extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.title, style: CoconutTypography.body2_14_Bold.setColor(CoconutColors.white)),
+                  Text(
+                    item.title,
+                    style: CoconutTypography.body2_14_Bold.setColor(
+                      CoconutColors.white,
+                    ),
+                  ),
                   if (item.subtitle != null)
-                    Text(item.subtitle!, style: CoconutTypography.body3_12_Number.setColor(CoconutColors.white)),
+                    Text(
+                      item.subtitle!,
+                      style: CoconutTypography.body3_12_Number.setColor(
+                        CoconutColors.white,
+                      ),
+                    ),
                 ],
               ),
             ),

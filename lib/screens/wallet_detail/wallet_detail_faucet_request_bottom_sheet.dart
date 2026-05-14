@@ -207,7 +207,7 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                   },
                   borderRadius: BorderRadius.circular(8.0),
                   padding: EdgeInsets.zero,
-                  color: canRequestFaucet() ? CoconutColors.white : CoconutColors.white.withOpacity(0.3),
+                  color: canRequestFaucet() ? CoconutColors.white : CoconutColors.white.withValues(alpha: 0.3),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                     child:
@@ -225,7 +225,9 @@ class _FaucetRequestBottomSheetState extends State<FaucetRequestBottomSheet> {
                                   ),
                               style: CoconutTypography.body2_14
                                   .setColor(
-                                    (canRequestFaucet()) ? CoconutColors.black : CoconutColors.black.withOpacity(0.5),
+                                    (canRequestFaucet())
+                                        ? CoconutColors.black
+                                        : CoconutColors.black.withValues(alpha: 0.5),
                                   )
                                   .merge(const TextStyle(letterSpacing: -0.1, fontWeight: FontWeight.w600)),
                             ),

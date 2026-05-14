@@ -442,7 +442,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                           }
                         });
 
-                        if (result == false) {
+                        if (result == false || !mounted) {
                           return;
                         }
 

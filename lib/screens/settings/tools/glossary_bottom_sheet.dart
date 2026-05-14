@@ -2,12 +2,13 @@ import 'dart:convert';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/constants/external_links.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -217,8 +218,9 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
     return Scaffold(
-      backgroundColor: CoconutColors.black,
+      backgroundColor: colors.background,
       appBar: CoconutAppBar.build(title: t.glossary, context: context, onBackPressed: null, isBottom: true),
       body: Padding(
         padding: EdgeInsets.only(left: GlossaryBottomSheet.gutter, right: GlossaryBottomSheet.gutter, top: 20),
@@ -324,9 +326,9 @@ class _GlossaryBottomSheetState extends State<GlossaryBottomSheet> {
                           Expanded(
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                              decoration: const BoxDecoration(
-                                color: CoconutColors.black,
-                                borderRadius: BorderRadius.only(
+                              decoration: BoxDecoration(
+                                color: context.coconutColors.background,
+                                borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(24),
                                   topRight: Radius.circular(24),
                                 ),

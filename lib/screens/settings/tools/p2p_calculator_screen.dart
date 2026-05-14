@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/extensions/int_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -910,7 +911,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           resizeToAvoidBottomInset: true,
-          backgroundColor: CoconutColors.black,
+          backgroundColor: context.coconutColors.background,
           appBar: CoconutAppBar.build(
             context: context,
             title: t.utility.p2p_calculator.calculator,
@@ -946,6 +947,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                 ),
               ),
             ],
+            isBottom: true,
           ),
           body: Consumer<P2PCalculatorViewModel>(
             builder: (context, viewModel, child) {
@@ -1001,7 +1003,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         _buildCurrentPriceWidget(isVisible),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
-            pressedColor: _viewModel.isOfflineMode ? CoconutColors.gray850 : CoconutColors.gray750,
+            pressedColor:
+                _viewModel.isOfflineMode ? CoconutColors.gray850 : context.coconutColors.surfacePressed,
             onPressed: () async {
               await _viewModel.onFiatUnitChange();
               _resetCalculator();

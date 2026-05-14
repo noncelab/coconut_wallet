@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart' as app_tokens;
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -11,7 +13,6 @@ import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/utils/file_logger.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:screen_capture_event/screen_capture_event.dart';
 
@@ -179,17 +180,21 @@ class _AppGuardState extends State<AppGuard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = app_tokens.CoconutColors.dark();
+    final privacyScreenBackground = colors.background;
+    final splashLogoFlavor = NetworkType.currentNetworkType.isTestnet ? 'regtest' : 'mainnet';
+
     return Stack(
       alignment: Alignment.topLeft,
       children: [
         widget.child,
         if (_isPaused && AppGuard._isPrivacyEnabled)
           Container(
-            color: CoconutColors.black,
+            color: privacyScreenBackground,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [Image.asset('assets/images/splash_logo_$appFlavor.png', width: 48, height: 48)],
+                children: [Image.asset('assets/images/splash_logo_$splashLogoFlavor.png', width: 48, height: 48)],
               ),
             ),
           ),

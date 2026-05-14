@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/app/bootstrap/splash_theme.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/main.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/view_model/onboarding/start_view_model.dart';
 import 'package:coconut_wallet/providers/visibility_provider.dart';
@@ -91,7 +91,8 @@ class _StartScreenState extends State<StartScreen> {
                 leftButtonText: t.alert.update.btn_do_later,
                 onTapRight: () async {
                   await _viewModel.launchUpdate();
-                  if (mounted) Navigator.pop(context, true);
+                  if (!context.mounted) return;
+                  Navigator.pop(context, true);
                 },
                 onTapLeft: () => Navigator.pop(context, false),
               ),

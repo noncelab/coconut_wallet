@@ -1,4 +1,5 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/extensions/widget_animation_extensions.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
@@ -7,7 +8,7 @@ import 'package:coconut_wallet/widgets/button/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/button/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_legacy_tokens.dart';
 
 class CommonBottomSheets {
   static Future<T?> showBottomSheet<T>({
@@ -21,9 +22,10 @@ class CommonBottomSheets {
     bool showCloseButton = false,
     bool showDragHandle = false,
     bool adjustForKeyboardInset = true,
-    Color backgroundColor = CoconutColors.black,
+    Color? backgroundColor,
     EdgeInsetsGeometry titlePadding = const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
   }) {
+    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     return showModalBottomSheet<T>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -99,7 +101,7 @@ class CommonBottomSheets {
           ),
         );
       },
-      backgroundColor: backgroundColor,
+      backgroundColor: resolvedBackgroundColor,
       isDismissible: isDismissible,
       isScrollControlled: true,
       enableDrag: enableDrag,
@@ -183,7 +185,7 @@ class CommonBottomSheets {
           ),
         );
       },
-      backgroundColor: CoconutColors.black,
+      backgroundColor: context.coconutColors.surfaceBottomSheet,
       isScrollControlled: true,
       enableDrag: true,
       useSafeArea: true,
@@ -194,7 +196,7 @@ class CommonBottomSheets {
     required BuildContext context,
     required Widget child,
     bool enableDrag = true,
-    Color backgroundColor = CoconutColors.black,
+    Color? backgroundColor,
     bool isDismissible = false,
     bool isScrollControlled = true,
     bool useSafeArea = true,
@@ -206,7 +208,7 @@ class CommonBottomSheets {
         return child; // child screen에서 type <T>를 반환하면 반환됩니다.
       },
       transitionAnimationController: animationController,
-      backgroundColor: backgroundColor,
+      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,
@@ -228,10 +230,11 @@ class CommonBottomSheets {
     String? subLabel,
     TextStyle? titleTextStyle,
     List<Widget>? actionList,
-    Color backgroundColor = CoconutColors.black,
+    Color? backgroundColor,
     bool adjustForKeyboardInset = true,
     ValueChanged<DraggableScrollableController>? onControllerReady,
   }) async {
+    final resolvedBackgroundColor = backgroundColor ?? context.coconutColors.surfaceBottomSheet;
     final draggableController = DraggableScrollableController();
     onControllerReady?.call(draggableController);
     bool isAnimating = false;
@@ -282,7 +285,7 @@ class CommonBottomSheets {
                   return false;
                 },
                 child: Container(
-                  color: backgroundColor,
+                  color: resolvedBackgroundColor,
                   child: Column(
                     children: [
                       if (showDragHandle)
@@ -300,7 +303,7 @@ class CommonBottomSheets {
                             handleDrag();
                           },
                           child: Container(
-                            color: backgroundColor,
+                            color: resolvedBackgroundColor,
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Center(
                               child: Container(
@@ -342,7 +345,7 @@ class CommonBottomSheets {
                               subLabel ?? '',
                               style: CoconutTypography.body3_12.setColor(CoconutColors.black),
                             ),
-                            backgroundColor: backgroundColor,
+                            backgroundColor: resolvedBackgroundColor,
                             showSubLabel: subLabel != null,
                             isBottom: true,
                             actionButtonList: actionList,
@@ -381,7 +384,7 @@ class CommonBottomSheets {
     double minChildSize = 0.5,
     double maxChildSize = 0.9,
     double? initialChildSize,
-    Color backgroundColor = CoconutColors.black,
+    Color? backgroundColor,
     TextStyle? titleTextStyle,
     bool showGradient = true,
     bool allowConfirmWhenSelectionUnchanged = false,
@@ -414,7 +417,7 @@ class CommonBottomSheets {
               itemBuilder: itemBuilder!,
               initiallySelectedId: initiallySelectedId,
               confirmText: confirmText ?? t.select,
-              backgroundColor: backgroundColor,
+              backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
               showGradient: showGradient,
               allowConfirmWhenSelectionUnchanged: allowConfirmWhenSelectionUnchanged,
             );
@@ -426,7 +429,7 @@ class CommonBottomSheets {
     required BuildContext context,
     required Widget child,
     bool enableDrag = true,
-    Color backgroundColor = CoconutColors.black,
+    Color? backgroundColor,
     bool isDismissible = true,
     bool isScrollControlled = true,
     bool useSafeArea = true,
@@ -457,7 +460,7 @@ class CommonBottomSheets {
           },
         );
       },
-      backgroundColor: backgroundColor,
+      backgroundColor: backgroundColor ?? context.coconutColors.surfaceBottomSheet,
       isDismissible: isDismissible,
       isScrollControlled: isScrollControlled,
       enableDrag: enableDrag,

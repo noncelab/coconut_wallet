@@ -1,18 +1,19 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:flutter/material.dart';
 
 class MultiButton extends StatefulWidget {
   final List<SingleButton> children;
   final int animationDuration;
-  final Color backgroundColor;
+  final Color? backgroundColor;
   final bool showDivider;
 
   const MultiButton({
     super.key,
     required this.children,
     this.animationDuration = 100,
-    this.backgroundColor = CoconutColors.gray800,
+    this.backgroundColor,
     this.showDivider = true,
   });
 
@@ -23,13 +24,15 @@ class MultiButton extends StatefulWidget {
 class _MultiButtonState extends State<MultiButton> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final backgroundColor = widget.backgroundColor ?? colors.surface;
     final BorderRadius topRadius = _getFirstElementRadius();
     final BorderRadius bottomRadius = _getLastElementRadius();
 
     return AnimatedContainer(
       duration: Duration(milliseconds: widget.animationDuration),
       decoration: BoxDecoration(
-        color: widget.backgroundColor,
+        color: backgroundColor,
         borderRadius: BorderRadius.only(
           topLeft: topRadius.topLeft,
           topRight: topRadius.topRight,

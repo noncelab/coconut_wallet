@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -21,14 +22,14 @@ import 'package:flutter/material.dart';
 import 'package:coconut_wallet/widgets/button/single_button.dart';
 import 'package:provider/provider.dart';
 
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+class AppSettingsScreen extends StatefulWidget {
+  const AppSettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreen();
+  State<AppSettingsScreen> createState() => _AppSettingsScreen();
 }
 
-class _SettingsScreen extends State<SettingsScreen> {
+class _AppSettingsScreen extends State<AppSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProxyProvider2<AuthProvider, PreferenceProvider, SettingsViewModel>(
@@ -42,9 +43,10 @@ class _SettingsScreen extends State<SettingsScreen> {
       },
       child: Consumer<SettingsViewModel>(
         builder: (context, viewModel, child) {
+          final colors = context.coconutColors;
           return Scaffold(
-            backgroundColor: CoconutColors.black,
-            appBar: CoconutAppBar.build(title: t.settings, context: context, isBottom: true),
+            backgroundColor: colors.background,
+            appBar: CoconutAppBar.build(title: t.app_settings, context: context, isBottom: true),
             body: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(

@@ -26,7 +26,7 @@ class HighlightedInfoArea extends StatelessWidget {
                 widget,
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Container(width: 1, height: 12, color: CoconutColors.white.withOpacity(0.4)),
+                  child: Container(width: 1, height: 12, color: CoconutColors.white.withValues(alpha: 0.4)),
                 ),
               ],
             )
@@ -49,7 +49,10 @@ class HighlightedInfoArea extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(24), color: CoconutColors.white.withOpacity(0.1)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: CoconutColors.white.withValues(alpha: 0.1),
+      ),
       width: width, // 넘겨받은 width가 적용되거나 null이면 자동으로 조절됩니다.
       height: height, // 넘겨받은 height가 적용되거나 null이면 자동으로 조절됩니다.
       child: child ?? _buildTextListWidget(),

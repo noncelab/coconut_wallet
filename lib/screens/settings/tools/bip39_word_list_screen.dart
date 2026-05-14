@@ -1,9 +1,9 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:coconut_wallet/styles.dart';
 
 /// 공통 스타일
 const _defaultTextStyle = TextStyle(color: CoconutColors.white);
@@ -70,9 +70,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   bool _isTop = true;
   bool _isFabShown = false;
 
-  Color _searchbarBackgroundColor = CoconutColors.white;
-  Color _searchbarFillColor = CoconutColors.black.withValues(alpha: 0.06);
-
   @override
   void initState() {
     super.initState();
@@ -98,16 +95,10 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
 
     if (_isTop && scrollPosition.pixels > 0) {
       _isTop = false;
-      setState(() {
-        _searchbarBackgroundColor = CoconutColors.whiteLilac;
-        _searchbarFillColor = CoconutColors.white;
-      });
+      setState(() {});
     } else if (!_isTop && scrollPosition.pixels <= 0) {
       _isTop = true;
-      setState(() {
-        _searchbarBackgroundColor = CoconutColors.white;
-        _searchbarFillColor = CoconutColors.borderLightGray;
-      });
+      setState(() {});
     }
 
     if (!_isFabShown && scrollPosition.pixels > 450) {
@@ -117,8 +108,6 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     }
   }
 
-  void _scrollToTop() => _scrollController.jumpTo(0.0);
-
   /// 검색창 변경 시 실행
   void _filterItems() {
     final text = _searchController.text;
@@ -127,7 +116,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
     });
   }
 
-  /// 🔹 검색 로직 (원본 유지)
+  /// 검색 로직 (원본 유지)
   List<Map<String, dynamic>> _queryWord(String input) {
     final query = input.toLowerCase();
     final isBinary = RegExp(r'^[01]+$').hasMatch(query);
@@ -182,10 +171,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: CoconutColors.black,
+        backgroundColor: colors.background,
         appBar: CoconutAppBar.build(title: _titleText, context: context, isBottom: true),
         body: Column(
           children: [
@@ -207,8 +198,11 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   }
 
   Widget _searchBar(BuildContext context) {
+    final colors = context.coconutColors;
+    final typography = context.coconutTypography;
+
     return Container(
-      color: CoconutColors.black,
+      color: colors.background,
       child: Container(
         width: MediaQuery.of(context).size.width,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -216,7 +210,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeOut,
-            decoration: BoxDecoration(color: MyColors.borderLightgrey, borderRadius: BorderRadius.circular(12.0)),
+            decoration: BoxDecoration(color: colors.borderSubtle, borderRadius: BorderRadius.circular(12)),
             child: TextField(
               keyboardType: TextInputType.text,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
@@ -226,14 +220,14 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
               decoration: InputDecoration(
                 counterText: '',
                 hintText: _hintText,
-                hintStyle: Styles.body2.merge(const TextStyle(color: MyColors.transparentWhite_50)),
-                prefixIcon: const Icon(Icons.search_rounded, color: MyColors.transparentWhite_50),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.0), borderSide: BorderSide.none),
+                hintStyle: typography.body.copyWith(color: colors.tertiaryText, fontSize: 14),
+                prefixIcon: Icon(Icons.search_rounded, color: colors.tertiaryText),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 filled: true,
                 fillColor: Colors.transparent,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0.0, horizontal: 16.0),
               ),
-              style: const TextStyle(decorationThickness: 0, color: CoconutColors.white),
+              style: typography.body.copyWith(decorationThickness: 0, color: colors.primaryText),
             ),
           ),
         ),
@@ -242,6 +236,9 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   }
 
   Widget _resultWidget() {
+    final colors = context.coconutColors;
+    final typography = context.coconutTypography;
+
     return _searchController.text.isEmpty
         ? Container()
         : Column(
@@ -252,7 +249,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   t.bip39_list_screen.result(text: _searchController.text),
-                  style: Styles.body1.merge(const TextStyle(color: CoconutColors.white)),
+                  style: typography.body.copyWith(color: colors.primaryText),
                 ),
               ),
             ),
@@ -262,7 +259,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
                   child: Center(
                     child: Text(
                       t.bip39_list_screen.no_result,
-                      style: Styles.body1Bold.merge(const TextStyle(color: MyColors.transparentWhite_70)),
+                      style: typography.bodyBold.copyWith(color: colors.secondaryText),
                     ),
                   ),
                 )
@@ -272,6 +269,8 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
   }
 
   Widget _buildListItem(BuildContext context, int index) {
+    final colors = context.coconutColors;
+    final typography = context.coconutTypography;
     final data = _filteredItems[index];
     final item = data['item'] as String;
     final indexNum = data['index'] as int;
@@ -285,12 +284,12 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
           title: RichText(
             text: TextSpan(
               children: highlightOccurrences(item, query, type: type),
-              style: Styles.h3.merge(const TextStyle(fontWeight: FontWeight.w600)),
+              style: typography.title.copyWith(fontWeight: FontWeight.w600, color: colors.primaryText),
             ),
           ),
           trailing: RichText(
             text: TextSpan(
-              style: Styles.subLabel.merge(const TextStyle(color: MyColors.transparentWhite_50)),
+              style: typography.caption.copyWith(color: colors.tertiaryText, fontSize: 16),
               children: [
                 const TextSpan(text: 'Binary: '),
                 ...highlightOccurrences(
@@ -302,7 +301,7 @@ class _Bip39ListScreenState extends State<Bip39ListScreen> {
             ),
           ),
         ),
-        if (index != _filteredItems.length - 1) const Divider(color: MyColors.borderLightgrey),
+        if (index != _filteredItems.length - 1) Divider(color: colors.borderSubtle),
       ],
     );
   }

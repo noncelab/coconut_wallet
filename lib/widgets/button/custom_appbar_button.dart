@@ -1,5 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart';
-import 'package:coconut_wallet/styles.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar_button.dart';
 import 'package:flutter/material.dart';
 
 class CustomAppbarButton extends StatelessWidget {
@@ -18,27 +17,11 @@ class CustomAppbarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isActive ? onPressed : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14.0),
-          border: Border.all(color: isActive ? Colors.transparent : MyColors.transparentWhite_20),
-          color: isActive ? (isActivePrimaryColor ? CoconutColors.primary : CoconutColors.white) : MyColors.grey,
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: Styles.label2.merge(
-              TextStyle(
-                color: isActive ? Colors.black : MyColors.transparentWhite_70,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return CoconutAppBarButton(
+      isActive: isActive,
+      onPressed: onPressed,
+      text: text,
+      isActivePrimaryColor: isActivePrimaryColor,
     );
   }
 }
